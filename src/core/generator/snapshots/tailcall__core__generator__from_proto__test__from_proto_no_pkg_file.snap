@@ -6,17 +6,17 @@ schema @server @upstream {
   query: Query
 }
 
-type NEWS @tag(id: "News") {
+type News @tag(id: "News") {
   body: String
   id: Int
-  post_image: String
+  postImage: String
   title: String
 }
 
-type NEWS_LIST @tag(id: "NewsList") {
-  news: [NEWS]!
+type NewsList @tag(id: "NewsList") {
+  news: [News]!
 }
 
 type Query {
-  get_all_news: NEWS_LIST! @grpc(method: "GetAllNews")
+  NewsService__GetAllNews: NewsList! @grpc(method: "NewsService.GetAllNews")
 }

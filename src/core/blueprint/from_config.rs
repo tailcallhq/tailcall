@@ -99,11 +99,12 @@ where
         JsonSchema::Enum(type_enum_.variants.to_owned())
     } else {
         match type_of {
-            "String" => JsonSchema::Str {},
-            "Int" => JsonSchema::Num {},
-            "Boolean" => JsonSchema::Bool {},
+            "String" => JsonSchema::Str,
+            "Int" => JsonSchema::Num,
+            "Boolean" => JsonSchema::Bool,
+            "Empty" => JsonSchema::Empty,
             "JSON" => JsonSchema::Obj(HashMap::new()),
-            _ => JsonSchema::Str {},
+            _ => JsonSchema::Any,
         }
     };
 

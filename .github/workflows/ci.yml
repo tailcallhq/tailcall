@@ -316,6 +316,7 @@ jobs:
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
+            features: --no-default-features --features cli
             libc: msvc
             ext: ".exe"
 
@@ -323,6 +324,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
+            features: --no-default-features --features cli
             cross: true
             libc: glibc
             ext: ".exe"

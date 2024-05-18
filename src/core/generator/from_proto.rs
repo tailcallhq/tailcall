@@ -1,11 +1,12 @@
 use std::collections::BTreeSet;
 
+use anyhow::{bail, Result};
 use derive_setters::Setters;
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
 };
 
-use super::graphql_type::GraphQLType;
+use super::graphql_type::{GraphQLType, Unparsed};
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
@@ -13,7 +14,7 @@ use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
 #[derive(Setters)]
 struct Context {
     /// The current proto package name.
-    package: String,
+    namespace: Vec<String>,
 
     /// Final configuration that's being built up.
     config: Config,
@@ -26,7 +27,7 @@ impl Context {
     fn new(query: &str) -> Self {
         Self {
             query: query.to_string(),
-            package: Default::default(),
+            namespace: Default::default(),
             config: Default::default(),
         }
     }
@@ -45,18 +46,12 @@ impl Context {
             let variants = enum_
                 .value
                 .iter()
-                .map(|v| {
-                    GraphQLType::new(v.name())
-                        .as_enum_variant()
-                        .unwrap()
-                        .to_string()
-                })
+                .map(|v| GraphQLType::new(v.name()).into_enum_variant().to_string())
                 .collect::<BTreeSet<String>>();
 
             let type_name = GraphQLType::new(enum_name)
-                .package(&self.package)
-                .as_enum()
-                .unwrap()
+                .extend(self.namespace.as_slice())
+                .into_enum()
                 .to_string();
             self.config
                 .enums
@@ -66,29 +61,31 @@ impl Context {
     }
 
     /// Processes proto message types.
-    fn append_msg_type(mut self, messages: &Vec<DescriptorProto>) -> Self {
+    fn append_msg_type(mut self, messages: &Vec<DescriptorProto>) -> Result<Self> {
         for message in messages {
-            let msg_name = message.name().to_string();
+            let msg_name = message.name();
             if let Some(options) = message.options.as_ref() {
                 if options.map_entry.unwrap_or_default() {
                     continue;
                 }
             }
 
+            // first append the name of current message as namespace
+            self.namespace.push(msg_name.to_string());
             self = self.append_enums(&message.enum_type);
-            self = self.append_msg_type(&message.nested_type);
+            self = self.append_msg_type(&message.nested_type)?;
+            // then drop it after handling nested types
+            self.namespace.pop();
 
-            let msg_type = GraphQLType::new(&msg_name)
-                .package(&self.package)
-                .as_object_type()
-                .unwrap();
+            let msg_type = GraphQLType::new(msg_name)
+                .extend(self.namespace.as_slice())
+                .into_object_type();
 
             let mut ty = Type::default();
             for field in message.field.iter() {
                 let field_name = GraphQLType::new(field.name())
-                    .package(&self.package)
-                    .as_field()
-                    .unwrap();
+                    .extend(self.namespace.as_slice())
+                    .into_field();
 
                 let mut cfg_field = Field::default();
 
@@ -96,22 +93,19 @@ impl Context {
                 cfg_field.list = label.contains("repeated");
                 cfg_field.required = label.contains("required") || cfg_field.list;
 
-                if field.r#type.is_some() {
-                    let type_of = convert_ty(field.r#type().as_str_name());
+                if field.type_name.is_some() {
+                    // for non-primitive types
+                    let type_of = graphql_type_from_ref(field.type_name())?
+                        .into_object_type()
+                        .to_string();
+
+                    cfg_field.type_of = type_of;
+                } else {
+                    let type_of = convert_primitive_type(field.r#type().as_str_name());
                     if type_of.eq("JSON") {
                         cfg_field.list = false;
                         cfg_field.required = false;
                     }
-                    cfg_field.type_of = type_of;
-                } else {
-                    // for non-primitive types
-                    let type_of = convert_ty(field.type_name());
-                    let type_of = GraphQLType::new(&type_of)
-                        .package(self.package.as_str())
-                        .as_object_type()
-                        .unwrap()
-                        .to_string();
-
                     cfg_field.type_of = type_of;
                 }
 
@@ -122,34 +116,29 @@ impl Context {
 
             self = self.insert_type(msg_type.to_string(), ty);
         }
-        self
+        Ok(self)
     }
 
     /// Processes proto service definitions and their methods.
-    fn append_query_service(mut self, services: &Vec<ServiceDescriptorProto>) -> Self {
+    fn append_query_service(mut self, services: &Vec<ServiceDescriptorProto>) -> Result<Self> {
         if services.is_empty() {
-            return self;
+            return Ok(self);
         }
 
         for service in services {
+            let service_name = service.name();
             for method in &service.method {
                 let field_name = GraphQLType::new(method.name())
-                    .package(&self.package)
-                    .as_method()
-                    .unwrap();
+                    .extend(self.namespace.as_slice())
+                    .push(service_name)
+                    .into_method();
 
                 let mut cfg_field = Field::default();
-                if let Some(arg_type) = get_input_ty(method.input_type()) {
-                    let key = GraphQLType::new(&arg_type)
-                        .package(&self.package)
-                        .as_field()
-                        .unwrap()
-                        .to_string();
-                    let type_of = GraphQLType::new(&arg_type)
-                        .package(&self.package)
-                        .as_object_type()
-                        .unwrap()
-                        .to_string();
+                let mut body = None;
+
+                if let Some(graphql_type) = get_input_type(method.input_type())? {
+                    let key = graphql_type.clone().into_field().to_string();
+                    let type_of = graphql_type.into_object_type().to_string();
                     let val = Arg {
                         type_of,
                         list: false,
@@ -161,21 +150,19 @@ impl Context {
                         default_value: None,
                     };
 
+                    body = Some(format!("{{{{.args.{key}}}}}"));
                     cfg_field.args.insert(key, val);
                 }
 
-                let output_ty = get_output_ty(method.output_type());
-                let output_ty = GraphQLType::new(&output_ty)
-                    .package(&self.package)
-                    .as_object_type()
-                    .unwrap()
+                let output_ty = get_output_type(method.output_type())?
+                    .into_object_type()
                     .to_string();
                 cfg_field.type_of = output_ty;
                 cfg_field.required = true;
 
                 cfg_field.grpc = Some(Grpc {
                     base_url: None,
-                    body: None,
+                    body,
                     group_by: vec![],
                     headers: vec![],
                     method: field_name.id(),
@@ -193,12 +180,26 @@ impl Context {
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
         }
-        self
+        Ok(self)
+    }
+}
+
+fn graphql_type_from_ref(name: &str) -> Result<GraphQLType<Unparsed>> {
+    if !name.starts_with('.') {
+        bail!("Expected fully-qualified name for reference type but got {name}. This is a bug!");
+    }
+
+    let name = &name[1..];
+
+    if let Some((package, name)) = name.rsplit_once('.') {
+        Ok(GraphQLType::new(name).push(package))
+    } else {
+        Ok(GraphQLType::new(name))
     }
 }
 
 /// Converts proto field types to a custom format.
-fn convert_ty(proto_ty: &str) -> String {
+fn convert_primitive_type(proto_ty: &str) -> String {
     let binding = proto_ty.to_lowercase();
     let proto_ty = binding.strip_prefix("type_").unwrap_or(proto_ty);
     match proto_ty {
@@ -214,74 +215,62 @@ fn convert_ty(proto_ty: &str) -> String {
 }
 
 /// Determines the output type for a service method.
-fn get_output_ty(output_ty: &str) -> String {
+fn get_output_type(output_ty: &str) -> Result<GraphQLType<Unparsed>> {
     // type, required
     match output_ty {
-        "google.protobuf.Empty" => {
+        ".google.protobuf.Empty" => {
             // If it's no response is expected, we return an Empty scalar type
-            "Empty".to_string()
+            Ok(GraphQLType::new("Empty"))
         }
-        any => {
+        _ => {
             // Setting it not null by default. There's no way to infer this from proto file
-            any.to_string()
+            graphql_type_from_ref(output_ty)
         }
     }
 }
 
-fn get_input_ty(input_ty: &str) -> Option<String> {
+fn get_input_type(input_ty: &str) -> Result<Option<GraphQLType<Unparsed>>> {
     match input_ty {
-        "google.protobuf.Empty" | "" => None,
-        any => Some(any.to_string()),
+        ".google.protobuf.Empty" | "" => Ok(None),
+        _ => graphql_type_from_ref(input_ty).map(Some),
     }
 }
 
 /// The main entry point that builds a Config object from proto descriptor sets.
-pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Config {
+pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<Config> {
     let mut ctx = Context::new(query);
     for descriptor_set in descriptor_sets.iter() {
         for file_descriptor in descriptor_set.file.iter() {
-            ctx.package = file_descriptor.package().to_string();
+            ctx.namespace = vec![file_descriptor.package().to_string()];
 
             ctx = ctx
                 .append_enums(&file_descriptor.enum_type)
-                .append_msg_type(&file_descriptor.message_type)
-                .append_query_service(&file_descriptor.service);
+                .append_msg_type(&file_descriptor.message_type)?
+                .append_query_service(&file_descriptor.service)?;
         }
     }
 
     let unused_types = ctx.config.unused_types();
     ctx.config = ctx.config.remove_types(unused_types);
 
-    ctx.config
+    Ok(ctx.config)
 }
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
+    use anyhow::Result;
+    use prost_reflect::prost_types::FileDescriptorSet;
+    use tailcall_fixtures::protobuf;
 
-    use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
+    use super::*;
+    use crate::core::config::{ConfigModule, Resolution};
 
-    use crate::core::generator::from_proto::from_proto;
-
-    fn get_proto_file_descriptor(name: &str) -> anyhow::Result<FileDescriptorProto> {
-        let path = PathBuf::from(tailcall_fixtures::generator::proto::SELF).join(name);
-        Ok(protox_parse::parse(
-            name,
-            std::fs::read_to_string(path)?.as_str(),
-        )?)
-    }
-
-    fn new_file_desc(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
-        let mut set = FileDescriptorSet::default();
-        for file in files.iter() {
-            let file = get_proto_file_descriptor(file)?;
-            set.file.push(file);
-        }
-        Ok(set)
+    fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet> {
+        Ok(protox::compile(files, [protobuf::SELF])?)
     }
 
     #[test]
-    fn test_from_proto() -> anyhow::Result<()> {
+    fn test_from_proto() -> Result<()> {
         // news_enum.proto covers:
         // test for mutation
         // test for empty objects
@@ -291,62 +280,88 @@ mod test {
         // test for a type used as both input and output
         // test for two types having same name in different packages
 
-        let set = new_file_desc(&["news.proto", "greetings_a.proto", "greetings_b.proto"])?;
-        let result = from_proto(&[set], "Query").to_sdl();
+        let set =
+            compile_protobuf(&[protobuf::NEWS, protobuf::GREETINGS_A, protobuf::GREETINGS_B])?;
+        let result = from_proto(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
 
         Ok(())
     }
 
     #[test]
-    fn test_from_proto_no_pkg_file() -> anyhow::Result<()> {
-        let set = new_file_desc(&["no_pkg.proto"])?;
-        let result = from_proto(&[set], "Query").to_sdl();
+    fn test_from_proto_no_pkg_file() -> Result<()> {
+        let set = compile_protobuf(&[protobuf::NEWS_NO_PKG])?;
+        let result = from_proto(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
         Ok(())
     }
 
     #[test]
-    fn test_from_proto_no_service_file() -> anyhow::Result<()> {
-        let set = new_file_desc(&["news_no_service.proto"])?;
-        let result = from_proto(&[set], "Query").to_sdl();
+    fn test_from_proto_no_service_file() -> Result<()> {
+        let set = compile_protobuf(&[protobuf::NEWS_NO_SERVICE])?;
+        let result = from_proto(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
 
         Ok(())
     }
 
     #[test]
-    fn test_greetings_proto_file() {
-        let set = new_file_desc(&["greetings.proto", "greetings_message.proto"]).unwrap();
-        let result = from_proto(&[set], "Query").to_sdl();
+    fn test_greetings_proto_file() -> Result<()> {
+        let set = compile_protobuf(&[protobuf::GREETINGS, protobuf::GREETINGS_MESSAGE]).unwrap();
+        let result = from_proto(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
+
+        Ok(())
     }
 
     #[test]
-    fn test_config_from_sdl() -> anyhow::Result<()> {
-        let set = new_file_desc(&["news.proto", "greetings_a.proto", "greetings_b.proto"])?;
+    fn test_config_from_sdl() -> Result<()> {
+        let set =
+            compile_protobuf(&[protobuf::NEWS, protobuf::GREETINGS_A, protobuf::GREETINGS_B])?;
 
-        let set1 = new_file_desc(&["news.proto"])?;
-        let set2 = new_file_desc(&["greetings_a.proto"])?;
-        let set3 = new_file_desc(&["greetings_b.proto"])?;
+        let set1 = compile_protobuf(&[protobuf::NEWS])?;
+        let set2 = compile_protobuf(&[protobuf::GREETINGS_A])?;
+        let set3 = compile_protobuf(&[protobuf::GREETINGS_B])?;
 
-        let actual = from_proto(&[set.clone()], "Query").to_sdl();
-        let expected = from_proto(&[set1, set2, set3], "Query").to_sdl();
+        let actual = from_proto(&[set.clone()], "Query")?.to_sdl();
+        let expected = from_proto(&[set1, set2, set3], "Query")?.to_sdl();
 
         pretty_assertions::assert_eq!(actual, expected);
         Ok(())
     }
 
     #[test]
-    fn test_required_types() -> anyhow::Result<()> {
+    fn test_required_types() -> Result<()> {
         // required fields are deprecated in proto3 (https://protobuf.dev/programming-guides/dos-donts/#add-required)
         // this example uses proto2 to test the same.
         // for proto3 it's guaranteed to have a default value (https://protobuf.dev/programming-guides/proto3/#default)
         // and our implementation (https://github.com/tailcallhq/tailcall/pull/1537) supports default values by default.
         // so we do not need to explicitly mark fields as required.
 
-        let set = new_file_desc(&["person.proto"])?;
-        let config = from_proto(&[set], "Query").to_sdl();
+        let set = compile_protobuf(&[protobuf::PERSON])?;
+        let config = from_proto(&[set], "Query")?.to_sdl();
+        insta::assert_snapshot!(config);
+        Ok(())
+    }
+
+    #[test]
+    fn test_movies() -> Result<()> {
+        let set = compile_protobuf(&[protobuf::MOVIES])?;
+        let config = from_proto(&[set], "Query")?;
+        let config_module = ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
+            input: format!("{}Input", v),
+            output: v.to_owned(),
+        });
+        let config = config_module.to_sdl();
+        insta::assert_snapshot!(config);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_nested_types() -> Result<()> {
+        let set = compile_protobuf(&[protobuf::NESTED_TYPES])?;
+        let config = from_proto(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
     }
