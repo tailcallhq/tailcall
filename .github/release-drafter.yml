@@ -14,6 +14,10 @@ categories:
       - "type: bug"
       - "type: fix"
 
+  - title: "🚀 Performance"
+    labels:
+      - "type: performance"
+
   - title: "🧰 Maintenance"
     labels:
       - "type: chore"
@@ -41,6 +45,7 @@ version-resolver:
   patch:
     labels:
       - "type: fix"
+      - "type: performance"
       - "type: chore"
       - "type: docs"
       - "type: bug"
@@ -78,3 +83,13 @@ autolabeler:
     title:
       - /doc/i
       - /docs/i
+
+  - label: "type: performance"
+    title:
+      - /perf/i
+
+  - label: "ci: benchmark"
+    title:
+      - /perf/i
+    files:
+      - "/benches/"
