@@ -1,10 +1,15 @@
 use anyhow::Result;
+use futures_util::future::join_all;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
+use reqwest::Method;
+use serde_json::Value;
+use std::collections::HashMap;
+use url::Url;
 
 use crate::core::config::{Config, ConfigModule, Link, LinkType, Resolution};
 use crate::core::generator::from_proto::from_proto;
-use crate::core::generator::Source;
+use crate::core::generator::{from_json, ConfigGenerationRequest, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
@@ -26,12 +31,23 @@ fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<File
     Ok(descriptor_set)
 }
 
+// TODO: move this logic to ResourceReader.
+async fn fetch_response(url: &str, runtime: &TargetRuntime) -> anyhow::Result<Value> {
+    let parsed_url = Url::parse(url)?;
+    let request = reqwest::Request::new(Method::GET, parsed_url);
+    let resp = runtime.http.execute(request).await?;
+    let body = serde_json::from_slice(&resp.body)?;
+    Ok(body)
+}
+
 pub struct Generator {
     proto_reader: ProtoReader,
+    runtime: TargetRuntime,
 }
 impl Generator {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self {
+            runtime: runtime.clone(),
             proto_reader: ProtoReader::init(ResourceReader::cached(runtime.clone()), runtime),
         }
     }
@@ -39,33 +55,65 @@ impl Generator {
     pub async fn read_all<T: AsRef<str>>(
         &self,
         input_source: Source,
-        files: &[T],
+        paths: &[T],
         query: &str,
-    ) -> Result<ConfigModule> {
-        let mut links = vec![];
-        let proto_metadata = self.proto_reader.read_all(files).await?;
+    ) -> Result<Vec<ConfigModule>> {
+        match input_source {
+            Source::Proto => {
+                let mut links = vec![];
+                let proto_metadata = self.proto_reader.read_all(paths).await?;
 
-        let mut config = Config::default();
-        for metadata in proto_metadata {
-            match input_source {
-                Source::Proto => {
+                let mut config = Config::default();
+                for metadata in proto_metadata {
                     links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
                     let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set)?;
                     config = config.merge_right(from_proto(&[descriptor_set], query)?);
                 }
-                _ => {
-                    unreachable!();
+
+                config.links = links;
+                Ok(vec![ConfigModule::from(config).resolve_ambiguous_types(
+                    |v| Resolution { input: format!("{}Input", v), output: v.to_owned() },
+                )])
+            }
+            Source::Url => {
+                let results = join_all(
+                    paths
+                        .iter()
+                        .map(|url| fetch_response(url.as_ref(), &self.runtime)),
+                )
+                .await
+                .into_iter()
+                .collect::<anyhow::Result<Vec<_>>>()?;
+
+                // create a config generation requests.
+                let config_gen_reqs = results
+                    .iter()
+                    .zip(paths.iter())
+                    .map(|(resp, url)| ConfigGenerationRequest::new(url.as_ref(), resp))
+                    .collect::<Vec<ConfigGenerationRequest>>();
+
+                // group requests with same domain name to have single config.
+                // and pass each group to from_json to generate the config.
+                let mut domain_groupings: HashMap<String, Vec<ConfigGenerationRequest>> =
+                    HashMap::new();
+                for req in config_gen_reqs {
+                    let url = Url::parse(req.url).unwrap();
+                    let domain = url.domain().unwrap();
+                    domain_groupings
+                        .entry(domain.to_string())
+                        .or_insert_with(Vec::new)
+                        .push(req);
                 }
+
+                let mut configs = Vec::with_capacity(domain_groupings.len());
+
+                for (_, same_domain_group_req) in domain_groupings {
+                    configs.push(ConfigModule::from(from_json(&same_domain_group_req)?));
+                }
+
+                Ok(configs)
             }
         }
-
-        config.links = links;
-        Ok(
-            ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
-                input: format!("{}Input", v),
-                output: v.to_owned(),
-            }),
-        )
     }
 }
 
@@ -119,7 +167,17 @@ mod test {
             .await
             .unwrap();
 
-        assert_eq!(config.links.len(), 3);
-        assert_eq!(config.types.get("Query").unwrap().fields.len(), 8);
+        assert_eq!(config.get(0).unwrap().links.len(), 3);
+        assert_eq!(
+            config
+                .get(0)
+                .unwrap()
+                .types
+                .get("Query")
+                .unwrap()
+                .fields
+                .len(),
+            8
+        );
     }
 }
