@@ -120,7 +120,7 @@ pub mod test {
         async fn execute_with(
             &self,
             request: reqwest::Request,
-            _http_filter: &'life0 http::filter::HttpFilter,
+            _http_filter: &'life0 http::HttpFilter,
         ) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(

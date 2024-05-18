@@ -9,7 +9,7 @@ use async_graphql_value::ConstValue;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
-use crate::core::http::{filter, DataLoaderRequest, Response};
+use crate::core::http::{DataLoaderRequest, HttpFilter, Response};
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
 
@@ -65,7 +65,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
     async fn load(
         &self,
         keys: &[DataLoaderRequest],
-        http_filter: filter::HttpFilter,
+        http_filter: HttpFilter,
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if let Some(group_by) = &self.group_by {
             let mut keys = keys.to_vec();

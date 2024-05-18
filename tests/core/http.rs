@@ -8,7 +8,7 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use hyper::body::Bytes;
 use reqwest::header::{HeaderName, HeaderValue};
-use tailcall::core::http::{filter, Response};
+use tailcall::core::http::{HttpFilter, Response};
 use tailcall::core::HttpIO;
 
 use super::runtime::{ExecutionMock, ExecutionSpec};
@@ -133,7 +133,7 @@ impl HttpIO for Http {
     async fn execute_with(
         &self,
         req: reqwest::Request,
-        _http_filter: &'life0 filter::HttpFilter,
+        _http_filter: &'life0 HttpFilter,
     ) -> anyhow::Result<Response<Bytes>> {
         // Try to find a matching mock for the incoming request.
         let execution_mock = self

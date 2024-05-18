@@ -106,7 +106,7 @@ impl Loader<DataLoaderRequest> for GrpcDataLoader {
     async fn load(
         &self,
         keys: &[DataLoaderRequest],
-        _http_filter: http::filter::HttpFilter,
+        _http_filter: http::HttpFilter,
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if let Some(group_by) = &self.group_by {
             self.load_with_group_by(group_by, keys)

@@ -104,7 +104,7 @@ mod tests {
         async fn execute_with(
             &self,
             _request: Request,
-            _http_filter: &'life0 http::filter::HttpFilter,
+            _http_filter: &'life0 http::HttpFilter,
         ) -> Result<Response<Bytes>> {
             let mut headers = HeaderMap::new();
             let message = Bytes::from_static(b"\0\0\0\0\x0e\n\x0ctest message");

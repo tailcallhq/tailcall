@@ -40,7 +40,7 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     async fn load(
         &self,
         keys: &[DataLoaderRequest],
-        _http_filter: http::filter::HttpFilter,
+        _http_filter: http::HttpFilter,
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if self.batch {
             let batched_req = create_batched_request(keys);

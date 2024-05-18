@@ -144,7 +144,7 @@ impl HttpIO for NativeHttp {
     async fn execute_with(
         &self,
         mut request: reqwest::Request,
-        _: &'life0 http::filter::HttpFilter,
+        _: &'life0 http::HttpFilter,
     ) -> Result<Response<Bytes>> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;

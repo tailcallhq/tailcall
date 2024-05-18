@@ -14,7 +14,6 @@ mod data_loader;
 
 mod cache;
 mod data_loader_request;
-pub mod filter;
 mod method;
 mod request_context;
 mod request_handler;
@@ -25,3 +24,10 @@ mod telemetry;
 
 pub static TAILCALL_HTTPS_ORIGIN: HeaderValue = HeaderValue::from_static("https://tailcall.run");
 pub static TAILCALL_HTTP_ORIGIN: HeaderValue = HeaderValue::from_static("http://tailcall.run");
+
+#[derive(Default, Clone, Debug)]
+/// User can configure the filter/interceptor
+/// for the http requests.
+pub struct HttpFilter {
+    pub on_request: Option<String>,
+}

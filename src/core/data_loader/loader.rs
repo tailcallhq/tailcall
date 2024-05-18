@@ -16,6 +16,6 @@ pub trait Loader<K: Send + Sync + Hash + Eq + Clone + 'static>: Send + Sync + 's
     async fn load(
         &self,
         keys: &[K],
-        http_filter: http::filter::HttpFilter,
+        http_filter: http::HttpFilter,
     ) -> Result<HashMap<K, Self::Value>, Self::Error>;
 }

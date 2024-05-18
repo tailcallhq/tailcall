@@ -4,7 +4,7 @@ use anyhow::Result;
 use hyper::body::Bytes;
 use lambda_http::RequestExt;
 use reqwest::Client;
-use tailcall::core::http::{filter, Response};
+use tailcall::core::http::{HttpFilter, Response};
 use tailcall::core::HttpIO;
 
 #[derive(Clone)]
@@ -43,7 +43,7 @@ impl HttpIO for LambdaHttp {
     async fn execute_with(
         &self,
         request: reqwest::Request,
-        _http_filter: &'life0 filter::HttpFilter,
+        _http_filter: &'life0 HttpFilter,
     ) -> Result<Response<Bytes>> {
         let req_str = format!("{} {}", request.method(), request.url());
         let response = self

@@ -13,7 +13,7 @@ pub mod test {
     use tailcall::cli::javascript;
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
-    use tailcall::core::http::{filter, Response};
+    use tailcall::core::http::{HttpFilter, Response};
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::{EnvIO, FileIO, HttpIO};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -84,7 +84,7 @@ pub mod test {
         async fn execute_with(
             &self,
             request: reqwest::Request,
-            _http_filter: &'life0 filter::HttpFilter,
+            _http_filter: &'life0 HttpFilter,
         ) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(

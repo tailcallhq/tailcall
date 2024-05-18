@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use async_std::task::spawn_local;
 use hyper::body::Bytes;
 use reqwest::Client;
-use tailcall::core::http::{filter, Response};
+use tailcall::core::http::{HttpFilter, Response};
 use tailcall::core::HttpIO;
 
 use crate::to_anyhow;
@@ -51,7 +51,7 @@ impl HttpIO for CloudflareHttp {
     async fn execute_with(
         &self,
         request: reqwest::Request,
-        _http_filter: &'life0 filter::HttpFilter,
+        _http_filter: &'life0 HttpFilter,
     ) -> Result<Response<Bytes>> {
         let client = self.client.clone();
         let method = request.method().clone();
