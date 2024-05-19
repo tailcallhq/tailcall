@@ -3,12 +3,11 @@ source: tests/core/spec.rs
 expression: response
 ---
 {
-  "status": 200,
+  "status": 400,
   "headers": {
     "content-type": "application/json"
   },
   "body": {
-    "data": null,
     "errors": [
       {
         "message": "Invalid Config URL specified"

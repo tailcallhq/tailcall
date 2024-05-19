@@ -132,16 +132,37 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
                         request.remove("extensions");
                     }
                 }
+            } else if let Some(requests) = request.as_array_mut() {
+                for request in requests.iter_mut() {
+                    if let Some(request) = request.as_object_mut() {
+                        if let Some(extensions) = request.get_mut("extensions") {
+                            if extensions.is_null() {
+                                request.remove("extensions");
+                            }
+                        }
+                    }
+                }
             }
 
             // async_graphql doesn't fail when query is null, which is required by the GraphQL over HTTP spec.
-            if request.get("query").is_none() {
+            if request.is_object() && request.get("query").is_none() {
                 let mut response = async_graphql::Response::default();
                 let server_error =
                     ServerError::new("Parameter query not present in request".to_string(), None);
                 response.errors = vec![server_error];
 
                 return GraphQLResponse::from(response).into_response(Some(&req));
+            } else if let Some(requests) = request.as_array() {
+                for request in requests.iter() {
+                    if request.get("query").is_none() {
+                        let mut response = async_graphql::Response::default();
+                        let server_error =
+                            ServerError::new("Parameter query not present in request".to_string(), None);
+                        response.errors = vec![server_error];
+
+                        return GraphQLResponse::from(response).into_response(Some(&req));
+                    }
+                }
             }
 
             let request = match serde_json::from_value::<T>(request) {

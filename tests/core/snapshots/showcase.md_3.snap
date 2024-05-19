@@ -3,12 +3,11 @@ source: tests/core/spec.rs
 expression: response
 ---
 {
-  "status": 200,
+  "status": 400,
   "headers": {
     "content-type": "application/json"
   },
   "body": {
-    "data": null,
     "errors": [
       {
         "message": "Failed to read config: Validation Error\n•  --> 1:1\n  |\n1 | \"dsjfsjdfjdsfjkdskjfjkds\"\n  | ^---\n  |\n  = expected type_system_definition\n"
