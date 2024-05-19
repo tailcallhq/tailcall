@@ -12,7 +12,7 @@ pub struct HttpCacheManager {
 
 impl Default for HttpCacheManager {
     fn default() -> Self {
-        Self::new(MokaCache::new(42))
+        Self::new(42)
     }
 }
 
@@ -23,8 +23,8 @@ pub struct Store {
 }
 
 impl HttpCacheManager {
-    pub fn new(cache: MokaCache<String, Store>) -> Self {
-        Self { cache: Arc::new(cache) }
+    pub fn new(cache_size: u64) -> Self {
+        Self { cache: Arc::new(MokaCache::new(cache_size)) }
     }
 
     pub async fn clear(&self) -> Result<()> {
