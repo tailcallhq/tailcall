@@ -1,3 +1,3 @@
-mod http_cache_manager;
+mod cache;
 
-pub use http_cache_manager::HttpCacheManager;
+pub use cache::HttpCacheManager;
