@@ -32,7 +32,7 @@ message NewsList {
 # for test upstream server see [repo](https://github.com/tailcallhq/rust-grpc)
 schema
   @server(port: 8080)
-  @upstream(baseURL: "http://localhost:50051", httpCache: true, batch: {delay: 10})
+  @upstream(baseURL: "http://localhost:50051", httpCache: 42, batch: {delay: 10})
   @link(id: "news", src: "./service.proto", type: Protobuf) {
   query: Query
 }
