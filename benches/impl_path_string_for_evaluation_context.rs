@@ -57,10 +57,10 @@ impl Http {
 
         let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-        if upstream.http_cache {
+        if upstream.http_cache > 0 {
             client = client.with(Cache(HttpCache {
                 mode: CacheMode::Default,
-                manager: HttpCacheManager::default(),
+                manager: HttpCacheManager::new(upstream.http_cache),
                 options: HttpCacheOptions::default(),
             }))
         }
