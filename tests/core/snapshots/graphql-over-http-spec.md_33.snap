@@ -1,0 +1,17 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 400,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "errors": [
+      {
+        "message": "Unexpected GraphQL Request: invalid type: integer `0`, expected a map"
+      }
+    ]
+  }
+}

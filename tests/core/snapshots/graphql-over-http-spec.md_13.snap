@@ -1,0 +1,17 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 400,
+  "headers": {
+    "content-type": "application/graphql-response+json"
+  },
+  "body": {
+    "errors": [
+      {
+        "message": "Parameter query not present in request"
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 400,
+  "headers": {
+    "content-type": "application/graphql-response+json"
+  },
+  "body": {
+    "errors": [
+      {
+        "message": "Schema is not configured for mutations.",
+        "locations": [
+          {
+            "line": 1,
+            "column": 1
+          }
+        ]
+      }
+    ]
+  }
+}
