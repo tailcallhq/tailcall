@@ -200,4 +200,18 @@ mod test {
         let input = r#"[1, 2, 3]"#;
         check_schema(&schema, input);
     }
+
+    #[test]
+    fn test_posts() {
+        const JSON: &str = include_str!("../data/posts.json");
+        let schema = Schema::array(Schema::object({
+            let mut map = std::collections::HashMap::new();
+            map.insert("user_id".to_string(), Schema::Number(N::U64));
+            map.insert("id".to_string(), Schema::Number(N::U64));
+            map.insert("title".to_string(), Schema::String);
+            map.insert("body".to_string(), Schema::String);
+            map
+        }));
+        check_schema(&schema, JSON);
+    }
 }
