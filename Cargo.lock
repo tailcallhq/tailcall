@@ -5226,9 +5226,11 @@ dependencies = [
 name = "tailcall-serde-schema"
 version = "0.1.0"
 dependencies = [
+ "criterion",
  "pretty_assertions",
  "serde",
  "serde_json",
+ "serde_json_borrow",
 ]
 
 [[package]]
