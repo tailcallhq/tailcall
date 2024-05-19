@@ -97,19 +97,6 @@ pub struct Server {
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
-    // left = right.iter().fold(left.to_vec(), |mut acc, kv| {
-    //     match acc.iter().position(|x| x.key == kv.key) {
-    //         None => acc.push(kv.clone()),
-    //         Some(pos) => {
-    //             match acc.get_mut(pos) {
-    //                 None => (), // Something deeply strange has happened.
-    //                 Some(lkv) => *lkv = kv.clone(),
-    //             }
-    //         }
-    //     }
-    //     acc
-    // });
-
     left = merge_key_value_vecs(&left, &right);
     left
 }
