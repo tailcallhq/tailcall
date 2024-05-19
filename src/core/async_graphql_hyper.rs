@@ -3,7 +3,7 @@ use std::any::Any;
 use anyhow::Result;
 use async_graphql::{BatchResponse, Executor, Value};
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
-use hyper::{Body, Response, StatusCode};
+use hyper::{Body, Request, Response, StatusCode};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -109,11 +109,21 @@ impl GraphQLQuery {
 static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
+static APPLICATION_GRAPHQL_JSON: Lazy<HeaderValue> =
+    Lazy::new(|| HeaderValue::from_static("application/graphql-response+json"));
+
 impl GraphQLResponse {
-    fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
+    fn build_response(&self, status: StatusCode, body: Body, request: Option<&Request<Body>>) -> Result<Response<Body>> {
         let mut response = Response::builder()
             .status(status)
-            .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
+            .header(
+                CONTENT_TYPE,
+                if request.map(|x| x.headers().get("accept") == Some(&APPLICATION_GRAPHQL_JSON)).unwrap_or(false) {
+                    APPLICATION_GRAPHQL_JSON.as_ref()
+                } else {
+                    APPLICATION_JSON.as_ref()
+                }
+            )
             .body(body)?;
 
         if self.0.is_ok() {
@@ -129,11 +139,34 @@ impl GraphQLResponse {
     }
 
     fn default_body(&self) -> Result<Body> {
-        Ok(Body::from(serde_json::to_string(&self.0)?))
+        let mut response = serde_json::to_value(&self.0)?;
+    
+        // HOTFIX: GraphQL-over-HTTP spec says we shouldn't return data when
+        // erroring out
+        if let Some(response) = response.as_object_mut() {
+            if let Some(data) = response.get("data") {
+                if data.is_null() {
+                    response.remove("data");
+                }
+            }
+        }
+
+        Ok(Body::from(serde_json::to_string(&response)?))
     }
 
-    pub fn into_response(self) -> Result<Response<hyper::Body>> {
-        self.build_response(StatusCode::OK, self.default_body()?)
+    pub fn into_response(self, request: Option<&Request<Body>>) -> Result<Response<hyper::Body>> {
+        if !self.0.is_ok() {
+            let is_document_error = match &self.0 {
+                BatchResponse::Single(x) => x.errors.iter().find(|x| !x.locations.is_empty()).is_some(),
+                BatchResponse::Batch(x) => x.iter().any(|x| x.errors.iter().find(|x| !x.locations.is_empty()).is_some()),
+            };
+
+            if !is_document_error || request.map(|x| x.headers().get("accept") == Some(&APPLICATION_GRAPHQL_JSON)).unwrap_or(false) {
+                return self.build_response(StatusCode::BAD_REQUEST, self.default_body()?, request)
+            }
+        }
+
+        self.build_response(StatusCode::OK, self.default_body()?, request)
     }
 
     fn flatten_response(data: &Value) -> &Value {
@@ -146,9 +179,9 @@ impl GraphQLResponse {
     /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
     /// Differs as `to_response` by flattening the response's data
     /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
-    pub fn into_rest_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_rest_response(self, request: Option<&Request<Body>>) -> Result<Response<hyper::Body>> {
         if !self.0.is_ok() {
-            return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?);
+            return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?, request);
         }
 
         match self.0 {
@@ -156,7 +189,7 @@ impl GraphQLResponse {
                 let item = Self::flatten_response(&res.data);
                 let data = serde_json::to_string(item)?;
 
-                self.build_response(StatusCode::OK, Body::from(data))
+                self.build_response(StatusCode::OK, Body::from(data), request)
             }
             BatchResponse::Batch(ref list) => {
                 let item = list
@@ -165,7 +198,7 @@ impl GraphQLResponse {
                     .collect::<Vec<&Value>>();
                 let data = serde_json::to_string(&item)?;
 
-                self.build_response(StatusCode::OK, Body::from(data))
+                self.build_response(StatusCode::OK, Body::from(data), request)
             }
         }
     }
@@ -221,7 +254,7 @@ mod tests {
         let data = IndexMap::from([(Name::new("user"), Value::Object(user))]);
 
         let response = GraphQLResponse(BatchResponse::Single(Response::new(Value::Object(data))));
-        let rest_response = response.into_rest_response().unwrap();
+        let rest_response = response.into_rest_response(None).unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -248,7 +281,7 @@ mod tests {
             .collect();
 
         let response = GraphQLResponse(BatchResponse::Batch(list));
-        let rest_response = response.into_rest_response().unwrap();
+        let rest_response = response.into_rest_response(None).unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -277,7 +310,7 @@ mod tests {
             .map(|error| ServerError::new(error.to_string(), None))
             .collect();
         let response = GraphQLResponse(BatchResponse::Single(response));
-        let rest_response = response.into_rest_response().unwrap();
+        let rest_response = response.into_rest_response(None).unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -287,7 +320,6 @@ mod tests {
                 .unwrap()
                 .to_vec(),
             json!({
-                "data": null,
                 "errors": errors.iter().map(|error| {
                     json!({
                         "message": error,

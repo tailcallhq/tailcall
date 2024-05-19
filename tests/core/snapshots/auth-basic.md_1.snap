@@ -8,7 +8,6 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": null,
     "errors": [
       {
         "message": "Authentication Failure: Missing Authorization Header",
