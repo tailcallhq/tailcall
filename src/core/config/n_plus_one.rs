@@ -40,17 +40,8 @@ fn find_fan_out(context: FindFanOutContext) -> Vec<Vec<(String, String)>> {
     }
 }
 
-pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
-    if let Some(query) = &config.schema.query {
-        find_fan_out(FindFanOutContext {
-            config,
-            type_name: query,
-            path: Vec::new(),
-            is_list: false,
-        })
-    } else {
-        Vec::new()
-    }
+pub fn n_plus_one() -> Vec<Vec<(String, String)>> {
+    Vec::new()
 }
 
 #[cfg(test)]
@@ -60,7 +51,7 @@ mod tests {
 
     #[test]
     fn test_nplusone_resolvers() {
-        let config = Config::default().query("Query").types(vec![
+        let config = Config::default().types(vec![
             (
                 "Query",
                 Type::default().fields(vec![(
@@ -98,7 +89,7 @@ mod tests {
 
     #[test]
     fn test_nplusone_batched_resolvers() {
-        let config = Config::default().query("Query").types(vec![
+        let config = Config::default().types(vec![
             (
                 "Query",
                 Type::default().fields(vec![(
@@ -133,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_nplusone_nested_resolvers() {
-        let config = Config::default().query("Query").types(vec![
+        let config = Config::default().types(vec![
             (
                 "Query",
                 Type::default().fields(vec![(
@@ -181,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_nplusone_nested_resolvers_non_list_resolvers() {
-        let config = Config::default().query("Query").types(vec![
+        let config = Config::default().types(vec![
             (
                 "Query",
                 Type::default().fields(vec![(
@@ -228,7 +219,7 @@ mod tests {
 
     #[test]
     fn test_nplusone_nested_resolvers_without_resolvers() {
-        let config = Config::default().query("Query").types(vec![
+        let config = Config::default().types(vec![
             (
                 "Query",
                 Type::default().fields(vec![(
@@ -260,7 +251,7 @@ mod tests {
 
     #[test]
     fn test_nplusone_cycles() {
-        let config = Config::default().query("Query").types(vec![
+        let config = Config::default().types(vec![
             (
                 "Query",
                 Type::default().fields(vec![(
@@ -292,7 +283,7 @@ mod tests {
 
     #[test]
     fn test_nplusone_cycles_with_resolvers() {
-        let config = Config::default().query("Query").types(vec![
+        let config = Config::default().types(vec![
             (
                 "Query",
                 Type::default().fields(vec![(
@@ -344,7 +335,7 @@ mod tests {
             .type_of("F".to_string())
             .http(Http::default());
 
-        let config = Config::default().query("Query").types(vec![
+        let config = Config::default().types(vec![
             ("Query", Type::default().fields(vec![("f", f_field)])),
             (
                 "F",

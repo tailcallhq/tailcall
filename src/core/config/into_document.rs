@@ -37,22 +37,6 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
         pos(directive)
     }));
 
-    let schema_definition = SchemaDefinition {
-        extend: false,
-        directives,
-        query: config.schema.query.clone().map(|name| pos(Name::new(name))),
-        mutation: config
-            .schema
-            .mutation
-            .clone()
-            .map(|name| pos(Name::new(name))),
-        subscription: config
-            .schema
-            .subscription
-            .clone()
-            .map(|name| pos(Name::new(name))),
-    };
-    definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
     for (type_name, type_def) in config.types.iter() {
         let kind = if config.interface_types.contains(type_name) {
             TypeKind::Interface(InterfaceType {

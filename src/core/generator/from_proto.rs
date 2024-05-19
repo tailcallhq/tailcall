@@ -173,7 +173,7 @@ impl Context {
                     .types
                     .entry(self.query.clone())
                     .or_insert_with(|| {
-                        self.config.schema.query = Some(self.query.clone());
+                        Some(self.query.clone());
                         Type::default()
                     });
 
