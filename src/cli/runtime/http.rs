@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
@@ -13,6 +13,7 @@ use opentelemetry_semantic_conventions::trace::{
 };
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use tailcall_http_cache::HttpCacheManager;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::HttpIO;
@@ -114,7 +115,7 @@ impl NativeHttp {
         if upstream.http_cache {
             client = client.with(Cache(HttpCache {
                 mode: CacheMode::Default,
-                manager: MokaManager::default(),
+                manager: HttpCacheManager::default(),
                 options: HttpCacheOptions::default(),
             }))
         }
