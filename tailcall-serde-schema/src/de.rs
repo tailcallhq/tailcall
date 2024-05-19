@@ -1,5 +1,5 @@
 use serde::de::{self};
-use serde_json::{self, Number};
+use serde_json::{self};
 
 use crate::ignore::Ignore;
 use crate::schema::Schema;
@@ -77,21 +77,23 @@ impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
     where
         E: de::Error,
     {
-        Ok(serde_json::Value::Number(Number::from_f64(v).unwrap()))
+        Ok(serde_json::Value::Number(
+            serde_json::Number::from_f64(v).unwrap(),
+        ))
     }
 
     fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(serde_json::Value::Number(Number::from(v)))
+        Ok(serde_json::Value::Number(serde_json::Number::from(v)))
     }
 
     fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(serde_json::Value::Number(Number::from(v)))
+        Ok(serde_json::Value::Number(serde_json::Number::from(v)))
     }
 
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
@@ -112,6 +114,22 @@ impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
             Ok(serde_json::Value::Object(object))
         } else {
             Err(de::Error::custom("expected object"))
+        }
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: de::SeqAccess<'de>,
+    {
+        if let Schema::Array(item) = self.schema {
+            let mut array = Vec::new();
+            while let Some(value) = seq.next_element_seed(Deserialize::new(item))? {
+                array.push(value);
+            }
+
+            Ok(serde_json::Value::Array(array))
+        } else {
+            Err(de::Error::custom("expected array"))
         }
     }
 }
@@ -173,6 +191,13 @@ mod test {
             fields
         });
         let input = r#"{"foo": 42, "bar": true}"#;
+        check_schema(&schema, input);
+    }
+
+    #[test]
+    fn test_array() {
+        let schema = Schema::array(Schema::Number(N::U64));
+        let input = r#"[1, 2, 3]"#;
         check_schema(&schema, input);
     }
 }

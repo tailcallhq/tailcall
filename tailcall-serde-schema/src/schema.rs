@@ -5,20 +5,6 @@ use serde_json::de::StrRead;
 
 use crate::de::Deserialize;
 
-pub enum Name {
-    Anonymous,
-    Named(String),
-}
-
-impl Name {
-    pub fn as_str(&self) -> &str {
-        match self {
-            Name::Anonymous => "anonymous",
-            Name::Named(name) => name,
-        }
-    }
-}
-
 pub enum Schema {
     String,
     Number(N),
