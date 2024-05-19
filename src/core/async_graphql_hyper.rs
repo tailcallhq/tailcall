@@ -113,16 +113,24 @@ static APPLICATION_GRAPHQL_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/graphql-response+json"));
 
 impl GraphQLResponse {
-    fn build_response(&self, status: StatusCode, body: Body, request: Option<&Request<Body>>) -> Result<Response<Body>> {
+    fn build_response(
+        &self,
+        status: StatusCode,
+        body: Body,
+        request: Option<&Request<Body>>,
+    ) -> Result<Response<Body>> {
         let mut response = Response::builder()
             .status(status)
             .header(
                 CONTENT_TYPE,
-                if request.map(|x| x.headers().get("accept") == Some(&APPLICATION_GRAPHQL_JSON)).unwrap_or(false) {
+                if request
+                    .map(|x| x.headers().get("accept") == Some(&APPLICATION_GRAPHQL_JSON))
+                    .unwrap_or(false)
+                {
                     APPLICATION_GRAPHQL_JSON.as_ref()
                 } else {
                     APPLICATION_JSON.as_ref()
-                }
+                },
             )
             .body(body)?;
 
@@ -140,8 +148,9 @@ impl GraphQLResponse {
 
     fn default_body(&self) -> Result<Body> {
         let mut response = serde_json::to_value(&self.0)?;
-    
-        // async_graphql returns data as null on error, which is prohibited by the GraphQL over HTTP spec.
+
+        // async_graphql returns data as null on error, which is prohibited by the
+        // GraphQL over HTTP spec.
         if let Some(response) = response.as_object_mut() {
             if let Some(data) = response.get("data") {
                 if data.is_null() {
@@ -156,12 +165,18 @@ impl GraphQLResponse {
     pub fn into_response(self, request: Option<&Request<Body>>) -> Result<Response<hyper::Body>> {
         if !self.0.is_ok() {
             let is_document_error = match &self.0 {
-                BatchResponse::Single(x) => x.errors.iter().find(|x| !x.locations.is_empty()).is_some(),
-                BatchResponse::Batch(x) => x.iter().any(|x| x.errors.iter().find(|x| !x.locations.is_empty()).is_some()),
+                BatchResponse::Single(x) => x.errors.iter().any(|x| !x.locations.is_empty()),
+                BatchResponse::Batch(x) => x
+                    .iter()
+                    .any(|x| x.errors.iter().any(|x| !x.locations.is_empty())),
             };
 
-            if !is_document_error || request.map(|x| x.headers().get("accept") == Some(&APPLICATION_GRAPHQL_JSON)).unwrap_or(false) {
-                return self.build_response(StatusCode::BAD_REQUEST, self.default_body()?, request)
+            if !is_document_error
+                || request
+                    .map(|x| x.headers().get("accept") == Some(&APPLICATION_GRAPHQL_JSON))
+                    .unwrap_or(false)
+            {
+                return self.build_response(StatusCode::BAD_REQUEST, self.default_body()?, request);
             }
         }
 
@@ -178,9 +193,16 @@ impl GraphQLResponse {
     /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
     /// Differs as `to_response` by flattening the response's data
     /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
-    pub fn into_rest_response(self, request: Option<&Request<Body>>) -> Result<Response<hyper::Body>> {
+    pub fn into_rest_response(
+        self,
+        request: Option<&Request<Body>>,
+    ) -> Result<Response<hyper::Body>> {
         if !self.0.is_ok() {
-            return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?, request);
+            return self.build_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                self.default_body()?,
+                request,
+            );
         }
 
         match self.0 {
