@@ -63,7 +63,14 @@ impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
-        Ok(serde_json::Value::String(value.to_string()))
+        Ok(serde_json::Value::String(value.to_owned()))
+    }
+
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(serde_json::Value::String(v))
     }
 
     fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
@@ -102,12 +109,17 @@ impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
     {
         if let Schema::Object(fields) = self.schema {
             let mut object = serde_json::Map::new();
-            while let Some(key) = map.next_key::<&str>()? {
+            while let Ok(Some(key)) = map.next_key::<&str>() {
                 if let Some(value_schema) = fields.get(key) {
-                    let value = map.next_value_seed(Deserialize::new(value_schema))?;
-                    object.insert(key.to_string(), value);
+                    match map.next_value_seed(Deserialize::new(value_schema)) {
+                        Ok(value) => object.insert(key.to_owned(), value),
+                        Err(err) => return Err(err),
+                    };
                 } else {
-                    map.next_value_seed(Ignore)?;
+                    match map.next_value_seed(Ignore) {
+                        Ok(_) => (),
+                        Err(err) => return Err(err),
+                    }
                 }
             }
 
@@ -122,8 +134,8 @@ impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
         A: de::SeqAccess<'de>,
     {
         if let Schema::Array(item) = self.schema {
-            let mut array = Vec::new();
-            while let Some(value) = seq.next_element_seed(Deserialize::new(item))? {
+            let mut array = Vec::with_capacity(seq.size_hint().unwrap_or(100));
+            while let Ok(Some(value)) = seq.next_element_seed(Deserialize::new(item)) {
                 array.push(value);
             }
 

@@ -57,13 +57,14 @@ fn bench_post_deserializer(c: &mut Criterion) {
         map
     }));
 
-    group.bench_function("typed", |b| b.iter(|| black_box(bench_typed())));
-    group.bench_function("typed_ref", |b| b.iter(|| black_box(bench_typed_ref())));
-    group.bench_function("untyped_ref", |b| b.iter(|| black_box(bench_untyped_ref())));
-    group.bench_function("untyped", |b| b.iter(|| black_box(bench_untyped())));
     group.bench_function("typed_schema", |b| {
         b.iter(|| black_box(bench_typed_schema(&schema)))
     });
+    group.bench_function("typed_ref", |b| b.iter(|| black_box(bench_typed_ref())));
+    group.bench_function("untyped_ref", |b| b.iter(|| black_box(bench_untyped_ref())));
+    group.bench_function("typed", |b| b.iter(|| black_box(bench_typed())));
+    group.bench_function("untyped", |b| b.iter(|| black_box(bench_untyped())));
+
     group.finish();
 }
 

@@ -5,6 +5,7 @@ use serde_json::de::StrRead;
 
 use crate::de::Deserialize;
 
+#[derive(Debug)]
 pub enum Schema {
     String,
     Number(N),
@@ -12,6 +13,8 @@ pub enum Schema {
     Object(HashMap<String, Box<Schema>>),
     Array(Box<Schema>),
 }
+
+#[derive(Debug)]
 pub enum N {
     I64,
     U64,

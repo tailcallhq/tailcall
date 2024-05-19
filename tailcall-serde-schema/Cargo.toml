@@ -16,3 +16,9 @@ pretty_assertions = "1.4.0"
 [[bench]]
 name = "criterion"
 harness = false
+
+[profile.bench]
+debug = true
+
+[profile.release]
+debug = true
