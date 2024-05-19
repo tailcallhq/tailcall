@@ -1,7 +1,6 @@
 use serde::de::{self};
 use serde_json::{self};
 
-use crate::ignore::Ignore;
 use crate::schema::Schema;
 
 pub struct Deserialize<'de> {
@@ -116,7 +115,7 @@ impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
                         Err(err) => return Err(err),
                     };
                 } else {
-                    match map.next_value_seed(Ignore) {
+                    match de::MapAccess::next_value::<de::IgnoredAny>(&mut map) {
                         Ok(_) => (),
                         Err(err) => return Err(err),
                     }
