@@ -141,8 +141,7 @@ impl GraphQLResponse {
     fn default_body(&self) -> Result<Body> {
         let mut response = serde_json::to_value(&self.0)?;
     
-        // HOTFIX: GraphQL-over-HTTP spec says we shouldn't return data when
-        // erroring out
+        // async_graphql returns data as null on error, which is prohibited by the GraphQL over HTTP spec.
         if let Some(response) = response.as_object_mut() {
             if let Some(data) = response.get("data") {
                 if data.is_null() {

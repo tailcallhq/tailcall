@@ -125,14 +125,23 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
                 }
             };
 
-            // HOTFIX: async_graphql doesn't support extensions being null, which
-            // is required by the GraphQL over HTTP spec.
+            // async_graphql doesn't support extensions being null, which is required by the GraphQL over HTTP spec.
             if let Some(request) = request.as_object_mut() {
                 if let Some(extensions) = request.get_mut("extensions") {
                     if extensions.is_null() {
                         request.remove("extensions");
                     }
                 }
+            }
+
+            // async_graphql doesn't fail when query is null, which is required by the GraphQL over HTTP spec.
+            if request.get("query").is_none() {
+                let mut response = async_graphql::Response::default();
+                let server_error =
+                    ServerError::new("Parameter query not present in request".to_string(), None);
+                response.errors = vec![server_error];
+
+                return GraphQLResponse::from(response).into_response(Some(&req));
             }
 
             let request = match serde_json::from_value::<T>(request) {
