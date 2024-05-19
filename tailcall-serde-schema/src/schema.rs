@@ -1,8 +1,23 @@
 use std::collections::HashMap;
 
 use serde::de::DeserializeSeed;
+use serde_json::de::StrRead;
 
-use crate::de::{Deserialize, Deserializer};
+use crate::de::Deserialize;
+
+pub enum Name {
+    Anonymous,
+    Named(String),
+}
+
+impl Name {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Name::Anonymous => "anonymous",
+            Name::Named(name) => name,
+        }
+    }
+}
 
 pub enum Schema {
     String,
@@ -12,22 +27,18 @@ pub enum Schema {
     Array(Box<Schema>),
 }
 pub enum N {
-    I8,
-    I16,
-    I32,
     I64,
-    I128,
-    U8,
-    U16,
-    U32,
     U64,
-    U128,
-    F32,
     F64,
 }
 
 impl Schema {
     pub fn deserialize(&self, input: &str) -> serde_json::Result<serde_json::Value> {
-        Deserialize::new(self).deserialize(Deserializer::new(input))
+        let mut deserializer = serde_json::Deserializer::new(StrRead::new(input));
+        Deserialize::new(self).deserialize(&mut deserializer)
+    }
+
+    pub fn array(item: Schema) -> Schema {
+        Schema::Array(Box::new(item))
     }
 }
