@@ -141,7 +141,7 @@ mod test {
     use crate::schema::{Schema, N};
 
     fn check_schema(schema: &Schema, input: &str) {
-        let actual = schema.deserialize(input).unwrap();
+        let actual = schema.from_str(input).unwrap();
         let expected = serde_json::from_str::<serde_json::Value>(input).unwrap();
 
         assert_eq!(actual, expected);
