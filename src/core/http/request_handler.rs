@@ -3,7 +3,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::ServerError;
+use async_graphql::{ServerError, Variables};
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
@@ -11,13 +11,15 @@ use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
+use serde_json::Value;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+use url::Url;
 
 use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
 use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
-use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
+use crate::core::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
 
@@ -96,37 +98,122 @@ pub fn update_response_headers(
 
 #[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+    mut req: Request<Body>,
     app_ctx: &AppContext,
     req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let bytes = hyper::body::to_bytes(req.into_body()).await?;
-    let graphql_request = serde_json::from_slice::<T>(&bytes);
-    match graphql_request {
-        Ok(request) => {
-            let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
 
-            response = update_cache_control_header(response, app_ctx, req_ctx.clone());
-            let mut resp = response.into_response()?;
-            update_response_headers(&mut resp, &req_ctx, app_ctx);
-            Ok(resp)
+    let mut response = match *req.method() {
+        Method::POST => {
+            let bytes = hyper::body::to_bytes(req.body_mut()).await?;
+            let mut request = match serde_json::from_slice::<Value>(&bytes) {
+                Ok(request) => request,
+                Err(err) => {
+                    tracing::error!(
+                        "Failed to parse request: {}",
+                        String::from_utf8(bytes.to_vec()).unwrap()
+                    );
+
+                    let mut response = async_graphql::Response::default();
+                    let server_error =
+                        ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
+                    response.errors = vec![server_error];
+
+                    return GraphQLResponse::from(response).into_response();
+                }
+            };
+
+            // HOTFIX: async_graphql doesn't support extensions being null, which
+            // is required by the GraphQL over HTTP spec.
+            if let Some(request) = request.as_object_mut() {
+                if let Some(extensions) = request.get_mut("extensions") {
+                    if extensions.is_null() {
+                        request.remove("extensions");
+                    }
+                }
+            }
+
+            let request = match serde_json::from_value::<T>(request) {
+                Ok(request) => request,
+                Err(err) => {
+                    tracing::error!(
+                        "Failed to parse request: {}",
+                        String::from_utf8(bytes.to_vec()).unwrap()
+                    );
+
+                    let mut response = async_graphql::Response::default();
+                    let server_error =
+                        ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
+                    response.errors = vec![server_error];
+
+                    return GraphQLResponse::from(response).into_response();
+                }
+            };
+
+            request.data(req_ctx.clone()).execute(&app_ctx.schema)
         }
-        Err(err) => {
-            tracing::error!(
-                "Failed to parse request: {}",
-                String::from_utf8(bytes.to_vec()).unwrap()
-            );
+        Method::GET => {
+            let url = Url::parse(&format!("http://tailcall{}", req.uri()))?;
 
-            let mut response = async_graphql::Response::default();
-            let server_error =
-                ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
-            response.errors = vec![server_error];
+            let query = match url.query_pairs().find(|x| x.0 == "query") {
+                Some(x) => x.1.into_owned(),
+                None => {
+                    let mut response = async_graphql::Response::default();
+                    let server_error = ServerError::new(
+                        "GraphQL request is missing query parameter".to_string(),
+                        None,
+                    );
+                    response.errors = vec![server_error];
 
-            Ok(GraphQLResponse::from(response).into_response()?)
+                    return GraphQLResponse::from(response).into_response();
+                }
+            };
+
+            let operation_name = url
+                .query_pairs()
+                .find(|x| x.0 == "operationName")
+                .map(|x| x.1.into_owned());
+            let variables = url
+                .query_pairs()
+                .find(|x| x.0 == "variables")
+                .map(|x| x.1.into_owned());
+
+            let mut request = async_graphql::Request::new(query);
+
+            request.operation_name = operation_name;
+
+            if let Some(variables) = variables {
+                let variables = match serde_json::from_str::<Variables>(&variables) {
+                    Ok(x) => x,
+                    Err(err) => {
+                        tracing::error!("Failed to parse request variables: {}", variables);
+
+                        let mut response = async_graphql::Response::default();
+                        let server_error = ServerError::new(
+                            format!("Unexpected GraphQL Request Variables: {}", err),
+                            None,
+                        );
+                        response.errors = vec![server_error];
+
+                        return GraphQLResponse::from(response).into_response();
+                    }
+                };
+                request.variables = variables;
+            }
+
+            let request = GraphQLRequest(request);
+            request.data(req_ctx.clone()).execute(&app_ctx.schema)
         }
+        _ => unreachable!(),
     }
+    .await;
+
+    response = update_cache_control_header(response, app_ctx, req_ctx.clone());
+    let mut resp = response.into_response()?;
+    update_response_headers(&mut resp, &req_ctx, app_ctx);
+    Ok(resp)
 }
 
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
@@ -276,6 +363,9 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
         hyper::Method::POST if req.uri().path() == "/graphql" => {
+            graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
+        }
+        hyper::Method::GET if req.uri().path() == "/graphql" => {
             graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
         }
         hyper::Method::POST
