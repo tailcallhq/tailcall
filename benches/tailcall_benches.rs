@@ -2,6 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 mod data_loader_bench;
 mod handle_request_bench;
+mod http_execute_bench;
 mod impl_path_string_for_evaluation_context;
 mod json_like_bench;
 mod protobuf_convert_output;
@@ -15,6 +16,7 @@ fn all_benchmarks(c: &mut Criterion) {
     protobuf_convert_output::benchmark_convert_output(c);
     request_template_bench::benchmark_to_request(c);
     handle_request_bench::benchmark_handle_request(c);
+    http_execute_bench::benchmark_http_execute_method(c);
 }
 
 criterion_group! {

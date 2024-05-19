@@ -49,6 +49,8 @@ opentelemetry-otlp = { version = "0.15.0", features = [
     "tls-roots",
 ], optional = true }
 opentelemetry-system-metrics = { version = "0.1.8", optional = true }
+tailcall-http-cache = {path = "tailcall-http-cache", optional = true }
+
 
 # dependencies safe for wasm:
 
@@ -193,7 +195,8 @@ cli = [
     "opentelemetry_sdk/rt-tokio",
     "dep:opentelemetry-otlp",
     "dep:opentelemetry-system-metrics",
-    "dep:tailcall-tracker"
+    "dep:tailcall-tracker",
+    "dep:tailcall-http-cache",
 ]
 
 # Feature flag to enable all default features.
@@ -214,7 +217,9 @@ members = [
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
-    "tailcall-hasher"]
+    "tailcall-hasher",
+    "tailcall-http-cache",
+]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]
