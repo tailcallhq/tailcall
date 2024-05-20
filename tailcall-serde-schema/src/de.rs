@@ -12,10 +12,12 @@ struct FieldSchema<'de> {
 
 struct Row(Vec<Output>);
 
-struct Object<'de>(&'de [(String, Schema)]);
+type ObjectMap = [(String, Schema)];
+
+struct Object<'de>(&'de ObjectMap);
 
 impl Object<'_> {
-    pub fn new<'de>(fields: &'de [(String, Schema)]) -> Object<'de> {
+    pub fn new<'de>(fields: &'de ObjectMap) -> Object<'de> {
         Object(&fields)
     }
 }
@@ -198,10 +200,10 @@ impl<'de> de::DeserializeSeed<'de> for Value<'de> {
     }
 }
 
-struct Table<'de>(&'de [(String, Schema)]);
+struct Table<'de>(&'de ObjectMap);
 
 impl<'de> Table<'de> {
-    pub fn new(fields: &'de [(String, Schema)]) -> Self {
+    pub fn new(fields: &'de ObjectMap) -> Self {
         Self(fields)
     }
 }
