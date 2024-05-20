@@ -276,8 +276,9 @@ mod test {
             .unwrap();
 
         assert_eq!(config.len(), 2);
-        insta::assert_snapshot!("config-1",config[1].to_sdl());
-        insta::assert_snapshot!("config-0",config[0].to_sdl());
+        for cfg in config.iter() {
+            insta::assert_snapshot!(cfg.upstream.base_url.clone(),cfg.to_sdl());
+        }
         Ok(())
     }
 }
