@@ -79,7 +79,7 @@ pub struct Upstream {
     pub connect_timeout: Option<u64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// Activating this enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `false` if unspecified.
+    /// Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.
     pub http_cache: Option<u64>,
 
     #[setters(strip_option)]
