@@ -132,9 +132,8 @@ impl<'de> de::Visitor<'de> for Value<'de> {
             while let Some(field) = map.next_key_seed(Object::new(fields))? {
                 match field {
                     Some(field) => {
-                        let value_schema = field.schema;
-                        match map.next_value_seed(Value::new(&value_schema)) {
-                            Ok(value) => rows.push((field.name.to_owned(), value)),
+                        match map.next_value_seed(Value::new(&field.schema)) {
+                            Ok(value) => rows.push(value),
                             Err(err) => return Err(err),
                         };
                     }
@@ -155,14 +154,14 @@ impl<'de> de::Visitor<'de> for Value<'de> {
         A: de::SeqAccess<'de>,
     {
         match self.schema {
-            Schema::Table { rows: _, head, map } => {
+            Schema::Table { rows: _, head: _, map } => {
                 let mut rows = Vec::with_capacity(seq.size_hint().unwrap_or(100));
 
                 while let Ok(Some(row)) = seq.next_element_seed(Table::new(map)) {
                     rows.push(row.0);
                 }
 
-                Ok(Output::Table { head: head.to_owned(), rows })
+                Ok(Output::Table(rows))
             }
             Schema::Array(primitive) => {
                 let mut rows = Vec::with_capacity(seq.size_hint().unwrap_or(100));

@@ -2,4 +2,4 @@
 source: tailcall-serde-schema/src/de.rs
 expression: actual
 ---
-Table { head: ["foo", "bar"], rows: [[Primitive(Number(U64(1))), Primitive(String("Hello"))], [Primitive(Number(U64(2))), Primitive(String("Bye"))]] }
+Table([[Primitive(Number(U64(1))), Primitive(String("Hello"))], [Primitive(Number(U64(2))), Primitive(String("Bye"))]])

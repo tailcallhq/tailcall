@@ -3,12 +3,9 @@ use std::fmt::Display;
 #[derive(Debug)]
 pub enum Value {
     Primitive(Primitive),
-    Table {
-        head: Vec<String>,
-        rows: Vec<Vec<Value>>,
-    },
+    Table(Vec<Vec<Value>>),
     Array(Vec<Primitive>),
-    Object(Vec<(String, Value)>),
+    Object(Vec<Value>),
 }
 
 #[derive(Debug)]
@@ -72,12 +69,12 @@ impl Value {
         Value::Array(v)
     }
 
-    pub fn from_object(v: Vec<(String, Value)>) -> Self {
+    pub fn from_object(v: Vec<Value>) -> Self {
         Value::Object(v)
     }
 
-    pub fn from_table(head: Vec<String>, rows: Vec<Vec<Value>>) -> Self {
-        Value::Table { head, rows }
+    pub fn from_table(rows: Vec<Vec<Value>>) -> Self {
+        Value::Table(rows)
     }
 }
 
