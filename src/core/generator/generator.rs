@@ -189,7 +189,7 @@ mod test {
 
     async fn read_json_fixtures(runtime: &TargetRuntime, fixture_path: &str) -> Value {
         let content = runtime.file.read(fixture_path).await.unwrap();
-        
+
         parse_to_json(content).unwrap()
     }
 

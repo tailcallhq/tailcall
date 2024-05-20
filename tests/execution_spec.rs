@@ -1,9 +1,8 @@
 mod core;
 
+use core::run_json_to_config_spec;
 use core::spec::load_and_test_execution_spec;
 use std::path::Path;
-
-use core::run_json_to_config_spec;
 
 fn run_execution_spec(path: &Path) -> datatest_stable::Result<()> {
     let result = tokio_test::block_on(load_and_test_execution_spec(path));
