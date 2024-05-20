@@ -1,7 +1,8 @@
 use serde::de::DeserializeSeed;
 use serde_json::de::StrRead;
 
-use crate::{de::ValueVisitor, Value};
+use crate::de::ValueVisitor;
+use crate::Value;
 
 #[derive(Debug, Clone)]
 pub enum Schema {
