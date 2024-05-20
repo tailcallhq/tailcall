@@ -17,6 +17,11 @@ message Request {
 		Payload payload = 2;
 		Command command = 3;
 	}
+
+	oneof opt_oneof {
+		bool flag = 4;
+		Payload opt_payload = 5;
+	}
 }
 
 message Response {

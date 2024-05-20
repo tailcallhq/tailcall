@@ -2,13 +2,114 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::{Config, ConfigModule};
+use super::{config, Config, ConfigModule};
 use crate::core::blueprint::TypeLike;
 use crate::core::directive::DirectiveCodec;
 
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
+
+fn convert_field(name: String, field: &config::Field) -> Positioned<FieldDefinition> {
+    let directives = get_directives(field);
+    let base_type = if field.list {
+        async_graphql::parser::types::BaseType::List(Box::new(Type {
+            nullable: !field.list_type_required,
+            base: async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone())),
+        }))
+    } else {
+        async_graphql::parser::types::BaseType::Named(Name::new(field.type_of.clone()))
+    };
+
+    let args_map = field.args.clone();
+    let args = args_map
+        .iter()
+        .map(|(name, arg)| {
+            let base_type = if arg.list {
+                async_graphql::parser::types::BaseType::List(Box::new(Type {
+                    nullable: !arg.list_type_required(),
+                    base: async_graphql::parser::types::BaseType::Named(Name::new(
+                        arg.type_of.clone(),
+                    )),
+                }))
+            } else {
+                async_graphql::parser::types::BaseType::Named(Name::new(arg.type_of.clone()))
+            };
+            pos(async_graphql::parser::types::InputValueDefinition {
+                description: arg.doc.clone().map(pos),
+                name: pos(Name::new(name.clone())),
+                ty: pos(Type { nullable: !arg.required, base: base_type }),
+
+                default_value: arg
+                    .default_value
+                    .clone()
+                    .map(|v| pos(ConstValue::String(v.to_string()))),
+                directives: Vec::new(),
+            })
+        })
+        .collect::<Vec<Positioned<InputValueDefinition>>>();
+
+    pos(async_graphql::parser::types::FieldDefinition {
+        description: field.doc.clone().map(pos),
+        name: pos(Name::new(name)),
+        arguments: args,
+        ty: pos(Type { nullable: !field.required, base: base_type }),
+
+        directives,
+    })
+}
+
+struct ArgumentsConverter<'config> {
+    config: &'config ConfigModule,
+    output: Vec<Positioned<FieldDefinition>>,
+}
+
+impl<'config> ArgumentsConverter<'config> {
+    fn new(config: &'config ConfigModule) -> Self {
+        Self { config, output: Default::default() }
+    }
+
+    fn walk_arguments(
+        &mut self,
+        args: &[(&String, &config::Arg)],
+        name: String,
+        current_field: &mut config::Field,
+    ) {
+        let Some((arg_name, arg)) = args.first() else {
+            self.output.push(convert_field(name, current_field));
+            return;
+        };
+
+        let args = &args[1..];
+
+        if let Some(union_) = self.config.find_union(&arg.type_of) {
+            // if the type is union walk over all type members and generate new separate
+            // field for this variant
+            for (i, type_) in union_.types.iter().enumerate() {
+                let new_arg = config::Arg { type_of: type_.clone(), ..Default::default() };
+
+                current_field.args.insert(arg_name.to_string(), new_arg);
+                self.walk_arguments(args, format!("{name}Var{i}"), current_field);
+            }
+        } else {
+            self.walk_arguments(args, name, current_field);
+        }
+    }
+
+    fn arguments_to_fields(
+        &mut self,
+        name: String,
+        field: &config::Field,
+    ) -> Vec<Positioned<FieldDefinition>> {
+        self.output = Vec::with_capacity(field.args.len());
+        let args: Vec<_> = field.args.iter().collect();
+
+        self.walk_arguments(&args, name, &mut field.clone());
+
+        std::mem::take(&mut self.output)
+    }
+}
+
 fn config_document(config: &ConfigModule) -> ServiceDocument {
     let mut definitions = Vec::new();
     let mut directives = vec![
@@ -129,61 +230,11 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     .collect(),
                 fields: type_def
                     .fields
-                    .clone()
                     .iter()
-                    .map(|(name, field)| {
-                        let directives = get_directives(field);
-                        let base_type = if field.list {
-                            async_graphql::parser::types::BaseType::List(Box::new(Type {
-                                nullable: !field.list_type_required,
-                                base: async_graphql::parser::types::BaseType::Named(Name::new(
-                                    field.type_of.clone(),
-                                )),
-                            }))
-                        } else {
-                            async_graphql::parser::types::BaseType::Named(Name::new(
-                                field.type_of.clone(),
-                            ))
-                        };
+                    .flat_map(|(name, field)| {
+                        let mut converter = ArgumentsConverter::new(config);
 
-                        let args_map = field.args.clone();
-                        let args = args_map
-                            .iter()
-                            .map(|(name, arg)| {
-                                let base_type = if arg.list {
-                                    async_graphql::parser::types::BaseType::List(Box::new(Type {
-                                        nullable: !arg.list_type_required(),
-                                        base: async_graphql::parser::types::BaseType::Named(
-                                            Name::new(arg.type_of.clone()),
-                                        ),
-                                    }))
-                                } else {
-                                    async_graphql::parser::types::BaseType::Named(Name::new(
-                                        arg.type_of.clone(),
-                                    ))
-                                };
-                                pos(async_graphql::parser::types::InputValueDefinition {
-                                    description: arg.doc.clone().map(pos),
-                                    name: pos(Name::new(name.clone())),
-                                    ty: pos(Type { nullable: !arg.required, base: base_type }),
-
-                                    default_value: arg
-                                        .default_value
-                                        .clone()
-                                        .map(|v| pos(ConstValue::String(v.to_string()))),
-                                    directives: Vec::new(),
-                                })
-                            })
-                            .collect::<Vec<Positioned<InputValueDefinition>>>();
-
-                        pos(async_graphql::parser::types::FieldDefinition {
-                            description: field.doc.clone().map(pos),
-                            name: pos(Name::new(name.clone())),
-                            arguments: args,
-                            ty: pos(Type { nullable: !field.required, base: base_type }),
-
-                            directives,
-                        })
+                        converter.arguments_to_fields(name.clone(), field)
                     })
                     .collect::<Vec<Positioned<FieldDefinition>>>(),
             })
@@ -214,19 +265,22 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
         })));
     }
     for (name, union) in config.unions.iter() {
-        definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
-            extend: false,
-            description: None,
-            name: pos(Name::new(name)),
-            directives: Vec::new(),
-            kind: TypeKind::Union(UnionType {
-                members: union
-                    .types
-                    .iter()
-                    .map(|name| pos(Name::new(name.clone())))
-                    .collect(),
-            }),
-        })));
+        // unions are only supported as the output types
+        if !config.input_types.contains(name) {
+            definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
+                extend: false,
+                description: None,
+                name: pos(Name::new(name)),
+                directives: Vec::new(),
+                kind: TypeKind::Union(UnionType {
+                    members: union
+                        .types
+                        .iter()
+                        .map(|name| pos(Name::new(name.clone())))
+                        .collect(),
+                }),
+            })));
+        }
     }
 
     for (name, values) in config.enums.iter() {

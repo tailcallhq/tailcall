@@ -7,7 +7,7 @@ use prost_reflect::prost_types::{
 };
 
 use super::graphql_type::{GraphQLType, Unparsed};
-use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
+use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type, Union};
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -35,6 +35,77 @@ impl Context {
     /// Resolves the actual name and inserts the type.
     fn insert_type(mut self, name: String, ty: Type) -> Self {
         self.config.types.insert(name.to_string(), ty);
+        self
+    }
+
+    /// Converts oneof definitions in message to set of types with union
+    fn insert_oneofs(
+        mut self,
+        type_name: String, // name of the message
+        base_type: Type,   // that's the type with fields that are not oneofs
+        oneof_fields: Vec<Vec<(String, Field)>>,
+    ) -> Self {
+        fn collect_types(
+            type_name: String,
+            base_type: Type,
+            oneof_fields: &[Vec<(String, Field)>],
+            output: &mut Vec<(String, Type)>,
+        ) {
+            let Some(one_of) = oneof_fields.first() else {
+                output.push((type_name, base_type));
+
+                return;
+            };
+
+            let oneof_fields = &oneof_fields[1..];
+
+            // since all of the fields are actually optional in protobuf generate also a
+            // type without this oneof completely
+            collect_types(
+                format!("{type_name}__Var"),
+                base_type.clone(),
+                oneof_fields,
+                output,
+            );
+
+            for (i, (field_name, field)) in one_of.iter().enumerate() {
+                let mut new_type = base_type.clone();
+                let mut field = field.clone();
+
+                // mark this field as required to force type-check on specific variant of oneof
+                field.required = true;
+
+                // add new field specific to this variant of oneof field
+                new_type.fields.insert(field_name.clone(), field);
+
+                collect_types(
+                    format!("{type_name}__Var{i}"),
+                    new_type,
+                    oneof_fields,
+                    output,
+                );
+            }
+        }
+
+        let mut union_types = Vec::new();
+
+        collect_types(
+            type_name.clone(),
+            base_type,
+            &oneof_fields,
+            &mut union_types,
+        );
+
+        let mut union_ = Union::default();
+
+        for (type_name, ty) in union_types {
+            union_.types.insert(type_name.clone());
+
+            self = self.insert_type(type_name, ty);
+        }
+
+        self.config.unions.insert(type_name, union_);
+
         self
     }
 
@@ -77,6 +148,8 @@ impl Context {
             // then drop it after handling nested types
             self.namespace.pop();
 
+            let mut oneof_fields: Vec<_> = message.oneof_decl.iter().map(|_| Vec::new()).collect();
+
             let msg_type = GraphQLType::new(msg_name)
                 .extend(self.namespace.as_slice())
                 .into_object_type();
@@ -109,12 +182,20 @@ impl Context {
                     cfg_field.type_of = type_of;
                 }
 
-                ty.fields.insert(field_name.to_string(), cfg_field);
+                if let Some(oneof_index) = field.oneof_index {
+                    oneof_fields[oneof_index as usize].push((field_name.to_string(), cfg_field));
+                } else {
+                    ty.fields.insert(field_name.to_string(), cfg_field);
+                }
             }
 
             ty.tag = Some(Tag { id: msg_type.id() });
 
-            self = self.insert_type(msg_type.to_string(), ty);
+            if message.oneof_decl.is_empty() {
+                self = self.insert_type(msg_type.to_string(), ty);
+            } else {
+                self = self.insert_oneofs(msg_type.to_string(), ty, oneof_fields);
+            }
         }
         Ok(self)
     }

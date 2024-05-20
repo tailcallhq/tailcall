@@ -388,7 +388,9 @@ pub struct Arg {
     pub default_value: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
@@ -694,7 +696,13 @@ impl Config {
     /// Given a starting type, this function searches for all the unique types
     /// that this type can be connected to via it's fields
     fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
-        if let Some(type_) = self.find_type(type_of) {
+        if let Some(union_) = self.find_union(type_of) {
+            types.insert(type_of.into());
+
+            for type_ in union_.types.iter() {
+                types = self.find_connections(type_, types);
+            }
+        } else if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
@@ -788,7 +796,11 @@ impl Config {
             stack.push(mutation.clone());
         }
         while let Some(type_name) = stack.pop() {
-            if let Some(typ) = self.types.get(&type_name) {
+            if let Some(union_) = self.unions.get(&type_name) {
+                for type_ in &union_.types {
+                    stack.push(type_.clone());
+                }
+            } else if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
