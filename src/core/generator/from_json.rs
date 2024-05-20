@@ -1,4 +1,3 @@
-use convert_case::Casing;
 use serde_json::Value;
 use url::Url;
 
@@ -33,12 +32,14 @@ struct ConfigGenerator {
     /// final configuration that's being built up.
     config: Config,
     /// Used to generate the type names.
-    type_counter: i32,
+    type_counter: u32,
+    /// Used to generate the field names.
+    field_counter: u32,
 }
 
 impl ConfigGenerator {
     fn new() -> Self {
-        Self { config: Config::default(), type_counter: 1 }
+        Self { config: Config::default(), type_counter: 1, field_counter: 1 }
     }
 
     fn insert_type(&mut self, type_name: &str, actual_type: Type) {
@@ -116,7 +117,7 @@ impl ConfigGenerator {
     fn generate_query_type(&mut self, url: &Url, value: &Value, root_type_name: String) {
         let mut field = Field {
             list: is_list_type(value),
-            type_of: root_type_name.to_string(),
+            type_of: root_type_name,
             ..Default::default()
         };
 
@@ -150,8 +151,10 @@ impl ConfigGenerator {
 
         let mut ty = Type::default();
         ty.fields
-            .insert(root_type_name.to_case(convert_case::Case::Camel), field);
+            .insert(format!("f{}",self.field_counter), field);
         self.insert_type("Query", ty);
+        self.field_counter += 1;
+
     }
 
     fn generate_upstream(&mut self, url: &Url) {
