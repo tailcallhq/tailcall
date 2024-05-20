@@ -156,7 +156,6 @@ impl ConfigGenerator {
         http.path = complete_path;
         field.http = Some(http);
 
-        // by default query field will have root field name.
         let mut ty = Type::default();
         ty.fields
             .insert(root_type_name.to_case(convert_case::Case::Camel), field);
