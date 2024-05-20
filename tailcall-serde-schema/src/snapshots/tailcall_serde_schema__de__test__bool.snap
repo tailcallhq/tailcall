@@ -1,0 +1,5 @@
+---
+source: tailcall-serde-schema/src/de.rs
+expression: actual
+---
+Primitive(Bool(true))

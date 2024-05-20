@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use serde::Deserialize;
-use tailcall_serde_schema::{Post, Schema};
+use tailcall_serde_schema::{Post, Schema, Value};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct PostRef<'a> {
@@ -30,18 +30,21 @@ fn bench_untyped() -> serde_json::Value {
     serde_json::from_str(JSON).unwrap()
 }
 
-fn bench_typed_schema(schema: &Schema) -> serde_json::Value {
+fn bench_typed_schema(schema: &Schema) -> Value {
     schema.from_str(JSON).unwrap()
 }
 
 fn bench_post_deserializer(c: &mut Criterion) {
     let mut group = c.benchmark_group("Deserialization");
-    let schema = Schema::array(Schema::object(vec![
-        ("user_id", Schema::u64()),
-        ("id", Schema::u64()),
-        ("title", Schema::String),
-        ("body", Schema::String),
-    ]));
+    let schema = Schema::table(
+        &["user_id", "id", "title", "body"],
+        &[
+            Schema::u64(),
+            Schema::u64(),
+            Schema::string(),
+            Schema::string(),
+        ],
+    );
 
     group.bench_function("typed_schema", |b| {
         b.iter(|| black_box(bench_typed_schema(&schema)))

@@ -1,0 +1,5 @@
+---
+source: tailcall-serde-schema/src/de.rs
+expression: actual
+---
+Object([("foo", Primitive(Number(U64(42)))), ("bar", Primitive(Bool(true)))])

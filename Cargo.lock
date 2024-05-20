@@ -5227,6 +5227,7 @@ name = "tailcall-serde-schema"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "insta",
  "pretty_assertions",
  "serde",
  "serde_json",

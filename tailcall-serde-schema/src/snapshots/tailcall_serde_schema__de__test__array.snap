@@ -1,0 +1,5 @@
+---
+source: tailcall-serde-schema/src/de.rs
+expression: actual
+---
+Array([Number(U64(1)), Number(U64(2)), Number(U64(3))])
