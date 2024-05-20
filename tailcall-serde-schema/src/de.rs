@@ -317,10 +317,7 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
                     Some(field) => {
                         let value_schema = field.schema;
                         match map.next_value_seed(Deserialize::new(&value_schema)) {
-                            Ok(value) => {
-                                dbg!("pushing", field.name);
-                                rows.push((field.name.to_owned(), value))
-                            }
+                            Ok(value) => rows.push((field.name.to_owned(), value)),
                             Err(err) => return Err(err),
                         };
                     }
@@ -330,7 +327,6 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
                 }
             }
 
-            dbg!("Completed");
             Ok(Value::Object(rows))
         } else {
             Err(de::Error::custom("expected object"))
