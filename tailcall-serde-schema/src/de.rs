@@ -351,7 +351,7 @@ impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::schema::{Schema, N};
+    use crate::schema::Schema;
     use insta::assert_snapshot;
 
     #[test]
