@@ -430,6 +430,24 @@ mod test {
     }
 
     #[test]
+    #[ignore]
+    fn test_object_missing() {
+        let schema = Schema::object(&[(("foo", Schema::u64()))]);
+        let input = r#"{"bar": true}"#;
+        let actual = schema.from_str(input).err().unwrap();
+        assert_snapshot!(actual);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_object_order() {
+        let schema = Schema::object(&[(("bar", Schema::boolean())), (("foo", Schema::u64()))]);
+        let input = r#"{"foo": 42, "bar": true}"#;
+        let actual = schema.from_str(input).unwrap();
+        assert_snapshot!(actual);
+    }
+
+    #[test]
     fn test_array() {
         let schema = Schema::array(schema::Primitive::u64());
         let input = r#"[1, 2, 3]"#;
@@ -448,6 +466,24 @@ mod test {
     #[test]
     fn test_table_partial() {
         let schema = Schema::table(&[("foo", Schema::u64())]);
+        let input = r#"[{"foo":1,"bar":"Hello"},{"foo":2,"bar":"Bye"}]"#;
+        let actual = schema.from_str(input).unwrap();
+        assert_snapshot!(actual);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_table_missing() {
+        let schema = Schema::table(&[("foo", Schema::u64())]);
+        let input = r#"[{"bar":"Hello"},{"bar":"Bye"}]"#;
+        let actual = schema.from_str(input).err().unwrap();
+        assert_snapshot!(actual);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_table_order() {
+        let schema = Schema::table(&[("bar", Schema::string()), ("foo", Schema::u64())]);
         let input = r#"[{"foo":1,"bar":"Hello"},{"foo":2,"bar":"Bye"}]"#;
         let actual = schema.from_str(input).unwrap();
         assert_snapshot!(actual);
