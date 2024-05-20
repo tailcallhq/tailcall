@@ -148,7 +148,7 @@ impl<'de> de::Visitor<'de> for Value<'de> {
             Err(de::Error::custom("expected object"))
         }
     }
-
+    #[inline]
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
         A: de::SeqAccess<'de>,
@@ -178,6 +178,8 @@ impl<'de> de::Visitor<'de> for Value<'de> {
 
 impl<'de> de::DeserializeSeed<'de> for Value<'de> {
     type Value = Output;
+
+    #[inline]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -226,6 +228,7 @@ impl<'de> de::Visitor<'de> for Table<'de> {
         formatter.write_str("a row")
     }
 
+    #[inline]
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
         A: de::MapAccess<'de>,
@@ -317,6 +320,7 @@ impl<'de> de::Visitor<'de> for Primitive<'de> {
 impl<'de> de::DeserializeSeed<'de> for Primitive<'de> {
     type Value = value::Primitive;
 
+    #[inline]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: de::Deserializer<'de>,
