@@ -10,6 +10,7 @@ use thiserror::Error;
 use super::{Concurrent, Eval, EvaluationContext, ResolverContextLike, IO};
 use crate::auth;
 use crate::blueprint::DynamicValue;
+use crate::cli::CLIError;
 use crate::json::JsonLike;
 use crate::lambda::cache::Cache;
 use crate::serde_value_ext::ValueExt;
@@ -53,10 +54,8 @@ pub enum Context {
 
 #[derive(Debug, Error, Clone)]
 pub enum EvaluationError {
-    #[error("IOException: {0}")]
     IOException(String),
 
-    #[error("gRPC Error: status: {grpc_code}, description: `{grpc_description}`, message: `{grpc_status_message}`")]
     GRPCError {
         grpc_code: i32,
         grpc_description: String,
@@ -64,17 +63,63 @@ pub enum EvaluationError {
         grpc_status_details: ConstValue,
     },
 
-    #[error("APIValidationError: {0:?}")]
     APIValidationError(Vec<String>),
 
-    #[error("ExprEvalError: {0}")]
     ExprEvalError(String),
 
-    #[error("DeserializeError: {0}")]
     DeserializeError(String),
 
-    #[error("Authentication Failure: {0}")]
     AuthError(auth::error::Error),
+}
+
+impl Display for EvaluationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EvaluationError::IOException(msg) => {
+                write!(
+                    f,
+                    "{}",
+                    CLIError::new("IO Exception").caused_by(vec![CLIError::new(msg)])
+                )
+            }
+            EvaluationError::APIValidationError(errors) => {
+                let cli_errors: Vec<CLIError> = errors.iter().map(|e| CLIError::new(e)).collect();
+                write!(
+                    f,
+                    "{}",
+                    CLIError::new("API Validation Error").caused_by(cli_errors)
+                )
+            }
+            EvaluationError::ExprEvalError(msg) => write!(
+                f,
+                "{}",
+                CLIError::new("Expr Eval Error").caused_by(vec![CLIError::new(msg)])
+            ),
+            EvaluationError::DeserializeError(msg) => write!(
+                f,
+                "{}",
+                CLIError::new("Deserialize Error").caused_by(vec![CLIError::new(msg)])
+            ),
+            EvaluationError::AuthError(err) => {
+                write!(f, "{}", err)
+            }
+            EvaluationError::GRPCError {
+                grpc_code,
+                grpc_description,
+                grpc_status_message,
+                grpc_status_details,
+            } => write!(
+                f,
+                "{}",
+                CLIError::new("GRPC Error").caused_by(vec![
+                    CLIError::new(format!("Code: {}", grpc_code).as_str()),
+                    CLIError::new(format!("Message: {}", grpc_status_message).as_str()),
+                    CLIError::new(format!("Description: {}", grpc_description).as_str()),
+                    CLIError::new(format!("Details: {}", grpc_status_details).as_str())
+                ])
+            ),
+        }
+    }
 }
 
 // TODO: remove conversion from anyhow and don't use anyhow to pass errors
