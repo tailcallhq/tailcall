@@ -122,16 +122,21 @@ impl Generator {
 mod test {
     use std::path::PathBuf;
 
-    use tailcall_fixtures::protobuf;
+    use tailcall_fixtures::{protobuf, json};
 
     use super::*;
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
     }
+    
+    fn parse_to_json(content: String) -> anyhow::Result<Value> {
+        let json_content: serde_json::Value = serde_json::from_str(&content)?;
+        Ok(json_content["body"].clone())
+    }
 
     #[tokio::test]
-    async fn test_read_all() {
+    async fn test_read_all_with_grpc_gen() {
         let server = start_mock_server();
         let runtime = crate::core::runtime::test::init(None);
         let test_dir = PathBuf::from(tailcall_fixtures::protobuf::SELF);
@@ -181,4 +186,46 @@ mod test {
             8
         );
     }
+
+    #[tokio::test]
+    async fn test_read_all_with_rest_api_gen() -> anyhow::Result<()> {
+        let server = start_mock_server();
+        let runtime = crate::core::runtime::test::init(None);
+
+        let list_content = runtime.file.read(json::LIST).await.unwrap();
+        let incompatible_properties = runtime.file.read(json::INCOMPATIBLE_PROPERTIES).await.unwrap();
+        let list_content = parse_to_json(list_content)?;
+        let incompatible_properties = parse_to_json(incompatible_properties)?;
+
+        server.mock(|when, then| {
+            when.method(httpmock::Method::GET).path("/list");
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(&list_content.to_string());
+        });
+
+        server.mock(|when, then| {
+            when.method(httpmock::Method::GET)
+                .path("/incompatible_properties");
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(&incompatible_properties.to_string());
+        });
+
+        let generator = Generator::init(runtime);
+        let list_url = format!("http://localhost:{}/list", server.port());
+        let incompatible_properties_url = format!("http://localhost:{}/incompatible_properties", server.port());
+
+        let config = generator
+            .read_all(Source::Url, &[list_url, incompatible_properties_url] , "Query")
+            .await
+            .unwrap();
+
+        for cfg in config {
+            insta::assert_snapshot!(cfg.to_sdl());
+        }
+
+        Ok(())
+    }
+
 }
