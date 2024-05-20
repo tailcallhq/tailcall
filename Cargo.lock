@@ -5226,6 +5226,7 @@ dependencies = [
 name = "tailcall-serde-schema"
 version = "0.1.0"
 dependencies = [
+ "async-graphql",
  "criterion",
  "insta",
  "pretty_assertions",

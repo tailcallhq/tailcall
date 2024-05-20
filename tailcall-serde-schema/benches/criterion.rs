@@ -30,12 +30,17 @@ fn bench_untyped() -> serde_json::Value {
     serde_json::from_str(JSON).unwrap()
 }
 
+fn bench_const_value() -> async_graphql::Value {
+    serde_json::from_str(JSON).unwrap()
+}
+
 fn bench_typed_schema(schema: &Schema) -> Value {
     schema.from_str(JSON).unwrap()
 }
 
 fn bench_post_deserializer(c: &mut Criterion) {
     let mut group = c.benchmark_group("Deserialization");
+
     let schema = Schema::table(&[
         ("user_id", Schema::u64()),
         ("id", Schema::u64()),
@@ -46,6 +51,7 @@ fn bench_post_deserializer(c: &mut Criterion) {
     group.bench_function("typed_schema", |b| {
         b.iter(|| black_box(bench_typed_schema(&schema)))
     });
+    group.bench_function("const_value", |b| b.iter(|| black_box(bench_const_value())));
     group.bench_function("typed_ref", |b| b.iter(|| black_box(bench_typed_ref())));
     group.bench_function("untyped_ref", |b| b.iter(|| black_box(bench_untyped_ref())));
     group.bench_function("typed", |b| b.iter(|| black_box(bench_typed())));

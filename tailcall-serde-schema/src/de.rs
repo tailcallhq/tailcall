@@ -1,9 +1,7 @@
 use serde::de::{self};
 
-use crate::{
-    schema::{self, Schema},
-    value,
-};
+use crate::schema::{self, Schema};
+use crate::value;
 
 type Value = crate::Value;
 
@@ -325,7 +323,7 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
         A: de::SeqAccess<'de>,
     {
         match self.schema {
-            Schema::Table { rows, head, map } => {
+            Schema::Table { rows: _, head, map } => {
                 let mut rows = Vec::with_capacity(seq.size_hint().unwrap_or(100));
 
                 while let Ok(Some(row)) = seq.next_element_seed(RowVisitor::new(map.as_slice())) {
@@ -349,10 +347,10 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
 
 #[cfg(test)]
 mod test {
+    use insta::assert_snapshot;
+
     use super::*;
     use crate::schema::Schema;
-    use insta::assert_snapshot;
-    use serde_json::json;
 
     #[test]
     fn test_string() {
