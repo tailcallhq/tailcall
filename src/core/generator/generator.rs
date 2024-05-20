@@ -236,4 +236,56 @@ mod test {
 
         Ok(())
     }
+
+
+    #[tokio::test]
+    async fn test_read_all_with_different_domain_rest_api_gen() -> anyhow::Result<()> {
+        let server = start_mock_server();
+        let runtime = crate::core::runtime::test::init(None);
+
+        let list_content = runtime.file.read(json::LIST).await.unwrap();
+        let incompatible_properties = runtime
+            .file
+            .read(json::INCOMPATIBLE_PROPERTIES)
+            .await
+            .unwrap();
+        let list_content = parse_to_json(list_content)?;
+        let incompatible_properties = parse_to_json(incompatible_properties)?;
+
+        server.mock(|when, then| {
+            when.method(httpmock::Method::GET).path("/list");
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(list_content.to_string());
+        });
+
+        server.mock(|when, then| {
+            when.method(httpmock::Method::GET)
+                .path("/incompatible_properties");
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(incompatible_properties.to_string());
+        });
+
+        let generator = Generator::init(runtime);
+        let list_url = format!("http://localhost:{}/list", server.port());
+        let incompatible_properties_url =
+            format!("http://localhost:{}/incompatible_properties", server.port());
+
+        let jsonplaceholder_users = "http://jsonplaceholder.typicode.com/users".to_string();
+
+        let config = generator
+            .read_all(
+                Source::Url,
+                &[list_url, incompatible_properties_url, jsonplaceholder_users],
+                "Query",
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(config.len(), 2);
+        insta::assert_snapshot!("config-1",config[1].to_sdl());
+        insta::assert_snapshot!("config-0",config[0].to_sdl());
+        Ok(())
+    }
 }

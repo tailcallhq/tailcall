@@ -1,0 +1,24 @@
+---
+source: src/core/generator/generator.rs
+expression: "config[0].to_sdl()"
+---
+schema @server @upstream(baseURL: "http://localhost") {
+  query: Query
+}
+
+scalar Any
+
+type Query {
+  t1: [T1] @http(path: "/list")
+  t2: T2 @http(path: "/incompatible_properties")
+}
+
+type T1 {
+  age: Int
+  name: String
+}
+
+type T2 {
+  campaignTemplates: Any
+  colors: [Any]
+}
