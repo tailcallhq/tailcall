@@ -1,19 +1,9 @@
-use serde::de::{self, IgnoredAny};
+use serde::de::{self};
 
 use crate::schema::{self, Schema};
 use crate::value;
 
 type Value = crate::Value;
-
-pub struct Deserialize<'de> {
-    schema: &'de Schema,
-}
-
-impl<'de> Deserialize<'de> {
-    pub fn new(schema: &'de Schema) -> Self {
-        Self { schema }
-    }
-}
 
 struct Field<'de> {
     name: &'de str,
@@ -70,7 +60,7 @@ impl<'de> de::DeserializeSeed<'de> for FieldSelection<'de> {
     }
 }
 
-impl<'de> de::DeserializeSeed<'de> for Deserialize<'de> {
+impl<'de> de::DeserializeSeed<'de> for ValueVisitor<'de> {
     type Value = Value;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
@@ -94,7 +84,7 @@ impl<'de> de::DeserializeSeed<'de> for Deserialize<'de> {
     }
 }
 
-struct ValueVisitor<'de> {
+pub struct ValueVisitor<'de> {
     schema: &'de Schema,
 }
 
@@ -146,14 +136,14 @@ impl<'de> de::Visitor<'de> for RowVisitor<'de> {
             match field {
                 Some(field) => {
                     let schema = field.schema;
-                    match map.next_value_seed(Deserialize::new(&schema)) {
+                    match map.next_value_seed(ValueVisitor::new(&schema)) {
                         Ok(value) => cols.push(value),
                         Err(err) => return Err(err),
                     }
                 }
 
                 None => {
-                    let _: IgnoredAny = map.next_value()?;
+                    let _: de::IgnoredAny = map.next_value()?;
                 }
             }
         }
@@ -316,13 +306,13 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
                 match field {
                     Some(field) => {
                         let value_schema = field.schema;
-                        match map.next_value_seed(Deserialize::new(&value_schema)) {
+                        match map.next_value_seed(ValueVisitor::new(&value_schema)) {
                             Ok(value) => rows.push((field.name.to_owned(), value)),
                             Err(err) => return Err(err),
                         };
                     }
                     None => {
-                        let _: IgnoredAny = map.next_value()?;
+                        let _: de::IgnoredAny = map.next_value()?;
                     }
                 }
             }
