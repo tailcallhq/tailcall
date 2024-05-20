@@ -1,5 +1,5 @@
 ---
-source: tests/json_to_config_spec.rs
+source: tests/core/json_to_config_spec.rs
 expression: config.to_sdl()
 ---
 schema @server @upstream(baseURL: "https://example.com") {
@@ -7,10 +7,5 @@ schema @server @upstream(baseURL: "https://example.com") {
 }
 
 type Query {
-  t1: [T1] @http(path: "/users")
-}
-
-type T1 {
-  age: Int
-  name: String
+  empty(age: Int!): Empty @http(path: "/users?age={{.args.age}}")
 }

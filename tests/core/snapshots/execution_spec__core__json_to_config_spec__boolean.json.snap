@@ -1,5 +1,5 @@
 ---
-source: tests/json_to_config_spec.rs
+source: tests/core/json_to_config_spec.rs
 expression: config.to_sdl()
 ---
 schema @server @upstream(baseURL: "https://example.com") {
@@ -7,5 +7,5 @@ schema @server @upstream(baseURL: "https://example.com") {
 }
 
 type Query {
-  string: String @http(path: "/login/status")
+  boolean: Boolean @http(path: "/user/12/online")
 }
