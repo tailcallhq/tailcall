@@ -86,30 +86,24 @@ impl Generator {
                 .into_iter()
                 .collect::<anyhow::Result<Vec<_>>>()?;
 
-                // create a config generation requests.
-                let config_gen_reqs = results
-                    .iter()
-                    .zip(paths.iter())
-                    .map(|(resp, url)| ConfigGenerationRequest::new(url.as_ref(), resp))
-                    .collect::<Vec<ConfigGenerationRequest>>();
-
-                // group requests with same domain name to have single config.
-                // and pass each group to from_json to generate the config.
                 let mut domain_groupings: HashMap<String, Vec<ConfigGenerationRequest>> =
                     HashMap::new();
-                for req in config_gen_reqs {
-                    let url = Url::parse(req.url)?;
-                    let domain = url.host_str().unwrap();
+
+                // group requests with same domain/host name to have single config.
+                // and pass each group to from_json to generate the config.
+                for (resp, url) in results.iter().zip(paths.iter()) {
+                    let parsed_url = Url::parse(url.as_ref())?;
+                    let domain = parsed_url.host_str().unwrap();
                     domain_groupings
                         .entry(domain.to_string())
                         .or_default()
-                        .push(req);
+                        .push(ConfigGenerationRequest::new(url.as_ref(), resp));
                 }
 
                 let mut configs = Vec::with_capacity(domain_groupings.len());
 
-                for (_, same_domain_group_req) in domain_groupings {
-                    configs.push(ConfigModule::from(from_json(&same_domain_group_req)?));
+                for config_gen_req in domain_groupings.values() {
+                    configs.push(ConfigModule::from(from_json(config_gen_req)?));
                 }
 
                 Ok(configs)
