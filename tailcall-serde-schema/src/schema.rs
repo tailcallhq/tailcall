@@ -10,7 +10,7 @@ pub enum Schema {
     String,
     Number(N),
     Boolean,
-    Object(HashMap<String, Box<Schema>>),
+    Object(Vec<(String, Box<Schema>)>),
     Array(Box<Schema>),
 }
 
@@ -27,23 +27,27 @@ impl Schema {
         Deserialize::new(self).deserialize(&mut deserializer)
     }
 
-    pub fn array(item: Schema) -> Schema {
+    pub fn array(item: Schema) -> Self {
         Schema::Array(Box::new(item))
     }
 
-    pub fn i64() -> Schema {
+    pub fn i64() -> Self {
         Schema::Number(N::I64)
     }
 
-    pub fn u64() -> Schema {
+    pub fn u64() -> Self {
         Schema::Number(N::U64)
     }
 
-    pub fn f64() -> Schema {
+    pub fn f64() -> Self {
         Schema::Number(N::F64)
     }
 
-    pub fn object(map: HashMap<String, Schema>) -> Schema {
-        Schema::Object(map.into_iter().map(|(k, v)| (k, Box::new(v))).collect())
+    pub fn object(map: Vec<(&str, Schema)>) -> Self {
+        Schema::Object(
+            map.into_iter()
+                .map(|(k, v)| (k.to_string(), Box::new(v)))
+                .collect::<Vec<_>>(),
+        )
     }
 }

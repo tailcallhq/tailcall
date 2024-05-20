@@ -1,9 +1,6 @@
-use std::collections::HashMap;
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-
 use serde::Deserialize;
-use tailcall_serde_schema::Schema;
+use tailcall_serde_schema::{Post, Schema};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct PostRef<'a> {
@@ -13,14 +10,6 @@ pub struct PostRef<'a> {
     pub title: &'a str,
     #[serde(borrow)]
     pub body: &'a str,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct Post {
-    pub user_id: u64,
-    pub id: u64,
-    pub title: String,
-    pub body: String,
 }
 
 const JSON: &str = include_str!("../data/posts.json");
@@ -47,15 +36,12 @@ fn bench_typed_schema(schema: &Schema) -> serde_json::Value {
 
 fn bench_post_deserializer(c: &mut Criterion) {
     let mut group = c.benchmark_group("Deserialization");
-
-    let schema = Schema::array(Schema::object({
-        let mut map = HashMap::new();
-        map.insert("user_id".to_string(), Schema::u64());
-        map.insert("id".to_string(), Schema::u64());
-        map.insert("title".to_string(), Schema::String);
-        map.insert("body".to_string(), Schema::String);
-        map
-    }));
+    let schema = Schema::array(Schema::object(vec![
+        ("user_id", Schema::u64()),
+        ("id", Schema::u64()),
+        ("title", Schema::String),
+        ("body", Schema::String),
+    ]));
 
     group.bench_function("typed_schema", |b| {
         b.iter(|| black_box(bench_typed_schema(&schema)))

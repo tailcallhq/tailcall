@@ -3,6 +3,8 @@ use serde_json::{self};
 
 use crate::schema::Schema;
 
+type FieldMap = [(String, Box<Schema>)];
+
 pub struct Deserialize<'de> {
     schema: &'de Schema,
 }
@@ -10,6 +12,61 @@ pub struct Deserialize<'de> {
 impl<'de> Deserialize<'de> {
     pub fn new(schema: &'de Schema) -> Self {
         Self { schema }
+    }
+}
+
+struct Field<'de> {
+    name: &'de str,
+    schema: &'de Schema,
+}
+
+struct FieldSelection<'de> {
+    fields: &'de FieldMap,
+}
+
+struct FieldVisitor<'de> {
+    fields: &'de FieldMap,
+}
+
+impl FieldVisitor<'_> {
+    pub fn new<'de>(fields: &'de FieldMap) -> FieldVisitor<'de> {
+        FieldVisitor { fields }
+    }
+}
+
+impl<'de> de::Visitor<'de> for FieldVisitor<'de> {
+    type Value = Field<'de>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a field name")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        match self.fields.iter().find(|(u, _)| u == v) {
+            Some((name, schema)) => Ok(Field { name, schema }),
+            None => Err(de::Error::unknown_field(v, &[])),
+        }
+    }
+}
+
+impl FieldSelection<'_> {
+    pub fn new<'de>(fields: &'de FieldMap) -> FieldSelection<'de> {
+        FieldSelection { fields }
+    }
+}
+
+impl<'de> de::DeserializeSeed<'de> for FieldSelection<'de> {
+    type Value = Field<'de>;
+    #[inline]
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        let visitor = FieldVisitor::new(self.fields);
+        deserializer.deserialize_identifier(visitor)
     }
 }
 
@@ -102,27 +159,24 @@ impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
         Ok(serde_json::Value::Number(serde_json::Number::from(v)))
     }
 
+    #[inline]
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
         A: de::MapAccess<'de>,
     {
         if let Schema::Object(fields) = self.schema {
-            let mut object = serde_json::Map::new();
-            while let Ok(Some(key)) = map.next_key::<&str>() {
-                if let Some(value_schema) = fields.get(key) {
-                    match map.next_value_seed(Deserialize::new(value_schema)) {
-                        Ok(value) => object.insert(key.to_owned(), value),
-                        Err(err) => return Err(err),
-                    };
-                } else {
-                    match de::MapAccess::next_value::<de::IgnoredAny>(&mut map) {
-                        Ok(_) => (),
-                        Err(err) => return Err(err),
-                    }
-                }
+            let mut object = Vec::new();
+            while let Ok(Some(field)) = map.next_key_seed(FieldSelection::new(fields.as_slice())) {
+                let value_schema = field.schema;
+                // let key = field.name;
+                // let id = field.id;
+                match map.next_value_seed(Deserialize::new(&value_schema)) {
+                    Ok(value) => object.push(value),
+                    Err(err) => return Err(err),
+                };
             }
 
-            Ok(serde_json::Value::Object(object))
+            Ok(serde_json::Value::Array(object))
         } else {
             Err(de::Error::custom("expected object"))
         }
@@ -195,12 +249,10 @@ mod test {
 
     #[test]
     fn test_object() {
-        let schema = Schema::Object({
-            let mut fields = std::collections::HashMap::new();
-            fields.insert("foo".to_string(), Box::new(Schema::Number(N::U64)));
-            fields.insert("bar".to_string(), Box::new(Schema::Boolean));
-            fields
-        });
+        let schema = Schema::object(vec![
+            (("foo", Schema::Number(N::U64))),
+            (("bar", Schema::Boolean)),
+        ]);
         let input = r#"{"foo": 42, "bar": true}"#;
         check_schema(&schema, input);
     }
@@ -215,14 +267,12 @@ mod test {
     #[test]
     fn test_posts() {
         const JSON: &str = include_str!("../data/posts.json");
-        let schema = Schema::array(Schema::object({
-            let mut map = std::collections::HashMap::new();
-            map.insert("user_id".to_string(), Schema::Number(N::U64));
-            map.insert("id".to_string(), Schema::Number(N::U64));
-            map.insert("title".to_string(), Schema::String);
-            map.insert("body".to_string(), Schema::String);
-            map
-        }));
+        let schema = Schema::array(Schema::object(vec![
+            ("user_id", Schema::Number(N::U64)),
+            ("id", Schema::Number(N::U64)),
+            ("title", Schema::String),
+            ("body", Schema::String),
+        ]));
         check_schema(&schema, JSON);
     }
 }
