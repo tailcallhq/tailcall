@@ -42,10 +42,10 @@ fn bench_post_deserializer(c: &mut Criterion) {
     let mut group = c.benchmark_group("Deserialization");
 
     let schema = Schema::table(&[
-        // ("user_id", Schema::u64()),
-        // ("id", Schema::u64()),
+        ("user_id", Schema::u64()),
+        ("id", Schema::u64()),
         ("title", Schema::string()),
-        // ("body", Schema::string()),
+        ("body", Schema::string()),
     ]);
 
     group.bench_function("typed_schema", |b| {
