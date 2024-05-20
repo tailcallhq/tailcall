@@ -6,8 +6,18 @@ use crate::{de::Deserialize, value};
 #[derive(Debug, Clone)]
 pub enum Schema {
     Primitive(Primitive),
-    Object(Vec<(String, Box<Schema>)>),
-    Table { head: Vec<String>, row: Vec<Schema> },
+    Object(Vec<(String, Schema)>),
+    Table {
+        map: Vec<(String, Schema)>,
+        // Just a copy of the keys in row
+        // Duplicated for performance reasons
+        // TODO: could this be avoided somehow?
+        head: Vec<String>,
+        // Just a copy of the value in row
+        // Duplicated for performance reasons
+        // TODO: could this be avoided somehow?
+        rows: Vec<Schema>,
+    },
     Array(Primitive),
 }
 
@@ -53,10 +63,17 @@ impl Schema {
         Deserialize::new(self).deserialize(&mut deserializer)
     }
 
-    pub fn table(headers: &[&str], body: &[Schema]) -> Self {
+    pub fn table(schema: &[(&str, Schema)]) -> Self {
         Schema::Table {
-            head: headers.iter().map(|a| a.to_string()).collect::<Vec<_>>(),
-            row: body.to_vec(),
+            head: schema
+                .iter()
+                .map(|(k, _)| k.to_string())
+                .collect::<Vec<_>>(),
+            rows: schema.iter().map(|(_, v)| v.clone()).collect::<Vec<_>>(),
+            map: schema
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.clone()))
+                .collect::<Vec<_>>(),
         }
     }
 
@@ -76,10 +93,10 @@ impl Schema {
         Schema::Primitive(Primitive::Number(N::F64))
     }
 
-    pub fn object(map: Vec<(&str, Schema)>) -> Self {
+    pub fn object(map: &[(&str, Schema)]) -> Self {
         Schema::Object(
-            map.into_iter()
-                .map(|(k, v)| (k.to_string(), Box::new(v)))
+            map.iter()
+                .map(|(k, v)| (k.to_string(), v.to_owned()))
                 .collect::<Vec<_>>(),
         )
     }

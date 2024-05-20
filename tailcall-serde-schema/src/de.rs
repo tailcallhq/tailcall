@@ -5,7 +5,6 @@ use crate::{
     value,
 };
 
-type FieldMap = [(String, Box<Schema>)];
 type Value = crate::Value;
 
 pub struct Deserialize<'de> {
@@ -24,15 +23,15 @@ struct Field<'de> {
 }
 
 struct FieldSelection<'de> {
-    fields: &'de FieldMap,
+    fields: &'de [(String, Schema)],
 }
 
 struct FieldVisitor<'de> {
-    fields: &'de FieldMap,
+    fields: &'de [(String, Schema)],
 }
 
 impl FieldVisitor<'_> {
-    pub fn new<'de>(fields: &'de FieldMap) -> FieldVisitor<'de> {
+    pub fn new<'de>(fields: &'de [(String, Schema)]) -> FieldVisitor<'de> {
         FieldVisitor { fields }
     }
 }
@@ -56,7 +55,7 @@ impl<'de> de::Visitor<'de> for FieldVisitor<'de> {
 }
 
 impl FieldSelection<'_> {
-    pub fn new<'de>(fields: &'de FieldMap) -> FieldSelection<'de> {
+    pub fn new<'de>(fields: &'de [(String, Schema)]) -> FieldSelection<'de> {
         FieldSelection { fields }
     }
 }
@@ -79,7 +78,7 @@ impl<'de> de::DeserializeSeed<'de> for Deserialize<'de> {
     where
         D: serde::Deserializer<'de>,
     {
-        let visitor = Visitor::new(self.schema);
+        let visitor = ValueVisitor::new(self.schema);
         match &self.schema {
             Schema::Primitive(schema) => match schema {
                 schema::Primitive::Boolean => deserializer.deserialize_bool(visitor),
@@ -91,24 +90,24 @@ impl<'de> de::DeserializeSeed<'de> for Deserialize<'de> {
                 schema::Primitive::String => deserializer.deserialize_str(visitor),
             },
             Schema::Object(_) => deserializer.deserialize_map(visitor),
-            Schema::Table { row: _, head: _ } => deserializer.deserialize_seq(visitor),
+            Schema::Table { map: _, head: _, rows: _ } => deserializer.deserialize_seq(visitor),
             Schema::Array(_) => deserializer.deserialize_seq(visitor),
         }
     }
 }
 
-struct Visitor<'de> {
+struct ValueVisitor<'de> {
     schema: &'de Schema,
 }
 
-impl<'de> Visitor<'de> {
+impl<'de> ValueVisitor<'de> {
     pub fn new(schema: &'de Schema) -> Self {
         Self { schema }
     }
 }
 
 struct RowVisitor<'de> {
-    schema: &'de [Schema],
+    fields: &'de [(String, Schema)],
 }
 
 struct Row {
@@ -116,8 +115,8 @@ struct Row {
 }
 
 impl<'de> RowVisitor<'de> {
-    pub fn new(schema: &'de [Schema]) -> Self {
-        Self { schema }
+    pub fn new(fields: &'de [(String, Schema)]) -> Self {
+        Self { fields }
     }
 }
 
@@ -128,7 +127,7 @@ impl<'de> de::DeserializeSeed<'de> for RowVisitor<'de> {
     where
         D: de::Deserializer<'de>,
     {
-        deserializer.deserialize_seq(self)
+        deserializer.deserialize_map(self)
     }
 }
 
@@ -139,21 +138,20 @@ impl<'de> de::Visitor<'de> for RowVisitor<'de> {
         formatter.write_str("a row")
     }
 
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where
-        A: de::SeqAccess<'de>,
+        A: de::MapAccess<'de>,
     {
         let mut cols = Vec::new();
-
-        for schema in self.schema {
-            let value = seq.next_element_seed(Deserialize::new(schema));
-
-            match value {
-                Ok(Some(value)) => cols.push(value),
-                Ok(None) => return Err(de::Error::invalid_length(cols.len(), &"expected more")),
+        let fields = self.fields;
+        while let Ok(Some(field)) = map.next_key_seed(FieldSelection::new(fields)) {
+            let value_schema = field.schema;
+            match map.next_value_seed(Deserialize::new(&value_schema)) {
+                Ok(value) => cols.push(value),
                 Err(err) => return Err(err),
-            }
+            };
         }
+
         Ok(Row { cols })
     }
 }
@@ -242,7 +240,7 @@ impl<'de> de::DeserializeSeed<'de> for Primitive<'de> {
     }
 }
 
-impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
+impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
     type Value = Value;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -257,7 +255,7 @@ impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
                 },
             },
             Schema::Object(_) => formatter.write_str("an object"),
-            Schema::Table { row: _, head: _ } => formatter.write_str("a table"),
+            Schema::Table { map: _, head: _, rows: _ } => formatter.write_str("a table"),
             Schema::Array(_) => formatter.write_str("an array"),
         }
     }
@@ -327,9 +325,10 @@ impl<'de> serde::de::Visitor<'de> for Visitor<'de> {
         A: de::SeqAccess<'de>,
     {
         match self.schema {
-            Schema::Table { head, row } => {
+            Schema::Table { rows, head, map } => {
                 let mut rows = Vec::with_capacity(seq.size_hint().unwrap_or(100));
-                while let Ok(Some(row)) = seq.next_element_seed(RowVisitor::new(row)) {
+
+                while let Ok(Some(row)) = seq.next_element_seed(RowVisitor::new(map.as_slice())) {
                     rows.push(row.cols);
                 }
 
@@ -353,6 +352,7 @@ mod test {
     use super::*;
     use crate::schema::Schema;
     use insta::assert_snapshot;
+    use serde_json::json;
 
     #[test]
     fn test_string() {
@@ -398,7 +398,7 @@ mod test {
 
     #[test]
     fn test_object() {
-        let schema = Schema::object(vec![(("foo", Schema::u64())), (("bar", Schema::boolean()))]);
+        let schema = Schema::object(&[(("foo", Schema::u64())), (("bar", Schema::boolean()))]);
         let input = r#"{"foo": 42, "bar": true}"#;
         let actual = schema.from_str(input).unwrap();
         assert_snapshot!(actual);
@@ -414,25 +414,21 @@ mod test {
 
     #[test]
     fn test_table() {
-        let schema = Schema::table(&["foo", "bar"], &[Schema::u64(), Schema::string()]);
-        let input = r#"[{"foo": 1, bar: "Hello"}, {"foo": 2, bar: "Bye"}]"#;
+        let schema = Schema::table(&[("foo", Schema::u64()), ("bar", Schema::string())]);
+        let input = r#"[{"foo":1,"bar":"Hello"},{"foo":2,"bar":"Bye"}]"#;
         let actual = schema.from_str(input).unwrap();
         assert_snapshot!(actual);
     }
 
     #[test]
-    #[ignore]
     fn test_posts() {
         const JSON: &str = include_str!("../data/posts.json");
-        let schema = Schema::table(
-            &["user_id", "id", "title", "body"],
-            &[
-                Schema::u64(),
-                Schema::u64(),
-                Schema::string(),
-                Schema::string(),
-            ],
-        );
+        let schema = Schema::table(&[
+            ("user_id", Schema::u64()),
+            ("id", Schema::u64()),
+            ("title", Schema::string()),
+            ("body", Schema::string()),
+        ]);
         let actual = schema.from_str(JSON).unwrap();
         assert_snapshot!(actual);
     }
