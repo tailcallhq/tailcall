@@ -98,8 +98,8 @@ impl Generator {
                 let mut domain_groupings: HashMap<String, Vec<ConfigGenerationRequest>> =
                     HashMap::new();
                 for req in config_gen_reqs {
-                    let url = Url::parse(req.url).unwrap();
-                    let domain = url.domain().unwrap();
+                    let url = Url::parse(req.url)?;
+                    let domain = url.host_str().unwrap();
                     domain_groupings
                         .entry(domain.to_string())
                         .or_default()
