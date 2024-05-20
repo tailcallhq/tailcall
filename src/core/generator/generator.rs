@@ -122,14 +122,14 @@ impl Generator {
 mod test {
     use std::path::PathBuf;
 
-    use tailcall_fixtures::{protobuf, json};
+    use tailcall_fixtures::{json, protobuf};
 
     use super::*;
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
     }
-    
+
     fn parse_to_json(content: String) -> anyhow::Result<Value> {
         let json_content: serde_json::Value = serde_json::from_str(&content)?;
         Ok(json_content["body"].clone())
@@ -193,7 +193,11 @@ mod test {
         let runtime = crate::core::runtime::test::init(None);
 
         let list_content = runtime.file.read(json::LIST).await.unwrap();
-        let incompatible_properties = runtime.file.read(json::INCOMPATIBLE_PROPERTIES).await.unwrap();
+        let incompatible_properties = runtime
+            .file
+            .read(json::INCOMPATIBLE_PROPERTIES)
+            .await
+            .unwrap();
         let list_content = parse_to_json(list_content)?;
         let incompatible_properties = parse_to_json(incompatible_properties)?;
 
@@ -201,7 +205,7 @@ mod test {
             when.method(httpmock::Method::GET).path("/list");
             then.status(200)
                 .header("Content-Type", "application/json")
-                .body(&list_content.to_string());
+                .body(list_content.to_string());
         });
 
         server.mock(|when, then| {
@@ -209,15 +213,20 @@ mod test {
                 .path("/incompatible_properties");
             then.status(200)
                 .header("Content-Type", "application/json")
-                .body(&incompatible_properties.to_string());
+                .body(incompatible_properties.to_string());
         });
 
         let generator = Generator::init(runtime);
         let list_url = format!("http://localhost:{}/list", server.port());
-        let incompatible_properties_url = format!("http://localhost:{}/incompatible_properties", server.port());
+        let incompatible_properties_url =
+            format!("http://localhost:{}/incompatible_properties", server.port());
 
         let config = generator
-            .read_all(Source::Url, &[list_url, incompatible_properties_url] , "Query")
+            .read_all(
+                Source::Url,
+                &[list_url, incompatible_properties_url],
+                "Query",
+            )
             .await
             .unwrap();
 
@@ -227,5 +236,4 @@ mod test {
 
         Ok(())
     }
-
 }
