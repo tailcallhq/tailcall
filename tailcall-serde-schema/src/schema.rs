@@ -1,8 +1,7 @@
 use serde::de::DeserializeSeed;
 use serde_json::de::StrRead;
 
-use crate::de::Deserialize;
-use crate::value;
+use crate::{de::Deserialize, Value};
 
 #[derive(Debug, Clone)]
 pub enum Schema {
@@ -59,7 +58,7 @@ pub enum N {
 }
 
 impl Schema {
-    pub fn from_str(&self, input: &str) -> serde_json::Result<value::Value> {
+    pub fn from_str(&self, input: &str) -> serde_json::Result<Value> {
         let mut deserializer = serde_json::Deserializer::new(StrRead::new(input));
         Deserialize::new(self).deserialize(&mut deserializer)
     }
@@ -111,8 +110,8 @@ impl Schema {
     }
 }
 
-impl From<&Primitive> for Schema {
-    fn from(value: &Primitive) -> Self {
-        Schema::Primitive(value.to_owned())
+impl From<Primitive> for Schema {
+    fn from(value: Primitive) -> Self {
+        Schema::Primitive(value)
     }
 }
