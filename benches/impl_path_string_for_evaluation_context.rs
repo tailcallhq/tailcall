@@ -7,7 +7,7 @@ use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
 use async_trait::async_trait;
 use criterion::{BenchmarkId, Criterion};
-use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
@@ -15,10 +15,14 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::{
-    EnvIO, EvaluationContext, FileIO, HttpIO, InMemoryCache, PathString, RequestContext,
-    ResolverContextLike, Response, Server, TargetRuntime, Upstream,
-};
+use tailcall::core::blueprint::{Server, Upstream};
+use tailcall::core::cache::InMemoryCache;
+use tailcall::core::http::{RequestContext, Response};
+use tailcall::core::lambda::{EvaluationContext, ResolverContextLike};
+use tailcall::core::path::PathString;
+use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::{EnvIO, FileIO, HttpIO};
+use tailcall_http_cache::HttpCacheManager;
 
 struct Http {
     client: ClientWithMiddleware,
@@ -56,7 +60,7 @@ impl Http {
         if upstream.http_cache {
             client = client.with(Cache(HttpCache {
                 mode: CacheMode::Default,
-                manager: MokaManager::default(),
+                manager: HttpCacheManager::default(),
                 options: HttpCacheOptions::default(),
             }))
         }
@@ -228,7 +232,7 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 }
 
 fn request_context() -> RequestContext {
-    let config_module = tailcall::ConfigModule::default();
+    let config_module = tailcall::core::config::ConfigModule::default();
 
     //TODO: default is used only in tests. Drop default and move it to test.
     let upstream = Upstream::try_from(&config_module).unwrap();

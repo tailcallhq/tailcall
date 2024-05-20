@@ -1,6 +1,6 @@
 use criterion::{black_box, Criterion};
 use serde_json::json;
-use tailcall::JsonLike;
+use tailcall::core::json::{gather_path_matches, JsonLike};
 
 pub fn benchmark_batched_body(c: &mut Criterion) {
     c.bench_function("test_batched_body", |b| {
@@ -19,7 +19,7 @@ pub fn benchmark_batched_body(c: &mut Criterion) {
             });
 
             black_box(
-                serde_json::to_value(tailcall::gather_path_matches(
+                serde_json::to_value(gather_path_matches(
                     &input,
                     &["data".into(), "user".into(), "id".into()],
                     vec![],
