@@ -128,7 +128,7 @@ impl<'de> de::Visitor<'de> for Value<'de> {
         A: de::MapAccess<'de>,
     {
         if let Schema::Object(fields) = self.schema {
-            let mut rows = Vec::new();
+            let mut rows = Vec::with_capacity(fields.len());
             while let Some(field) = map.next_key_seed(Object::new(fields))? {
                 match field {
                     Some(field) => {
@@ -231,7 +231,7 @@ impl<'de> de::Visitor<'de> for Table<'de> {
     where
         A: de::MapAccess<'de>,
     {
-        let mut cols = Vec::new();
+        let mut cols = Vec::with_capacity(self.0.len());
         while let Some(field) = map.next_key_seed(Object::new(self.0))? {
             match field {
                 Some(field) => {
