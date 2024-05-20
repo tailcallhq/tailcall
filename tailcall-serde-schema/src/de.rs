@@ -3,25 +3,25 @@ use serde::de::{self};
 use crate::schema::{self, Schema};
 use crate::value;
 
-type Value = crate::Value;
+type Output = crate::Value;
 
-struct Field<'de> {
+struct FieldSchema<'de> {
     name: &'de str,
     schema: &'de Schema,
 }
 
-struct FieldVisitor<'de> {
-    fields: &'de [(String, Schema)],
-}
+struct Row(Vec<Output>);
 
-impl FieldVisitor<'_> {
-    pub fn new<'de>(fields: &'de [(String, Schema)]) -> FieldVisitor<'de> {
-        FieldVisitor { fields }
+struct Object<'de>(&'de [(String, Schema)]);
+
+impl Object<'_> {
+    pub fn new<'de>(fields: &'de [(String, Schema)]) -> Object<'de> {
+        Object(&fields)
     }
 }
 
-impl<'de> de::Visitor<'de> for FieldVisitor<'de> {
-    type Value = Option<Field<'de>>;
+impl<'de> de::Visitor<'de> for Object<'de> {
+    type Value = Option<FieldSchema<'de>>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("a field name")
@@ -31,37 +31,37 @@ impl<'de> de::Visitor<'de> for FieldVisitor<'de> {
     where
         E: de::Error,
     {
-        match self.fields.iter().find(|(u, _)| u == v) {
-            Some((name, schema)) => Ok(Some(Field { name, schema })),
+        match self.0.iter().find(|(u, _)| u == v) {
+            Some((name, schema)) => Ok(Some(FieldSchema { name, schema })),
             None => Ok(None),
         }
     }
 }
 
-impl<'de> de::DeserializeSeed<'de> for FieldVisitor<'de> {
-    type Value = Option<Field<'de>>;
+impl<'de> de::DeserializeSeed<'de> for Object<'de> {
+    type Value = Option<FieldSchema<'de>>;
     #[inline]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: de::Deserializer<'de>,
     {
-        let visitor = FieldVisitor::new(self.fields);
+        let visitor = Object::new(self.0);
         deserializer.deserialize_identifier(visitor)
     }
 }
 
-pub struct ValueVisitor<'de> {
+pub struct Value<'de> {
     schema: &'de Schema,
 }
 
-impl<'de> ValueVisitor<'de> {
+impl<'de> Value<'de> {
     pub fn new(schema: &'de Schema) -> Self {
         Self { schema }
     }
 }
 
-impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
-    type Value = Value;
+impl<'de> de::Visitor<'de> for Value<'de> {
+    type Value = Output;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.schema {
@@ -81,42 +81,42 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
-        Ok(Value::from_string(value.to_owned()))
+        Ok(Output::from_string(value.to_owned()))
     }
 
     fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(Value::from_string(v))
+        Ok(Output::from_string(v))
     }
 
     fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(Value::from_bool(v))
+        Ok(Output::from_bool(v))
     }
 
     fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(Value::from_f64(v))
+        Ok(Output::from_f64(v))
     }
 
     fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(Value::from_u64(v))
+        Ok(Output::from_u64(v))
     }
 
     fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
     where
         E: de::Error,
     {
-        Ok(Value::from_i64(v))
+        Ok(Output::from_i64(v))
     }
 
     #[inline]
@@ -126,11 +126,11 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
     {
         if let Schema::Object(fields) = self.schema {
             let mut rows = Vec::new();
-            while let Some(field) = map.next_key_seed(FieldVisitor::new(fields.as_slice()))? {
+            while let Some(field) = map.next_key_seed(Object::new(fields.as_slice()))? {
                 match field {
                     Some(field) => {
                         let value_schema = field.schema;
-                        match map.next_value_seed(ValueVisitor::new(&value_schema)) {
+                        match map.next_value_seed(Value::new(&value_schema)) {
                             Ok(value) => rows.push((field.name.to_owned(), value)),
                             Err(err) => return Err(err),
                         };
@@ -141,7 +141,7 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
                 }
             }
 
-            Ok(Value::Object(rows))
+            Ok(Output::Object(rows))
         } else {
             Err(de::Error::custom("expected object"))
         }
@@ -155,32 +155,32 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
             Schema::Table { rows: _, head, map } => {
                 let mut rows = Vec::with_capacity(seq.size_hint().unwrap_or(100));
 
-                while let Ok(Some(row)) = seq.next_element_seed(RowVisitor::new(map.as_slice())) {
-                    rows.push(row.cols);
+                while let Ok(Some(row)) = seq.next_element_seed(Table::new(map.as_slice())) {
+                    rows.push(row.0);
                 }
 
-                Ok(Value::Table { head: head.to_owned(), rows })
+                Ok(Output::Table { head: head.to_owned(), rows })
             }
             Schema::Array(primitive) => {
                 let mut rows = Vec::with_capacity(seq.size_hint().unwrap_or(100));
-                while let Ok(Some(row)) = seq.next_element_seed(PrimitiveVisitor::new(primitive)) {
+                while let Ok(Some(row)) = seq.next_element_seed(Primitive::new(primitive)) {
                     rows.push(row);
                 }
 
-                Ok(Value::Array(rows))
+                Ok(Output::Array(rows))
             }
             _ => Err(de::Error::custom("expected a table or an array")),
         }
     }
 }
 
-impl<'de> de::DeserializeSeed<'de> for ValueVisitor<'de> {
-    type Value = Value;
+impl<'de> de::DeserializeSeed<'de> for Value<'de> {
+    type Value = Output;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        let visitor = ValueVisitor::new(self.schema);
+        let visitor = Value::new(self.schema);
         match &self.schema {
             Schema::Primitive(schema) => match schema {
                 schema::Primitive::Boolean => deserializer.deserialize_bool(visitor),
@@ -198,21 +198,15 @@ impl<'de> de::DeserializeSeed<'de> for ValueVisitor<'de> {
     }
 }
 
-struct Row {
-    cols: Vec<Value>,
-}
+struct Table<'de>(&'de [(String, Schema)]);
 
-struct RowVisitor<'de> {
-    fields: &'de [(String, Schema)],
-}
-
-impl<'de> RowVisitor<'de> {
+impl<'de> Table<'de> {
     pub fn new(fields: &'de [(String, Schema)]) -> Self {
-        Self { fields }
+        Self(fields)
     }
 }
 
-impl<'de> de::DeserializeSeed<'de> for RowVisitor<'de> {
+impl<'de> de::DeserializeSeed<'de> for Table<'de> {
     type Value = Row;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -223,7 +217,7 @@ impl<'de> de::DeserializeSeed<'de> for RowVisitor<'de> {
     }
 }
 
-impl<'de> de::Visitor<'de> for RowVisitor<'de> {
+impl<'de> de::Visitor<'de> for Table<'de> {
     type Value = Row;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -235,12 +229,11 @@ impl<'de> de::Visitor<'de> for RowVisitor<'de> {
         A: de::MapAccess<'de>,
     {
         let mut cols = Vec::new();
-        let fields = self.fields;
-        while let Some(field) = map.next_key_seed(FieldVisitor::new(fields))? {
+        while let Some(field) = map.next_key_seed(Object::new(self.0))? {
             match field {
                 Some(field) => {
                     let schema = field.schema;
-                    match map.next_value_seed(ValueVisitor::new(&schema)) {
+                    match map.next_value_seed(Value::new(&schema)) {
                         Ok(value) => cols.push(value),
                         Err(err) => return Err(err),
                     }
@@ -252,25 +245,23 @@ impl<'de> de::Visitor<'de> for RowVisitor<'de> {
             }
         }
 
-        Ok(Row { cols })
+        Ok(Row(cols))
     }
 }
 
-struct PrimitiveVisitor<'de> {
-    schema: &'de schema::Primitive,
-}
+struct Primitive<'de>(&'de schema::Primitive);
 
-impl<'de> PrimitiveVisitor<'de> {
+impl<'de> Primitive<'de> {
     fn new(schema: &'de schema::Primitive) -> Self {
-        Self { schema }
+        Self(schema)
     }
 }
 
-impl<'de> de::Visitor<'de> for PrimitiveVisitor<'de> {
+impl<'de> de::Visitor<'de> for Primitive<'de> {
     type Value = value::Primitive;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match &self.schema {
+        match &self.0 {
             schema::Primitive::String => formatter.write_str("a string"),
             schema::Primitive::Boolean => formatter.write_str("a boolean"),
             schema::Primitive::Number(n) => match n {
@@ -321,14 +312,14 @@ impl<'de> de::Visitor<'de> for PrimitiveVisitor<'de> {
     }
 }
 
-impl<'de> de::DeserializeSeed<'de> for PrimitiveVisitor<'de> {
+impl<'de> de::DeserializeSeed<'de> for Primitive<'de> {
     type Value = value::Primitive;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: de::Deserializer<'de>,
     {
-        match self.schema {
+        match self.0 {
             schema::Primitive::String => deserializer.deserialize_str(self),
             schema::Primitive::Boolean => deserializer.deserialize_bool(self),
             schema::Primitive::Number(n) => match n {
