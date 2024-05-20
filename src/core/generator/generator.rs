@@ -187,10 +187,10 @@ mod test {
         );
     }
 
-    async fn read_json_fixtures(runtime: &TargetRuntime ,fixture_path: &str) -> Value {
+    async fn read_json_fixtures(runtime: &TargetRuntime, fixture_path: &str) -> Value {
         let content = runtime.file.read(fixture_path).await.unwrap();
-        let json_content = parse_to_json(content).unwrap();
-        json_content
+        
+        parse_to_json(content).unwrap()
     }
 
     #[tokio::test]
@@ -198,8 +198,9 @@ mod test {
         let runtime = crate::core::runtime::test::init(None);
         let server = start_mock_server();
 
-        let list_content = read_json_fixtures(&runtime,json::LIST).await;
-        let incompatible_properties = read_json_fixtures(&runtime, json::INCOMPATIBLE_PROPERTIES).await;
+        let list_content = read_json_fixtures(&runtime, json::LIST).await;
+        let incompatible_properties =
+            read_json_fixtures(&runtime, json::INCOMPATIBLE_PROPERTIES).await;
 
         server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/list");
@@ -235,14 +236,14 @@ mod test {
         Ok(())
     }
 
-
     #[tokio::test]
     async fn test_read_all_with_different_domain_rest_api_gen() -> anyhow::Result<()> {
         let server = start_mock_server();
         let runtime = crate::core::runtime::test::init(None);
 
-        let list_content = read_json_fixtures(&runtime,json::LIST).await;
-        let incompatible_properties = read_json_fixtures(&runtime, json::INCOMPATIBLE_PROPERTIES).await;
+        let list_content = read_json_fixtures(&runtime, json::LIST).await;
+        let incompatible_properties =
+            read_json_fixtures(&runtime, json::INCOMPATIBLE_PROPERTIES).await;
 
         server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/list");
@@ -277,7 +278,7 @@ mod test {
 
         assert_eq!(config.len(), 2);
         for cfg in config.iter() {
-            insta::assert_snapshot!(cfg.upstream.base_url.clone(),cfg.to_sdl());
+            insta::assert_snapshot!(cfg.upstream.base_url.clone(), cfg.to_sdl());
         }
         Ok(())
     }
