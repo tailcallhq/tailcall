@@ -150,11 +150,9 @@ impl ConfigGenerator {
         field.http = Some(http);
 
         let mut ty = Type::default();
-        ty.fields
-            .insert(format!("f{}",self.field_counter), field);
+        ty.fields.insert(format!("f{}", self.field_counter), field);
         self.insert_type("Query", ty);
         self.field_counter += 1;
-
     }
 
     fn generate_upstream(&mut self, url: &Url) {
