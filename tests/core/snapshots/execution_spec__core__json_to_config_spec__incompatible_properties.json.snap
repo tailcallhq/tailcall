@@ -9,7 +9,7 @@ schema @server @upstream(baseURL: "https://example.com") {
 scalar Any
 
 type Query {
-  t1: T1 @http(path: "/")
+  f1: T1 @http(path: "/")
 }
 
 type T1 {

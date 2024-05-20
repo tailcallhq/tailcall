@@ -9,8 +9,8 @@ schema @server @upstream(baseURL: "http://localhost") {
 scalar Any
 
 type Query {
-  t1: [T1] @http(path: "/list")
-  t2: T2 @http(path: "/incompatible_properties")
+  f1: [T1] @http(path: "/list")
+  f2: T2 @http(path: "/incompatible_properties")
 }
 
 type T1 {
