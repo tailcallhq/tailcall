@@ -49,18 +49,10 @@ impl ConfigGenerator {
         match value {
             Value::Array(json_array) => !json_array.is_empty(),
             Value::Object(json_object) => {
-                if json_object.is_empty() {
-                    return false;
-                }
-                // generate type only when all fields have graphql compatible field name.
-                if json_object
-                    .keys()
-                    .any(|json_property| !is_valid_field_name(json_property))
-                {
-                    return false;
-                }
-
-                true
+                !json_object.is_empty()
+                    && !json_object
+                        .keys()
+                        .any(|json_property| !is_valid_field_name(json_property))
             }
             _ => true, // generate for all primitive types.
         }
