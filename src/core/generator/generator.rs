@@ -278,7 +278,10 @@ mod test {
 
         assert_eq!(config.len(), 2);
         for cfg in config.iter() {
-            insta::assert_snapshot!(cfg.upstream.base_url.clone(), cfg.to_sdl());
+            let base_url = cfg.upstream.base_url.clone();
+            let url = Url::parse(base_url.unwrap().as_str())?;
+            let host_name = url.host_str().unwrap();
+            insta::assert_snapshot!(host_name, cfg.to_sdl());
         }
         Ok(())
     }
