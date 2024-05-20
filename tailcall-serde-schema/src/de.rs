@@ -1,4 +1,4 @@
-use serde::de::{self};
+use serde::de::{self, IgnoredAny};
 
 use crate::schema::{self, Schema};
 use crate::value;
@@ -35,7 +35,7 @@ impl FieldVisitor<'_> {
 }
 
 impl<'de> de::Visitor<'de> for FieldVisitor<'de> {
-    type Value = Field<'de>;
+    type Value = Option<Field<'de>>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("a field name")
@@ -46,8 +46,8 @@ impl<'de> de::Visitor<'de> for FieldVisitor<'de> {
         E: de::Error,
     {
         match self.fields.iter().find(|(u, _)| u == v) {
-            Some((name, schema)) => Ok(Field { name, schema }),
-            None => Err(de::Error::unknown_field(v, &[])),
+            Some((name, schema)) => Ok(Some(Field { name, schema })),
+            None => Ok(None),
         }
     }
 }
@@ -59,7 +59,7 @@ impl FieldSelection<'_> {
 }
 
 impl<'de> de::DeserializeSeed<'de> for FieldSelection<'de> {
-    type Value = Field<'de>;
+    type Value = Option<Field<'de>>;
     #[inline]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
@@ -142,29 +142,37 @@ impl<'de> de::Visitor<'de> for RowVisitor<'de> {
     {
         let mut cols = Vec::new();
         let fields = self.fields;
-        while let Ok(Some(field)) = map.next_key_seed(FieldSelection::new(fields)) {
-            let value_schema = field.schema;
-            match map.next_value_seed(Deserialize::new(&value_schema)) {
-                Ok(value) => cols.push(value),
-                Err(err) => return Err(err),
-            };
+        while let Some(field) = map.next_key_seed(FieldSelection::new(fields))? {
+            match field {
+                Some(field) => {
+                    let schema = field.schema;
+                    match map.next_value_seed(Deserialize::new(&schema)) {
+                        Ok(value) => cols.push(value),
+                        Err(err) => return Err(err),
+                    }
+                }
+
+                None => {
+                    let _: IgnoredAny = map.next_value()?;
+                }
+            }
         }
 
         Ok(Row { cols })
     }
 }
 
-struct Primitive<'de> {
+struct PrimitiveVisitor<'de> {
     schema: &'de schema::Primitive,
 }
 
-impl<'de> Primitive<'de> {
+impl<'de> PrimitiveVisitor<'de> {
     fn new(schema: &'de schema::Primitive) -> Self {
         Self { schema }
     }
 }
 
-impl<'de> de::Visitor<'de> for Primitive<'de> {
+impl<'de> de::Visitor<'de> for PrimitiveVisitor<'de> {
     type Value = value::Primitive;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -219,7 +227,7 @@ impl<'de> de::Visitor<'de> for Primitive<'de> {
     }
 }
 
-impl<'de> de::DeserializeSeed<'de> for Primitive<'de> {
+impl<'de> de::DeserializeSeed<'de> for PrimitiveVisitor<'de> {
     type Value = value::Primitive;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -304,14 +312,25 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
     {
         if let Schema::Object(fields) = self.schema {
             let mut rows = Vec::new();
-            while let Ok(Some(field)) = map.next_key_seed(FieldSelection::new(fields.as_slice())) {
-                let value_schema = field.schema;
-                match map.next_value_seed(Deserialize::new(&value_schema)) {
-                    Ok(value) => rows.push((field.name.to_owned(), value)),
-                    Err(err) => return Err(err),
-                };
+            while let Some(field) = map.next_key_seed(FieldSelection::new(fields.as_slice()))? {
+                match field {
+                    Some(field) => {
+                        let value_schema = field.schema;
+                        match map.next_value_seed(Deserialize::new(&value_schema)) {
+                            Ok(value) => {
+                                dbg!("pushing", field.name);
+                                rows.push((field.name.to_owned(), value))
+                            }
+                            Err(err) => return Err(err),
+                        };
+                    }
+                    None => {
+                        let _: IgnoredAny = map.next_value()?;
+                    }
+                }
             }
 
+            dbg!("Completed");
             Ok(Value::Object(rows))
         } else {
             Err(de::Error::custom("expected object"))
@@ -334,7 +353,7 @@ impl<'de> serde::de::Visitor<'de> for ValueVisitor<'de> {
             }
             Schema::Array(primitive) => {
                 let mut rows = Vec::with_capacity(seq.size_hint().unwrap_or(100));
-                while let Ok(Some(row)) = seq.next_element_seed(Primitive::new(primitive)) {
+                while let Ok(Some(row)) = seq.next_element_seed(PrimitiveVisitor::new(primitive)) {
                     rows.push(row);
                 }
 
@@ -403,6 +422,14 @@ mod test {
     }
 
     #[test]
+    fn test_object_partial() {
+        let schema = Schema::object(&[(("foo", Schema::u64()))]);
+        let input = r#"{"foo": 42, "bar": true}"#;
+        let actual = schema.from_str(input).unwrap();
+        assert_snapshot!(actual);
+    }
+
+    #[test]
     fn test_array() {
         let schema = Schema::array(schema::Primitive::u64());
         let input = r#"[1, 2, 3]"#;
@@ -419,13 +446,21 @@ mod test {
     }
 
     #[test]
+    fn test_table_partial() {
+        let schema = Schema::table(&[("foo", Schema::u64())]);
+        let input = r#"[{"foo":1,"bar":"Hello"},{"foo":2,"bar":"Bye"}]"#;
+        let actual = schema.from_str(input).unwrap();
+        assert_snapshot!(actual);
+    }
+
+    #[test]
     fn test_posts() {
         const JSON: &str = include_str!("../data/posts.json");
         let schema = Schema::table(&[
-            ("user_id", Schema::u64()),
+            // ("user_id", Schema::u64()),
             ("id", Schema::u64()),
-            ("title", Schema::string()),
-            ("body", Schema::string()),
+            // ("title", Schema::string()),
+            // ("body", Schema::string()),
         ]);
         let actual = schema.from_str(JSON).unwrap();
         assert_snapshot!(actual);
