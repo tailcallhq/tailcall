@@ -5,6 +5,7 @@ edition = "2021"
 
 
 [dependencies]
+fxhash = "0.2.1"
 serde.workspace = true
 serde_json = { workspace = true, features = ["alloc"] }
 serde_json_borrow = "0.3.0"

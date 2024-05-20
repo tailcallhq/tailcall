@@ -1,3 +1,4 @@
+use fxhash::FxHashMap;
 use serde::de::DeserializeSeed;
 use serde_json::de::StrRead;
 
@@ -6,9 +7,9 @@ use crate::de::Value;
 #[derive(Debug, Clone)]
 pub enum Schema {
     Primitive(Primitive),
-    Object(Vec<(String, Schema)>),
+    Object(FxHashMap<String, Schema>),
     Table {
-        map: Vec<(String, Schema)>,
+        map: FxHashMap<String, Schema>,
         // Just a copy of the keys in row
         // Duplicated for performance reasons
         // TODO: could this be avoided somehow?
@@ -73,7 +74,7 @@ impl Schema {
             map: schema
                 .iter()
                 .map(|(k, v)| (k.to_string(), v.clone()))
-                .collect::<Vec<_>>(),
+                .collect::<FxHashMap<_, _>>(),
         }
     }
 
@@ -97,7 +98,7 @@ impl Schema {
         Schema::Object(
             map.iter()
                 .map(|(k, v)| (k.to_string(), v.to_owned()))
-                .collect::<Vec<_>>(),
+                .collect::<FxHashMap<_, _>>(),
         )
     }
 

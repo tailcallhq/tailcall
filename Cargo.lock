@@ -5228,6 +5228,7 @@ version = "0.1.0"
 dependencies = [
  "async-graphql",
  "criterion",
+ "fxhash",
  "insta",
  "pretty_assertions",
  "serde",

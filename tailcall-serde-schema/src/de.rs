@@ -1,3 +1,4 @@
+use fxhash::FxHashMap;
 use serde::de::{self};
 
 use crate::schema::{self, Schema};
@@ -12,7 +13,7 @@ struct FieldSchema<'de> {
 
 struct Row(Vec<Output>);
 
-type ObjectMap = [(String, Schema)];
+type ObjectMap = FxHashMap<String, Schema>;
 
 struct Object<'de>(&'de ObjectMap);
 
@@ -33,7 +34,7 @@ impl<'de> de::Visitor<'de> for Object<'de> {
     where
         E: de::Error,
     {
-        match self.0.iter().find(|(u, _)| u == v) {
+        match self.0.get_key_value(v) {
             Some((name, schema)) => Ok(Some(FieldSchema { name, schema })),
             None => Ok(None),
         }
@@ -128,7 +129,7 @@ impl<'de> de::Visitor<'de> for Value<'de> {
     {
         if let Schema::Object(fields) = self.schema {
             let mut rows = Vec::new();
-            while let Some(field) = map.next_key_seed(Object::new(fields.as_slice()))? {
+            while let Some(field) = map.next_key_seed(Object::new(fields))? {
                 match field {
                     Some(field) => {
                         let value_schema = field.schema;
@@ -157,7 +158,7 @@ impl<'de> de::Visitor<'de> for Value<'de> {
             Schema::Table { rows: _, head, map } => {
                 let mut rows = Vec::with_capacity(seq.size_hint().unwrap_or(100));
 
-                while let Ok(Some(row)) = seq.next_element_seed(Table::new(map.as_slice())) {
+                while let Ok(Some(row)) = seq.next_element_seed(Table::new(map)) {
                     rows.push(row.0);
                 }
 
