@@ -190,13 +190,20 @@ mod tests {
     use tokio;
 
     use super::*;
+    use crate::core::http::Response;
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
     }
 
+    async fn make_request(request_url: &str,native_http: &NativeHttp) -> Response<Bytes> {
+        let request = reqwest::Request::new(Method::GET, request_url.parse().unwrap());
+        let result = native_http.execute(request).await;
+        result.unwrap()
+    }
+
     #[tokio::test]
-    async fn test_native_http_get_request() {
+    async fn test_native_http_get_request_without_cache() {
         let server = start_mock_server();
 
         let header_serv = server.mock(|when, then| {
@@ -208,17 +215,67 @@ mod tests {
         let port = server.port();
         // Build a GET request to the mock server
         let request_url = format!("http://localhost:{}/test", port);
-        let request = reqwest::Request::new(Method::GET, request_url.parse().unwrap());
-
-        // Execute the request
-        let result = native_http.execute(request).await;
+        let response = make_request(&request_url, &native_http).await;        
 
         // Assert the response is as expected
-        assert!(result.is_ok());
-        let response = result.unwrap();
         assert_eq!(response.status, reqwest::StatusCode::OK);
         assert_eq!(response.body, Bytes::from("Hello"));
+        assert!(response.headers.get("x-cache-lookup").is_none());
 
-        header_serv.assert();
+
+
+        let request_url = format!("http://localhost:{}/test", port);
+        let response = make_request(&request_url, &native_http).await;        
+
+        // Assert the response is as expected
+        assert_eq!(response.status, reqwest::StatusCode::OK);
+        assert_eq!(response.body, Bytes::from("Hello"));
+        assert!(response.headers.get("x-cache-lookup").is_none());
+
+        header_serv.assert_hits(2);
+    }
+
+
+    #[tokio::test]
+    async fn test_native_http_get_request_with_cache() {
+        let server = start_mock_server();
+
+        let header_serv = server.mock(|when, then| {
+            when.method(httpmock::Method::GET).path("/test");
+            then.status(200).body("Hello");
+        });
+
+        let mut upstream = Upstream::default();
+        upstream.http_cache = 42;
+
+        let native_http = NativeHttp::init(&upstream, &Default::default());
+        let port = server.port();
+
+        // Build a GET request to the mock server
+        let request_url = format!("http://localhost:{}/test", port);
+        let response = make_request(&request_url, &native_http).await;        
+        assert_eq!(response.status, reqwest::StatusCode::OK);
+        assert_eq!(response.body, Bytes::from("Hello"));
+        assert_eq!(response.headers.get("x-cache-lookup").unwrap(), "MISS");
+
+
+        // make the same request to check if underlying cache is working correctly or not.
+        let request_url = format!("http://localhost:{}/test", port);
+        let response = make_request(&request_url, &native_http).await;        
+        assert_eq!(response.status, reqwest::StatusCode::OK);
+        assert_eq!(response.body, Bytes::from("Hello"));
+        assert_eq!(response.headers.get("x-cache-lookup").unwrap(), "HIT");
+
+
+
+
+        // make the same request to check if underlying cache is working correctly or not.
+        let request_url = format!("http://localhost:{}/test", port);
+        let response = make_request(&request_url, &native_http).await;        
+        assert_eq!(response.status, reqwest::StatusCode::OK);
+        assert_eq!(response.body, Bytes::from("Hello"));
+        assert_eq!(response.headers.get("x-cache-lookup").unwrap(), "HIT");
+
+        header_serv.assert_hits(3);
     }
 }
