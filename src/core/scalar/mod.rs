@@ -1,15 +1,21 @@
+pub use big_int::*;
+pub use bytes::*;
 pub use date::*;
 pub use email::*;
 pub use empty::*;
 pub use json::*;
 pub use phone::*;
+pub use unsigned_int::*;
 pub use url::*;
 
+mod big_int;
+mod bytes;
 mod date;
 mod email;
 mod empty;
 mod json;
 mod phone;
+mod unsigned_int;
 mod url;
 
 use std::collections::{HashMap, HashSet};
@@ -28,6 +34,9 @@ lazy_static! {
             Arc::new(Url::default()),
             Arc::new(JSON::default()),
             Arc::new(Empty::default()),
+            Arc::new(BigInt::default()),
+            Arc::new(UnsignedInt::default()),
+            Arc::new(Bytes::default()),
         ];
         let mut hm = HashMap::new();
 

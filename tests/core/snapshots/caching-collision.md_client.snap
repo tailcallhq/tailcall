@@ -7,6 +7,10 @@ type Bar {
   id: String!
 }
 
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -24,6 +28,8 @@ scalar PhoneNumber
 type Query {
   bars: [Bar]
 }
+
+scalar UnsignedInt
 
 scalar Url
 

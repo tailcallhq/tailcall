@@ -2,6 +2,10 @@
 source: tests/core/spec.rs
 expression: client
 ---
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -27,6 +31,8 @@ type Query {
 type Todo {
   completed: Boolean
 }
+
+scalar UnsignedInt
 
 scalar Url
 

@@ -7,6 +7,10 @@ type B implements IA {
   b: String
 }
 
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -24,6 +28,8 @@ scalar PhoneNumber
 type Query {
   bar: IA
 }
+
+scalar UnsignedInt
 
 scalar Url
 

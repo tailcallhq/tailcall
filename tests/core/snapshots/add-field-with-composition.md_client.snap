@@ -7,6 +7,10 @@ type Address {
   street: String
 }
 
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -27,6 +31,8 @@ type Query {
   lng: String
   user: User
 }
+
+scalar UnsignedInt
 
 scalar Url
 

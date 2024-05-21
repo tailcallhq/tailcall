@@ -8,6 +8,10 @@ type A {
   d: String
 }
 
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -29,6 +33,8 @@ type U {
   d: String
   e: String
 }
+
+scalar UnsignedInt
 
 scalar Url
 

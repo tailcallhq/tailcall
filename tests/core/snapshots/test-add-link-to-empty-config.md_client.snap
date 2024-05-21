@@ -2,6 +2,10 @@
 source: tests/core/spec.rs
 expression: client
 ---
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -21,6 +25,8 @@ type Query {
   foo: Foo
   hello: String
 }
+
+scalar UnsignedInt
 
 scalar Url
 

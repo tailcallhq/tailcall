@@ -8,6 +8,10 @@ type Address {
   zipcode: String
 }
 
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -21,6 +25,8 @@ scalar PhoneNumber
 type Query {
   user: User
 }
+
+scalar UnsignedInt
 
 scalar Url
 

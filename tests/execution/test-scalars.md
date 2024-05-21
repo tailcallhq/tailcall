@@ -1,4 +1,4 @@
-# test-scalar-email
+# Test scalars
 
 ```graphql @config
 # this is already defined scalars in tailcall

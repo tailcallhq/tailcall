@@ -8,6 +8,10 @@ type Bar {
   id: Int!
 }
 
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -28,6 +32,8 @@ type Query {
   bars: [Bar]
   foos: [Foo]
 }
+
+scalar UnsignedInt
 
 scalar Url
 

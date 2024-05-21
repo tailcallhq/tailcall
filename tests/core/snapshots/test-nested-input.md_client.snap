@@ -10,6 +10,10 @@ input B {
   c: C
 }
 
+scalar BigInt
+
+scalar Bytes
+
 input C {
   d: D
 }
@@ -31,6 +35,8 @@ scalar PhoneNumber
 type Query {
   a(a: A!): X
 }
+
+scalar UnsignedInt
 
 scalar Url
 

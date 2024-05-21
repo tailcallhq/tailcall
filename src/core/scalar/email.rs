@@ -41,30 +41,26 @@ impl super::Scalar for Email {
 
 #[cfg(test)]
 mod test {
-    use anyhow::Result;
     use async_graphql_value::ConstValue;
 
     use crate::core::scalar::{Email, Scalar};
 
-    #[tokio::test]
-    async fn test_email_valid_req_resp() -> Result<()> {
+    #[test]
+    fn test_email_valid_req_resp() {
         assert!(Email::default().validate()(&ConstValue::String(
             "valid@email.com".to_string()
         )));
-        Ok(())
     }
 
-    #[tokio::test]
-    async fn test_email_invalid() -> Result<()> {
+    #[test]
+    fn test_email_invalid() {
         assert!(!Email::default().validate()(&ConstValue::String(
             "invalid_email".to_string()
         )));
-        Ok(())
     }
 
-    #[tokio::test]
-    async fn test_email_invalid_const_value() -> Result<()> {
+    #[test]
+    fn test_email_invalid_const_value() {
         assert!(!Email::default().validate()(&ConstValue::Null));
-        Ok(())
     }
 }

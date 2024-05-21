@@ -6,6 +6,10 @@ type Bar {
   bar: String
 }
 
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -24,6 +28,8 @@ type Query {
   bar: Bar!
   foo: Foo!
 }
+
+scalar UnsignedInt
 
 scalar Url
 

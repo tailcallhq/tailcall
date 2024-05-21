@@ -1,8 +1,11 @@
 ---
 source: tests/core/spec.rs
-assertion_line: 273
 expression: client
 ---
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -24,6 +27,8 @@ scalar PhoneNumber
 type Query {
   foo(val: String!): Foo
 }
+
+scalar UnsignedInt
 
 scalar Url
 

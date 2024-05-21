@@ -2,6 +2,10 @@
 source: tests/core/spec.rs
 expression: client
 ---
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -23,6 +27,8 @@ type Query {
   wrap_args: JSON
   wrap_input(input: JSON): JSON
 }
+
+scalar UnsignedInt
 
 scalar Url
 

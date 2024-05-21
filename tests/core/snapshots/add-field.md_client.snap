@@ -6,6 +6,10 @@ type Address {
   geo: Geo
 }
 
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -23,6 +27,8 @@ scalar PhoneNumber
 type Query {
   user: User
 }
+
+scalar UnsignedInt
 
 scalar Url
 

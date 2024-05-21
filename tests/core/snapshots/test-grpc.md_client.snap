@@ -2,6 +2,10 @@
 source: tests/core/spec.rs
 expression: client
 ---
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -35,6 +39,8 @@ type Query {
   newsById(news: NewsInput!): News!
   newsByIdBatch(news: NewsInput!): News!
 }
+
+scalar UnsignedInt
 
 scalar Url
 

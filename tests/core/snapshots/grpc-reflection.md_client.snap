@@ -2,6 +2,10 @@
 source: tests/core/spec.rs
 expression: client
 ---
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -26,6 +30,8 @@ scalar PhoneNumber
 type Query {
   news: NewsData!
 }
+
+scalar UnsignedInt
 
 scalar Url
 

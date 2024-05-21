@@ -4,6 +4,10 @@ expression: client
 ---
 scalar AnyScalar
 
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -21,6 +25,8 @@ type Query {
   phone(value: PhoneNumber!): PhoneNumber!
   url(value: Url!): Url!
 }
+
+scalar UnsignedInt
 
 scalar Url
 

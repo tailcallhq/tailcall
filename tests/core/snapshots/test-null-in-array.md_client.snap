@@ -2,6 +2,10 @@
 source: tests/core/spec.rs
 expression: client
 ---
+scalar BigInt
+
+scalar Bytes
+
 type Company {
   id: ID
   name: String
@@ -20,6 +24,8 @@ scalar PhoneNumber
 type Query {
   hi(id: ID!): [Company]
 }
+
+scalar UnsignedInt
 
 scalar Url
 

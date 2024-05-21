@@ -2,6 +2,10 @@
 source: tests/core/spec.rs
 expression: client
 ---
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -32,6 +36,8 @@ input PostInput {
 type Query {
   firstUser: User
 }
+
+scalar UnsignedInt
 
 scalar Url
 

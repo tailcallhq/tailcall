@@ -2,6 +2,10 @@
 source: tests/core/spec.rs
 expression: client
 ---
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -54,6 +58,8 @@ type Query {
   userPosts(id: ID!): [Post]
   userWithPosts: UserWithPosts
 }
+
+scalar UnsignedInt
 
 scalar Url
 

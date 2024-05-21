@@ -6,6 +6,10 @@ type B {
   c: String
 }
 
+scalar BigInt
+
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -19,6 +23,8 @@ scalar PhoneNumber
 type Query {
   foo: B
 }
+
+scalar UnsignedInt
 
 scalar Url
 

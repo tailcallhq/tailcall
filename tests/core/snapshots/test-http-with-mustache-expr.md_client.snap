@@ -12,6 +12,10 @@ type BC {
   f: Boolean
 }
 
+scalar BigInt
+
+scalar Bytes
+
 type D {
   e: Int
 }
@@ -29,6 +33,8 @@ scalar PhoneNumber
 type Query {
   a: A
 }
+
+scalar UnsignedInt
 
 scalar Url
 
