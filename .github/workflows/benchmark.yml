@@ -2,11 +2,11 @@ name: Benchmark
 
 on:
   push:
-    paths-ignore: ["docs/**", "**.md"]
+    paths-ignore: ["docs/", ".md"]
     branches:
       - main
   pull_request:
-    paths-ignore: ["docs/**", "**.md"]
+    paths-ignore: ["docs/", ".md"]
     types: [opened, reopened, synchronize, labeled]
 
 concurrency:
@@ -68,3 +68,22 @@ jobs:
         with:
           name: body
           path: ci-benchmark/body.md
+
+      - name: Generate BMF JSON
+        working-directory: ci-benchmark
+        run: python generate_bmf_json.py wrk-output.txt
+
+      - uses: bencherdev/bencher@main
+      - name: Push to Bencher.dev
+        run: |
+            bencher run \
+            --project tailcall \
+            --token '${{ secrets.BENCHER_API_TOKEN }}' \
+            --branch '${{ github.head_ref }}' \
+            --branch-start-point '${{ github.base_ref }}' \
+            --branch-start-point-hash '${{ github.base_sha }}' \
+            --testbed ubuntu-latest \
+            --adapter json \
+            --err \
+            --file "results.json"
+            --github-actions '${{ secrets.GITHUB_TOKEN }}' \
