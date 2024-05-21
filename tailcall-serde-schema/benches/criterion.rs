@@ -14,7 +14,7 @@ pub struct PostRef<'a> {
 
 const JSON: &str = include_str!("../data/posts.json");
 
-fn bench_typed_ref() -> Vec<PostRef<'static>> {
+fn bench_typed_borrow() -> Vec<PostRef<'static>> {
     serde_json::from_str(JSON).unwrap()
 }
 
@@ -22,7 +22,7 @@ fn bench_typed() -> Vec<Post> {
     serde_json::from_str(JSON).unwrap()
 }
 
-fn bench_untyped_ref() -> serde_json_borrow::Value<'static> {
+fn bench_untyped_borrow() -> serde_json_borrow::Value<'static> {
     serde_json::from_str(JSON).unwrap()
 }
 
@@ -48,13 +48,19 @@ fn bench_post_deserializer(c: &mut Criterion) {
         ("body", Schema::string()),
     ]);
 
+    // Current
     group.bench_function("typed_schema", |b| {
         b.iter(|| black_box(bench_typed_schema(&schema)))
     });
-    group.bench_function("const_value", |b| b.iter(|| black_box(bench_const_value())));
-    group.bench_function("typed_ref", |b| b.iter(|| black_box(bench_typed_ref())));
-    group.bench_function("untyped_ref", |b| b.iter(|| black_box(bench_untyped_ref())));
+    // Main Competition
     group.bench_function("typed", |b| b.iter(|| black_box(bench_typed())));
+
+    // Before
+    group.bench_function("const_value", |b| b.iter(|| black_box(bench_const_value())));
+
+    // Using Borrowed
+    group.bench_function("typed_borrowed", |b| b.iter(|| black_box(bench_typed_borrow())));
+    group.bench_function("untyped_borrowed", |b| b.iter(|| black_box(bench_untyped_borrow())));
     group.bench_function("untyped", |b| b.iter(|| black_box(bench_untyped())));
 
     group.finish();
