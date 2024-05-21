@@ -11,6 +11,7 @@ type Query {
 }
 
 type T1 {
+  adult: Boolean
   age: Int
   name: String
 }
