@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use serde_json::{Map, Value};
 use url::Url;
 
@@ -75,9 +76,13 @@ impl ConfigGenerator {
         "Any".to_string()
     }
 
-    fn create_type_from_object(&mut self, json_object: &Map<String, Value>) -> Type {
+    fn create_type_from_object(&mut self, json_object: &Map<String, Value>, visited_field_set: &mut HashSet<String>) -> Type {
         let mut ty = Type::default();
         for (json_property, json_val) in json_object {
+            if visited_field_set.contains(json_property) {
+                continue;
+            }
+
             let field = if !self.should_generate_type(json_val) {
                 // if object, array is empty or object has in-compatible fields then
                 // generate scalar for it.
@@ -94,6 +99,9 @@ impl ConfigGenerator {
                     let type_name = self.generate_types(json_val);
                     field.type_of = type_name;
                     field.list = json_val.is_array()
+                }
+                if !field.type_of.is_empty() && field.type_of != "Empty" {
+                    visited_field_set.insert(json_property.clone());
                 }
                 field
             };
@@ -130,13 +138,13 @@ impl ConfigGenerator {
                     }
                 });
                 let mut object_types = Vec::<_>::with_capacity(vec_capacity);
-
+                let mut visited_field_set: HashSet<_> = HashSet::new();
                 for json_item in json_arr {
                     if let Value::Object(json_obj) = json_item {
                         if !self.should_generate_type(json_item) {
                             return self.generate_scalar();
                         }
-                        object_types.push(self.create_type_from_object(json_obj));
+                        object_types.push(self.create_type_from_object(json_obj,&mut visited_field_set));
                     } else {
                         return self.generate_types(json_item);
                     }
@@ -158,7 +166,8 @@ impl ConfigGenerator {
                 if !self.should_generate_type(json_value) {
                     return self.generate_scalar();
                 }
-                let ty = self.create_type_from_object(json_obj);
+                let mut property_set = HashSet::new();
+                let ty = self.create_type_from_object(json_obj, &mut property_set);
                 let type_name = format!("T{}", self.type_counter);
                 self.type_counter += 1;
                 self.insert_type(&type_name, ty);
