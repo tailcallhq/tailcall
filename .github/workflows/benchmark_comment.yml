@@ -5,7 +5,6 @@ on:
     workflows: ["Benchmark"]
     types:
       - completed
-
 jobs:
   macro_benchmarks_comment:
     name: Benchmark comment on commit
@@ -25,3 +24,5 @@ jobs:
         with:
           sha: ${{ github.event.workflow_run.head_sha }}
           body-path: body.md
+
+# Benchmark comment
