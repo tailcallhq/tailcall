@@ -35,10 +35,6 @@ pub fn to_gql_type(value: &Value) -> String {
     .to_string()
 }
 
-pub fn is_list_type(value: &Value) -> bool {
-    to_gql_type(value) == "List"
-}
-
 pub fn is_primitive(value: &Value) -> bool {
     let value_type = to_gql_type(value);
     value_type != "List" && value_type != "Object"
@@ -49,7 +45,7 @@ mod test {
     use serde_json::{json, Value};
 
     use super::{
-        detect_gql_data_type, is_list_type, is_primitive, is_valid_field_name, to_gql_type,
+        detect_gql_data_type, is_primitive, is_valid_field_name, to_gql_type,
     };
     #[test]
     fn test_detect_gql_data_type() {
@@ -91,20 +87,6 @@ mod test {
 
         assert_eq!(to_gql_type(&json!([])), "List");
         assert_eq!(to_gql_type(&json!({})), "Object");
-    }
-
-    #[test]
-    fn test_is_list_type() {
-        assert!(!is_list_type(&json!("Testing")));
-        assert!(!is_list_type(&json!(12)));
-        assert!(!is_list_type(&json!(12.3)));
-        assert!(!is_list_type(&json!(-12)));
-        assert!(!is_list_type(&json!(-12.2)));
-        assert!(!is_list_type(&json!(true)));
-        assert!(!is_list_type(&json!(false)));
-        assert!(!is_list_type(&json!({"name":"test", "age": 12})));
-
-        assert!(is_list_type(&json!([1, 2, 3])));
     }
 
     #[test]

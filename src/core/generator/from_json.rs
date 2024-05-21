@@ -3,7 +3,7 @@ use url::Url;
 
 use crate::core::config::{Arg, Config, Field, Http, KeyValue, Type};
 use crate::core::helpers::gql_type::{
-    detect_gql_data_type, is_list_type, is_primitive, is_valid_field_name, to_gql_type,
+    detect_gql_data_type, is_primitive, is_valid_field_name, to_gql_type,
 };
 use crate::core::merge_right::MergeRight;
 
@@ -83,7 +83,7 @@ impl ConfigGenerator {
                 // generate scalar for it.
                 Field {
                     type_of: self.generate_scalar(),
-                    list: is_list_type(json_val),
+                    list: json_val.is_array(),
                     ..Default::default()
                 }
             } else {
@@ -93,7 +93,7 @@ impl ConfigGenerator {
                 } else {
                     let type_name = self.generate_types(json_val);
                     field.type_of = type_name;
-                    field.list = is_list_type(json_val);
+                    field.list = json_val.is_array()
                 }
                 field
             };
@@ -155,7 +155,7 @@ impl ConfigGenerator {
 
     fn generate_query_type(&mut self, url: &Url, value: &Value, root_type_name: String) {
         let mut field = Field {
-            list: is_list_type(value),
+            list: value.is_array(),
             type_of: root_type_name,
             ..Default::default()
         };
