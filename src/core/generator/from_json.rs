@@ -106,8 +106,15 @@ impl ConfigGenerator {
     fn merge_types(type_list: Vec<Type>) -> Type {
         let mut ty = Type::default();
         for current_type in type_list {
-            let field_list = current_type.fields;
-            ty.fields.extend(field_list);
+            for (key, value) in current_type.fields {
+                if let Some(existing_value) = ty.fields.get(&key) {
+                    if existing_value.type_of.is_empty() || existing_value.type_of == "Empty"  {
+                        ty.fields.insert(key, value);
+                    }
+                } else {
+                    ty.fields.insert(key, value);
+                }
+            }
         }
         ty
     }
