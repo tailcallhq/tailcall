@@ -5,6 +5,8 @@ mod http;
 use std::hash::Hash;
 use std::sync::Arc;
 
+pub use http::NativeHttp;
+
 use crate::core::blueprint::Blueprint;
 use crate::core::cache::InMemoryCache;
 use crate::core::runtime::TargetRuntime;
