@@ -2,20 +2,22 @@ use regex::Regex;
 use serde_json::Value;
 
 pub fn detect_gql_data_type(value: &str) -> String {
-    if value.parse::<i32>().is_ok() {
-        return "Int".to_string();
+    let trimmed_value = value.trim();
+
+    if trimmed_value.parse::<i32>().is_ok() {
+        "Int".to_string()
+    } else if trimmed_value.parse::<f64>().is_ok() {
+        "Float".to_string()
+    } else if trimmed_value.parse::<bool>().is_ok() {
+        "Boolean".to_string()
+    } else if trimmed_value.contains(',') {
+        let first_value = trimmed_value.split(',').next().unwrap_or("");
+        detect_gql_data_type(first_value)
+    } else {
+        "String".to_string()
     }
-    if value.parse::<f64>().is_ok() {
-        return "Float".to_string();
-    }
-    if value.parse::<bool>().is_ok() {
-        return "Boolean".to_string();
-    }
-    if value.contains(',') {
-        return "List".to_string();
-    }
-    "String".to_string()
 }
+
 
 pub fn is_valid_field_name(property_name: &str) -> bool {
     let gql_field_name_validator: Regex = Regex::new(r"^[a-zA-Z][a-zA-Z0-9_]*$").unwrap();
@@ -56,7 +58,8 @@ mod test {
         assert_eq!(detect_gql_data_type("3.14"), "Float");
         assert_eq!(detect_gql_data_type("true"), "Boolean");
         assert_eq!(detect_gql_data_type("false"), "Boolean");
-        assert_eq!(detect_gql_data_type("1,2,3"), "List");
+        assert_eq!(detect_gql_data_type("1,2,3"), "Int");
+        assert_eq!(detect_gql_data_type("a,b,c"), "String");
         assert_eq!(detect_gql_data_type("hello"), "String");
     }
 

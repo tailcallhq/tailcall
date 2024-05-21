@@ -11,6 +11,7 @@ use crate::core::merge_right::MergeRight;
 struct UrlQuery {
     key: String,
     data_type: String, // gql type.
+    is_list: bool,
 }
 
 #[derive(Debug)]
@@ -22,7 +23,10 @@ impl UrlQueryParser {
     fn new(url: &Url) -> Self {
         let query_list: Vec<_> = url
             .query_pairs()
-            .map(|(k, v)| UrlQuery { key: k.to_string(), data_type: detect_gql_data_type(&v) })
+            .map(|(k, v)| {
+                let is_list = v.contains(",");
+                UrlQuery { key: k.to_string(), data_type: detect_gql_data_type(&v), is_list }
+            })
             .collect();
         Self { queries: query_list }
     }
@@ -131,7 +135,7 @@ impl ConfigGenerator {
             path_queries.push(format!("{}={{{{.args.{}}}}}", query.key, query.key));
 
             let arg = Arg {
-                list: query.data_type == "List",
+                list: query.is_list,
                 type_of: query.data_type,
                 required: true,
                 ..Default::default()
@@ -242,18 +246,25 @@ mod test {
 
         assert_eq!(parser.queries[0].key, "query1");
         assert_eq!(parser.queries[0].data_type, "String");
+        assert!(!parser.queries[0].is_list);
+        
 
         assert_eq!(parser.queries[1].key, "query2");
         assert_eq!(parser.queries[1].data_type, "Int");
+        assert!(!parser.queries[1].is_list);
 
         assert_eq!(parser.queries[2].key, "query3");
         assert_eq!(parser.queries[2].data_type, "Float");
+        assert!(!parser.queries[2].is_list);
 
         assert_eq!(parser.queries[3].key, "query4");
-        assert_eq!(parser.queries[3].data_type, "List");
+        assert!(parser.queries[3].is_list);
+        assert_eq!(parser.queries[3].data_type, "Int");
 
         assert_eq!(parser.queries[4].key, "query5");
         assert_eq!(parser.queries[4].data_type, "Boolean");
+        assert!(!parser.queries[4].is_list);
+
     }
 
     #[test]
