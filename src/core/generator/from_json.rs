@@ -1,7 +1,7 @@
 use serde_json::Value;
 use url::Url;
 
-use crate::core::config::{Arg, Config, Field, Http, Type};
+use crate::core::config::{Arg, Config, Field, Http, KeyValue, Type};
 use crate::core::helpers::gql_type::{
     detect_gql_data_type, is_list_type, is_primitive, is_valid_field_name, to_gql_type,
 };
@@ -134,12 +134,10 @@ impl ConfigGenerator {
 
         let query_list = UrlQueryParser::new(url).queries;
 
-        // collect queries to generate mustache format path.
-        let mut path_queries: Vec<String> = Vec::with_capacity(query_list.len());
-
         // add args to field and prepare mustache template format queries.
+        let mut http = Http::default();
         for query in query_list {
-            path_queries.push(format!("{}={{{{.args.{}}}}}", query.key, query.key));
+            let value: String = format!("{{{{.args.{}}}}}", query.key);
 
             let arg = Arg {
                 list: query.is_list,
@@ -147,17 +145,12 @@ impl ConfigGenerator {
                 required: true,
                 ..Default::default()
             };
-
+            http.query.push(KeyValue { key: query.key.clone(), value });
             field.args.insert(query.key, arg);
         }
 
         // add path in http directive.
-        let mut http = Http::default();
-        http.path = if !path_queries.is_empty() {
-            format!("{}?{}", url.path(), path_queries.join("&"))
-        } else {
-            url.path().to_string()
-        };
+        http.path = url.path().to_string();
         field.http = Some(http);
 
         let mut ty = Type::default();
