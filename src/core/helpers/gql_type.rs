@@ -18,7 +18,6 @@ pub fn detect_gql_data_type(value: &str) -> String {
     }
 }
 
-
 pub fn is_valid_field_name(property_name: &str) -> bool {
     let gql_field_name_validator: Regex = Regex::new(r"^[a-zA-Z][a-zA-Z0-9_]*$").unwrap();
     gql_field_name_validator.is_match(property_name)
