@@ -1,0 +1,31 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  map__MapService__GetMap(mapRequest: map__MapRequest!): map__MapResponse!
+}
+
+scalar Url
+
+input map__MapRequest {
+  map: JSON!
+}
+
+type map__MapResponse {
+  map: JSON!
+}
+
+schema {
+  query: Query
+}
