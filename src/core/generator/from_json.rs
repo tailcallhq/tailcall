@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+
 use serde_json::{Map, Value};
 use url::Url;
 
@@ -76,7 +77,11 @@ impl ConfigGenerator {
         "Any".to_string()
     }
 
-    fn create_type_from_object(&mut self, json_object: &Map<String, Value>, visited_field_set: &mut HashSet<String>) -> Type {
+    fn create_type_from_object(
+        &mut self,
+        json_object: &Map<String, Value>,
+        visited_field_set: &mut HashSet<String>,
+    ) -> Type {
         let mut ty = Type::default();
         for (json_property, json_val) in json_object {
             if visited_field_set.contains(json_property) {
@@ -116,7 +121,7 @@ impl ConfigGenerator {
         for current_type in type_list {
             for (key, value) in current_type.fields {
                 if let Some(existing_value) = ty.fields.get(&key) {
-                    if existing_value.type_of.is_empty() || existing_value.type_of == "Empty"  {
+                    if existing_value.type_of.is_empty() || existing_value.type_of == "Empty" {
                         ty.fields.insert(key, value);
                     }
                 } else {
@@ -144,7 +149,8 @@ impl ConfigGenerator {
                         if !self.should_generate_type(json_item) {
                             return self.generate_scalar();
                         }
-                        object_types.push(self.create_type_from_object(json_obj,&mut visited_field_set));
+                        object_types
+                            .push(self.create_type_from_object(json_obj, &mut visited_field_set));
                     } else {
                         return self.generate_types(json_item);
                     }
