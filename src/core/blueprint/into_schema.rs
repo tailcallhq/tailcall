@@ -45,28 +45,48 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
-                    move |ctx| {
-                        let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
+                    move |a_ctx| {
+                        let req_ctx = a_ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
 
                         match &field.resolver {
                             None => {
-                                let ctx: ResolverContext = ctx.into();
-                                let ctx = EvaluationContext::new(req_ctx, &ctx);
-                                FieldFuture::from_value(
-                                    ctx.path_value(&[field_name])
-                                        .map(|a| a.into_owned().to_owned()),
-                                )
+                                match a_ctx.parent_value.as_value() {
+                                    None => FieldFuture::from_value(None),
+                                    Some(value) => match value {
+                                        ConstValue::Null => todo!(),
+                                        ConstValue::Number(_) => todo!(),
+                                        ConstValue::String(_) => todo!(),
+                                        ConstValue::Boolean(_) => todo!(),
+                                        ConstValue::Binary(_) => todo!(),
+                                        ConstValue::Enum(_) => todo!(),
+                                        ConstValue::List(_) => todo!(),
+                                        ConstValue::Object(index) => FieldFuture::from_value(
+                                            index.get(field_name.as_str()).map(|a| a.to_owned()),
+                                        ),
+                                    },
+                                }
+                                //
+                                // let ctx: ResolverContext = a_ctx.into();
+                                // let e_ctx = EvaluationContext::new(req_ctx, &ctx);
+                                // let value = a_ctx.parent_value.as_value().map(|a| a.as_)
+                                //
+                                //
+                                //
+                                // FieldFuture::from_value(
+                                //     e_ctx.path_value(&[field_name])
+                                //         .map(|a| a.into_owned().to_owned()),
+                                // )
                             }
                             Some(expr) => {
                                 let span = tracing::info_span!(
                                     "field_resolver",
-                                    otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
+                                    otel.name = a_ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
                                 );
                                 let expr = expr.to_owned();
                                 FieldFuture::new(
                                     async move {
-                                        let ctx: ResolverContext = ctx.into();
+                                        let ctx: ResolverContext = a_ctx.into();
                                         let ctx = EvaluationContext::new(req_ctx, &ctx);
 
                                         let const_value =
