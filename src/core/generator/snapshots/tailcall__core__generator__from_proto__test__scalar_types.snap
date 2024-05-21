@@ -1,0 +1,33 @@
+---
+source: src/core/generator/from_proto.rs
+expression: config
+---
+schema @server @upstream {
+  query: Query
+}
+
+input Item @tag(id: "Item") {
+  boolean: Boolean
+  bytesType: Bytes
+  doubleNum: Float
+  fixedint32: Int
+  fixedint64: BigInt
+  floatNum: Float
+  integer32: Int
+  integer64: BigInt
+  sfixedint32: Int
+  sfixedint64: BigInt
+  sinteger32: Int
+  sinteger64: BigInt
+  str: String
+  uinteger32: UnsignedInt
+  uinteger64: UnsignedInt
+}
+
+type Query {
+  Example__Get(item: Item!): Result! @grpc(body: "{{.args.item}}", method: "Example.Get")
+}
+
+type Result @tag(id: "Result") {
+  result: [Item]!
+}

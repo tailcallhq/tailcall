@@ -225,9 +225,12 @@ fn convert_primitive_type(proto_ty: &str) -> String {
     let proto_ty = binding.strip_prefix("type_").unwrap_or(proto_ty);
     match proto_ty {
         "double" | "float" => "Float",
-        "int32" | "int64" | "fixed32" | "fixed64" | "uint32" | "uint64" => "Int",
+        "int32" | "sint32" | "fixed32" | "sfixed32" => "Int",
+        "int64" | "sint64" | "fixed64" | "sfixed64" => "BigInt",
+        "uint32" | "uint64" => "UnsignedInt",
         "bool" => "Boolean",
-        "string" | "bytes" => "String",
+        "string" => "String",
+        "bytes" => "Bytes",
         x => x,
     }
     .to_string()
@@ -388,6 +391,14 @@ mod test {
     #[test]
     fn test_map_types() -> Result<()> {
         let set = compile_protobuf(&[protobuf::MAP])?;
+        let config = from_proto(&[set], "Query")?.to_sdl();
+        insta::assert_snapshot!(config);
+        Ok(())
+    }
+
+    #[test]
+    fn test_scalar_types()  -> Result<()> {
+        let set = compile_protobuf(&[protobuf::SCALARS])?;
         let config = from_proto(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
