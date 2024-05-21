@@ -75,7 +75,7 @@ impl ConfigGenerator {
         "Any".to_string()
     }
 
-    fn generate_type_from_object(&mut self, json_object: &Map<String, Value>) -> Type {
+    fn create_type_from_object(&mut self, json_object: &Map<String, Value>) -> Type {
         let mut ty = Type::default();
         for (json_property, json_val) in json_object {
             let field = if !self.should_generate_type(json_val) {
@@ -115,8 +115,7 @@ impl ConfigGenerator {
     fn generate_types(&mut self, json_value: &Value) -> String {
         match json_value {
             Value::Array(json_arr) => {
-                
-                let vec_capacity = json_arr.get(0).map_or(0, |json_item| {
+                let vec_capacity = json_arr.first().map_or(0, |json_item| {
                     if json_item.is_object() {
                         json_arr.len()
                     } else {
@@ -130,7 +129,7 @@ impl ConfigGenerator {
                         if !self.should_generate_type(json_item) {
                             return self.generate_scalar();
                         }
-                        object_types.push(self.generate_type_from_object(json_obj));
+                        object_types.push(self.create_type_from_object(json_obj));
                     } else {
                         return self.generate_types(json_item);
                     }
@@ -152,7 +151,7 @@ impl ConfigGenerator {
                 if !self.should_generate_type(json_value) {
                     return self.generate_scalar();
                 }
-                let ty = self.generate_type_from_object(json_obj);
+                let ty = self.create_type_from_object(json_obj);
                 let type_name = format!("T{}", self.type_counter);
                 self.type_counter += 1;
                 self.insert_type(&type_name, ty);
@@ -162,6 +161,30 @@ impl ConfigGenerator {
         }
     }
 
+    fn create_http_directive(&self, field: &mut Field, url: &Url) -> Http {
+        let query_list = UrlQueryParser::new(url).queries;
+
+        // add args to field and prepare mustache template format queries.
+        let mut http: Http = Http::default();
+        for query in query_list {
+            let arg = Arg {
+                list: query.is_list,
+                type_of: query.data_type,
+                required: true,
+                ..Default::default()
+            };
+
+            let value: String = format!("{{{{.args.{}}}}}", query.key);
+            http.query.push(KeyValue { key: query.key.clone(), value });
+            field.args.insert(query.key, arg);
+        }
+
+        // add path in http directive.
+        http.path = url.path().to_string();
+
+        http
+    }
+
     fn generate_query_type(&mut self, url: &Url, value: &Value, root_type_name: String) {
         let mut field = Field {
             list: value.is_array(),
@@ -169,26 +192,7 @@ impl ConfigGenerator {
             ..Default::default()
         };
 
-        let query_list = UrlQueryParser::new(url).queries;
-
-        // add args to field and prepare mustache template format queries.
-        let mut http = Http::default();
-        for query in query_list {
-            let value: String = format!("{{{{.args.{}}}}}", query.key);
-
-            let arg = Arg {
-                list: query.is_list,
-                type_of: query.data_type,
-                required: true,
-                ..Default::default()
-            };
-            http.query.push(KeyValue { key: query.key.clone(), value });
-            field.args.insert(query.key, arg);
-        }
-
-        // add path in http directive.
-        http.path = url.path().to_string();
-        field.http = Some(http);
+        field.http = Some(self.create_http_directive(&mut field, url));
 
         let mut ty = Type::default();
         ty.fields.insert(format!("f{}", self.field_counter), field);
