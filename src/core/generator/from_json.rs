@@ -167,9 +167,15 @@ impl ConfigGenerator {
         self.field_counter += 1;
     }
 
-    fn generate_upstream(&mut self, url: &Url) {
-        self.config.upstream.base_url =
-            Some(format!("{}://{}", url.scheme(), url.host_str().unwrap()));
+    fn generate_upstream(&mut self, url: &Url) -> anyhow::Result<()> {
+        let host = url.host_str().ok_or(anyhow::anyhow!("Failed to extract host from URL: {}", url))?;
+        let base_url = match url.port() {
+            Some(port) => format!("{}://{}:{}", url.scheme(), host, port),
+            None => format!("{}://{}", url.scheme(), host),
+        };
+        
+        self.config.upstream.base_url = Some(base_url);
+        Ok(())
     }
 
     fn generate_schema(&mut self) {
@@ -180,7 +186,7 @@ impl ConfigGenerator {
         let url = Url::parse(url)?;
         let root_type_name = self.generate_types(resp);
         self.generate_query_type(&url, resp, root_type_name);
-        self.generate_upstream(&url);
+        self.generate_upstream(&url)?;
         self.generate_schema();
         Ok(())
     }
@@ -240,6 +246,20 @@ mod test {
         assert!(!config_gen.should_generate_type(&json!({"user info": {
             "age": 12
         }})));
+    }
+
+    #[test]
+    fn test_generate_upstream() -> anyhow::Result<()> {
+        let input_urls = ["http://localhost:8080/q?search=test&page=1&pageSize=20", "http://127.0.0.1:8000/api/v1/users"];
+        let expected_urls = ["http://localhost:8080","http://127.0.0.1:8000"];
+
+        for i in 0..input_urls.len() {
+            let mut  cfg_gen = ConfigGenerator::new();
+            let parsed_url = Url::parse(input_urls[i]).unwrap();
+            cfg_gen.generate_upstream(&parsed_url)?;
+            assert_eq!(cfg_gen.config.upstream.base_url.unwrap(), expected_urls[i]);
+        }
+        Ok(())
     }
 
     #[test]
