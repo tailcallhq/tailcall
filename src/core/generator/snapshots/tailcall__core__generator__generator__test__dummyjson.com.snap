@@ -1,0 +1,32 @@
+---
+source: src/core/generator/generator.rs
+expression: cfg.to_sdl()
+---
+schema @server @upstream(baseURL: "https://dummyjson.com") {
+  query: Query
+}
+
+type Query {
+  f1(q: String!): T2 @http(path: "/products/search?q={{.args.q}}")
+}
+
+type T1 {
+  brand: String
+  category: String
+  description: String
+  discountPercentage: Int
+  id: Int
+  images: [String]
+  price: Int
+  rating: Int
+  stock: Int
+  thumbnail: String
+  title: String
+}
+
+type T2 {
+  limit: Int
+  products: [T1]
+  skip: Int
+  total: Int
+}

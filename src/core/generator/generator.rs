@@ -93,7 +93,7 @@ impl Generator {
                 // and pass each group to from_json to generate the config.
                 for (resp, url) in results.iter().zip(paths.iter()) {
                     let parsed_url = Url::parse(url.as_ref())?;
-                    let domain = parsed_url.host_str().unwrap();
+                    let domain = parsed_url.host_str().ok_or(anyhow::anyhow!("Failed to extract host from URL: {}", parsed_url))?;
                     domain_groupings
                         .entry(domain.to_string())
                         .or_default()
@@ -116,17 +116,12 @@ impl Generator {
 mod test {
     use std::path::PathBuf;
 
-    use tailcall_fixtures::{json, protobuf};
+    use tailcall_fixtures::protobuf;
 
     use super::*;
 
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
-    }
-
-    fn parse_to_json(content: String) -> anyhow::Result<Value> {
-        let json_content: serde_json::Value = serde_json::from_str(&content)?;
-        Ok(json_content["body"].clone())
     }
 
     #[tokio::test]
@@ -181,45 +176,19 @@ mod test {
         );
     }
 
-    async fn read_json_fixtures(runtime: &TargetRuntime, fixture_path: &str) -> Value {
-        let content = runtime.file.read(fixture_path).await.unwrap();
-
-        parse_to_json(content).unwrap()
-    }
 
     #[tokio::test]
     async fn test_read_all_with_rest_api_gen() -> anyhow::Result<()> {
         let runtime = crate::core::runtime::test::init(None);
-        let server = start_mock_server();
-
-        let list_content = read_json_fixtures(&runtime, json::LIST).await;
-        let incompatible_properties =
-            read_json_fixtures(&runtime, json::INCOMPATIBLE_PROPERTIES).await;
-
-        server.mock(|when, then| {
-            when.method(httpmock::Method::GET).path("/list");
-            then.status(200)
-                .header("Content-Type", "application/json")
-                .body(list_content.to_string());
-        });
-
-        server.mock(|when, then| {
-            when.method(httpmock::Method::GET)
-                .path("/incompatible_properties");
-            then.status(200)
-                .header("Content-Type", "application/json")
-                .body(incompatible_properties.to_string());
-        });
-
         let generator = Generator::init(runtime);
-        let list_url = format!("http://localhost:{}/list", server.port());
-        let incompatible_properties_url =
-            format!("http://localhost:{}/incompatible_properties", server.port());
+
+        let users = "http://jsonplaceholder.typicode.com/users".to_string();
+        let user = "http://jsonplaceholder.typicode.com/users/1".to_string();
 
         let config = generator
             .read_all(
                 Source::Url,
-                &[list_url, incompatible_properties_url],
+                &[users, user],
                 "Query",
             )
             .await
@@ -232,39 +201,18 @@ mod test {
 
     #[tokio::test]
     async fn test_read_all_with_different_domain_rest_api_gen() -> anyhow::Result<()> {
-        let server = start_mock_server();
         let runtime = crate::core::runtime::test::init(None);
 
-        let list_content = read_json_fixtures(&runtime, json::LIST).await;
-        let incompatible_properties =
-            read_json_fixtures(&runtime, json::INCOMPATIBLE_PROPERTIES).await;
-
-        server.mock(|when, then| {
-            when.method(httpmock::Method::GET).path("/list");
-            then.status(200)
-                .header("Content-Type", "application/json")
-                .body(list_content.to_string());
-        });
-
-        server.mock(|when, then| {
-            when.method(httpmock::Method::GET)
-                .path("/incompatible_properties");
-            then.status(200)
-                .header("Content-Type", "application/json")
-                .body(incompatible_properties.to_string());
-        });
-
         let generator = Generator::init(runtime);
-        let list_url = format!("http://localhost:{}/list", server.port());
-        let incompatible_properties_url =
-            format!("http://localhost:{}/incompatible_properties", server.port());
 
-        let jsonplaceholder_users = "http://jsonplaceholder.typicode.com/users".to_string();
+        let user_comments = "https://jsonplaceholder.typicode.com/posts/1/comments".to_string();
+        let post = "https://jsonplaceholder.typicode.com/posts/1".to_string();
+        let laptops = "https://dummyjson.com/products/search?q=Laptop".to_string();
 
         let config = generator
             .read_all(
                 Source::Url,
-                &[list_url, incompatible_properties_url, jsonplaceholder_users],
+                &[user_comments, post, laptops],
                 "Query",
             )
             .await

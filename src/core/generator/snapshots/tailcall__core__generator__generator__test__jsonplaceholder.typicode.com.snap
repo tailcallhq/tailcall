@@ -1,0 +1,27 @@
+---
+source: src/core/generator/generator.rs
+expression: cfg.to_sdl()
+---
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  f1: [T1] @http(path: "/posts/1/comments")
+  f2: T2 @http(path: "/posts/1")
+}
+
+type T1 {
+  body: String
+  email: String
+  id: Int
+  name: String
+  postId: Int
+}
+
+type T2 {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
