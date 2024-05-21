@@ -1,0 +1,19 @@
+---
+source: tests/core/spec.rs
+expression: merged
+---
+schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: []}, httpCache: true) @link(src: "map.proto", type: Protobuf) {
+  query: Query
+}
+
+input map__MapRequest {
+  map: JSON!
+}
+
+type Query {
+  map__MapService__GetMap(mapRequest: map__MapRequest!): map__MapResponse! @grpc(body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
+}
+
+type map__MapResponse @tag(id: "map.MapResponse") {
+  map: JSON!
+}
