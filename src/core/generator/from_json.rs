@@ -1,4 +1,4 @@
-use serde_json::Value;
+use serde_json::{Map, Value};
 use url::Url;
 
 use crate::core::config::{Arg, Config, Field, Http, KeyValue, Type};
@@ -75,16 +75,67 @@ impl ConfigGenerator {
         "Any".to_string()
     }
 
+    fn generate_type_from_object(&mut self, json_object: &Map<String, Value>) -> Type {
+        let mut ty = Type::default();
+        for (json_property, json_val) in json_object {
+            let field = if !self.should_generate_type(json_val) {
+                // if object, array is empty or object has in-compatible fields then
+                // generate scalar for it.
+                Field {
+                    type_of: self.generate_scalar(),
+                    list: is_list_type(json_val),
+                    ..Default::default()
+                }
+            } else {
+                let mut field = Field::default();
+                if is_primitive(json_val) {
+                    field.type_of = to_gql_type(json_val);
+                } else {
+                    let type_name = self.generate_types(json_val);
+                    field.type_of = type_name;
+                    field.list = is_list_type(json_val);
+                }
+                field
+            };
+            ty.fields.insert(json_property.to_string(), field);
+        }
+        ty
+    }
+
+    /// given a list of types, merges all fields into single type.
+    fn merge_types(type_list: Vec<Type>) -> Type {
+        let mut ty = Type::default();
+        for current_type in type_list {
+            let field_list = current_type.fields;
+            ty.fields.extend(field_list);
+        }
+        ty
+    }
+
     fn generate_types(&mut self, json_value: &Value) -> String {
         match json_value {
             Value::Array(json_arr) => {
-                if let Some(json_item) = json_arr.first() {
-                    return if is_primitive(json_item) {
-                        to_gql_type(json_item)
+                let mut object_types = Vec::with_capacity(json_arr.len());
+                for json_item in json_arr {
+                    if let Value::Object(json_obj) = json_item {
+                        if !self.should_generate_type(json_item) {
+                            return self.generate_scalar();
+                        }
+                        object_types.push(self.generate_type_from_object(json_obj));
                     } else {
-                        self.generate_types(json_item)
-                    };
+                        return self.generate_types(json_item);
+                    }
                 }
+
+                if !object_types.is_empty() {
+                    // merge the generated types of list into single concrete type.
+                    let merged_type = ConfigGenerator::merge_types(object_types);
+                    let type_name = format!("T{}", self.type_counter);
+                    self.type_counter += 1;
+                    self.insert_type(&type_name, merged_type);
+                    return type_name;
+                }
+
                 // generate a scalar if array is empty.
                 self.generate_scalar()
             }
@@ -92,30 +143,7 @@ impl ConfigGenerator {
                 if !self.should_generate_type(json_value) {
                     return self.generate_scalar();
                 }
-
-                let mut ty = Type::default();
-                for (json_property, json_val) in json_obj {
-                    let field = if !self.should_generate_type(json_val) {
-                        // if object, array is empty or object has in-compatible fields then
-                        // generate scalar for it.
-                        Field {
-                            type_of: self.generate_scalar(),
-                            list: is_list_type(json_val),
-                            ..Default::default()
-                        }
-                    } else {
-                        let mut field = Field::default();
-                        if is_primitive(json_val) {
-                            field.type_of = to_gql_type(json_val);
-                        } else {
-                            let type_name = self.generate_types(json_val);
-                            field.type_of = type_name;
-                            field.list = is_list_type(json_val);
-                        }
-                        field
-                    };
-                    ty.fields.insert(json_property.to_string(), field);
-                }
+                let ty = self.generate_type_from_object(json_obj);
                 let type_name = format!("T{}", self.type_counter);
                 self.type_counter += 1;
                 self.insert_type(&type_name, ty);
