@@ -153,11 +153,11 @@ impl ConfigGenerator {
 
         // add path in http directive.
         let mut http = Http::default();
-        let mut complete_path = url.path().to_string();
-        if !path_queries.is_empty() {
-            complete_path = format!("{}?{}", complete_path, path_queries.join("&"))
-        }
-        http.path = complete_path;
+        http.path = if !path_queries.is_empty() {
+            format!("{}?{}", url.path(), path_queries.join("&"))   
+        } else {
+            url.path().to_string()
+        };
         field.http = Some(http);
 
         let mut ty = Type::default();
