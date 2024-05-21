@@ -89,6 +89,10 @@ impl ConfigGenerator {
                 self.generate_scalar()
             }
             Value::Object(json_obj) => {
+                if !self.should_generate_type(json_value) {
+                    return self.generate_scalar();
+                }
+
                 let mut ty = Type::default();
                 for (json_property, json_val) in json_obj {
                     if !self.should_generate_type(json_val) {
