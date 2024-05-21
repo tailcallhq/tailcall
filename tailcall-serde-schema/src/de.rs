@@ -6,11 +6,6 @@ use crate::value;
 
 type Output = crate::Value;
 
-struct FieldSchema<'de> {
-    name: &'de str,
-    schema: &'de Schema,
-}
-
 struct Row(Vec<Output>);
 
 type ObjectMap = FxHashMap<String, Schema>;
@@ -24,7 +19,7 @@ impl Object<'_> {
 }
 
 impl<'de> de::Visitor<'de> for Object<'de> {
-    type Value = Option<FieldSchema<'de>>;
+    type Value = Option<&'de Schema>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("a field name")
@@ -35,14 +30,14 @@ impl<'de> de::Visitor<'de> for Object<'de> {
         E: de::Error,
     {
         match self.0.get_key_value(v) {
-            Some((name, schema)) => Ok(Some(FieldSchema { name, schema })),
+            Some((_, schema)) => Ok(Some(&schema)),
             None => Ok(None),
         }
     }
 }
 
 impl<'de> de::DeserializeSeed<'de> for Object<'de> {
-    type Value = Option<FieldSchema<'de>>;
+    type Value = Option<&'de Schema>;
     #[inline]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
@@ -129,10 +124,10 @@ impl<'de> de::Visitor<'de> for Value<'de> {
     {
         if let Schema::Object(fields) = self.schema {
             let mut rows = Vec::with_capacity(fields.len());
-            while let Some(field) = map.next_key_seed(Object::new(fields))? {
-                match field {
-                    Some(field) => {
-                        match map.next_value_seed(Value::new(&field.schema)) {
+            while let Some(schema) = map.next_key_seed(Object::new(fields))? {
+                match schema {
+                    Some(schema) => {
+                        match map.next_value_seed(Value::new(&schema)) {
                             Ok(value) => rows.push(value),
                             Err(err) => return Err(err),
                         };
@@ -234,15 +229,12 @@ impl<'de> de::Visitor<'de> for Table<'de> {
         A: de::MapAccess<'de>,
     {
         let mut cols = Vec::with_capacity(self.0.len());
-        while let Some(field) = map.next_key_seed(Object::new(self.0))? {
-            match field {
-                Some(field) => {
-                    let schema = field.schema;
-                    match map.next_value_seed(Value::new(&schema)) {
-                        Ok(value) => cols.push(value),
-                        Err(err) => return Err(err),
-                    }
-                }
+        while let Some(schema) = map.next_key_seed(Object::new(self.0))? {
+            match schema {
+                Some(schema) => match map.next_value_seed(Value::new(&schema)) {
+                    Ok(value) => cols.push(value),
+                    Err(err) => return Err(err),
+                },
 
                 None => {
                     let _: de::IgnoredAny = map.next_value()?;
