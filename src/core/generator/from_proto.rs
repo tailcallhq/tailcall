@@ -397,7 +397,7 @@ mod test {
     }
 
     #[test]
-    fn test_scalar_types()  -> Result<()> {
+    fn test_scalar_types() -> Result<()> {
         let set = compile_protobuf(&[protobuf::SCALARS])?;
         let config = from_proto(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);

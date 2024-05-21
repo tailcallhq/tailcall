@@ -52,12 +52,12 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ bigInt1: bigInt(value: 32147483647), bigInt2: bigInt(value: -32147483647) }'
+    query: "{ bigInt1: bigInt(value: 32147483647), bigInt2: bigInt(value: -32147483647) }"
 
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ uInt(value: 32147483647) }'
+    query: "{ uInt(value: 32147483647) }"
 
 - method: POST
   url: http://localhost:8000/graphql
@@ -91,15 +91,15 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ bigInt(value: 1.25) }'
+    query: "{ bigInt(value: 1.25) }"
 
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ uInt(value: -2415185) }'
+    query: "{ uInt(value: -2415185) }"
 
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ bytes(value: 44864) }'
+    query: "{ bytes(value: 44864) }"
 ```

@@ -4,11 +4,11 @@ use schemars::{schema_for, JsonSchema};
 
 use crate::core::json::JsonLike;
 
+/// A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
 #[derive(JsonSchema, Default)]
 pub struct PhoneNumber {
     #[allow(dead_code)]
     #[serde(rename = "PhoneNumber")]
-    /// A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
     pub phone_no: String,
 }
 impl super::Scalar for PhoneNumber {
