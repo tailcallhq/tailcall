@@ -7,7 +7,7 @@ schema @server @upstream(baseURL: "https://dummyjson.com") {
 }
 
 type Query {
-  f1(q: String!): T2 @http(path: "/products/search?q={{.args.q}}")
+  f1(q: String!): T2 @http(path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
 }
 
 type T1 {
