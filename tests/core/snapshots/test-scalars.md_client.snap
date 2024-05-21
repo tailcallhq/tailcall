@@ -20,9 +20,12 @@ scalar PhoneNumber
 
 type Query {
   any(value: AnyScalar!): AnyScalar
+  bigInt(value: BigInt!): BigInt!
+  bytes(value: Bytes): Bytes
   date(value: Date!): Date!
   email(value: Email!): Email!
   phone(value: PhoneNumber!): PhoneNumber!
+  uInt(value: UnsignedInt): UnsignedInt
   url(value: Url!): Url!
 }
 
