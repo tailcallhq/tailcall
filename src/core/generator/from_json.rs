@@ -95,26 +95,25 @@ impl ConfigGenerator {
 
                 let mut ty = Type::default();
                 for (json_property, json_val) in json_obj {
-                    if !self.should_generate_type(json_val) {
+                    let field = if !self.should_generate_type(json_val) {
                         // if object, array is empty or object has in-compatible fields then
                         // generate scalar for it.
-                        let field = Field {
+                        Field {
                             type_of: self.generate_scalar(),
                             list: is_list_type(json_val),
                             ..Default::default()
-                        };
-                        ty.fields.insert(json_property.to_string(), field);
-                        continue;
-                    }
-
-                    let mut field = Field::default();
-                    if is_primitive(json_val) {
-                        field.type_of = to_gql_type(json_val);
+                        }
                     } else {
-                        let type_name = self.generate_types(json_val);
-                        field.type_of = type_name;
-                        field.list = is_list_type(json_val);
-                    }
+                        let mut field = Field::default();
+                        if is_primitive(json_val) {
+                            field.type_of = to_gql_type(json_val);
+                        } else {
+                            let type_name = self.generate_types(json_val);
+                            field.type_of = type_name;
+                            field.list = is_list_type(json_val);
+                        }
+                        field
+                    };
                     ty.fields.insert(json_property.to_string(), field);
                 }
                 let type_name = format!("T{}", self.type_counter);
