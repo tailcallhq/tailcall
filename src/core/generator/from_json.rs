@@ -245,6 +245,10 @@ pub fn from_json(config_gen_req: &[ConfigGenerationRequest]) -> anyhow::Result<C
         ctx.generate(request.url, request.resp)?;
         config = config.merge_right(ctx.config.clone());
     }
+
+    let unused_types = config.unused_types();
+    config = config.remove_types(unused_types);
+
     Ok(config)
 }
 
