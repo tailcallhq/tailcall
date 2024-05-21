@@ -115,7 +115,16 @@ impl ConfigGenerator {
     fn generate_types(&mut self, json_value: &Value) -> String {
         match json_value {
             Value::Array(json_arr) => {
-                let mut object_types = Vec::with_capacity(json_arr.len());
+                
+                let vec_capacity = json_arr.get(0).map_or(0, |json_item| {
+                    if json_item.is_object() {
+                        json_arr.len()
+                    } else {
+                        0
+                    }
+                });
+                let mut object_types = Vec::<_>::with_capacity(vec_capacity);
+
                 for json_item in json_arr {
                     if let Value::Object(json_obj) = json_item {
                         if !self.should_generate_type(json_item) {
