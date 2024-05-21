@@ -1,25 +1,25 @@
 {
-    "url": "https://example.com/users?children=true",
-    "body": {
-        "people": [
-            {
-                "name": "Alice",
-                "age": 30
-            },
-            {
-                "name": "Bob",
-                "age": 25,
-                "children": [
-                    {
-                        "name": "Charlie",
-                        "age": 5
-                    },
-                    {
-                        "name": "Diana",
-                        "age": 8
-                    }
-                ]
-            }
+  "url": "https://example.com/users?children=true",
+  "body": {
+    "people": [
+      {
+        "name": "Alice",
+        "age": 30
+      },
+      {
+        "name": "Bob",
+        "age": 25,
+        "children": [
+          {
+            "name": "Charlie",
+            "age": 5
+          },
+          {
+            "name": "Diana",
+            "age": 8
+          }
         ]
-    }
+      }
+    ]
+  }
 }

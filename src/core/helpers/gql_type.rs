@@ -44,9 +44,7 @@ pub fn is_primitive(value: &Value) -> bool {
 mod test {
     use serde_json::{json, Value};
 
-    use super::{
-        detect_gql_data_type, is_primitive, is_valid_field_name, to_gql_type,
-    };
+    use super::{detect_gql_data_type, is_primitive, is_valid_field_name, to_gql_type};
     #[test]
     fn test_detect_gql_data_type() {
         assert_eq!(detect_gql_data_type("42"), "Int");
