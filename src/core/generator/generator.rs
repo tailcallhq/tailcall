@@ -93,7 +93,10 @@ impl Generator {
                 // and pass each group to from_json to generate the config.
                 for (resp, url) in results.iter().zip(paths.iter()) {
                     let parsed_url = Url::parse(url.as_ref())?;
-                    let domain = parsed_url.host_str().ok_or(anyhow::anyhow!("Failed to extract host from URL: {}", parsed_url))?;
+                    let domain = parsed_url.host_str().ok_or(anyhow::anyhow!(
+                        "Failed to extract host from URL: {}",
+                        parsed_url
+                    ))?;
                     domain_groupings
                         .entry(domain.to_string())
                         .or_default()
@@ -176,7 +179,6 @@ mod test {
         );
     }
 
-
     #[tokio::test]
     async fn test_read_all_with_rest_api_gen() -> anyhow::Result<()> {
         let runtime = crate::core::runtime::test::init(None);
@@ -186,11 +188,7 @@ mod test {
         let user = "http://jsonplaceholder.typicode.com/users/1".to_string();
 
         let config = generator
-            .read_all(
-                Source::Url,
-                &[users, user],
-                "Query",
-            )
+            .read_all(Source::Url, &[users, user], "Query")
             .await
             .unwrap();
 
@@ -210,11 +208,7 @@ mod test {
         let laptops = "https://dummyjson.com/products/search?q=Laptop".to_string();
 
         let config = generator
-            .read_all(
-                Source::Url,
-                &[user_comments, post, laptops],
-                "Query",
-            )
+            .read_all(Source::Url, &[user_comments, post, laptops], "Query")
             .await
             .unwrap();
 
