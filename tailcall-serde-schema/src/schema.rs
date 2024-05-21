@@ -1,8 +1,12 @@
+use std::fmt::Display;
+
 use fxhash::FxHashMap;
 use serde::de::DeserializeSeed;
 use serde_json::de::StrRead;
 
 use crate::de::Value;
+
+type Output<'de> = crate::value::Value<'de>;
 
 #[derive(Debug, Clone)]
 pub enum Schema {
@@ -58,10 +62,32 @@ pub enum N {
     F64,
 }
 
+pub struct Owned {
+    #[allow(dead_code)]
+    input: String,
+    value: Output<'static>,
+}
+
+impl Display for Owned {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.value.fmt(f)
+    }
+}
+
+fn extend_lifetime<'a>(s: Output<'a>) -> Output<'static> {
+    unsafe { std::mem::transmute(s) }
+}
+
 impl Schema {
-    pub fn from_str(&self, input: &str) -> serde_json::Result<crate::value::Value> {
-        let mut deserializer = serde_json::Deserializer::new(StrRead::new(input));
-        Value::new(self).deserialize(&mut deserializer)
+    pub fn from_str(&self, input: &str) -> serde_json::Result<Owned> {
+        self.from_string(input.to_owned())
+    }
+
+    pub fn from_string(&self, input: String) -> serde_json::Result<Owned> {
+        let mut deserializer = serde_json::Deserializer::new(StrRead::new(input.as_str()));
+        let value = Value::new(self).deserialize(&mut deserializer)?;
+        let value: Output<'static> = extend_lifetime(value);
+        Ok(Owned { value, input })
     }
 
     pub fn table(schema: &[(&str, Schema)]) -> Self {

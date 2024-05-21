@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use serde::Deserialize;
-use tailcall_serde_schema::{Post, Schema, Value};
+use tailcall_serde_schema::{Owned, Post, Schema};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct PostRef<'a> {
@@ -34,7 +34,7 @@ fn bench_const_value() -> async_graphql::Value {
     serde_json::from_str(JSON).unwrap()
 }
 
-fn bench_typed_schema(schema: &Schema) -> Value {
+fn bench_typed_schema(schema: &Schema) -> Owned {
     schema.from_str(JSON).unwrap()
 }
 
@@ -59,8 +59,12 @@ fn bench_post_deserializer(c: &mut Criterion) {
     group.bench_function("const_value", |b| b.iter(|| black_box(bench_const_value())));
 
     // Using Borrowed
-    group.bench_function("typed_borrowed", |b| b.iter(|| black_box(bench_typed_borrow())));
-    group.bench_function("untyped_borrowed", |b| b.iter(|| black_box(bench_untyped_borrow())));
+    group.bench_function("typed_borrowed", |b| {
+        b.iter(|| black_box(bench_typed_borrow()))
+    });
+    group.bench_function("untyped_borrowed", |b| {
+        b.iter(|| black_box(bench_untyped_borrow()))
+    });
     group.bench_function("untyped", |b| b.iter(|| black_box(bench_untyped())));
 
     group.finish();

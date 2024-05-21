@@ -1,21 +1,21 @@
 use std::fmt::Display;
 
 #[derive(Debug)]
-pub enum Value {
-    Primitive(Primitive),
-    Table(Vec<Vec<Value>>),
-    Array(Vec<Primitive>),
-    Object(Vec<Value>),
+pub enum Value<'de> {
+    Primitive(Primitive<'de>),
+    Table(Vec<Vec<Value<'de>>>),
+    Array(Vec<Primitive<'de>>),
+    Object(Vec<Value<'de>>),
 }
 
 #[derive(Debug)]
-pub enum Primitive {
+pub enum Primitive<'de> {
     Bool(bool),
     Number(N),
-    String(String),
+    String(&'de str),
 }
 
-impl Primitive {
+impl<'de> Primitive<'de> {
     pub fn from_i64(v: i64) -> Self {
         Primitive::Number(N::I64(v))
     }
@@ -28,7 +28,7 @@ impl Primitive {
         Primitive::Number(N::F64(v))
     }
 
-    pub fn from_string(v: String) -> Self {
+    pub fn from_str(v: &'de str) -> Self {
         Primitive::String(v)
     }
 
@@ -44,7 +44,7 @@ pub enum N {
     F64(f64),
 }
 
-impl Value {
+impl<'de> Value<'de> {
     pub fn from_i64(v: i64) -> Self {
         Value::Primitive(Primitive::Number(N::I64(v)))
     }
@@ -57,7 +57,7 @@ impl Value {
         Value::Primitive(Primitive::Number(N::F64(v)))
     }
 
-    pub fn from_string(v: String) -> Self {
+    pub fn from_str(v: &'de str) -> Self {
         Value::Primitive(Primitive::String(v))
     }
 
@@ -65,20 +65,20 @@ impl Value {
         Value::Primitive(Primitive::Bool(v))
     }
 
-    pub fn from_array(v: Vec<Primitive>) -> Self {
+    pub fn from_array(v: Vec<Primitive<'de>>) -> Self {
         Value::Array(v)
     }
 
-    pub fn from_object(v: Vec<Value>) -> Self {
+    pub fn from_object(v: Vec<Value<'de>>) -> Self {
         Value::Object(v)
     }
 
-    pub fn from_table(rows: Vec<Vec<Value>>) -> Self {
+    pub fn from_table(rows: Vec<Vec<Value<'de>>>) -> Self {
         Value::Table(rows)
     }
 }
 
-impl Display for Value {
+impl<'de> Display for Value<'de> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(format!("{:?}", self).as_str())
     }

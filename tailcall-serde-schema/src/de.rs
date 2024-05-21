@@ -4,9 +4,9 @@ use serde::de::{self};
 use crate::schema::{self, Schema};
 use crate::value;
 
-type Output = crate::Value;
+type Output<'de> = crate::Value<'de>;
 
-struct Row(Vec<Output>);
+struct Row<'de>(Vec<Output<'de>>);
 
 type ObjectMap = FxHashMap<String, Schema>;
 
@@ -58,8 +58,12 @@ impl<'de> Value<'de> {
     }
 }
 
+fn extend_lifetime<'a, 'b>(value: &'a str) -> &'b str {
+    unsafe { std::mem::transmute(value) }
+}
+
 impl<'de> de::Visitor<'de> for Value<'de> {
-    type Value = Output;
+    type Value = Output<'de>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.schema {
@@ -79,14 +83,7 @@ impl<'de> de::Visitor<'de> for Value<'de> {
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
-        Ok(Output::from_string(value.to_owned()))
-    }
-
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(Output::from_string(v))
+        Ok(Output::from_str(extend_lifetime(value)))
     }
 
     fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
@@ -172,7 +169,7 @@ impl<'de> de::Visitor<'de> for Value<'de> {
 }
 
 impl<'de> de::DeserializeSeed<'de> for Value<'de> {
-    type Value = Output;
+    type Value = Output<'de>;
 
     #[inline]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -206,7 +203,7 @@ impl<'de> Table<'de> {
 }
 
 impl<'de> de::DeserializeSeed<'de> for Table<'de> {
-    type Value = Row;
+    type Value = Row<'de>;
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
@@ -217,7 +214,7 @@ impl<'de> de::DeserializeSeed<'de> for Table<'de> {
 }
 
 impl<'de> de::Visitor<'de> for Table<'de> {
-    type Value = Row;
+    type Value = Row<'de>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         formatter.write_str("a row")
@@ -255,7 +252,7 @@ impl<'de> Primitive<'de> {
 }
 
 impl<'de> de::Visitor<'de> for Primitive<'de> {
-    type Value = value::Primitive;
+    type Value = value::Primitive<'de>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.0 {
@@ -269,15 +266,8 @@ impl<'de> de::Visitor<'de> for Primitive<'de> {
         }
     }
 
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
-        Ok(value::Primitive::from_string(value.to_owned()))
-    }
-
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(value::Primitive::from_string(v))
+    fn visit_borrowed_str<E>(self, value: &'de str) -> Result<Self::Value, E> {
+        Ok(value::Primitive::from_str(value))
     }
 
     fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
@@ -310,7 +300,7 @@ impl<'de> de::Visitor<'de> for Primitive<'de> {
 }
 
 impl<'de> de::DeserializeSeed<'de> for Primitive<'de> {
-    type Value = value::Primitive;
+    type Value = value::Primitive<'de>;
 
     #[inline]
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
