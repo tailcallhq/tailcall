@@ -26,7 +26,6 @@ def generate_bmf_json(data):
         }
     }
     return bmf_json
-
 # Example usage
 wrk_data = parse_wrk_output('wrk_output.txt')
 bmf_data = generate_bmf_json(wrk_data)
