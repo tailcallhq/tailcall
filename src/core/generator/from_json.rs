@@ -25,14 +25,13 @@ impl UrlQueryParser {
     fn new(url: &Url) -> Self {
         let query_list: Vec<_> = url
             .query_pairs()
-            .map(|(k, v)| {
-                let is_list = v.contains(",");
+            .map(|(k, v)| 
                 UrlQuery {
                     key: k.to_string(),
                     data_type: detect_gql_data_type(&v),
-                    is_list,
+                    is_list: v.contains(","),
                 }
-            })
+            )
             .collect();
         Self { queries: query_list }
     }
@@ -349,8 +348,8 @@ mod test {
         assert!(!parser.queries[2].is_list);
 
         assert_eq!(parser.queries[3].key, "query4");
-        assert!(parser.queries[3].is_list);
         assert_eq!(parser.queries[3].data_type, "Int");
+        assert!(parser.queries[3].is_list);
 
         assert_eq!(parser.queries[4].key, "query5");
         assert_eq!(parser.queries[4].data_type, "Boolean");
