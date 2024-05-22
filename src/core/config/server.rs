@@ -97,15 +97,6 @@ pub struct Server {
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
-    left = right.iter().fold(left.to_vec(), |mut acc, kv| {
-        let position = acc.iter().position(|x| x.key == kv.key);
-        if let Some(pos) = position {
-            acc[pos] = kv.clone();
-        } else {
-            acc.push(kv.clone());
-        };
-        acc
-    });
     left = merge_key_value_vecs(&left, &right);
     left
 }
@@ -261,5 +252,60 @@ mod tests {
         let merged = a.merge_right(b);
         let expected = ScriptOptions { timeout: Some(100) };
         assert_eq!(merged.script, Some(expected));
+    }
+
+    fn get_default_left_vec() -> Vec<KeyValue> {
+        [
+            KeyValue { key: "left".to_string(), value: "From Left".to_string() },
+            KeyValue { key: "1".to_string(), value: "1, Left".to_string() },
+            KeyValue { key: "2".to_string(), value: "2, Left".to_string() },
+        ]
+        .to_vec()
+    }
+
+    fn get_default_right_vec() -> Vec<KeyValue> {
+        [
+            KeyValue { key: "right".to_string(), value: "From Right".to_string() },
+            KeyValue { key: "1".to_string(), value: "1, Right".to_string() },
+            KeyValue { key: "2".to_string(), value: "2, Right".to_string() },
+        ]
+        .to_vec()
+    }
+
+    fn get_sorted_expected_merge_value() -> Vec<KeyValue> {
+        let mut res = [
+            KeyValue { key: "right".to_string(), value: "From Right".to_string() },
+            KeyValue { key: "left".to_string(), value: "From Left".to_string() },
+            KeyValue { key: "1".to_string(), value: "1, Right".to_string() },
+            KeyValue { key: "2".to_string(), value: "2, Right".to_string() },
+        ]
+        .to_vec();
+        res.sort_by(|a, b| a.key.cmp(&b.key));
+        res
+    }
+
+    #[test]
+    fn check_merge_vec_fn() {
+        let left_vec = get_default_left_vec();
+        let right_vec = get_default_right_vec();
+        let expected_vec = get_sorted_expected_merge_value();
+
+        let mut merge_vec = merge_key_value_vecs(&left_vec, &right_vec);
+        merge_vec.sort_by(|a, b| a.key.cmp(&b.key));
+
+        assert_eq!(merge_vec, expected_vec)
+    }
+
+    #[test]
+    fn check_merge_right_fn() {
+        let left_vec = get_default_left_vec();
+        let right_vec = get_default_right_vec();
+        let expected_vec = get_sorted_expected_merge_value();
+
+        let mut merge_vec = merge_right_vars(left_vec, right_vec);
+
+        merge_vec.sort_by(|a, b| a.key.cmp(&b.key));
+
+        assert_eq!(merge_vec, expected_vec)
     }
 }
