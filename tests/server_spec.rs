@@ -6,7 +6,7 @@ pub mod test {
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
-    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
@@ -16,6 +16,7 @@ pub mod test {
     use tailcall::core::http::Response;
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::{EnvIO, FileIO, HttpIO};
+    use tailcall_http_cache::HttpCacheManager;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     #[derive(Clone)]
@@ -60,7 +61,7 @@ pub mod test {
             if upstream.http_cache {
                 client = client.with(Cache(HttpCache {
                     mode: CacheMode::Default,
-                    manager: MokaManager::default(),
+                    manager: HttpCacheManager::default(),
                     options: HttpCacheOptions::default(),
                 }))
             }

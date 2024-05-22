@@ -183,6 +183,11 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
     type Error = crate::core::valid::ValidationError<String>;
 
     fn try_from(value: &MessageDescriptor) -> Result<Self, Self::Error> {
+        if value.is_map_entry() {
+            // we encode protobuf's map as JSON scalar
+            return Ok(JsonSchema::Any);
+        }
+
         let mut map = std::collections::HashMap::new();
         let fields = value.fields();
 
