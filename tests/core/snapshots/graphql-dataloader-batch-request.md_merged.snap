@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server @upstream(batch: {delay: 1, headers: []}) {
   query: Query
@@ -9,7 +9,13 @@ schema @server @upstream(batch: {delay: 1, headers: []}) {
 type Post {
   id: Int
   title: String
-  user: User @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], baseURL: "http://upstream/graphql", batch: true, name: "user")
+  user: User
+    @graphQL(
+      args: [{key: "id", value: "{{.value.userId}}"}]
+      baseURL: "http://upstream/graphql"
+      batch: true
+      name: "user"
+    )
   userId: Int
 }
 
