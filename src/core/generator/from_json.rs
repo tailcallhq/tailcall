@@ -105,7 +105,10 @@ impl ConfigGenerator {
         for current_type in type_list {
             for (key, value) in current_type.fields {
                 if let Some(existing_value) = ty.fields.get(&key) {
-                    if existing_value.type_of.is_empty() || existing_value.type_of == "Empty" {
+                    if existing_value.type_of.is_empty()
+                        || existing_value.type_of == "Empty"
+                        || existing_value.type_of == "Any"
+                    {
                         ty.fields.insert(key, value);
                     }
                 } else {
