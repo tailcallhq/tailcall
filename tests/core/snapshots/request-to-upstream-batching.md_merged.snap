@@ -1,13 +1,19 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server(batchRequests: true) @upstream(batch: {delay: 1, headers: [], maxSize: 100}) {
   query: Query
 }
 
 type Query {
-  user(id: Int!): User @http(baseURL: "http://jsonplaceholder.typicode.com", batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{.args.id}}"}])
+  user(id: Int!): User
+    @http(
+      baseURL: "http://jsonplaceholder.typicode.com"
+      batchKey: ["id"]
+      path: "/users"
+      query: [{key: "id", value: "{{.args.id}}"}]
+    )
 }
 
 type User {

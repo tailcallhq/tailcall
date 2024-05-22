@@ -1,13 +1,14 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server @upstream {
   query: Query
 }
 
 type Query {
-  user(id: Int): User @graphQL(args: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
+  user(id: Int): User
+    @graphQL(args: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
 }
 
 type User {
