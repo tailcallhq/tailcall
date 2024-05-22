@@ -51,10 +51,12 @@ impl Eval for IO {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         if ctx.request_ctx.upstream.dedupe {
             Box::pin(async move {
-                let key = self.cache_key(&ctx);
+                let key = self
+                    .cache_key(&ctx)
+                    .ok_or(anyhow::anyhow!("Unable to generate Cache Key"))?;
                 ctx.request_ctx
                     .cache
-                    .get_or_eval(key, move || Box::pin(async { self.eval_inner(ctx).await }))
+                    .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
                     .await
                     .as_ref()
                     .clone()
@@ -139,7 +141,7 @@ impl IO {
 }
 
 impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<'a, Ctx>> for IO {
-    fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> u64 {
+    fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> Option<u64> {
         match self {
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
             IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
