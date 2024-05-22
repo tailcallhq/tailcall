@@ -13,7 +13,6 @@ pub fn benchmark_from_json_method(c: &mut Criterion) {
 
     let mut reqs = Vec::with_capacity(1);
     tokio_runtime.block_on(async {
-        // cache the 1st request in order the evaluate the perf of underlying cache.
         let request = reqwest::Request::new(Method::GET, request_url.parse().unwrap());
         let result = native_http.execute(request).await.unwrap();
         let body: Value = serde_json::from_slice(&result.body).unwrap();
