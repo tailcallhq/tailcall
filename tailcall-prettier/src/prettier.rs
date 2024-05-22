@@ -1,4 +1,6 @@
+use std::fs;
 use std::io::Write;
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, Result};
@@ -7,6 +9,7 @@ pub use super::Parser;
 
 pub struct Prettier {
     runtime: tokio::runtime::Runtime,
+    config_path: String,
 }
 
 impl Prettier {
@@ -16,17 +19,24 @@ impl Prettier {
             .build()
             .unwrap();
 
-        Self { runtime }
+        let config_path = fs::canonicalize(Path::new("./.prettierrc"))
+            .unwrap()
+            .display()
+            .to_string();
+        Self { runtime, config_path }
     }
 
     pub async fn format<'a>(&'a self, source: String, parser: &'a Parser) -> Result<String> {
         let parser = parser.clone();
+        let config = self.config_path.clone();
         self.runtime
             .spawn_blocking(move || {
                 let mut command = command();
                 let mut child = command
                     .arg("--stdin-filepath")
                     .arg(format!("file.{}", parser))
+                    .arg("--config")
+                    .arg(config)
                     .stdin(Stdio::piped())
                     .stdout(Stdio::piped())
                     .spawn()?;
