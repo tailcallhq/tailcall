@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use async_graphql_value::ConstValue;
 
 use serde_json::json;
 
@@ -33,6 +34,10 @@ impl PathString for serde_json::Value {
     }
 }
 
+fn convert_list_to_query_param(list: &[ConstValue]) -> String {
+    list.iter().map(|list_item| list_item.to_string()).collect::<Vec<_>>().join(",")
+}
+
 fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
     match value {
         Cow::Owned(async_graphql::Value::String(s)) => Some(Cow::Owned(s)),
@@ -46,6 +51,14 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
         Cow::Borrowed(async_graphql::Value::Object(map)) => Some(json!(map).to_string().into()),
         Cow::Borrowed(async_graphql::Value::List(list)) => Some(json!(list).to_string().into()),
         _ => None,
+    }
+}
+
+fn convert_args(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
+    match value {
+        Cow::Owned(async_graphql::Value::List(list)) => Some(convert_list_to_query_param(&list).into()),
+        Cow::Borrowed(async_graphql::Value::List(list)) => Some(convert_list_to_query_param(list).into()),
+        _ => convert_value(value),
     }
 }
 
@@ -69,7 +82,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
         path.split_first()
             .and_then(move |(head, tail)| match head.as_ref() {
                 "value" => convert_value(ctx.path_value(tail)?),
-                "args" => convert_value(ctx.path_arg(tail)?),
+                "args" => convert_args(ctx.path_arg(tail)?),
                 "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
                 "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
                 "env" => ctx.env_var(tail[0].as_ref()),
