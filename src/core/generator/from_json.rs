@@ -25,13 +25,11 @@ impl UrlQueryParser {
     fn new(url: &Url) -> Self {
         let query_list: Vec<_> = url
             .query_pairs()
-            .map(|(k, v)| 
-                UrlQuery {
-                    key: k.to_string(),
-                    data_type: detect_gql_data_type(&v),
-                    is_list: v.contains(","),
-                }
-            )
+            .map(|(k, v)| UrlQuery {
+                key: k.to_string(),
+                data_type: detect_gql_data_type(&v),
+                is_list: v.contains(","),
+            })
             .collect();
         Self { queries: query_list }
     }

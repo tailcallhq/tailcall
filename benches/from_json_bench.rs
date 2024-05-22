@@ -1,9 +1,11 @@
 use criterion::Criterion;
 use hyper::Method;
 use serde_json::Value;
-use tailcall::{cli::runtime::NativeHttp, core::{generator::{from_json, ConfigGenerationRequest}, HttpIO}};
+use tailcall::cli::runtime::NativeHttp;
+use tailcall::core::generator::{from_json, ConfigGenerationRequest};
+use tailcall::core::HttpIO;
 
-pub fn benchmark_from_json_method(c: &mut Criterion){
+pub fn benchmark_from_json_method(c: &mut Criterion) {
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
 
     let native_http = NativeHttp::init(&Default::default(), &Default::default());
@@ -19,7 +21,6 @@ pub fn benchmark_from_json_method(c: &mut Criterion){
     });
 
     let cfg_gen_reqs = [ConfigGenerationRequest::new(&request_url, &reqs[0])];
-
 
     c.bench_function("from_json_bench", |b| {
         b.iter(|| {

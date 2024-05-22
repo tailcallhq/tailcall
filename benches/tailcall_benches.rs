@@ -1,13 +1,13 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
 mod data_loader_bench;
+mod from_json_bench;
 mod handle_request_bench;
 mod http_execute_bench;
 mod impl_path_string_for_evaluation_context;
 mod json_like_bench;
 mod protobuf_convert_output;
 mod request_template_bench;
-mod from_json_bench;
 
 fn all_benchmarks(c: &mut Criterion) {
     data_loader_bench::benchmark_data_loader(c);
