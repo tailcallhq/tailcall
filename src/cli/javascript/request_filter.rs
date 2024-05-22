@@ -68,10 +68,7 @@ impl RequestFilter {
         let js_request = JsRequest::try_from(&request)?;
         let event = Event::Request(js_request);
 
-        let mut command = None;
-        if let Some(ref on_request) = http_filter.on_request {
-            command = self.worker.call(on_request.clone(), event).await?;
-        }
+        let command = self.worker.call(http_filter.on_request, event).await?;
 
         match command {
             Some(command) => match command {
@@ -105,11 +102,16 @@ impl HttpIO for RequestFilter {
         request: reqwest::Request,
         http_filter: &'life0 HttpFilter,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        if http_filter.on_request.is_some() {
-            self.on_request(request, http_filter.clone()).await
-        } else {
-            self.client.execute(request).await
-        }
+        // FIXME: This should accept an option of http-filter
+        // FIXME: drop the clones from HTTP_FILTER
+        // FIXME: WorkerIO should be called by evaluation runtime
+        self.on_request(request, http_filter.clone()).await
+
+        // if http_filter.on_request.is_some() {
+        //     self.on_request(request, http_filter.clone()).await
+        // } else {
+        //     self.client.execute(request).await
+        // }
     }
 }
 

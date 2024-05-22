@@ -64,7 +64,8 @@ pub fn compile_http(
                 .on_request
                 .clone()
                 .or(config_module.upstream.on_request.clone())
-                .or(Some("onRequest".to_string()));
+                .unwrap_or("onRequest".to_string());
+
             let http_filter = HttpFilter { on_request };
 
             if !http.group_by.is_empty() && http.method == Method::GET {
