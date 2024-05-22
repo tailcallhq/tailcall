@@ -13,7 +13,7 @@ impl super::Scalar for Bytes {
         |value| value.as_str_ok().is_ok()
     }
 
-    fn scalar(&self) -> Schema {
+    fn schema(&self) -> Schema {
         schema_for!(Self).schema.into()
     }
 }

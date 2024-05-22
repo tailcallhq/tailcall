@@ -24,7 +24,7 @@ impl super::Scalar for Date {
         }
     }
 
-    fn scalar(&self) -> Schema {
+    fn schema(&self) -> Schema {
         Schema::Object(schema_for!(Self).schema)
     }
 }

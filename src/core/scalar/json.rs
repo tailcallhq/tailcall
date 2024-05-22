@@ -18,7 +18,7 @@ impl super::Scalar for JSON {
         |_| true
     }
 
-    fn scalar(&self) -> Schema {
+    fn schema(&self) -> Schema {
         Schema::Object(schema_for!(Self).schema)
     }
 }

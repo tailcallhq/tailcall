@@ -17,7 +17,7 @@ impl super::Scalar for BigInt {
         }
     }
 
-    fn scalar(&self) -> Schema {
+    fn schema(&self) -> Schema {
         schema_for!(Self).schema.into()
     }
 }

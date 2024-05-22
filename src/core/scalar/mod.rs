@@ -63,7 +63,7 @@ pub fn is_predefined_scalar(type_name: &str) -> bool {
 
 pub trait Scalar {
     fn validate(&self) -> fn(&ConstValue) -> bool;
-    fn scalar(&self) -> Schema;
+    fn schema(&self) -> Schema;
     fn name(&self) -> String {
         std::any::type_name::<Self>()
             .split("::")
@@ -103,7 +103,7 @@ mod test {
         // it's easy to accidentally add a different scalar type to the schema
         // this test ensures that the scalar types are correctly defined
         for (k, v) in CUSTOM_SCALARS.iter() {
-            assert_eq!(k.clone(), get_name(v.scalar()));
+            assert_eq!(k.clone(), get_name(v.schema()));
         }
     }
 }
