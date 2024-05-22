@@ -1,6 +1,6 @@
 use std::borrow::Cow;
-use async_graphql_value::ConstValue;
 
+use async_graphql_value::ConstValue;
 use serde_json::json;
 
 use crate::core::json::JsonLike;
@@ -35,7 +35,10 @@ impl PathString for serde_json::Value {
 }
 
 fn convert_list_to_query_param(list: &[ConstValue]) -> String {
-    list.iter().map(|list_item| list_item.to_string()).collect::<Vec<_>>().join(",")
+    list.iter()
+        .map(|list_item| list_item.to_string())
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
@@ -56,8 +59,12 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
 
 fn convert_args(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
     match value {
-        Cow::Owned(async_graphql::Value::List(list)) => Some(convert_list_to_query_param(&list).into()),
-        Cow::Borrowed(async_graphql::Value::List(list)) => Some(convert_list_to_query_param(list).into()),
+        Cow::Owned(async_graphql::Value::List(list)) => {
+            Some(convert_list_to_query_param(&list).into())
+        }
+        Cow::Borrowed(async_graphql::Value::List(list)) => {
+            Some(convert_list_to_query_param(list).into())
+        }
         _ => convert_value(value),
     }
 }

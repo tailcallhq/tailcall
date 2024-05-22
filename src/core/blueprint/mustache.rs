@@ -1,4 +1,4 @@
-use super::{to_type, FieldDefinition, Type};
+use super::{to_type, FieldDefinition};
 use crate::core::config::{self, Config};
 use crate::core::lambda::{Expression, IO};
 use crate::core::scalar;
@@ -72,7 +72,10 @@ impl<'a> MustachePartsValidator<'a> {
                 // most cases
                 if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
                     // we can use non-scalar types in args
-                    if (!is_query || arg.of_type.is_list()) && arg.default_value.is_none() && arg.of_type.is_nullable() {
+                    if (!is_query || arg.of_type.is_list())
+                        && arg.default_value.is_none()
+                        && arg.of_type.is_nullable()
+                    {
                         return Valid::fail(format!("argument '{tail}' is a nullable type"));
                     }
                 } else {
