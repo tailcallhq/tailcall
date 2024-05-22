@@ -9,7 +9,7 @@ pub use super::Parser;
 
 pub struct Prettier {
     runtime: tokio::runtime::Runtime,
-    config_path: String,
+    config_path: Option<String>,
 }
 
 impl Prettier {
@@ -20,9 +20,8 @@ impl Prettier {
             .unwrap();
 
         let config_path = fs::canonicalize(Path::new("./.prettierrc"))
-            .unwrap()
-            .display()
-            .to_string();
+            .map(|a| a.display().to_string())
+            .ok();
         Self { runtime, config_path }
     }
 
@@ -34,12 +33,13 @@ impl Prettier {
                 let mut command = command();
                 let mut child = command
                     .arg("--stdin-filepath")
-                    .arg(format!("file.{}", parser))
-                    .arg("--config")
-                    .arg(config)
-                    .stdin(Stdio::piped())
-                    .stdout(Stdio::piped())
-                    .spawn()?;
+                    .arg(format!("file.{}", parser));
+
+                if let Some(config) = config {
+                    child = child.arg("--config").arg(config);
+                }
+
+                let mut child = child.stdin(Stdio::piped()).stdout(Stdio::piped()).spawn()?;
 
                 if let Some(ref mut stdin) = child.stdin {
                     stdin.write_all(source.as_bytes())?;
