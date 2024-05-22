@@ -1,8 +1,12 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
-schema @server @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) @link(id: "jwks", src: "jwks.json", type: Jwks) {
+schema
+  @server
+  @upstream
+  @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd)
+  @link(id: "jwks", src: "jwks.json", type: Jwks) {
   query: Query
 }
 
