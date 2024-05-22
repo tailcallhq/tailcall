@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use hyper::body::Bytes;
@@ -52,7 +53,7 @@ impl RequestFilter {
     async fn on_request(&self, mut request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
         let js_request = WorkerRequest::try_from(&request)?;
         let event = Event::Request(js_request);
-        let command = self.worker.call("onRequest".to_string(), event).await?;
+        let command = self.worker.call(Cow::Borrowed("onRequest"), event).await?;
         match command {
             Some(command) => match command {
                 Command::Request(js_request) => {

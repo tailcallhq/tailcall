@@ -1,4 +1,5 @@
 use core::future::Future;
+use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -143,7 +144,7 @@ impl IO {
                         .request_ctx
                         .runtime
                         .worker
-                        .call(method.clone(), value)
+                        .call(Cow::Borrowed(method), value)
                         .await
                         .map_err(EvaluationError::from)?;
 
