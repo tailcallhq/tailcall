@@ -2,7 +2,13 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 1, headers: [], maxSize: 1000}, httpCache: 42) {
+schema
+  @server
+  @upstream(
+    baseURL: "http://jsonplaceholder.typicode.com"
+    batch: {delay: 1, headers: [], maxSize: 1000}
+    httpCache: 42
+  ) {
   query: Query
 }
 
