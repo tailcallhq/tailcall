@@ -3,9 +3,10 @@ use http_cache_semantics::CachePolicy;
 use serde::{Deserialize, Serialize};
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T> = std::result::Result<T, BoxError>;
-use moka::{future::Cache, policy::EvictionPolicy};
-
 use std::sync::Arc;
+
+use moka::future::Cache;
+use moka::policy::EvictionPolicy;
 
 pub struct HttpCacheManager {
     pub cache: Arc<Cache<String, Store>>,
@@ -26,9 +27,9 @@ pub struct Store {
 impl HttpCacheManager {
     pub fn new(cache_size: u64) -> Self {
         let cache = Cache::builder()
-                        .eviction_policy(EvictionPolicy::lru())
-                        .max_capacity(cache_size)
-                        .build();
+            .eviction_policy(EvictionPolicy::lru())
+            .max_capacity(cache_size)
+            .build();
         Self { cache: Arc::new(cache) }
     }
 
@@ -124,7 +125,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_when_key_present() {
         let manager = HttpCacheManager::default();
-        insert_key_into_cache(&manager,"test").await;
+        insert_key_into_cache(&manager, "test").await;
         let value = manager.get("test").await.unwrap();
         assert!(value.is_some());
     }
@@ -149,14 +150,14 @@ mod tests {
     #[tokio::test]
     async fn test_clear() {
         let manager = HttpCacheManager::default();
-        insert_key_into_cache(&manager,"test").await;
+        insert_key_into_cache(&manager, "test").await;
         assert!(manager.cache.iter().count() as i32 == 1);
         let _ = manager.clear().await;
         assert!(manager.cache.iter().count() as i32 == 0);
     }
 
     #[tokio::test]
-    async fn test_lru_eviction_policy(){
+    async fn test_lru_eviction_policy() {
         let manager = HttpCacheManager::new(2);
         insert_key_into_cache(&manager, "test-1").await;
         insert_key_into_cache(&manager, "test-2").await;
@@ -173,5 +174,4 @@ mod tests {
 
         assert_eq!(manager.cache.entry_count(), 2);
     }
-
 }
