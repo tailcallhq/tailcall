@@ -2,7 +2,7 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::{config, Config, ConfigModule};
+use super::{config, ConfigModule};
 use crate::core::blueprint::TypeLike;
 use crate::core::directive::DirectiveCodec;
 
@@ -75,7 +75,7 @@ impl<'config> ArgumentsConverter<'config> {
         name: String,
         current_field: &mut config::Field,
     ) {
-        let Some((arg_name, arg)) = args.first() else {
+        let Some(&(arg_name, arg)) = args.first() else {
             self.output.push(convert_field(name, current_field));
             return;
         };
@@ -86,7 +86,7 @@ impl<'config> ArgumentsConverter<'config> {
             // if the type is union walk over all type members and generate new separate
             // field for this variant
             for (i, type_) in union_.types.iter().enumerate() {
-                let new_arg = config::Arg { type_of: type_.clone(), ..Default::default() };
+                let new_arg = config::Arg { type_of: type_.clone(), ..arg.clone() };
 
                 current_field.args.insert(arg_name.to_string(), new_arg);
                 self.walk_arguments(args, format!("{name}Var{i}"), current_field);
