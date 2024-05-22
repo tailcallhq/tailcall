@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -7,7 +7,7 @@ use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use crate::core::config::Config;
+use crate::core::config::{Config, Union};
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
@@ -119,6 +119,10 @@ fn insert_resolution(
 }
 
 impl ConfigModule {
+    pub fn to_sdl(self) -> String {
+        crate::core::document::print(self.into())
+    }
+
     /// This function resolves the ambiguous types by renaming the input and
     /// output types. The resolver function should return a Resolution
     /// object containing the new input and output types.
@@ -157,20 +161,28 @@ impl ConfigModule {
             let input_name = &resolution.input;
             let output_name = &resolution.output;
 
-            let og_ty = self.config.types.get(current_name).cloned();
-
-            // remove old types
-            self.config.types.remove(current_name);
             self.input_types.remove(current_name);
             self.output_types.remove(current_name);
+            self.input_types.insert(input_name.clone());
+            self.output_types.insert(output_name.clone());
 
-            // add new types
-            if let Some(og_ty) = og_ty {
+            if let Some(union_) = self.config.unions.remove(current_name) {
+                let (input_types, output_types): (BTreeSet<_>, BTreeSet<_>) = union_
+                    .types
+                    .iter()
+                    .flat_map(|type_| resolution_map.get(type_))
+                    .map(|res| (res.input.clone(), res.output.clone()))
+                    .unzip();
+
+                self.config
+                    .unions
+                    .insert(input_name.clone(), Union { types: input_types, ..union_.clone() });
+                self.config
+                    .unions
+                    .insert(output_name.clone(), Union { types: output_types, ..union_ });
+            } else if let Some(og_ty) = self.config.types.remove(current_name) {
                 self.config.types.insert(input_name.clone(), og_ty.clone());
-                self.input_types.insert(input_name.clone());
-
                 self.config.types.insert(output_name.clone(), og_ty);
-                self.output_types.insert(output_name.clone());
             }
         }
 

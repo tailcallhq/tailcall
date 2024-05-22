@@ -325,8 +325,8 @@ fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDir
     directives.into_iter().flatten().collect()
 }
 
-impl From<Config> for ServiceDocument {
-    fn from(value: Config) -> Self {
-        config_document(&value.into())
+impl From<ConfigModule> for ServiceDocument {
+    fn from(value: ConfigModule) -> Self {
+        config_document(&value)
     }
 }

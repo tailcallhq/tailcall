@@ -1,0 +1,53 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  testVar0(input: T1Input!): U
+  testVar1(input: T2Input!): U
+  testVar2(input: T3Input!): U
+}
+
+type T1 {
+  t1: String
+}
+
+input T1Input {
+  t1: String
+}
+
+type T2 {
+  t2: Int
+}
+
+input T2Input {
+  t2: Int
+}
+
+type T3 {
+  t3: Boolean
+  t33: Float!
+}
+
+input T3Input {
+  t3: Boolean
+  t33: Float!
+}
+
+union U = T1 | T2 | T3
+
+scalar Url
+
+schema {
+  query: Query
+}

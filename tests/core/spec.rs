@@ -10,7 +10,6 @@ use colored::Colorize;
 use futures_util::future::join_all;
 use hyper::{Body, Request};
 use serde::{Deserialize, Serialize};
-use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::{Config, ConfigModule, Source};
@@ -18,6 +17,10 @@ use tailcall::core::http::{handle_request, AppContext};
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::print_schema::print_schema;
 use tailcall::core::valid::{Cause, ValidationError};
+use tailcall::core::{
+    async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest},
+    config::Resolution,
+};
 use tailcall_prettier::Parser;
 
 use super::file::File;
@@ -220,20 +223,6 @@ async fn test_spec(spec: ExecutionSpec) {
     // Parse and validate all server configs + check for identity
     let server = check_server_config(spec.clone()).await;
 
-    // merged: Run merged specs
-    let merged = server
-        .iter()
-        .fold(Config::default(), |acc, c| acc.merge_right(c.clone()))
-        .to_sdl();
-
-    let formatter = tailcall_prettier::format(merged, &Parser::Gql)
-        .await
-        .unwrap();
-
-    let snapshot_name = format!("{}_merged", spec.safe_name);
-
-    insta::assert_snapshot!(snapshot_name, formatter);
-
     // Resolve all configs
     let mut runtime = runtime::create_runtime(mock_http_client.clone(), spec.env.clone(), None);
     runtime.file = Arc::new(File::new(spec.clone()));
@@ -258,6 +247,24 @@ async fn test_spec(spec: ExecutionSpec) {
         })
     })
     .collect();
+
+    // merged: Run merged specs
+    let merged = server
+        .iter()
+        .fold(ConfigModule::default(), |acc, c| acc.merge_right(c.clone()))
+        .resolve_ambiguous_types(|v| Resolution {
+            input: format!("{}Input", v),
+            output: v.to_owned(),
+        })
+        .to_sdl();
+
+    let formatter = tailcall_prettier::format(merged, &Parser::Gql)
+        .await
+        .unwrap();
+
+    let snapshot_name = format!("{}_merged", spec.safe_name);
+
+    insta::assert_snapshot!(snapshot_name, formatter);
 
     // client: Check if client spec matches snapshot
     if server.len() == 1 {
