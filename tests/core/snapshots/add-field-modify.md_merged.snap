@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server @upstream {
   query: Query
@@ -16,7 +16,10 @@ type Query {
   user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
 }
 
-type User @addField(name: "street", path: ["address", "street"]) @addField(name: "city", path: ["address", "city"]) @addField(name: "zipcode", path: ["address", "zipcode"]) {
+type User
+  @addField(name: "street", path: ["address", "street"])
+  @addField(name: "city", path: ["address", "city"])
+  @addField(name: "zipcode", path: ["address", "zipcode"]) {
   address: Address
   name: String
 }

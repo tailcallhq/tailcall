@@ -430,4 +430,32 @@ pub mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn map_proto_file() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("map.MapService.GetMap").unwrap();
+
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::MAP).await?)?;
+        let service = file.find_service(&grpc_method)?;
+        let operation = service.find_operation(&grpc_method)?;
+
+        // only single key-value in json since the converted output can change the
+        // ordering on every run
+        let input = operation.convert_input(r#"{ "map": { "key": "value" } }"#)?;
+
+        assert_eq!(input, b"\0\0\0\0\x0e\n\x0c\n\x03key\x12\x05value");
+
+        let output = b"\0\0\0\0\x12\n\t\x08\x01\x12\x05value\n\x05\x08\x02\x12\x01v";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({
+              "map": { "1": "value", "2": "v" }
+            })
+        );
+
+        Ok(())
+    }
 }

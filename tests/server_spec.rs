@@ -6,7 +6,7 @@ pub mod test {
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
-    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
@@ -17,6 +17,7 @@ pub mod test {
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::worker::DefaultJsRuntime;
     use tailcall::core::{EnvIO, FileIO, HttpIO};
+    use tailcall_http_cache::HttpCacheManager;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     #[derive(Clone)]
@@ -58,10 +59,10 @@ pub mod test {
 
             let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-            if upstream.http_cache {
+            if upstream.http_cache > 0 {
                 client = client.with(Cache(HttpCache {
                     mode: CacheMode::Default,
-                    manager: MokaManager::default(),
+                    manager: HttpCacheManager::new(upstream.http_cache),
                     options: HttpCacheOptions::default(),
                 }))
             }
