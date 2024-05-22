@@ -7,8 +7,8 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
 }
 
 type Query {
-  f1: [T4] @http(path: "/users")
-  f2: T8 @http(path: "/users/1")
+  f1: [T31] @http(path: "/users")
+  f2: T35 @http(path: "/users/1")
 }
 
 type T1 {
@@ -30,7 +30,7 @@ type T3 {
   name: String
 }
 
-type T4 {
+type T31 {
   address: T2
   company: T3
   email: String
@@ -41,28 +41,28 @@ type T4 {
   website: String
 }
 
-type T5 {
+type T32 {
   lat: String
   lng: String
 }
 
-type T6 {
+type T33 {
   city: String
-  geo: T5
+  geo: T32
   street: String
   suite: String
   zipcode: String
 }
 
-type T7 {
+type T34 {
   bs: String
   catchPhrase: String
   name: String
 }
 
-type T8 {
-  address: T6
-  company: T7
+type T35 {
+  address: T33
+  company: T34
   email: String
   id: Int
   name: String
