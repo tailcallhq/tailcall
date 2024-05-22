@@ -1,13 +1,14 @@
-use http_cache_reqwest::{CacheManager, HttpResponse, MokaCache};
+use http_cache_reqwest::{CacheManager, HttpResponse};
 use http_cache_semantics::CachePolicy;
 use serde::{Deserialize, Serialize};
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T> = std::result::Result<T, BoxError>;
+use moka::{future::Cache, policy::EvictionPolicy};
 
 use std::sync::Arc;
 
 pub struct HttpCacheManager {
-    pub cache: Arc<MokaCache<String, Store>>,
+    pub cache: Arc<Cache<String, Store>>,
 }
 
 impl Default for HttpCacheManager {
@@ -24,7 +25,11 @@ pub struct Store {
 
 impl HttpCacheManager {
     pub fn new(cache_size: u64) -> Self {
-        Self { cache: Arc::new(MokaCache::new(cache_size)) }
+        let cache = Cache::builder()
+                        .eviction_policy(EvictionPolicy::lru())
+                        .max_capacity(cache_size)
+                        .build();
+        Self { cache: Arc::new(cache) }
     }
 
     pub async fn clear(&self) -> Result<()> {
@@ -84,7 +89,7 @@ mod tests {
         Ok(Response::from(ret_res))
     }
 
-    async fn insert_key_into_cache(manager: &HttpCacheManager) {
+    async fn insert_key_into_cache(manager: &HttpCacheManager, key: &str) {
         let request_url = "http://localhost:8080/test";
         let url = Url::parse(request_url).unwrap();
 
@@ -101,7 +106,7 @@ mod tests {
 
         let _ = manager
             .put(
-                "test".to_string(),
+                key.to_string(),
                 http_resp,
                 CachePolicy::new(&request, &resp),
             )
@@ -112,14 +117,14 @@ mod tests {
     #[tokio::test]
     async fn test_put() {
         let manager = HttpCacheManager::default();
-        insert_key_into_cache(&manager).await;
+        insert_key_into_cache(&manager, "test").await;
         assert!(manager.cache.contains_key("test"));
     }
 
     #[tokio::test]
     async fn test_get_when_key_present() {
         let manager = HttpCacheManager::default();
-        insert_key_into_cache(&manager).await;
+        insert_key_into_cache(&manager,"test").await;
         let value = manager.get("test").await.unwrap();
         assert!(value.is_some());
     }
@@ -134,7 +139,7 @@ mod tests {
     #[tokio::test]
     async fn test_delete_when_key_present() {
         let manager = HttpCacheManager::default();
-        insert_key_into_cache(&manager).await;
+        insert_key_into_cache(&manager, "test").await;
 
         assert!(manager.cache.iter().count() as i32 == 1);
         let _ = manager.delete("test").await;
@@ -144,9 +149,29 @@ mod tests {
     #[tokio::test]
     async fn test_clear() {
         let manager = HttpCacheManager::default();
-        insert_key_into_cache(&manager).await;
+        insert_key_into_cache(&manager,"test").await;
         assert!(manager.cache.iter().count() as i32 == 1);
         let _ = manager.clear().await;
         assert!(manager.cache.iter().count() as i32 == 0);
     }
+
+    #[tokio::test]
+    async fn test_lru_eviction_policy(){
+        let manager = HttpCacheManager::new(2);
+        insert_key_into_cache(&manager, "test-1").await;
+        insert_key_into_cache(&manager, "test-2").await;
+        insert_key_into_cache(&manager, "test-10").await;
+
+        let res = manager.get("test-1").await.unwrap();
+        assert!(res.is_none());
+
+        let res = manager.get("test-2").await.unwrap();
+        assert!(res.is_some());
+
+        let res = manager.get("test-10").await.unwrap();
+        assert!(res.is_some());
+
+        assert_eq!(manager.cache.entry_count(), 2);
+    }
+
 }
