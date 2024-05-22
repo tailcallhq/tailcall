@@ -72,10 +72,7 @@ impl ConfigGenerator {
         "Any".to_string()
     }
 
-    fn create_type_from_object(
-        &mut self,
-        json_object: &Map<String, Value>
-    ) -> Type {
+    fn create_type_from_object(&mut self, json_object: &Map<String, Value>) -> Type {
         let mut ty = Type::default();
         for (json_property, json_val) in json_object {
             let field = if !self.should_generate_type(json_val) {
@@ -135,8 +132,7 @@ impl ConfigGenerator {
                         if !self.should_generate_type(json_item) {
                             return self.generate_scalar();
                         }
-                        object_types
-                            .push(self.create_type_from_object(json_obj));
+                        object_types.push(self.create_type_from_object(json_obj));
                     } else {
                         return self.generate_types(json_item);
                     }
@@ -235,7 +231,7 @@ impl ConfigGenerator {
 }
 
 pub struct ConfigGenerationRequest<'a> {
-    pub url: &'a str,
+    url: &'a str,
     resp: &'a Value,
 }
 
