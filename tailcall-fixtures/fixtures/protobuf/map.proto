@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package map;
+
+message MapRequest {
+    map<string, string> map = 1;
+}
+
+message MapResponse {
+    map<int32, string> map = 1;
+}
+
+service MapService {
+  rpc GetMap (MapRequest) returns (MapResponse) {}
+}

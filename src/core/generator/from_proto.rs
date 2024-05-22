@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 
 use anyhow::{bail, Result};
 use derive_setters::Setters;
@@ -21,6 +21,9 @@ struct Context {
 
     /// Root GraphQL query type
     query: String,
+
+    /// Set of visited map types
+    map_types: HashSet<String>,
 }
 
 impl Context {
@@ -29,6 +32,7 @@ impl Context {
             query: query.to_string(),
             namespace: Default::default(),
             config: Default::default(),
+            map_types: Default::default(),
         }
     }
 
@@ -64,10 +68,23 @@ impl Context {
     fn append_msg_type(mut self, messages: &Vec<DescriptorProto>) -> Result<Self> {
         for message in messages {
             let msg_name = message.name();
-            if let Some(options) = message.options.as_ref() {
-                if options.map_entry.unwrap_or_default() {
-                    continue;
-                }
+
+            let msg_type = GraphQLType::new(msg_name)
+                .extend(self.namespace.as_slice())
+                .into_object_type();
+
+            if message
+                .options
+                .as_ref()
+                .and_then(|opt| opt.map_entry)
+                .unwrap_or_default()
+            {
+                // map types in protobuf are encoded as nested type
+                // https://protobuf.dev/programming-guides/encoding/#maps
+                // since we encode it as JSON scalar type in graphQL
+                // record that this type is map and ignore it
+                self.map_types.insert(msg_type.id());
+                continue;
             }
 
             // first append the name of current message as namespace
@@ -76,10 +93,6 @@ impl Context {
             self = self.append_msg_type(&message.nested_type)?;
             // then drop it after handling nested types
             self.namespace.pop();
-
-            let msg_type = GraphQLType::new(msg_name)
-                .extend(self.namespace.as_slice())
-                .into_object_type();
 
             let mut ty = Type::default();
             for field in message.field.iter() {
@@ -93,19 +106,27 @@ impl Context {
                 cfg_field.list = label.contains("repeated");
                 cfg_field.required = label.contains("required") || cfg_field.list;
 
-                if field.type_name.is_some() {
-                    // for non-primitive types
-                    let type_of = graphql_type_from_ref(field.type_name())?
-                        .into_object_type()
-                        .to_string();
+                if let Some(type_name) = &field.type_name {
+                    // check that current field is map.
+                    // it's done by checking that we've seen this type before
+                    // inside the nested type. It works only if we explore nested types
+                    // before the current type
+                    if self.map_types.contains(&type_name[1..]) {
+                        cfg_field.type_of = "JSON".to_string();
+                        // drop list option since it is not relevant
+                        // when using JSON representation
+                        cfg_field.list = false;
+                    } else {
+                        // for non-primitive types
+                        let type_of = graphql_type_from_ref(type_name)?
+                            .into_object_type()
+                            .to_string();
 
-                    cfg_field.type_of = type_of;
+                        cfg_field.type_of = type_of;
+                    }
                 } else {
                     let type_of = convert_primitive_type(field.r#type().as_str_name());
-                    if type_of.eq("JSON") {
-                        cfg_field.list = false;
-                        cfg_field.required = false;
-                    }
+
                     cfg_field.type_of = type_of;
                 }
 
@@ -207,8 +228,6 @@ fn convert_primitive_type(proto_ty: &str) -> String {
         "int32" | "int64" | "fixed32" | "fixed64" | "uint32" | "uint64" => "Int",
         "bool" => "Boolean",
         "string" | "bytes" => "String",
-        "message" => "JSON", // JSON scalar is preloaded by tailcall, so there is no need to
-        // explicitly define it in the config.
         x => x,
     }
     .to_string()
@@ -361,6 +380,14 @@ mod test {
     #[test]
     fn test_nested_types() -> Result<()> {
         let set = compile_protobuf(&[protobuf::NESTED_TYPES])?;
+        let config = from_proto(&[set], "Query")?.to_sdl();
+        insta::assert_snapshot!(config);
+        Ok(())
+    }
+
+    #[test]
+    fn test_map_types() -> Result<()> {
+        let set = compile_protobuf(&[protobuf::MAP])?;
         let config = from_proto(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
