@@ -182,6 +182,12 @@ mod tests {
             root.insert(Name::new("nested"), Value::Object(nested));
             root.insert(Name::new("root"), Value::String("root-test".to_owned()));
 
+            let query_list = Value::List(vec![
+                Value::Number(Number::from(1)),
+                Value::Number(Number::from(2)),
+                Value::Number(Number::from(3)),
+            ]);
+            root.insert(Name::new("q"), query_list);
             root
         });
 
@@ -270,6 +276,10 @@ mod tests {
 
             // args
             assert_eq!(
+                EVAL_CTX.path_string(&["args", "q"]),
+                Some(Cow::Borrowed("1,2,3"))
+            );
+            assert_eq!(
                 EVAL_CTX.path_string(&["args", "root"]),
                 Some(Cow::Borrowed("root-test"))
             );
@@ -282,7 +292,7 @@ mod tests {
             assert_eq!(
                 EVAL_CTX.path_string(&["args"]),
                 Some(Cow::Borrowed(
-                    r#"{"nested":{"existing":"nested-test"},"root":"root-test"}"#
+                    r#"{"nested":{"existing":"nested-test"},"root":"root-test","q":[1,2,3]}"#
                 ))
             );
 
