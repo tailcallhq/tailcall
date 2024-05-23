@@ -1,7 +1,7 @@
 # With List args
 
 ```graphql @config
-schema @server(queryValidation: true) @upstream(baseURL: "http://localhost:3000"){
+schema @server(queryValidation: true) @upstream(baseURL: "http://localhost:3000") {
   query: Query
 }
 
@@ -20,8 +20,8 @@ type T1 {
     url: http://localhost:3000/api?q=1,2,3
   response:
     status: 200
-    body:   
-        numbers : [1,2,3]
+    body:
+      numbers: [1, 2, 3]
 ```
 
 ```yml @test
