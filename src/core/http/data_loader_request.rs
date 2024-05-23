@@ -78,15 +78,14 @@ impl Deref for DataLoaderRequest {
 
 #[cfg(test)]
 mod tests {
-    use hyper::header::{HeaderName, HeaderValue};
-
     use super::*;
+
     fn create_request_with_headers(url: &str, headers: Vec<(&str, &str)>) -> reqwest::Request {
         let mut req = reqwest::Request::new(reqwest::Method::GET, url.parse().unwrap());
         for (name, value) in headers {
             req.headers_mut().insert(
-                name.parse::<HeaderName>().unwrap(),
-                value.parse::<HeaderValue>().unwrap(),
+                name.parse::<reqwest::header::HeaderName>().unwrap(),
+                value.parse::<reqwest::header::HeaderValue>().unwrap(),
             );
         }
         req

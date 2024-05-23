@@ -4,10 +4,9 @@ use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
 use tokio::sync::oneshot;
 
+use super::server_config::ServerConfig;
 use crate::core::async_graphql_hyper::GraphQLRequest;
 use crate::core::http::{handle_request, Request};
-
-use super::server_config::ServerConfig;
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,
@@ -22,20 +21,20 @@ pub async fn start_http_1(
 
     /* let mut _ty: impl GraphQLRequestLike + DeserializeOwned = GraphQLRequest;
 
-     if sc.blueprint.server.enable_batch_requests {
-         _ty = GraphQLBatchRequest;
-     };*/
+    if sc.blueprint.server.enable_batch_requests {
+        _ty = GraphQLBatchRequest;
+    };*/
 
     /*    let make_svc_single_req = async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLRequest>(req, sc.app_ctx.clone())
-            }))
-        };
-        let make_svc_batch_req = async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLBatchRequest>(req, sc.app_ctx.clone())
-            }))
-        };*/
+        Ok::<_, anyhow::Error>(service_fn(move |req| {
+            handle_request::<GraphQLRequest>(req, sc.app_ctx.clone())
+        }))
+    };
+    let make_svc_batch_req = async move {
+        Ok::<_, anyhow::Error>(service_fn(move |req| {
+            handle_request::<GraphQLBatchRequest>(req, sc.app_ctx.clone())
+        }))
+    };*/
     if let Some(sender) = server_up_sender {
         sender
             .send(())
@@ -46,20 +45,19 @@ pub async fn start_http_1(
         let (stream, _) = listener.accept().await?;
         let app_ctx = sc.app_ctx.clone();
 
-
-        let connection = builder
-            .serve_connection(
-                TokioIo::new(stream),
-                service_fn(move |req| {
-                    let app_ctx = app_ctx.clone();
-                    async move {
-                        let req = Request::from_hyper(req).await?;
-                        handle_request::<
-                            GraphQLRequest // TODO
-                        >(req, app_ctx).await
-                    }
-                }),
-            );
+        let connection = builder.serve_connection(
+            TokioIo::new(stream),
+            service_fn(move |req| {
+                let app_ctx = app_ctx.clone();
+                async move {
+                    let req = Request::from_hyper(req).await?;
+                    handle_request::<
+                        GraphQLRequest, // TODO
+                    >(req, app_ctx)
+                    .await
+                }
+            }),
+        );
         tokio::spawn(async move {
             if let Err(err) = connection.await {
                 println!("Error serving HTTP connection: {err:?}");
@@ -67,26 +65,25 @@ pub async fn start_http_1(
         });
     }
 
-
     /*    let builder = hyper::Server::try_bind(&addr)
-            .map_err(CLIError::from)?
-            .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
-        super::log_launch(sc.as_ref());
+        .map_err(CLIError::from)?
+        .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
+    super::log_launch(sc.as_ref());
 
-        if let Some(sender) = server_up_sender {
-            sender
-                .send(())
-                .or(Err(anyhow::anyhow!("Failed to send message")))?;
-        }
+    if let Some(sender) = server_up_sender {
+        sender
+            .send(())
+            .or(Err(anyhow::anyhow!("Failed to send message")))?;
+    }
 
-        let server: std::prelude::v1::Result<(), hyper::Error> =
-            if sc.blueprint.server.enable_batch_requests {
-                builder.serve(make_svc_batch_req).await
-            } else {
-                builder.serve(make_svc_single_req).await
-            };
+    let server: std::prelude::v1::Result<(), hyper::Error> =
+        if sc.blueprint.server.enable_batch_requests {
+            builder.serve(make_svc_batch_req).await
+        } else {
+            builder.serve(make_svc_single_req).await
+        };
 
-        let result = server.map_err(CLIError::from);
+    let result = server.map_err(CLIError::from);
 
-        Ok(result?)*/
+    Ok(result?)*/
 }

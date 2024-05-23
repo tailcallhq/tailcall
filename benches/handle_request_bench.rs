@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
+use bytes::Bytes;
 use criterion::Criterion;
-use hyper::Request;
+use hyper::Method;
 use tailcall::cli::server::server_config::ServerConfig;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::{Config, ConfigModule};
-use tailcall::core::http::handle_request;
+use tailcall::core::http::{handle_request, Request};
 use tailcall::core::valid::Validator;
 
 static QUERY: &str = r#"{"query":"query{posts{title}}"}"#;
@@ -30,10 +31,9 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
             let server_config = server_config.clone();
             tokio_runtime.block_on(async move {
                 let req = Request::builder()
-                    .method("POST")
-                    .uri("http://localhost:8000/graphql")
-                    .body(hyper::Body::from(QUERY))
-                    .unwrap();
+                    .method(Method::POST)
+                    .uri("http://localhost:8000/graphql".parse().unwrap())
+                    .body(Bytes::from(QUERY));
 
                 let _ = handle_request::<GraphQLRequest>(req, server_config.app_ctx.clone())
                     .await

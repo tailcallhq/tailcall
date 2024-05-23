@@ -218,7 +218,7 @@ mod tests {
         let response = make_request(&request_url, &native_http).await;
 
         // Assert the response is as expected
-        assert_eq!(response.status, reqwest::StatusCode::OK);
+        assert_eq!(response.status, hyper::StatusCode::OK);
         assert_eq!(response.body, Bytes::from("Hello"));
         assert!(response.headers.get("x-cache-lookup").is_none());
 
@@ -226,7 +226,7 @@ mod tests {
         let response = make_request(&request_url, &native_http).await;
 
         // Assert the response is as expected
-        assert_eq!(response.status, reqwest::StatusCode::OK);
+        assert_eq!(response.status, hyper::StatusCode::OK);
         assert_eq!(response.body, Bytes::from("Hello"));
         assert!(response.headers.get("x-cache-lookup").is_none());
 

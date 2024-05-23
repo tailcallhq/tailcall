@@ -121,9 +121,9 @@ mod tests {
     use std::collections::HashSet;
 
     use derive_setters::Setters;
-    use hyper::header::{HeaderName, HeaderValue};
-    use hyper::{HeaderMap, Method};
+    use hyper::header::HeaderMap;
     use pretty_assertions::assert_eq;
+    use reqwest::Method;
     use tailcall_fixtures::protobuf;
 
     use super::RequestTemplate;
@@ -202,7 +202,7 @@ mod tests {
         let tmpl = RequestTemplate {
             url: Mustache::parse("http://localhost:3000/").unwrap(),
             headers: vec![(
-                HeaderName::from_static("test-header"),
+                hyper::header::HeaderName::from_static("test-header"),
                 Mustache::parse("value").unwrap(),
             )],
             operation: get_protobuf_op().await,
@@ -217,14 +217,14 @@ mod tests {
         assert_eq!(req.method(), Method::POST);
         assert_eq!(
             req.headers(),
-            &HeaderMap::from_iter([
+            &reqwest::header::HeaderMap::from_iter([
                 (
-                    HeaderName::from_static("test-header"),
-                    HeaderValue::from_static("value")
+                    reqwest::header::HeaderName::from_static("test-header"),
+                    reqwest::header::HeaderValue::from_static("value")
                 ),
                 (
-                    HeaderName::from_static("content-type"),
-                    HeaderValue::from_static("application/grpc")
+                    reqwest::header::HeaderName::from_static("content-type"),
+                    reqwest::header::HeaderValue::from_static("application/grpc")
                 )
             ])
         );

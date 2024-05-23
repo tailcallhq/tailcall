@@ -140,8 +140,8 @@ mod tests {
         let context = Context::base(&runtime).unwrap();
         context.with(|ctx| {
             let js_response = JsResponse::try_from(Response {
-                status: reqwest::StatusCode::OK,
-                headers: reqwest::header::HeaderMap::default(),
+                status: hyper::StatusCode::OK,
+                headers: hyper::header::HeaderMap::default(),
                 body: Bytes::new(),
             })
             .unwrap();

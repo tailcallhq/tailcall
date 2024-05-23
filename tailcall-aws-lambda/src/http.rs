@@ -1,11 +1,13 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::Result;
+use http_body_util::BodyExt;
 use hyper::body::Bytes;
 use lambda_http::RequestExt;
 use reqwest::Client;
-use tailcall::core::http::Response;
-use tailcall::core::HttpIO;
+use tailcall::core::http::{Request, Response};
+use tailcall::core::{Body, HttpIO};
 
 #[derive(Clone)]
 pub struct LambdaHttp {
@@ -40,7 +42,7 @@ impl HttpIO for LambdaHttp {
     }
 }
 
-pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
+pub fn to_request(req: lambda_http::Request) -> Result<Request> {
     // TODO: Update hyper to 1.0 to make conversions easier
     let method: hyper::Method = match req.method().to_owned() {
         lambda_http::http::Method::CONNECT => hyper::Method::CONNECT,
@@ -68,21 +70,32 @@ pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hy
             .join("/")
     );
 
-    let mut req2 = hyper::Request::builder().method(method).uri(url);
+    let mut req2 = Request::builder()
+        .method(method)
+        .uri(hyper::Uri::from_str(&url)?);
 
+    let mut hyper_headers = hyper::header::HeaderMap::new();
     for (k, v) in req.headers() {
-        let key: hyper::http::header::HeaderName = k.as_str().parse()?;
-        let value = hyper::http::header::HeaderValue::from_bytes(v.as_bytes())?;
-        req2 = req2.header(key, value);
+        hyper_headers.insert(
+            hyper::header::HeaderName::from_str(k.as_str())?,
+            hyper::header::HeaderValue::from_str(v.to_str()?)?,
+        );
     }
 
-    Ok(req2.body(hyper::Body::from(req.body().to_vec()))?)
+    req2 = req2.headers(hyper_headers);
+    Ok(req2.body(Bytes::from(req.body().to_vec())))
 }
 
 pub async fn to_response(
-    res: hyper::Response<hyper::Body>,
+    res: hyper::Response<Body>,
 ) -> Result<lambda_http::Response<lambda_http::Body>, lambda_http::http::Error> {
-    // TODO: Update hyper to 1.0 to make conversions easier
+    let (parts, body) = res.into_parts();
+    let body = body.collect().await?.to_bytes();
+    Ok(lambda_http::Response::from_parts(
+        parts,
+        lambda_http::Body::Binary(body.to_vec()),
+    ))
+    /*/ TODO: Update hyper to 1.0 to make conversions easier
     let mut build = lambda_http::Response::builder().status(res.status().as_u16());
 
     for (k, v) in res.headers() {
@@ -91,7 +104,7 @@ pub async fn to_response(
 
     build.body(lambda_http::Body::Binary(Vec::from(
         hyper::body::to_bytes(res.into_body()).await.unwrap(),
-    )))
+    )))*/
 }
 
 pub fn init_http() -> Arc<LambdaHttp> {
@@ -101,7 +114,6 @@ pub fn init_http() -> Arc<LambdaHttp> {
 #[cfg(test)]
 mod tests {
     use lambda_http::http::{Method, Request, StatusCode, Uri};
-    use lambda_http::Body;
 
     use super::*;
 
@@ -112,17 +124,17 @@ mod tests {
             .uri(Uri::from_static("http://example.com"))
             .header("content-type", "application/json")
             .header("x-custom-header", "custom-value")
-            .body(Body::from("Hello, world!"))
+            .body(lambda_http::Body::from("Hello, world!"))
             .unwrap();
         let hyper_req = to_request(req).unwrap();
-        assert_eq!(hyper_req.method(), hyper::Method::GET);
-        assert_eq!(hyper_req.uri(), "http://example.com/");
+        assert_eq!(hyper_req.method, hyper::Method::GET);
+        assert_eq!(hyper_req.uri, "http://example.com/");
         assert_eq!(
-            hyper_req.headers().get("content-type").unwrap(),
+            hyper_req.headers.get("content-type").unwrap(),
             "application/json"
         );
         assert_eq!(
-            hyper_req.headers().get("x-custom-header").unwrap(),
+            hyper_req.headers.get("x-custom-header").unwrap(),
             "custom-value"
         );
     }
@@ -133,7 +145,7 @@ mod tests {
             .status(200)
             .header("content-type", "application/json")
             .header("x-custom-header", "custom-value")
-            .body(hyper::Body::from("Hello, world!"))
+            .body(Body::from("Hello, world!"))
             .unwrap();
         let lambda_res = to_response(res).await.unwrap();
         assert_eq!(lambda_res.status(), StatusCode::OK);

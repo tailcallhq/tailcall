@@ -286,8 +286,8 @@ mod tests {
         use hyper::{Method, Uri, Version};
         use maplit::btreemap;
         use pretty_assertions::assert_eq;
-        use crate::core::http::Request;
 
+        use crate::core::http::Request;
         use crate::core::rest::endpoint::tests::TEST_QUERY;
         use crate::core::rest::endpoint::Endpoint;
 
@@ -296,7 +296,7 @@ mod tests {
                 .method(method)
                 .uri(Uri::from_str(uri)?)
                 .version(Version::HTTP_11)
-                .body(bytes::Bytes::new())?)
+                .body(bytes::Bytes::new()))
         }
 
         fn test_matches(query: &str, method: Method, uri: &str) -> Option<Variables> {

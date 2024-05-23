@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use hyper::Method;
+use reqwest::Method;
 use tailcall::cli::runtime::NativeHttp;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::HttpIO;

@@ -6,18 +6,22 @@ use std::sync::Arc;
 use std::{fs, panic};
 
 use anyhow::Context;
+use bytes::Bytes;
 use colored::Colorize;
 use futures_util::future::join_all;
-use hyper::{Body, Request};
+use http_body_util::BodyExt;
+use hyper::http::{HeaderName, HeaderValue};
+use hyper::HeaderMap;
 use serde::{Deserialize, Serialize};
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::{Config, ConfigModule, Source};
-use tailcall::core::http::{handle_request, AppContext};
+use tailcall::core::http::{handle_request, AppContext, Request};
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::print_schema::print_schema;
 use tailcall::core::valid::{Cause, ValidationError};
+use tailcall::core::Body;
 use tailcall_prettier::Parser;
 
 use super::file::File;
@@ -184,14 +188,14 @@ async fn run_query_tests_on_spec(
                 headers.insert(key.to_string(), value.to_str().unwrap().to_string());
             }
 
+            let status = response.status().as_u16();
+            let body = response.into_body().collect().await.unwrap().to_bytes();
+
             let response: APIResponse = APIResponse {
-                status: response.status().clone().as_u16(),
+                status,
                 headers,
                 body: Some(APIBody::Value(
-                    serde_json::from_slice(
-                        &hyper::body::to_bytes(response.into_body()).await.unwrap(),
-                    )
-                    .unwrap_or_default(),
+                    serde_json::from_slice(&body).unwrap_or_default(),
                 )),
             };
 
@@ -305,7 +309,7 @@ async fn run_test(
     let body = request
         .body
         .as_ref()
-        .map(|body| Body::from(body.to_bytes()))
+        .map(|body| Bytes::from(body.to_bytes()))
         .unwrap_or_default();
 
     let method = request.method.clone();
@@ -316,10 +320,15 @@ async fn run_test(
         .fold(
             Request::builder()
                 .method(method.to_hyper())
-                .uri(url.as_str()),
-            |acc, (key, value)| acc.header(key, value),
+                .uri(url.as_str().parse().unwrap()),
+            |acc, (key, value)| {
+                acc.headers(HeaderMap::from_iter([(
+                    HeaderName::try_from(key).unwrap(),
+                    HeaderValue::from_str(&value).unwrap(),
+                )]))
+            },
         )
-        .body(body)?;
+        .body(body);
 
     // TODO: reuse logic from server.rs to select the correct handler
     if app_ctx.blueprint.server.enable_batch_requests {

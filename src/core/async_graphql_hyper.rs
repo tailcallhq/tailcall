@@ -213,7 +213,6 @@ impl GraphQLResponse {
 mod tests {
     use async_graphql::{Name, Response, ServerError, Value};
     use http_body_util::BodyExt;
-    use hyper::StatusCode;
     use indexmap::IndexMap;
     use serde_json::json;
 
@@ -228,15 +227,11 @@ mod tests {
 
         let response = GraphQLResponse(BatchResponse::Single(Response::new(Value::Object(data))));
         let rest_response = response.into_rest_response().unwrap();
-        let body = rest_response
-            .into_body()
-            .collect()
-            .await
-            .unwrap()
-            .to_bytes();
+        let (parts, body) = rest_response.into_parts();
+        let body = body.collect().await.unwrap().to_bytes();
 
-        assert_eq!(rest_response.status(), StatusCode::OK);
-        assert_eq!(rest_response.headers()["content-type"], "application/json");
+        assert_eq!(parts.status, StatusCode::OK);
+        assert_eq!(parts.headers["content-type"], "application/json");
         assert_eq!(
             body.to_vec(),
             json!({ "name": name }).to_string().as_bytes().to_vec()
@@ -258,15 +253,11 @@ mod tests {
 
         let response = GraphQLResponse(BatchResponse::Batch(list));
         let rest_response = response.into_rest_response().unwrap();
-        let body = rest_response
-            .into_body()
-            .collect()
-            .await
-            .unwrap()
-            .to_bytes();
+        let (p, b) = rest_response.into_parts();
+        let body = b.collect().await.unwrap().to_bytes();
 
-        assert_eq!(rest_response.status(), StatusCode::OK);
-        assert_eq!(rest_response.headers()["content-type"], "application/json");
+        assert_eq!(p.status, StatusCode::OK);
+        assert_eq!(p.headers["content-type"], "application/json");
         assert_eq!(
             body.to_vec(),
             json!([
@@ -290,15 +281,11 @@ mod tests {
             .collect();
         let response = GraphQLResponse(BatchResponse::Single(response));
         let rest_response = response.into_rest_response().unwrap();
-        let body = rest_response
-            .into_body()
-            .collect()
-            .await
-            .unwrap()
-            .to_bytes();
+        let (parts, body) = rest_response.into_parts();
+        let body = body.collect().await.unwrap().to_bytes();
 
-        assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
-        assert_eq!(rest_response.headers()["content-type"], "application/json");
+        assert_eq!(parts.status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(parts.headers["content-type"], "application/json");
         assert_eq!(
             body.to_vec(),
             json!({

@@ -53,13 +53,13 @@ mod tests {
     }
 
     fn cache_control_header(i: i32) -> HeaderMap {
-        let mut headers = reqwest::header::HeaderMap::default();
+        let mut headers = HeaderMap::default();
         headers.append("Cache-Control", format!("max-age={}", i).parse().unwrap());
         headers
     }
 
     fn cache_control_header_visibility(i: i32, visibility: &str) -> HeaderMap {
-        let mut headers = reqwest::header::HeaderMap::default();
+        let mut headers = HeaderMap::default();
         headers.append(
             "Cache-Control",
             format!("max-age={}, {}", i, visibility).parse().unwrap(),

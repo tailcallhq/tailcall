@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use hyper::body::Bytes;
-use reqwest::header::{HeaderName, HeaderValue};
+use hyper::header::{HeaderName, HeaderValue};
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
 
@@ -61,7 +61,7 @@ impl HttpIO for Http {
             .iter()
             .find(|mock| {
                 let mock_req = &mock.mock.request;
-                let method_match = req.method() == mock_req.0.method.clone().to_hyper();
+                let method_match = req.method() == mock_req.0.method.clone().to_reqwest();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
                 let body_match = mock_req
                     .0
@@ -107,7 +107,7 @@ impl HttpIO for Http {
         let mock_response = execution_mock.mock.response.clone();
 
         // Build the response with the status code from the mock.
-        let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
+        let status_code = hyper::StatusCode::from_u16(mock_response.0.status)?;
 
         if status_code.is_client_error() || status_code.is_server_error() {
             return Err(anyhow::format_err!("Status code error"));

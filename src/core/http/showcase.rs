@@ -2,17 +2,17 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use async_graphql::ServerError;
-use hyper::{Response};
+use hyper::Response;
 use serde::de::DeserializeOwned;
 use url::Url;
 
 use super::{AppContext, Request};
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::Blueprint;
-use crate::core::Body;
 use crate::core::config::reader::ConfigReader;
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
+use crate::core::Body;
 
 pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     req: &Request,
@@ -72,15 +72,14 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
+
     use bytes::Bytes;
     use hyper::Method;
-
     use serde_json::json;
 
     use crate::core::async_graphql_hyper::GraphQLRequest;
-    use crate::core::Body;
-    use crate::core::http::{handle_request, Request};
     use crate::core::http::showcase::create_app_ctx;
+    use crate::core::http::{handle_request, Request};
 
     #[tokio::test]
     async fn works_with_file() {
@@ -89,8 +88,7 @@ mod tests {
             .uri("http://upstream/showcase/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql".parse().unwrap())
             .body(Bytes::from(json!({
                 "query": "query { user { name } }"
-            }).to_string()))
-            .unwrap();
+            }).to_string()));
 
         let runtime = crate::core::runtime::test::init(None);
         let app = create_app_ctx::<GraphQLRequest>(&req, runtime, true)
@@ -100,14 +98,17 @@ mod tests {
 
         let req = Request::builder()
             .method(Method::POST)
-            .uri("http://upstream/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql".parse().unwrap())
+            .uri(
+                "http://upstream/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql"
+                    .parse()
+                    .unwrap(),
+            )
             .body(Bytes::from(
                 json!({
                     "query": "query { user { name } }"
                 })
                 .to_string(),
-            ))
-            .unwrap();
+            ));
 
         let res = handle_request::<GraphQLRequest>(req, Arc::new(app))
             .await

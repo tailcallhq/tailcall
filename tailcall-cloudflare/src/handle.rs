@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
-use hyper::{Body, Request, Response};
+use hyper::Response;
 use lazy_static::lazy_static;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
-use tailcall::core::http::{handle_request, showcase, AppContext};
+use tailcall::core::http::{handle_request, showcase, AppContext, Request};
+use tailcall::core::Body;
 
 use crate::http::{to_request, to_response};
 use crate::runtime;
@@ -41,11 +42,11 @@ pub async fn fetch(
 /// for future requests.
 async fn get_app_ctx(
     env: Rc<worker::Env>,
-    req: &Request<Body>,
+    req: &Request,
 ) -> anyhow::Result<Result<Arc<AppContext>, Response<Body>>> {
     // Read context from cache
     let file_path = req
-        .uri()
+        .uri
         .query()
         .and_then(|x| serde_qs::from_str::<HashMap<String, String>>(x).ok())
         .and_then(|x| x.get("config").cloned());
