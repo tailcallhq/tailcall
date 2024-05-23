@@ -103,7 +103,7 @@ where
             "Int" => JsonSchema::Num,
             "Boolean" => JsonSchema::Bool,
             "Empty" => JsonSchema::Empty,
-            "JSON" => JsonSchema::Obj(HashMap::new()),
+            "JSON" => JsonSchema::Any,
             _ => JsonSchema::Any,
         }
     };

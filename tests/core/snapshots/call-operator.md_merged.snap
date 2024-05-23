@@ -1,8 +1,11 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) @link(id: "news", src: "news.proto", type: Protobuf) {
+schema
+  @server(hostname: "0.0.0.0", port: 8000)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42)
+  @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
@@ -35,13 +38,16 @@ type Post {
 
 type Query {
   news: NewsData! @grpc(baseURL: "http://localhost:50051", method: "news.NewsService.GetAllNews")
-  newsWithPortArg(port: Int!): NewsData! @grpc(baseURL: "http://localhost:{{.args.port}}", method: "news.NewsService.GetAllNews")
+  newsWithPortArg(port: Int!): NewsData!
+    @grpc(baseURL: "http://localhost:{{.args.port}}", method: "news.NewsService.GetAllNews")
   posts: [Post] @http(path: "/posts")
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
   user1: User @http(path: "/users/1")
   userFromValue: User @http(path: "/users/{{.value.userId}}")
-  userGraphQL(id: Int): User @graphQL(args: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
-  userGraphQLHeaders(id: Int!): User @graphQL(baseURL: "http://upstream/graphql", headers: [{key: "id", value: "{{.args.id}}"}], name: "user")
+  userGraphQL(id: Int): User
+    @graphQL(args: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://upstream/graphql", name: "user")
+  userGraphQLHeaders(id: Int!): User
+    @graphQL(baseURL: "http://upstream/graphql", headers: [{key: "id", value: "{{.args.id}}"}], name: "user")
   userHttpHeaders(id: ID!): User @http(headers: [{key: "id", value: "{{.args.id}}"}], path: "/users")
   userHttpQuery(id: ID!): User @http(path: "/users", query: [{key: "id", value: "{{.args.id}}"}])
   userId: Int! @expr(body: 2)
