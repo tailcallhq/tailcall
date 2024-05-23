@@ -7,7 +7,7 @@ error: true
 ```graphql @file:jsonplaceholder.graphql
 schema
   @server(port: 8000, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
 
