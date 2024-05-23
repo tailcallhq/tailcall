@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use hyper::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::core::async_cache::AsyncCache;
 use crate::core::auth::context::AuthContext;

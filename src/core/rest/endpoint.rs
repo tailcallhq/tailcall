@@ -10,10 +10,9 @@ use super::partial_request::PartialRequest;
 use super::path::{Path, Segment};
 use super::query_params::QueryParams;
 use super::type_map::TypeMap;
-use super::Request;
 use crate::core::async_graphql_hyper::GraphQLRequest;
 use crate::core::directive::DirectiveCodec;
-use crate::core::http::Method;
+use crate::core::http::{Method, Request};
 use crate::core::rest::typed_variables::{UrlParamType, N};
 
 /// An executable Http Endpoint created from a GraphQL query
@@ -139,7 +138,7 @@ impl Endpoint {
 
     pub fn matches<'a>(&'a self, request: &Request) -> Option<PartialRequest<'a>> {
         let query_params = request
-            .uri()
+            .uri
             .query()
             .map(|query| serde_urlencoded::from_str(query).unwrap_or_else(|_| BTreeMap::new()))
             .unwrap_or_default();
@@ -147,12 +146,12 @@ impl Endpoint {
         let mut variables = Variables::default();
 
         // Method
-        if self.method.clone().to_hyper() != request.method() {
+        if self.method.clone().to_hyper() != request.method {
             return None;
         }
 
         // Path
-        let path = self.path.matches(request.uri().path())?;
+        let path = self.path.matches(request.uri.path())?;
 
         // Query
         let query = self.query_params.matches(query_params)?;
@@ -284,19 +283,20 @@ mod tests {
 
         use async_graphql::Variables;
         use async_graphql_value::{ConstValue, Name};
-        use hyper::{Body, Method, Request, Uri, Version};
+        use hyper::{Method, Uri, Version};
         use maplit::btreemap;
         use pretty_assertions::assert_eq;
+        use crate::core::http::Request;
 
         use crate::core::rest::endpoint::tests::TEST_QUERY;
         use crate::core::rest::endpoint::Endpoint;
 
-        fn test_request(method: Method, uri: &str) -> anyhow::Result<hyper::Request<Body>> {
+        fn test_request(method: Method, uri: &str) -> anyhow::Result<Request> {
             Ok(Request::builder()
                 .method(method)
                 .uri(Uri::from_str(uri)?)
                 .version(Version::HTTP_11)
-                .body(Body::empty())?)
+                .body(bytes::Bytes::new())?)
         }
 
         fn test_matches(query: &str, method: Method, uri: &str) -> Option<Variables> {

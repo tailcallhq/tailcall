@@ -2,24 +2,25 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use async_graphql::ServerError;
-use hyper::{Body, Request, Response};
+use hyper::{Response};
 use serde::de::DeserializeOwned;
 use url::Url;
 
-use super::AppContext;
+use super::{AppContext, Request};
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::Blueprint;
+use crate::core::Body;
 use crate::core::config::reader::ConfigReader;
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
 
 pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
-    req: &Request<Body>,
+    req: &Request,
     runtime: TargetRuntime,
     enable_fs: bool,
 ) -> Result<Result<AppContext, Response<Body>>> {
     let config_url = req
-        .uri()
+        .uri
         .query()
         .and_then(|x| serde_qs::from_str::<HashMap<String, String>>(x).ok())
         .and_then(|x| x.get("config").cloned());
@@ -71,20 +72,22 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
+    use bytes::Bytes;
+    use hyper::Method;
 
-    use hyper::Request;
     use serde_json::json;
 
     use crate::core::async_graphql_hyper::GraphQLRequest;
-    use crate::core::http::handle_request;
+    use crate::core::Body;
+    use crate::core::http::{handle_request, Request};
     use crate::core::http::showcase::create_app_ctx;
 
     #[tokio::test]
     async fn works_with_file() {
         let req = Request::builder()
-            .method("POST")
-            .uri("http://upstream/showcase/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
-            .body(hyper::Body::from(json!({
+            .method(Method::POST)
+            .uri("http://upstream/showcase/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql".parse().unwrap())
+            .body(Bytes::from(json!({
                 "query": "query { user { name } }"
             }).to_string()))
             .unwrap();
@@ -96,9 +99,9 @@ mod tests {
             .unwrap();
 
         let req = Request::builder()
-            .method("POST")
-            .uri("http://upstream/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
-            .body(hyper::Body::from(
+            .method(Method::POST)
+            .uri("http://upstream/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql".parse().unwrap())
+            .body(Bytes::from(
                 json!({
                     "query": "query { user { name } }"
                 })

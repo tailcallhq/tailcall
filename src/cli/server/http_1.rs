@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
-use serde::de::DeserializeOwned;
 use tokio::sync::oneshot;
 
-use super::server_config::ServerConfig;
-use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike};
+use crate::core::async_graphql_hyper::GraphQLRequest;
 use crate::core::http::{handle_request, Request};
+
+use super::server_config::ServerConfig;
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,

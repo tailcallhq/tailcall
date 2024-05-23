@@ -45,6 +45,8 @@ use async_graphql_value::ConstValue;
 use http::Response;
 pub use tailcall_macros as macros;
 
+pub type Body = http_body_util::Full<bytes::Bytes>;
+
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;
 }
