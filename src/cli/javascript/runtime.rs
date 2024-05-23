@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::cell::{OnceCell, RefCell};
 use std::fmt::{Debug, Formatter};
 use std::thread;
@@ -83,13 +82,9 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    async fn call(
-        &self,
-        name: Cow<'async_trait, str>,
-        event: Event,
-    ) -> anyhow::Result<Option<Command>> {
+    async fn call(&self, name: &'async_trait str, event: Event) -> anyhow::Result<Option<Command>> {
         let script = self.script.clone();
-        let name = name.as_ref().to_string(); // TODO
+        let name = name.to_string(); // TODO
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
@@ -107,11 +102,11 @@ impl WorkerIO<Event, Command> for Runtime {
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
     async fn call(
         &self,
-        name: Cow<'async_trait, str>,
+        name: &'async_trait str,
         input: ConstValue,
     ) -> anyhow::Result<Option<ConstValue>> {
         let script = self.script.clone();
-        let name = name.as_ref().to_string();
+        let name = name.to_string();
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
