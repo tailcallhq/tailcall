@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # undeclared-type
 
-```graphql @server
+```graphql @config
 schema @server {
   query: Query
 }

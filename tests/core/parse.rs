@@ -10,13 +10,13 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
-use tailcall::blueprint::Blueprint;
-use tailcall::cache::InMemoryCache;
 use tailcall::cli::javascript;
-use tailcall::config::{ConfigModule, Source};
-use tailcall::http::AppContext;
-use tailcall::runtime::TargetRuntime;
-use tailcall::EnvIO;
+use tailcall::core::blueprint::Blueprint;
+use tailcall::core::cache::InMemoryCache;
+use tailcall::core::config::{ConfigModule, Source};
+use tailcall::core::http::AppContext;
+use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::EnvIO;
 
 use super::file::File;
 use super::http::Http;
@@ -89,10 +89,11 @@ impl ExecutionSpec {
                             let split = expect.value.splitn(2, ':').collect::<Vec<&str>>();
                             match split[..] {
                                 [a, b] => {
-                                    check_identity =
-                                        a.contains("check_identity") && b.ends_with("true");
-                                    sdl_error = a.contains("expect_validation_error")
-                                        && b.ends_with("true");
+                                    check_identity = a.contains("identity") && b.ends_with("true");
+                                    sdl_error = a.contains("error") && b.ends_with("true");
+                                    if a.contains("skip") && b.ends_with("true") {
+                                        runner = Some(Annotation::Skip);
+                                    }
                                 }
                                 _ => {
                                     return Err(anyhow!(
@@ -105,31 +106,26 @@ impl ExecutionSpec {
                         }
                     } else if heading.depth == 5 {
                         // Parse annotation
-                        if runner.is_none() {
+                        return if runner.is_none() {
                             if let Some(Node::Text(text)) = heading.children.first() {
-                                runner = Some(match text.value.as_str() {
-                                    "skip" => Annotation::Skip,
-                                    _ => {
-                                        return Err(anyhow!(
-                                            "Unexpected runner annotation {:?} in {:?}",
-                                            text.value,
-                                            path,
-                                        ));
-                                    }
-                                });
+                                Err(anyhow!(
+                                    "Unexpected runner annotation {:?} in {:?}",
+                                    text.value,
+                                    path,
+                                ))
                             } else {
-                                return Err(anyhow!(
+                                Err(anyhow!(
                                     "Unexpected content of level 5 heading in {:?}: {:#?}",
                                     path,
                                     heading
-                                ));
+                                ))
                             }
                         } else {
-                            return Err(anyhow!(
+                            Err(anyhow!(
                                 "Unexpected double-declaration of runner annotation in {:?}",
                                 path
-                            ));
-                        }
+                            ))
+                        };
                     } else if heading.depth == 4 {
                     } else {
                         return Err(anyhow!(
@@ -172,7 +168,7 @@ impl ExecutionSpec {
                             let source = Source::from_str(&lang)?;
 
                             match name {
-                                "server" => {
+                                "config" => {
                                     // Server configs are only parsed if the test isn't skipped.
                                     server.push((source, content));
                                 }

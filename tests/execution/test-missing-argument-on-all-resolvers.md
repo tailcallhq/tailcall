@@ -1,5 +1,5 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-missing-argument-on-all-resolvers
@@ -40,7 +40,7 @@ message NewsList {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema @upstream(baseURL: "http://jsonplaceholder.typicode.com") @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }

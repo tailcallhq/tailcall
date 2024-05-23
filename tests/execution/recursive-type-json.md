@@ -1,6 +1,6 @@
 # Recursive Type JSON
 
-```json @server
+```json @config
 {
   "$schema": "./.tailcallrc.schema.json",
   "upstream": {
@@ -61,6 +61,7 @@
 - request:
     method: GET
     url: https://jsonplaceholder.typicode.com/friends/1
+  expectedHits: 2
   response:
     status: 200
     body:

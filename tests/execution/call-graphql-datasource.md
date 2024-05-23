@@ -1,6 +1,6 @@
 # Call operator with graphQL datasource
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8000, hostname: "0.0.0.0")
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
@@ -54,7 +54,7 @@ type Post {
     method: POST
     url: http://upstream/graphql
     textBody: '{ "query": "query { user(id: 1) { name } }" }'
-  expectedHits: 1
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -65,7 +65,7 @@ type Post {
     method: POST
     url: http://upstream/graphql
     textBody: '{ "query": "query { user(id: 2) { name } }" }'
-  expectedHits: 1
+  expectedHits: 2
   response:
     status: 200
     body:

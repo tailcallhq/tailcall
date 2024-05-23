@@ -1,5 +1,5 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-nested-link
@@ -40,7 +40,7 @@ type User {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema @server @upstream @link(src: "graphql-with-link.graphql", type: Config) {
   query: Query
 }

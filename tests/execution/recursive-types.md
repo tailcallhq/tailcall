@@ -1,6 +1,6 @@
 # Recursive Type
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
 }
@@ -28,6 +28,7 @@ type Query {
 - request:
     method: GET
     url: https://jsonplaceholder.typicode.com/friends/1
+  expectedHits: 2
   response:
     status: 200
     body:

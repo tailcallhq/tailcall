@@ -1,6 +1,6 @@
 # Env value
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {

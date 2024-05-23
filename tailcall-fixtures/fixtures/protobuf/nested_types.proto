@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package nested.types;
+
+message Item { string name = 1; }
+
+message Result {
+  string value = 1;
+
+  message Nested {
+    message VeryNested { string description = 1; }
+
+    string movie = 2;
+
+    VeryNested info = 3;
+  }
+
+  enum NestedEnum {
+    VALUE_0 = 0;
+    VALUE_1 = 1;
+    VALUE_2 = 2;
+  }
+
+  Nested nested_usage = 3;
+
+  NestedEnum nested_enum = 4;
+}
+
+service Example {
+  rpc Get(Result.Nested.VeryNested) returns (Result) {}
+}

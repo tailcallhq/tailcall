@@ -1,7 +1,7 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::cli::CLIError;
-use crate::FileIO;
+use crate::core::FileIO;
 
 #[derive(Clone)]
 pub struct NativeFileIO {}

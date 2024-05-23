@@ -1,6 +1,6 @@
 # test-upstream-headers
 
-```graphql @server
+```graphql @config
 schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", allowedHeaders: ["x-foo", "X-bar"]) {
   query: Query
 }

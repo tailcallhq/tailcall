@@ -1,10 +1,11 @@
 # test-scalar-email
 
-```graphql @server
+```graphql @config
+# this is already defined scalars in tailcall
 scalar Email
-scalar PhoneNumber
-scalar Date
-scalar Url
+
+# this is custom scalars in config
+scalar AnyScalar
 
 schema @server(port: 8000, hostname: "localhost") {
   query: Query
@@ -15,6 +16,7 @@ type Query {
   phone(value: PhoneNumber!): PhoneNumber! @expr(body: "{{.args.value}}")
   date(value: Date!): Date! @expr(body: "{{.args.value}}")
   url(value: Url!): Url! @expr(body: "{{.args.value}}")
+  any(value: AnyScalar!): AnyScalar @expr(body: "{{.args.value}}")
 }
 ```
 
@@ -38,6 +40,11 @@ type Query {
   url: http://localhost:8000/graphql
   body:
     query: '{ url(value: "https://tailcall.run/") }'
+
+- method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: '{ any1: any(value: { test: "abc" } ), any2: any(value: "string-value") }'
 
 # Invalid value test
 

@@ -140,9 +140,9 @@ impl NewsService for MyNewsService {
         let new_news = request.into_inner();
         let mut lock = self.news.lock().unwrap();
         if let Some(news) = lock.iter_mut().find(|n| n.id == new_news.id) {
-            news.title = new_news.title.clone();
-            news.body = new_news.body.clone();
-            news.post_image = new_news.post_image.clone();
+            news.title.clone_from(&new_news.title);
+            news.body.clone_from(&new_news.body);
+            news.post_image.clone_from(&new_news.post_image);
             return Ok(Response::new(new_news));
         }
         Err(Status::not_found("News not found"))

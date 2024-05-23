@@ -1,6 +1,6 @@
 # Ref other nested
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {
@@ -66,7 +66,7 @@
 - request:
     method: GET
     url: https://jsonplaceholder.typicode.com/users/1
-  expectedHits: 1
+  expectedHits: 2
   response:
     status: 200
     body:

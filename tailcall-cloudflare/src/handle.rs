@@ -1,12 +1,11 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use hyper::{Body, Request, Response};
 use lazy_static::lazy_static;
-use tailcall::async_graphql_hyper::GraphQLRequest;
-use tailcall::http::{handle_request, showcase, AppContext};
+use tailcall::core::async_graphql_hyper::GraphQLRequest;
+use tailcall::core::http::{handle_request, showcase, AppContext};
 
 use crate::http::{to_request, to_response};
 use crate::runtime;
@@ -53,7 +52,7 @@ async fn get_app_ctx(
 
     if let Some(file_path) = &file_path {
         if let Some(app_ctx) = read_app_ctx() {
-            if app_ctx.0 == file_path.borrow() {
+            if app_ctx.0.eq(file_path) {
                 tracing::info!("Using cached application context");
                 return Ok(Ok(app_ctx.clone().1));
             }
