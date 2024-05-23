@@ -68,10 +68,15 @@ pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hy
             .join("/")
     );
 
-    Ok(hyper::Request::builder()
-        .method(method)
-        .uri(url)
-        .body(hyper::Body::from(req.body().to_vec()))?)
+    let mut req2 = hyper::Request::builder().method(method).uri(url);
+
+    for (k, v) in req.headers() {
+        let key: hyper::http::header::HeaderName = k.as_str().parse()?;
+        let value = hyper::http::header::HeaderValue::from_bytes(v.as_bytes())?;
+        req2 = req2.header(key, value);
+    }
+
+    Ok(req2.body(hyper::Body::from(req.body().to_vec()))?)
 }
 
 pub async fn to_response(
@@ -91,4 +96,54 @@ pub async fn to_response(
 
 pub fn init_http() -> Arc<LambdaHttp> {
     Arc::new(LambdaHttp::init())
+}
+
+#[cfg(test)]
+mod tests {
+    use lambda_http::http::{Method, Request, StatusCode, Uri};
+    use lambda_http::Body;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_to_request() {
+        let req = Request::builder()
+            .method(Method::GET)
+            .uri(Uri::from_static("http://example.com"))
+            .header("content-type", "application/json")
+            .header("x-custom-header", "custom-value")
+            .body(Body::from("Hello, world!"))
+            .unwrap();
+        let hyper_req = to_request(req).unwrap();
+        assert_eq!(hyper_req.method(), hyper::Method::GET);
+        assert_eq!(hyper_req.uri(), "http://example.com/");
+        assert_eq!(
+            hyper_req.headers().get("content-type").unwrap(),
+            "application/json"
+        );
+        assert_eq!(
+            hyper_req.headers().get("x-custom-header").unwrap(),
+            "custom-value"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_to_response() {
+        let res = hyper::Response::builder()
+            .status(200)
+            .header("content-type", "application/json")
+            .header("x-custom-header", "custom-value")
+            .body(hyper::Body::from("Hello, world!"))
+            .unwrap();
+        let lambda_res = to_response(res).await.unwrap();
+        assert_eq!(lambda_res.status(), StatusCode::OK);
+        assert_eq!(
+            lambda_res.headers().get("content-type").unwrap(),
+            "application/json"
+        );
+        assert_eq!(
+            lambda_res.headers().get("x-custom-header").unwrap(),
+            "custom-value"
+        );
+    }
 }

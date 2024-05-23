@@ -1,8 +1,11 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") @link(src: "operation-user.graphql", type: Operation) {
+schema
+  @server
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com")
+  @link(src: "operation-user.graphql", type: Operation) {
   query: Query
 }
 

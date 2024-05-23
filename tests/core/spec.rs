@@ -18,6 +18,7 @@ use tailcall::core::http::{handle_request, AppContext};
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::print_schema::print_schema;
 use tailcall::core::valid::{Cause, ValidationError};
+use tailcall_prettier::Parser;
 
 use super::file::File;
 use super::http::Http;
@@ -225,9 +226,13 @@ async fn test_spec(spec: ExecutionSpec) {
         .fold(Config::default(), |acc, c| acc.merge_right(c.clone()))
         .to_sdl();
 
+    let formatter = tailcall_prettier::format(merged, &Parser::Gql)
+        .await
+        .unwrap();
+
     let snapshot_name = format!("{}_merged", spec.safe_name);
 
-    insta::assert_snapshot!(snapshot_name, merged);
+    insta::assert_snapshot!(snapshot_name, formatter);
 
     // Resolve all configs
     let mut runtime = runtime::create_runtime(mock_http_client.clone(), spec.env.clone(), None);
@@ -264,9 +269,13 @@ async fn test_spec(spec: ExecutionSpec) {
                 .unwrap())
             .to_schema(),
         );
+
+        let formatted = tailcall_prettier::format(client, &Parser::Gql)
+            .await
+            .unwrap();
         let snapshot_name = format!("{}_client", spec.safe_name);
 
-        insta::assert_snapshot!(snapshot_name, client);
+        insta::assert_snapshot!(snapshot_name, formatted);
     }
 
     // run query tests
