@@ -1,5 +1,4 @@
 use core::future::Future;
-use std::hash::{Hash, Hasher};
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -164,12 +163,7 @@ impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
             IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
             IO::GraphQL { req_template, .. } => req_template.cache_key(ctx),
-            IO::Js { name: method } => {
-                // TODO
-                let mut hasher = std::hash::DefaultHasher::new();
-                method.hash(&mut hasher);
-                hasher.finish()
-            }
+            IO::Js { .. } => None,
         }
     }
 }
