@@ -346,6 +346,14 @@ fn to_type_of(type_: &Type) -> String {
         BaseType::List(ty) => to_type_of(ty),
     }
 }
+
+fn is_list_type_required(type_ : &Type) -> bool {
+    match &type_.base {
+        BaseType::Named(_) => type_.nullable,
+        BaseType::List(ty) => is_list_type_required(ty),
+    }
+}
+
 fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> {
     let mut args: BTreeMap<String, config::Arg> = BTreeMap::new();
 
@@ -360,6 +368,11 @@ fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> 
 fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     let type_of = to_type_of(&input_value_definition.ty.node);
     let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
+    let mut list_type_required = false;
+    if list {
+        // check if type inside the list is required or not.
+        list_type_required = !is_list_type_required(&input_value_definition.ty.node);
+    }
     let required = !input_value_definition.ty.node.nullable;
     let doc = input_value_definition
         .description
@@ -375,7 +388,7 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     } else {
         None
     };
-    config::Arg { type_of, list, required, doc, modify, default_value }
+    config::Arg { type_of, list, required, list_type_required, doc, modify, default_value }
 }
 
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {

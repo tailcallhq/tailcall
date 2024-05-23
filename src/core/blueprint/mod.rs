@@ -72,7 +72,7 @@ impl TypeLike for Arg {
     }
 
     fn list_type_required(&self) -> bool {
-        false
+         self.list_type_required
     }
 }
 

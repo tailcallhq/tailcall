@@ -164,6 +164,7 @@ impl Context {
                         type_of,
                         list: false,
                         required: true,
+                        list_type_required: false,
                         /* Setting it not null by default. There's no way to infer this
                          * from proto file */
                         doc: None,

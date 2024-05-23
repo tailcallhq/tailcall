@@ -386,6 +386,9 @@ pub struct Arg {
     pub modify: Option<Modify>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub default_value: Option<Value>,
+    /// Flag to indicate if the type inside the list is required.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub list_type_required: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
