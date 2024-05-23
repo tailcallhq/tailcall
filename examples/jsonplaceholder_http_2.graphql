@@ -2,7 +2,7 @@ schema
   @server(port: 3000, queryValidation: false, hostname: "0.0.0.0", version: HTTP2)
   @link(type: Cert, src: "./example.crt")
   @link(type: Key, src: "./example.key")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
 }
 
