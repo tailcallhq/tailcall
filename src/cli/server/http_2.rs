@@ -63,35 +63,29 @@ async fn handle<T: DeserializeOwned + GraphQLRequestLike + Send>(
 ) -> anyhow::Result<()> {
     loop {
         let stream_result = listener.accept().await;
-        match stream_result {
-            Ok((stream, _)) => {
-                let app_ctx = sc.app_ctx.clone();
-                let io_result = acceptor.accept(stream).await;
-                match io_result {
-                    Ok(io) => {
-                        let io = TokioIo::new(io);
-                        let server = builder
-                            .serve_connection(
-                                io,
-                                service_fn(move |req| {
-                                    let app_ctx = app_ctx.clone();
-                                    async move {
-                                        let req = Request::from_hyper(req).await?;
-                                        handle_request::<T>(req, app_ctx).await
-                                    }
-                                }),
-                            )
-                            .await;
-                        tokio::spawn(async move {
-                            if let Err(e) = server {
-                                tracing::error!("An error occurred while handling a request: {e}");
+        if let Ok((stream, _)) = stream_result {
+            let app_ctx = sc.app_ctx.clone();
+            let io_result = acceptor.accept(stream).await;
+            if let Ok(io) = io_result {
+                let io = TokioIo::new(io);
+                let server = builder
+                    .serve_connection(
+                        io,
+                        service_fn(move |req| {
+                            let app_ctx = app_ctx.clone();
+                            async move {
+                                let req = Request::from_hyper(req).await?;
+                                handle_request::<T>(req, app_ctx).await
                             }
-                        });
+                        }),
+                    )
+                    .await;
+                tokio::spawn(async move {
+                    if let Err(e) = server {
+                        tracing::error!("An error occurred while handling a request: {e}");
                     }
-                    Err(e) => tracing::error!("An error occurred while handling request IO: {e}"),
-                }
+                });
             }
-            Err(e) => tracing::error!("An error occurred while handling request: {e}"),
         }
     }
 }
