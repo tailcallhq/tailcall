@@ -40,20 +40,21 @@ impl Eval for Cache {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             if let Expression::IO(io) = self.expr.deref() {
-                let key = io
-                    .cache_key(&ctx)
-                    .ok_or(anyhow::anyhow!("Unable to generate Cache Key"))?;
-
-                if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
-                    Ok(val)
+                let key = io.cache_key(&ctx);
+                if let Some(key) = key {
+                    if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
+                        Ok(val)
+                    } else {
+                        let val = self.expr.eval(ctx.clone()).await?;
+                        ctx.request_ctx
+                            .runtime
+                            .cache
+                            .set(key, val.clone(), self.max_age)
+                            .await?;
+                        Ok(val)
+                    }
                 } else {
-                    let val = self.expr.eval(ctx.clone()).await?;
-                    ctx.request_ctx
-                        .runtime
-                        .cache
-                        .set(key, val.clone(), self.max_age)
-                        .await?;
-                    Ok(val)
+                    self.expr.eval(ctx).await
                 }
             } else {
                 Ok(self.expr.eval(ctx).await?)

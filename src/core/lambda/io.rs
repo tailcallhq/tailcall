@@ -51,15 +51,17 @@ impl Eval for IO {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         if ctx.request_ctx.upstream.dedupe {
             Box::pin(async move {
-                let key = self
-                    .cache_key(&ctx)
-                    .ok_or(anyhow::anyhow!("Unable to generate Cache Key"))?;
-                ctx.request_ctx
-                    .cache
-                    .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
-                    .await
-                    .as_ref()
-                    .clone()
+                let key = self.cache_key(&ctx);
+                if let Some(key) = key {
+                    ctx.request_ctx
+                        .cache
+                        .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
+                        .await
+                        .as_ref()
+                        .clone()
+                } else {
+                    self.eval_inner(ctx).await
+                }
             })
         } else {
             Box::pin(self.eval_inner(ctx))
