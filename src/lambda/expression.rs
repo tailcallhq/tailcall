@@ -69,7 +69,7 @@ pub enum EvaluationError {
 
     DeserializeError(String),
 
-    AuthError(auth::error::Error),
+    AuthError(String),
 }
 
 impl Display for EvaluationError {
@@ -100,9 +100,11 @@ impl Display for EvaluationError {
                 "{}",
                 CLIError::new("Deserialize Error").caused_by(vec![CLIError::new(msg)])
             ),
-            EvaluationError::AuthError(err) => {
-                write!(f, "Authentication Failure: {}", err)
-            }
+            EvaluationError::AuthError(msg) => write!(
+                f,
+                "{}",
+                CLIError::new("Authentication Failure").caused_by(vec![CLIError::new(msg)])
+            ),
             EvaluationError::GRPCError {
                 grpc_code,
                 grpc_description,
@@ -175,7 +177,7 @@ impl<'a> From<crate::valid::ValidationError<&'a str>> for EvaluationError {
 
 impl From<auth::error::Error> for EvaluationError {
     fn from(value: auth::error::Error) -> Self {
-        EvaluationError::AuthError(value)
+        EvaluationError::AuthError(value.to_string())
     }
 }
 
