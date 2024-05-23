@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package scalars;
+
 message Item {
   bool boolean = 1;
   bytes bytesType = 2;

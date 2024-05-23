@@ -6,7 +6,7 @@ schema @server @upstream {
   query: Query
 }
 
-input Item @tag(id: "Item") {
+input scalars__Item @tag(id: "scalars.Item") {
   boolean: Boolean
   bytesType: Bytes
   doubleNum: Float
@@ -25,9 +25,9 @@ input Item @tag(id: "Item") {
 }
 
 type Query {
-  Example__Get(item: Item!): Result! @grpc(body: "{{.args.item}}", method: "Example.Get")
+  scalars__Example__Get(item: scalars__Item!): scalars__Result! @grpc(body: "{{.args.item}}", method: "scalars.Example.Get")
 }
 
-type Result @tag(id: "Result") {
-  result: [Item]!
+type scalars__Result @tag(id: "scalars.Result") {
+  result: [scalars__Item]!
 }
