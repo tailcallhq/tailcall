@@ -15,6 +15,7 @@ pub mod cors;
 mod from_document;
 pub mod group_by;
 mod headers;
+pub mod ident;
 mod into_document;
 mod key_values;
 mod link;
