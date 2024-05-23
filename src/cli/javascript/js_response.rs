@@ -51,7 +51,7 @@ impl<'js> FromJs<'js> for JsResponse {
         let response = Response {
             status: hyper::StatusCode::from_u16(status).map_err(|_| rquickjs::Error::FromJs {
                 from: "u16",
-                to: "reqwest::StatusCode",
+                to: "hyper::StatusCode",
                 message: Some("invalid status code".to_string()),
             })?,
             headers: create_header_map(headers).map_err(|e| rquickjs::Error::FromJs {
