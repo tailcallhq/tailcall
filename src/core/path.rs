@@ -34,7 +34,7 @@ impl PathString for serde_json::Value {
     }
 }
 
-fn convert_list_to_query_param(list: &[ConstValue]) -> String {
+fn convert_list_to_query_string(list: &[ConstValue]) -> String {
     list.iter()
         .map(|list_item| list_item.to_string())
         .collect::<Vec<_>>()
@@ -60,10 +60,10 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
 fn convert_args(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
     match value {
         Cow::Owned(async_graphql::Value::List(list)) => {
-            Some(convert_list_to_query_param(&list).into())
+            Some(convert_list_to_query_string(&list).into())
         }
         Cow::Borrowed(async_graphql::Value::List(list)) => {
-            Some(convert_list_to_query_param(list).into())
+            Some(convert_list_to_query_string(list).into())
         }
         _ => convert_value(value),
     }
