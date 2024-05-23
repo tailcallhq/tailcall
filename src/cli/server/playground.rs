@@ -1,4 +1,4 @@
-use crate::cli::version::VERSION;
+use tailcall_version::VERSION;
 
 const UTM_MEDIUM: &str = "server";
 const DEBUG_UTM_SOURCE: &str = "tailcall-debug";

@@ -7,7 +7,6 @@ pub mod metrics;
 pub mod server;
 mod tc;
 pub mod telemetry;
-mod version;
 
 pub mod runtime;
 pub(crate) mod update_checker;
