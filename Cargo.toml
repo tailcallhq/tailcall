@@ -50,13 +50,15 @@ opentelemetry-otlp = { version = "0.15.0", features = [
 ], optional = true }
 opentelemetry-system-metrics = { version = "0.1.8", optional = true }
 tailcall-http-cache = {path = "tailcall-http-cache", optional = true }
-
+hyper-util = {version = "0.1.3",features = ["tokio"],optional = true}
 
 # dependencies safe for wasm:
 
 rustls-pemfile = { version = "1.0.4" }
 schemars = { version = "0.8.17", features = ["derive"] }
 hyper = { version = "1.3.1", features = ["server"], default-features = false }
+http-body-util = "0.1.1"
+bytes = "1.6.0"
 tokio = { workspace = true }
 anyhow = { workspace = true }
 reqwest = { workspace = true }
@@ -197,6 +199,9 @@ cli = [
     "dep:opentelemetry-system-metrics",
     "dep:tailcall-tracker",
     "dep:tailcall-http-cache",
+    "hyper/http2",
+    "hyper/http1",
+    "hyper-util",
 ]
 
 # Feature flag to enable all default features.
