@@ -1,8 +1,21 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
-schema @server(headers: {cors: {allowHeaders: ["Authorization"], allowMethods: ["POST", "OPTIONS"], allowOrigins: ["abc.com", "xyz.com"], allowPrivateNetwork: true, maxAge: 23, vary: ["origin", "access-control-request-method", "access-control-request-headers"]}}) @upstream(baseURL: "http://example.com", batch: {delay: 1, headers: [], maxSize: 1000}) {
+schema
+  @server(
+    headers: {
+      cors: {
+        allowHeaders: ["Authorization"]
+        allowMethods: ["POST", "OPTIONS"]
+        allowOrigins: ["abc.com", "xyz.com"]
+        allowPrivateNetwork: true
+        maxAge: 23
+        vary: ["origin", "access-control-request-method", "access-control-request-headers"]
+      }
+    }
+  )
+  @upstream(baseURL: "http://example.com", batch: {delay: 1, headers: [], maxSize: 1000}) {
   query: Query
 }
 

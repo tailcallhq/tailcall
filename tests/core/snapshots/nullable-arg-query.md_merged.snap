@@ -1,13 +1,14 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server @upstream {
   query: Query
 }
 
 type Query {
-  users(id: ID): [User] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users", query: [{key: "id", value: "{{.args.id}}"}])
+  users(id: ID): [User]
+    @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users", query: [{key: "id", value: "{{.args.id}}"}])
 }
 
 type User {
