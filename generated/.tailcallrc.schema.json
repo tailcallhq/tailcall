@@ -147,6 +147,10 @@
         "list": {
           "type": "boolean"
         },
+        "list_type_required": {
+          "description": "Flag to indicate if the type inside the list is required.",
+          "type": "boolean"
+        },
         "modify": {
           "anyOf": [
             {
