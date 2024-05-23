@@ -26,17 +26,24 @@ pub struct KeyValue {
     pub value: String,
 }
 
+// When we merge values, we do a merge right, which is to say that
+// where both current and other have the same key, we use the value
+// from other. This simplifies the merge_right_vars function in
+// server.rs.
 pub fn merge_key_value_vecs(current: &[KeyValue], other: &[KeyValue]) -> Vec<KeyValue> {
-    let mut acc: BTreeMap<&String, &String> =
-        current.iter().map(|kv| (&kv.key, &kv.value)).collect();
+    let mut res = BTreeMap::new();
 
-    for kv in other {
-        acc.insert(&kv.key, &kv.value);
+    for kv in current {
+        res.insert(kv.key.to_owned(), kv.value.to_owned());
     }
 
-    acc.iter()
-        .map(|(k, v)| KeyValue { key: k.to_string(), value: v.to_string() })
-        .collect()
+    for kv in other {
+        res.insert(kv.key.to_owned(), kv.value.to_owned());
+    }
+
+    res.into_iter()
+        .map(|(k, v)| KeyValue { key: k, value: v })
+        .collect::<Vec<KeyValue>>()
 }
 
 impl Serialize for KeyValues {
