@@ -8,12 +8,13 @@ use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
 use crate::core::grpc::protobuf::ProtobufOperation;
+use crate::core::http::{to_hyper_headers, to_reqwest_headers};
 use crate::core::lambda::EvaluationError;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
-    pub status: reqwest::StatusCode,
-    pub headers: reqwest::header::HeaderMap,
+    pub status: hyper::StatusCode,
+    pub headers: hyper::header::HeaderMap,
     pub body: Body,
 }
 
@@ -48,16 +49,16 @@ impl FromValue for ConstValue {
 
 impl Response<Bytes> {
     pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {
-        let status = resp.status();
-        let headers = resp.headers().to_owned();
+        let status = hyper::StatusCode::from_u16(resp.status().as_u16())?;
+        let headers = to_hyper_headers(resp.headers());
         let body = resp.bytes().await?;
         Ok(Response { status, headers, body })
     }
 
     pub fn empty() -> Self {
         Response {
-            status: reqwest::StatusCode::OK,
-            headers: reqwest::header::HeaderMap::default(),
+            status: hyper::StatusCode::OK,
+            headers: hyper::header::HeaderMap::default(),
             body: Bytes::new(),
         }
     }
@@ -91,7 +92,8 @@ impl Response<Bytes> {
     }
 
     pub fn to_grpc_error(&self, operation: &ProtobufOperation) -> anyhow::Error {
-        let grpc_status = match Status::from_header_map(&self.headers) {
+        let grpc_status = match Status::from_header_map(&to_reqwest_headers(&self.headers)) {
+            // TODO
             Some(status) => status,
             None => {
                 return EvaluationError::IOException(

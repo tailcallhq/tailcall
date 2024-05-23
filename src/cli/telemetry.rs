@@ -26,6 +26,7 @@ use tracing_subscriber::{Layer, Registry};
 use super::metrics::init_metrics;
 use crate::cli::CLIError;
 use crate::core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
+use crate::core::http::to_reqwest_headers;
 use crate::core::runtime::TargetRuntime;
 use crate::core::tracing::{default_tracing_tailcall, get_log_level, tailcall_filter_target};
 
@@ -55,7 +56,9 @@ fn otlp_exporter(config: &OtlpExporter) -> TonicExporterBuilder {
     opentelemetry_otlp::new_exporter()
         .tonic()
         .with_endpoint(config.url.as_str())
-        .with_metadata(MetadataMap::from_headers(config.headers.clone()))
+        .with_metadata(MetadataMap::from_headers(to_reqwest_headers(
+            &config.headers,
+        )))
 }
 
 fn set_trace_provider(

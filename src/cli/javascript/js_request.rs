@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::str::FromStr;
 
-use headers::HeaderValue;
 use reqwest::header::HeaderName;
 use reqwest::Request;
 use rquickjs::{FromJs, IntoJs};
@@ -110,10 +109,12 @@ impl<'js> FromJs<'js> for JsRequest {
                     to: "HeaderName",
                     message: Some(e.to_string()),
                 })?,
-                HeaderValue::from_str(v.as_str()).map_err(|e| rquickjs::Error::FromJs {
-                    from: "string",
-                    to: "reqwest::header::HeaderValue",
-                    message: Some(e.to_string()),
+                reqwest::header::HeaderValue::from_str(v.as_str()).map_err(|e| {
+                    rquickjs::Error::FromJs {
+                        from: "string",
+                        to: "reqwest::header::HeaderValue",
+                        message: Some(e.to_string()),
+                    }
                 })?,
             );
         }
@@ -250,6 +251,7 @@ impl Display for Uri {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
+    use reqwest::header::HeaderValue;
     use rquickjs::{Context, Runtime};
 
     use super::*;

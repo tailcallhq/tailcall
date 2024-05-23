@@ -1,14 +1,16 @@
 #![allow(clippy::too_many_arguments)]
 
 use std::hash::{Hash, Hasher};
+use std::str::FromStr;
 
 use derive_setters::Setters;
-use reqwest::header::{HeaderValue, HeaderMap};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use tailcall_hasher::TailcallHasher;
 
 use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
+use crate::core::http::to_reqwest_headers;
 use crate::core::http::Method::POST;
 use crate::core::lambda::{CacheKey, GraphQLOperationContext};
 use crate::core::mustache::Mustache;
@@ -31,7 +33,7 @@ impl RequestTemplate {
 
         for (k, v) in &self.headers {
             if let Ok(header_value) = HeaderValue::from_str(&v.render_graphql(ctx)) {
-                header_map.insert(k, header_value);
+                header_map.insert(HeaderName::from_str(k.as_str()).unwrap(), header_value);
             }
         }
 
@@ -53,7 +55,7 @@ impl RequestTemplate {
             reqwest::header::CONTENT_TYPE,
             HeaderValue::from_static("application/json"),
         );
-        headers.extend(ctx.headers().to_owned());
+        headers.extend(to_reqwest_headers(ctx.headers()));
         req
     }
 

@@ -16,11 +16,13 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
-use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN, Request};
+use super::{
+    showcase, telemetry, AppContext, Request, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN,
+};
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
-use crate::core::Body;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
+use crate::core::Body;
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -49,7 +51,7 @@ fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Respon
 fn not_found() -> Result<Response<Body>> {
     Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
-        .body(Body::empty())?)
+        .body(Body::default())?)
 }
 
 fn create_request_context(req: &Request, app_ctx: &AppContext) -> RequestContext {

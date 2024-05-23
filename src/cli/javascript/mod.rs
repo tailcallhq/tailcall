@@ -26,8 +26,8 @@ pub fn init_http(
 
 fn create_header_map(
     headers: BTreeMap<String, String>,
-) -> anyhow::Result<reqwest::header::HeaderMap> {
-    let mut header_map = reqwest::header::HeaderMap::new();
+) -> anyhow::Result<hyper::header::HeaderMap> {
+    let mut header_map = hyper::header::HeaderMap::new();
     for (key, value) in headers.iter() {
         let key = HeaderName::from_bytes(key.as_bytes())?;
         let value = HeaderValue::from_str(value.as_str())?;

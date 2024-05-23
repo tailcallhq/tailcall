@@ -2,9 +2,8 @@ use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
 use derive_setters::Setters;
-use hyper::header::CONTENT_TYPE;
-use hyper::{HeaderMap, Method};
-use reqwest::header::HeaderValue;
+use hyper::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
+use reqwest::Method;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -13,6 +12,7 @@ use crate::core::config::GraphQLOperationType;
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
+use crate::core::http::to_reqwest_headers;
 use crate::core::lambda::CacheKey;
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
@@ -96,7 +96,7 @@ impl RequestTemplate {
 impl RenderedRequestTemplate {
     pub fn to_request(&self) -> Result<reqwest::Request> {
         let mut req = reqwest::Request::new(Method::POST, self.url.clone());
-        req.headers_mut().extend(self.headers.clone());
+        req.headers_mut().extend(to_reqwest_headers(&self.headers));
 
         Ok(create_grpc_request(
             self.url.clone(),

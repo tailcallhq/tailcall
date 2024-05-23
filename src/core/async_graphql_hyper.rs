@@ -3,17 +3,18 @@ use std::any::Any;
 use anyhow::Result;
 use async_graphql::{BatchResponse, Executor, Value};
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
-use hyper::{Body, Response, StatusCode};
+use hyper::{Response, StatusCode};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+
 use crate::core::Body;
 
 #[async_trait::async_trait]
 pub trait GraphQLRequestLike {
     fn data<D: Any + Clone + Send + Sync>(self, data: D) -> Self;
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
-        where
-            E: Executor;
+    where
+        E: Executor;
 }
 
 #[derive(Debug, Deserialize)]
@@ -31,8 +32,8 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
     }
     /// Shortcut method to execute the request on the executor.
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
-        where
-            E: Executor,
+    where
+        E: Executor,
     {
         GraphQLResponse(executor.execute_batch(self.0).await)
     }
@@ -52,8 +53,8 @@ impl GraphQLRequestLike for GraphQLRequest {
     }
     /// Shortcut method to execute the request on the schema.
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
-        where
-            E: Executor,
+    where
+        E: Executor,
     {
         GraphQLResponse(executor.execute(self.0).await.into())
     }
@@ -102,8 +103,8 @@ pub struct GraphQLQuery {
 impl GraphQLQuery {
     /// Shortcut method to execute the request on the schema.
     pub async fn execute<E>(self, executor: &E) -> GraphQLResponse
-        where
-            E: Executor,
+    where
+        E: Executor,
     {
         let request: GraphQLRequest = self.into();
         request.execute(executor).await
@@ -227,7 +228,12 @@ mod tests {
 
         let response = GraphQLResponse(BatchResponse::Single(Response::new(Value::Object(data))));
         let rest_response = response.into_rest_response().unwrap();
-        let body = rest_response.into_body().collect().await.unwrap().to_bytes();
+        let body = rest_response
+            .into_body()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -252,7 +258,12 @@ mod tests {
 
         let response = GraphQLResponse(BatchResponse::Batch(list));
         let rest_response = response.into_rest_response().unwrap();
-        let body = rest_response.into_body().collect().await.unwrap().to_bytes();
+        let body = rest_response
+            .into_body()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -263,9 +274,9 @@ mod tests {
                 { "name": names[1] },
                 { "name": names[2] }
             ])
-                .to_string()
-                .as_bytes()
-                .to_vec()
+            .to_string()
+            .as_bytes()
+            .to_vec()
         );
     }
 
@@ -279,7 +290,12 @@ mod tests {
             .collect();
         let response = GraphQLResponse(BatchResponse::Single(response));
         let rest_response = response.into_rest_response().unwrap();
-        let body = rest_response.into_body().collect().await.unwrap().to_bytes();
+        let body = rest_response
+            .into_body()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes();
 
         assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -293,9 +309,9 @@ mod tests {
                     })
                 }).collect::<Vec<_>>()
             })
-                .to_string()
-                .as_bytes()
-                .to_vec()
+            .to_string()
+            .as_bytes()
+            .to_vec()
         );
     }
 }

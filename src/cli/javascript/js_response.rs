@@ -49,14 +49,14 @@ impl<'js> FromJs<'js> for JsResponse {
         let headers = object.get::<&str, BTreeMap<String, String>>("headers")?;
         let body = object.get::<&str, Option<String>>("body")?;
         let response = Response {
-            status: reqwest::StatusCode::from_u16(status).map_err(|_| rquickjs::Error::FromJs {
+            status: hyper::StatusCode::from_u16(status).map_err(|_| rquickjs::Error::FromJs {
                 from: "u16",
                 to: "reqwest::StatusCode",
                 message: Some("invalid status code".to_string()),
             })?,
             headers: create_header_map(headers).map_err(|e| rquickjs::Error::FromJs {
                 from: "BTreeMap<String, String>",
-                to: "reqwest::header::HeaderMap",
+                to: "hyper::header::HeaderMap",
                 message: Some(e.to_string()),
             })?,
             body: body.unwrap_or_default(),
@@ -98,8 +98,8 @@ mod test {
     use anyhow::Result;
     use headers::{HeaderName, HeaderValue};
     use hyper::body::Bytes;
+    use hyper::header::HeaderMap;
     use pretty_assertions::assert_eq;
-    use reqwest::header::HeaderMap;
     use rquickjs::{Context, FromJs, IntoJs, Runtime};
 
     use super::JsResponse;
@@ -108,7 +108,7 @@ mod test {
         let mut headers = HeaderMap::new();
         headers.insert("content-type", "application/json".parse().unwrap());
         let response = crate::core::http::Response {
-            status: reqwest::StatusCode::OK,
+            status: hyper::StatusCode::OK,
             headers,
             body: Bytes::from("Hello, World!"),
         };
@@ -152,7 +152,7 @@ mod test {
             HeaderValue::from_str("🚀").unwrap(),
         );
         let response = crate::core::http::Response {
-            status: reqwest::StatusCode::OK,
+            status: hyper::StatusCode::OK,
             headers,
             body: body.into(),
         };

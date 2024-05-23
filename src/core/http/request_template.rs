@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
+use std::str::FromStr;
 
 use derive_setters::Setters;
-use hyper::HeaderMap;
-use reqwest::header::HeaderValue;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -11,6 +11,7 @@ use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
+use crate::core::http::to_reqwest_headers;
 use crate::core::lambda::CacheKey;
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
@@ -86,7 +87,7 @@ impl RequestTemplate {
 
         for (k, v) in &self.headers {
             if let Ok(header_value) = HeaderValue::from_str(&v.render(ctx)) {
-                header_map.insert(k, header_value);
+                header_map.insert(HeaderName::from_str(k.as_str()).unwrap(), header_value);
             }
         }
 
@@ -162,7 +163,7 @@ impl RequestTemplate {
             );
         }
 
-        headers.extend(ctx.headers().to_owned());
+        headers.extend(to_reqwest_headers(ctx.headers()));
         req
     }
 
@@ -198,7 +199,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
             .iter()
             .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
             .collect::<anyhow::Result<Vec<_>>>()?;
-        let method = endpoint.method.clone().to_hyper();
+        let method = endpoint.method.clone().to_reqwest();
         let headers = endpoint
             .headers
             .iter()

@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use async_graphql::{SelectionField, ServerError, Value};
-use reqwest::header::HeaderMap;
+use hyper::header::HeaderMap;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
 use crate::core::http::RequestContext;

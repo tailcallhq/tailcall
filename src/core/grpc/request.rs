@@ -1,17 +1,17 @@
 use anyhow::{bail, Result};
-use hyper::{HeaderMap, Method};
+use hyper::HeaderMap;
 use reqwest::Request;
 use url::Url;
 
 use super::protobuf::ProtobufOperation;
-use crate::core::http::Response;
+use crate::core::http::{to_reqwest_headers, Response};
 use crate::core::runtime::TargetRuntime;
 
 pub static GRPC_STATUS: &str = "grpc-status";
 
 pub fn create_grpc_request(url: Url, headers: HeaderMap, body: Vec<u8>) -> Request {
-    let mut req = Request::new(Method::POST, url);
-    req.headers_mut().extend(headers.clone());
+    let mut req = Request::new(reqwest::Method::POST, url);
+    req.headers_mut().extend(to_reqwest_headers(&headers));
     req.body_mut().replace(body.into());
 
     req
@@ -46,8 +46,9 @@ mod tests {
     use anyhow::Result;
     use async_trait::async_trait;
     use hyper::body::Bytes;
+    use hyper::StatusCode;
     use reqwest::header::HeaderMap;
-    use reqwest::{Method, Request, StatusCode};
+    use reqwest::{Method, Request};
     use serde_json::json;
     use tailcall_fixtures::protobuf;
     use tonic::{Code, Status};
@@ -55,7 +56,7 @@ mod tests {
     use crate::core::blueprint::GrpcMethod;
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::grpc::request::execute_grpc_request;
-    use crate::core::http::Response;
+    use crate::core::http::{to_hyper_headers, Response};
     use crate::core::lambda::EvaluationError;
     use crate::core::runtime::TargetRuntime;
     use crate::core::HttpIO;
@@ -79,23 +80,33 @@ mod tests {
             let error = Bytes::from_static(b"\x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details");
 
             match self.scenario {
-                TestScenario::SuccessWithoutGrpcStatus => {
-                    Ok(Response { status: StatusCode::OK, headers, body: message })
-                }
+                TestScenario::SuccessWithoutGrpcStatus => Ok(Response {
+                    status: StatusCode::OK,
+                    headers: to_hyper_headers(&headers),
+                    body: message,
+                }),
                 TestScenario::SuccessWithOkGrpcStatus => {
                     let status = Status::ok("");
                     status.add_header(&mut headers)?;
-                    Ok(Response { status: StatusCode::OK, headers, body: message })
+                    Ok(Response {
+                        status: StatusCode::OK,
+                        headers: to_hyper_headers(&headers),
+                        body: message,
+                    })
                 }
                 TestScenario::SuccessWithErrorGrpcStatus => {
                     let status =
                         Status::with_details(Code::InvalidArgument, "description message", error);
                     status.add_header(&mut headers)?;
-                    Ok(Response { status: StatusCode::OK, headers, body: Bytes::default() })
+                    Ok(Response {
+                        status: StatusCode::OK,
+                        headers: to_hyper_headers(&headers),
+                        body: Bytes::default(),
+                    })
                 }
                 TestScenario::Error => Ok(Response {
                     status: StatusCode::NOT_FOUND,
-                    headers,
+                    headers: to_hyper_headers(&headers),
                     body: Bytes::default(),
                 }),
             }
