@@ -101,21 +101,20 @@ impl Display for EvaluationError {
                 CLIError::new("Deserialize Error").caused_by(vec![CLIError::new(msg)])
             ),
             EvaluationError::AuthError(err) => {
-                write!(f, "{}", err)
+                write!(f, "Authentication Failure: {}", err)
             }
             EvaluationError::GRPCError {
                 grpc_code,
                 grpc_description,
                 grpc_status_message,
-                grpc_status_details,
+                grpc_status_details: _,
             } => write!(
                 f,
                 "{}",
                 CLIError::new("GRPC Error").caused_by(vec![
-                    CLIError::new(format!("Code: {}", grpc_code).as_str()),
+                    CLIError::new(format!("Status: {}", grpc_code).as_str()),
                     CLIError::new(format!("Message: {}", grpc_status_message).as_str()),
-                    CLIError::new(format!("Description: {}", grpc_description).as_str()),
-                    CLIError::new(format!("Details: {}", grpc_status_details).as_str())
+                    CLIError::new(format!("Description: {}", grpc_description).as_str())
                 ])
             ),
         }
