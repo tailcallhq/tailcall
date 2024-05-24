@@ -13,7 +13,7 @@ use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::lambda::CacheKey;
 use crate::core::mustache::Mustache;
-use crate::core::path::PathString;
+use crate::core::path::{PathString, RequestString};
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -33,13 +33,13 @@ pub struct RequestTemplate {
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
-    fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+    fn create_url<C: RequestString>(&self, ctx: &C) -> anyhow::Result<Url> {
         let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
         }
         let extra_qp = self.query.iter().filter_map(|(k, v)| {
-            let value = v.render(ctx);
+            let value = v.render_http(ctx, &self.method);
             if value.is_empty() {
                 None
             } else {
@@ -94,7 +94,7 @@ impl RequestTemplate {
     }
 
     /// Creates a Request for the given context
-    pub fn to_request<C: PathString + HasHeaders>(
+    pub fn to_request<C: RequestString + HasHeaders>(
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
@@ -224,7 +224,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
     }
 }
 
-impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: RequestString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> u64 {
         let mut hasher = TailcallHasher::default();
         let state = &mut hasher;
@@ -268,7 +268,7 @@ mod tests {
     use super::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
     use crate::core::mustache::Mustache;
-    use crate::core::path::PathString;
+    use crate::core::path::RequestString;
 
     #[derive(Setters)]
     struct Context {
@@ -288,6 +288,12 @@ mod tests {
         }
     }
 
+    impl crate::core::path::RequestString for Context {
+        fn req_string<T: AsRef<str>>(&self, parts: &[T], method: &reqwest::Method) -> Option<Cow<'_, str>> {
+            self.value.req_string(parts, method)
+        }
+    }
+
     impl crate::core::has_headers::HasHeaders for Context {
         fn headers(&self) -> &HeaderMap {
             &self.headers
@@ -295,7 +301,7 @@ mod tests {
     }
 
     impl RequestTemplate {
-        fn to_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
+        fn to_body<C: RequestString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
             let body = self
                 .to_request(ctx)?
                 .body()
