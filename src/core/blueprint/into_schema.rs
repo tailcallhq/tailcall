@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
+use async_graphql::dynamic::{self, FieldFuture, FieldValue, Object, SchemaBuilder};
 use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
@@ -77,18 +77,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         let p = match const_value {
                                             ConstValue::List(a) => Some(FieldValue::list(a)),
                                             ConstValue::Null => FieldValue::NONE,
-                                            a => Some(
-                                                FieldValue::from(a)
-                                                // uncomment below to fix response for union
-                                                // {
-                                                //     let ty = if a.get_key("foo").is_some() {
-                                                //         "Foo"
-                                                //     } else {
-                                                //         "Bar"
-                                                //     };
-                                                //     FieldValue::from(a).with_type(ty)
-                                                // },
-                                            ),
+                                            a => Some(FieldValue::from(a)),
                                         };
                                         Ok(p)
                                     }
@@ -178,7 +167,23 @@ impl From<&Blueprint> for SchemaBuilder {
             ));
         }
 
+        let mut query_obj = Object::new(query.clone());
+
         for def in blueprint.definitions.iter() {
+            let p = to_type(def);
+            if let dynamic::Type::Union(union) = p {
+                query_obj = query_obj
+                    .field(dynamic::Field::new(
+                        "Foo",
+                        dynamic::TypeRef::named_nn(union.type_name()),
+                        |_| FieldFuture::new(async { Ok(Some(FieldValue::NULL.with_type("Foo"))) }),
+                    ))
+                    .field(dynamic::Field::new(
+                        "Bar",
+                        dynamic::TypeRef::named_nn(union.type_name()),
+                        |_| FieldFuture::new(async { Ok(Some(FieldValue::NULL.with_type("Bar"))) }),
+                    ))
+            }
             schema = schema.register(to_type(def));
         }
 
