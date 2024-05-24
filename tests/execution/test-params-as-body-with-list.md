@@ -1,4 +1,4 @@
-# Http with args as body
+# Http with args as body with list
 
 ```graphql @config
 schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
