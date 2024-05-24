@@ -170,11 +170,11 @@ impl ConfigGenerator {
 
     fn check_n_add_path_variables(&self, field: &mut Field, http: &mut Http, url: &Url) {
         let re = Regex::new(r"/(\d+)/?").unwrap();
-        let mut placeholder_index = 1;
+        let mut arg_index = 1;
         let path_url = url.path().to_string();
 
         let replaced_str = re.replace_all(path_url.as_str(), |_: &regex::Captures| {
-            let arg_key = format!("p{}", placeholder_index);
+            let arg_key = format!("p{}", arg_index);
             let placeholder = format!("/{{{{.args.{}}}}}/", arg_key);
 
             let arg = Arg {
@@ -185,7 +185,7 @@ impl ConfigGenerator {
 
             field.args.insert(arg_key, arg);
 
-            placeholder_index += 1;
+            arg_index += 1;
             placeholder
         });
 
