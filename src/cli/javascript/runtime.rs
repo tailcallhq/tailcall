@@ -82,9 +82,14 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    async fn call(&self, name: &'async_trait str, event: Event) -> anyhow::Result<Option<Command>> {
+    async fn call(
+        &self,
+        name: &'async_trait str,
+        event: &'async_trait Event,
+    ) -> anyhow::Result<Option<Command>> {
         let script = self.script.clone();
         let name = name.to_string(); // TODO
+        let event = event.clone(); // TODO
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
@@ -103,15 +108,16 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
     async fn call(
         &self,
         name: &'async_trait str,
-        input: ConstValue,
+        input: &'async_trait ConstValue,
     ) -> anyhow::Result<Option<ConstValue>> {
         let script = self.script.clone();
         let name = name.to_string();
+        let value = serde_json::to_string(input)?;
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    execute_inner(name, input).map(Some)
+                    execute_inner(name, value).map(Some)
                 })
                 .await?
         } else {
@@ -169,9 +175,7 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
     })
 }
 
-fn execute_inner(name: String, value: ConstValue) -> anyhow::Result<ConstValue> {
-    let value = serde_json::to_string(&value)?;
-
+fn execute_inner(name: String, value: String) -> anyhow::Result<ConstValue> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
         let runtime = cell
             .get_mut()

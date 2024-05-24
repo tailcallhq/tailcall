@@ -52,7 +52,7 @@ impl RequestFilter {
     async fn on_request(&self, mut request: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
         let js_request = WorkerRequest::try_from(&request)?;
         let event = Event::Request(js_request);
-        let command = self.worker.call("onRequest", event).await?;
+        let command = self.worker.call("onRequest", &event).await?;
         match command {
             Some(command) => match command {
                 Command::Request(js_request) => {
