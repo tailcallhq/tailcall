@@ -169,13 +169,13 @@ impl ConfigGenerator {
     }
 
     fn check_n_add_path_variables(&self, field: &mut Field, http: &mut Http, url: &Url) {
-        let re = Regex::new(r"/(\d+)/?").unwrap();
+        let re = Regex::new(r"/(\d+)").unwrap();
         let mut arg_index = 1;
         let path_url = url.path().to_string();
 
         let replaced_str = re.replace_all(path_url.as_str(), |_: &regex::Captures| {
             let arg_key = format!("p{}", arg_index);
-            let placeholder = format!("/{{{{.args.{}}}}}/", arg_key);
+            let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
 
             let arg = Arg {
                 type_of: "Int".to_string(), 
@@ -299,14 +299,23 @@ mod test {
         let config_gen = ConfigGenerator::new();
         let url = Url::parse("https://jsonplaceholder.typicode.com/users/1").unwrap();
         let http = config_gen.create_http_directive(&mut Default::default(), &url);
-        assert_eq!(http.path, "/users/{{.args.p1}}/");
+        assert_eq!(http.path, "/users/{{.args.p1}}");
+
+
+        let url = Url::parse("https://jsonplaceholder.typicode.com/users/1/comments/2").unwrap();
+        let http = config_gen.create_http_directive(&mut Default::default(), &url);
+        assert_eq!(http.path, "/users/{{.args.p1}}/comments/{{.args.p2}}");
+
+        let url = Url::parse("https://jsonplaceholder.typicode.com/posts/1/comments").unwrap();
+        let http = config_gen.create_http_directive(&mut Default::default(), &url);
+        assert_eq!(http.path, "/posts/{{.args.p1}}/comments");
 
         let url = Url::parse("https://jsonplaceholder.typicode.com/users/1?q=12").unwrap();
         let http = config_gen.create_http_directive(&mut Default::default(), &url);
         let expected_query_list =
             vec![KeyValue { key: "q".to_string(), value: "{{.args.q}}".to_string() }];
         assert_eq!(http.query, expected_query_list);
-        assert_eq!(http.path, "/users/{{.args.p1}}/");
+        assert_eq!(http.path, "/users/{{.args.p1}}");
     }
 
     #[test]
