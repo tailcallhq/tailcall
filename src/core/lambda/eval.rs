@@ -1,9 +1,10 @@
+use crate::core::value::Value;
 use core::future::Future;
 use std::pin::Pin;
 
 use super::{EvaluationContext, EvaluationError, ResolverContextLike};
 
-pub trait Eval<Output = async_graphql::Value>
+pub trait Eval<Output = Value>
 where
     Self: Send + Sync,
 {

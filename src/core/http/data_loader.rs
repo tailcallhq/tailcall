@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
-use async_graphql_value::ConstValue;
 
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
@@ -12,16 +11,17 @@ use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::http::{DataLoaderRequest, Response};
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
+use crate::core::value::Value;
 
-fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
+fn get_body_value_single(body_value: &HashMap<String, Vec<&Value>>, id: &str) -> Value {
     body_value
         .get(id)
         .and_then(|a| a.first().cloned().cloned())
-        .unwrap_or(ConstValue::Null)
+        .unwrap_or_default()
 }
 
-fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
-    ConstValue::List(
+fn get_body_value_list(body_value: &HashMap<String, Vec<&Value>>, id: &str) -> Value {
+    Value::as_list(
         body_value
             .get(id)
             .unwrap_or(&Vec::new())
@@ -35,7 +35,7 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
 pub struct HttpDataLoader {
     pub runtime: TargetRuntime,
     pub group_by: Option<GroupBy>,
-    pub body: fn(&HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
+    pub body: fn(&HashMap<String, Vec<&Value>>, &str) -> Value,
 }
 impl HttpDataLoader {
     pub fn new(runtime: TargetRuntime, group_by: Option<GroupBy>, is_list: bool) -> Self {
@@ -59,7 +59,7 @@ impl HttpDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for HttpDataLoader {
-    type Value = Response<async_graphql::Value>;
+    type Value = Response<Value>;
     type Error = Arc<anyhow::Error>;
 
     async fn load(
@@ -84,7 +84,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 .http
                 .execute(request)
                 .await?
-                .to_json::<ConstValue>()?;
+                .to_json::<Value>()?;
             #[allow(clippy::mutable_key_type)]
             let mut hashmap = HashMap::with_capacity(keys.len());
             let path = &group_by.path();

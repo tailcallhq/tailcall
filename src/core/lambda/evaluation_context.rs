@@ -2,11 +2,12 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use async_graphql::{SelectionField, ServerError, Value};
+use async_graphql::{SelectionField, ServerError};
 use reqwest::header::HeaderMap;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
 use crate::core::http::RequestContext;
+use crate::core::value::Value;
 
 // TODO: rename to ResolverContext
 #[derive(Clone)]
@@ -60,9 +61,9 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         } else if path.is_empty() {
             self.graphql_ctx
                 .args()
-                .map(|a| Cow::Owned(Value::Object(a.clone())))
+                .map(|a| Cow::Owned(Value::as_object(a)))
         } else {
-            let arg = self.graphql_ctx.args()?.get(path[0].as_ref())?;
+            let arg = self.graphql_ctx.args()?.get(path[0].as_ref())?.clone();
             get_path_value(arg, &path[1..]).map(Cow::Borrowed)
         }
     }
@@ -168,14 +169,8 @@ pub fn get_path_value<'a, T: AsRef<str>>(input: &'a Value, path: &[T]) -> Option
     let mut value = Some(input);
     for name in path {
         match value {
-            Some(Value::Object(map)) => {
-                value = map.get(name.as_ref());
-            }
-
-            Some(Value::List(list)) => {
-                value = list.get(name.as_ref().parse::<usize>().ok()?);
-            }
-            _ => return None,
+            Some(inp) => value = inp.get(name.as_ref()),
+            None => return None,
         }
     }
 

@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 use std::ops::Deref;
 use std::pin::Pin;
 
-use async_graphql_value::ConstValue;
+use crate::core::value::Value;
 
 use super::{Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
 
@@ -37,7 +37,7 @@ impl Eval for Cache {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Value, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             if let Expression::IO(io) = self.expr.deref() {
                 let key = io.cache_key(&ctx);

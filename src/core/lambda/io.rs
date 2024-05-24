@@ -2,9 +2,9 @@ use core::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use async_graphql::from_value;
-use async_graphql_value::ConstValue;
+use async_graphql_value::DeserializerError;
 use reqwest::Request;
+use serde::de::DeserializeOwned;
 
 use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
 use crate::core::config::group_by::GroupBy;
@@ -19,6 +19,7 @@ use crate::core::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Respons
 use crate::core::json::JsonLike;
 use crate::core::lambda::EvaluationError;
 use crate::core::valid::Validator;
+use crate::core::value::Value;
 use crate::core::{grpc, http};
 
 #[derive(Clone, Debug, strum_macros::Display)]
@@ -48,7 +49,7 @@ impl Eval for IO {
     fn eval<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Value, EvaluationError>> + 'a + Send>> {
         if ctx.request_ctx.upstream.dedupe {
             Box::pin(async move {
                 let key = self.cache_key(&ctx);
@@ -69,7 +70,7 @@ impl IO {
     fn eval_inner<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Value, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 IO::Http { req_template, dl_id, .. } => {
@@ -85,10 +86,8 @@ impl IO {
                     };
 
                     if ctx.request_ctx.server.get_enable_http_validation() {
-                        req_template
-                            .endpoint
-                            .output
-                            .validate(&res.body)
+                        (&res.body)
+                            .validate_with(&req_template.endpoint.output)
                             .to_result()
                             .map_err(EvaluationError::from)?;
                     }
@@ -150,7 +149,7 @@ impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<
 
 fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
-    res: &Response<async_graphql::Value>,
+    res: &Response<Value>,
 ) {
     set_cache_control(ctx, res);
     set_cookie_headers(ctx, res);
@@ -159,7 +158,7 @@ fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
-    res: &Response<async_graphql::Value>,
+    res: &Response<Value>,
 ) {
     if ctx.request_ctx.server.get_enable_cache_control() && res.status.is_success() {
         if let Some(policy) = cache_policy(res) {
@@ -170,14 +169,14 @@ fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
 
 fn set_experimental_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
-    res: &Response<async_graphql::Value>,
+    res: &Response<Value>,
 ) {
     ctx.request_ctx.add_x_headers(&res.headers);
 }
 
 fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
-    res: &Response<async_graphql::Value>,
+    res: &Response<Value>,
 ) {
     if res.status.is_success() {
         ctx.request_ctx.set_cookie_headers(&res.headers);
@@ -187,7 +186,7 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
-) -> Result<Response<async_graphql::Value>, EvaluationError> {
+) -> Result<Response<Value>, EvaluationError> {
     let response = ctx
         .request_ctx
         .runtime
@@ -204,7 +203,7 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
     operation: &ProtobufOperation,
-) -> Result<Response<async_graphql::Value>, EvaluationError> {
+) -> Result<Response<Value>, EvaluationError> {
     execute_grpc_request(&ctx.request_ctx.runtime, operation, req)
         .await
         .map_err(EvaluationError::from)
@@ -213,16 +212,12 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_grpc_request_with_dl<
     'ctx,
     Ctx: ResolverContextLike<'ctx>,
-    Dl: Loader<
-        grpc::DataLoaderRequest,
-        Value = Response<async_graphql::Value>,
-        Error = Arc<anyhow::Error>,
-    >,
+    Dl: Loader<grpc::DataLoaderRequest, Value = Response<Value>, Error = Arc<anyhow::Error>>,
 >(
     ctx: &EvaluationContext<'ctx, Ctx>,
     rendered: RenderedRequestTemplate,
     data_loader: Option<&DataLoader<grpc::DataLoaderRequest, Dl>>,
-) -> Result<Response<async_graphql::Value>, EvaluationError> {
+) -> Result<Response<Value>, EvaluationError> {
     let headers = ctx
         .request_ctx
         .upstream
@@ -243,12 +238,12 @@ async fn execute_grpc_request_with_dl<
 async fn execute_request_with_dl<
     'ctx,
     Ctx: ResolverContextLike<'ctx>,
-    Dl: Loader<DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<anyhow::Error>>,
+    Dl: Loader<DataLoaderRequest, Value = Response<Value>, Error = Arc<anyhow::Error>>,
 >(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
     data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
-) -> Result<Response<async_graphql::Value>, EvaluationError> {
+) -> Result<Response<Value>, EvaluationError> {
     let headers = ctx
         .request_ctx
         .upstream
@@ -266,11 +261,15 @@ async fn execute_request_with_dl<
         .unwrap_or_default())
 }
 
+#[inline]
+pub fn from_value<T: DeserializeOwned>(value: Value) -> Result<T, DeserializerError> {
+    todo!()
+}
 fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
-    res: Response<async_graphql::Value>,
+    res: Response<Value>,
     field_name: &str,
-) -> Result<async_graphql::Value, EvaluationError> {
+) -> Result<Value, EvaluationError> {
     let res: async_graphql::Response =
         from_value(res.body).map_err(|err| EvaluationError::DeserializeError(err.to_string()))?;
 
@@ -281,6 +280,6 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
     Ok(res
         .data
         .get_key(field_name)
-        .map(|v| v.to_owned())
+        .map(|v| v.to_owned().into())
         .unwrap_or_default())
 }

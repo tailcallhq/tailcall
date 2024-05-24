@@ -4,6 +4,7 @@ use serde_json::json;
 
 use crate::core::json::JsonLike;
 use crate::core::lambda::{EvaluationContext, ResolverContextLike};
+use crate::core::value::Value;
 
 ///
 /// The path module provides a trait for accessing values from a JSON-like
@@ -33,22 +34,6 @@ impl PathString for serde_json::Value {
     }
 }
 
-fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
-    match value {
-        Cow::Owned(async_graphql::Value::String(s)) => Some(Cow::Owned(s)),
-        Cow::Owned(async_graphql::Value::Number(n)) => Some(Cow::Owned(n.to_string())),
-        Cow::Owned(async_graphql::Value::Boolean(b)) => Some(Cow::Owned(b.to_string())),
-        Cow::Owned(async_graphql::Value::Object(map)) => Some(json!(map).to_string().into()),
-        Cow::Owned(async_graphql::Value::List(list)) => Some(json!(list).to_string().into()),
-        Cow::Borrowed(async_graphql::Value::String(s)) => Some(Cow::Borrowed(s.as_str())),
-        Cow::Borrowed(async_graphql::Value::Number(n)) => Some(Cow::Owned(n.to_string())),
-        Cow::Borrowed(async_graphql::Value::Boolean(b)) => Some(Cow::Owned(b.to_string())),
-        Cow::Borrowed(async_graphql::Value::Object(map)) => Some(json!(map).to_string().into()),
-        Cow::Borrowed(async_graphql::Value::List(list)) => Some(json!(list).to_string().into()),
-        _ => None,
-    }
-}
-
 impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         let ctx = self;
@@ -59,7 +44,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
 
         if path.len() == 1 {
             return match path[0].as_ref() {
-                "value" => convert_value(ctx.path_value(&[] as &[T])?),
+                "value" => Value::convert_value(ctx.path_value(&[] as &[T])?),
                 "args" => Some(json!(ctx.path_arg::<&str>(&[])?).to_string().into()),
                 "vars" => Some(json!(ctx.vars()).to_string().into()),
                 _ => None,
@@ -68,8 +53,8 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
 
         path.split_first()
             .and_then(move |(head, tail)| match head.as_ref() {
-                "value" => convert_value(ctx.path_value(tail)?),
-                "args" => convert_value(ctx.path_arg(tail)?),
+                "value" => Value::convert_value(ctx.path_value(tail)?),
+                "args" => Value::convert_value(ctx.path_arg(tail)?),
                 "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
                 "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
                 "env" => ctx.env_var(tail[0].as_ref()),

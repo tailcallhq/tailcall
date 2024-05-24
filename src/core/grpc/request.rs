@@ -6,6 +6,7 @@ use url::Url;
 use super::protobuf::ProtobufOperation;
 use crate::core::http::Response;
 use crate::core::runtime::TargetRuntime;
+use crate::core::value::Value;
 
 pub static GRPC_STATUS: &str = "grpc-status";
 
@@ -21,7 +22,7 @@ pub async fn execute_grpc_request(
     runtime: &TargetRuntime,
     operation: &ProtobufOperation,
     request: Request,
-) -> Result<Response<async_graphql::Value>> {
+) -> Result<Response<Value>> {
     let response = runtime.http2_only.execute(request).await?;
 
     let grpc_status = response

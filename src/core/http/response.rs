@@ -9,6 +9,7 @@ use tonic_types::Status as GrpcStatus;
 
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::lambda::EvaluationError;
+use crate::core::value::Value;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
@@ -25,6 +26,12 @@ pub struct Response<Body> {
 
 pub trait FromValue {
     fn from_value(value: serde_json_borrow::Value) -> Self;
+}
+
+impl FromValue for Value {
+    fn from_value(value: serde_json_borrow::Value) -> Self {
+        ConstValue::from_value(value).into()
+    }
 }
 
 impl FromValue for ConstValue {
@@ -78,12 +85,9 @@ impl Response<Bytes> {
         Ok(Response { status: self.status, headers: self.headers, body })
     }
 
-    pub fn to_grpc_value(
-        self,
-        operation: &ProtobufOperation,
-    ) -> Result<Response<async_graphql::Value>> {
+    pub fn to_grpc_value(self, operation: &ProtobufOperation) -> Result<Response<Value>> {
         let mut resp = Response::default();
-        let body = operation.convert_output::<async_graphql::Value>(&self.body)?;
+        let body = operation.convert_output::<Value>(&self.body)?;
         resp.body = body;
         resp.status = self.status;
         resp.headers = self.headers;

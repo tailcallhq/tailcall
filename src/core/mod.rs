@@ -35,6 +35,7 @@ mod serde_value_ext;
 pub mod tracing;
 pub mod try_fold;
 pub mod valid;
+mod value;
 
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;

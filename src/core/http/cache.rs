@@ -1,8 +1,9 @@
+use crate::core::value::Value;
 use cache_control::CacheControl;
 
 use super::Response;
 
-pub fn cache_policy(res: &Response<async_graphql::Value>) -> Option<CacheControl> {
+pub fn cache_policy(res: &Response<Value>) -> Option<CacheControl> {
     let header = res.headers.get(hyper::header::CACHE_CONTROL)?;
     let value = header.to_str().ok()?;
 

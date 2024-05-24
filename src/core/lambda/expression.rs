@@ -13,6 +13,7 @@ use crate::core::blueprint::DynamicValue;
 use crate::core::json::JsonLike;
 use crate::core::lambda::cache::Cache;
 use crate::core::serde_value_ext::ValueExt;
+use crate::core::value::Value;
 
 #[derive(Clone, Debug)]
 pub enum Expression {
@@ -150,17 +151,15 @@ impl Eval for Expression {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Value, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 Expression::Context(op) => match op {
-                    Context::Value => {
-                        Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null))
-                    }
+                    Context::Value => Ok(ctx.value().cloned().unwrap_or_default()),
                     Context::Path(path) => Ok(ctx
                         .path_value(path)
                         .map(|a| a.into_owned())
-                        .unwrap_or(async_graphql::Value::Null)),
+                        .unwrap_or_default()),
                     Context::PushArgs { expr, and_then } => {
                         let args = expr.eval(ctx.clone()).await?;
                         let ctx = ctx.with_args(args).clone();
@@ -174,12 +173,9 @@ impl Eval for Expression {
                 },
                 Expression::Path(input, path) => {
                     let inp = &input.eval(ctx).await?;
-                    Ok(inp
-                        .get_path(path)
-                        .unwrap_or(&async_graphql::Value::Null)
-                        .clone())
+                    Ok(inp.get_path(path).cloned().unwrap_or_default())
                 }
-                Expression::Dynamic(value) => Ok(value.render_value(&ctx)),
+                Expression::Dynamic(value) => Ok(value.render_value(&ctx).into()),
                 Expression::Protect(expr) => {
                     ctx.request_ctx
                         .auth_ctx

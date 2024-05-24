@@ -5,7 +5,6 @@ use std::time::Duration;
 use anyhow::Result;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
-use async_graphql_value::ConstValue;
 
 use super::data_loader_request::DataLoaderRequest;
 use super::protobuf::ProtobufOperation;
@@ -17,6 +16,7 @@ use crate::core::grpc::request::create_grpc_request;
 use crate::core::http::Response;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
+use crate::core::value::Value;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {
@@ -35,7 +35,7 @@ impl GrpcDataLoader {
     async fn load_dedupe_only(
         &self,
         keys: &[DataLoaderRequest],
-    ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
+    ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<Value>>> {
         let results = keys.iter().map(|key| async {
             let result = match key.to_request() {
                 Ok(req) => execute_grpc_request(&self.runtime, &self.operation, req).await,
@@ -54,7 +54,6 @@ impl GrpcDataLoader {
         for (key, value) in results {
             hashmap.insert(key, value?);
         }
-
         Ok(hashmap)
     }
 
@@ -62,7 +61,7 @@ impl GrpcDataLoader {
         &self,
         group_by: &GroupBy,
         keys: &[DataLoaderRequest],
-    ) -> Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
+    ) -> Result<HashMap<DataLoaderRequest, Response<Value>>> {
         let inputs = keys.iter().map(|key| key.template.body.as_str());
         let (multiple_body, grouped_keys) = self
             .operation
@@ -88,7 +87,7 @@ impl GrpcDataLoader {
                 response_body
                     .get(&id)
                     .and_then(|a| a.first().cloned().cloned())
-                    .unwrap_or(ConstValue::Null),
+                    .unwrap_or_default(),
             );
 
             result.insert(key.clone(), res);
@@ -100,7 +99,7 @@ impl GrpcDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for GrpcDataLoader {
-    type Value = Response<async_graphql::Value>;
+    type Value = Response<Value>;
     type Error = Arc<anyhow::Error>;
 
     async fn load(

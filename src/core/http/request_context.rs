@@ -2,7 +2,6 @@ use std::num::NonZeroU64;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
-use async_graphql_value::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -17,6 +16,7 @@ use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{AppContext, DataLoaderRequest, HttpDataLoader};
 use crate::core::lambda::EvaluationError;
 use crate::core::runtime::TargetRuntime;
+use crate::core::value::Value;
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -34,7 +34,7 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
-    pub cache: AsyncCache<u64, ConstValue, EvaluationError>,
+    pub cache: AsyncCache<u64, Value, EvaluationError>,
 }
 
 impl RequestContext {
@@ -134,7 +134,7 @@ impl RequestContext {
         }
     }
 
-    pub async fn cache_get(&self, key: &u64) -> anyhow::Result<Option<ConstValue>> {
+    pub async fn cache_get(&self, key: &u64) -> anyhow::Result<Option<Value>> {
         self.runtime.cache.get(key).await
     }
 
@@ -142,7 +142,7 @@ impl RequestContext {
     pub async fn cache_insert(
         &self,
         key: u64,
-        value: ConstValue,
+        value: Value,
         ttl: NonZeroU64,
     ) -> anyhow::Result<()> {
         self.runtime.cache.set(key, value, ttl).await

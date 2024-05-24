@@ -45,7 +45,7 @@ impl Headers {
         self.cache_control.unwrap_or(false)
     }
     pub fn set_cookies(&self) -> bool {
-        self.set_cookies.unwrap_or_default()
+        self.set_cookies.unwrap_or(false)
     }
     pub fn get_cors(&self) -> Option<Cors> {
         self.cors.clone()
