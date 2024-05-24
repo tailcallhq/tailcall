@@ -18,6 +18,14 @@ pub trait PathString {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
 }
 
+
+///
+/// The RequestString trait provides a method for accessing values from a
+/// JSON-like structure. The returned value encoding depends upon the method argument.
+pub trait RequestString: PathString {
+    fn req_string<T: AsRef<str>>(&self, path: &[T], method: &reqwest::Method) -> Option<Cow<'_, str>>;
+}
+
 ///
 /// The PathGraphql trait provides a method for accessing values from a
 /// JSON-like structure. The returned value is encoded as a GraphQL Value.
@@ -27,6 +35,15 @@ pub trait PathGraphql {
 
 impl PathString for serde_json::Value {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
+        self.get_path(path).map(|a| match a {
+            serde_json::Value::String(s) => Cow::Borrowed(s.as_str()),
+            _ => Cow::Owned(a.to_string()),
+        })
+    }
+}
+
+impl RequestString for serde_json::Value {
+    fn req_string<T: AsRef<str>>(&self, path: &[T], _method: &reqwest::Method) -> Option<Cow<'_, str>> {
         self.get_path(path).map(|a| match a {
             serde_json::Value::String(s) => Cow::Borrowed(s.as_str()),
             _ => Cow::Owned(a.to_string()),
@@ -69,13 +86,23 @@ fn convert_args(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx> {
-    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
+
+impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
+    fn encode<T: AsRef<str>>(
+        &self,
+        path: &[T],
+        method: Option<&reqwest::Method>,
+    ) -> Option<Cow<'_, str>> {
         let ctx = self;
 
         if path.is_empty() {
             return None;
         }
+
+        let converter_fn = match method {
+            Some(&reqwest::Method::GET) => convert_args,
+            _ => convert_value,
+        };
 
         if path.len() == 1 {
             return match path[0].as_ref() {
@@ -86,15 +113,29 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
             };
         }
 
-        path.split_first()
-            .and_then(move |(head, tail)| match head.as_ref() {
-                "value" => convert_value(ctx.path_value(tail)?),
-                "args" => convert_args(ctx.path_arg(tail)?),
-                "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
-                "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
-                "env" => ctx.env_var(tail[0].as_ref()),
-                _ => None,
-            })
+        path.split_first().and_then(move |(head, tail)| match head.as_ref() {
+            "value" => convert_value(ctx.path_value(tail)?),
+            "args" => converter_fn(ctx.path_arg(tail)?),
+            "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
+            "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
+            "env" => ctx.env_var(tail[0].as_ref()),
+            _ => None,
+        })
+    }
+}
+
+
+
+impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx> {
+    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
+        self.encode(path, None)
+    }
+}
+
+
+impl<'a, Ctx: ResolverContextLike<'a>> RequestString for EvaluationContext<'a, Ctx> {
+    fn req_string<T: AsRef<str>>(&self, path: &[T], method: &reqwest::Method) -> Option<Cow<'_, str>> {
+      self.encode(path, Some(method))
     }
 }
 
@@ -135,7 +176,7 @@ mod tests {
 
         use crate::core::http::RequestContext;
         use crate::core::lambda::{EvaluationContext, ResolverContextLike};
-        use crate::core::path::{PathGraphql, PathString};
+        use crate::core::path::{PathGraphql, PathString, RequestString};
         use crate::core::EnvIO;
 
         struct Env {
@@ -246,6 +287,28 @@ mod tests {
         static EVAL_CTX: Lazy<EvaluationContext<'static, MockGraphqlContext>> =
             Lazy::new(|| EvaluationContext::new(&REQ_CTX, &MockGraphqlContext));
 
+
+        #[test]
+        fn req_to_string() {
+            // args
+            assert_eq!(
+                EVAL_CTX.req_string(&["args", "q"], &reqwest::Method::GET),
+                Some(Cow::Borrowed("1,2,3"))
+            );
+
+            assert_eq!(
+                EVAL_CTX.req_string(&["args", "q"], &reqwest::Method::POST),
+                Some(Cow::Borrowed("[1,2,3]"))
+            );
+
+            assert_eq!(
+                EVAL_CTX.req_string(&["args", "root"],&reqwest::Method::GET),
+                Some(Cow::Borrowed("root-test"))
+            );
+
+            assert_eq!(EVAL_CTX.req_string(&["args", "missing"], &reqwest::Method::GET), None);
+        }
+
         #[test]
         fn path_to_string() {
             // value
@@ -277,7 +340,7 @@ mod tests {
             // args
             assert_eq!(
                 EVAL_CTX.path_string(&["args", "q"]),
-                Some(Cow::Borrowed("1,2,3"))
+                Some(Cow::Borrowed("[1,2,3]"))
             );
             assert_eq!(
                 EVAL_CTX.path_string(&["args", "root"]),
