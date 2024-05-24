@@ -82,14 +82,9 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    async fn call(
-        &self,
-        name: &'async_trait str,
-        event: &'async_trait Event,
-    ) -> anyhow::Result<Option<Command>> {
+    async fn call(&self, name: &'async_trait str, event: Event) -> anyhow::Result<Option<Command>> {
         let script = self.script.clone();
         let name = name.to_string(); // TODO
-        let event = event.clone(); // TODO
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
@@ -108,11 +103,11 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
     async fn call(
         &self,
         name: &'async_trait str,
-        input: &'async_trait ConstValue,
+        input: ConstValue,
     ) -> anyhow::Result<Option<ConstValue>> {
         let script = self.script.clone();
         let name = name.to_string();
-        let value = serde_json::to_string(input)?;
+        let value = serde_json::to_string(&input)?;
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {

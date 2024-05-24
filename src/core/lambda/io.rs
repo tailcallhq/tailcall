@@ -141,7 +141,7 @@ impl IO {
                     Ok(res.body)
                 }
                 IO::Js { name: method } => {
-                    let value = ctx.value().unwrap_or(&ConstValue::Null);
+                    let value = ctx.value().cloned().unwrap_or(ConstValue::Null);
                     let value = ctx
                         .request_ctx
                         .runtime
