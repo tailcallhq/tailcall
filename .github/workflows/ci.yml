@@ -162,6 +162,7 @@ jobs:
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
+          profile: minimal
           target: ${{ matrix.target }}
 
       - name: Install dependencies on Windows
