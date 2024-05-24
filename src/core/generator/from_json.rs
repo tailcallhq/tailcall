@@ -171,14 +171,14 @@ impl ConfigGenerator {
     fn check_n_add_path_variables(&self, field: &mut Field, http: &mut Http, url: &Url) {
         let re = Regex::new(r"/(\d+)").unwrap();
         let mut arg_index = 1;
-        let path_url = url.path().to_string();
+        let path_url = url.path();
 
-        let replaced_str = re.replace_all(path_url.as_str(), |_: &regex::Captures| {
+        let replaced_str = re.replace_all(path_url, |_: &regex::Captures| {
             let arg_key = format!("p{}", arg_index);
             let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
 
             let arg = Arg {
-                type_of: "Int".to_string(), 
+                type_of: "Int".to_string(),
                 required: true,
                 ..Default::default()
             };
@@ -300,7 +300,6 @@ mod test {
         let url = Url::parse("https://jsonplaceholder.typicode.com/users/1").unwrap();
         let http = config_gen.create_http_directive(&mut Default::default(), &url);
         assert_eq!(http.path, "/users/{{.args.p1}}");
-
 
         let url = Url::parse("https://jsonplaceholder.typicode.com/users/1/comments/2").unwrap();
         let http = config_gen.create_http_directive(&mut Default::default(), &url);
