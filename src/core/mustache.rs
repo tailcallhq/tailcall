@@ -8,7 +8,7 @@ use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
-use crate::core::path::{PathGraphql, PathString};
+use crate::core::path::{PathGraphql, PathString, RequestString};
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Mustache(Vec<Segment>);
@@ -45,6 +45,21 @@ impl Mustache {
         match result {
             Ok((_, mustache)) => Ok(mustache),
             Err(_) => Ok(Mustache::from(vec![Segment::Literal(str.to_string())])),
+        }
+    }
+
+    pub fn render_http(&self, value: &impl RequestString, method: &reqwest::Method) -> String {
+        match self {
+            Mustache(segments) => segments
+                .iter()
+                .map(|segment| match segment {
+                    Segment::Literal(text) => text.clone(),
+                    Segment::Expression(parts) => value
+                        .req_string(parts, method)
+                        .map(|a| a.to_string())
+                        .unwrap_or_default(),
+                })
+                .collect(),
         }
     }
 
