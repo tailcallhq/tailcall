@@ -167,6 +167,7 @@ jobs:
       - name: Install dependencies on Windows
         if: runner.os == 'Windows'
         run: |
+          set AWS_LC_SYS_NO_ASM=1
           choco install nasm -y
 
       - name: Run Cargo Test
