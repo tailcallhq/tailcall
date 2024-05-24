@@ -4,7 +4,6 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use async_graphql_value::ConstValue;
 use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::worker::DefaultJsRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 
 use crate::{cache, env, file, http};
@@ -41,7 +40,7 @@ pub fn init(env: Rc<worker::Env>) -> anyhow::Result<TargetRuntime> {
         file: init_file(env.clone(), &bucket_id)?,
         cache: init_cache(env),
         extensions: Arc::new(vec![]),
-        http_worker: Arc::new(DefaultJsRuntime {}),
-        worker: Arc::new(DefaultJsRuntime {}),
+        http_worker: None,
+        worker: None,
     })
 }

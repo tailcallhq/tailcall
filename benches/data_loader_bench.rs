@@ -12,7 +12,6 @@ use reqwest::Request;
 use tailcall::core::config::Batch;
 use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
 use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::worker::DefaultJsRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 
 #[derive(Clone)]
@@ -80,8 +79,8 @@ pub fn benchmark_data_loader(c: &mut Criterion) {
                     file: Arc::new(File {}),
                     cache: Arc::new(Cache {}),
                     extensions: Arc::new(vec![]),
-                    http_worker: Arc::new(DefaultJsRuntime {}),
-                    worker: Arc::new(DefaultJsRuntime {}),
+                    http_worker: None,
+                    worker: None,
                 };
                 let loader = HttpDataLoader::new(rt, None, false);
                 let loader = loader.to_data_loader(Batch::default().delay(1));

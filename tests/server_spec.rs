@@ -15,7 +15,6 @@ pub mod test {
     use tailcall::core::cache::InMemoryCache;
     use tailcall::core::http::Response;
     use tailcall::core::runtime::TargetRuntime;
-    use tailcall::core::worker::DefaultJsRuntime;
     use tailcall::core::{EnvIO, FileIO, HttpIO};
     use tailcall_http_cache::HttpCacheManager;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -155,8 +154,8 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
-            http_worker: Arc::new(DefaultJsRuntime {}),
-            worker: Arc::new(DefaultJsRuntime {}),
+            http_worker: None,
+            worker: None,
         }
     }
 }

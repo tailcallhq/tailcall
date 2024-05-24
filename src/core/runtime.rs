@@ -28,9 +28,9 @@ pub struct TargetRuntime {
     /// functionality or integrate additional features.
     pub extensions: Arc<Vec<SchemaExtension>>,
     /// Worker middleware for handling HTTP requests.
-    pub http_worker: Arc<dyn WorkerIO<Event, Command>>,
+    pub http_worker: Option<Arc<dyn WorkerIO<Event, Command>>>,
     /// Worker middleware for resolving data.
-    pub worker: Arc<dyn WorkerIO<ConstValue, ConstValue>>,
+    pub worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>>,
 }
 
 impl TargetRuntime {
@@ -59,7 +59,6 @@ pub mod test {
     use crate::core::cache::InMemoryCache;
     use crate::core::http::Response;
     use crate::core::runtime::TargetRuntime;
-    use crate::core::worker::DefaultJsRuntime;
     use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
@@ -197,8 +196,8 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
-            http_worker: Arc::new(DefaultJsRuntime {}),
-            worker: Arc::new(DefaultJsRuntime {}),
+            http_worker: None,
+            worker: None,
         }
     }
 }

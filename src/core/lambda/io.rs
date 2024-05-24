@@ -140,17 +140,19 @@ impl IO {
 
                     Ok(res.body)
                 }
-                IO::Js { name: method } => {
-                    let value = ctx.value().cloned().unwrap_or(ConstValue::Null);
-                    let value = ctx
+                IO::Js { name } => {
+                    if let Some((worker, value)) = ctx
                         .request_ctx
                         .runtime
                         .worker
-                        .call(method, value)
-                        .await
-                        .map_err(EvaluationError::from)?;
-
-                    Ok(value.unwrap_or_default())
+                        .as_ref()
+                        .zip(ctx.value().cloned())
+                    {
+                        let val = worker.call(name, value).await?;
+                        Ok(val.unwrap_or_default())
+                    } else {
+                        Ok(ConstValue::Null)
+                    }
                 }
             }
         })

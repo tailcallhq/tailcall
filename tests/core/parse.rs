@@ -8,6 +8,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use async_graphql_value::ConstValue;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
 use tailcall::cli::javascript;
@@ -16,8 +17,8 @@ use tailcall::core::cache::InMemoryCache;
 use tailcall::core::config::{ConfigModule, Source};
 use tailcall::core::http::AppContext;
 use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::worker::DefaultJsRuntime;
-use tailcall::core::EnvIO;
+use tailcall::core::worker::{Command, Event};
+use tailcall::core::{EnvIO, WorkerIO};
 
 use super::file::File;
 use super::http::Http;
@@ -281,16 +282,18 @@ impl ExecutionSpec {
 
         let http2_only = http.clone();
 
-        let http_worker = if let Some(script) = script.clone() {
-            javascript::init_worker_io(script)
-        } else {
-            Arc::new(DefaultJsRuntime {})
-        };
+        let http_worker: Option<Arc<dyn WorkerIO<Event, Command>>> =
+            if let Some(script) = script.clone() {
+                Some(javascript::init_worker_io(script))
+            } else {
+                None
+            };
 
-        let worker = if let Some(script) = script {
-            javascript::init_worker_io(script)
+        let worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>> = if let Some(script) = script
+        {
+            Some(javascript::init_worker_io(script))
         } else {
-            Arc::new(DefaultJsRuntime {})
+            None
         };
 
         let runtime = TargetRuntime {
