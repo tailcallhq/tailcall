@@ -159,9 +159,12 @@ fn to_types(
             )
             .some(),
             TypeKind::Enum(_) => Valid::none(),
-            TypeKind::InputObject(input_object_type) => {
-                to_input_object(input_object_type, &type_definition.node.directives).some()
-            }
+            TypeKind::InputObject(input_object_type) => to_input_object(
+                input_object_type,
+                &type_definition.node.description,
+                &type_definition.node.directives,
+            )
+            .some(),
             TypeKind::Union(_) => Valid::none(),
             TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
         }
@@ -252,11 +255,15 @@ where
 }
 fn to_input_object(
     input_object_type: InputObjectType,
+    description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
 ) -> Valid<config::Type, String> {
     to_input_object_fields(&input_object_type.fields)
         .fuse(Protected::from_directives(directives.iter()))
-        .map(|(fields, protected)| config::Type { fields, protected, ..Default::default() })
+        .map(|(fields, protected)| {
+            let doc = description.to_owned().map(|pos| pos.node);
+            config::Type { fields, protected, doc, ..Default::default() }
+        })
 }
 
 fn to_fields_inner<T, F>(
