@@ -72,7 +72,7 @@ pub fn create_runtime(
         http_client.clone()
     };
 
-    let http2 = if let Some(script) = script {
+    let http2 = if let Some(script) = script.clone() {
         javascript::init_http(http_client.clone(), script)
     } else {
         http_client.clone()

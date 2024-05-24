@@ -272,13 +272,26 @@ impl ExecutionSpec {
         http_client: Arc<Http>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
-        let http = if let Some(script) = blueprint.server.script.clone() {
+        let script = blueprint.server.script.clone();
+        let http = if let Some(script) = script.clone() {
             javascript::init_http(http_client, script)
         } else {
             http_client
         };
 
         let http2_only = http.clone();
+
+        let http_worker = if let Some(script) = script.clone() {
+            javascript::init_worker_io(script)
+        } else {
+            Arc::new(DefaultJsRuntime {})
+        };
+
+        let worker = if let Some(script) = script {
+            javascript::init_worker_io(script)
+        } else {
+            Arc::new(DefaultJsRuntime {})
+        };
 
         let runtime = TargetRuntime {
             http,
@@ -287,8 +300,8 @@ impl ExecutionSpec {
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
-            http_worker: Arc::new(DefaultJsRuntime {}),
-            worker: Arc::new(DefaultJsRuntime {}),
+            http_worker,
+            worker,
         };
 
         let endpoints = config
