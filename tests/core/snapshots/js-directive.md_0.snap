@@ -10,7 +10,7 @@ expression: response
   "body": {
     "data": {
       "hello": {
-        "name": "Leanne Graham"
+        "name": "LEANNE GRAHAM"
       }
     }
   }

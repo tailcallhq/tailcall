@@ -7,7 +7,7 @@ function onRequest({request}) {
 
 function name(val) {
   let json = JSON.parse(val)
-  return JSON.stringify(json.name)
+  return JSON.stringify(json.name.toUpperCase())
 }
 ```
 
