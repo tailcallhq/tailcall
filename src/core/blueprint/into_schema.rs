@@ -7,10 +7,13 @@ use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use tracing::Instrument;
 
-use crate::core::blueprint::{Blueprint, Definition, Type};
 use crate::core::http::RequestContext;
 use crate::core::lambda::{Eval, EvaluationContext, ResolverContext};
 use crate::core::scalar::CUSTOM_SCALARS;
+use crate::core::{
+    blueprint::{Blueprint, Definition, Type},
+    json::JsonLike,
+};
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {
@@ -74,7 +77,18 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         let p = match const_value {
                                             ConstValue::List(a) => Some(FieldValue::list(a)),
                                             ConstValue::Null => FieldValue::NONE,
-                                            a => Some(FieldValue::from(a)),
+                                            a => Some(
+                                                FieldValue::from(a)
+                                                // uncomment below to fix response for union
+                                                // {
+                                                //     let ty = if a.get_key("foo").is_some() {
+                                                //         "Foo"
+                                                //     } else {
+                                                //         "Bar"
+                                                //     };
+                                                //     FieldValue::from(a).with_type(ty)
+                                                // },
+                                            ),
                                         };
                                         Ok(p)
                                     }

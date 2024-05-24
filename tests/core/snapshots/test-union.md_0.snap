@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "internal: invalid value for union \"FooBar\", expected \"FieldValue::WithType\"",
+        "locations": [
+          {
+            "line": 2,
+            "column": 3
+          }
+        ],
+        "path": [
+          "foo"
+        ]
+      }
+    ]
+  }
+}
