@@ -75,7 +75,7 @@ jobs:
         run: cargo install wasm-bindgen-cli --vers "0.2.92"
 
       - name: Test WASM
-        run: cargo test
+        run: wasm-pack test --node
 
   test_cf:
     name: Run Tests (Cloudflare)
