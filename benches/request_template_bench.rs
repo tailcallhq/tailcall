@@ -7,7 +7,7 @@ use serde_json::json;
 use tailcall::core::endpoint::Endpoint;
 use tailcall::core::has_headers::HasHeaders;
 use tailcall::core::http::RequestTemplate;
-use tailcall::core::path::PathString;
+use tailcall::core::path::{PathString, RequestString};
 
 #[derive(Setters)]
 struct Context {
@@ -25,6 +25,17 @@ impl PathString for Context {
         self.value.path_string(parts)
     }
 }
+
+impl RequestString for Context {
+    fn req_string<T: AsRef<str>>(
+        &self,
+        parts: &[T],
+        method: &reqwest::Method,
+    ) -> Option<Cow<'_, str>> {
+        self.value.req_string(parts, method)
+    }
+}
+
 impl HasHeaders for Context {
     fn headers(&self) -> &HeaderMap {
         &self.headers

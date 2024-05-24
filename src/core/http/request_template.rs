@@ -289,7 +289,11 @@ mod tests {
     }
 
     impl crate::core::path::RequestString for Context {
-        fn req_string<T: AsRef<str>>(&self, parts: &[T], method: &reqwest::Method) -> Option<Cow<'_, str>> {
+        fn req_string<T: AsRef<str>>(
+            &self,
+            parts: &[T],
+            method: &reqwest::Method,
+        ) -> Option<Cow<'_, str>> {
             self.value.req_string(parts, method)
         }
     }

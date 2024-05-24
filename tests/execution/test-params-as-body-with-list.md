@@ -20,13 +20,13 @@ type User {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/users
-    body: {"id": 1, "name": "foo", "q": [1,2,3]}
+    body: {"id": 1, "name": "foo", "q": [1, 2, 3]}
   response:
     status: 200
     body:
       id: 1
       name: foo
-      numbers: [1,2,3]
+      numbers: [1, 2, 3]
 ```
 
 ```yml @test
