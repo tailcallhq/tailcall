@@ -169,6 +169,7 @@ jobs:
         run: |
           set AWS_LC_SYS_NO_ASM=0
           choco install nasm -y
+          choco install llvm -y
 
       - name: Run Cargo Test
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
