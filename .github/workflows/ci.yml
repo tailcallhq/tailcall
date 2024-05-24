@@ -58,27 +58,8 @@ jobs:
       - name: Build
         run: cargo lambda build
 
-  test_wasm:
-    name: Run Tests (WASM)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./tailcall-wasm
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: wasm32-unknown-unknown
-
-      - name: Install Wasm Pack
-        run: cargo install wasm-bindgen-cli --vers "0.2.92"
-
-      - name: Test WASM
-        run: cargo test
-
   test_cf:
-    name: Run Tests (Cloudflare)
+    name: Run Tests (WASM)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -92,6 +73,9 @@ jobs:
         with:
           target: wasm32-unknown-unknown
 
+      - name: Build WASM
+        run: cargo check --lib --target wasm32-unknown-unknown
+        working-directory: ./tailcall-cloudflare
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
@@ -180,6 +164,11 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
+      - name: Install dependencies on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install nasm -y
+
       - name: Run Cargo Test
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
 
@@ -246,7 +235,7 @@ jobs:
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [test, draft_release, check_if_build, test_cf, test_wasm]
+    needs: [test, draft_release, check_if_build, test_cf]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
     runs-on: ${{ matrix.os }}
@@ -359,10 +348,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
-      - name: Install dependencies on Windows
-        if: runner.os == 'Windows'
-        run: |
-          choco install nasm -y
 
       - name: Build
         env:
@@ -493,19 +478,28 @@ jobs:
         with:
           node-version: 20.11.0
           registry-url: https://registry.npmjs.org
-      - name: Setup .npmrc file to publish to npm
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       - name: Install dependencies
         run: |
-          cd tailcall-wasm
+          cd npm
           npm install
-      - name: Run publish script
+      - name: Run generate-root.js script
         env:
-          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
         run: |
-          cd tailcall-wasm
-          npm run publish
+          cd npm
+          npm run gen-root -- --version ${{ env.APP_VERSION }}
+      - name: Setup .npmrc file to publish to npm
+        run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
+      - name: Publish packages
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: npm/@tailcallhq/tailcall
+          access: public
+
+        env:
+          APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   build-and-push-image:
     env:
