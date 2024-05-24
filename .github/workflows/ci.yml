@@ -162,22 +162,14 @@ jobs:
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          profile: minimal
           target: ${{ matrix.target }}
 
       - name: Install dependencies on Windows
         if: runner.os == 'Windows'
         run: |
-          Invoke-WebRequest -Uri https://www.nasm.us/pub/nasm/releasebuilds/2.16.02/win64/nasm-2.16.02-win64.zip -OutFile nasm.zip
-          Expand-Archive -Path nasm.zip -DestinationPath .
-          $env:PATH += ";$PWD\nasm-2.16.02"
-          Remove-Item nasm.zip
-
-      - name: Install CMake
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          tools: cmake
+          winget install nasm -i
+          setx Path "%Path%;C:\Program Files\NASM\"
+          nasm --version
 
       - name: Run Cargo Test
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
