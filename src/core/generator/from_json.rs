@@ -1,3 +1,4 @@
+use regex::Regex;
 use serde_json::{Map, Value};
 use url::Url;
 
@@ -167,11 +168,34 @@ impl ConfigGenerator {
         }
     }
 
-    fn create_http_directive(&self, field: &mut Field, url: &Url) -> Http {
+    fn check_n_add_path_variables(&self, field: &mut Field, http: &mut Http, url: &Url) {
+        let re = Regex::new(r"/(\d+)/?").unwrap();
+        let mut placeholder_index = 1;
+        let path_url = url.path().to_string();
+
+        let replaced_str = re.replace_all(path_url.as_str(), |_: &regex::Captures| {
+            let arg_key = format!("p{}", placeholder_index);
+            let placeholder = format!("/{{{{.args.{}}}}}/", arg_key);
+
+            let arg = Arg {
+                type_of: "Int".to_string(), 
+                required: true,
+                ..Default::default()
+            };
+
+            field.args.insert(arg_key, arg);
+
+            placeholder_index += 1;
+            placeholder
+        });
+
+        // add path in http directive.
+        http.path = replaced_str.to_string();
+    }
+
+    fn check_n_add_query_variables(&self, field: &mut Field, http: &mut Http, url: &Url) {
         let query_list = UrlQueryParser::new(url).queries;
 
-        // add args to field and prepare mustache template format queries.
-        let mut http: Http = Http::default();
         for query in query_list {
             let arg = Arg {
                 list: query.is_list,
@@ -184,9 +208,13 @@ impl ConfigGenerator {
             http.query.push(KeyValue { key: query.key.clone(), value });
             field.args.insert(query.key, arg);
         }
+    }
 
-        // add path in http directive.
-        http.path = url.path().to_string();
+    fn create_http_directive(&self, field: &mut Field, url: &Url) -> Http {
+        let mut http: Http = Http::default();
+
+        self.check_n_add_path_variables(field, &mut http, url);
+        self.check_n_add_query_variables(field, &mut http, url);
 
         http
     }
@@ -263,7 +291,23 @@ mod test {
     use serde_json::json;
     use url::Url;
 
+    use crate::core::config::KeyValue;
     use crate::core::generator::from_json::{ConfigGenerator, UrlQueryParser};
+
+    #[test]
+    fn test_create_http_directive() {
+        let config_gen = ConfigGenerator::new();
+        let url = Url::parse("https://jsonplaceholder.typicode.com/users/1").unwrap();
+        let http = config_gen.create_http_directive(&mut Default::default(), &url);
+        assert_eq!(http.path, "/users/{{.args.p1}}/");
+
+        let url = Url::parse("https://jsonplaceholder.typicode.com/users/1?q=12").unwrap();
+        let http = config_gen.create_http_directive(&mut Default::default(), &url);
+        let expected_query_list =
+            vec![KeyValue { key: "q".to_string(), value: "{{.args.q}}".to_string() }];
+        assert_eq!(http.query, expected_query_list);
+        assert_eq!(http.path, "/users/{{.args.p1}}/");
+    }
 
     #[test]
     fn test_should_generate_type() {
