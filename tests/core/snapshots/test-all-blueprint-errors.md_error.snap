@@ -20,13 +20,6 @@ expression: errors
     "description": null
   },
   {
-    "message": "type is used in input and output",
-    "trace": [
-      "B"
-    ],
-    "description": null
-  },
-  {
     "message": "expected string",
     "trace": [
       "Query",

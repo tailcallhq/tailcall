@@ -309,9 +309,9 @@ mod tests {
         let expected = hashset![
             "Query",
             "Type1Input",
-            "Type1Output",
+            "Type1",
             "Type2Input",
-            "Type2Output",
+            "Type2",
             "Type3"
         ];
 
