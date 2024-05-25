@@ -39,6 +39,9 @@ pub enum IO {
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
     },
+    Js {
+        name: String,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -137,6 +140,20 @@ impl IO {
 
                     Ok(res.body)
                 }
+                IO::Js { name } => {
+                    if let Some((worker, value)) = ctx
+                        .request_ctx
+                        .runtime
+                        .worker
+                        .as_ref()
+                        .zip(ctx.value().cloned())
+                    {
+                        let val = worker.call(name, value).await?;
+                        Ok(val.unwrap_or_default())
+                    } else {
+                        Ok(ConstValue::Null)
+                    }
+                }
             }
         })
     }
@@ -148,6 +165,7 @@ impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
             IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
             IO::GraphQL { req_template, .. } => req_template.cache_key(ctx),
+            IO::Js { .. } => None,
         }
     }
 }
