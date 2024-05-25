@@ -71,7 +71,7 @@ pub fn create_runtime(
         http_client.clone()
     };
 
-    let http2 = if let Some(script) = script {
+    let http2 = if let Some(script) = script.clone() {
         javascript::init_http(http_client.clone(), script)
     } else {
         http_client.clone()
@@ -87,5 +87,7 @@ pub fn create_runtime(
         file: Arc::new(file),
         cache: Arc::new(InMemoryCache::new()),
         extensions: Arc::new(vec![]),
+        http_worker: None,
+        worker: None,
     }
 }

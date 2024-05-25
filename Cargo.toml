@@ -105,7 +105,7 @@ lazy_static = { workspace = true }
 which = { version = "6.0.1", optional = true }
 async-recursion = "1.1.1"
 tempfile = "3.10.1"
-rquickjs = { "version" = "0.5.1", optional = true, features = ["full"] }
+rquickjs = { "version" = "0.5.1", optional = true, features = ["macro"] }
 strum_macros = "0.26.2"
 # TODO: disable some levels with features?
 tracing = { workspace = true }
