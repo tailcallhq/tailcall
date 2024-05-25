@@ -61,3 +61,15 @@ enum Operation {
 struct JS {
     name: String,
 }
+
+impl PartialEq for RPC {
+    fn eq(&self, other: &Self) -> bool {
+        todo!()
+    }
+}
+
+impl RPC {
+    pub fn depends_on(&self, other: &Self) -> bool {
+        todo!()
+    }
+}

@@ -1,21 +1,23 @@
 use std::collections::HashMap;
 
+use crate::rpc::RPC;
+
 type Id = u64;
 
 #[derive(Clone)]
-struct Node<A> {
+struct Node<'a> {
     parent_id: Option<Id>,
-    task: A,
+    rpc: &'a RPC,
 }
 
 /// Representation of the actual execution plan.
 /// Internally it represents a graph of nodes where each node has an Id of its
 /// own and refers to a parent node to maintain the dependency relationship.
 #[derive(Clone)]
-struct ExecutionGraph<'a, A>(HashMap<Id, Node<&'a A>>);
+struct ExecutionGraph<'a>(HashMap<Id, Node<'a>>);
 
-impl<'a, A> ExecutionGraph<'a, A> {
-    fn get(&self, id: &Id) -> Option<&Node<&A>> {
+impl<'a> ExecutionGraph<'a> {
+    fn get(&self, id: &Id) -> Option<&Node<'a>> {
         self.0.get(&id)
     }
 
@@ -61,16 +63,13 @@ impl<'a, A> ExecutionGraph<'a, A> {
     }
 
     /// Find all plans that don't depend on their parent plans
-    fn independent_plans(&self) -> Vec<Id>
-    where
-        A: Task,
-    {
+    fn independent_plans(&self) -> Vec<Id> {
         self.0
             .iter()
             .filter(|(_, node)| {
                 if let Some(parent_id) = node.parent_id {
                     if let Some(parent) = self.get(&parent_id) {
-                        !node.task.depends_on(parent.task)
+                        !node.rpc.depends_on(parent.rpc)
                     } else {
                         false
                     }
@@ -85,20 +84,16 @@ impl<'a, A> ExecutionGraph<'a, A> {
 
 struct DuplicateTasks<A>(Vec<A>);
 
-trait Task: Eq {
-    fn depends_on(&self, other: &Self) -> bool;
-}
-
-trait Transformer<A> {
-    fn transform<'a>(&'a self, plan: ExecutionGraph<'a, A>) -> ExecutionGraph<'a, A>;
+trait Transformer {
+    fn transform<'a>(&'a self, plan: ExecutionGraph<'a>) -> ExecutionGraph<'a>;
 }
 
 /// Takes all the tasks that are equal and merges them into a new Task.
 /// The new task contains children from the
 struct Dedupe {}
 
-impl<A: Task> Transformer<A> for Dedupe {
-    fn transform<'a>(&'a self, plan: ExecutionGraph<'a, A>) -> ExecutionGraph<'a, A> {
+impl Transformer for Dedupe {
+    fn transform<'a>(&'a self, plan: ExecutionGraph<'a>) -> ExecutionGraph<'a> {
         todo!()
     }
 }
@@ -108,8 +103,8 @@ struct TreeShake {
     max_count: u64,
 }
 
-impl<A> Transformer<A> for TreeShake {
-    fn transform<'a>(&'a self, mut plan: ExecutionGraph<'a, A>) -> ExecutionGraph<'a, A> {
+impl Transformer for TreeShake {
+    fn transform<'a>(&'a self, mut plan: ExecutionGraph<'a>) -> ExecutionGraph<'a> {
         let mut changes = true;
         let mut count = 0;
         while changes && count < self.max_count {
@@ -132,11 +127,11 @@ impl<A> Transformer<A> for TreeShake {
 /// execution plan.
 struct ShiftToRoot {}
 
-impl<A: Task> Transformer<A> for ShiftToRoot {
-    fn transform<'a>(&'a self, mut plan: ExecutionGraph<'a, A>) -> ExecutionGraph<'a, A> {
+impl Transformer for ShiftToRoot {
+    fn transform<'a>(&'a self, mut plan: ExecutionGraph<'a>) -> ExecutionGraph<'a> {
         let independent_plans = plan.independent_plans();
         for id in independent_plans {
-            if let Some(node) = plan.nodes.get_mut(&id) {
+            if let Some(node) = plan.0.get_mut(&id) {
                 node.parent_id = None;
             }
         }
