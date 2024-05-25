@@ -49,9 +49,25 @@ enum movies__Genre {
 }
 
 type Query {
+  """
+  *
+ get all movies
+  """
   movies__AnotherExample__GetMovies(movieRequest: movies__MovieRequest!): movies__MoviesResult! @grpc(body: "{{.args.movieRequest}}", method: "movies.AnotherExample.GetMovies")
+  """
+  *
+ search movies by the name of the cast
+  """
   movies__AnotherExample__SearchMoviesByCast(searchByCastRequest: movies__SearchByCastRequest!): movies__Movie! @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.AnotherExample.SearchMoviesByCast")
+  """
+  *
+ get all movies
+  """
   movies__Example__GetMovies(movieRequest: movies__MovieRequest!): movies__MoviesResult! @grpc(body: "{{.args.movieRequest}}", method: "movies.Example.GetMovies")
+  """
+  *
+ search movies by the name of the cast
+  """
   movies__Example__SearchMoviesByCast(searchByCastRequest: movies__SearchByCastRequest!): movies__Movie! @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.Example.SearchMoviesByCast")
 }
 

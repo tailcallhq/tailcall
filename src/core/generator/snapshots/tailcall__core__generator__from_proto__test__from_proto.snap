@@ -37,7 +37,13 @@ enum news__Status {
 }
 
 type Query {
+  """
+  Sends a greeting
+  """
   greetings_a__b__Greeter__SayHello(helloRequest: greetings_a__b__HelloRequest!): greetings_a__b__HelloReply! @grpc(body: "{{.args.helloRequest}}", method: "greetings_a.b.Greeter.SayHello")
+  """
+  Sends a greeting
+  """
   greetings_b__c__Greeter__SayHello(helloRequest: greetings__HelloRequest!): greetings__HelloReply! @grpc(body: "{{.args.helloRequest}}", method: "greetings_b.c.Greeter.SayHello")
   news__NewsService__AddNews(news: news__News!): news__News! @grpc(body: "{{.args.news}}", method: "news.NewsService.AddNews")
   news__NewsService__DeleteNews(newsId: news__NewsId!): Empty! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.DeleteNews")

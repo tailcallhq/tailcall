@@ -3,7 +3,7 @@ use std::collections::{BTreeSet, HashSet};
 use anyhow::{bail, Result};
 use derive_setters::Setters;
 use prost_reflect::prost_types::{
-    DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto,
+    DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto, SourceCodeInfo,
 };
 
 use super::graphql_type::{GraphQLType, Unparsed};
@@ -24,6 +24,10 @@ struct Context {
 
     /// Set of visited map types
     map_types: HashSet<String>,
+
+    /// Optional field to store source code information, including comments, for
+    /// each entity.
+    source_code_info: Option<SourceCodeInfo>,
 }
 
 impl Context {
@@ -33,7 +37,29 @@ impl Context {
             namespace: Default::default(),
             config: Default::default(),
             map_types: Default::default(),
+            source_code_info: None,
         }
+    }
+
+    /// Sets source code information for preservation of comments.
+    fn with_source_code_info(mut self, source_code_info: SourceCodeInfo) -> Self {
+        self.source_code_info = Some(source_code_info);
+        self
+    }
+
+    /// Retrieves comments associated with the source code information.
+    fn get_comments(&self, path: &[i32]) -> Option<String> {
+        self.source_code_info.as_ref().and_then(|info| {
+            info.location
+                .iter()
+                .find(|loc| loc.path == path)
+                .and_then(|loc| {
+                    loc.leading_comments
+                        .as_ref()
+                        .map(|c| c.trim().to_string())
+                        .filter(|c| !c.is_empty())
+                })
+        })
     }
 
     /// Resolves the actual name and inserts the type.
@@ -43,8 +69,8 @@ impl Context {
     }
 
     /// Processes proto enum types.
-    fn append_enums(mut self, enums: &Vec<EnumDescriptorProto>) -> Self {
-        for enum_ in enums {
+    fn append_enums(mut self, enums: &[EnumDescriptorProto], parent_path: &[i32]) -> Self {
+        for (index, enum_) in enums.iter().enumerate() {
             let enum_name = enum_.name();
 
             let variants = enum_
@@ -57,16 +83,22 @@ impl Context {
                 .extend(self.namespace.as_slice())
                 .into_enum()
                 .to_string();
-            self.config
-                .enums
-                .insert(type_name, Enum { variants, doc: None });
+
+            let path = [parent_path, &[5, index as i32]].concat();
+            let doc = self.get_comments(&path);
+
+            self.config.enums.insert(type_name, Enum { variants, doc });
         }
         self
     }
 
     /// Processes proto message types.
-    fn append_msg_type(mut self, messages: &Vec<DescriptorProto>) -> Result<Self> {
-        for message in messages {
+    fn append_msg_type(
+        mut self,
+        messages: &[DescriptorProto],
+        parent_path: &[i32],
+    ) -> Result<Self> {
+        for (index, message) in messages.iter().enumerate() {
             let msg_name = message.name();
 
             let msg_type = GraphQLType::new(msg_name)
@@ -89,13 +121,22 @@ impl Context {
 
             // first append the name of current message as namespace
             self.namespace.push(msg_name.to_string());
-            self = self.append_enums(&message.enum_type);
-            self = self.append_msg_type(&message.nested_type)?;
+            self = self.append_enums(
+                &message.enum_type,
+                &[parent_path, &[3, index as i32]].concat(),
+            );
+            self = self.append_msg_type(
+                &message.nested_type,
+                &[parent_path, &[3, index as i32]].concat(),
+            )?;
             // then drop it after handling nested types
             self.namespace.pop();
 
             let mut ty = Type::default();
-            for field in message.field.iter() {
+            let path = [parent_path, &[3, index as i32]].concat(); // 3: message_type field
+            ty.doc = self.get_comments(&path);
+
+            for (field_index, field) in message.field.iter().enumerate() {
                 let field_name = GraphQLType::new(field.name())
                     .extend(self.namespace.as_slice())
                     .into_field();
@@ -130,6 +171,9 @@ impl Context {
                     cfg_field.type_of = type_of;
                 }
 
+                let field_path = [path.clone(), vec![2, field_index as i32]].concat(); // 2: field field
+                cfg_field.doc = self.get_comments(&field_path);
+
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
 
@@ -141,14 +185,20 @@ impl Context {
     }
 
     /// Processes proto service definitions and their methods.
-    fn append_query_service(mut self, services: &Vec<ServiceDescriptorProto>) -> Result<Self> {
+    fn append_query_service(
+        mut self,
+        services: &[ServiceDescriptorProto],
+        parent_path: &[i32],
+    ) -> Result<Self> {
         if services.is_empty() {
             return Ok(self);
         }
 
-        for service in services {
+        for (index, service) in services.iter().enumerate() {
             let service_name = service.name();
-            for method in &service.method {
+            let path = [parent_path, &[6, index as i32]].concat(); // 6: service field
+
+            for (method_index, method) in service.method.iter().enumerate() {
                 let field_name = GraphQLType::new(method.name())
                     .extend(self.namespace.as_slice())
                     .push(service_name)
@@ -188,6 +238,9 @@ impl Context {
                     headers: vec![],
                     method: field_name.id(),
                 });
+
+                let method_path = [path.clone(), [2, method_index as i32].to_vec()].concat(); // 2: method field
+                cfg_field.doc = self.get_comments(&method_path);
 
                 let ty = self
                     .config
@@ -262,10 +315,14 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<
         for file_descriptor in descriptor_set.file.iter() {
             ctx.namespace = vec![file_descriptor.package().to_string()];
 
+            if let Some(source_code_info) = &file_descriptor.source_code_info {
+                ctx = ctx.with_source_code_info(source_code_info.clone());
+            }
+
             ctx = ctx
-                .append_enums(&file_descriptor.enum_type)
-                .append_msg_type(&file_descriptor.message_type)?
-                .append_query_service(&file_descriptor.service)?;
+                .append_enums(&file_descriptor.enum_type, &[])
+                .append_msg_type(&file_descriptor.message_type, &[])?
+                .append_query_service(&file_descriptor.service, &[])?;
         }
     }
 
