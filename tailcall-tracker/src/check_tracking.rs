@@ -1,15 +1,13 @@
 use std::env;
 
+use tailcall_version::VERSION;
+
 const LONG_ENV_FILTER_VAR_NAME: &str = "TAILCALL_TRACKER";
 const SHORT_ENV_FILTER_VAR_NAME: &str = "TC_TRACKER";
-const VERSION: &str = match option_env!("APP_VERSION") {
-    Some(version) => version,
-    _ => "0.1.0-dev",
-};
 
 /// Checks if tracking is enabled
 pub fn check_tracking() -> bool {
-    let is_prod = !VERSION.contains("dev");
+    let is_prod = !VERSION.is_dev();
     let usage_enabled = env::var(LONG_ENV_FILTER_VAR_NAME)
         .or(env::var(SHORT_ENV_FILTER_VAR_NAME))
         .map(|v| !v.eq_ignore_ascii_case("false"))
