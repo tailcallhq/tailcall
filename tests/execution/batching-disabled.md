@@ -5,7 +5,7 @@
   "server": {},
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com",
-    "httpCache": true,
+    "httpCache": 42,
     "batch": {
       "maxSize": 100,
       "delay": 0,

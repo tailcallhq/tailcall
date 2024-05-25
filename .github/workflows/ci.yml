@@ -427,7 +427,7 @@ jobs:
         env:
           APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: cargo lambda build -p tailcall-aws-lambda --release
+        run: cargo lambda build -p tailcall-aws-lambda --release --target x86_64-unknown-linux-musl
 
       - name: Rename Binary with Target Name
         run: |

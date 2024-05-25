@@ -49,6 +49,9 @@ opentelemetry-otlp = { version = "0.15.0", features = [
     "tls-roots",
 ], optional = true }
 opentelemetry-system-metrics = { version = "0.1.8", optional = true }
+tailcall-http-cache = {path = "tailcall-http-cache", optional = true }
+tailcall-version = { path = "./tailcall-version", optional = true }
+
 
 # dependencies safe for wasm:
 
@@ -102,7 +105,7 @@ lazy_static = { workspace = true }
 which = { version = "6.0.1", optional = true }
 async-recursion = "1.1.1"
 tempfile = "3.10.1"
-rquickjs = { "version" = "0.5.1", optional = true, features = ["full"] }
+rquickjs = { "version" = "0.5.1", optional = true, features = ["macro"] }
 strum_macros = "0.26.2"
 # TODO: disable some levels with features?
 tracing = { workspace = true }
@@ -193,7 +196,9 @@ cli = [
     "opentelemetry_sdk/rt-tokio",
     "dep:opentelemetry-otlp",
     "dep:opentelemetry-system-metrics",
-    "dep:tailcall-tracker"
+    "dep:tailcall-tracker",
+    "dep:tailcall-http-cache",
+    "dep:tailcall-version"
 ]
 
 # Feature flag to enable all default features.
@@ -214,7 +219,10 @@ members = [
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
-    "tailcall-hasher"]
+    "tailcall-hasher",
+    "tailcall-http-cache",
+    "tailcall-version",
+]
 
 # Boost execution_spec snapshot diffing performance
 [profile.dev.package]

@@ -1,8 +1,10 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+schema
+  @server(hostname: "0.0.0.0", port: 8000)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
 }
 

@@ -1,8 +1,12 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
-schema @server(port: 8000) @upstream(baseURL: "http://localhost:50051") @link(src: "foo.proto", type: Protobuf) @link(src: "bar.proto", type: Protobuf) {
+schema
+  @server(port: 8000)
+  @upstream(baseURL: "http://localhost:50051")
+  @link(src: "foo.proto", type: Protobuf)
+  @link(src: "bar.proto", type: Protobuf) {
   query: Query
 }
 

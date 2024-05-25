@@ -3,20 +3,9 @@ use std::sync::Arc;
 use hyper::body::Bytes;
 use rquickjs::FromJs;
 
-use super::{JsRequest, JsResponse};
 use crate::core::http::{HttpFilter, Response};
+use crate::core::worker::{Command, Event, WorkerRequest, WorkerResponse};
 use crate::core::{HttpIO, WorkerIO};
-
-#[derive(Debug)]
-pub enum Event {
-    Request(JsRequest),
-}
-
-#[derive(Debug)]
-pub enum Command {
-    Request(JsRequest),
-    Response(JsResponse),
-}
 
 impl<'js> FromJs<'js> for Command {
     fn from_js(ctx: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
@@ -27,12 +16,12 @@ impl<'js> FromJs<'js> for Command {
         })?;
 
         if object.contains_key("request")? {
-            Ok(Command::Request(JsRequest::from_js(
+            Ok(Command::Request(WorkerRequest::from_js(
                 ctx,
                 object.get("request")?,
             )?))
         } else if object.contains_key("response")? {
-            Ok(Command::Response(JsResponse::from_js(
+            Ok(Command::Response(WorkerResponse::from_js(
                 ctx,
                 object.get("response")?,
             )?))
@@ -65,10 +54,10 @@ impl RequestFilter {
         mut request: reqwest::Request,
         http_filter: HttpFilter,
     ) -> anyhow::Result<Response<Bytes>> {
-        let js_request = JsRequest::try_from(&request)?;
+        let js_request = WorkerRequest::try_from(&request)?;
         let event = Event::Request(js_request);
 
-        let command = self.worker.call(http_filter.on_request, event).await?;
+        let command = self.worker.call(&http_filter.on_request, event).await?;
 
         match command {
             Some(command) => match command {
@@ -120,9 +109,8 @@ mod tests {
     use hyper::body::Bytes;
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
 
-    use crate::cli::javascript::request_filter::Command;
-    use crate::cli::javascript::{JsRequest, JsResponse};
     use crate::core::http::Response;
+    use crate::core::worker::{Command, WorkerRequest, WorkerResponse};
 
     #[test]
     fn test_command_from_invalid_object() {
@@ -143,7 +131,7 @@ mod tests {
         context.with(|ctx| {
             let request =
                 reqwest::Request::new(reqwest::Method::GET, "http://example.com/".parse().unwrap());
-            let js_request: JsRequest = (&request).try_into().unwrap();
+            let js_request: WorkerRequest = (&request).try_into().unwrap();
             let value = Object::new(ctx.clone()).unwrap();
             value.set("request", js_request.into_js(&ctx)).unwrap();
             assert!(Command::from_js(&ctx, value.into_value()).is_ok());
@@ -155,7 +143,7 @@ mod tests {
         let runtime = Runtime::new().unwrap();
         let context = Context::base(&runtime).unwrap();
         context.with(|ctx| {
-            let js_response = JsResponse::try_from(Response {
+            let js_response = WorkerResponse::try_from(Response {
                 status: reqwest::StatusCode::OK,
                 headers: reqwest::header::HeaderMap::default(),
                 body: Bytes::new(),

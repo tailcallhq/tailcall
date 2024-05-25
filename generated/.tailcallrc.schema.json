@@ -755,10 +755,10 @@
     "JS": {
       "type": "object",
       "required": [
-        "script"
+        "name"
       ],
       "properties": {
-        "script": {
+        "name": {
           "type": "string"
         }
       }
@@ -1373,11 +1373,13 @@
           ]
         },
         "httpCache": {
-          "description": "Activating this enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `false` if unspecified.",
+          "description": "Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.",
           "type": [
-            "boolean",
+            "integer",
             "null"
-          ]
+          ],
+          "format": "uint64",
+          "minimum": 0.0
         },
         "keepAliveInterval": {
           "description": "The time in seconds between each keep-alive message sent to maintain the connection.",
