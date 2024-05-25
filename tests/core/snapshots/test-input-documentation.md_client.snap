@@ -9,7 +9,13 @@ scalar Email
 
 scalar Empty
 
+"""
+Test input documentation
+"""
 input Foo {
+  """
+  Test input field documentation
+  """
   id: Int
 }
 
@@ -26,6 +32,9 @@ type Post {
   id: Int!
 }
 
+"""
+Some Documentation
+"""
 type Query {
   foo: String
   postFromFoo(id: Int!): Post
