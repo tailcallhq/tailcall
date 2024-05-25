@@ -21,7 +21,7 @@ pub struct QueryParam {
     value: DynamicValue,
 }
 
-struct Http {
+pub struct Http {
     base_url: DynamicValue,
     path: DynamicValue,
     query: Vec<QueryParam>,
@@ -29,36 +29,36 @@ struct Http {
     headers: Headers,
 }
 
-struct Grpc {
+pub struct Grpc {
     base_url: DynamicValue,
     method: String,
     headers: Headers,
     body: DynamicValue,
 }
 
-struct GraphQL {
+pub struct GraphQL {
     base_url: DynamicValue,
     headers: Headers,
     operation: GraphQLOperation,
 }
 
-struct GraphQLOperation {
+pub struct GraphQLOperation {
     operation: Operation,
     name: Option<String>,
     variables: BTreeMap<String, DynamicValue>,
     selection: Vec<Selection>,
 }
 
-enum Selection {
+pub enum Selection {
     Field { name: String },
 }
 
-enum Operation {
+pub enum Operation {
     Query,
     Mutation,
 }
 
-struct JS {
+pub struct JS {
     name: String,
 }
 
