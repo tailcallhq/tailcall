@@ -49,7 +49,7 @@ opentelemetry-otlp = { version = "0.15.0", features = [
     "tls-roots",
 ], optional = true }
 opentelemetry-system-metrics = { version = "0.1.8", optional = true }
-tailcall-http-cache = {path = "tailcall-http-cache", optional = true }
+tailcall-http-cache = { path = "tailcall-http-cache", optional = true }
 
 
 # dependencies safe for wasm:
@@ -217,6 +217,7 @@ members = [
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
+    "tailcall-jit",
     "tailcall-hasher",
     "tailcall-http-cache",
 ]
