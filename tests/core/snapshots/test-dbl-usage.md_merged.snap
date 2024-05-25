@@ -1,0 +1,21 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+input UserInput {
+  id: ID!
+  name: String!
+}
+
+type Query {
+  user(input: UserInput!): User! @http(baseURL: "http://localhost:8080", path: "/user/{{.args.input.id}}")
+}
+
+type User {
+  id: ID!
+  name: String!
+}

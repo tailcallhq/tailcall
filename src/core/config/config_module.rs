@@ -212,6 +212,10 @@ impl From<Config> for ConfigModule {
             interface_types,
             ..Default::default()
         }
+        .resolve_ambiguous_types(|v| Resolution {
+            input: format!("{}Input", v),
+            output: v.to_owned(),
+        })
     }
 }
 

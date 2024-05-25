@@ -7,7 +7,7 @@ use rustls_pki_types::{
 };
 use url::Url;
 
-use super::{ConfigModule, Content, Link, LinkType};
+use super::{ConfigModule, Content, Link, LinkType, Resolution};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
@@ -200,7 +200,10 @@ impl ConfigReader {
             config_module = config_module.merge_right(new_config_module);
         }
 
-        Ok(config_module)
+        Ok(config_module.resolve_ambiguous_types(|v| Resolution {
+            input: format!("{}Input", v),
+            output: v.to_owned(),
+        }))
     }
 
     /// Resolves all the links in a Config to create a ConfigModule
