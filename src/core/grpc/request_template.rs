@@ -107,11 +107,11 @@ impl RenderedRequestTemplate {
 }
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
-    fn cache_key(&self, ctx: &Ctx) -> u64 {
+    fn cache_key(&self, ctx: &Ctx) -> Option<u64> {
         let mut hasher = TailcallHasher::default();
         let rendered_req = self.render(ctx).unwrap();
         rendered_req.hash(&mut hasher);
-        hasher.finish()
+        Some(hasher.finish())
     }
 }
 

@@ -1,19 +1,20 @@
 use std::collections::BTreeMap;
-pub use std::sync::Arc;
+use std::sync::Arc;
 
 use hyper::header::{HeaderName, HeaderValue};
 
 mod js_request;
+
 mod js_response;
-mod request_filter;
+
+pub mod request_filter;
+
 mod runtime;
 
-pub use js_request::JsRequest;
-pub use js_response::JsResponse;
 pub use request_filter::RequestFilter;
 pub use runtime::Runtime;
 
-use crate::core::{blueprint, HttpIO};
+use crate::core::{blueprint, HttpIO, WorkerIO};
 
 pub fn init_http(
     http: Arc<impl HttpIO>,
@@ -22,6 +23,13 @@ pub fn init_http(
     tracing::debug!("Initializing JavaScript HTTP filter: {}", script.source);
     let script_io = Arc::new(Runtime::new(script));
     Arc::new(RequestFilter::new(http, script_io))
+}
+
+pub fn init_worker_io<T, V>(script: blueprint::Script) -> Arc<dyn WorkerIO<T, V> + Send + Sync>
+where
+    Runtime: WorkerIO<T, V>,
+{
+    (Arc::new(Runtime::new(script))) as _
 }
 
 fn create_header_map(

@@ -39,6 +39,9 @@ pub enum IO {
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
     },
+    Js {
+        name: String,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -52,12 +55,16 @@ impl Eval for IO {
         if ctx.request_ctx.upstream.dedupe {
             Box::pin(async move {
                 let key = self.cache_key(&ctx);
-                ctx.request_ctx
-                    .cache
-                    .get_or_eval(key, move || Box::pin(async { self.eval_inner(ctx).await }))
-                    .await
-                    .as_ref()
-                    .clone()
+                if let Some(key) = key {
+                    ctx.request_ctx
+                        .cache
+                        .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
+                        .await
+                        .as_ref()
+                        .clone()
+                } else {
+                    self.eval_inner(ctx).await
+                }
             })
         } else {
             Box::pin(self.eval_inner(ctx))
@@ -133,17 +140,32 @@ impl IO {
 
                     Ok(res.body)
                 }
+                IO::Js { name } => {
+                    if let Some((worker, value)) = ctx
+                        .request_ctx
+                        .runtime
+                        .worker
+                        .as_ref()
+                        .zip(ctx.value().cloned())
+                    {
+                        let val = worker.call(name, value).await?;
+                        Ok(val.unwrap_or_default())
+                    } else {
+                        Ok(ConstValue::Null)
+                    }
+                }
             }
         })
     }
 }
 
 impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<'a, Ctx>> for IO {
-    fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> u64 {
+    fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> Option<u64> {
         match self {
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
             IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
             IO::GraphQL { req_template, .. } => req_template.cache_key(ctx),
+            IO::Js { .. } => None,
         }
     }
 }
