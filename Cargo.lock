@@ -5132,6 +5132,7 @@ dependencies = [
  "tailcall-macros",
  "tailcall-prettier",
  "tailcall-tracker",
+ "tailcall-version",
  "temp-env",
  "tempfile",
  "thiserror",
@@ -5251,6 +5252,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sysinfo 0.30.12",
+ "tailcall-version",
  "tokio",
  "tracing",
 ]
@@ -5297,6 +5299,10 @@ dependencies = [
  "tracing-opentelemetry",
  "tracing-subscriber",
 ]
+
+[[package]]
+name = "tailcall-version"
+version = "0.1.0"
 
 [[package]]
 name = "tailcall_query_plan"
