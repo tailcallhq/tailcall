@@ -84,7 +84,7 @@ impl Context {
                 .into_enum()
                 .to_string();
 
-            let path = [parent_path, &[5, index as i32]].concat();
+            let path = [parent_path, &[5, index as i32]].concat(); // 5: enum_type field
             let doc = self.get_comments(&path);
 
             self.config.enums.insert(type_name, Enum { variants, doc });
@@ -133,7 +133,7 @@ impl Context {
             self.namespace.pop();
 
             let mut ty = Type::default();
-            let path = [parent_path, &[3, index as i32]].concat(); // 3: message_type field
+            let path = [parent_path, &[4, index as i32]].concat(); // 4: message_type field
             ty.doc = self.get_comments(&path);
 
             for (field_index, field) in message.field.iter().enumerate() {
