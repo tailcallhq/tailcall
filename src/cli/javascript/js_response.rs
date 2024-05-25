@@ -5,11 +5,9 @@ use rquickjs::{FromJs, IntoJs};
 
 use super::create_header_map;
 use crate::core::http::Response;
+use crate::core::worker::WorkerResponse;
 
-#[derive(Debug)]
-pub struct JsResponse(Response<String>);
-
-impl JsResponse {
+impl WorkerResponse {
     pub fn status(&self) -> u16 {
         self.0.status.as_u16()
     }
@@ -28,7 +26,7 @@ impl JsResponse {
     }
 }
 
-impl<'js> IntoJs<'js> for JsResponse {
+impl<'js> IntoJs<'js> for WorkerResponse {
     fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
         let object = rquickjs::Object::new(ctx.clone())?;
         object.set("status", self.status())?;
@@ -38,7 +36,7 @@ impl<'js> IntoJs<'js> for JsResponse {
     }
 }
 
-impl<'js> FromJs<'js> for JsResponse {
+impl<'js> FromJs<'js> for WorkerResponse {
     fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
         let object = value.as_object().ok_or(rquickjs::Error::FromJs {
             from: value.type_name(),
@@ -61,14 +59,14 @@ impl<'js> FromJs<'js> for JsResponse {
             })?,
             body: body.unwrap_or_default(),
         };
-        Ok(JsResponse(response))
+        Ok(WorkerResponse(response))
     }
 }
 
-impl TryFrom<JsResponse> for Response<Bytes> {
+impl TryFrom<WorkerResponse> for Response<Bytes> {
     type Error = anyhow::Error;
 
-    fn try_from(res: JsResponse) -> Result<Self, Self::Error> {
+    fn try_from(res: WorkerResponse) -> Result<Self, Self::Error> {
         let res = res.0;
         Ok(Response {
             status: res.status,
@@ -78,12 +76,12 @@ impl TryFrom<JsResponse> for Response<Bytes> {
     }
 }
 
-impl TryFrom<Response<Bytes>> for JsResponse {
+impl TryFrom<Response<Bytes>> for WorkerResponse {
     type Error = anyhow::Error;
 
     fn try_from(res: Response<Bytes>) -> Result<Self, Self::Error> {
         let body = String::from_utf8_lossy(res.body.as_ref()).to_string();
-        Ok(JsResponse(Response {
+        Ok(WorkerResponse(Response {
             status: res.status,
             headers: res.headers,
             body,
@@ -102,9 +100,9 @@ mod test {
     use reqwest::header::HeaderMap;
     use rquickjs::{Context, FromJs, IntoJs, Runtime};
 
-    use super::JsResponse;
+    use super::WorkerResponse;
 
-    fn create_test_response() -> Result<JsResponse> {
+    fn create_test_response() -> Result<WorkerResponse> {
         let mut headers = HeaderMap::new();
         headers.insert("content-type", "application/json".parse().unwrap());
         let response = crate::core::http::Response {
@@ -112,7 +110,7 @@ mod test {
             headers,
             body: Bytes::from("Hello, World!"),
         };
-        let js_response: Result<JsResponse> = response.try_into();
+        let js_response: Result<WorkerResponse> = response.try_into();
         js_response
     }
 
@@ -156,7 +154,7 @@ mod test {
             headers,
             body: body.into(),
         };
-        let js_response = JsResponse(response);
+        let js_response = WorkerResponse(response);
 
         let response: Result<crate::core::http::Response<Bytes>, _> = js_response.try_into();
         assert!(response.is_ok());
@@ -195,7 +193,7 @@ mod test {
         let context = Context::base(&runtime).unwrap();
         context.with(|ctx| {
             let js_response = create_test_response().unwrap().into_js(&ctx).unwrap();
-            let response = JsResponse::from_js(&ctx, js_response).unwrap();
+            let response = WorkerResponse::from_js(&ctx, js_response).unwrap();
 
             assert_eq!(response.status(), reqwest::StatusCode::OK.as_u16());
             assert_eq!(response.body(), Some("Hello, World!".to_owned()));
