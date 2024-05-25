@@ -1,3 +1,5 @@
+pub mod rpc;
+
 use std::collections::HashMap;
 
 type Id = u64;
