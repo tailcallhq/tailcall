@@ -15,24 +15,24 @@ use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
 
 #[derive(Clone, Debug)]
-pub enum Expression {
+pub enum IR {
     Context(Context),
     Dynamic(DynamicValue),
     IO(IO),
     Cache(Cache),
-    Path(Box<Expression>, Vec<String>),
-    Protect(Box<Expression>),
+    Path(Box<IR>, Vec<String>),
+    Protect(Box<IR>),
 }
 
-impl Display for Expression {
+impl Display for IR {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Expression::Context(_) => write!(f, "Context"),
-            Expression::Dynamic(_) => write!(f, "Literal"),
-            Expression::IO(io) => write!(f, "{io}"),
-            Expression::Cache(_) => write!(f, "Cache"),
-            Expression::Path(_, _) => write!(f, "Input"),
-            Expression::Protect(expr) => write!(f, "Protected({expr})"),
+            IR::Context(_) => write!(f, "Context"),
+            IR::Dynamic(_) => write!(f, "Literal"),
+            IR::IO(io) => write!(f, "{io}"),
+            IR::Cache(_) => write!(f, "Cache"),
+            IR::Path(_, _) => write!(f, "Input"),
+            IR::Protect(expr) => write!(f, "Protected({expr})"),
         }
     }
 }
@@ -41,14 +41,8 @@ impl Display for Expression {
 pub enum Context {
     Value,
     Path(Vec<String>),
-    PushArgs {
-        expr: Box<Expression>,
-        and_then: Box<Expression>,
-    },
-    PushValue {
-        expr: Box<Expression>,
-        and_then: Box<Expression>,
-    },
+    PushArgs { expr: Box<IR>, and_then: Box<IR> },
+    PushValue { expr: Box<IR>, and_then: Box<IR> },
 }
 
 #[derive(Debug, Error, Clone)]
@@ -135,17 +129,17 @@ impl From<auth::error::Error> for EvaluationError {
     }
 }
 
-impl Expression {
+impl IR {
     pub fn and_then(self, next: Self) -> Self {
-        Expression::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
+        IR::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
     }
 
-    pub fn with_args(self, args: Expression) -> Self {
-        Expression::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
+    pub fn with_args(self, args: IR) -> Self {
+        IR::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
     }
 }
 
-impl Eval for Expression {
+impl Eval for IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
@@ -153,7 +147,7 @@ impl Eval for Expression {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
-                Expression::Context(op) => match op {
+                IR::Context(op) => match op {
                     Context::Value => {
                         Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null))
                     }
@@ -172,15 +166,15 @@ impl Eval for Expression {
                         and_then.eval(ctx).await
                     }
                 },
-                Expression::Path(input, path) => {
+                IR::Path(input, path) => {
                     let inp = &input.eval(ctx).await?;
                     Ok(inp
                         .get_path(path)
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                Expression::Dynamic(value) => Ok(value.render_value(&ctx)),
-                Expression::Protect(expr) => {
+                IR::Dynamic(value) => Ok(value.render_value(&ctx)),
+                IR::Protect(expr) => {
                     ctx.request_ctx
                         .auth_ctx
                         .validate(ctx.request_ctx)
@@ -188,8 +182,8 @@ impl Eval for Expression {
                         .to_result()?;
                     expr.eval(ctx).await
                 }
-                Expression::IO(operation) => operation.eval(ctx).await,
-                Expression::Cache(cached) => cached.eval(ctx).await,
+                IR::IO(operation) => operation.eval(ctx).await,
+                IR::Cache(cached) => cached.eval(ctx).await,
             }
         })
     }

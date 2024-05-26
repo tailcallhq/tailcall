@@ -1,7 +1,7 @@
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
 use crate::core::config::{ConfigModule, Field};
-use crate::core::ir::{Expression, IO};
+use crate::core::ir::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 
@@ -10,10 +10,10 @@ pub struct CompileJs<'a> {
     pub script: &'a Option<String>,
 }
 
-pub fn compile_js(inputs: CompileJs) -> Valid<Expression, String> {
+pub fn compile_js(inputs: CompileJs) -> Valid<IR, String> {
     let name = inputs.name;
     Valid::from_option(inputs.script.as_ref(), "script is required".to_string())
-        .map(|_| Expression::IO(IO::Js { name: name.to_string() }))
+        .map(|_| IR::IO(IO::Js { name: name.to_string() }))
 }
 
 pub fn update_js_field<'a>(
