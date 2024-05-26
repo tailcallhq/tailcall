@@ -1,166 +1,171 @@
-use std::{collections::HashMap, ops::Deref};
+use std::collections::HashMap;
 
-// ---------------------------- M O D U L E S ----------------------------
-mod http {
-    use super::{Conditional, DynamicValue, TemplateContains};
+pub struct Headers(Vec<(DynamicValue, DynamicValue)>);
 
-    pub struct Headers(Vec<(DynamicValue, DynamicValue)>);
+pub struct Http {
+    pub path: DynamicValue,
+    pub query: Vec<Conditional<QueryParam>>,
+    pub headers: Headers,
+    pub body: DynamicValue,
+}
 
-    pub struct Http {
-        pub path: DynamicValue,
-        pub query: Vec<Conditional<QueryParam>>,
-        pub headers: Headers,
-        pub body: DynamicValue,
-    }
+pub enum QueryParam {
+    Empty,
+    Param {
+        key: DynamicValue,
+        value: DynamicValue,
+    },
+}
 
-    pub enum QueryParam {
-        Empty,
-        Param {
-            key: DynamicValue,
-            value: DynamicValue,
-        },
-    }
-
-    impl TemplateContains for QueryParam {
-        fn template_contains(&self, text: &str) -> bool {
-            match self {
-                QueryParam::Empty => false,
-                QueryParam::Param { key, value } => {
-                    key.template_contains(text) || value.template_contains(text)
-                }
+impl TemplateContains for QueryParam {
+    fn template_contains(&self, text: &str) -> bool {
+        match self {
+            QueryParam::Empty => false,
+            QueryParam::Param { key, value } => {
+                key.template_contains(text) || value.template_contains(text)
             }
         }
     }
+}
 
-    impl TemplateContains for Headers {
-        fn template_contains(&self, text: &str) -> bool {
-            self.0
-                .iter()
-                .any(|(k, v)| k.template_contains(text) || v.template_contains(text))
-        }
+impl TemplateContains for Headers {
+    fn template_contains(&self, text: &str) -> bool {
+        self.0
+            .iter()
+            .any(|(k, v)| k.template_contains(text) || v.template_contains(text))
     }
+}
 
-    impl TemplateContains for Http {
-        fn template_contains(&self, text: &str) -> bool {
-            self.path.template_contains(text)
-                || self.query.template_contains(text)
-                || self.headers.template_contains(text)
-                || self.body.template_contains(text)
+impl TemplateContains for Http {
+    fn template_contains(&self, text: &str) -> bool {
+        self.path.template_contains(text)
+            || self.query.template_contains(text)
+            || self.headers.template_contains(text)
+            || self.body.template_contains(text)
+    }
+}
+
+pub struct Grpc;
+
+impl TemplateContains for Grpc {
+    fn template_contains(&self, _text: &str) -> bool {
+        todo!()
+    }
+}
+
+pub struct GraphQL;
+
+impl TemplateContains for GraphQL {
+    fn template_contains(&self, _text: &str) -> bool {
+        todo!()
+    }
+}
+
+pub enum FieldType {
+    Named(String),
+    List(Box<FieldType>),
+    Optional(Box<FieldType>),
+}
+impl FieldType {
+    pub fn is_list(&self) -> bool {
+        match self {
+            FieldType::List(_) => true,
+            FieldType::Named(_) => false,
+            FieldType::Optional(inner) => inner.is_list(),
         }
     }
 }
 
-mod grpc {
-    use super::TemplateContains;
+/// Unique identifier for a field in the query.
+#[derive(Eq, PartialEq, Hash)]
+pub struct FieldId(u64);
 
-    pub struct Grpc;
+pub struct Field {
+    pub name: String,
+    pub parent_id: Option<FieldId>,
+    pub type_of: FieldType,
+}
 
-    impl TemplateContains for Grpc {
-        fn template_contains(&self, _text: &str) -> bool {
-            todo!()
-        }
+pub struct FieldMap {
+    map: HashMap<FieldId, Field>,
+}
+
+impl HasField for FieldMap {
+    fn has_field(&self, id: &FieldId) -> bool {
+        self.contains(id)
     }
 }
 
-mod graphql {
-    use super::TemplateContains;
+impl FieldMap {
+    pub fn new() -> Self {
+        Self { map: HashMap::new() }
+    }
 
-    pub struct GraphQL;
+    pub fn find_children(&self, parent: &FieldId) -> Vec<&FieldId> {
+        self.map
+            .iter()
+            .filter_map(|(id, field)| field.parent_id.as_ref().map(|p| p == parent).map(|_| id))
+            .collect()
+    }
 
-    impl TemplateContains for GraphQL {
-        fn template_contains(&self, _text: &str) -> bool {
-            todo!()
+    pub fn contains(&self, field: &FieldId) -> bool {
+        self.map.contains_key(field)
+    }
+
+    pub fn parent(&self, field: &FieldId) -> Option<&Field> {
+        self.map
+            .get(field)
+            .and_then(|field| field.parent_id.as_ref())
+            .and_then(|parent| self.map.get(parent))
+    }
+
+    pub fn parent_is_list(&self, field: &FieldId) -> bool {
+        let mut id = field;
+
+        while let Some(parent) = self.parent(id) {
+            if parent.type_of.is_list() {
+                return true;
+            } else if let Some(parent) = &parent.parent_id {
+                id = parent;
+            } else {
+                return false;
+            }
         }
+
+        return false;
     }
 }
 
-mod field {
-    use std::collections::HashMap;
+pub trait Transformer {
+    fn transform(map: &mut ExecutionMap);
+}
 
-    use super::HasField;
+pub struct Pipe<A, B> {
+    pub first: A,
+    pub second: B,
+}
 
-    /// Unique identifier for a field in the query.
-    #[derive(Eq, PartialEq, Hash)]
-    pub struct FieldId(u64);
+pub struct Empty;
+impl Transformer for Empty {
+    fn transform(_map: &mut ExecutionMap) {}
+}
 
-    pub struct Field {
-        name: String,
-        parent: Option<FieldId>,
-    }
-
-    pub struct FieldMap {
-        map: HashMap<FieldId, Field>,
-    }
-
-    impl HasField for FieldMap {
-        fn has_field(&self, id: &FieldId) -> bool {
-            self.contains(id)
-        }
-    }
-
-    impl FieldMap {
-        pub fn new() -> Self {
-            Self { map: HashMap::new() }
-        }
-
-        pub fn find_children(&self, parent: &FieldId) -> Vec<&FieldId> {
-            self.map
-                .iter()
-                .filter_map(|(id, field)| field.parent.as_ref().map(|p| p == parent).map(|_| id))
-                .collect()
-        }
-
-        pub fn contains(&self, field: &FieldId) -> bool {
-            self.map.contains_key(field)
-        }
+impl<A: Transformer, B: Transformer> Transformer for Pipe<A, B> {
+    fn transform(map: &mut ExecutionMap) {
+        A::transform(map);
+        B::transform(map);
     }
 }
 
-mod transform {
-    use super::{Cond, ExecutionMap, Http, Node, Task, TemplateContains};
+pub struct Transform;
 
-    pub trait Transformer {
-        fn transform(map: &mut ExecutionMap);
-    }
-
-    struct Pipe<A, B> {
-        first: A,
-        second: B,
-    }
-
-    struct Empty;
-    impl Transformer for Empty {
-        fn transform(_map: &mut ExecutionMap) {}
-    }
-
-    impl<A: Transformer, B: Transformer> Transformer for Pipe<A, B> {
-        fn transform(map: &mut ExecutionMap) {
-            A::transform(map);
-            B::transform(map);
-        }
-    }
-
-    struct Transform;
-
-    impl Transform {
-        pub fn empty() -> Empty {
-            Empty
-        }
+impl Transform {
+    pub fn empty() -> Empty {
+        Empty
     }
 }
 
-// -----------------------------------------------------------------------
-
-use graphql::*;
-use grpc::*;
-use http::*;
-
-use self::{
-    field::{FieldId, FieldMap},
-    transform::Transformer,
-};
-
-enum DynamicValue {
+pub enum DynamicValue {
     Literal(String),
     Template(Vec<String>),
 }
@@ -193,7 +198,7 @@ trait TemplateContains {
     fn template_contains(&self, text: &str) -> bool;
 }
 
-enum Cond {
+pub enum Cond {
     T,
     F,
     And(Box<Cond>, Box<Cond>),
@@ -201,7 +206,7 @@ enum Cond {
     HasField(FieldId),
 }
 
-trait HasField {
+pub trait HasField {
     fn has_field(&self, id: &FieldId) -> bool;
 }
 
@@ -227,7 +232,7 @@ impl Cond {
     }
 }
 
-struct Conditional<A> {
+pub struct Conditional<A> {
     cond: Cond,
     is_true: A,
     is_false: A,
@@ -256,19 +261,20 @@ impl<A: TemplateContains> TemplateContains for Conditional<A> {
     }
 }
 
-enum Task {
+pub enum Task {
     Http(Http),
     Grpc(Grpc),
     GraphQL(GraphQL),
 }
 
 #[derive(Eq, PartialEq, Hash)]
-struct TaskId(u64);
+pub struct TaskId(u64);
 
-struct Node {
-    parent: Option<TaskId>,
-    field: FieldId,
-    task: Task,
+pub struct Node {
+    pub parent: Option<TaskId>,
+    pub field: FieldId,
+    pub task: Task,
+    pub hint_parent_is_list: bool,
 }
 
 impl TemplateContains for Task {
@@ -281,14 +287,14 @@ impl TemplateContains for Task {
     }
 }
 
-struct ExecutionMap {
-    pub selection: FieldMap,
+pub struct ExecutionMap {
+    pub fields: FieldMap,
     pub tasks: HashMap<TaskId, Node>,
 }
 
 impl<'a> ExecutionMap {
     pub fn new() -> Self {
-        Self { tasks: HashMap::new(), selection: FieldMap::new() }
+        Self { tasks: HashMap::new(), fields: FieldMap::new() }
     }
 
     pub fn insert(mut self, id: TaskId, node: Node) -> Self {
@@ -303,11 +309,11 @@ impl<'a> ExecutionMap {
 
 impl HasField for ExecutionMap {
     fn has_field(&self, id: &FieldId) -> bool {
-        self.selection.has_field(id)
+        self.fields.has_field(id)
     }
 }
 
-struct MoveToRoot;
+pub struct MoveToRoot;
 impl Transformer for MoveToRoot {
     fn transform(map: &mut ExecutionMap) {
         for (_, node) in &mut map.tasks {
@@ -318,10 +324,10 @@ impl Transformer for MoveToRoot {
     }
 }
 
-struct Expand;
+pub struct Expand;
 impl Transformer for Expand {
     fn transform(map: &mut ExecutionMap) {
-        let selection = &map.selection;
+        let selection = &map.fields;
         for (_, node) in map.tasks.iter_mut() {
             match &mut node.task {
                 Task::Http(http) => {
@@ -334,6 +340,15 @@ impl Transformer for Expand {
                 Task::Grpc(_) => (),
                 Task::GraphQL(_) => (),
             };
+        }
+    }
+}
+
+pub struct UseBulk;
+impl Transformer for UseBulk {
+    fn transform(map: &mut ExecutionMap) {
+        for (_, node) in map.tasks.iter_mut() {
+            node.hint_parent_is_list = map.fields.parent_is_list(&node.field)
         }
     }
 }
