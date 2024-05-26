@@ -22,6 +22,7 @@ pub async fn execute_grpc_request(
     operation: &ProtobufOperation,
     request: Request,
 ) -> Result<Response<async_graphql::Value>> {
+    use crate::core::HttpIO;
     let response = runtime.http2_only.execute(request).await?;
 
     let grpc_status = response

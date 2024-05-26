@@ -210,6 +210,7 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
 ) -> Result<Response<async_graphql::Value>, EvaluationError> {
+    use crate::core::HttpIO;
     let response = ctx
         .request_ctx
         .runtime

@@ -13,16 +13,18 @@ mod runtime;
 
 pub use request_filter::RequestFilter;
 pub use runtime::Runtime;
+use crate::cli::runtime::NativeHttp;
 
 use crate::core::{blueprint, HttpIO, WorkerIO};
+use crate::core::runtime::DefaultHttp;
 
 pub fn init_http(
-    http: Arc<impl HttpIO>,
+    _http: crate::core::runtime::Http,
     script: blueprint::Script,
-) -> Arc<dyn HttpIO + Sync + Send> {
+) -> crate::core::runtime::Http {
     tracing::debug!("Initializing JavaScript HTTP filter: {}", script.source);
-    let script_io = Arc::new(Runtime::new(script));
-    Arc::new(RequestFilter::new(http, script_io))
+    let _script_io = Arc::new(Runtime::new(script));
+    DefaultHttp {}.into()
 }
 
 pub fn init_worker_io<T, V>(script: blueprint::Script) -> Arc<dyn WorkerIO<T, V> + Send + Sync>

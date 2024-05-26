@@ -1,10 +1,38 @@
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
+use enum_dispatch::enum_dispatch;
+use hyper::body::Bytes;
+use reqwest::Request;
+use crate::cli::javascript::RequestFilter;
+use crate::cli::runtime::NativeHttp;
 
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::worker::{Command, Event};
 use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
+use crate::core::http::Response;
+#[cfg(test)]
+use crate::core::runtime::test::TestHttp;
+
+#[derive(Clone)]
+pub struct DefaultHttp {}
+
+impl HttpIO for DefaultHttp {
+    fn execute<'life0, 'async_trait>(&'life0 self, _: Request) -> Pin<Box<dyn Future<Output=anyhow::Result<Response<Bytes>>> + Send + 'async_trait>> where 'life0: 'async_trait, Self: 'async_trait {
+        todo!()
+    }
+}
+
+#[enum_dispatch(HttpIO)]
+#[derive(Clone)]
+pub enum Http {
+    NativeHttp,
+    DefaultHttp,
+    #[cfg(test)]
+    TestHttp,
+}
 
 /// The TargetRuntime struct unifies the available runtime-specific
 /// IO implementations. This is used to reduce piping IO structs all
@@ -12,9 +40,9 @@ use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
 #[derive(Clone)]
 pub struct TargetRuntime {
     /// HTTP client for making standard HTTP requests.
-    pub http: Arc<dyn HttpIO>,
+    pub http: Http,
     /// HTTP client optimized for HTTP/2 requests.
-    pub http2_only: Arc<dyn HttpIO>,
+    pub http2_only: Http,
     /// Interface for accessing environment variables specific to the target
     /// environment.
     pub env: Arc<dyn EnvIO>,
@@ -62,7 +90,7 @@ pub mod test {
     use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
-    struct TestHttp {
+    pub struct TestHttp {
         client: ClientWithMiddleware,
     }
 
@@ -174,7 +202,7 @@ pub mod test {
         let http = if let Some(script) = script.clone() {
             javascript::init_http(TestHttp::init(&Default::default()), script)
         } else {
-            TestHttp::init(&Default::default())
+            TestHttp::init(&Default::default()).into()
         };
 
         let http2 = if let Some(script) = script {
@@ -183,7 +211,7 @@ pub mod test {
                 script,
             )
         } else {
-            TestHttp::init(&Upstream::default().http2_only(true))
+            TestHttp::init(&Upstream::default().http2_only(true)).into()
         };
 
         let file = TestFileIO::init();

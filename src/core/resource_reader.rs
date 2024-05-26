@@ -69,6 +69,7 @@ impl Reader for Direct {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             if url.scheme().starts_with("http") {
+                use crate::core::HttpIO;
                 let response = self
                     .runtime
                     .http

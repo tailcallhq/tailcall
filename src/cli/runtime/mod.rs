@@ -23,7 +23,7 @@ fn init_file() -> Arc<dyn FileIO> {
     Arc::new(file::NativeFileIO::init())
 }
 
-fn init_hook_http(http: Arc<impl HttpIO>, script: Option<blueprint::Script>) -> Arc<dyn HttpIO> {
+fn init_hook_http(http: crate::core::runtime::Http, script: Option<blueprint::Script>) -> crate::core::runtime::Http {
     #[cfg(feature = "js")]
     if let Some(script) = script {
         return super::javascript::init_http(http, script);
@@ -53,18 +53,18 @@ fn init_resolver_worker_io(
 }
 
 // Provides access to http in native rust environment
-fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
+fn init_http(blueprint: &Blueprint) -> crate::core::runtime::Http {
     let http_io = http::NativeHttp::init(&blueprint.upstream, &blueprint.telemetry);
-    init_hook_http(Arc::new(http_io), blueprint.server.script.clone())
+    init_hook_http(http_io.into(), blueprint.server.script.clone())
 }
 
 // Provides access to http in native rust environment
-fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
+fn init_http2_only(blueprint: &Blueprint) -> crate::core::runtime::Http {
     let http_io = http::NativeHttp::init(
         &blueprint.upstream.clone().http2_only(true),
         &blueprint.telemetry,
     );
-    init_hook_http(Arc::new(http_io), blueprint.server.script.clone())
+    init_hook_http(http_io.into(), blueprint.server.script.clone())
 }
 
 fn init_in_memory_cache<K: Hash + Eq, V: Clone>() -> InMemoryCache<K, V> {

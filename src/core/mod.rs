@@ -43,6 +43,7 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
+use enum_dispatch::enum_dispatch;
 use http::Response;
 pub use tailcall_macros as macros;
 
@@ -50,7 +51,16 @@ pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;
 }
 
+
+use crate::core::runtime::Http;
+use crate::core::runtime::DefaultHttp;
+use crate::cli::runtime::NativeHttp;
+use crate::cli::javascript::RequestFilter;
+#[cfg(test)]
+use crate::core::runtime::test::TestHttp;
+
 #[async_trait::async_trait]
+#[enum_dispatch]
 pub trait HttpIO: Sync + Send + 'static {
     async fn execute(
         &self,

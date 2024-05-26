@@ -41,6 +41,7 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
         &self,
         keys: &[DataLoaderRequest],
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
+        use crate::core::HttpIO;
         if self.batch {
             let batched_req = create_batched_request(keys);
             let result = self.runtime.http.execute(batched_req).await?.to_json();

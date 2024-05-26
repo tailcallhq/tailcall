@@ -35,7 +35,8 @@ impl<'js> FromJs<'js> for Command {
     }
 }
 
-pub struct RequestFilter {
+#[derive(Clone)]
+pub struct  RequestFilter {
     worker: Arc<dyn WorkerIO<Event, Command>>,
     client: Arc<dyn HttpIO>,
 }

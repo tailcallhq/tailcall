@@ -78,7 +78,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 let url = request.url();
                 first_url.query_pairs_mut().extend_pairs(url.query_pairs());
             }
-
+            use crate::core::HttpIO;
             let res = self
                 .runtime
                 .http
@@ -102,6 +102,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             Ok(hashmap)
         } else {
             let results = keys.iter().map(|key| async {
+                use crate::core::HttpIO;
                 let result = self.runtime.http.execute(key.to_request()).await;
                 (key.clone(), result)
             });

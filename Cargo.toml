@@ -158,6 +158,7 @@ tokio-test = "0.4.4"
 base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
 serde_json_borrow = "0.3.0"
+enum_dispatch = "0.3.13"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
