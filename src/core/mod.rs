@@ -55,7 +55,6 @@ pub trait EnvIO: Send + Sync + 'static {
 use crate::core::runtime::Http;
 use crate::core::runtime::DefaultHttp;
 use crate::cli::runtime::NativeHttp;
-use crate::cli::javascript::RequestFilter;
 #[cfg(test)]
 use crate::core::runtime::test::TestHttp;
 

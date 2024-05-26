@@ -13,9 +13,8 @@ mod runtime;
 
 pub use request_filter::RequestFilter;
 pub use runtime::Runtime;
-use crate::cli::runtime::NativeHttp;
 
-use crate::core::{blueprint, HttpIO, WorkerIO};
+use crate::core::{blueprint, WorkerIO};
 use crate::core::runtime::DefaultHttp;
 
 pub fn init_http(

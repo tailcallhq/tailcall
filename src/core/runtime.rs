@@ -6,7 +6,6 @@ use async_graphql_value::ConstValue;
 use enum_dispatch::enum_dispatch;
 use hyper::body::Bytes;
 use reqwest::Request;
-use crate::cli::javascript::RequestFilter;
 use crate::cli::runtime::NativeHttp;
 
 use crate::core::schema_extension::SchemaExtension;
