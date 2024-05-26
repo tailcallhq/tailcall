@@ -11,7 +11,7 @@ use serde_json::Value;
 use super::telemetry::Telemetry;
 use super::GlobalTimeout;
 use crate::core::blueprint::{Server, Upstream};
-use crate::core::lambda::Expression;
+use crate::core::ir::Expression;
 use crate::core::schema_extension::SchemaExtension;
 
 /// Blueprint is an intermediary representation that allows us to generate

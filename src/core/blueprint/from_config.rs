@@ -7,8 +7,8 @@ use super::{Server, TypeLike};
 use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::{Arg, Batch, Config, ConfigModule, Field};
+use crate::core::ir::{Expression, IO};
 use crate::core::json::JsonSchema;
-use crate::core::lambda::{Expression, IO};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 

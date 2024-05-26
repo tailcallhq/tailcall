@@ -3,7 +3,7 @@ use crate::core::config::group_by::GroupBy;
 use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{Method, RequestTemplate};
-use crate::core::lambda::{Expression, IO};
+use crate::core::ir::{Expression, IO};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};

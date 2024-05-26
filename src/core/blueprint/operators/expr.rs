@@ -3,8 +3,8 @@ use async_graphql_value::ConstValue;
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::Field;
-use crate::core::lambda::Expression;
-use crate::core::lambda::Expression::Dynamic;
+use crate::core::ir::Expression;
+use crate::core::ir::Expression::Dynamic;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 

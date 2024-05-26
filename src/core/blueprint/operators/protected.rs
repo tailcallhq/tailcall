@@ -1,6 +1,6 @@
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{self, ConfigModule, Field};
-use crate::core::lambda::{Context, Expression};
+use crate::core::ir::{Context, Expression};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
 

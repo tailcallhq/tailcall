@@ -7,7 +7,7 @@ use dashmap::DashMap;
 use futures_util::future::{join_all, try_join_all};
 use indexmap::IndexMap;
 use tailcall::core::http::RequestContext;
-use tailcall::core::lambda::{EvaluationContext, ResolverContextLike};
+use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
 
 use super::step::ExecutionStep;
 use crate::plan::{GeneralPlan, OperationPlan};

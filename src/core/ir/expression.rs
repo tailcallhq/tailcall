@@ -10,8 +10,8 @@ use thiserror::Error;
 use super::{Eval, EvaluationContext, ResolverContextLike, IO};
 use crate::core::auth;
 use crate::core::blueprint::DynamicValue;
+use crate::core::ir::cache::Cache;
 use crate::core::json::JsonLike;
-use crate::core::lambda::cache::Cache;
 use crate::core::serde_value_ext::ValueExt;
 
 #[derive(Clone, Debug)]

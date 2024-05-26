@@ -5,7 +5,7 @@ mod tests {
     use serde_json::json;
     use tailcall::core::blueprint::{Blueprint, DynamicValue};
     use tailcall::core::http::RequestContext;
-    use tailcall::core::lambda::{
+    use tailcall::core::ir::{
         EmptyResolverContext, Eval, EvaluationContext, EvaluationError, Expression,
     };
     use tailcall::core::mustache::Mustache;

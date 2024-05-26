@@ -5,7 +5,7 @@ use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
-use crate::core::lambda::{Cache, Context, Expression};
+use crate::core::ir::{Cache, Context, Expression};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{config, scalar};

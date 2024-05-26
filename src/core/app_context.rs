@@ -11,7 +11,7 @@ use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{DataLoaderRequest, HttpDataLoader};
-use crate::core::lambda::{DataLoaderId, Expression, IO};
+use crate::core::ir::{DataLoaderId, Expression, IO};
 use crate::core::rest::{Checked, EndpointSet};
 use crate::core::runtime::TargetRuntime;
 
