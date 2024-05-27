@@ -85,7 +85,15 @@ impl Eval for IO {
                 }
             })
         } else {
-            Box::pin(self.eval_inner(ctx))
+            let key = self.cache_key(&ctx).unwrap();
+            Box::pin(async move {
+                ctx.request_ctx
+                    .global_cache
+                    .read_aside(key, move || Box::pin(self.eval_inner(ctx)))
+                    .await
+                    .as_ref()
+                    .clone()
+            })
         }
     }
 }
