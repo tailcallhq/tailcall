@@ -11,7 +11,7 @@ use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::http::Method::POST;
-use crate::core::lambda::{CacheKey, GraphQLOperationContext};
+use crate::core::ir::{CacheKey, GraphQLOperationContext};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathGraphql;
 
@@ -147,8 +147,8 @@ mod tests {
     use crate::core::config::GraphQLOperationType;
     use crate::core::graphql::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
+    use crate::core::ir::{CacheKey, GraphQLOperationContext};
     use crate::core::json::JsonLike;
-    use crate::core::lambda::{CacheKey, GraphQLOperationContext};
     use crate::core::path::PathGraphql;
 
     struct Context {

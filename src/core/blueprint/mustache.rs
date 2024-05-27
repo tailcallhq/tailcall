@@ -1,6 +1,6 @@
 use super::{to_type, FieldDefinition, Type};
 use crate::core::config::{self, Config};
-use crate::core::lambda::{Expression, IO};
+use crate::core::ir::{IO, IR};
 use crate::core::scalar;
 use crate::core::valid::{Valid, Validator};
 
@@ -112,7 +112,7 @@ impl FieldDefinition {
         let parts_validator = MustachePartsValidator::new(type_of, config, self);
 
         match &self.resolver {
-            Some(Expression::IO(IO::Http { req_template, .. })) => {
+            Some(IR::IO(IO::Http { req_template, .. })) => {
                 Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
                     parts_validator.validate(parts, false).trace("path")
                 })
@@ -125,7 +125,7 @@ impl FieldDefinition {
                 }))
                 .unit()
             }
-            Some(Expression::IO(IO::GraphQL { req_template, .. })) => {
+            Some(IR::IO(IO::GraphQL { req_template, .. })) => {
                 Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
                     Valid::from_iter(mustache.expression_segments(), |parts| {
                         parts_validator.validate(parts, true).trace("headers")
@@ -144,7 +144,7 @@ impl FieldDefinition {
                 })
                 .unit()
             }
-            Some(Expression::IO(IO::Grpc { req_template, .. })) => {
+            Some(IR::IO(IO::Grpc { req_template, .. })) => {
                 Valid::from_iter(req_template.url.expression_segments(), |parts| {
                     parts_validator.validate(parts, false).trace("path")
                 })
