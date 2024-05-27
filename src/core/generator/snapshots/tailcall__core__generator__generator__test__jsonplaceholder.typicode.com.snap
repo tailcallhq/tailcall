@@ -7,8 +7,8 @@ schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
 }
 
 type Query {
-  f1: [T1] @http(path: "/posts/1/comments")
-  f2: T2 @http(path: "/posts/1")
+  f1(p1: Int!): [T1] @http(path: "/posts/{{.args.p1}}/comments")
+  f2(p1: Int!): T2 @http(path: "/posts/{{.args.p1}}")
 }
 
 type T1 {
