@@ -167,9 +167,14 @@ jobs:
       - name: Install dependencies on Windows
         if: runner.os == 'Windows'
         run: |
-          choco install nasm -y
-          dir C:\ProgramData\chocolatey\bin
-          nasm --version
+          cd ,
+          $nasmUrl = 'https://www.nasm.us/pub/nasm/releasebuilds/2.16.02/win64/nasm-2.16.02-win64.zip'
+          $nasmZip = 'nasm.zip'
+          $nasmDir = 'nasm-2.16.02'
+          Invoke-WebRequest -Uri $nasmUrl -OutFile $nasmZip
+          Expand-Archive -Path $nasmZip -DestinationPath '.'
+          Remove-Item -Path $nasmZip
+          echo "$(Resolve-Path $nasmDir)" >> $env:GITHUB_PATH
 
       - name: Run Cargo Test
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
