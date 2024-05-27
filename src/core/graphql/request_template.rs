@@ -11,7 +11,7 @@ use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::http::Method::POST;
-use crate::core::lambda::{CacheKey, GraphQLOperationContext};
+use crate::core::ir::{CacheKey, GraphQLOperationContext};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathGraphql;
 
@@ -127,11 +127,11 @@ impl RequestTemplate {
 }
 
 impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
-    fn cache_key(&self, ctx: &Ctx) -> u64 {
+    fn cache_key(&self, ctx: &Ctx) -> Option<u64> {
         let mut hasher = TailcallHasher::default();
         let graphql_query = self.render_graphql_query(ctx);
         graphql_query.hash(&mut hasher);
-        hasher.finish()
+        Some(hasher.finish())
     }
 }
 
@@ -147,8 +147,8 @@ mod tests {
     use crate::core::config::GraphQLOperationType;
     use crate::core::graphql::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
+    use crate::core::ir::{CacheKey, GraphQLOperationContext};
     use crate::core::json::JsonLike;
-    use crate::core::lambda::{CacheKey, GraphQLOperationContext};
     use crate::core::path::PathGraphql;
 
     struct Context {

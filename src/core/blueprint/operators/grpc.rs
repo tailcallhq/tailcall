@@ -8,8 +8,8 @@ use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
+use crate::core::ir::{IO, IR};
 use crate::core::json::JsonSchema;
-use crate::core::lambda::{Expression, IO};
 use crate::core::mustache::Mustache;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -156,7 +156,7 @@ impl TryFrom<&str> for GrpcMethod {
     }
 }
 
-pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
+pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
     let config_module = inputs.config_module;
     let operation_type = inputs.operation_type;
     let field = inputs.field;
@@ -199,13 +199,13 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<Expression, String> {
                 operation_type: operation_type.clone(),
             };
             if !grpc.group_by.is_empty() {
-                Expression::IO(IO::Grpc {
+                IR::IO(IO::Grpc {
                     req_template,
                     group_by: Some(GroupBy::new(grpc.group_by.clone())),
                     dl_id: None,
                 })
             } else {
-                Expression::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
+                IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
             }
         })
 }
