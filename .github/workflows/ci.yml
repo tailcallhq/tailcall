@@ -167,7 +167,7 @@ jobs:
       - name: Install dependencies on Windows
         if: runner.os == 'Windows'
         run: |
-          cd ,
+          echo %cd%
           $nasmUrl = 'https://www.nasm.us/pub/nasm/releasebuilds/2.16.02/win64/nasm-2.16.02-win64.zip'
           $nasmZip = 'nasm.zip'
           $nasmDir = 'nasm-2.16.02'
