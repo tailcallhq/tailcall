@@ -164,6 +164,18 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
+      - name: Install dependencies on Windows
+        if: runner.os == 'Windows'
+        run: |
+          echo %cd%
+          $nasmUrl = 'https://www.nasm.us/pub/nasm/releasebuilds/2.16.02/win64/nasm-2.16.02-win64.zip'
+          $nasmZip = 'nasm.zip'
+          $nasmDir = 'nasm-2.16.02'
+          Invoke-WebRequest -Uri $nasmUrl -OutFile $nasmZip
+          Expand-Archive -Path $nasmZip -DestinationPath '.'
+          Remove-Item -Path $nasmZip
+          echo "$(Resolve-Path $nasmDir)" >> $env:GITHUB_PATH
+
       - name: Run Cargo Test
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
 
@@ -316,7 +328,6 @@ jobs:
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
-            features: --no-default-features --features cli
             libc: msvc
             ext: ".exe"
 
@@ -324,7 +335,6 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
-            features: --no-default-features --features cli
             cross: true
             libc: glibc
             ext: ".exe"
