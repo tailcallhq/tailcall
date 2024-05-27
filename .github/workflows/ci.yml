@@ -167,9 +167,7 @@ jobs:
       - name: Install dependencies on Windows
         if: runner.os == 'Windows'
         run: |
-          winget install nasm -i
-          setx Path "%Path%;C:\Program Files\NASM\"
-          nasm --version
+          choco install nasm -y
 
       - name: Run Cargo Test
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
