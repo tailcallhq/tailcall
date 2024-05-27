@@ -3,8 +3,8 @@ use async_graphql_value::ConstValue;
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::Field;
-use crate::core::lambda::Expression;
-use crate::core::lambda::Expression::Dynamic;
+use crate::core::ir::IR;
+use crate::core::ir::IR::Dynamic;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
@@ -29,7 +29,7 @@ pub struct CompileExpr<'a> {
     pub validate: bool,
 }
 
-pub fn compile_expr(inputs: CompileExpr) -> Valid<Expression, String> {
+pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
     let config_module = inputs.config_module;
     let field = inputs.field;
     let value = inputs.value;

@@ -9,7 +9,7 @@ use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, Type};
 use crate::core::http::RequestContext;
-use crate::core::lambda::{Eval, EvaluationContext, ResolverContext};
+use crate::core::ir::{Eval, EvaluationContext, ResolverContext};
 use crate::core::scalar::CUSTOM_SCALARS;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
