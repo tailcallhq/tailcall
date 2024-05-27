@@ -1,6 +1,6 @@
 use hyper::header::HeaderMap;
 
-use crate::core::lambda::{EvaluationContext, ResolverContextLike};
+use crate::core::ir::{EvaluationContext, ResolverContextLike};
 
 pub trait HasHeaders {
     // TODO: Try converting headers() to reqwest

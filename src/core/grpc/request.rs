@@ -57,7 +57,7 @@ mod tests {
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::grpc::request::execute_grpc_request;
     use crate::core::http::{to_hyper_headers, Response};
-    use crate::core::lambda::EvaluationError;
+    use crate::core::ir::EvaluationError;
     use crate::core::runtime::TargetRuntime;
     use crate::core::HttpIO;
 

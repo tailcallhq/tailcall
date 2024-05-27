@@ -12,7 +12,7 @@ use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::http::to_reqwest_headers;
-use crate::core::lambda::CacheKey;
+use crate::core::ir::CacheKey;
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
 
@@ -737,7 +737,7 @@ mod tests {
 
         use crate::core::http::request_template::tests::Context;
         use crate::core::http::RequestTemplate;
-        use crate::core::lambda::CacheKey;
+        use crate::core::ir::CacheKey;
         use crate::core::mustache::Mustache;
 
         fn assert_no_duplicate<const N: usize>(arr: [Option<u64>; N]) {

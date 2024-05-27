@@ -2,7 +2,7 @@ use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{self, ConfigModule, Field, GraphQLOperationType};
 use crate::core::graphql::RequestTemplate;
 use crate::core::helpers;
-use crate::core::lambda::{Expression, IO};
+use crate::core::ir::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
@@ -10,7 +10,7 @@ pub fn compile_graphql(
     config: &config::Config,
     operation_type: &config::GraphQLOperationType,
     graphql: &config::GraphQL,
-) -> Valid<Expression, String> {
+) -> Valid<IR, String> {
     let args = graphql.args.as_ref();
     Valid::from_option(
         graphql
@@ -35,7 +35,7 @@ pub fn compile_graphql(
     .map(|req_template| {
         let field_name = graphql.name.clone();
         let batch = graphql.batch;
-        Expression::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
+        IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
     })
 }
 
