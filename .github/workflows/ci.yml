@@ -343,6 +343,9 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
 
       - name: Build
         env:
@@ -353,6 +356,10 @@ jobs:
           use-cross: ${{ matrix.cross }}
           command: build
           args: ${{matrix.features}} --release --target ${{ matrix.target }}
+      - name: Sign the binary
+        run: |
+          echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --passphrase-fd 0 --pinentry-mode loopback --sign --detach-sign --armor target/${{ matrix.target }}/release/tailcall${{ matrix.ext }}
+          gpg --batch --yes --passphrase "${{ secrets.GPG_PASSPHRASE }}" --pinentry-mode loopback --output target/${{ matrix.target }}/release/tailcall${{ matrix.ext }}.sig --detach-sign target/${{ matrix.target }}/release/tailcall${{ matrix.ext }}
 
       - name: Install Node.js
         if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')

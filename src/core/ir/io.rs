@@ -16,8 +16,8 @@ use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
 use crate::core::grpc::request_template::RenderedRequestTemplate;
 use crate::core::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
+use crate::core::ir::EvaluationError;
 use crate::core::json::JsonLike;
-use crate::core::lambda::EvaluationError;
 use crate::core::valid::Validator;
 use crate::core::{grpc, http};
 
