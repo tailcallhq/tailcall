@@ -164,18 +164,29 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
-      - name: Install dependencies on Windows
+      - name: Cache NASM
         if: runner.os == 'Windows'
         uses: actions/cache@v3
+        with:
+          path: |
+            nasm-2.16.02
+            nasm.zip
+          key: ${{ runner.os }}-nasm-${{ matrix.build }}-v2
+          restore-keys: |
+            ${{ runner.os }}-nasm-${{ matrix.build }}-
+
+      - name: Install dependencies on Windows
+        if: runner.os == 'Windows'
         run: |
-          echo %cd%
-          $nasmUrl = 'https://www.nasm.us/pub/nasm/releasebuilds/2.16.02/win64/nasm-2.16.02-win64.zip'
-          $nasmZip = 'nasm.zip'
-          $nasmDir = 'nasm-2.16.02'
-          Invoke-WebRequest -Uri $nasmUrl -OutFile $nasmZip
-          Expand-Archive -Path $nasmZip -DestinationPath '.'
-          Remove-Item -Path $nasmZip
-          echo "$(Resolve-Path $nasmDir)" >> $env:GITHUB_PATH
+          if (Test-Path nasm-2.16.02) {
+            echo "Using cached NASM"
+          } else {
+            $nasmUrl = 'https://www.nasm.us/pub/nasm/releasebuilds/2.16.02/win64/nasm-2.16.02-win64.zip'
+            $nasmZip = 'nasm.zip'
+            Invoke-WebRequest -Uri $nasmUrl -OutFile $nasmZip
+            Expand-Archive -Path $nasmZip -DestinationPath '.'
+          }
+          echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
 
       - name: Run Cargo Test
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
