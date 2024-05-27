@@ -168,6 +168,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           choco install nasm -y
+          dir C:\ProgramData\chocolatey\bin
           nasm --version
 
       - name: Run Cargo Test
