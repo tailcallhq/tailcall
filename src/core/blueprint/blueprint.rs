@@ -47,15 +47,6 @@ impl Type {
         }
     }
 
-    pub fn with_name(self, name: String) -> Self {
-        match self {
-            Type::NamedType { name: _, non_null } => Type::NamedType { name, non_null },
-            Type::ListType { of_type, non_null } => {
-                Type::ListType { of_type: of_type.with_name(name).into(), non_null }
-            }
-        }
-    }
-
     /// checks if the type is nullable
     pub fn is_nullable(&self) -> bool {
         !match self {

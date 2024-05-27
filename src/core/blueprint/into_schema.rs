@@ -1,5 +1,6 @@
+use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::Arc;
-use std::{borrow::Cow, collections::HashMap};
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql::ErrorExtensions;
@@ -8,12 +9,11 @@ use futures_util::TryFutureExt;
 use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, Type};
+use crate::core::http::RequestContext;
+use crate::core::ir::{Eval, EvaluationContext, ResolverContext};
+use crate::core::json::JsonSchema;
 use crate::core::scalar::CUSTOM_SCALARS;
-use crate::core::{http::RequestContext, json::JsonSchema};
-use crate::core::{
-    ir::{Eval, EvaluationContext, ResolverContext},
-    valid::Validator,
-};
+use crate::core::valid::Validator;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {
@@ -82,7 +82,13 @@ fn to_json_schema(blueprint: &Blueprint, ty_: &Type) -> JsonSchema {
     };
 
     if !required {
+        if list {
+            JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(schema))))
+        } else {
             JsonSchema::Opt(Box::new(schema))
+        }
+    } else if list {
+        JsonSchema::Arr(Box::new(schema))
     } else {
         schema
     }
@@ -111,7 +117,7 @@ fn to_type(blueprint: &Blueprint, def: &Definition) -> dynamic::Type {
         Definition::Object(def) => {
             let mut object = dynamic::Object::new(def.name.clone());
             for field in def.fields.iter() {
-                let field = field.clone();
+                let dyn_field = Arc::new(field.clone());
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
 
@@ -127,26 +133,28 @@ fn to_type(blueprint: &Blueprint, def: &Definition) -> dynamic::Type {
                         def.types
                             .iter()
                             .map(|type_name| {
-                                let type_ = field.of_type.clone().with_name(type_name.clone());
+                                // not a list and non_null because we handle list later
+                                // if FieldFuture and we want to check non_null entries actually
+                                let type_ =
+                                    Type::NamedType { name: type_name.clone(), non_null: true };
 
                                 (type_name.clone(), to_json_schema(blueprint, &type_))
                             })
                             .collect::<Vec<_>>()
                     });
+                let union_schemas = Arc::new(union_schemas);
 
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
                     move |ctx| {
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-                        let field_name = &field.name;
+                        let field_name = &dyn_field.name;
 
-                        match &field.resolver {
+                        match &dyn_field.resolver {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
                                 let ctx = EvaluationContext::new(req_ctx, &ctx);
-
-                                dbg!(ctx.path_value(&[field_name]), &union_schemas);
 
                                 let value = ctx
                                     .path_value(&[field_name])
