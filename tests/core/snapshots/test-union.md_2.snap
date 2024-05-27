@@ -9,8 +9,13 @@ expression: response
   },
   "body": {
     "data": {
-      "foo": {
-        "foo": "test-foo"
+      "nested": {
+        "foo": {
+          "foo": "nested-foo"
+        },
+        "bar": {
+          "bar": "nested-bar"
+        }
       }
     }
   }

@@ -1,5 +1,5 @@
-use std::borrow::Cow;
 use std::sync::Arc;
+use std::{borrow::Cow, collections::HashMap};
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql::ErrorExtensions;
@@ -7,12 +7,12 @@ use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use tracing::Instrument;
 
-use crate::core::http::RequestContext;
-use crate::core::ir::{Eval, EvaluationContext, ResolverContext};
+use crate::core::blueprint::{Blueprint, Definition, Type};
 use crate::core::scalar::CUSTOM_SCALARS;
+use crate::core::{http::RequestContext, json::JsonSchema};
 use crate::core::{
-    blueprint::{Blueprint, Definition, Type},
-    json::JsonLike,
+    ir::{Eval, EvaluationContext, ResolverContext},
+    valid::Validator,
 };
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
@@ -37,7 +37,76 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     }
 }
 
-fn to_type(def: &Definition) -> dynamic::Type {
+fn to_json_schema(blueprint: &Blueprint, ty_: &Type) -> JsonSchema {
+    let type_of = ty_.name();
+    let list = ty_.is_list();
+    let required = !ty_.is_nullable();
+    let def = blueprint
+        .definitions
+        .iter()
+        .find(|def| def.name() == type_of);
+
+    let schema = if let Some(def) = def {
+        match def {
+            Definition::Interface(_) => todo!(),
+            Definition::Object(obj) => {
+                let mut schema_fields = HashMap::new();
+                for field in obj.fields.iter() {
+                    schema_fields.insert(
+                        field.name.clone(),
+                        to_json_schema(blueprint, &field.of_type),
+                    );
+                }
+                JsonSchema::Obj(schema_fields)
+            }
+            Definition::InputObject(_) => todo!(),
+            Definition::Scalar(_) => todo!(),
+            Definition::Enum(type_enum) => JsonSchema::Enum(
+                type_enum
+                    .enum_values
+                    .iter()
+                    .map(|var| var.name.clone())
+                    .collect(),
+            ),
+            Definition::Union(_) => todo!(),
+        }
+    } else {
+        match type_of {
+            "String" => JsonSchema::Str,
+            "Int" => JsonSchema::Num,
+            "Boolean" => JsonSchema::Bool,
+            "Empty" => JsonSchema::Empty,
+            "JSON" => JsonSchema::Any,
+            _ => JsonSchema::Any,
+        }
+    };
+
+    if !required {
+            JsonSchema::Opt(Box::new(schema))
+    } else {
+        schema
+    }
+}
+
+fn to_field_value(
+    schemas: &Option<Vec<(String, JsonSchema)>>,
+    value: async_graphql::Value,
+) -> FieldValue<'static> {
+    match schemas {
+        Some(schemas) => {
+            for (name, schema) in schemas {
+                if schema.validate(&value).is_succeed() {
+                    return FieldValue::from(value).with_type(name.clone());
+                }
+            }
+
+            FieldValue::from(value)
+        }
+        None => FieldValue::from(value),
+    }
+}
+
+fn to_type(blueprint: &Blueprint, def: &Definition) -> dynamic::Type {
     match def {
         Definition::Object(def) => {
             let mut object = dynamic::Object::new(def.name.clone());
@@ -45,6 +114,26 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
+
+                let type_name = type_ref.type_name();
+                let union_schemas = blueprint
+                    .definitions
+                    .iter()
+                    .find_map(|def| match def {
+                        Definition::Union(union_) if &union_.name == type_name => Some(union_),
+                        _ => None,
+                    })
+                    .map(|def| {
+                        def.types
+                            .iter()
+                            .map(|type_name| {
+                                let type_ = field.of_type.clone().with_name(type_name.clone());
+
+                                (type_name.clone(), to_json_schema(blueprint, &type_))
+                            })
+                            .collect::<Vec<_>>()
+                    });
+
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
@@ -56,17 +145,23 @@ fn to_type(def: &Definition) -> dynamic::Type {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
                                 let ctx = EvaluationContext::new(req_ctx, &ctx);
-                                FieldFuture::from_value(
-                                    ctx.path_value(&[field_name])
-                                        .map(|a| a.into_owned().to_owned()),
-                                )
+
+                                dbg!(ctx.path_value(&[field_name]), &union_schemas);
+
+                                let value = ctx
+                                    .path_value(&[field_name])
+                                    .map(|a| to_field_value(&union_schemas, a.into_owned()));
+
+                                FieldFuture::Value(value)
                             }
                             Some(expr) => {
                                 let span = tracing::info_span!(
                                     "field_resolver",
                                     otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
                                 );
+
                                 let expr = expr.to_owned();
+                                let union_schemas = union_schemas.clone();
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();
@@ -75,20 +170,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         let const_value =
                                             expr.eval(ctx).await.map_err(|err| err.extend())?;
                                         let p = match const_value {
-                                            ConstValue::List(a) => Some(FieldValue::list(a)),
+                                            ConstValue::List(a) => Some(FieldValue::list(
+                                                a.into_iter()
+                                                    .map(|a| to_field_value(&union_schemas, a)),
+                                            )),
                                             ConstValue::Null => FieldValue::NONE,
-                                            a => Some(
-                                                FieldValue::from(a)
-                                                // uncomment below to fix response for union
-                                                // {
-                                                //     let ty = if a.get_key("foo").is_some() {
-                                                //         "Foo"
-                                                //     } else {
-                                                //         "Bar"
-                                                //     };
-                                                //     FieldValue::from(a).with_type(ty)
-                                                // },
-                                            ),
+                                            a => Some(to_field_value(&union_schemas, a)),
                                         };
                                         Ok(p)
                                     }
@@ -179,7 +266,7 @@ impl From<&Blueprint> for SchemaBuilder {
         }
 
         for def in blueprint.definitions.iter() {
-            schema = schema.register(to_type(def));
+            schema = schema.register(to_type(blueprint, def));
         }
 
         schema
