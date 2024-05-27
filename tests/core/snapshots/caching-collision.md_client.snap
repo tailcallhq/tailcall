@@ -1,13 +1,11 @@
 ---
 source: tests/core/spec.rs
-expression: client
+expression: formatted
 ---
 type Bar {
   foo: Foo
   id: String!
 }
-
-scalar BigInt
 
 scalar Bytes
 
@@ -21,6 +19,10 @@ type Foo {
   id: Int!
 }
 
+scalar Int64
+
+scalar Int64Str
+
 scalar JSON
 
 scalar PhoneNumber
@@ -29,7 +31,11 @@ type Query {
   bars: [Bar]
 }
 
-scalar UnsignedInt
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt64Str
 
 scalar Url
 

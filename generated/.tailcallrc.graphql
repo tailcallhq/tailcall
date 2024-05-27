@@ -780,10 +780,6 @@ input Schema {
   Enum: [String!]
 }
 """
-Represents signed integer type 64 bit size
-"""
-scalar BigInt
-"""
 Represents list of bytes
 """
 scalar Bytes
@@ -800,6 +796,14 @@ Empty scalar type represents an empty value.
 """
 scalar Empty
 """
+Represents unsigned integer type 64 bit size
+"""
+scalar Int64
+"""
+Represents unsigned integer type 64 bit size as string
+"""
+scalar Int64Str
+"""
 The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ ECMA-404.pdf).
 """
 scalar JSON
@@ -810,7 +814,15 @@ scalar PhoneNumber
 """
 Represents unsigned integer type 64 bit size
 """
-scalar UnsignedInt
+scalar UInt32
+"""
+Represents unsigned integer type 64 bit size
+"""
+scalar UInt64
+"""
+Represents unsigned integer type 64 bit size as string
+"""
+scalar UInt64Str
 """
 A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
 """

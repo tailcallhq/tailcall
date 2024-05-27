@@ -8,8 +8,20 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": {
-      "bytes": "test"
-    }
+    "data": null,
+    "errors": [
+      {
+        "message": "internal: invalid value for scalar \"PhoneNumber\", expected \"FieldValue::Value\"",
+        "locations": [
+          {
+            "line": 1,
+            "column": 3
+          }
+        ],
+        "path": [
+          "phone"
+        ]
+      }
+    ]
   }
 }

@@ -554,7 +554,10 @@ pub mod tests {
             )
             .unwrap_err();
 
-        assert_eq!(input.to_string(), "Failed to parse input according to type scalars.Item");
+        assert_eq!(
+            input.to_string(),
+            "Failed to parse input according to type scalars.Item"
+        );
 
         Ok(())
     }

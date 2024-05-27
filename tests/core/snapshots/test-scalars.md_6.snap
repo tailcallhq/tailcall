@@ -8,8 +8,20 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": {
-      "uInt": 32147483647
-    }
+    "data": null,
+    "errors": [
+      {
+        "message": "internal: invalid value for scalar \"Email\", expected \"FieldValue::Value\"",
+        "locations": [
+          {
+            "line": 1,
+            "column": 3
+          }
+        ],
+        "path": [
+          "email"
+        ]
+      }
+    ]
   }
 }

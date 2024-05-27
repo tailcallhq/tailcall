@@ -1,9 +1,7 @@
 ---
 source: tests/core/spec.rs
-expression: client
+expression: formatted
 ---
-scalar BigInt
-
 scalar Bytes
 
 scalar Date
@@ -15,6 +13,10 @@ scalar Empty
 type InPost {
   get: [Post]
 }
+
+scalar Int64
+
+scalar Int64Str
 
 scalar JSON
 
@@ -29,7 +31,11 @@ type Query {
   posts: InPost
 }
 
-scalar UnsignedInt
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt64Str
 
 scalar Url
 

@@ -1,14 +1,12 @@
 ---
 source: tests/core/spec.rs
-expression: client
+expression: formatted
 ---
 type A {
   b: [String]
   c: String
   d: String
 }
-
-scalar BigInt
 
 scalar Bytes
 
@@ -17,6 +15,10 @@ scalar Date
 scalar Email
 
 scalar Empty
+
+scalar Int64
+
+scalar Int64Str
 
 scalar JSON
 
@@ -34,7 +36,11 @@ type U {
   e: String
 }
 
-scalar UnsignedInt
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt64Str
 
 scalar Url
 

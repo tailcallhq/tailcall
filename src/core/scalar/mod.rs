@@ -1,21 +1,27 @@
-pub use big_int::*;
 pub use bytes::*;
 pub use date::*;
 pub use email::*;
 pub use empty::*;
+pub use int64::*;
+pub use int64str::*;
 pub use json::*;
 pub use phone::*;
-pub use unsigned_int::*;
+pub use uint32::*;
+pub use uint64::*;
+pub use uint64str::*;
 pub use url::*;
 
-mod big_int;
 mod bytes;
 mod date;
 mod email;
 mod empty;
+mod int64;
+mod int64str;
 mod json;
 mod phone;
-mod unsigned_int;
+mod uint32;
+mod uint64;
+mod uint64str;
 mod url;
 
 use std::collections::{HashMap, HashSet};
@@ -34,8 +40,11 @@ lazy_static! {
             Arc::new(Url::default()),
             Arc::new(JSON::default()),
             Arc::new(Empty::default()),
-            Arc::new(BigInt::default()),
-            Arc::new(UnsignedInt::default()),
+            Arc::new(Int64::default()),
+            Arc::new(Int64Str::default()),
+            Arc::new(UInt32::default()),
+            Arc::new(UInt64::default()),
+            Arc::new(UInt64Str::default()),
             Arc::new(Bytes::default()),
         ];
         let mut hm = HashMap::new();
@@ -85,6 +94,36 @@ mod test {
     use schemars::schema::Schema;
 
     use crate::core::scalar::CUSTOM_SCALARS;
+
+    /// generates test asserts for valid scalar inputs
+    #[macro_export]
+    macro_rules! test_scalar_valid {
+        ($ty: ty, $($value: expr),+) => {
+            #[test]
+            fn test_scalar_valid() {
+                let value = <$ty>::default();
+
+                $(
+                    assert!(value.validate()(&$value));
+                )+
+            }
+        };
+    }
+
+    // generates test asserts for invalid scalar inputs
+    #[macro_export]
+    macro_rules! test_scalar_invalid {
+        ($ty: ty, $($value: expr),+) => {
+            #[test]
+            fn test_scalar_invalid() {
+                let value = <$ty>::default();
+
+                $(
+                    assert!(!value.validate()(&$value));
+                )+
+            }
+        };
+    }
 
     fn get_name(v: Schema) -> String {
         serde_json::to_value(v)

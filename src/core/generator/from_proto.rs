@@ -223,11 +223,15 @@ fn graphql_type_from_ref(name: &str) -> Result<GraphQLType<Unparsed>> {
 fn convert_primitive_type(proto_ty: &str) -> String {
     let binding = proto_ty.to_lowercase();
     let proto_ty = binding.strip_prefix("type_").unwrap_or(proto_ty);
+    // use Int64Str and Uint64Str to represent 64bit integers as string by default
+    // it's how this values are represented in JSON by default in prost
+    // see tests in `protobuf::tests::scalars_proto_file`
     match proto_ty {
         "double" | "float" => "Float",
         "int32" | "sint32" | "fixed32" | "sfixed32" => "Int",
-        "int64" | "sint64" | "fixed64" | "sfixed64" => "BigInt",
-        "uint32" | "uint64" => "UnsignedInt",
+        "int64" | "sint64" | "fixed64" | "sfixed64" => "Int64Str",
+        "uint32" => "UInt32",
+        "uint64" => "Uint64Str",
         "bool" => "Boolean",
         "string" => "String",
         "bytes" => "Bytes",

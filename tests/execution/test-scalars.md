@@ -1,7 +1,7 @@
 # Test scalars
 
 ```graphql @config
-# this is already defined scalars in tailcall
+# these are pre-defined scalars in Tailcall
 scalar Email
 
 # this is custom scalars in config
@@ -17,8 +17,6 @@ type Query {
   date(value: Date!): Date! @expr(body: "{{.args.value}}")
   url(value: Url!): Url! @expr(body: "{{.args.value}}")
   any(value: AnyScalar!): AnyScalar @expr(body: "{{.args.value}}")
-  bigInt(value: BigInt!): BigInt! @expr(body: "{{.args.value}}")
-  uInt(value: UnsignedInt): UnsignedInt @expr(body: "{{.args.value}}")
   bytes(value: Bytes): Bytes @expr(body: "{{.args.value}}")
 }
 ```
@@ -52,16 +50,6 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: "{ bigInt1: bigInt(value: 32147483647), bigInt2: bigInt(value: -32147483647) }"
-
-- method: POST
-  url: http://localhost:8000/graphql
-  body:
-    query: "{ uInt(value: 32147483647) }"
-
-- method: POST
-  url: http://localhost:8000/graphql
-  body:
     query: '{ bytes(value: "test") }'
 
 # Invalid value test
@@ -87,16 +75,6 @@ type Query {
   url: http://localhost:8000/graphql
   body:
     query: '{ url(value: "invalid_host") }'
-
-- method: POST
-  url: http://localhost:8000/graphql
-  body:
-    query: "{ bigInt(value: 1.25) }"
-
-- method: POST
-  url: http://localhost:8000/graphql
-  body:
-    query: "{ uInt(value: -2415185) }"
 
 - method: POST
   url: http://localhost:8000/graphql

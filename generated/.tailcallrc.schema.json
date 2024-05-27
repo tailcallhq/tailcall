@@ -192,12 +192,6 @@
         }
       }
     },
-    "BigInt": {
-      "title": "BigInt",
-      "description": "Represents signed integer type 64 bit size",
-      "type": "integer",
-      "format": "int64"
-    },
     "Bytes": {
       "title": "Bytes",
       "description": "Represents list of bytes",
@@ -756,6 +750,18 @@
         "HTTP2"
       ]
     },
+    "Int64": {
+      "title": "Int64",
+      "description": "Represents unsigned integer type 64 bit size",
+      "type": "integer",
+      "format": "int64"
+    },
+    "Int64Str": {
+      "title": "Int64Str",
+      "description": "Represents unsigned integer type 64 bit size as string",
+      "type": "integer",
+      "format": "int64"
+    },
     "JS": {
       "type": "object",
       "required": [
@@ -1299,6 +1305,27 @@
         }
       }
     },
+    "UInt32": {
+      "title": "UInt32",
+      "description": "Represents unsigned integer type 64 bit size",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "UInt64": {
+      "title": "UInt64",
+      "description": "Represents unsigned integer type 64 bit size",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "UInt64Str": {
+      "title": "UInt64Str",
+      "description": "Represents unsigned integer type 64 bit size as string",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
     "Union": {
       "type": "object",
       "required": [
@@ -1319,13 +1346,6 @@
           "uniqueItems": true
         }
       }
-    },
-    "UnsignedInt": {
-      "title": "UnsignedInt",
-      "description": "Represents unsigned integer type 64 bit size",
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
     },
     "Upstream": {
       "description": "The `upstream` directive allows you to control various aspects of the upstream server connection. This includes settings like connection timeouts, keep-alive intervals, and more. If not specified, default values are used.",

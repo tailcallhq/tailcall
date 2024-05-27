@@ -11,17 +11,17 @@ input scalars__Item @tag(id: "scalars.Item") {
   bytesType: Bytes
   doubleNum: Float
   fixedint32: Int
-  fixedint64: BigInt
+  fixedint64: Int64Str
   floatNum: Float
   integer32: Int
-  integer64: BigInt
+  integer64: Int64Str
   sfixedint32: Int
-  sfixedint64: BigInt
+  sfixedint64: Int64Str
   sinteger32: Int
-  sinteger64: BigInt
+  sinteger64: Int64Str
   str: String
-  uinteger32: UnsignedInt
-  uinteger64: UnsignedInt
+  uinteger32: UInt32
+  uinteger64: Uint64Str
 }
 
 type Query {

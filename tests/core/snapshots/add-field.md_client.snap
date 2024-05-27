@@ -1,12 +1,10 @@
 ---
 source: tests/core/spec.rs
-expression: client
+expression: formatted
 ---
 type Address {
   geo: Geo
 }
-
-scalar BigInt
 
 scalar Bytes
 
@@ -20,6 +18,10 @@ type Geo {
   lat: String
 }
 
+scalar Int64
+
+scalar Int64Str
+
 scalar JSON
 
 scalar PhoneNumber
@@ -28,7 +30,11 @@ type Query {
   user: User
 }
 
-scalar UnsignedInt
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt64Str
 
 scalar Url
 

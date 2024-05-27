@@ -9,8 +9,7 @@ expression: response
   },
   "body": {
     "data": {
-      "bigInt1": 32147483647,
-      "bigInt2": -32147483647
+      "bytes": "test"
     }
   }
 }
