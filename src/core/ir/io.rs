@@ -65,8 +65,8 @@ impl Eval for IO {
         ctx: super::EvaluationContext<'a, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         if ctx.request_ctx.upstream.dedupe {
+            let key = self.cache_key(&ctx);
             Box::pin(async move {
-                let key = self.cache_key(&ctx);
                 if let Some(key) = key {
                     ctx.request_ctx
                         .cache

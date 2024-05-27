@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::core::async_cache::AsyncCache;
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
 
@@ -11,7 +12,7 @@ use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{DataLoaderRequest, HttpDataLoader};
-use crate::core::ir::{DataLoaderId, IO, IR};
+use crate::core::ir::{DataLoaderId, EvaluationError, IO, IR};
 use crate::core::rest::{Checked, EndpointSet};
 use crate::core::runtime::TargetRuntime;
 
@@ -24,6 +25,8 @@ pub struct AppContext {
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
+    pub async_cache:
+        Arc<AsyncCache<u64, crate::core::http::request_handler::TailcallResponse, EvaluationError>>,
 }
 
 impl AppContext {
@@ -118,6 +121,7 @@ impl AppContext {
             .to_schema_with(SchemaModifiers::default().extensions(runtime.extensions.clone()));
         let auth = blueprint.server.auth.clone();
         let auth_ctx = GlobalAuthContext::new(auth);
+        let async_cache = Arc::new(AsyncCache::new());
 
         AppContext {
             schema,
@@ -128,6 +132,7 @@ impl AppContext {
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
             auth_ctx: Arc::new(auth_ctx),
+            async_cache,
         }
     }
 

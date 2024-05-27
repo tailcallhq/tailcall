@@ -62,6 +62,47 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
             result
         }
     }
+
+    pub async fn read_aside<'a>(
+        &self,
+        key: Key,
+        func: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
+    ) -> Arc<Result<Value, Error>> {
+        if let Some(cache_value) = self.get_cache_value(&key) {
+            match cache_value {
+                CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
+                CacheValue::Ready(_) => {
+                    let (tx, _) = tokio::sync::broadcast::channel(100);
+                    self.cache
+                        .write()
+                        .unwrap()
+                        .insert(key.clone(), CacheValue::Pending(tx.clone()));
+                    let result = Arc::new(func().await);
+                    let mut guard = self.cache.write().unwrap();
+                    if let Some(cache_value) = guard.get_mut(&key) {
+                        *cache_value = CacheValue::Ready(result.clone())
+                    }
+                    tx.send(result.clone()).ok();
+                    result
+                }
+            }
+        } else {
+            {
+                let (tx, _) = tokio::sync::broadcast::channel(100);
+                self.cache
+                    .write()
+                    .unwrap()
+                    .insert(key.clone(), CacheValue::Pending(tx.clone()));
+                let result = Arc::new(func().await);
+                let mut guard = self.cache.write().unwrap();
+                if let Some(cache_value) = guard.get_mut(&key) {
+                    *cache_value = CacheValue::Ready(result.clone())
+                }
+                tx.send(result.clone()).ok();
+                result
+            }
+        }
+    }
 }
 
 #[cfg(test)]
