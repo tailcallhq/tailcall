@@ -168,6 +168,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           choco install nasm -y
+          nasm --version
 
       - name: Run Cargo Test
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
