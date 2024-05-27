@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::hash::Hash;
 
 use anyhow::Result;
 use async_graphql::{BatchResponse, Executor, Value};
@@ -19,6 +20,19 @@ pub trait GraphQLRequestLike {
 pub struct GraphQLBatchRequest(pub async_graphql::BatchRequest);
 impl GraphQLBatchRequest {}
 
+impl Hash for GraphQLBatchRequest {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        for request in self.0.iter() {
+            request.query.hash(state);
+            request.operation_name.hash(state);
+            for (name, value) in request.variables.iter() {
+                name.hash(state);
+                value.to_string().hash(state);
+            }
+        }
+    }
+}
+
 #[async_trait::async_trait]
 impl GraphQLRequestLike for GraphQLBatchRequest {
     fn data<D: Any + Clone + Send + Sync>(mut self, data: D) -> Self {
@@ -38,6 +52,17 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct GraphQLRequest(pub async_graphql::Request);
+
+impl Hash for GraphQLRequest {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.query.hash(state);
+        self.0.operation_name.hash(state);
+        for (name, value) in self.0.variables.iter() {
+            name.hash(state);
+            value.to_string().hash(state);
+        }
+    }
+}
 
 impl GraphQLRequest {}
 
