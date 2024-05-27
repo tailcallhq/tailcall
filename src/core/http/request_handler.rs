@@ -130,7 +130,7 @@ pub async fn graphql_request<
 
             let resp = app_ctx
                 .async_cache
-                .get_or_eval(cache_key, move || {
+                .read_aside(cache_key, move || {
                     Box::pin(async move {
                         let mut response: GraphQLResponse =
                             request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
