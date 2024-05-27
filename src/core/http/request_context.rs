@@ -35,6 +35,7 @@ pub struct RequestContext {
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
     pub cache: AsyncCache<IoId, ConstValue, EvaluationError>,
+    pub global_cache: Arc<AsyncCache<u64, ConstValue, EvaluationError>>,
 }
 
 impl RequestContext {
@@ -51,6 +52,7 @@ impl RequestContext {
             cache_public: Arc::new(Mutex::new(None)),
             runtime: target_runtime,
             cache: AsyncCache::new(),
+            global_cache: Arc::new(AsyncCache::new()),
             allowed_headers: HeaderMap::new(),
             auth_ctx: AuthContext::default(),
         }
@@ -201,6 +203,7 @@ impl From<&AppContext> for RequestContext {
             cache_public: Arc::new(Mutex::new(None)),
             runtime: app_ctx.runtime.clone(),
             cache: AsyncCache::new(),
+            global_cache: app_ctx.async_cache.clone(),
         }
     }
 }

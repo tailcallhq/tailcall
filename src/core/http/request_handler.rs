@@ -1,5 +1,4 @@
 use std::collections::BTreeSet;
-use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -12,7 +11,6 @@ use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
-use tailcall_hasher::TailcallHasher;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
@@ -22,7 +20,6 @@ use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTT
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
-use crate::core::ir::EvaluationError;
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -97,61 +94,25 @@ pub fn update_response_headers(
     req_ctx.extend_x_headers(resp.headers_mut());
 }
 
-#[derive(Debug, Clone)]
-pub struct TailcallResponse {
-    headers: HeaderMap,
-    body: hyper::body::Bytes,
-}
-
-impl TailcallResponse {
-    pub fn into_response(mut self) -> Result<Response<Body>> {
-        let mut resp = Response::new(Body::from(self.body));
-        std::mem::swap(resp.headers_mut(), &mut self.headers);
-        Ok(resp)
-    }
-}
-
 #[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
-pub async fn graphql_request<
-    T: DeserializeOwned + GraphQLRequestLike + Hash + std::marker::Send,
->(
+pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: &AppContext,
     req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let headers = req.headers().clone();
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
             let _ = request.parse_query();
-            let cache_key = cache_key(&request, &headers).unwrap();
+            let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
 
-            let resp = app_ctx
-                .async_cache
-                .read_aside(cache_key, move || {
-                    Box::pin(async move {
-                        let mut response: GraphQLResponse =
-                            request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-
-                        response = update_cache_control_header(response, app_ctx, req_ctx.clone());
-                        let mut resp = response.into_response()?;
-                        update_response_headers(&mut resp, &req_ctx, app_ctx);
-                        Ok(TailcallResponse {
-                            headers: resp.headers().clone(),
-                            body: hyper::body::to_bytes(resp.into_body())
-                                .await
-                                .map_err(|e| EvaluationError::IOException(e.to_string()))?,
-                        })
-                    })
-                })
-                .await
-                .as_ref()
-                .clone()?
-                .into_response();
-            Ok(resp?)
+            response = update_cache_control_header(response, app_ctx, req_ctx.clone());
+            let mut resp = response.into_response()?;
+            update_response_headers(&mut resp, &req_ctx, app_ctx);
+            Ok(resp)
         }
         Err(err) => {
             tracing::error!(
@@ -168,16 +129,7 @@ pub async fn graphql_request<
         }
     }
 }
-fn cache_key<T: GraphQLRequestLike + Hash>(bytes: &T, headers: &hyper::HeaderMap) -> Option<u64> {
-    let mut hasher = TailcallHasher::default();
-    let state = &mut hasher;
-    for (name, value) in headers.iter() {
-        name.hash(state);
-        value.hash(state);
-    }
-    bytes.hash(state);
-    Some(hasher.finish())
-}
+
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
     let mut new_headers = HeaderMap::new();
     for (k, v) in headers.iter() {
@@ -191,9 +143,7 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
-async fn handle_origin_tailcall<
-    T: DeserializeOwned + GraphQLRequestLike + Hash + std::marker::Send,
->(
+async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
@@ -225,7 +175,7 @@ async fn handle_origin_tailcall<
     }
 }
 
-async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
+async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
@@ -313,9 +263,7 @@ async fn handle_rest_apis(
     not_found()
 }
 
-async fn handle_request_inner<
-    T: DeserializeOwned + GraphQLRequestLike + Hash + std::marker::Send,
->(
+async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     req_counter: &mut RequestCounter,
@@ -369,7 +317,7 @@ async fn handle_request_inner<
         http.request.method = %req.method()
     )
 )]
-pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
+pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {

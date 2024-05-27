@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::core::async_cache::AsyncCache;
 use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql::Response;
+use async_graphql_value::ConstValue;
 
 use crate::core::auth::context::GlobalAuthContext;
 use crate::core::blueprint::Type::ListType;
@@ -25,8 +26,7 @@ pub struct AppContext {
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
-    pub async_cache:
-        Arc<AsyncCache<u64, crate::core::http::request_handler::TailcallResponse, EvaluationError>>,
+    pub async_cache: Arc<AsyncCache<u64, ConstValue, EvaluationError>>,
 }
 
 impl AppContext {
