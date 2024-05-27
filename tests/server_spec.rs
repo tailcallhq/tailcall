@@ -154,6 +154,8 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
+            http_worker: None,
+            worker: None,
         }
     }
 }

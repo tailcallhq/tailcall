@@ -8,7 +8,7 @@ use futures_util::TryFutureExt;
 use tracing::Instrument;
 
 use crate::core::http::RequestContext;
-use crate::core::lambda::{Eval, EvaluationContext, ResolverContext};
+use crate::core::ir::{Eval, EvaluationContext, ResolverContext};
 use crate::core::scalar::CUSTOM_SCALARS;
 use crate::core::{
     blueprint::{Blueprint, Definition, Type},
