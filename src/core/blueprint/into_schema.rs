@@ -114,8 +114,6 @@ impl UnionTypeResolver {
             schema
         };
 
-        
-
         if ty_.is_nullable() {
             JsonSchema::Opt(Box::new(schema))
         } else {
