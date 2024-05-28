@@ -64,29 +64,29 @@ impl Eval for IO {
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
-        let key = self.cache_key(&ctx);
-
-        Box::pin(async move {
-            if let Some(key) = key {
-                if ctx.request_ctx.upstream.dedupe {
+        if let Some(key) = self.cache_key(&ctx) {
+            if ctx.request_ctx.upstream.dedupe {
+                Box::pin(async move {
                     ctx.request_ctx
                         .cache
                         .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
                         .await
                         .as_ref()
                         .clone()
-                } else {
+                })
+            } else {
+                Box::pin(async move {
                     ctx.request_ctx
                         .global_cache
                         .read_aside(key, move || Box::pin(self.eval_inner(ctx)))
                         .await
                         .as_ref()
                         .clone()
-                }
-            } else {
-                self.eval_inner(ctx).await
+                })
             }
-        })
+        } else {
+            self.eval_inner(ctx)
+        }
     }
 }
 

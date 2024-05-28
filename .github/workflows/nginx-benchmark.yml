@@ -2,12 +2,12 @@ name: Nginx Benchmark
 
 on:
   push:
-    paths-ignore: ["docs/**", "**.md"]
+    paths-ignore: [ "docs/**", "**.md" ]
     branches:
       - main
   pull_request:
-    paths-ignore: ["docs/**", "**.md"]
-    types: [opened, reopened, synchronize, labeled]
+    paths-ignore: [ "docs/**", "**.md" ]
+    types: [ opened, reopened, synchronize, labeled ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -59,7 +59,7 @@ jobs:
         name: Run Wrk
         working-directory: ci-benchmark
         run: |
-          wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
+          wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql | tee wrk-output.txt
 
       - id: convert_wrk_output_markdown
         name: Convert Output to Markdown
