@@ -1,41 +1,47 @@
-use std::collections::HashMap;
+use dashmap::DashMap;
+use futures_util::Future;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::pin::Pin;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use tokio::sync::{broadcast, RwLock};
 
-use futures_util::Future;
-use tokio::sync::broadcast;
-use tokio::sync::broadcast::Sender;
+use crate::core::ir::EvaluationError;
 
-/// A simple async cache that uses a `HashMap` to store the values.
+/// A simple async cache that uses a `DashMap` to store the values.
 pub struct AsyncCache<Key, Value, Error> {
-    cache: Arc<RwLock<HashMap<Key, CacheValue<Value, Error>>>>,
+    cache: Arc<DashMap<Key, CacheValue<Value, Error>>>,
 }
 
 #[derive(Clone)]
 pub enum CacheValue<Value, Error> {
-    Pending(Sender<Arc<Result<Value, Error>>>),
+    Pending(broadcast::Sender<Arc<Result<Value, Error>>>),
     Ready(Arc<Result<Value, Error>>),
 }
 
-impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + Clone + Send>
-    Default for AsyncCache<Key, Value, Error>
+impl<
+        Key: Eq + Hash + Clone + Send + Sync,
+        Value: Debug + Clone + Send + Sync,
+        Error: Debug + Clone + Send + Sync,
+    > Default for AsyncCache<Key, Value, Error>
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + Clone + Send>
-    AsyncCache<Key, Value, Error>
+impl<
+        Key: Eq + Hash + Clone + Send + Sync,
+        Value: Debug + Clone + Send + Sync,
+        Error: Debug + Clone + Send + Sync,
+    > AsyncCache<Key, Value, Error>
 {
     pub fn new() -> Self {
-        Self { cache: Arc::new(RwLock::new(HashMap::new())) }
+        Self { cache: Arc::new(DashMap::new()) }
     }
 
     fn get_cache_value(&self, key: &Key) -> Option<CacheValue<Value, Error>> {
-        self.cache.read().unwrap().get(key).cloned()
+        self.cache.get(key).map(|v| v.clone())
     }
 
     pub async fn get_or_eval<'a>(
@@ -49,16 +55,15 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
                 CacheValue::Ready(value) => value,
             }
         } else {
-            let (tx, _) = tokio::sync::broadcast::channel(100);
+            let (tx, _) = broadcast::channel(100);
             self.cache
-                .write()
-                .unwrap()
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
             let result = Arc::new(or_else().await);
-            let mut guard = self.cache.write().unwrap();
-            if let Some(cache_value) = guard.get_mut(&key) {
-                *cache_value = CacheValue::Ready(result.clone())
-            }
+            let mut guard = self
+                .cache
+                .entry(key)
+                .or_insert(CacheValue::Pending(tx.clone()));
+            *guard = CacheValue::Ready(result.clone());
             tx.send(result.clone()).ok();
             result
         }
@@ -78,20 +83,26 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
             }
         }
 
-        let (tx, mut rx) = broadcast::channel(10000);
+        let (tx, mut rx) = broadcast::channel(100);
 
         {
-            let mut write_guard = self.cache.write().unwrap();
+            let mut write_guard = self
+                .cache
+                .entry(key.clone())
+                .or_insert(CacheValue::Pending(tx.clone()));
             // Always insert a pending state
-            write_guard.insert(key.clone(), CacheValue::Pending(tx.clone()));
+            *write_guard = CacheValue::Pending(tx.clone());
         }
 
         // Execute the closure and store the result
         let result = Arc::new(func().await);
 
         {
-            let mut write_guard = self.cache.write().unwrap();
-            write_guard.insert(key.clone(), CacheValue::Ready(result.clone()));
+            let mut write_guard = self
+                .cache
+                .entry(key.clone())
+                .or_insert(CacheValue::Pending(tx.clone()));
+            *write_guard = CacheValue::Ready(result.clone());
         }
 
         // Notify all subscribers

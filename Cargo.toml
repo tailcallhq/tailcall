@@ -159,6 +159,7 @@ base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
 serde_json_borrow = "0.3.0"
 Inflector = "0.11.4"
+dashmap = "5.5.3"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }

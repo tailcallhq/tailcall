@@ -5243,6 +5243,7 @@ dependencies = [
  "colored",
  "convert_case",
  "criterion",
+ "dashmap",
  "datatest-stable",
  "derive_setters",
  "dotenvy",
