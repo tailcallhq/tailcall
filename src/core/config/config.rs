@@ -676,10 +676,6 @@ impl Config {
         }
     }
 
-    pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
-        super::n_plus_one::n_plus_one()
-    }
-
     ///
     /// Given a starting type, this function searches for all the unique types
     /// that this type can be connected to via it's fields

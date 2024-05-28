@@ -18,7 +18,6 @@ mod headers;
 mod into_document;
 mod key_values;
 mod link;
-mod n_plus_one;
 pub mod reader;
 pub mod reader_context;
 mod server;
