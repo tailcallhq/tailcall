@@ -179,7 +179,7 @@ directive @http(
 ) on FIELD_DEFINITION
 
 directive @js(
-  script: String!
+  name: String!
 ) on FIELD_DEFINITION
 
 """
@@ -667,7 +667,7 @@ enum HttpVersion {
   HTTP2
 }
 input JS {
-  script: String!
+  name: String!
 }
 input KeyValue {
   key: String!
