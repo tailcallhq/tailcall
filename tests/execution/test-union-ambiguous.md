@@ -1,8 +1,6 @@
----
-identity: true
----
+# Test union types in ambiguous case
 
-# Test union type resolve
+We use JsonSchema to figure out concrete type for data that are specified as union type. But due to limitations of schema validation in some cases like below we can wrongly figure out the type and therefore get unresolved data in response.
 
 ```graphql @config
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
@@ -12,11 +10,11 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
 union FooBar = Bar | Foo
 
 type Bar {
-  bar: String!
+  bar: String
 }
 
 type Foo {
-  foo: String!
+  foo: String
 }
 
 type Nested {

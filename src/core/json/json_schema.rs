@@ -37,6 +37,17 @@ impl Default for JsonSchema {
 }
 
 impl JsonSchema {
+    pub fn from_scalar_type(type_name: &str) -> Self {
+        match type_name {
+            "String" => JsonSchema::Str,
+            "Int" => JsonSchema::Num,
+            "Boolean" => JsonSchema::Bool,
+            "Empty" => JsonSchema::Empty,
+            "JSON" => JsonSchema::Any,
+            _ => JsonSchema::Any,
+        }
+    }
+
     // TODO: validate `JsonLike` instead of fixing on `async_graphql::Value`
     pub fn validate(&self, value: &async_graphql::Value) -> Valid<(), &'static str> {
         match self {

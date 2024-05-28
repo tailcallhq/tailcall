@@ -9,11 +9,11 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
 union FooBar = Bar | Foo
 
 type Bar {
-  bar: String!
+  bar: String
 }
 
 type Foo {
-  foo: String!
+  foo: String
 }
 
 type Nested {

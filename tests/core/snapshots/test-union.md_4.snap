@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "Failed to select concrete type for resolved data for union: FooBar",
+        "locations": [
+          {
+            "line": 2,
+            "column": 3
+          }
+        ]
+      }
+    ]
+  }
+}

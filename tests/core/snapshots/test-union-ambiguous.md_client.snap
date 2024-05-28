@@ -3,7 +3,7 @@ source: tests/core/spec.rs
 expression: formatted
 ---
 type Bar {
-  bar: String!
+  bar: String
 }
 
 scalar Date
@@ -13,7 +13,7 @@ scalar Email
 scalar Empty
 
 type Foo {
-  foo: String!
+  foo: String
 }
 
 union FooBar = Bar | Foo

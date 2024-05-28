@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use anyhow::{bail, Result};
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
@@ -37,78 +38,107 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     }
 }
 
-fn to_json_schema(blueprint: &Blueprint, ty_: &Type) -> JsonSchema {
-    let type_of = ty_.name();
-    let list = ty_.is_list();
-    let required = !ty_.is_nullable();
-    let def = blueprint
-        .definitions
-        .iter()
-        .find(|def| def.name() == type_of);
-
-    let schema = if let Some(def) = def {
-        match def {
-            Definition::Interface(_) => todo!(),
-            Definition::Object(obj) => {
-                let mut schema_fields = HashMap::new();
-                for field in obj.fields.iter() {
-                    schema_fields.insert(
-                        field.name.clone(),
-                        to_json_schema(blueprint, &field.of_type),
-                    );
-                }
-                JsonSchema::Obj(schema_fields)
-            }
-            Definition::InputObject(_) => todo!(),
-            Definition::Scalar(_) => todo!(),
-            Definition::Enum(type_enum) => JsonSchema::Enum(
-                type_enum
-                    .enum_values
-                    .iter()
-                    .map(|var| var.name.clone())
-                    .collect(),
-            ),
-            Definition::Union(_) => todo!(),
-        }
-    } else {
-        match type_of {
-            "String" => JsonSchema::Str,
-            "Int" => JsonSchema::Num,
-            "Boolean" => JsonSchema::Bool,
-            "Empty" => JsonSchema::Empty,
-            "JSON" => JsonSchema::Any,
-            _ => JsonSchema::Any,
-        }
-    };
-
-    if !required {
-        if list {
-            JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(schema))))
-        } else {
-            JsonSchema::Opt(Box::new(schema))
-        }
-    } else if list {
-        JsonSchema::Arr(Box::new(schema))
-    } else {
-        schema
-    }
+/// Entity that analyzes resolved data and decides what variant type of union
+/// this data satisfies to. It's required to specify exact type in
+/// `async_graphql` otherwise validation error will be generated at runtime
+#[derive(Clone)]
+struct UnionTypeResolver {
+    type_name: String,
+    schemas: Arc<Option<Vec<(String, JsonSchema)>>>,
 }
 
-fn to_field_value(
-    schemas: &Option<Vec<(String, JsonSchema)>>,
-    value: async_graphql::Value,
-) -> FieldValue<'static> {
-    match schemas {
-        Some(schemas) => {
-            for (name, schema) in schemas {
-                if schema.validate(&value).is_succeed() {
-                    return FieldValue::from(value).with_type(name.clone());
-                }
-            }
+impl UnionTypeResolver {
+    fn new(blueprint: &Blueprint, type_name: String) -> Self {
+        let schemas = blueprint
+            .definitions
+            .iter()
+            .find_map(|def| match def {
+                Definition::Union(union_) if union_.name == type_name => Some(union_),
+                _ => None,
+            })
+            .map(|def| {
+                def.types
+                    .iter()
+                    .map(|type_name| {
+                        // not a list and non_null because we handle list later
+                        // if FieldFuture and we want to check non_null entries actually
+                        let type_ = Type::NamedType { name: type_name.clone(), non_null: true };
 
-            FieldValue::from(value)
+                        (type_name.clone(), Self::to_json_schema(blueprint, &type_))
+                    })
+                    .collect::<Vec<_>>()
+            });
+        let schemas = Arc::new(schemas);
+
+        Self { type_name, schemas }
+    }
+
+    fn to_json_schema(blueprint: &Blueprint, ty_: &Type) -> JsonSchema {
+        let type_of = ty_.name();
+        let def = blueprint
+            .definitions
+            .iter()
+            .find(|def| def.name() == type_of);
+
+        let schema = if let Some(def) = def {
+            match def {
+                Definition::Object(obj) => {
+                    let mut schema_fields = HashMap::new();
+                    for field in obj.fields.iter() {
+                        schema_fields.insert(
+                            field.name.clone(),
+                            Self::to_json_schema(blueprint, &field.of_type),
+                        );
+                    }
+                    JsonSchema::Obj(schema_fields)
+                }
+                Definition::Enum(type_enum) => JsonSchema::Enum(
+                    type_enum
+                        .enum_values
+                        .iter()
+                        .map(|var| var.name.clone())
+                        .collect(),
+                ),
+                // ignore any other definition type since we're focusing
+                // only on union type and there are limitations what kind of nested type
+                // could be used in union
+                _ => JsonSchema::Any,
+            }
+        } else {
+            JsonSchema::from_scalar_type(type_of)
+        };
+
+        let schema = if ty_.is_list() {
+            JsonSchema::Arr(Box::new(schema))
+        } else {
+            schema
+        };
+
+        
+
+        if ty_.is_nullable() {
+            JsonSchema::Opt(Box::new(schema))
+        } else {
+            schema
         }
-        None => FieldValue::from(value),
+    }
+
+    fn to_field_value(&self, value: async_graphql::Value) -> Result<FieldValue<'static>> {
+        match self.schemas.as_deref() {
+            Some(schemas) => {
+                for (name, schema) in schemas {
+                    if schema.validate(&value).is_succeed() {
+                        return Ok(FieldValue::from(value).with_type(name.clone()));
+                    }
+                }
+
+                bail!(
+                    "Failed to select concrete type for resolved data for union: {}",
+                    self.type_name
+                );
+            }
+            None => Ok(FieldValue::from(value)),
+        }
     }
 }
 
@@ -117,48 +147,30 @@ fn to_type(blueprint: &Blueprint, def: &Definition) -> dynamic::Type {
         Definition::Object(def) => {
             let mut object = dynamic::Object::new(def.name.clone());
             for field in def.fields.iter() {
-                let dyn_field = Arc::new(field.clone());
+                let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
 
                 let type_name = type_ref.type_name();
-                let union_schemas = blueprint
-                    .definitions
-                    .iter()
-                    .find_map(|def| match def {
-                        Definition::Union(union_) if &union_.name == type_name => Some(union_),
-                        _ => None,
-                    })
-                    .map(|def| {
-                        def.types
-                            .iter()
-                            .map(|type_name| {
-                                // not a list and non_null because we handle list later
-                                // if FieldFuture and we want to check non_null entries actually
-                                let type_ =
-                                    Type::NamedType { name: type_name.clone(), non_null: true };
-
-                                (type_name.clone(), to_json_schema(blueprint, &type_))
-                            })
-                            .collect::<Vec<_>>()
-                    });
-                let union_schemas = Arc::new(union_schemas);
+                let union_type_resolver = UnionTypeResolver::new(blueprint, type_name.to_string());
 
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
                     move |ctx| {
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
-                        let field_name = &dyn_field.name;
+                        let field_name = &field.name;
 
-                        match &dyn_field.resolver {
+                        match &field.resolver {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
                                 let ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                                let value = ctx
-                                    .path_value(&[field_name])
-                                    .map(|a| to_field_value(&union_schemas, a.into_owned()));
+                                let value = ctx.path_value(&[field_name]).map(|a| {
+                                    union_type_resolver
+                                        .to_field_value(a.into_owned())
+                                        .unwrap_or(FieldValue::NULL)
+                                });
 
                                 FieldFuture::Value(value)
                             }
@@ -169,7 +181,7 @@ fn to_type(blueprint: &Blueprint, def: &Definition) -> dynamic::Type {
                                 );
 
                                 let expr = expr.to_owned();
-                                let union_schemas = union_schemas.clone();
+                                let union_type_resolver = union_type_resolver.clone();
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();
@@ -178,12 +190,15 @@ fn to_type(blueprint: &Blueprint, def: &Definition) -> dynamic::Type {
                                         let const_value =
                                             expr.eval(ctx).await.map_err(|err| err.extend())?;
                                         let p = match const_value {
-                                            ConstValue::List(a) => Some(FieldValue::list(
-                                                a.into_iter()
-                                                    .map(|a| to_field_value(&union_schemas, a)),
-                                            )),
+                                            ConstValue::List(a) => {
+                                                let result: Result<Vec<_>> = a
+                                                    .into_iter()
+                                                    .map(|a| union_type_resolver.to_field_value(a))
+                                                    .collect();
+                                                Some(FieldValue::list(result?))
+                                            }
                                             ConstValue::Null => FieldValue::NONE,
-                                            a => Some(to_field_value(&union_schemas, a)),
+                                            a => Some(union_type_resolver.to_field_value(a)?),
                                         };
                                         Ok(p)
                                     }
