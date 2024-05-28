@@ -5,6 +5,7 @@ use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
 use futures_util::Future;
+use tokio::sync::broadcast;
 use tokio::sync::broadcast::Sender;
 
 /// A simple async cache that uses a `HashMap` to store the values.
@@ -66,41 +67,47 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
     pub async fn read_aside<'a>(
         &self,
         key: Key,
-        func: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
+        func: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>>
+            + 'a
+            + Send,
     ) -> Arc<Result<Value, Error>> {
         if let Some(cache_value) = self.get_cache_value(&key) {
             match cache_value {
-                CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
-                CacheValue::Ready(_) => {
-                    let (tx, _) = tokio::sync::broadcast::channel(100);
-                    self.cache
-                        .write()
-                        .unwrap()
-                        .insert(key.clone(), CacheValue::Pending(tx.clone()));
-                    let result = Arc::new(func().await);
-                    let mut guard = self.cache.write().unwrap();
-                    if let Some(cache_value) = guard.get_mut(&key) {
-                        *cache_value = CacheValue::Ready(result.clone())
+                CacheValue::Pending(tx) => {
+                    // Release the lock before awaiting
+                    drop(self.cache.read().unwrap());
+                    let _ = tx.subscribe().recv().await.unwrap();
+                }
+                CacheValue::Ready(result) => return result,
+            }
+        }
+
+        let (tx, mut rx) = broadcast::channel(100);
+        let should_compute = {
+            let mut write_guard = self.cache.write().unwrap();
+            if let Some(cache_value) = write_guard.get(&key) {
+                match cache_value {
+                    CacheValue::Pending(tx) => false,
+                    CacheValue::Ready(result) => {
+                        return result.clone();
                     }
-                    tx.send(result.clone()).ok();
-                    result
                 }
+            } else {
+                write_guard.insert(key.clone(), CacheValue::Pending(tx.clone()));
+                true
             }
+        };
+
+        if should_compute {
+            let result = Arc::new(func().await);
+            let mut write_guard = self.cache.write().unwrap();
+            if let Some(cache_value) = write_guard.get_mut(&key) {
+                *cache_value = CacheValue::Ready(result.clone());
+            }
+            tx.send(result.clone()).ok();
+            result
         } else {
-            {
-                let (tx, _) = tokio::sync::broadcast::channel(100);
-                self.cache
-                    .write()
-                    .unwrap()
-                    .insert(key.clone(), CacheValue::Pending(tx.clone()));
-                let result = Arc::new(func().await);
-                let mut guard = self.cache.write().unwrap();
-                if let Some(cache_value) = guard.get_mut(&key) {
-                    *cache_value = CacheValue::Ready(result.clone())
-                }
-                tx.send(result.clone()).ok();
-                result
-            }
+            rx.recv().await.unwrap()
         }
     }
 }

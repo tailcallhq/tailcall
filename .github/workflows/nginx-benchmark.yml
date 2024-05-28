@@ -2,12 +2,12 @@ name: Nginx Benchmark
 
 on:
   push:
-    paths-ignore: [ "docs/**", "**.md" ]
+    paths-ignore: ["docs/**", "**.md"]
     branches:
       - main
   pull_request:
-    paths-ignore: [ "docs/**", "**.md" ]
-    types: [ opened, reopened, synchronize, labeled ]
+    paths-ignore: ["docs/**", "**.md"]
+    types: [opened, reopened, synchronize, labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
