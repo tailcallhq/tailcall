@@ -1,12 +1,11 @@
-use dashmap::DashMap;
-use futures_util::Future;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::pin::Pin;
 use std::sync::Arc;
-use tokio::sync::{broadcast, RwLock};
 
-use crate::core::ir::EvaluationError;
+use dashmap::DashMap;
+use futures_util::Future;
+use tokio::sync::broadcast;
 
 /// A simple async cache that uses a `DashMap` to store the values.
 pub struct AsyncCache<Key, Value, Error> {
@@ -77,10 +76,8 @@ impl<
             + Send,
     ) -> Arc<Result<Value, Error>> {
         // Check for any pending value
-        if let Some(cache_value) = self.get_cache_value(&key) {
-            if let CacheValue::Pending(tx) = cache_value {
-                return tx.subscribe().recv().await.unwrap();
-            }
+        if let Some(CacheValue::Pending(tx)) = self.get_cache_value(&key) {
+            return tx.subscribe().recv().await.unwrap();
         }
 
         let (tx, mut rx) = broadcast::channel(100);
