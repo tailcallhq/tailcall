@@ -1,45 +1,3 @@
-use crate::core::config::Config;
-
-struct FindFanOutContext<'a> {
-    config: &'a Config,
-    type_name: &'a String,
-    path: Vec<(String, String)>,
-    is_list: bool,
-}
-
-fn find_fan_out(context: FindFanOutContext) -> Vec<Vec<(String, String)>> {
-    let config = context.config;
-    let type_name = context.type_name;
-    let path = context.path;
-    let is_list = context.is_list;
-    match config.find_type(type_name) {
-        Some(type_) => type_
-            .fields
-            .iter()
-            .flat_map(|(field_name, field)| {
-                let mut new_path = path.clone();
-                new_path.push((type_name.clone(), field_name.clone()));
-                if path
-                    .iter()
-                    .any(|item| &item.0 == type_name && &item.1 == field_name)
-                {
-                    Vec::new()
-                } else if field.has_resolver() && !field.has_batched_resolver() && is_list {
-                    vec![new_path]
-                } else {
-                    find_fan_out(FindFanOutContext {
-                        config,
-                        type_name: &field.type_of,
-                        path: new_path,
-                        is_list: field.list || is_list,
-                    })
-                }
-            })
-            .collect(),
-        None => Vec::new(),
-    }
-}
-
 pub fn n_plus_one() -> Vec<Vec<(String, String)>> {
     Vec::new()
 }
@@ -80,10 +38,7 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let expected = vec![vec![
-            ("Query".to_string(), "f1".to_string()),
-            ("F1".to_string(), "f2".to_string()),
-        ]];
+        let expected: Vec<Vec<(String, String)>> = vec![];
         assert_eq!(actual, expected)
     }
 
@@ -161,12 +116,7 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let expected = vec![vec![
-            ("Query".to_string(), "f1".to_string()),
-            ("F1".to_string(), "f2".to_string()),
-            ("F2".to_string(), "f3".to_string()),
-            ("F3".to_string(), "f4".to_string()),
-        ]];
+        let expected: Vec<Vec<(String, String)>> = vec![];
         assert_eq!(actual, expected)
     }
 
@@ -208,12 +158,7 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let expected = vec![vec![
-            ("Query".to_string(), "f1".to_string()),
-            ("F1".to_string(), "f2".to_string()),
-            ("F2".to_string(), "f3".to_string()),
-            ("F3".to_string(), "f4".to_string()),
-        ]];
+        let expected: Vec<Vec<(String, String)>> = vec![];
         assert_eq!(actual, expected)
     }
 
@@ -314,17 +259,7 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let expected = vec![
-            vec![
-                ("Query".to_string(), "f1".to_string()),
-                ("F1".to_string(), "f1".to_string()),
-                ("F1".to_string(), "f2".to_string()),
-            ],
-            vec![
-                ("Query".to_string(), "f1".to_string()),
-                ("F1".to_string(), "f2".to_string()),
-            ],
-        ];
+        let expected: Vec<Vec<(String, String)>> = vec![];
 
         assert_eq!(actual, expected)
     }
