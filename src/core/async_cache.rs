@@ -71,44 +71,33 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
             + 'a
             + Send,
     ) -> Arc<Result<Value, Error>> {
+        // Check for any pending value
         if let Some(cache_value) = self.get_cache_value(&key) {
-            match cache_value {
-                CacheValue::Pending(tx) => {
-                    // Release the lock before awaiting
-                    drop(self.cache.read().unwrap());
-                    let _ = tx.subscribe().recv().await.unwrap();
-                }
-                CacheValue::Ready(result) => return result,
+            if let CacheValue::Pending(tx) = cache_value {
+                return tx.subscribe().recv().await.unwrap();
             }
         }
 
-        let (tx, mut rx) = broadcast::channel(100);
-        let should_compute = {
-            let mut write_guard = self.cache.write().unwrap();
-            if let Some(cache_value) = write_guard.get(&key) {
-                match cache_value {
-                    CacheValue::Pending(tx) => false,
-                    CacheValue::Ready(result) => {
-                        return result.clone();
-                    }
-                }
-            } else {
-                write_guard.insert(key.clone(), CacheValue::Pending(tx.clone()));
-                true
-            }
-        };
+        let (tx, mut rx) = broadcast::channel(10000);
 
-        if should_compute {
-            let result = Arc::new(func().await);
+        {
             let mut write_guard = self.cache.write().unwrap();
-            if let Some(cache_value) = write_guard.get_mut(&key) {
-                *cache_value = CacheValue::Ready(result.clone());
-            }
-            tx.send(result.clone()).ok();
-            result
-        } else {
-            rx.recv().await.unwrap()
+            // Always insert a pending state
+            write_guard.insert(key.clone(), CacheValue::Pending(tx.clone()));
         }
+
+        // Execute the closure and store the result
+        let result = Arc::new(func().await);
+
+        {
+            let mut write_guard = self.cache.write().unwrap();
+            write_guard.insert(key.clone(), CacheValue::Ready(result.clone()));
+        }
+
+        // Notify all subscribers
+        tx.send(result).ok();
+
+        rx.recv().await.unwrap()
     }
 }
 
