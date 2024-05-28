@@ -233,15 +233,12 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
 
         let mut headers = vec![];
         for (name, mustache) in self.headers.iter() {
-            name.hash(state);
-            mustache.render(ctx).hash(state);
             headers.push((name.to_string(), mustache.render(ctx)));
         }
 
-        for (name, value) in ctx.headers().iter() {
+        for (name, value) in headers {
             name.hash(state);
             value.hash(state);
-            headers.push((name.to_string(), value.to_str().unwrap().to_string()));
         }
 
         if let Some(body) = self.body_path.as_ref() {
