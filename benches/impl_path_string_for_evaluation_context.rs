@@ -18,7 +18,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::http::{RequestContext, Response};
-use tailcall::core::lambda::{EvaluationContext, ResolverContextLike};
+use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
 use tailcall::core::path::PathString;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
@@ -246,6 +246,8 @@ fn request_context() -> RequestContext {
         file: Arc::new(File {}),
         cache: Arc::new(InMemoryCache::new()),
         extensions: Arc::new(vec![]),
+        http_worker: None,
+        worker: None,
     };
     RequestContext::new(runtime)
         .server(server)

@@ -16,8 +16,8 @@ use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
 use crate::core::grpc::request_template::RenderedRequestTemplate;
 use crate::core::http::{cache_policy, DataLoaderRequest, HttpDataLoader, Response};
+use crate::core::ir::EvaluationError;
 use crate::core::json::JsonLike;
-use crate::core::lambda::EvaluationError;
 use crate::core::valid::Validator;
 use crate::core::{grpc, http};
 
@@ -38,6 +38,9 @@ pub enum IO {
         req_template: grpc::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
+    },
+    Js {
+        name: String,
     },
 }
 
@@ -137,6 +140,20 @@ impl IO {
 
                     Ok(res.body)
                 }
+                IO::Js { name } => {
+                    if let Some((worker, value)) = ctx
+                        .request_ctx
+                        .runtime
+                        .worker
+                        .as_ref()
+                        .zip(ctx.value().cloned())
+                    {
+                        let val = worker.call(name, value).await?;
+                        Ok(val.unwrap_or_default())
+                    } else {
+                        Ok(ConstValue::Null)
+                    }
+                }
             }
         })
     }
@@ -148,6 +165,7 @@ impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
             IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
             IO::GraphQL { req_template, .. } => req_template.cache_key(ctx),
+            IO::Js { .. } => None,
         }
     }
 }

@@ -5,7 +5,7 @@ use std::pin::Pin;
 
 use async_graphql_value::ConstValue;
 
-use super::{Eval, EvaluationContext, EvaluationError, Expression, ResolverContextLike};
+use super::{Eval, EvaluationContext, EvaluationError, ResolverContextLike, IR};
 
 pub trait CacheKey<Ctx> {
     fn cache_key(&self, ctx: &Ctx) -> Option<u64>;
@@ -14,7 +14,7 @@ pub trait CacheKey<Ctx> {
 #[derive(Clone, Debug)]
 pub struct Cache {
     pub max_age: NonZeroU64,
-    pub expr: Box<Expression>,
+    pub expr: Box<IR>,
 }
 
 impl Cache {
@@ -22,12 +22,9 @@ impl Cache {
     /// Wraps an expression with the cache primitive.
     /// Performance DFS on the cache on the expression and identifies all the IO
     /// nodes. Then wraps each IO node with the cache primitive.
-    pub fn wrap(max_age: NonZeroU64, expr: Expression) -> Expression {
+    pub fn wrap(max_age: NonZeroU64, expr: IR) -> IR {
         expr.modify(move |expr| match expr {
-            Expression::IO(_) => Some(Expression::Cache(Cache {
-                max_age,
-                expr: Box::new(expr.clone()),
-            })),
+            IR::IO(_) => Some(IR::Cache(Cache { max_age, expr: Box::new(expr.clone()) })),
             _ => None,
         })
     }
@@ -39,7 +36,7 @@ impl Eval for Cache {
         ctx: EvaluationContext<'a, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
-            if let Expression::IO(io) = self.expr.deref() {
+            if let IR::IO(io) = self.expr.deref() {
                 let key = io.cache_key(&ctx);
                 if let Some(key) = key {
                     if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {

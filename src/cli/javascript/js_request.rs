@@ -9,11 +9,9 @@ use rquickjs::{FromJs, IntoJs};
 use serde::{Deserialize, Serialize};
 
 use crate::core::is_default;
+use crate::core::worker::WorkerRequest;
 
-#[derive(Debug)]
-pub struct JsRequest(reqwest::Request);
-
-impl JsRequest {
+impl WorkerRequest {
     fn uri(&self) -> Uri {
         self.0.url().into()
     }
@@ -41,24 +39,24 @@ impl JsRequest {
     }
 }
 
-impl TryFrom<&reqwest::Request> for JsRequest {
+impl TryFrom<&reqwest::Request> for WorkerRequest {
     type Error = anyhow::Error;
 
     fn try_from(value: &Request) -> Result<Self, Self::Error> {
         let request = value
             .try_clone()
             .ok_or(anyhow::anyhow!("unable to clone request"))?;
-        Ok(JsRequest(request))
+        Ok(WorkerRequest(request))
     }
 }
 
-impl From<JsRequest> for reqwest::Request {
-    fn from(val: JsRequest) -> Self {
+impl From<WorkerRequest> for reqwest::Request {
+    fn from(val: WorkerRequest) -> Self {
         val.0
     }
 }
 
-impl<'js> IntoJs<'js> for JsRequest {
+impl<'js> IntoJs<'js> for WorkerRequest {
     fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
         let object = rquickjs::Object::new(ctx.clone())?;
         object.set("uri", self.uri())?;
@@ -76,7 +74,7 @@ impl<'js> IntoJs<'js> for JsRequest {
     }
 }
 
-impl<'js> FromJs<'js> for JsRequest {
+impl<'js> FromJs<'js> for WorkerRequest {
     fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
         let object = value.as_object().ok_or(rquickjs::Error::FromJs {
             from: value.type_name(),
@@ -120,7 +118,7 @@ impl<'js> FromJs<'js> for JsRequest {
         if let Some(body) = body {
             let _ = request.body_mut().insert(reqwest::Body::from(body));
         }
-        Ok(JsRequest(request))
+        Ok(WorkerRequest(request))
     }
 }
 
@@ -261,7 +259,7 @@ mod tests {
         let _ = reqwest_request
             .body_mut()
             .insert(reqwest::Body::from("Hello, World!"));
-        let js_request: JsRequest = (&reqwest_request).try_into().unwrap();
+        let js_request: WorkerRequest = (&reqwest_request).try_into().unwrap();
         assert_eq!(js_request.method(), "GET");
         assert_eq!(js_request.uri().to_string(), "http://example.com/");
         let body_out = js_request.body();
@@ -286,7 +284,7 @@ mod tests {
                 HeaderValue::from_str("application/json").unwrap(),
             );
 
-            let js_request: JsRequest = (&request).try_into().unwrap();
+            let js_request: WorkerRequest = (&request).try_into().unwrap();
             let value = js_request.into_js(&ctx).unwrap();
             let object = value.as_object().unwrap();
 
@@ -325,10 +323,10 @@ mod tests {
                 HeaderValue::from_str("application/json").unwrap(),
             );
 
-            let js_request: JsRequest = (&request).try_into().unwrap();
+            let js_request: WorkerRequest = (&request).try_into().unwrap();
             let value = js_request.into_js(&ctx).unwrap();
 
-            let js_request = JsRequest::from_js(&ctx, value).unwrap();
+            let js_request = WorkerRequest::from_js(&ctx, value).unwrap();
 
             assert_eq!(js_request.uri().to_string(), "http://example.com/");
             assert_eq!(js_request.method(), "GET");
