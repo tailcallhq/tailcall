@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::pin::Pin;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use futures_util::Future;
-use tokio::sync::broadcast::Sender;
+use tokio::sync::{broadcast, RwLock};
 
 /// A simple async cache that uses a `HashMap` to store the values.
 pub struct AsyncCache<Key, Value, Error> {
@@ -14,7 +14,7 @@ pub struct AsyncCache<Key, Value, Error> {
 
 #[derive(Clone)]
 pub enum CacheValue<Value, Error> {
-    Pending(Sender<Arc<Result<Value, Error>>>),
+    Pending(broadcast::Sender<Arc<Result<Value, Error>>>),
     Ready(Arc<Result<Value, Error>>),
 }
 
@@ -33,8 +33,14 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
         Self { cache: Arc::new(RwLock::new(HashMap::new())) }
     }
 
-    fn get_cache_value(&self, key: &Key) -> Option<CacheValue<Value, Error>> {
-        self.cache.read().unwrap().get(key).cloned()
+    async fn get_cache_value(&self, key: &Key) -> Option<CacheValue<Value, Error>> {
+        let cache = self.cache.read().await;
+        cache.get(key).cloned()
+    }
+
+    async fn insert_cache_value(&self, key: Key, value: CacheValue<Value, Error>) {
+        let mut cache = self.cache.write().await;
+        cache.insert(key, value);
     }
 
     pub async fn get_or_eval<'a>(
@@ -42,23 +48,20 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
         key: Key,
         or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
     ) -> Arc<Result<Value, Error>> {
-        if let Some(cache_value) = self.get_cache_value(&key) {
+        if let Some(cache_value) = self.get_cache_value(&key).await {
             match cache_value {
                 CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
                 CacheValue::Ready(value) => value,
             }
         } else {
-            let (tx, _) = tokio::sync::broadcast::channel(100);
-            self.cache
-                .write()
-                .unwrap()
-                .insert(key.clone(), CacheValue::Pending(tx.clone()));
+            let (tx, _) = broadcast::channel(100);
+            self.insert_cache_value(key.clone(), CacheValue::Pending(tx.clone()))
+                .await;
+
             let result = Arc::new(or_else().await);
-            let mut guard = self.cache.write().unwrap();
-            if let Some(cache_value) = guard.get_mut(&key) {
-                *cache_value = CacheValue::Ready(result.clone())
-            }
-            tx.send(result.clone()).ok();
+            self.insert_cache_value(key.clone(), CacheValue::Ready(result.clone()))
+                .await;
+            let _ = tx.send(result.clone());
             result
         }
     }
@@ -68,39 +71,31 @@ impl<Key: Eq + Hash + Send + Clone, Value: Debug + Clone + Send, Error: Debug + 
         key: Key,
         func: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
     ) -> Arc<Result<Value, Error>> {
-        if let Some(cache_value) = self.get_cache_value(&key) {
+        if let Some(cache_value) = self.get_cache_value(&key).await {
             match cache_value {
                 CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
                 CacheValue::Ready(_) => {
-                    let (tx, _) = tokio::sync::broadcast::channel(100);
-                    self.cache
-                        .write()
-                        .unwrap()
-                        .insert(key.clone(), CacheValue::Pending(tx.clone()));
+                    let (tx, _) = broadcast::channel(100);
+                    self.insert_cache_value(key.clone(), CacheValue::Pending(tx.clone()))
+                        .await;
+
                     let result = Arc::new(func().await);
-                    let mut guard = self.cache.write().unwrap();
-                    if let Some(cache_value) = guard.get_mut(&key) {
-                        *cache_value = CacheValue::Ready(result.clone())
-                    }
-                    tx.send(result.clone()).ok();
+                    self.insert_cache_value(key.clone(), CacheValue::Ready(result.clone()))
+                        .await;
+                    let _ = tx.send(result.clone());
                     result
                 }
             }
         } else {
-            {
-                let (tx, _) = tokio::sync::broadcast::channel(100);
-                self.cache
-                    .write()
-                    .unwrap()
-                    .insert(key.clone(), CacheValue::Pending(tx.clone()));
-                let result = Arc::new(func().await);
-                let mut guard = self.cache.write().unwrap();
-                if let Some(cache_value) = guard.get_mut(&key) {
-                    *cache_value = CacheValue::Ready(result.clone())
-                }
-                tx.send(result.clone()).ok();
-                result
-            }
+            let (tx, _) = broadcast::channel(100);
+            self.insert_cache_value(key.clone(), CacheValue::Pending(tx.clone()))
+                .await;
+
+            let result = Arc::new(func().await);
+            self.insert_cache_value(key.clone(), CacheValue::Ready(result.clone()))
+                .await;
+            let _ = tx.send(result.clone());
+            result
         }
     }
 }
@@ -211,9 +206,5 @@ mod tests {
 
         // Check that all tasks received the correct value.
         assert!(results.iter().all(|&v| v == value));
-
-        // Optionally, verify that the value was computed only once.
-        // This might require additional instrumentation in the cache or the
-        // computation function.
     }
 }

@@ -231,12 +231,12 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
 
         self.method.hash(state);
 
-        let mut headers = vec![];
         for (name, mustache) in self.headers.iter() {
-            headers.push((name.to_string(), mustache.render(ctx)));
+            name.hash(state);
+            mustache.render(ctx).hash(state);
         }
 
-        for (name, value) in headers {
+        for (name, value) in ctx.headers().iter() {
             name.hash(state);
             value.hash(state);
         }

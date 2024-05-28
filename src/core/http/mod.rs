@@ -16,7 +16,7 @@ mod cache;
 mod data_loader_request;
 mod method;
 mod request_context;
-pub(crate) mod request_handler;
+mod request_handler;
 mod request_template;
 mod response;
 pub mod showcase;
