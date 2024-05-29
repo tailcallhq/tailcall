@@ -54,7 +54,7 @@ impl<
                 CacheValue::Ready(value) => value,
             }
         } else {
-            let (tx, _) = broadcast::channel(100);
+            let (tx, _) = broadcast::channel(10000);
             self.cache
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
             let result = Arc::new(or_else().await);
@@ -68,7 +68,7 @@ impl<
         }
     }
 
-    pub async fn read_aside<'a>(
+    pub async fn load_without_cache<'a>(
         &self,
         key: Key,
         func: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>>
@@ -76,35 +76,26 @@ impl<
             + Send,
     ) -> Arc<Result<Value, Error>> {
         if let Some(cache_value) = self.get_cache_value(&key) {
-            match cache_value {
-                CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
-                CacheValue::Ready(_) => {
-                    let (tx, mut rx) = broadcast::channel(100);
-                    self.cache
-                        .insert(key.clone(), CacheValue::Pending(tx.clone()));
-                    let result = Arc::new(func().await);
-                    let mut guard = self
-                        .cache
-                        .entry(key)
-                        .or_insert(CacheValue::Pending(tx.clone()));
-                    *guard = CacheValue::Ready(result.clone());
-                    tx.send(result.clone()).ok();
-                    rx.recv().await.unwrap()
-                }
+            if let CacheValue::Pending(tx) = cache_value {
+                // Subscribe to the broadcast channel and wait for the result
+                return tx.subscribe().recv().await.unwrap();
             }
-        } else {
-            let (tx, mut rx) = broadcast::channel(100);
-            self.cache
-                .insert(key.clone(), CacheValue::Pending(tx.clone()));
-            let result = Arc::new(func().await);
-            let mut guard = self
-                .cache
-                .entry(key)
-                .or_insert(CacheValue::Pending(tx.clone()));
-            *guard = CacheValue::Ready(result.clone());
-            tx.send(result.clone()).ok();
-            rx.recv().await.unwrap()
         }
+
+        // Create a new broadcast channel
+        let (tx, _) = broadcast::channel(10000);
+        // Insert a pending state with the broadcast sender into the cache
+        self.cache
+            .insert(key.clone(), CacheValue::Pending(tx.clone()));
+
+        // Perform the async operation
+        let result = Arc::new(func().await);
+        // Remove the pending state from the cache
+        self.cache.remove(&key);
+        // Notify all subscribers of the result
+        tx.send(result.clone()).ok();
+
+        result
     }
 }
 
