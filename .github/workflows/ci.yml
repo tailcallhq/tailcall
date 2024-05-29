@@ -208,11 +208,11 @@ jobs:
 
       - name: Set up paths
         run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            echo "FOO=$(pwd)/target/${{ matrix.target }}/release/tailcall${{ matrix.ext }}" >> $GITHUB_ENV
+          if [ "${{ runner.os }}" == "Linux" || "${{ runner.os }}" == "macOS""]; then
+            echo "FOO=$(pwd)/target/debug/tailcall${{ matrix.ext }}" >> $GITHUB_ENV
             echo "GPG_TTY=$(tty)" >> $GITHUB_ENV
           else
-            echo "FOO=$env:GITHUB_WORKSPACE\\target\\${{ matrix.target }}\\release\\tailcall${{ matrix.ext }}" >> $GITHUB_ENV
+            echo "FOO=$env:GITHUB_WORKSPACE\\target\\debug\\tailcall${{ matrix.ext }}" >> $GITHUB_ENV
           fi
 
       - name: Sign the binary
