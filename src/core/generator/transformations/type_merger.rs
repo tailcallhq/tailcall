@@ -36,7 +36,6 @@ fn calculate_similarity(
     type_info_2: &Type,
     thresh: f32,
 ) -> bool {
-    // TODO: check if there's better way to do this.
     let matching_fields_count = count_matching_fields(config, type_info_1, type_info_2, thresh);
     let total_fields_count =
         (type_info_1.fields.len() + type_info_2.fields.len()) - matching_fields_count;
@@ -109,15 +108,14 @@ fn check_for_conflicts(grouped_types: &HashSet<String>, type_name: &str, config:
 
 impl super::Transform for TypeMerger {
     fn apply(&mut self, mut config: Config) -> Config {
-        let mut merge_types_names = HashMap::new(); // mapping of type to it's merged type: {t1 : m1} -> t1 got merged into m1.
-        let mut same_type_collection: Vec<HashSet<String>> = vec![];
+        let mut type_to_merge_type_mapping = HashMap::new();
+        let mut similar_type_group_list: Vec<HashSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
 
         // step 1: identify all the types that satisfies the thresh criteria and group them.
         for (type_name_1, type_info_1) in config.types.iter() {
             if visited_types.contains(type_name_1) || type_name_1 == "Query" {
-                // if type is already added for merging then skip it.
                 continue;
             }
 
@@ -139,27 +137,28 @@ impl super::Transform for TypeMerger {
                 }
             }
             if type_1_sim.len() > 1 {
-                // push only when we've good set of candidates for merging.
-                same_type_collection.push(type_1_sim);
+                similar_type_group_list.push(type_1_sim);
             }
 
             i += 1;
         }
 
+        if similar_type_group_list.is_empty() {
+            return config;
+        }
+
         // step 2: merge similar types into single merged type.
-        for same_types in same_type_collection {
+        for same_types in similar_type_group_list {
             let mut merged_into = Type::default();
-            // generate the type name.
             let merged_type_name = format!("M{}", self.merge_counter);
             self.merge_counter += 1;
 
             for type_name in same_types {
-                merge_types_names.insert(type_name.clone(), merged_type_name.clone()); // type t1 got merged into m1   // t1 : m1
+                type_to_merge_type_mapping.insert(type_name.clone(), merged_type_name.clone());
                 let type_ = config.types.get(type_name.as_str()).unwrap();
                 merged_into = merge_type(type_, merged_into);
             }
 
-            // insert the type into config.
             config.types.insert(merged_type_name, merged_into);
         }
 
@@ -167,10 +166,10 @@ impl super::Transform for TypeMerger {
         for (type_name, type_info) in config.types.iter_mut() {
             for actual_field in type_info.fields.values_mut() {
                 if let Some(merged_into_type_name) =
-                    merge_types_names.get(actual_field.type_of.as_str())
+                    type_to_merge_type_mapping.get(actual_field.type_of.as_str())
                 {
                     if merged_into_type_name == type_name {
-                        tracing::debug!("Found cyclic type, reverting merging.");
+                        tracing::info!("Found cyclic type, reverting merging.");
                         continue;
                     }
                     actual_field.type_of = merged_into_type_name.to_string();
@@ -179,12 +178,11 @@ impl super::Transform for TypeMerger {
         }
 
         // step 4: remove all merged types.
-        let unused_types: HashSet<_> = merge_types_names.keys().cloned().collect();
+        let unused_types: HashSet<_> = type_to_merge_type_mapping.keys().cloned().collect();
         let repeat_merging = unused_types.len() > 0;
         config = config.remove_types(unused_types);
 
         if repeat_merging {
-            // check further if we can merge the newly merged types.
             return self.apply(config);
         }
         config
@@ -200,7 +198,6 @@ fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
         .implements
         .extend(type_.implements.iter().cloned());
 
-    //TODO: see if we can copy other properties also.
     merge_into
 }
 
