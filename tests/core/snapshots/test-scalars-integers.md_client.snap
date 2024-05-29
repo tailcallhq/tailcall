@@ -19,7 +19,11 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
-  hello: User!
+  int64(x: Int64): Int64
+  int64Str(x: Int64Str): Int64Str
+  uInt32(x: UInt32): UInt32
+  uInt64(x: UInt64): UInt64
+  uInt64Str(x: UInt64Str): UInt64Str
 }
 
 scalar UInt32
@@ -29,11 +33,6 @@ scalar UInt64
 scalar UInt64Str
 
 scalar Url
-
-type User {
-  id: Int!
-  name: String!
-}
 
 schema {
   query: Query
