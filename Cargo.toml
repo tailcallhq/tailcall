@@ -131,7 +131,7 @@ opentelemetry-stdout = { version = "0.3.0", features = [
     "logs",
     "metrics",
 ] }
-opentelemetry-appender-tracing = { version = "0.3.0" }
+opentelemetry-appender-tracing = { version = "0.4.0" }
 opentelemetry-prometheus = "0.15.0"
 phonenumber = "0.3.4"
 chrono = "0.4.38"
