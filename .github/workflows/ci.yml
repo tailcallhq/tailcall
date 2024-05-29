@@ -208,7 +208,7 @@ jobs:
 
       - name: Set up paths
         run: |
-          if [ "${{ runner.os }}" == "Linux" || "${{ runner.os }}" == "macOS"]; then
+          if [ "${{ runner.os }}" -eq "Linux" || "${{ runner.os }}" -eq "macOS" ]; then
             echo "FOO=$(pwd)/target/debug/tailcall${{ matrix.ext }}" >> $GITHUB_ENV
             echo "GPG_TTY=$(tty)" >> $GITHUB_ENV
           else
@@ -217,7 +217,7 @@ jobs:
 
       - name: Sign the binary
         run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
+          if [ "${{ runner.os }}" -eq "Linux" || "${{ runner.os }}" -eq "macOS" ]; then
             echo $GPG_PASSPHRASE | gpg --output ${{ matrix.build }}.sig --yes --batch --passphrase-fd 0 --pinentry-mode loopback --detach-sign $FOO
           else
             gpg --output ${{ matrix.build }}.sig --yes --batch --pinentry-mode loopback --passphrase $Env:GPG_PASSPHRASE --detach-sign $FOO
