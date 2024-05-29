@@ -11,7 +11,7 @@ use async_graphql::Name;
 use super::telemetry::Telemetry;
 use super::{Tag, JS};
 use crate::core::config::{
-    self, Cache, Call, Config, Enum, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
+    self, Cache, Call, Config, Enum, GraphQL, Grpc, Link, Modify, Omit, Protected,
     Server, Union, Upstream,
 };
 use crate::core::directive::DirectiveCodec;
@@ -38,24 +38,21 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
     let types = to_types(&type_definitions);
     let unions = to_union_types(&type_definitions);
     let enums = to_enum_types(&type_definitions);
-    let schema = schema_definition(&doc).map(to_root_schema);
     schema_definition(&doc).and_then(|sd| {
         server(sd)
             .fuse(upstream(sd))
             .fuse(types)
             .fuse(unions)
             .fuse(enums)
-            .fuse(schema)
             .fuse(links(sd))
             .fuse(telemetry(sd))
             .map(
-                |(server, upstream, types, unions, enums, schema, links, telemetry)| Config {
+                |(server, upstream, types, unions, enums, links, telemetry)| Config {
                     server,
                     upstream,
                     types,
                     unions,
                     enums,
-                    schema,
                     links,
                     telemetry,
                 },
@@ -127,16 +124,6 @@ fn telemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, String> {
     )
 }
 
-fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
-    let query = schema_definition.query.as_ref().map(pos_name_to_string);
-    let mutation = schema_definition.mutation.as_ref().map(pos_name_to_string);
-    let subscription = schema_definition
-        .subscription
-        .as_ref()
-        .map(pos_name_to_string);
-
-    RootSchema { query, mutation, subscription }
-}
 fn pos_name_to_string(pos: &Positioned<Name>) -> String {
     pos.node.to_string()
 }

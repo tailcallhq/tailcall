@@ -17,11 +17,6 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
         Valid::from(Server::try_from(config_module.clone())).map(|server| blueprint.server(server))
     });
 
-    let schema = to_schema().transform::<Blueprint>(
-        |schema, blueprint| blueprint.schema(schema),
-        |blueprint| blueprint.schema,
-    );
-
     let definitions = to_definitions().transform::<Blueprint>(
         |definitions, blueprint| blueprint.definitions(definitions),
         |blueprint| blueprint.definitions,
@@ -41,7 +36,6 @@ pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     );
 
     server
-        .and(schema)
         .and(definitions)
         .and(upstream)
         .and(links)
