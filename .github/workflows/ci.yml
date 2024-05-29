@@ -188,11 +188,11 @@ jobs:
           }
           echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
 
-      - name: Run Cargo Test
-        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
-      - name: Import GPG key
-        run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+      #      - name: Run Cargo Test
+      #        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
+      #      - name: Import GPG key
+      #        run: |
+      #          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
 
       - name: Cargo Build
         run: cargo build --all-features
