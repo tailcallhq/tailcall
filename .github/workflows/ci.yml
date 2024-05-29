@@ -99,7 +99,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: aarch64-pc-windows-msvc
-            libc: msvc
+            libc: glibc
             ext: ".exe"
 
           - build: win32-ia32-gnu
