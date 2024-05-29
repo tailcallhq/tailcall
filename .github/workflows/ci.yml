@@ -199,9 +199,9 @@ jobs:
 
       - name: Sign the binary
         run: |
-          echo '${{ matrix.ext }}'
+          ls target/debug
           export GPG_TTY=$(tty)
-          echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --yes --batch --sign --detach-sign --armor target/debug/tailcall${{ matrix.ext }}
+          echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --yes --batch --sign --detach-sign --armor target/debug/tailcall
 
       - name: Upload Coverage to Codecov
         if: matrix.build == 'darwin-arm64'
