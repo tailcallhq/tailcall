@@ -220,7 +220,7 @@ jobs:
       - name: Sign binary (windows)
         if: runner.os == 'Windows'
         run: |
-          gpg --output ${{ matrix.ext }}.sig --yes --batch --pinentry-mode loopback --passphrase $Env:GPG_PASSPHRASE --detach-sign $Env:FOO
+          echo $Env:GPG_PASSPHRASE | gpg --output ${{ matrix.ext }}.sig --yes --batch --pinentry-mode loopback --detach-sign $Env:FOO
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
