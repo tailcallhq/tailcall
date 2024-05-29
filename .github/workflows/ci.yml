@@ -106,7 +106,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
-            #            cross: true
+            cross: true
             libc: glibc
             ext: ".exe"
 
