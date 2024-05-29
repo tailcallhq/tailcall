@@ -6,67 +6,37 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
+type M1 {
+  lat: String
+  lng: String
+}
+
+type M2 {
+  city: String
+  geo: M1
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type M3 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type M4 {
+  address: M2
+  company: M3
+  email: String
+  id: Int
+  name: String
+  phone: String
+  username: String
+  website: String
+}
+
 type Query {
-  f1: [T31] @http(path: "/users")
-  f2(p1: Int!): T35 @http(path: "/users/{{.args.p1}}")
-}
-
-type T1 {
-  lat: String
-  lng: String
-}
-
-type T2 {
-  city: String
-  geo: T1
-  street: String
-  suite: String
-  zipcode: String
-}
-
-type T3 {
-  bs: String
-  catchPhrase: String
-  name: String
-}
-
-type T31 {
-  address: T2
-  company: T3
-  email: String
-  id: Int
-  name: String
-  phone: String
-  username: String
-  website: String
-}
-
-type T32 {
-  lat: String
-  lng: String
-}
-
-type T33 {
-  city: String
-  geo: T32
-  street: String
-  suite: String
-  zipcode: String
-}
-
-type T34 {
-  bs: String
-  catchPhrase: String
-  name: String
-}
-
-type T35 {
-  address: T33
-  company: T34
-  email: String
-  id: Int
-  name: String
-  phone: String
-  username: String
-  website: String
+  f1: [M4] @http(path: "/users")
+  f2(p1: Int!): M4 @http(path: "/users/{{.args.p1}}")
 }
