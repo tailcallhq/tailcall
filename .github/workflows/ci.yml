@@ -197,14 +197,14 @@ jobs:
       - name: Cargo Build
         run: cargo build
 
-#      - name: Sign the binary
-#        run: |
-#          export FOO=$(pwd)/target/debug/tailcall
-#          echo $FOO
-#          export GPG_TTY=`tty`
-#          echo $GPG_PASSPHRASE | gpg --output foo.sig --yes --batch --passphrase-fd 0 --pinentry-mode loopback --sign --detach-sign --armor $FOO
-#        env:
-#          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      #      - name: Sign the binary
+      #        run: |
+      #          export FOO=$(pwd)/target/debug/tailcall
+      #          echo $FOO
+      #          export GPG_TTY=`tty`
+      #          echo $GPG_PASSPHRASE | gpg --output foo.sig --yes --batch --passphrase-fd 0 --pinentry-mode loopback --sign --detach-sign --armor $FOO
+      #        env:
+      #          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Set up paths
         run: |
