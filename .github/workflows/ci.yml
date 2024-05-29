@@ -200,6 +200,7 @@ jobs:
       - name: Sign the binary
         run: |
           echo '${{ matrix.ext }}'
+          export GPG_TTY=$(tty)
           echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --yes --batch --sign --detach-sign --armor target/debug/tailcall${{ matrix.ext }}
 
       - name: Upload Coverage to Codecov
