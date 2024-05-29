@@ -2,6 +2,7 @@ use regex::Regex;
 use serde_json::{Map, Value};
 use url::Url;
 
+use super::transformations::{Transform, TypeMerger};
 use crate::core::config::{Arg, Config, Field, Http, KeyValue, Type};
 use crate::core::helpers::gql_type::{
     detect_gql_data_type, is_primitive, is_valid_field_name, to_gql_type,
@@ -282,6 +283,8 @@ pub fn from_json(config_gen_req: &[ConfigGenerationRequest]) -> anyhow::Result<C
 
     let unused_types = config.unused_types();
     config = config.remove_types(unused_types);
+    
+    config = TypeMerger::new(0.88).apply(config);
 
     Ok(config)
 }
