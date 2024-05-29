@@ -200,11 +200,11 @@ jobs:
       - name: Sign the binary
         run: |
           export FOO=$(pwd)/target/debug/tailcall
-          echo '$FOO'
+          echo $FOO
           export GPG_TTY=`tty`
-          echo '$GPG_PASSPHRASE' | gpg --yes --batch --sign --output foo.sig --detach-sign --armor '$FOO'
+          echo $GPG_PASSPHRASE | gpg --yes --batch --sign --output foo.sig --detach-sign --armor $FOO
         env:
-          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Verify the signature (todo remove)
         run: |
