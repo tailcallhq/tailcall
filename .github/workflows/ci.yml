@@ -206,24 +206,40 @@ jobs:
       #        env:
       #          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Set up paths
+      - name: Set up path (Win)
+        if: runner.os == 'Windows'
         run: |
-          if [[ "${{ runner.os }}" -eq "Linux" || "${{ runner.os }}" -eq "macOS" ]]; then
-            echo "FOO=$(pwd)/target/debug/tailcall${{ matrix.ext }}" >> $GITHUB_ENV
-            echo "GPG_TTY=$(tty)" >> $GITHUB_ENV
-          else
-            echo "FOO=$env:GITHUB_WORKSPACE\\target\\debug\\tailcall${{ matrix.ext }}" >> $GITHUB_ENV
-          fi
+          echo "FOO=$env:GITHUB_WORKSPACE\\target\\debug\\tailcall${{ matrix.ext }}" >> $GITHUB_ENV
 
-      - name: Sign the binary
+      - name: Setup path (Lin)
+        if: runner.os != 'Linux'
         run: |
-          if [[ "${{ runner.os }}" -eq "Linux" || "${{ runner.os }}" -eq "macOS" ]]; then
-            echo $GPG_PASSPHRASE | gpg --output ${{ matrix.build }}.sig --yes --batch --passphrase-fd 0 --pinentry-mode loopback --detach-sign $FOO
-          else
-            gpg --output ${{ matrix.build }}.sig --yes --batch --pinentry-mode loopback --passphrase $Env:GPG_PASSPHRASE --detach-sign $FOO
-          fi
+          echo "FOO=$(pwd)/target/debug/tailcall${{ matrix.ext }}" >> $GITHUB_ENV
+          echo "GPG_TTY=$(tty)" >> $GITHUB_ENV
+
+      - name: Sign binary (windows)
+        if: runner.os == 'Windows'
+        run: |
+          gpg --output $Env:GITHUB_WORKSPACE\\target\\debug\\tailcall${{ matrix.ext }}.sig --yes --batch --pinentry-mode loopback --passphrase $Env:GPG_PASSPHRASE --detach-sign $Env:GITHUB_WORKSPACE\\target\\debug\\tailcall${{ matrix.ext }}
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Sign binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          echo $GPG_PASSPHRASE | gpg --output ${{ matrix.build }}.sig --yes --batch --passphrase-fd 0 --pinentry-mode loopback --detach-sign $FOO
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      #      - name: Sign the binary
+      #        run: |
+      #          if [[ "${{ runner.os }}" -eq "Linux" || "${{ runner.os }}" -eq "macOS" ]]; then
+      #            echo $GPG_PASSPHRASE | gpg --output ${{ matrix.build }}.sig --yes --batch --passphrase-fd 0 --pinentry-mode loopback --detach-sign $FOO
+      #          else
+      #            gpg --output ${{ matrix.build }}.sig --yes --batch --pinentry-mode loopback --passphrase $Env:GPG_PASSPHRASE --detach-sign $FOO
+      #          fi
+      #        env:
+      #          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Verify the signature (todo remove)
         run: |
