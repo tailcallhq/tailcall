@@ -27,7 +27,7 @@ impl UrlQueryParser {
             .map(|(k, v)| UrlQuery {
                 key: k.to_string(),
                 data_type: detect_gql_data_type(&v),
-                is_list: v.contains(","),
+                is_list: v.contains(","), // TODO: improve this.
             })
             .collect();
         Self { queries: query_list }

@@ -3,7 +3,6 @@ use url::Url;
 
 use crate::core::config::Config;
 use crate::core::generator::json::schema_generator::SchemaGenerator;
-use crate::core::generator::json::upstream_generator::UpstreamGenerator;
 use crate::core::generator::json::StepConfigGenerator;
 use crate::core::merge_right::MergeRight;
 
@@ -34,8 +33,7 @@ pub fn from_json(config_gen_req: &[ConfigGenerationRequest]) -> anyhow::Result<C
                 format!("f{}", i + 1),
                 query.to_string(),
             ))
-            .pipe(UpstreamGenerator::new(url))
-            .pipe(SchemaGenerator::new(Some(query.to_string())))
+            .pipe(SchemaGenerator::new(Some(query.to_string()), None))
             .generate();
         
         config = config.merge_right(generated_config);
