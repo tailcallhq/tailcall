@@ -96,7 +96,7 @@ jobs:
         build: [win32-arm64-msvc, win32-ia32-gnu]
         include:
           - build: win32-arm64-msvc
-            os: windows-latest
+            os: ubuntu-latest
             rust: stable
             target: aarch64-pc-windows-msvc
             libc: msvc
