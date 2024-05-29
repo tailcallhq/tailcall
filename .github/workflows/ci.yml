@@ -197,19 +197,37 @@ jobs:
       - name: Cargo Build
         run: cargo build
 
+#      - name: Sign the binary
+#        run: |
+#          export FOO=$(pwd)/target/debug/tailcall
+#          echo $FOO
+#          export GPG_TTY=`tty`
+#          echo $GPG_PASSPHRASE | gpg --output foo.sig --yes --batch --passphrase-fd 0 --pinentry-mode loopback --sign --detach-sign --armor $FOO
+#        env:
+#          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Set up paths
+        run: |
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            echo "FOO=$(pwd)/target/${{ matrix.target }}/release/tailcall${{ matrix.ext }}" >> $GITHUB_ENV
+            echo "GPG_TTY=$(tty)" >> $GITHUB_ENV
+          else
+            echo "FOO=$env:GITHUB_WORKSPACE\\target\\${{ matrix.target }}\\release\\tailcall${{ matrix.ext }}" >> $GITHUB_ENV
+          fi
+
       - name: Sign the binary
         run: |
-          export FOO=$(pwd)/target/debug/tailcall
-          echo $FOO
-          export GPG_TTY=`tty`
-          echo $GPG_PASSPHRASE | gpg --output foo.sig --yes --batch --passphrase-fd 0 --pinentry-mode loopback --sign --detach-sign --armor $FOO
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            echo $GPG_PASSPHRASE | gpg --output ${{ matrix.build }}.sig --yes --batch --passphrase-fd 0 --pinentry-mode loopback --detach-sign $FOO
+          else
+            gpg --output ${{ matrix.build }}.sig --yes --batch --pinentry-mode loopback --passphrase $Env:GPG_PASSPHRASE --detach-sign $FOO
+          fi
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Verify the signature (todo remove)
         run: |
-          export FOO=$(pwd)/target/debug/tailcall
-          gpg --verify foo.sig $FOO
+          gpg --verify ${{ matrix.build }}.sig $FOO
 
       - name: Upload Coverage to Codecov
         if: matrix.build == 'darwin-arm64'
