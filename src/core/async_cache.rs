@@ -75,37 +75,36 @@ impl<
             + 'a
             + Send,
     ) -> Arc<Result<Value, Error>> {
-        // Check for any pending value
-        if let Some(CacheValue::Pending(tx)) = self.get_cache_value(&key) {
-            return tx.subscribe().recv().await.unwrap();
-        }
-
-        let (tx, mut rx) = broadcast::channel(100);
-
-        {
-            let mut write_guard = self
+        if let Some(cache_value) = self.get_cache_value(&key) {
+            match cache_value {
+                CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
+                CacheValue::Ready(_) => {
+                    let (tx, mut rx) = broadcast::channel(100);
+                    self.cache
+                        .insert(key.clone(), CacheValue::Pending(tx.clone()));
+                    let result = Arc::new(func().await);
+                    let mut guard = self
+                        .cache
+                        .entry(key)
+                        .or_insert(CacheValue::Pending(tx.clone()));
+                    *guard = CacheValue::Ready(result.clone());
+                    tx.send(result.clone()).ok();
+                    rx.recv().await.unwrap()
+                }
+            }
+        } else {
+            let (tx, mut rx) = broadcast::channel(100);
+            self.cache
+                .insert(key.clone(), CacheValue::Pending(tx.clone()));
+            let result = Arc::new(func().await);
+            let mut guard = self
                 .cache
-                .entry(key.clone())
+                .entry(key)
                 .or_insert(CacheValue::Pending(tx.clone()));
-            // Always insert a pending state
-            *write_guard = CacheValue::Pending(tx.clone());
+            *guard = CacheValue::Ready(result.clone());
+            tx.send(result.clone()).ok();
+            rx.recv().await.unwrap()
         }
-
-        // Execute the closure and store the result
-        let result = Arc::new(func().await);
-
-        {
-            let mut write_guard = self
-                .cache
-                .entry(key.clone())
-                .or_insert(CacheValue::Pending(tx.clone()));
-            *write_guard = CacheValue::Ready(result.clone());
-        }
-
-        // Notify all subscribers
-        tx.send(result).ok();
-
-        rx.recv().await.unwrap()
     }
 }
 
