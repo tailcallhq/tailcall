@@ -273,7 +273,7 @@ mod test {
         let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
         let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };
         let float_field = Field { type_of: "Float".to_owned(), ..Default::default() };
-        let id_field = Field { type_of: "Float".to_owned(), ..Default::default() };
+        let id_field = Field { type_of: "ID".to_owned(), ..Default::default() };
 
         let mut ty = Type::default();
         ty.fields.insert("f1".to_string(), str_field.clone());

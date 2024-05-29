@@ -11,7 +11,7 @@ type M1 {
   f2: Int
   f3: Boolean
   f4: Float
-  f5: Float
+  f5: ID
 }
 
 type Query {
