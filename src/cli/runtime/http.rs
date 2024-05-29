@@ -14,12 +14,14 @@ use opentelemetry_semantic_conventions::trace::{
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall_http_cache::HttpCacheManager;
+use tailcall_http_cache::HttpCacheManagerByteBased;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
 use crate::core::blueprint::Upstream;
 use crate::core::http::Response;
+use crate::core::config::CacheType;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -113,11 +115,20 @@ impl NativeHttp {
         let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
         if upstream.http_cache > 0 {
-            client = client.with(Cache(HttpCache {
-                mode: CacheMode::Default,
-                manager: HttpCacheManager::new(upstream.http_cache),
-                options: HttpCacheOptions::default(),
-            }))
+            if upstream.http_cache_type == Some(CacheType::ByteBased) {
+                client = client.with(Cache(HttpCache {
+                    mode: CacheMode::Default,
+                    manager: HttpCacheManagerByteBased::new(upstream.http_cache),
+                    options: HttpCacheOptions::default(),
+                }))
+            } else {
+                client = client.with(Cache(HttpCache {
+                    mode: CacheMode::Default,
+                    manager: HttpCacheManager::new(upstream.http_cache),
+                    options: HttpCacheOptions::default(),
+                }))
+            }
+            
         }
         Self {
             client: client.build(),
@@ -253,6 +264,56 @@ mod tests {
         });
 
         let upstream = Upstream { http_cache: 2, ..Default::default() };
+        let native_http = NativeHttp::init(&upstream, &Default::default());
+        let port = server.port();
+
+        let url1 = format!("http://localhost:{}/test-1", port);
+        let resp = make_request(&url1, &native_http).await;
+        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "MISS");
+
+        let resp = make_request(&url1, &native_http).await;
+        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "HIT");
+
+        let url2 = format!("http://localhost:{}/test-2", port);
+        let resp = make_request(&url2, &native_http).await;
+        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "MISS");
+
+        let resp = make_request(&url2, &native_http).await;
+        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "HIT");
+
+        // now cache is full, let's make 3rd request and cache it and evict url1.
+        let url3 = format!("http://localhost:{}/test-3", port);
+        let resp = make_request(&url3, &native_http).await;
+        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "MISS");
+
+        let resp = make_request(&url3, &native_http).await;
+        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "HIT");
+
+        let resp = make_request(&url1, &native_http).await;
+        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "MISS");
+    }
+
+
+#[tokio::test]
+    async fn test_native_http_get_request_with_cache_byte_based() {
+        let server = start_mock_server();
+
+        server.mock(|when, then| {
+            when.method(httpmock::Method::GET).path("/test-1");
+            then.status(200).body("Hello");
+        });
+
+        server.mock(|when, then| {
+            when.method(httpmock::Method::GET).path("/test-2");
+            then.status(200).body("Hello");
+        });
+
+        server.mock(|when, then| {
+            when.method(httpmock::Method::GET).path("/test-3");
+            then.status(200).body("Hello");
+        });
+        // 616 is the body length without "Hello" 616+5(size of hello in bytes) = 621 , 1242 = 621*2
+        let upstream = Upstream { http_cache: 1242, http_cache_type: Some(CacheType::ByteBased), ..Default::default() };
         let native_http = NativeHttp::init(&upstream, &Default::default());
         let port = server.port();
 

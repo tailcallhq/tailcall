@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use derive_setters::Setters;
-
+use crate::core::config::CacheType;
 use crate::core::config::{self, Batch, ConfigModule};
 use crate::core::valid::{Valid, ValidationError, Validator};
 
@@ -25,6 +25,7 @@ pub struct Upstream {
     pub allowed_headers: BTreeSet<String>,
     pub base_url: Option<String>,
     pub http_cache: u64,
+    pub http_cache_type: Option<CacheType>,
     pub batch: Option<Batch>,
     pub http2_only: bool,
     pub dedupe: bool,
@@ -79,6 +80,7 @@ impl TryFrom<&ConfigModule> for Upstream {
                 allowed_headers,
                 base_url,
                 http_cache: (config_upstream).get_http_cache_size(),
+                http_cache_type: Some((config_upstream).get_http_cache_type()),
                 batch,
                 http2_only: (config_upstream).get_http_2_only(),
                 dedupe: (config_upstream).get_dedupe(),
