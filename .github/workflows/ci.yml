@@ -212,7 +212,7 @@ jobs:
           echo "FOO=$env:GITHUB_WORKSPACE\\target\\debug\\tailcall${{ matrix.ext }}" >> $GITHUB_ENV
 
       - name: Setup path (Lin)
-        if: runner.os != 'Linux'
+        if: runner.os != 'Windows'
         run: |
           echo "FOO=$(pwd)/target/debug/tailcall${{ matrix.ext }}" >> $GITHUB_ENV
           echo "GPG_TTY=$(tty)" >> $GITHUB_ENV
@@ -220,7 +220,7 @@ jobs:
       - name: Sign binary (windows)
         if: runner.os == 'Windows'
         run: |
-          gpg --output $Env:GITHUB_WORKSPACE\\target\\debug\\tailcall${{ matrix.ext }}.sig --yes --batch --pinentry-mode loopback --passphrase $Env:GPG_PASSPHRASE --detach-sign $Env:GITHUB_WORKSPACE\\target\\debug\\tailcall${{ matrix.ext }}
+          gpg --output ${{ matrix.ext }}.sig --yes --batch --pinentry-mode loopback --passphrase $Env:GPG_PASSPHRASE --detach-sign $Env:FOO
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
