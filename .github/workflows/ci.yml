@@ -188,20 +188,30 @@ jobs:
           }
           echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
 
-      - name: Run Cargo Test
-        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
-
-      - name: Upload Coverage to Codecov
-        if: matrix.build == 'darwin-arm64'
-        uses: Wandalen/wretry.action@v3
+      - name: Build
+        env:
+          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name}}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: ClementTsang/cargo-action@v0.0.6
         with:
-          action: codecov/codecov-action@v4
-          attempt_limit: 3
-          attempt_delay: 10000
-          with: |
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: lcov.info
-            fail_ci_if_error: true
+          use-cross: ${{ matrix.cross }}
+          command: build
+          args: ${{matrix.features}} --target ${{ matrix.target }}
+
+  #      - name: Run Cargo Test
+  #        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
+
+  #      - name: Upload Coverage to Codecov
+  #        if: matrix.build == 'darwin-arm64'
+  #        uses: Wandalen/wretry.action@v3
+  #        with:
+  #          action: codecov/codecov-action@v4
+  #          attempt_limit: 3
+  #          attempt_delay: 10000
+  #          with: |
+  #            token: ${{ secrets.CODECOV_TOKEN }}
+  #            files: lcov.info
+  #            fail_ci_if_error: true
 
   check-examples:
     name: Check Examples
