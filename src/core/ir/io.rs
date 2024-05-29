@@ -79,8 +79,8 @@ impl Eval for IO {
                         }),
                         _ => Box::pin(async move {
                             ctx.request_ctx
-                                .global_cache
-                                .load_without_cache(key, move || Box::pin(self.eval_inner(ctx)))
+                                .async_loader
+                                .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
                                 .await
                                 .as_ref()
                                 .clone()

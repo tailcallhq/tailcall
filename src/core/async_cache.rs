@@ -7,9 +7,35 @@ use dashmap::DashMap;
 use futures_util::Future;
 use tokio::sync::broadcast;
 
+pub trait CachingBehavior: Clone + Send + Sync + 'static {
+    fn should_cache() -> bool;
+}
+
+#[derive(Clone)]
+pub struct Cache;
+
+impl CachingBehavior for Cache {
+    fn should_cache() -> bool {
+        true
+    }
+}
+
+#[derive(Clone)]
+pub struct NoCache;
+
+impl CachingBehavior for NoCache {
+    fn should_cache() -> bool {
+        false
+    }
+}
+
 /// A simple async cache that uses a `DashMap` to store the values.
-pub struct AsyncCache<Key, Value, Error> {
+pub struct AsyncCache<Key, Value, Error, Behavior>
+where
+    Behavior: CachingBehavior,
+{
     cache: Arc<DashMap<Key, CacheValue<Value, Error>>>,
+    _behavior: std::marker::PhantomData<Behavior>,
 }
 
 #[derive(Clone)]
@@ -22,7 +48,8 @@ impl<
         Key: Eq + Hash + Clone + Send + Sync,
         Value: Debug + Clone + Send + Sync,
         Error: Debug + Clone + Send + Sync,
-    > Default for AsyncCache<Key, Value, Error>
+        Behavior: CachingBehavior,
+    > Default for AsyncCache<Key, Value, Error, Behavior>
 {
     fn default() -> Self {
         Self::new()
@@ -33,10 +60,14 @@ impl<
         Key: Eq + Hash + Clone + Send + Sync,
         Value: Debug + Clone + Send + Sync,
         Error: Debug + Clone + Send + Sync,
-    > AsyncCache<Key, Value, Error>
+        Behavior: CachingBehavior,
+    > AsyncCache<Key, Value, Error, Behavior>
 {
     pub fn new() -> Self {
-        Self { cache: Arc::new(DashMap::new()) }
+        Self {
+            cache: Arc::new(DashMap::new()),
+            _behavior: std::marker::PhantomData,
+        }
     }
 
     fn get_cache_value(&self, key: &Key) -> Option<CacheValue<Value, Error>> {
@@ -48,49 +79,45 @@ impl<
         key: Key,
         or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
     ) -> Arc<Result<Value, Error>> {
-        if let Some(cache_value) = self.get_cache_value(&key) {
-            match cache_value {
-                CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
-                CacheValue::Ready(value) => value,
+        if Behavior::should_cache() {
+            if let Some(cache_value) = self.get_cache_value(&key) {
+                match cache_value {
+                    CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
+                    CacheValue::Ready(value) => value,
+                }
+            } else {
+                let (tx, _) = broadcast::channel(10000);
+                self.cache
+                    .insert(key.clone(), CacheValue::Pending(tx.clone()));
+                let result = Arc::new(or_else().await);
+                let mut guard = self
+                    .cache
+                    .entry(key)
+                    .or_insert(CacheValue::Pending(tx.clone()));
+                *guard = CacheValue::Ready(result.clone());
+                tx.send(result.clone()).ok();
+                result
             }
         } else {
-            let (tx, _) = broadcast::channel(10000);
-            self.cache
-                .insert(key.clone(), CacheValue::Pending(tx.clone()));
-            let result = Arc::new(or_else().await);
-            let mut guard = self
-                .cache
-                .entry(key)
-                .or_insert(CacheValue::Pending(tx.clone()));
-            *guard = CacheValue::Ready(result.clone());
-            tx.send(result.clone()).ok();
-            result
+            self.load_without_cache(key, or_else).await
         }
     }
 
-    pub async fn load_without_cache<'a>(
+    async fn load_without_cache<'a>(
         &self,
         key: Key,
-        func: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>>
-            + 'a
-            + Send,
+        func: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
     ) -> Arc<Result<Value, Error>> {
         if let Some(CacheValue::Pending(tx)) = self.get_cache_value(&key) {
-            // Subscribe to the broadcast channel and wait for the result
             return tx.subscribe().recv().await.unwrap();
         }
 
-        // Create a new broadcast channel
         let (tx, _) = broadcast::channel(10000);
-        // Insert a pending state with the broadcast sender into the cache
         self.cache
             .insert(key.clone(), CacheValue::Pending(tx.clone()));
 
-        // Perform the async operation
         let result = Arc::new(func().await);
-        // Remove the pending state from the cache
         self.cache.remove(&key);
-        // Notify all subscribers of the result
         tx.send(result.clone()).ok();
 
         result
@@ -109,7 +136,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_no_key() {
-        let cache = AsyncCache::<i32, i32, String>::new();
+        let cache = AsyncCache::<i32, i32, String, Cache>::new();
         let actual = cache
             .get_or_eval(1, || Box::pin(async { Ok(1) }))
             .await
@@ -121,7 +148,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_key() {
-        let cache = AsyncCache::<i32, i32, String>::new();
+        let cache = AsyncCache::<i32, i32, String, Cache>::new();
         cache
             .get_or_eval(1, || Box::pin(async { Ok(1) }))
             .await
@@ -140,7 +167,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_multi_get() {
-        let cache = AsyncCache::<i32, i32, String>::new();
+        let cache = AsyncCache::<i32, i32, String, Cache>::new();
 
         for i in 0..100 {
             cache
@@ -162,7 +189,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_failure() {
-        let cache = AsyncCache::<i32, String, String>::new();
+        let cache = AsyncCache::<i32, String, String, Cache>::new();
         let actual = cache
             .get_or_eval(1, || Box::pin(async { Err("error".into()) }))
             .await;
@@ -171,7 +198,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_multi_get_failure() {
-        let cache = AsyncCache::<i32, i32, String>::new();
+        let cache = AsyncCache::<i32, i32, String, Cache>::new();
         let _ = cache
             .get_or_eval(1, || Box::pin(async { Err("error".into()) }))
             .await;
@@ -183,10 +210,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_concurrent_access() {
-        let cache = Arc::new(AsyncCache::<i32, i32, String>::new());
+        let cache = Arc::new(AsyncCache::<i32, i32, String, Cache>::new());
         let key = 1;
         let value = 42;
-        // Simulate concurrent access by spawning multiple tasks.
         let handles: Vec<_> = (0..100)
             .map(|_| {
                 let cache = cache.clone();
@@ -198,29 +224,23 @@ mod tests {
             })
             .collect();
 
-        // Await all spawned tasks and collect their results.
         let results: Vec<_> = futures_util::future::join_all(handles)
             .await
             .into_iter()
-            .map(|res| res.unwrap().as_ref().clone().unwrap()) // Unwrap the Result from the join, and the Result from get_or_eval
+            .map(|res| res.unwrap().as_ref().clone().unwrap())
             .collect();
 
-        // Check that all tasks received the correct value.
         assert!(results.iter().all(|&v| v == value));
-
-        // Optionally, verify that the value was computed only once.
-        // This might require additional instrumentation in the cache or the
-        // computation function.
     }
 
     #[tokio::test]
-    async fn test_load_without_cache() {
-        let cache = Arc::new(AsyncCache::new());
+    async fn test_no_cache_behavior() {
+        let cache: Arc<AsyncCache<i32, String, String, NoCache>> = Arc::new(AsyncCache::new());
 
         // Test case where cache is empty
         let key1 = 1;
         let result1 = cache
-            .load_without_cache(key1, || {
+            .get_or_eval(key1, || {
                 Box::pin(async { Ok("value1".to_string()) })
                     as Pin<Box<dyn Future<Output = Result<String, String>> + Send>>
             })
@@ -276,7 +296,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_load_without_cache_race_condition() {
-        let cache = Arc::new(AsyncCache::new());
+        let cache: Arc<AsyncCache<i32, String, String, NoCache>> = Arc::new(AsyncCache::new());
         let key = 1;
 
         // Spawning multiple tasks to simulate race conditions
@@ -286,7 +306,7 @@ mod tests {
             let key_clone = key;
             handles.push(tokio::spawn(async move {
                 cache_clone
-                    .load_without_cache(key_clone, || {
+                    .get_or_eval(key_clone, || {
                         Box::pin(async {
                             sleep(Duration::from_millis(50)).await;
                             Ok(format!("value{}", i))
