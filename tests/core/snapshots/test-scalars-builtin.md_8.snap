@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "a": true,
+      "b": 0
+    }
+  }
+}
