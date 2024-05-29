@@ -26,7 +26,6 @@ pub struct Upstream {
     pub base_url: Option<String>,
     pub http_cache: u64,
     pub http_cache_type: Option<CacheType>,
-    pub http_cache_type: Option<CacheType>,
     pub batch: Option<Batch>,
     pub http2_only: bool,
     pub dedupe: bool,

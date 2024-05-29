@@ -4,16 +4,12 @@ use serde::{Deserialize, Serialize};
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T> = std::result::Result<T, BoxError>;
 use std::mem::size_of_val;
-use std::mem::size_of_val;
 use std::sync::Arc;
 
 use moka::future::Cache;
 use moka::policy::EvictionPolicy;
 
 pub struct HttpCacheManager {
-    pub cache: Arc<Cache<String, Store>>,
-}
-pub struct HttpCacheManagerByteBased {
     pub cache: Arc<Cache<String, Store>>,
 }
 pub struct HttpCacheManagerByteBased {
@@ -84,24 +80,6 @@ impl HttpCacheManager {
     }
 }
 
-impl HttpCacheManagerByteBased {
-    pub fn new(cache_size: u64) -> Self {
-        let cache = Cache::builder()
-            .eviction_policy(EvictionPolicy::lru())
-            .weigher(|_key: &String, value: &Store| -> u32 {
-                value.size_in_bytes().try_into().unwrap_or(u32::MAX)
-            })
-            .max_capacity(cache_size)
-            .build();
-        Self { cache: Arc::new(cache) }
-    }
-
-    pub async fn clear(&self) -> Result<()> {
-        self.cache.invalidate_all();
-        self.cache.run_pending_tasks().await;
-        Ok(())
-    }
-}
 
 impl HttpCacheManagerByteBased {
     pub fn new(cache_size: u64) -> Self {
@@ -180,34 +158,7 @@ impl CacheManager for HttpCacheManagerByteBased {
     }
 }
 
-#[async_trait::async_trait]
-impl CacheManager for HttpCacheManagerByteBased {
-    async fn get(&self, cache_key: &str) -> Result<Option<(HttpResponse, CachePolicy)>> {
-        let store: Store = match self.cache.get(cache_key).await {
-            Some(d) => d,
-            None => return Ok(None),
-        };
-        Ok(Some((store.response, store.policy)))
-    }
 
-    async fn put(
-        &self,
-        cache_key: String,
-        response: HttpResponse,
-        policy: CachePolicy,
-    ) -> Result<HttpResponse> {
-        let data = Store { response: response.clone(), policy };
-        self.cache.insert(cache_key, data).await;
-        self.cache.run_pending_tasks().await;
-        Ok(response)
-    }
-
-    async fn delete(&self, cache_key: &str) -> Result<()> {
-        self.cache.invalidate(cache_key).await;
-        self.cache.run_pending_tasks().await;
-        Ok(())
-    }
-}
 
 #[cfg(test)]
 mod tests {
