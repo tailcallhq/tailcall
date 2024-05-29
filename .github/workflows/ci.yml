@@ -199,8 +199,7 @@ jobs:
 
       - name: Sign the binary
         run: |
-          ls target/debug
-          export GPG_TTY=$(tty)
+          export GPG_TTY=`tty`
           echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --yes --batch --sign --detach-sign --armor target/debug/tailcall
 
       - name: Upload Coverage to Codecov
