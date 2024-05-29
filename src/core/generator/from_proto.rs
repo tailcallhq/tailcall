@@ -104,7 +104,8 @@ impl Context {
 
                 let label = field.label().as_str_name().to_lowercase();
                 cfg_field.list = label.contains("repeated");
-                cfg_field.required = label.contains("required") || cfg_field.list;
+                // required only applicable for proto2
+                cfg_field.required = label.contains("required");
 
                 if let Some(type_name) = &field.type_name {
                     // check that current field is map.
@@ -388,6 +389,14 @@ mod test {
     #[test]
     fn test_map_types() -> Result<()> {
         let set = compile_protobuf(&[protobuf::MAP])?;
+        let config = from_proto(&[set], "Query")?.to_sdl();
+        insta::assert_snapshot!(config);
+        Ok(())
+    }
+
+    #[test]
+    fn test_optional_fields() -> Result<()> {
+        let set = compile_protobuf(&[protobuf::OPTIONAL])?;
         let config = from_proto(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
