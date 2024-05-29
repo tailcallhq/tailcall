@@ -11,7 +11,6 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
-use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self};
 use crate::core::blueprint::Blueprint;
@@ -62,7 +61,7 @@ pub async fn run() -> Result<()> {
                 .await?;
 
             let config = output.unwrap_or_default().encode(&cfg)?;
-            Fmt::display(config);
+            println!("{}", config);
             Ok(())
         }
     }

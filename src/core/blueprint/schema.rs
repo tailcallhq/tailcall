@@ -6,21 +6,6 @@ use crate::core::blueprint::*;
 use crate::core::config::{Field, Type};
 use crate::core::valid::{Valid, ValidationError, Validator};
 
-// fn validate_query(config: &Config) -> Valid<(), String> {
-//     Valid::from_option(
-//         config.schema.query.clone(),
-//         "Query root is missing".to_owned(),
-//     )
-//     .and_then(|ref query_type_name| {
-//         let Some(query) = config.find_type(query_type_name) else {
-//             return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
-//         };
-
-//         validate_type_has_resolvers(query_type_name, query, &config.types)
-//     })
-//     .unit()
-// }
-
 /// Validates that all the root type fields has resolver
 /// making into the account the nesting
 fn validate_type_has_resolvers(
@@ -84,18 +69,3 @@ pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String>
         })
         .into()
 }
-
-// fn validate_mutation(config: &Config) -> Valid<(), String> {
-//     let mutation_type_name = config.schema.mutation.as_ref();
-
-//     if let Some(mutation_type_name) = mutation_type_name {
-//         let Some(mutation) = config.find_type(mutation_type_name) else {
-//             return Valid::fail("Mutation type is not defined".to_owned())
-//                 .trace(mutation_type_name);
-//         };
-
-//         validate_type_has_resolvers(mutation_type_name, mutation, &config.types)
-//     } else {
-//         Valid::succeed(())
-//     }
-// }
