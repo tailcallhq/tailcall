@@ -1,11 +1,9 @@
-use std::collections::HashMap;
 
 use anyhow::Result;
 use futures_util::future::join_all;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 use reqwest::Method;
-use serde_json::Value;
 use url::Url;
 
 use crate::core::config::{Config, ConfigModule, Link, LinkType, Resolution};
@@ -33,12 +31,12 @@ fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<File
 }
 
 // TODO: move this logic to ResourceReader.
-async fn fetch_response(url: &str, runtime: &TargetRuntime) -> anyhow::Result<Value> {
+async fn fetch_response(url: &str, runtime: &TargetRuntime) -> anyhow::Result<ConfigGenerationRequest> {
     let parsed_url = Url::parse(url)?;
-    let request = reqwest::Request::new(Method::GET, parsed_url);
+    let request = reqwest::Request::new(Method::GET, parsed_url.clone());
     let resp = runtime.http.execute(request).await?;
     let body = serde_json::from_slice(&resp.body)?;
-    Ok(body)
+    Ok(ConfigGenerationRequest::new(parsed_url, body))
 }
 
 pub struct Generator {
@@ -58,7 +56,7 @@ impl Generator {
         input_source: Source,
         paths: &[T],
         query: &str,
-    ) -> Result<Vec<ConfigModule>> {
+    ) -> Result<ConfigModule> {
         match input_source {
             Source::Proto => {
                 let mut links = vec![];
@@ -72,9 +70,12 @@ impl Generator {
                 }
 
                 config.links = links;
-                Ok(vec![ConfigModule::from(config).resolve_ambiguous_types(
-                    |v| Resolution { input: format!("{}Input", v), output: v.to_owned() },
-                )])
+                Ok(
+                    ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
+                        input: format!("{}Input", v),
+                        output: v.to_owned(),
+                    }),
+                )
             }
             Source::Url => {
                 let results = join_all(
@@ -86,30 +87,8 @@ impl Generator {
                 .into_iter()
                 .collect::<anyhow::Result<Vec<_>>>()?;
 
-                let mut domain_groupings: HashMap<String, Vec<ConfigGenerationRequest>> =
-                    HashMap::new();
-
-                // group requests with same domain/host name to have single config.
-                // and pass each group to from_json to generate the config.
-                for (resp, url) in results.iter().zip(paths.iter()) {
-                    let parsed_url = Url::parse(url.as_ref())?;
-                    let domain = parsed_url.host_str().ok_or(anyhow::anyhow!(
-                        "Failed to extract host from URL: {}",
-                        parsed_url
-                    ))?;
-                    domain_groupings
-                        .entry(domain.to_string())
-                        .or_default()
-                        .push(ConfigGenerationRequest::new(url.as_ref(), resp));
-                }
-
-                let mut configs = Vec::with_capacity(domain_groupings.len());
-
-                for config_gen_req in domain_groupings.values() {
-                    configs.push(ConfigModule::from(from_json(config_gen_req)?));
-                }
-
-                Ok(configs)
+                let config = from_json(&results, query)?;
+                Ok(ConfigModule::from(config))
             }
         }
     }
@@ -165,11 +144,9 @@ mod test {
             .await
             .unwrap();
 
-        assert_eq!(config.first().unwrap().links.len(), 3);
+        assert_eq!(config.links.len(), 3);
         assert_eq!(
             config
-                .first()
-                .unwrap()
                 .types
                 .get("Query")
                 .unwrap()
@@ -180,7 +157,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_read_all_with_rest_api_gen() -> anyhow::Result<()> {
+    async fn test_read_all_with_rest_api_gen() {
         let runtime = crate::core::runtime::test::init(None);
         let generator = Generator::init(runtime);
 
@@ -192,13 +169,11 @@ mod test {
             .await
             .unwrap();
 
-        assert_eq!(config.len(), 1);
-        insta::assert_snapshot!(config.first().unwrap().to_sdl());
-        Ok(())
+        insta::assert_snapshot!(config.to_sdl());
     }
 
     #[tokio::test]
-    async fn test_read_all_with_different_domain_rest_api_gen() -> anyhow::Result<()> {
+    async fn test_read_all_with_different_domain_rest_api_gen() {
         let runtime = crate::core::runtime::test::init(None);
 
         let generator = Generator::init(runtime);
@@ -212,13 +187,6 @@ mod test {
             .await
             .unwrap();
 
-        assert_eq!(config.len(), 2);
-        for cfg in config.iter() {
-            let base_url = cfg.upstream.base_url.clone();
-            let url = Url::parse(base_url.unwrap().as_str())?;
-            let host_name = url.host_str().unwrap();
-            insta::assert_snapshot!(host_name, cfg.to_sdl());
-        }
-        Ok(())
+        insta::assert_snapshot!(config.to_sdl());
     }
 }
