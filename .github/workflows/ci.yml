@@ -208,7 +208,7 @@ jobs:
 
       - name: Set up paths
         run: |
-          if [ "${{ runner.os }}" == "Linux" || "${{ runner.os }}" == "macOS""]; then
+          if [ "${{ runner.os }}" == "Linux" || "${{ runner.os }}" == "macOS"]; then
             echo "FOO=$(pwd)/target/debug/tailcall${{ matrix.ext }}" >> $GITHUB_ENV
             echo "GPG_TTY=$(tty)" >> $GITHUB_ENV
           else
