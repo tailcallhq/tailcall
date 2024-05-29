@@ -30,6 +30,15 @@ impl Default for Batch {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
+#[derive(Default)]
+pub enum CacheType {
+    ByteBased,
+    #[default]
+    NumberOfEntryBased,
+}
+
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
 pub struct Proxy {
     pub url: String,
 }
@@ -81,6 +90,12 @@ pub struct Upstream {
     #[serde(default, skip_serializing_if = "is_default")]
     /// Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.
     pub http_cache: Option<u64>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// The type of cache to be used. The two options are `ByteBased` and
+    /// `NumberOfEntryBased`. If not specified, the default is
+    /// `NumberOfEntryBased`.
+    pub http_cache_type: Option<CacheType>,
 
     #[setters(strip_option)]
     #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
@@ -174,6 +189,9 @@ impl Upstream {
     }
     pub fn get_http_cache_size(&self) -> u64 {
         self.http_cache.unwrap_or(0)
+    }
+    pub fn get_http_cache_type(&self) -> CacheType {
+        self.http_cache_type.clone().unwrap_or_default()
     }
     pub fn get_allowed_headers(&self) -> BTreeSet<String> {
         self.allowed_headers.clone().unwrap_or_default()

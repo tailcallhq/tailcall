@@ -208,6 +208,13 @@
       },
       "additionalProperties": false
     },
+    "CacheType": {
+      "type": "string",
+      "enum": [
+        "ByteBased",
+        "NumberOfEntryBased"
+      ]
+    },
     "Call": {
       "description": "Provides the ability to refer to multiple fields in the Query or Mutation root.",
       "type": "object",
@@ -1373,6 +1380,17 @@
           ],
           "format": "uint64",
           "minimum": 0.0
+        },
+        "httpCacheType": {
+          "description": "The type of cache to be used. The two options are `ByteBased` and `NumberOfEntryBased`. If not specified, the default is `NumberOfEntryBased`.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CacheType"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "keepAliveInterval": {
           "description": "The time in seconds between each keep-alive message sent to maintain the connection.",

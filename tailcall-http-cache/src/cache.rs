@@ -3,6 +3,7 @@ use http_cache_semantics::CachePolicy;
 use serde::{Deserialize, Serialize};
 pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T> = std::result::Result<T, BoxError>;
+use std::mem::size_of_val;
 use std::sync::Arc;
 
 use moka::future::Cache;
@@ -11,17 +12,56 @@ use moka::policy::EvictionPolicy;
 pub struct HttpCacheManager {
     pub cache: Arc<Cache<String, Store>>,
 }
+pub struct HttpCacheManagerByteBased {
+    pub cache: Arc<Cache<String, Store>>,
+}
 
 impl Default for HttpCacheManager {
     fn default() -> Self {
         Self::new(42)
     }
 }
+impl Default for HttpCacheManagerByteBased {
+    fn default() -> Self {
+        Self::new(42)
+    }
+}
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Store {
     response: HttpResponse,
     policy: CachePolicy,
+}
+impl Store {
+    // Method to calculate the size in bytes of the Store struct
+
+    pub fn size_in_bytes(&self) -> usize {
+        let mut size = 0;
+
+        // Size of the `body` field
+        size += self.response.body.len();
+
+        // Size of the `headers` field
+        size += self
+            .response
+            .headers
+            .iter()
+            .fold(0, |acc, (k, v)| acc + k.len() + v.len());
+
+        // Size of the `status` field
+        size += size_of_val(&self.response.status);
+
+        // Size of the `url` field
+        size += size_of_val(&self.response.url);
+
+        // Size of the `version` field
+        size += size_of_val(&self.response.version);
+
+        // Size of the `policy` field
+        size += size_of_val(&self.policy);
+
+        size
+    }
 }
 
 impl HttpCacheManager {
@@ -40,8 +80,56 @@ impl HttpCacheManager {
     }
 }
 
+impl HttpCacheManagerByteBased {
+    pub fn new(cache_size: u64) -> Self {
+        let cache = Cache::builder()
+            .eviction_policy(EvictionPolicy::lru())
+            .weigher(|_key: &String, value: &Store| -> u32 {
+                value.size_in_bytes().try_into().unwrap_or(u32::MAX)
+            })
+            .max_capacity(cache_size)
+            .build();
+        Self { cache: Arc::new(cache) }
+    }
+
+    pub async fn clear(&self) -> Result<()> {
+        self.cache.invalidate_all();
+        self.cache.run_pending_tasks().await;
+        Ok(())
+    }
+}
+
 #[async_trait::async_trait]
 impl CacheManager for HttpCacheManager {
+    async fn get(&self, cache_key: &str) -> Result<Option<(HttpResponse, CachePolicy)>> {
+        let store: Store = match self.cache.get(cache_key).await {
+            Some(d) => d,
+            None => return Ok(None),
+        };
+        Ok(Some((store.response, store.policy)))
+    }
+
+    async fn put(
+        &self,
+        cache_key: String,
+        response: HttpResponse,
+        policy: CachePolicy,
+    ) -> Result<HttpResponse> {
+        let data = Store { response: response.clone(), policy };
+        self.cache.insert(cache_key, data).await;
+        self.cache.run_pending_tasks().await;
+        Ok(response)
+    }
+
+    async fn delete(&self, cache_key: &str) -> Result<()> {
+        self.cache.invalidate(cache_key).await;
+        self.cache.run_pending_tasks().await;
+        Ok(())
+    }
+}
+
+#[async_trait::async_trait]
+impl CacheManager for HttpCacheManagerByteBased {
     async fn get(&self, cache_key: &str) -> Result<Option<(HttpResponse, CachePolicy)>> {
         let store: Store = match self.cache.get(cache_key).await {
             Some(d) => d,
