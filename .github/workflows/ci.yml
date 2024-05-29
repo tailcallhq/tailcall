@@ -199,9 +199,9 @@ jobs:
 
       - name: Sign the binary
         run: |
-          export TC_PATH=target/debug/tailcall
+          export FOO=$(pwd)/target/debug/tailcall
           export GPG_TTY=`tty`
-          echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --yes --batch --sign --detach-sign --armor $TC_PATH
+          echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --yes --batch --sign --detach-sign --armor $FOO
 
       - name: Upload Coverage to Codecov
         if: matrix.build == 'darwin-arm64'
