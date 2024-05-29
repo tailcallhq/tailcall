@@ -190,18 +190,17 @@ jobs:
 
       #      - name: Run Cargo Test
       #        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
-      #      - name: Import GPG key
-      #        run: |
-      #          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
 
       - name: Cargo Build
-        run: cargo build --all-features
+        run: cargo build
 
       - name: Sign the binary
         run: |
-          ls target
-          ls target/debug
-          echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --sign --detach-sign --armor target/debug/tailcall${{ matrix.ext }}
+          echo '${{ matrix.ext }}'
+          echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --yes --batch --sign --detach-sign --armor target/debug/tailcall${{ matrix.ext }}
 
       - name: Upload Coverage to Codecov
         if: matrix.build == 'darwin-arm64'
