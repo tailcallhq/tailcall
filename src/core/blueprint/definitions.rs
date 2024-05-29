@@ -365,16 +365,7 @@ fn to_fields(
     type_of: &config::Type,
     config_module: &ConfigModule,
 ) -> Valid<Vec<FieldDefinition>, String> {
-    let operation_type = if config_module
-        .schema
-        .mutation
-        .as_deref()
-        .eq(&Some(object_name))
-    {
-        GraphQLOperationType::Mutation
-    } else {
-        GraphQLOperationType::Query
-    };
+    let operation_type = GraphQLOperationType::Query;
 
     // Process fields that are not marked as `omit`
     let fields = Valid::from_iter(

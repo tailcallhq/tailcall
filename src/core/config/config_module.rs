@@ -202,7 +202,7 @@ impl ConfigModule {
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
         let input_types = config.input_types();
-        let output_types = config.output_types();
+        let output_types: HashSet<String> = HashSet::new();
         let interface_types = config.interface_types();
 
         ConfigModule {
@@ -245,7 +245,6 @@ mod tests {
         query.fields.insert("field2".to_string(), field2);
 
         config.types.insert("Query".to_string(), query);
-        config = config.query("Query");
 
         config
     }

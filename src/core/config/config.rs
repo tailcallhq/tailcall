@@ -48,11 +48,6 @@ pub struct Config {
     pub upstream: Upstream,
 
     ///
-    /// Specifies the entry points for query and mutation in the generated
-    /// GraphQL schema.
-    pub schema: RootSchema,
-
-    ///
     /// A map of all the types in the schema.
     #[serde(default)]
     #[setters(skip)]
@@ -154,27 +149,6 @@ pub struct Cache {
     Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema, MergeRight,
 )]
 pub struct Protected {}
-
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    Setters,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-)]
-#[setters(strip_option)]
-pub struct RootSchema {
-    pub query: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub mutation: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub subscription: Option<String>,
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -642,11 +616,6 @@ impl Config {
         crate::core::document::print(doc)
     }
 
-    pub fn query(mut self, query: &str) -> Self {
-        self.schema.query = Some(query.to_string());
-        self
-    }
-
     pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
         let mut graphql_types = BTreeMap::new();
         for (name, type_) in types {
@@ -686,10 +655,6 @@ impl Config {
         }
     }
 
-    pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
-        super::n_plus_one::n_plus_one(self)
-    }
-
     ///
     /// Given a starting type, this function searches for all the unique types
     /// that this type can be connected to via it's fields
@@ -725,21 +690,6 @@ impl Config {
             .fold(HashSet::new(), |types, type_of| {
                 self.find_connections(type_of, types)
             })
-    }
-
-    /// Returns a list of all the types that are used as output types
-    pub fn output_types(&self) -> HashSet<String> {
-        let mut types = HashSet::new();
-
-        if let Some(ref query) = &self.schema.query {
-            types = self.find_connections(query, types);
-        }
-
-        if let Some(ref mutation) = &self.schema.mutation {
-            types = self.find_connections(mutation, types);
-        }
-
-        types
     }
 
     /// Returns a list of all the types that are used as interface
@@ -782,12 +732,6 @@ impl Config {
     pub fn get_all_used_type_names(&self) -> HashSet<String> {
         let mut set = HashSet::new();
         let mut stack = Vec::new();
-        if let Some(query) = &self.schema.query {
-            stack.push(query.clone());
-        }
-        if let Some(mutation) = &self.schema.mutation {
-            stack.push(mutation.clone());
-        }
         while let Some(type_name) = stack.pop() {
             if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);

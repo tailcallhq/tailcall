@@ -28,26 +28,6 @@ pub enum Command {
         file_paths: Vec<String>,
     },
 
-    /// Validate a composition spec
-    Check {
-        /// Path for the configuration files separated by spaces if more than
-        /// one
-        #[arg(required = true)]
-        file_paths: Vec<String>,
-
-        /// N plus one queries
-        #[arg(short, long)]
-        n_plus_one_queries: bool,
-
-        /// Display schema
-        #[arg(short, long)]
-        schema: bool,
-
-        /// Prints the input config in the provided format.
-        #[clap(short, long)]
-        format: Option<config::Source>,
-    },
-
     /// Initialize a new project
     Init {
         // default is current directory

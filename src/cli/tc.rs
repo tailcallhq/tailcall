@@ -13,12 +13,11 @@ use super::command::{Cli, Command};
 use super::update_checker;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
-use crate::cli::{self, CLIError};
+use crate::cli::{self};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
 use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
-use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
 
 const FILE_NAME: &str = ".tailcallrc.graphql";
@@ -50,36 +49,10 @@ pub async fn run() -> Result<()> {
         Command::Start { file_paths } => {
             let config_module = config_reader.read_all(&file_paths).await?;
             log_endpoint_set(&config_module.extensions.endpoint_set);
-            Fmt::log_n_plus_one(false, &config_module.config);
+            // Fmt::log_n_plus_one(false, &config_module.config);
             let server = Server::new(config_module);
             server.fork_start().await?;
             Ok(())
-        }
-        Command::Check { file_paths, n_plus_one_queries, schema, format } => {
-            let config_module = (config_reader.read_all(&file_paths)).await?;
-            log_endpoint_set(&config_module.extensions.endpoint_set);
-            if let Some(format) = format {
-                Fmt::display(format.encode(&config_module)?);
-            }
-            let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
-
-            match blueprint {
-                Ok(blueprint) => {
-                    tracing::info!("Config {} ... ok", file_paths.join(", "));
-                    Fmt::log_n_plus_one(n_plus_one_queries, &config_module.config);
-                    // Check the endpoints' schema
-                    let _ = config_module
-                        .extensions
-                        .endpoint_set
-                        .into_checked(&blueprint, runtime)
-                        .await?;
-                    if schema {
-                        display_schema(&blueprint);
-                    }
-                    Ok(())
-                }
-                Err(e) => Err(e.into()),
-            }
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Gen { file_paths, input, output, query } => {
@@ -201,10 +174,4 @@ fn log_endpoint_set(endpoint_set: &EndpointSet<Unchecked>) {
             endpoint.get_path().as_str()
         );
     }
-}
-
-pub fn display_schema(blueprint: &Blueprint) {
-    Fmt::display(Fmt::heading("GraphQL Schema:\n"));
-    let sdl = blueprint.to_schema();
-    Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
 }
