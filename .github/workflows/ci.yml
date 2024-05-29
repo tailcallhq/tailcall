@@ -103,10 +103,10 @@ jobs:
             ext: ".exe"
 
           - build: win32-ia32-gnu
-            os: windows-latest
+            os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
-            cross: true
+            #            cross: true
             #            libc: glibc
             ext: ".exe"
 
