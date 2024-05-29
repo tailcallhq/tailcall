@@ -132,7 +132,7 @@ opentelemetry-stdout = { version = "0.3.0", features = [
     "metrics",
 ] }
 opentelemetry-appender-tracing = { version = "0.3.0" }
-opentelemetry-prometheus = "0.15.0"
+opentelemetry-prometheus = "0.16.0"
 phonenumber = "0.3.4"
 chrono = "0.4.38"
 async-graphql-extension-apollo-tracing = { version = "3.2.15" }
