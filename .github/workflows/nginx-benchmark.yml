@@ -31,7 +31,8 @@ jobs:
 
       - name: Run Tailcall
         run: |
-          TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/nginx-benchmark.graphql &
+          TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/nginx-benchmark.graphql > tailcall.log 2>&1 &
+          echo $! > tailcall_pid.txt
 
       - name: Install Nginx
         run: |
@@ -60,6 +61,18 @@ jobs:
         working-directory: ci-benchmark
         run: |
           wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql | tee wrk-output.txt
+
+      - id: check_tailcall
+        name: Check Tailcall Status
+        run: |
+          tailcall_pid=$(cat tailcall_pid.txt)
+          if ! kill -0 $tailcall_pid > /dev/null 2>&1; then
+            echo "Tailcall process has crashed. Log output:" >&2
+            cat tailcall.log >&2
+            exit 1
+          else
+            echo "Tailcall process is still running"
+          fi
 
       - id: convert_wrk_output_markdown
         name: Convert Output to Markdown
