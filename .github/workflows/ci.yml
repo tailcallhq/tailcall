@@ -316,11 +316,11 @@ jobs:
             ext: ".exe"
 
           - build: win32-ia32-gnu
-            os: ubuntu-latest
+            os: windows-latest
             rust: stable
             target: i686-pc-windows-gnu
             cross: true
-            libc: glibc
+            #            libc: glibc
             ext: ".exe"
     permissions:
       contents: write
