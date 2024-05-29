@@ -1,12 +1,11 @@
 use serde_json::Value;
 use url::Url;
 
+use super::json::types_generator::TypesGenerator;
 use crate::core::config::Config;
 use crate::core::generator::json::schema_generator::SchemaGenerator;
 use crate::core::generator::json::StepConfigGenerator;
 use crate::core::merge_right::MergeRight;
-
-use super::json::types_generator::TypesGenerator;
 
 pub struct ConfigGenerationRequest {
     url: Url,
@@ -19,7 +18,10 @@ impl ConfigGenerationRequest {
     }
 }
 
-pub fn from_json(config_gen_req: &[ConfigGenerationRequest], query: &str) -> anyhow::Result<Config> {
+pub fn from_json(
+    config_gen_req: &[ConfigGenerationRequest],
+    query: &str,
+) -> anyhow::Result<Config> {
     let mut config = Config::default();
     let mut type_counter = 1;
     for (i, request) in config_gen_req.iter().enumerate() {
@@ -33,7 +35,7 @@ pub fn from_json(config_gen_req: &[ConfigGenerationRequest], query: &str) -> any
             ))
             .pipe(SchemaGenerator::new(Some(query.to_string()), None))
             .get();
-        
+
         config = config.merge_right(generated_config);
     }
 

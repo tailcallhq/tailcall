@@ -19,11 +19,14 @@ pub fn benchmark_from_json_method(c: &mut Criterion) {
         reqs.push(body);
     });
 
-    let cfg_gen_reqs = [ConfigGenerationRequest::new(&request_url, &reqs[0])];
+    let cfg_gen_reqs = [ConfigGenerationRequest::new(
+        request_url.parse().unwrap(),
+        reqs[0].clone(),
+    )];
 
     c.bench_function("from_json_bench", |b| {
         b.iter(|| {
-            let _ = from_json(&cfg_gen_reqs);
+            let _ = from_json(&cfg_gen_reqs, "Query");
         });
     });
 }

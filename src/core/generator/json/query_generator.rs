@@ -1,12 +1,9 @@
 use regex::Regex;
 use url::Url;
 
-use crate::core::{
-    config::{Arg, Config, Field, Http, KeyValue, Type},
-    helpers::gql_type::detect_gql_data_type,
-};
-
 use super::ConfigGenerator;
+use crate::core::config::{Arg, Config, Field, Http, KeyValue, Type};
+use crate::core::helpers::gql_type::detect_gql_data_type;
 
 #[derive(Debug)]
 struct UrlQuery {
@@ -102,6 +99,16 @@ fn create_http_directive(field: &mut Field, url: &Url) -> Http {
     check_n_add_path_variables(field, &mut http, url);
     check_n_add_query_variables(field, &mut http, url);
 
+    let base_url = match url.host_str() {
+        Some(host) => match url.port() {
+            Some(port) => format!("{}://{}:{}", url.scheme(), host, port),
+            None => format!("{}://{}", url.scheme(), host),
+        },
+        None => return http,
+    };
+
+    http.base_url = Some(base_url);
+
     http
 }
 
@@ -113,7 +120,7 @@ impl ConfigGenerator for QueryGenerator<'_> {
             ..Default::default()
         };
 
-        field.http = Some(create_http_directive(&mut field, &self.url));
+        field.http = Some(create_http_directive(&mut field, self.url));
 
         let mut ty = Type::default();
         ty.fields.insert(self.field_name.to_string(), field);
@@ -126,9 +133,9 @@ impl ConfigGenerator for QueryGenerator<'_> {
 mod test {
     use url::Url;
 
-    use crate::core::generator::json::{query_generator::UrlQueryParser, ConfigGenerator};
-
     use super::QueryGenerator;
+    use crate::core::generator::json::query_generator::UrlQueryParser;
+    use crate::core::generator::json::ConfigGenerator;
 
     #[test]
     fn test_new_url_query_parser() {
@@ -183,7 +190,6 @@ mod test {
         let config = query_generator.apply(Default::default());
         insta::assert_snapshot!(config.to_sdl());
     }
-
 
     #[test]
     fn test_query_generator_with_query_params() {

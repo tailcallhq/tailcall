@@ -1,4 +1,3 @@
-
 use anyhow::Result;
 use futures_util::future::join_all;
 use prost_reflect::prost_types::FileDescriptorSet;
@@ -31,7 +30,10 @@ fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<File
 }
 
 // TODO: move this logic to ResourceReader.
-async fn fetch_response(url: &str, runtime: &TargetRuntime) -> anyhow::Result<ConfigGenerationRequest> {
+async fn fetch_response(
+    url: &str,
+    runtime: &TargetRuntime,
+) -> anyhow::Result<ConfigGenerationRequest> {
     let parsed_url = Url::parse(url)?;
     let request = reqwest::Request::new(Method::GET, parsed_url.clone());
     let resp = runtime.http.execute(request).await?;
@@ -145,15 +147,7 @@ mod test {
             .unwrap();
 
         assert_eq!(config.links.len(), 3);
-        assert_eq!(
-            config
-                .types
-                .get("Query")
-                .unwrap()
-                .fields
-                .len(),
-            8
-        );
+        assert_eq!(config.types.get("Query").unwrap().fields.len(), 8);
     }
 
     #[tokio::test]

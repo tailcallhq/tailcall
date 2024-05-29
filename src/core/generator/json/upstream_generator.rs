@@ -1,8 +1,7 @@
 use url::Url;
 
-use crate::core::config::Config;
-
 use super::ConfigGenerator;
+use crate::core::config::Config;
 
 pub struct UpstreamGenerator {
     url: Url,
@@ -33,10 +32,8 @@ impl ConfigGenerator for UpstreamGenerator {
 mod test {
     use url::Url;
 
-    use crate::core::generator::json::ConfigGenerator;
-
     use super::UpstreamGenerator;
-
+    use crate::core::generator::json::ConfigGenerator;
 
     #[test]
     fn test_apply_with_host_and_port() {

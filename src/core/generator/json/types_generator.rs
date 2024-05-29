@@ -1,12 +1,10 @@
 use serde_json::{Map, Value};
 use url::Url;
 
-use crate::core::{
-    config::{Config, Field, Type},
-    helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type},
-};
-
-use super::{query_generator::QueryGenerator, ConfigGenerator};
+use super::query_generator::QueryGenerator;
+use super::ConfigGenerator;
+use crate::core::config::{Config, Field, Type};
+use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 
 pub struct TypesGenerator<'a> {
     json_value: &'a Value,
@@ -166,7 +164,7 @@ impl ConfigGenerator for TypesGenerator<'_> {
             &root_type_name,
             &self.field_name_in_query_ty,
             &self.query_name,
-            &self.url,
+            self.url,
         )
         .apply(config)
     }

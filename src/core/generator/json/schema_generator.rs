@@ -14,7 +14,7 @@ impl SchemaGenerator {
     }
 
     pub fn generate_schema(&self, config: &mut Config) {
-        config.schema.query = self.query_name.clone();
+        config.schema.query.clone_from(&self.query_name);
         // TODO: add support for mutations and subscriptions later on.
     }
 
@@ -45,9 +45,8 @@ impl ConfigGenerator for SchemaGenerator {
 mod test {
     use url::Url;
 
-    use crate::core::generator::json::ConfigGenerator;
-
     use super::SchemaGenerator;
+    use crate::core::generator::json::ConfigGenerator;
 
     #[test]
     fn test_schema_generator_with_query() {
@@ -77,7 +76,7 @@ mod test {
     #[test]
     fn test_apply_with_host_without_port() {
         let url = Url::parse("http://example.com").unwrap();
-        let mut generator = SchemaGenerator::new(None,Some(url));
+        let mut generator = SchemaGenerator::new(None, Some(url));
         let updated_config = generator.apply(Default::default());
 
         assert_eq!(
@@ -89,7 +88,7 @@ mod test {
     #[test]
     fn test_apply_with_https_scheme() {
         let url = Url::parse("https://example.com").unwrap();
-        let mut generator = SchemaGenerator::new(None,Some(url));
+        let mut generator = SchemaGenerator::new(None, Some(url));
         let updated_config = generator.apply(Default::default());
 
         assert_eq!(

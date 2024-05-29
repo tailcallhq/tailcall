@@ -3,20 +3,16 @@ pub mod schema_generator;
 pub mod types_generator;
 pub mod upstream_generator;
 
-use crate::core::{config::Config, merge_right::MergeRight};
+use crate::core::config::Config;
+use crate::core::merge_right::MergeRight;
 
 pub trait ConfigGenerator {
     fn apply(&mut self, config: Config) -> Config;
 }
 
+#[derive(Default)]
 pub struct StepConfigGenerator {
     config: Config,
-}
-
-impl Default for StepConfigGenerator {
-    fn default() -> Self {
-        Self { config: Default::default() }
-    }
 }
 
 impl StepConfigGenerator {
