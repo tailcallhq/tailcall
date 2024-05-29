@@ -202,7 +202,7 @@ jobs:
           export FOO=$(pwd)/target/debug/tailcall
           echo $FOO
           export GPG_TTY=`tty`
-          echo $GPG_PASSPHRASE | gpg --yes --batch --passphrase-fd 0 --pinentry-mode loopback --sign --detach-sign --armor $FOO
+          echo $GPG_PASSPHRASE | gpg --output foo.sig --yes --batch --passphrase-fd 0 --pinentry-mode loopback --sign --detach-sign --armor $FOO
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
