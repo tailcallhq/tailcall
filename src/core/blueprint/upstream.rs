@@ -27,7 +27,7 @@ pub struct Upstream {
     pub http_cache: u64,
     pub batch: Option<Batch>,
     pub http2_only: bool,
-    pub dedupe: bool,
+    pub dedupe: crate::core::config::Dedupe,
     pub on_request: Option<String>,
 }
 

@@ -8,7 +8,7 @@ use reqwest::Request;
 
 use super::{CacheKey, Eval, EvaluationContext, IoId, ResolverContextLike};
 use crate::core::config::group_by::GroupBy;
-use crate::core::config::GraphQLOperationType;
+use crate::core::config::{Dedupe, GraphQLOperationType};
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::graphql::{self, GraphqlDataLoader};
 use crate::core::grpc::data_loader::GrpcDataLoader;
@@ -64,28 +64,32 @@ impl Eval for IO {
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
-        if let Some(key) = self.cache_key(&ctx) {
-            if ctx.request_ctx.upstream.dedupe {
-                Box::pin(async move {
-                    ctx.request_ctx
-                        .cache
-                        .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
-                        .await
-                        .as_ref()
-                        .clone()
-                })
-            } else {
-                Box::pin(async move {
-                    ctx.request_ctx
-                        .global_cache
-                        .load_without_cache(key, move || Box::pin(self.eval_inner(ctx)))
-                        .await
-                        .as_ref()
-                        .clone()
-                })
+        match ctx.request_ctx.upstream.dedupe {
+            Dedupe::Off => self.eval_inner(ctx),
+            _ => {
+                if let Some(key) = self.cache_key(&ctx) {
+                    match ctx.request_ctx.upstream.dedupe {
+                        Dedupe::Min => Box::pin(async move {
+                            ctx.request_ctx
+                                .cache
+                                .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
+                                .await
+                                .as_ref()
+                                .clone()
+                        }),
+                        _ => Box::pin(async move {
+                            ctx.request_ctx
+                                .global_cache
+                                .load_without_cache(key, move || Box::pin(self.eval_inner(ctx)))
+                                .await
+                                .as_ref()
+                                .clone()
+                        }),
+                    }
+                } else {
+                    self.eval_inner(ctx)
+                }
             }
-        } else {
-            self.eval_inner(ctx)
         }
     }
 }

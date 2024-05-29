@@ -311,6 +311,14 @@
         }
       }
     },
+    "Dedupe": {
+      "type": "string",
+      "enum": [
+        "min",
+        "max",
+        "off"
+      ]
+    },
     "Email": {
       "title": "Email",
       "description": "field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.",
@@ -1430,9 +1438,10 @@
         },
         "dedupe": {
           "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once within the context of a single GraphQL request.",
-          "type": [
-            "boolean",
-            "null"
+          "allOf": [
+            {
+              "$ref": "#/definitions/Dedupe"
+            }
           ]
         },
         "http2Only": {

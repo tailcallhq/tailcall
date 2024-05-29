@@ -358,7 +358,7 @@ directive @upstream(
   When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more 
   than once within the context of a single GraphQL request.
   """
-  dedupe: Boolean
+  dedupe: Dedupe
   """
   The `http2Only` setting allows you to specify whether the client should always issue 
   HTTP2 requests, without checking if the server supports it or not. By default it 
@@ -500,6 +500,11 @@ input Cors {
   response to vary, potentially affecting caching.
   """
   vary: [String!]
+}
+enum Dedupe {
+  min
+  max
+  off
 }
 enum Encoding {
   ApplicationJson
