@@ -8,33 +8,31 @@ use crate::core::merge_right::MergeRight;
 
 use super::json::types_generator::TypesGenerator;
 
-pub struct ConfigGenerationRequest<'a> {
-    url: &'a str,
-    resp: &'a Value,
+pub struct ConfigGenerationRequest {
+    url: Url,
+    resp: Value,
 }
 
-impl<'a> ConfigGenerationRequest<'a> {
-    pub fn new(url: &'a str, resp: &'a Value) -> Self {
+impl ConfigGenerationRequest {
+    pub fn new(url: Url, resp: Value) -> Self {
         Self { url, resp }
     }
 }
 
-pub fn from_json(config_gen_req: &[ConfigGenerationRequest]) -> anyhow::Result<Config> {
+pub fn from_json(config_gen_req: &[ConfigGenerationRequest], query: &str) -> anyhow::Result<Config> {
     let mut config = Config::default();
-    let query = "Query";
     let mut type_counter = 1;
     for (i, request) in config_gen_req.iter().enumerate() {
-        let url = Url::parse(request.url).unwrap();
         let generated_config = StepConfigGenerator::default()
             .pipe(TypesGenerator::new(
-                request.resp.clone(),
+                &request.resp,
                 &mut type_counter,
-                url.clone(),
+                &request.url,
                 format!("f{}", i + 1),
                 query.to_string(),
             ))
             .pipe(SchemaGenerator::new(Some(query.to_string()), None))
-            .generate();
+            .get();
         
         config = config.merge_right(generated_config);
     }

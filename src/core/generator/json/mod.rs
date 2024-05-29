@@ -26,7 +26,7 @@ impl StepConfigGenerator {
         self
     }
 
-    pub fn generate(self) -> Config {
+    pub fn get(self) -> Config {
         self.config
     }
 }

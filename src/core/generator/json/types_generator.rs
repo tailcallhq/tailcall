@@ -9,18 +9,18 @@ use crate::core::{
 use super::{query_generator::QueryGenerator, ConfigGenerator};
 
 pub struct TypesGenerator<'a> {
-    json_value: Value,
+    json_value: &'a Value,
     type_counter: &'a mut u64,
     field_name_in_query_ty: String,
     query_name: String,
-    url: Url,
+    url: &'a Url,
 }
 
 impl<'a> TypesGenerator<'a> {
     pub fn new(
-        json_value: Value,
+        json_value: &'a Value,
         type_counter: &'a mut u64,
-        url: Url,
+        url: &'a Url,
         field_name_in_query_ty: String,
         query_name: String,
     ) -> Self {
@@ -34,8 +34,8 @@ impl<'a> TypesGenerator<'a> {
     }
 }
 
-impl TypesGenerator<'_> {
-    fn should_generate_type(&self, value: &Value) -> bool {
+impl<'a> TypesGenerator<'a> {
+    fn should_generate_type(&self, value: &'a Value) -> bool {
         match value {
             Value::Array(json_array) => !json_array.is_empty(),
             Value::Object(json_object) => {
@@ -59,7 +59,7 @@ impl TypesGenerator<'_> {
 
     fn create_type_from_object(
         &mut self,
-        json_object: &Map<String, Value>,
+        json_object: &'a Map<String, Value>,
         config: &mut Config,
     ) -> Type {
         let mut ty = Type::default();
@@ -108,7 +108,7 @@ impl TypesGenerator<'_> {
         ty
     }
 
-    fn generate_types(&mut self, json_value: &Value, config: &mut Config) -> String {
+    fn generate_types(&mut self, json_value: &'a Value, config: &mut Config) -> String {
         match json_value {
             Value::Array(json_arr) => {
                 let vec_capacity = json_arr.first().map_or(0, |json_item| {
@@ -159,11 +159,10 @@ impl TypesGenerator<'_> {
 
 impl ConfigGenerator for TypesGenerator<'_> {
     fn apply(&mut self, mut config: Config) -> Config {
-        let json_val = self.json_value.clone();
-        let root_type_name = self.generate_types(&json_val, &mut config);
+        let root_type_name = self.generate_types(self.json_value, &mut config);
 
         QueryGenerator::new(
-            json_val.is_array(),
+            self.json_value.is_array(),
             &root_type_name,
             &self.field_name_in_query_ty,
             &self.query_name,
