@@ -304,7 +304,7 @@ dependencies = [
  "protobuf 3.4.0",
  "protobuf-codegen",
  "protox",
- "reqwest",
+ "reqwest 0.11.27",
  "serde",
  "serde-json-wasm",
  "serde_json",
@@ -2130,7 +2130,22 @@ dependencies = [
  "bincode",
  "cacache",
  "http 0.2.12",
- "http-cache-semantics",
+ "http-cache-semantics 1.0.2",
+ "httpdate",
+ "serde",
+ "url",
+]
+
+[[package]]
+name = "http-cache"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6ffb12b95bb2a369fe47ca8924016c72c2fa0e6059ba98bd1516f558696c5a8"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "http 1.1.0",
+ "http-cache-semantics 2.1.0",
  "httpdate",
  "moka",
  "serde",
@@ -2139,19 +2154,18 @@ dependencies = [
 
 [[package]]
 name = "http-cache-reqwest"
-version = "0.13.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c8285341ce7e709c56a0f259ff1c789c70edfbaa88acd69d27e4d63980b92dc"
+checksum = "be3e27c4e2e510571cbcc601407b639667146aa9a4e818d5cc1d97c8b4b27d61"
 dependencies = [
  "anyhow",
  "async-trait",
- "http 0.2.12",
- "http-cache",
- "http-cache-semantics",
- "reqwest",
- "reqwest-middleware",
+ "http 1.1.0",
+ "http-cache 0.19.0",
+ "http-cache-semantics 2.1.0",
+ "reqwest 0.12.4",
+ "reqwest-middleware 0.3.1",
  "serde",
- "task-local-extensions",
  "url",
 ]
 
@@ -2163,7 +2177,19 @@ checksum = "7aec9f678bca3f4a15194b980f20ed9bfe0dd38e8d298c65c559a93dfbd6380a"
 dependencies = [
  "http 0.2.12",
  "http-serde 1.1.3",
- "reqwest",
+ "reqwest 0.11.27",
+ "serde",
+ "time",
+]
+
+[[package]]
+name = "http-cache-semantics"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92baf25cf0b8c9246baecf3a444546360a97b569168fdf92563ee6a47829920c"
+dependencies = [
+ "http 1.1.0",
+ "http-serde 2.1.0",
  "serde",
  "time",
 ]
@@ -2245,7 +2271,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -4225,6 +4251,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "reqwest"
+version = "0.12.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "566cafdd92868e0939d3fb961bd0dc25fcfaaed179291093b3d43e6b3150ea10"
+dependencies = [
+ "base64 0.22.1",
+ "bytes",
+ "futures-core",
+ "futures-util",
+ "http 1.1.0",
+ "http-body 1.0.0",
+ "http-body-util",
+ "hyper 1.3.1",
+ "hyper-util",
+ "ipnet",
+ "js-sys",
+ "log",
+ "mime",
+ "once_cell",
+ "percent-encoding",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "sync_wrapper",
+ "tokio",
+ "tower-service",
+ "url",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "winreg 0.52.0",
+]
+
+[[package]]
 name = "reqwest-middleware"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4233,10 +4294,25 @@ dependencies = [
  "anyhow",
  "async-trait",
  "http 0.2.12",
- "reqwest",
+ "reqwest 0.11.27",
  "serde",
  "task-local-extensions",
  "thiserror",
+]
+
+[[package]]
+name = "reqwest-middleware"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a45d100244a467870f6cb763c4484d010a6bed6bd610b3676e3825d93fb4cfbd"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "http 1.1.0",
+ "reqwest 0.12.4",
+ "serde",
+ "thiserror",
+ "tower-service",
 ]
 
 [[package]]
@@ -5109,8 +5185,8 @@ dependencies = [
  "protox-parse",
  "rand",
  "regex",
- "reqwest",
- "reqwest-middleware",
+ "reqwest 0.11.27",
+ "reqwest-middleware 0.2.5",
  "resource",
  "rquickjs",
  "rustls 0.23.8",
@@ -5160,7 +5236,7 @@ dependencies = [
  "hyper 0.14.28",
  "lambda_http",
  "lambda_runtime",
- "reqwest",
+ "reqwest 0.11.27",
  "tailcall",
  "tokio",
  "tracing",
@@ -5179,7 +5255,7 @@ dependencies = [
  "hyper 0.14.28",
  "lazy_static",
  "protox",
- "reqwest",
+ "reqwest 0.11.27",
  "serde_json",
  "serde_qs",
  "tailcall",
@@ -5212,11 +5288,11 @@ dependencies = [
  "anyhow",
  "async-trait",
  "http 0.2.12",
- "http-cache",
+ "http-cache 0.18.0",
  "http-cache-reqwest",
- "http-cache-semantics",
+ "http-cache-semantics 1.0.2",
  "moka",
- "reqwest",
+ "reqwest 0.11.27",
  "serde",
  "tokio",
  "url",
@@ -5248,7 +5324,7 @@ dependencies = [
  "anyhow",
  "lazy_static",
  "machineid-rs",
- "reqwest",
+ "reqwest 0.11.27",
  "serde",
  "serde_json",
  "sysinfo 0.30.12",
@@ -5952,7 +6028,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f8811797a24ff123db3c6e1087aa42551d03d772b3724be421ad063da1f5f3f"
 dependencies = [
  "directories",
- "reqwest",
+ "reqwest 0.11.27",
  "semver",
  "serde",
  "serde_json",
@@ -6486,6 +6562,16 @@ name = "winreg"
 version = "0.50.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
+dependencies = [
+ "cfg-if",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "winreg"
+version = "0.52.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a277a57398d4bfa075df44f501a17cfdf8542d224f0d36095a2adc7aee4ef0a5"
 dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",

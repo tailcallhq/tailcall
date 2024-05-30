@@ -29,7 +29,7 @@ serde = { version = "1.0.200", features = ["derive"] }
 # one needs to add default feature tag if it is something IO related or might conflict with WASM
 
 mimalloc = { version = "0.1.41", default-features = false, optional = true }
-http-cache-reqwest = { version = "0.13.0", features = [
+http-cache-reqwest = { version = "0.14.0", features = [
     "manager-moka",
 ], default-features = false, optional = true }
 moka = { version = "0.12.7", default-features = false, features = [
