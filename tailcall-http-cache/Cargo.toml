@@ -18,5 +18,5 @@ tokio = {version = "1.37.0", features = ["full"]}
 url = { version = "2.5.0", features = ["serde"] }
 reqwest = { workspace = true }
 http = "0.2.12"
-http-cache = "0.18.0"
+http-cache = "0.19.0"
 anyhow = { workspace = true }
