@@ -6,6 +6,7 @@ use url::Url;
 use super::types_generator::OperationGenerator;
 use crate::core::config::{Arg, Config, Field, Http, KeyValue, Type};
 use crate::core::helpers::gql_type::detect_gql_data_type;
+use crate::core::valid::Valid;
 
 #[derive(Debug)]
 struct UrlQuery {
@@ -113,7 +114,7 @@ fn create_http_directive(field: &mut Field, url: &Url) -> Http {
 }
 
 impl OperationGenerator for QueryGenerator<'_> {
-    fn generate(&self, root_type: &str, mut config: Config) -> Config {
+    fn generate(&self, root_type: &str, mut config: Config) -> Valid<Config, String> {
         let mut field = Field {
             list: self.is_list_json,
             type_of: root_type.to_string(),
@@ -125,7 +126,7 @@ impl OperationGenerator for QueryGenerator<'_> {
         let mut ty = Type::default();
         ty.fields.insert(self.field_name.to_string(), field);
         config.types.insert(self.query.to_string(), ty);
-        config
+        Valid::succeed(config)
     }
 }
 
@@ -136,6 +137,7 @@ mod test {
     use super::QueryGenerator;
     use crate::core::generator::json::query_generator::UrlQueryParser;
     use crate::core::generator::json::types_generator::OperationGenerator;
+    use crate::core::valid::Validator;
 
     #[test]
     fn test_new_url_query_parser() {
@@ -167,12 +169,9 @@ mod test {
         assert_eq!(parser.queries[4].data_type, "Boolean");
         assert!(!parser.queries[4].is_list);
 
-
-
-        let url = Url::parse(
-            "http://example.com/path?q=1&q=2&q=3&ids=1,2,4&userids[]=1&userids[]=2",
-        )
-        .unwrap();
+        let url =
+            Url::parse("http://example.com/path?q=1&q=2&q=3&ids=1,2,4&userids[]=1&userids[]=2")
+                .unwrap();
         let parser = UrlQueryParser::new(&url);
 
         assert_eq!(parser.queries[0].key, "q");
@@ -193,34 +192,46 @@ mod test {
     }
 
     #[test]
-    fn test_list_json_query_generator() {
+    fn test_list_json_query_generator() -> anyhow::Result<()> {
         let url = Url::parse("http://example.com/path").unwrap();
         let query_generator = QueryGenerator::new(true, &url, "Query", "f1");
-        let config = query_generator.generate("T1", Default::default());
+        let config = query_generator
+            .generate("T1", Default::default())
+            .to_result()?;
         insta::assert_snapshot!(config.to_sdl());
+        Ok(())
     }
 
     #[test]
-    fn test_query_generator() {
+    fn test_query_generator() -> anyhow::Result<()> {
         let url = Url::parse("http://example.com/path").unwrap();
         let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
-        let config = query_generator.generate("T1", Default::default());
+        let config = query_generator
+            .generate("T1", Default::default())
+            .to_result()?;
         insta::assert_snapshot!(config.to_sdl());
+        Ok(())
     }
 
     #[test]
-    fn test_query_generator_with_query_params() {
+    fn test_query_generator_with_query_params() -> anyhow::Result<()> {
         let url = Url::parse("http://example.com/path?q=12&is_verified=true").unwrap();
         let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
-        let config = query_generator.generate("T1", Default::default());
+        let config = query_generator
+            .generate("T1", Default::default())
+            .to_result()?;
         insta::assert_snapshot!(config.to_sdl());
+        Ok(())
     }
 
     #[test]
-    fn test_query_generator_with_path_variables() {
+    fn test_query_generator_with_path_variables() -> anyhow::Result<()> {
         let url = Url::parse("http://example.com/users/12").unwrap();
         let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
-        let config = query_generator.generate("T1", Default::default());
+        let config = query_generator
+            .generate("T1", Default::default())
+            .to_result()?;
         insta::assert_snapshot!(config.to_sdl());
+        Ok(())
     }
 }

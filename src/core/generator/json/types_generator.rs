@@ -3,6 +3,7 @@ use serde_json::{Map, Value};
 use super::ConfigTransformer;
 use crate::core::config::{Config, Field, Type};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
+use crate::core::valid::Valid;
 
 pub struct TypesGenerator<'a, T: OperationGenerator> {
     json_value: &'a Value,
@@ -150,7 +151,7 @@ impl<T> ConfigTransformer for TypesGenerator<'_, T>
 where
     T: OperationGenerator,
 {
-    fn apply(&mut self, mut config: Config) -> Config {
+    fn apply(&mut self, mut config: Config) -> Valid<Config, String> {
         let root_type_name = self.generate_types(self.json_value, &mut config);
 
         self.operation_generator
@@ -162,5 +163,5 @@ where
 /// OperationGenerator should be implemented by Query, Subscription and
 /// Mutation.
 pub trait OperationGenerator {
-    fn generate(&self, root_type: &str, config: Config) -> Config;
+    fn generate(&self, root_type: &str, config: Config) -> Valid<Config, String>;
 }
