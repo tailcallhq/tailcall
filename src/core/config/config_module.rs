@@ -319,8 +319,6 @@ mod tests {
         let news = tailcall_fixtures::protobuf::NEWS;
         let config_module = gen.read_all(Source::Proto, &[news], "Query").await?;
         let actual = config_module
-            .first()
-            .unwrap()
             .config
             .types
             .keys()

@@ -5,7 +5,7 @@ use anyhow::Result;
 use async_graphql::parser::types::{Field, Selection, SelectionSet};
 use async_graphql::{Positioned, Value};
 use indenter::indented;
-use tailcall::core::lambda::{Eval, EvaluationContext, Expression, ResolverContextLike};
+use tailcall::core::ir::{Eval, EvaluationContext, ResolverContextLike, IR};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Id(pub usize);
@@ -33,7 +33,7 @@ impl Deref for Id {
 #[derive(Clone, Debug)]
 pub struct FieldPlan {
     pub(super) id: Id,
-    pub(super) resolver: Expression,
+    pub(super) resolver: IR,
     pub(super) depends_on: Vec<Id>,
 }
 

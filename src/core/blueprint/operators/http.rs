@@ -3,7 +3,7 @@ use crate::core::config::group_by::GroupBy;
 use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{Method, RequestTemplate};
-use crate::core::lambda::{Expression, IO};
+use crate::core::ir::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};
@@ -12,7 +12,7 @@ pub fn compile_http(
     config_module: &config::ConfigModule,
     field: &config::Field,
     http: &config::Http,
-) -> Valid<Expression, String> {
+) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.group_by.is_empty() && http.method != Method::GET)
         .and(
@@ -60,13 +60,13 @@ pub fn compile_http(
         })
         .map(|req_template| {
             if !http.group_by.is_empty() && http.method == Method::GET {
-                Expression::IO(IO::Http {
+                IR::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.group_by.clone())),
                     dl_id: None,
                 })
             } else {
-                Expression::IO(IO::Http { req_template, group_by: None, dl_id: None })
+                IR::IO(IO::Http { req_template, group_by: None, dl_id: None })
             }
         })
 }

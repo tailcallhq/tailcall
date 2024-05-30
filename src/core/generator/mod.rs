@@ -2,6 +2,7 @@ mod from_json;
 mod from_proto;
 mod generator;
 mod graphql_type;
+mod json;
 mod source;
 mod transformations;
 

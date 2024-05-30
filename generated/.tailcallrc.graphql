@@ -179,7 +179,7 @@ directive @http(
 ) on FIELD_DEFINITION
 
 directive @js(
-  script: String!
+  name: String!
 ) on FIELD_DEFINITION
 
 """
@@ -362,11 +362,11 @@ directive @upstream(
   """
   http2Only: Boolean
   """
-  Activating this enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), 
-  to enhance performance by minimizing redundant data fetches. Defaults to `false` 
-  if unspecified.
+  Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching 
+  RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant 
+  data fetches. Defaults to `0` if unspecified.
   """
-  httpCache: Boolean
+  httpCache: Int
   """
   The time in seconds between each keep-alive message sent to maintain the connection.
   """
@@ -667,7 +667,7 @@ enum HttpVersion {
   HTTP2
 }
 input JS {
-  script: String!
+  name: String!
 }
 input KeyValue {
   key: String!

@@ -87,18 +87,8 @@ pub async fn run() -> Result<()> {
                 .read_all(input, paths.as_ref(), query.as_str())
                 .await?;
 
-            let cfg_len = cfg.len();
-            let output_source = output.unwrap_or_default();
-            for (idx, cfg_module) in cfg.into_iter().enumerate() {
-                let config = output_source.encode(&cfg_module)?;
-                Fmt::display(config);
-                if idx < cfg_len {
-                    // if we've multiple configurations generated then add space between each
-                    // config.
-                    println!();
-                }
-            }
-
+            let config = output.unwrap_or_default().encode(&cfg)?;
+            Fmt::display(config);
             Ok(())
         }
     }
