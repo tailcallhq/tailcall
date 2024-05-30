@@ -24,4 +24,5 @@ pub mod reader_context;
 mod server;
 mod source;
 mod telemetry;
+mod transformer;
 mod upstream;
