@@ -158,9 +158,9 @@ where
     }
 }
 
-
 /// For generated types we also have to generate the appropriate operation type.
-/// OperationGenerator should be implemented by Query, Subscription and Mutation.
+/// OperationGenerator should be implemented by Query, Subscription and
+/// Mutation.
 pub trait OperationGenerator {
     fn generate(&self, root_type: &str, config: Config) -> Config;
 }
