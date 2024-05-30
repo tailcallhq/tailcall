@@ -65,7 +65,6 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool 
             Ok(config) => {
                 let mut runtime = runtime::create_runtime(mock_http_client, spec.env.clone(), None);
                 runtime.file = Arc::new(File::new(spec.clone()));
-                println!("hx");
 
                 let reader = ConfigReader::init(runtime);
                 match reader.resolve(config, spec.path.parent()).await {

@@ -280,10 +280,17 @@ mod test {
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
 
-    use super::*;
     use crate::core::config::transformer::{AmbiguousType, Transform};
-    use crate::core::config::ConfigModule;
+    use crate::core::config::{Config, ConfigModule};
     use crate::core::valid::Validator;
+
+    fn from_proto_resolved(files: &[FileDescriptorSet], query: &str) -> Result<Config> {
+        let config = AmbiguousType::default()
+            .transform(ConfigModule::from(super::from_proto(files, query)?))
+            .to_result()?
+            .config;
+        Ok(config)
+    }
 
     fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet> {
         Ok(protox::compile(files, [protobuf::SELF])?)
@@ -302,7 +309,7 @@ mod test {
 
         let set =
             compile_protobuf(&[protobuf::NEWS, protobuf::GREETINGS_A, protobuf::GREETINGS_B])?;
-        let result = from_proto(&[set], "Query")?.to_sdl();
+        let result = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
 
         Ok(())
@@ -311,7 +318,7 @@ mod test {
     #[test]
     fn test_from_proto_no_pkg_file() -> Result<()> {
         let set = compile_protobuf(&[protobuf::NEWS_NO_PKG])?;
-        let result = from_proto(&[set], "Query")?.to_sdl();
+        let result = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
         Ok(())
     }
@@ -319,7 +326,7 @@ mod test {
     #[test]
     fn test_from_proto_no_service_file() -> Result<()> {
         let set = compile_protobuf(&[protobuf::NEWS_NO_SERVICE])?;
-        let result = from_proto(&[set], "Query")?.to_sdl();
+        let result = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
 
         Ok(())
@@ -328,7 +335,7 @@ mod test {
     #[test]
     fn test_greetings_proto_file() -> Result<()> {
         let set = compile_protobuf(&[protobuf::GREETINGS, protobuf::GREETINGS_MESSAGE]).unwrap();
-        let result = from_proto(&[set], "Query")?.to_sdl();
+        let result = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
 
         Ok(())
@@ -343,8 +350,8 @@ mod test {
         let set2 = compile_protobuf(&[protobuf::GREETINGS_A])?;
         let set3 = compile_protobuf(&[protobuf::GREETINGS_B])?;
 
-        let actual = from_proto(&[set.clone()], "Query")?.to_sdl();
-        let expected = from_proto(&[set1, set2, set3], "Query")?.to_sdl();
+        let actual = from_proto_resolved(&[set.clone()], "Query")?.to_sdl();
+        let expected = from_proto_resolved(&[set1, set2, set3], "Query")?.to_sdl();
 
         pretty_assertions::assert_eq!(actual, expected);
         Ok(())
@@ -359,7 +366,7 @@ mod test {
         // so we do not need to explicitly mark fields as required.
 
         let set = compile_protobuf(&[protobuf::PERSON])?;
-        let config = from_proto(&[set], "Query")?.to_sdl();
+        let config = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
     }
@@ -367,7 +374,7 @@ mod test {
     #[test]
     fn test_movies() -> Result<()> {
         let set = compile_protobuf(&[protobuf::MOVIES])?;
-        let config = from_proto(&[set], "Query")?;
+        let config = from_proto_resolved(&[set], "Query")?;
         let config_module = AmbiguousType::default()
             .transform(ConfigModule::from(config))
             .to_result()?;
@@ -380,7 +387,7 @@ mod test {
     #[test]
     fn test_nested_types() -> Result<()> {
         let set = compile_protobuf(&[protobuf::NESTED_TYPES])?;
-        let config = from_proto(&[set], "Query")?.to_sdl();
+        let config = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
     }
@@ -388,7 +395,7 @@ mod test {
     #[test]
     fn test_map_types() -> Result<()> {
         let set = compile_protobuf(&[protobuf::MAP])?;
-        let config = from_proto(&[set], "Query")?.to_sdl();
+        let config = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
     }

@@ -14,6 +14,12 @@ pub struct Resolution {
     pub output: String,
 }
 
+impl Resolution {
+    pub fn is_unique(&self) -> bool {
+        self.input.ne(&self.output)
+    }
+}
+
 pub struct AmbiguousType {
     resolver: Box<dyn Fn(&str) -> Resolution>,
 }
@@ -50,8 +56,6 @@ fn insert_resolution(
 }
 
 impl Transform for AmbiguousType {
-    // FIXME: Validation failure should be returned if the resolution returns the
-    // same value for input an output
     fn transform(&self, mut c: ConfigModule) -> Valid<ConfigModule, String> {
         let mut resolution_map = HashMap::new();
 
@@ -59,6 +63,9 @@ impl Transform for AmbiguousType {
         for current_name in c.input_types.intersection(&c.output_types) {
             let resolution = (self.resolver)(current_name);
 
+            if !resolution.is_unique() {
+                return Valid::fail("Input and output types are same".to_string());
+            }
             resolution_map = insert_resolution(resolution_map, current_name, resolution);
 
             if let Some(ty) = c.config.types.get(current_name) {
