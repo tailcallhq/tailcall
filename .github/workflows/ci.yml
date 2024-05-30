@@ -99,7 +99,6 @@ jobs:
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
-            features: --no-default-features --features cli
             libc: glibc
             ext: ".exe"
 
