@@ -583,7 +583,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify failure on Discord
-        if: failure()
+        if: ${{ always() && contains(needs.*.result, 'failure') }}
         uses: discord-actions/message@v2
         with:
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK_URL }}
