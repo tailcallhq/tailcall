@@ -1,0 +1,13 @@
+---
+source: src/core/generator/tests/json_to_config_spec.rs
+expression: config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://example.comusers") {
+  query: Query
+}
+
+scalar Any
+
+type Query {
+  f1: [Any] @http(path: "/")
+}
