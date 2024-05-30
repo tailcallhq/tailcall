@@ -2,10 +2,12 @@ mod query_generator;
 mod schema_generator;
 mod types_generator;
 mod upstream_generator;
+mod field_base_url_generator;
 
 pub use query_generator::QueryGenerator;
 pub use schema_generator::SchemaGenerator;
 pub use types_generator::TypesGenerator;
+pub use field_base_url_generator::FieldBaseUrlGenerator;
 
 use crate::core::config::Config;
 use crate::core::merge_right::MergeRight;
