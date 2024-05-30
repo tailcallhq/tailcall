@@ -11,7 +11,6 @@ use crate::Parser;
 /// Struct representing a Prettier formatter.
 ///
 /// # Fields
-///
 /// * `runtime` - A Tokio runtime for executing asynchronous tasks.
 /// * `config_path` - An optional path to the Prettier configuration file.
 pub struct Prettier {
@@ -27,7 +26,6 @@ impl Prettier {
     /// `.prettierrc` configuration file in the current directory.
     ///
     /// # Returns
-    ///
     /// A new `Prettier` instance.
     pub fn new() -> Prettier {
         let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -48,13 +46,11 @@ impl Prettier {
     /// via stdin and captures the formatted output from stdout.
     ///
     /// # Arguments
-    ///
     /// * `source` - A string containing the source code to be formatted.
     /// * `parser` - A reference to a `Parser` that specifies the language
     ///   parser to be used.
     ///
     /// # Returns
-    ///
     /// A `Result` containing the formatted source code string or an error if
     /// formatting fails.
     pub async fn format<'a>(&'a self, source: String, parser: &'a Parser) -> Result<String> {
@@ -98,7 +94,6 @@ impl Prettier {
 /// on other operating systems, it returns a command to execute `prettier`.
 ///
 /// # Returns
-///
 /// A `Command` instance for executing Prettier.
 fn command() -> Command {
     if cfg!(target_os = "windows") {
