@@ -1,8 +1,11 @@
 use serde_json::Value;
 use url::Url;
 
-use super::json::{
-    ConfigPipeline, FieldBaseUrlGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
+use super::{
+    json::{
+        ConfigPipeline, FieldBaseUrlGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
+    },
+    transformations::TypeMerger,
 };
 use crate::core::config::Config;
 
@@ -65,10 +68,12 @@ pub fn from_json(
         }
     }
 
-    step_config_gen = step_config_gen.then(SchemaGenerator::new(
-        Some(query.to_string()),
-        url_for_schema,
-    ));
+    step_config_gen = step_config_gen
+        .then(SchemaGenerator::new(
+            Some(query.to_string()),
+            url_for_schema,
+        ))
+        .then(TypeMerger::new(0.88));
 
     let mut config = step_config_gen.get();
 

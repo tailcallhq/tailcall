@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::core::config::{Config, Type};
+use crate::core::{config::{Config, Type}, generator::json::ConfigTransformer};
 
 pub struct TypeMerger {
     /// thresh required for the merging process.
@@ -106,7 +106,7 @@ fn check_for_conflicts(grouped_types: &HashSet<String>, type_name: &str, config:
     })
 }
 
-impl super::Transform for TypeMerger {
+impl ConfigTransformer for TypeMerger {
     fn apply(&mut self, mut config: Config) -> Config {
         let mut type_to_merge_type_mapping = HashMap::new();
         let mut similar_type_group_list: Vec<HashSet<String>> = vec![];
@@ -206,8 +206,8 @@ mod test {
     use super::TypeMerger;
     use crate::core::config::{Config, Field, Type};
     use crate::core::generator::transformations::type_merger::is_type_comparable;
-    use crate::core::generator::transformations::Transform;
-
+    use crate::core::generator::json::ConfigTransformer;
+    
     #[test]
     fn test_validate_thresh() {
         let ty_merger = TypeMerger::new(0.0);
