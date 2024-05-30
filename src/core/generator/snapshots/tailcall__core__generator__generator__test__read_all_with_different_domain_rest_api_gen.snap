@@ -6,6 +6,27 @@ schema @server @upstream {
   query: Query
 }
 
+type M1 {
+  comment: String
+  date: String
+  rating: Int
+  reviewerEmail: String
+  reviewerName: String
+}
+
+type M2 {
+  barcode: String
+  createdAt: String
+  qrCode: String
+  updatedAt: String
+}
+
+type M3 {
+  depth: Int
+  height: Int
+  width: Int
+}
+
 type Query {
   f1(p1: Int!): [T1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}/comments")
   f2(p1: Int!): T2 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}")
@@ -25,16 +46,16 @@ type T18 {
   brand: String
   category: String
   description: String
-  dimensions: T3
+  dimensions: M3
   discountPercentage: Int
   id: Int
   images: [String]
-  meta: T5
+  meta: M2
   minimumOrderQuantity: Int
   price: Int
   rating: Int
   returnPolicy: String
-  reviews: [T4]
+  reviews: [M1]
   shippingInformation: String
   sku: String
   stock: Int
@@ -57,25 +78,4 @@ type T2 {
   id: Int
   title: String
   userId: Int
-}
-
-type T3 {
-  depth: Int
-  height: Int
-  width: Int
-}
-
-type T4 {
-  comment: String
-  date: String
-  rating: Int
-  reviewerEmail: String
-  reviewerName: String
-}
-
-type T5 {
-  barcode: String
-  createdAt: String
-  qrCode: String
-  updatedAt: String
 }
