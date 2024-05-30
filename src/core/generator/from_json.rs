@@ -22,7 +22,8 @@ fn has_same_domain(config_gen_req: &[ConfigGenerationRequest]) -> bool {
     for cfg_gen_req in config_gen_req.iter() {
         let domain = cfg_gen_req.url.host_str().unwrap_or("");
         if domain.is_empty() || !url_domain.is_empty() && url_domain != domain {
-            // if we find different domains are present then add baseUrl in http directive else in upstream.
+            // if we find different domains are present then add baseUrl in http directive
+            // else in upstream.
             has_same_domain = false;
             break;
         }
@@ -59,8 +60,9 @@ pub fn from_json(
         ));
 
         if url_for_schema.is_none() {
-            // if all API's are of not same domain, then add base url in each field of query opeartion.
-            step_config_gen = step_config_gen.pipe(FieldBaseUrlGenerator::new(&request.url, &query))
+            // if all API's are of not same domain, then add base url in each field of query
+            // opeartion.
+            step_config_gen = step_config_gen.pipe(FieldBaseUrlGenerator::new(&request.url, query))
         }
     }
 

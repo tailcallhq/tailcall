@@ -1,8 +1,7 @@
 use url::Url;
 
-use crate::core::config::Config;
-
 use super::ConfigGenerator;
+use crate::core::config::Config;
 
 pub struct FieldBaseUrlGenerator<'a> {
     url: &'a Url,
