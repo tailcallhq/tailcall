@@ -141,13 +141,22 @@ jobs:
 
           - build: win32-x64-gnu
             os: windows-latest
-
           - build: win32-arm64-msvc
             os: windows-latest
+            rust: stable
+            target: aarch64-pc-windows-msvc
+            libc: msvc
+            features: --no-default-features --features cli
+            ext: ".exe"
 
           - build: win32-ia32-gnu
             os: ubuntu-latest
+            rust: stable
             target: i686-pc-windows-gnu
+            cross: true
+            libc: glibc
+            ext: ".exe"
+
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
@@ -341,6 +350,7 @@ jobs:
             rust: stable
             target: aarch64-pc-windows-msvc
             libc: msvc
+            features: --no-default-features --features cli
             ext: ".exe"
 
           - build: win32-ia32-gnu
