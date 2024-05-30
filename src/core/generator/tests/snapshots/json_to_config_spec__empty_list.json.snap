@@ -2,12 +2,12 @@
 source: src/core/generator/tests/json_to_config_spec.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "https://example.comusers") {
+schema @server @upstream(baseURL: "https://example.com") {
   query: Query
 }
 
 scalar Any
 
 type Query {
-  f1: [Any] @http(path: "/")
+  f1: [Any] @http(path: "/users")
 }
