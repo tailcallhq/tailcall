@@ -166,6 +166,23 @@ mod test {
         assert_eq!(parser.queries[4].key, "query5");
         assert_eq!(parser.queries[4].data_type, "Boolean");
         assert!(!parser.queries[4].is_list);
+
+
+
+        let url = Url::parse(
+            "http://example.com/path?q=1&q=2&q=3&ids=1,2,4&userids[]=1&userids[]=2",
+        )
+        .unwrap();
+        let parser = UrlQueryParser::new(&url);
+
+        assert_eq!(parser.queries[0].key, "q");
+        assert!(parser.queries[0].is_list);
+
+        assert_eq!(parser.queries[1].key, "ids");
+        assert!(parser.queries[1].is_list);
+
+        assert_eq!(parser.queries[2].key, "userids[]");
+        assert!(parser.queries[2].is_list);
     }
 
     #[test]
