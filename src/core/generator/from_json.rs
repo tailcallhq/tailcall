@@ -1,6 +1,7 @@
 use serde_json::Value;
 use url::Url;
 
+use super::json::query_generator::QueryGenerator;
 use super::json::types_generator::TypesGenerator;
 use crate::core::config::Config;
 use crate::core::generator::json::schema_generator::SchemaGenerator;
@@ -25,13 +26,18 @@ pub fn from_json(
     let mut config = Config::default();
     let mut type_counter = 1;
     for (i, request) in config_gen_req.iter().enumerate() {
+        let operation_field_name = format!("f{}", i + 1);
+        let query_operation_gen = QueryGenerator::new(
+            request.resp.is_array(),
+            &request.url,
+            query,
+            &operation_field_name,
+        );
         let generated_config = StepConfigGenerator::default()
             .pipe(TypesGenerator::new(
                 &request.resp,
                 &mut type_counter,
-                &request.url,
-                format!("f{}", i + 1),
-                query.to_string(),
+                query_operation_gen,
             ))
             .pipe(SchemaGenerator::new(Some(query.to_string()), None))
             .get();

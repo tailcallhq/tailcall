@@ -1,38 +1,28 @@
 use serde_json::{Map, Value};
-use url::Url;
 
-use super::query_generator::QueryGenerator;
 use super::ConfigGenerator;
 use crate::core::config::{Config, Field, Type};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 
-pub struct TypesGenerator<'a> {
+pub struct TypesGenerator<'a, T: OperationGenerator> {
     json_value: &'a Value,
     type_counter: &'a mut u64,
-    field_name_in_query_ty: String,
-    query_name: String,
-    url: &'a Url,
+    operation_generator: T,
 }
 
-impl<'a> TypesGenerator<'a> {
-    pub fn new(
-        json_value: &'a Value,
-        type_counter: &'a mut u64,
-        url: &'a Url,
-        field_name_in_query_ty: String,
-        query_name: String,
-    ) -> Self {
-        Self {
-            json_value,
-            type_counter,
-            url,
-            field_name_in_query_ty,
-            query_name,
-        }
+impl<'a, T> TypesGenerator<'a, T>
+where
+    T: OperationGenerator,
+{
+    pub fn new(json_value: &'a Value, type_counter: &'a mut u64, operation_generator: T) -> Self {
+        Self { json_value, type_counter, operation_generator }
     }
 }
 
-impl<'a> TypesGenerator<'a> {
+impl<'a, T> TypesGenerator<'a, T>
+where
+    T: OperationGenerator,
+{
     fn should_generate_type(&self, value: &'a Value) -> bool {
         match value {
             Value::Array(json_array) => !json_array.is_empty(),
@@ -87,7 +77,7 @@ impl<'a> TypesGenerator<'a> {
     }
 
     /// given a list of types, merges all fields into single type.
-    fn merge_types(type_list: Vec<Type>) -> Type {
+    fn merge_types(&self, type_list: Vec<Type>) -> Type {
         let mut ty = Type::default();
         for current_type in type_list {
             for (key, value) in current_type.fields {
@@ -130,7 +120,7 @@ impl<'a> TypesGenerator<'a> {
 
                 if !object_types.is_empty() {
                     // merge the generated types of list into single concrete type.
-                    let merged_type = TypesGenerator::merge_types(object_types);
+                    let merged_type = self.merge_types(object_types);
                     let type_name = format!("T{}", self.type_counter);
                     *self.type_counter += 1;
                     config.types.insert(type_name.clone(), merged_type);
@@ -155,17 +145,23 @@ impl<'a> TypesGenerator<'a> {
     }
 }
 
-impl ConfigGenerator for TypesGenerator<'_> {
+impl<T> ConfigGenerator for TypesGenerator<'_, T>
+where
+    T: OperationGenerator,
+{
     fn apply(&mut self, mut config: Config) -> Config {
         let root_type_name = self.generate_types(self.json_value, &mut config);
 
-        QueryGenerator::new(
-            self.json_value.is_array(),
-            &root_type_name,
-            &self.field_name_in_query_ty,
-            &self.query_name,
-            self.url,
-        )
-        .apply(config)
+        self.operation_generator
+            .generate(root_type_name.as_str(), config)
     }
+}
+
+/**
+ * For generated types we also have to generate the appropriate operation
+ * type. OperationGenerator should be implemented by Query, Subscription and
+ * Mutation.
+ */
+pub trait OperationGenerator {
+    fn generate(&self, root_type: &str, config: Config) -> Config;
 }

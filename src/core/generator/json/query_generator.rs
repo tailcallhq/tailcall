@@ -1,7 +1,7 @@
 use regex::Regex;
 use url::Url;
 
-use super::ConfigGenerator;
+use super::types_generator::OperationGenerator;
 use crate::core::config::{Arg, Config, Field, Http, KeyValue, Type};
 use crate::core::helpers::gql_type::detect_gql_data_type;
 
@@ -33,21 +33,14 @@ impl UrlQueryParser {
 
 pub struct QueryGenerator<'a> {
     is_list_json: bool,
-    root_type_name: &'a str,
-    field_name: &'a str,
-    query_name: &'a str,
     url: &'a Url,
+    query: &'a str,
+    field_name: &'a str,
 }
 
 impl<'a> QueryGenerator<'a> {
-    pub fn new(
-        is_list_json: bool,
-        root_type_name: &'a str,
-        field_name: &'a str,
-        query_name: &'a str,
-        url: &'a Url,
-    ) -> Self {
-        Self { is_list_json, root_type_name, url, field_name, query_name }
+    pub fn new(is_list_json: bool, url: &'a Url, query: &'a str, field_name: &'a str) -> Self {
+        Self { is_list_json, url, query, field_name }
     }
 }
 
@@ -112,11 +105,11 @@ fn create_http_directive(field: &mut Field, url: &Url) -> Http {
     http
 }
 
-impl ConfigGenerator for QueryGenerator<'_> {
-    fn apply(&mut self, mut config: Config) -> Config {
+impl OperationGenerator for QueryGenerator<'_> {
+    fn generate(&self, root_type: &str, mut config: Config) -> Config {
         let mut field = Field {
             list: self.is_list_json,
-            type_of: self.root_type_name.to_string(),
+            type_of: root_type.to_string(),
             ..Default::default()
         };
 
@@ -124,7 +117,7 @@ impl ConfigGenerator for QueryGenerator<'_> {
 
         let mut ty = Type::default();
         ty.fields.insert(self.field_name.to_string(), field);
-        config.types.insert(self.query_name.to_string(), ty);
+        config.types.insert(self.query.to_string(), ty);
         config
     }
 }
@@ -135,7 +128,7 @@ mod test {
 
     use super::QueryGenerator;
     use crate::core::generator::json::query_generator::UrlQueryParser;
-    use crate::core::generator::json::ConfigGenerator;
+    use crate::core::generator::json::types_generator::OperationGenerator;
 
     #[test]
     fn test_new_url_query_parser() {
@@ -178,32 +171,32 @@ mod test {
     #[test]
     fn test_list_json_query_generator() {
         let url = Url::parse("http://example.com/path").unwrap();
-        let mut query_generator = QueryGenerator::new(true, "T1", "f1", "Query", &url);
-        let config = query_generator.apply(Default::default());
+        let query_generator = QueryGenerator::new(true, &url, "Query", "f1");
+        let config = query_generator.generate("T1", Default::default());
         insta::assert_snapshot!(config.to_sdl());
     }
 
     #[test]
     fn test_query_generator() {
         let url = Url::parse("http://example.com/path").unwrap();
-        let mut query_generator = QueryGenerator::new(false, "T1", "f1", "Query", &url);
-        let config = query_generator.apply(Default::default());
+        let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
+        let config = query_generator.generate("T1", Default::default());
         insta::assert_snapshot!(config.to_sdl());
     }
 
     #[test]
     fn test_query_generator_with_query_params() {
         let url = Url::parse("http://example.com/path?q=12&is_verified=true").unwrap();
-        let mut query_generator = QueryGenerator::new(false, "T1", "f1", "Query", &url);
-        let config = query_generator.apply(Default::default());
+        let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
+        let config = query_generator.generate("T1", Default::default());
         insta::assert_snapshot!(config.to_sdl());
     }
 
     #[test]
     fn test_query_generator_with_path_variables() {
         let url = Url::parse("http://example.com/users/12").unwrap();
-        let mut query_generator = QueryGenerator::new(false, "T1", "f1", "Query", &url);
-        let config = query_generator.apply(Default::default());
+        let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
+        let config = query_generator.generate("T1", Default::default());
         insta::assert_snapshot!(config.to_sdl());
     }
 }
