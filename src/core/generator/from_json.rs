@@ -21,10 +21,8 @@ fn has_same_domain(config_gen_req: &[ConfigGenerationRequest]) -> bool {
     let mut has_same_domain = true;
     let mut url_domain = "";
     for cfg_gen_req in config_gen_req.iter() {
-        let domain = cfg_gen_req.url.host_str().unwrap_or("");
+        let domain = cfg_gen_req.url.host_str().unwrap_or_default();
         if domain.is_empty() || !url_domain.is_empty() && url_domain != domain {
-            // if we find different domains are present then add baseUrl in http directive
-            // else in upstream.
             has_same_domain = false;
             break;
         }
