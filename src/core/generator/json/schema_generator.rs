@@ -25,10 +25,7 @@ impl SchemaGenerator {
             let base_url = match extract_base_url(url) {
                 Some(base_url) => base_url,
                 None => {
-                    return Valid::fail(format!(
-                        "failed to extract the host url from {} ",
-                        url
-                    ))
+                    return Valid::fail(format!("failed to extract the host url from {} ", url))
                 }
             };
             config.upstream.base_url = Some(base_url);

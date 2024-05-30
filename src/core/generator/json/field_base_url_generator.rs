@@ -21,10 +21,7 @@ impl ConfigTransformer for FieldBaseUrlGenerator<'_> {
         let base_url = match extract_base_url(self.url) {
             Some(base_url) => base_url,
             None => {
-                return Valid::fail(format!(
-                    "failed to extract the host url from {} ",
-                    self.url
-                ))
+                return Valid::fail(format!("failed to extract the host url from {} ", self.url))
             }
         };
 

@@ -12,8 +12,9 @@ pub fn extract_base_url(url: &Url) -> Option<String> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use url::Url;
+
+    use super::*;
 
     #[test]
     fn test_extract_base_url_with_port() {
