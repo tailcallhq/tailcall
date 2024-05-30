@@ -1,10 +1,8 @@
 use serde_json::Value;
 use url::Url;
 
-use super::json::query_generator::QueryGenerator;
-use super::json::types_generator::TypesGenerator;
+use super::json::{QueryGenerator, SchemaGenerator, TypesGenerator};
 use crate::core::config::Config;
-use crate::core::generator::json::schema_generator::SchemaGenerator;
 use crate::core::generator::json::StepConfigGenerator;
 use crate::core::merge_right::MergeRight;
 

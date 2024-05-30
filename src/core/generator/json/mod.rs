@@ -1,7 +1,11 @@
-pub mod query_generator;
-pub mod schema_generator;
-pub mod types_generator;
-pub mod upstream_generator;
+mod query_generator;
+mod schema_generator;
+mod types_generator;
+mod upstream_generator;
+
+pub use query_generator::QueryGenerator;
+pub use schema_generator::SchemaGenerator;
+pub use types_generator::TypesGenerator;
 
 use crate::core::config::Config;
 use crate::core::merge_right::MergeRight;
