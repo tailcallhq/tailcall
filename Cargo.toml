@@ -48,7 +48,7 @@ opentelemetry-otlp = { version = "0.16.0", features = [
     # required to make grpc requests
     "tls-roots",
 ], optional = true }
-opentelemetry-system-metrics = { version = "0.1.8", optional = true }
+opentelemetry-system-metrics = { version = "0.1.9", optional = true }
 tailcall-http-cache = {path = "tailcall-http-cache", optional = true }
 tailcall-version = { path = "./tailcall-version", optional = true }
 
