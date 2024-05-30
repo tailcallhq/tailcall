@@ -114,8 +114,9 @@ impl ConfigTransformer for TypeMerger {
         let mut i = 0;
 
         // step 1: identify all the types that satisfies the thresh criteria and group them.
+        let query_name = config.schema.query.unwrap_or_default().clone();
         for (type_name_1, type_info_1) in config.types.iter() {
-            if visited_types.contains(type_name_1) || type_name_1 == "Query" {
+            if visited_types.contains(type_name_1) || type_name_1 == query_name.as_str() {
                 continue;
             }
 
