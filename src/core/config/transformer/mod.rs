@@ -1,4 +1,6 @@
 mod ambiguous_type;
+pub use ambiguous_type::{AmbiguousType, Resolution};
+
 use super::ConfigModule;
 use crate::core::valid::{Valid, Validator};
 

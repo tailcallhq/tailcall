@@ -2,13 +2,15 @@ use anyhow::Result;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 
-use crate::core::config::{Config, ConfigModule, Link, LinkType, Resolution};
+use crate::core::config::transformer::{AmbiguousType, Transform};
+use crate::core::config::{Config, ConfigModule, Link, LinkType};
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::Source;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
+use crate::core::valid::Validator;
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work
@@ -57,12 +59,9 @@ impl Generator {
         }
 
         config.links = links;
-        Ok(
-            ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
-                input: format!("{}Input", v),
-                output: v.to_owned(),
-            }),
-        )
+        let module = ConfigModule::from(config);
+
+        Ok(AmbiguousType::default().transform(module).to_result()?)
     }
 }
 

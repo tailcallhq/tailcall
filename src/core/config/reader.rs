@@ -7,13 +7,15 @@ use rustls_pki_types::{
 };
 use url::Url;
 
-use super::{ConfigModule, Content, Link, LinkType, Resolution};
+use super::transformer::{AmbiguousType, Transform};
+use super::{ConfigModule, Content, Link, LinkType};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
+use crate::core::valid::Validator;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
@@ -200,10 +202,10 @@ impl ConfigReader {
             config_module = config_module.merge_right(new_config_module);
         }
 
-        Ok(config_module.resolve_ambiguous_types(|v| Resolution {
-            input: format!("{}Input", v),
-            output: v.to_owned(),
-        }))
+        AmbiguousType::default()
+            .transform(config_module)
+            .to_result()
+            .map_err(|e| e.into())
     }
 
     /// Resolves all the links in a Config to create a ConfigModule
