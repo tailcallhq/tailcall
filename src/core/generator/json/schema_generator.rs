@@ -1,10 +1,9 @@
 use url::Url;
 
+use super::url_utils::extract_base_url;
 use crate::core::config::Config;
 use crate::core::generator::json::ConfigTransformer;
 use crate::core::valid::Valid;
-
-use super::url_utils::extract_base_url;
 
 pub struct SchemaGenerator {
     query_name: Option<String>,
@@ -28,7 +27,7 @@ impl SchemaGenerator {
                 None => {
                     return Valid::fail(format!(
                         "failed to extract the host url from {} ",
-                        url.to_string()
+                        url
                     ))
                 }
             };

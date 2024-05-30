@@ -23,7 +23,7 @@ impl ConfigTransformer for FieldBaseUrlGenerator<'_> {
             None => {
                 return Valid::fail(format!(
                     "failed to extract the host url from {} ",
-                    self.url.to_string()
+                    self.url
                 ))
             }
         };
