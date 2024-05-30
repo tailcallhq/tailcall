@@ -50,23 +50,19 @@ enum movies__Genre {
 
 type Query {
   """
-  *
- get all movies
+  get all movies
   """
   movies__AnotherExample__GetMovies(movieRequest: movies__MovieRequest!): movies__MoviesResult! @grpc(body: "{{.args.movieRequest}}", method: "movies.AnotherExample.GetMovies")
   """
-  *
- search movies by the name of the cast
+  search movies by the name of the cast
   """
   movies__AnotherExample__SearchMoviesByCast(searchByCastRequest: movies__SearchByCastRequest!): movies__Movie! @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.AnotherExample.SearchMoviesByCast")
   """
-  *
- get all movies
+  get all movies
   """
   movies__Example__GetMovies(movieRequest: movies__MovieRequest!): movies__MoviesResult! @grpc(body: "{{.args.movieRequest}}", method: "movies.Example.GetMovies")
   """
-  *
- search movies by the name of the cast
+  search movies by the name of the cast
   """
   movies__Example__SearchMoviesByCast(searchByCastRequest: movies__SearchByCastRequest!): movies__Movie! @grpc(body: "{{.args.searchByCastRequest}}", method: "movies.Example.SearchMoviesByCast")
 }
@@ -74,17 +70,17 @@ type Query {
 type google__protobuf__Duration @tag(id: "google.protobuf.Duration") {
   """
   Signed fractions of a second at nanosecond resolution of the span
- of time. Durations less than one second are represented with a 0
- `seconds` field and a positive or negative `nanos` field. For durations
- of one second or more, a non-zero value for the `nanos` field must be
- of the same sign as the `seconds` field. Must be from -999,999,999
- to +999,999,999 inclusive.
+  of time. Durations less than one second are represented with a 0
+  `seconds` field and a positive or negative `nanos` field. For durations
+  of one second or more, a non-zero value for the `nanos` field must be
+  of the same sign as the `seconds` field. Must be from -999,999,999
+  to +999,999,999 inclusive.
   """
   nanos: Int
   """
   Signed seconds of the span of time. Must be from -315,576,000,000
- to +315,576,000,000 inclusive. Note: these bounds are computed from:
- 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
+  to +315,576,000,000 inclusive. Note: these bounds are computed from:
+  60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
   """
   seconds: Int
 }
@@ -99,23 +95,22 @@ type google__protobuf__Int32Value @tag(id: "google.protobuf.Int32Value") {
 type google__protobuf__Timestamp @tag(id: "google.protobuf.Timestamp") {
   """
   Non-negative fractions of a second at nanosecond resolution. Negative
- second values with fractions must still have non-negative nanos values
- that count forward in time. Must be from 0 to 999,999,999
- inclusive.
+  second values with fractions must still have non-negative nanos values
+  that count forward in time. Must be from 0 to 999,999,999
+  inclusive.
   """
   nanos: Int
   """
   Represents seconds of UTC time since Unix epoch
- 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
- 9999-12-31T23:59:59Z inclusive.
+  1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+  9999-12-31T23:59:59Z inclusive.
   """
   seconds: Int
 }
 
 type movies__Movie @tag(id: "movies.Movie") {
   """
-  *
- list of cast
+  list of cast
   """
   cast: [String]!
   duration: google__protobuf__Duration
@@ -128,8 +123,7 @@ type movies__Movie @tag(id: "movies.Movie") {
 
 type movies__MoviesResult @tag(id: "movies.MoviesResult") {
   """
-  *
- list of movies
+  list of movies
   """
   result: [movies__Movie]!
 }

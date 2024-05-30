@@ -54,10 +54,13 @@ impl Context {
                 .iter()
                 .find(|loc| loc.path == path)
                 .and_then(|loc| {
-                    loc.leading_comments
-                        .as_ref()
-                        .map(|c| c.trim().to_string())
-                        .filter(|c| !c.is_empty())
+                    loc.leading_comments.as_ref().map(|c| {
+                        c.lines()
+                            .map(|line| line.trim_start_matches('*').trim())
+                            .filter(|line| !line.is_empty())
+                            .collect::<Vec<_>>()
+                            .join("\n  ")
+                    })
                 })
         })
     }
