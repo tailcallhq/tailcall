@@ -180,6 +180,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
+            features: --no-default-features --features cli
             cross: true
             libc: glibc
             ext: ".exe"
@@ -402,6 +403,7 @@ jobs:
             rust: stable
             target: i686-pc-windows-gnu
             cross: true
+            features: --no-default-features --features cli
             libc: glibc
             ext: ".exe"
 
