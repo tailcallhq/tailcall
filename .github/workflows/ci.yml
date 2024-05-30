@@ -196,6 +196,12 @@ jobs:
             Expand-Archive -Path $nasmZip -DestinationPath '.'
           }
           echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
+      - name: Install mingw
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 llvm llvm-dev mingw-w64 libssl-dev
+          sudo apt install -y openssl
 
       - name: Build
         env:
