@@ -21,7 +21,7 @@ pub struct AmbiguousType {
 
 impl Default for AmbiguousType {
     fn default() -> Self {
-        Self::new(|v: &str| Resolution { input: format!("In_{}", v), output: v.to_string() })
+        Self::new(|v: &str| Resolution { input: format!("{}Input", v), output: v.to_owned() })
     }
 }
 
@@ -51,21 +51,23 @@ fn insert_resolution(
 }
 
 impl Transform for AmbiguousType {
-    fn transform(&self, mut this: ConfigModule) -> Valid<ConfigModule, String> {
+    // FIXME: Validation failure should be returned if the resolution returns the
+    // same value for input an output
+    fn transform(&self, mut c: ConfigModule) -> Valid<ConfigModule, String> {
         let mut resolution_map = HashMap::new();
 
         // iterate over intersection of input and output types
-        for current_name in this.input_types.intersection(&this.output_types) {
+        for current_name in c.input_types.intersection(&c.output_types) {
             let resolution = (self.resolver)(current_name);
 
             resolution_map = insert_resolution(resolution_map, current_name, resolution);
 
-            if let Some(ty) = this.config.types.get(current_name) {
+            if let Some(ty) = c.config.types.get(current_name) {
                 for field in ty.fields.values() {
                     for args in field.args.values() {
                         // if arg is of output type then it should be changed to that of newly
                         // created input type.
-                        if this.output_types.contains(&args.type_of)
+                        if c.output_types.contains(&args.type_of)
                             && !resolution_map.contains_key(&args.type_of)
                         {
                             let resolution = (self.resolver)(args.type_of.as_str());
@@ -85,32 +87,32 @@ impl Transform for AmbiguousType {
             let input_name = &resolution.input;
             let output_name = &resolution.output;
 
-            let og_ty = this.config.types.get(current_name).cloned();
+            let og_ty = c.config.types.get(current_name).cloned();
 
             // remove old types
-            this.config.types.remove(current_name);
-            this.input_types.remove(current_name);
-            this.output_types.remove(current_name);
+            c.config.types.remove(current_name);
+            c.input_types.remove(current_name);
+            c.output_types.remove(current_name);
 
             // add new types
             if let Some(og_ty) = og_ty {
-                this.config.types.insert(input_name.clone(), og_ty.clone());
-                this.input_types.insert(input_name.clone());
+                c.config.types.insert(input_name.clone(), og_ty.clone());
+                c.input_types.insert(input_name.clone());
 
-                this.config.types.insert(output_name.clone(), og_ty);
-                this.output_types.insert(output_name.clone());
+                c.config.types.insert(output_name.clone(), og_ty);
+                c.output_types.insert(output_name.clone());
             }
         }
 
-        let keys = this.config.types.keys().cloned().collect::<Vec<String>>();
+        let keys = c.config.types.keys().cloned().collect::<Vec<String>>();
 
         for k in keys {
-            if let Some(ty) = this.config.types.get_mut(&k) {
+            if let Some(ty) = c.config.types.get_mut(&k) {
                 for field in ty.fields.values_mut() {
                     if let Some(resolution) = resolution_map.get(&field.type_of) {
-                        if this.output_types.contains(&k) {
+                        if c.output_types.contains(&k) {
                             field.type_of.clone_from(&resolution.output);
-                        } else if this.input_types.contains(&k) {
+                        } else if c.input_types.contains(&k) {
                             field.type_of.clone_from(&resolution.input);
                         }
                     }
@@ -123,8 +125,7 @@ impl Transform for AmbiguousType {
             }
         }
 
-        // FIXME: Validation failure should happen if the resolution is not possible
-        Valid::succeed(this)
+        Valid::succeed(c)
     }
 }
 
@@ -134,7 +135,7 @@ mod tests {
 
     use maplit::hashset;
 
-    use crate::core::config::transformer::{AmbiguousType, Resolution, Transform};
+    use crate::core::config::transformer::{AmbiguousType, Transform};
     use crate::core::config::{Config, ConfigModule, Type};
     use crate::core::generator::Source;
     use crate::core::valid::Validator;
@@ -200,15 +201,10 @@ mod tests {
 
         let mut config_module = ConfigModule::from(config);
 
-        config_module = AmbiguousType::new(|type_name: &str| -> Resolution {
-            Resolution {
-                input: format!("{}Input", type_name),
-                output: format!("{}Output", type_name),
-            }
-        })
-        .transform(config_module)
-        .to_result()
-        .unwrap();
+        config_module = AmbiguousType::default()
+            .transform(config_module)
+            .to_result()
+            .unwrap();
 
         let actual = config_module
             .config

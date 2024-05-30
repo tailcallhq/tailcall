@@ -282,7 +282,9 @@ mod test {
     use tailcall_fixtures::protobuf;
 
     use super::*;
+    use crate::core::config::transformer::{AmbiguousType, Transform};
     use crate::core::config::ConfigModule;
+    use crate::core::valid::Validator;
 
     fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet> {
         Ok(protox::compile(files, [protobuf::SELF])?)
@@ -367,7 +369,9 @@ mod test {
     fn test_movies() -> Result<()> {
         let set = compile_protobuf(&[protobuf::MOVIES])?;
         let config = from_proto(&[set], "Query")?;
-        let config_module = ConfigModule::from(config);
+        let config_module = AmbiguousType::default()
+            .transform(ConfigModule::from(config))
+            .to_result()?;
         let config = config_module.to_sdl();
         insta::assert_snapshot!(config);
 

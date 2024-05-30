@@ -2,7 +2,7 @@ use anyhow::Result;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 
-use crate::core::config::transformer::{AmbiguousType, Transform};
+use crate::core::config::transformer::AmbiguousType;
 use crate::core::config::{Config, ConfigModule, Link, LinkType};
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::Source;
@@ -59,9 +59,12 @@ impl Generator {
         }
 
         config.links = links;
-        let module = ConfigModule::from(config);
 
-        Ok(AmbiguousType::default().transform(module).to_result()?)
+        let module = ConfigModule::from(config)
+            .transform::<AmbiguousType>()
+            .to_result()?;
+
+        Ok(module)
     }
 }
 
