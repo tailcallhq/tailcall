@@ -502,9 +502,10 @@ input Cors {
   vary: [String!]
 }
 enum Dedupe {
-  min
-  max
-  off
+  LOCAL
+  GLOBAL
+  SELF
+  OFF
 }
 enum Encoding {
   ApplicationJson

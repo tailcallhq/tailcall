@@ -151,12 +151,12 @@ pub struct Upstream {
     Default, Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight,
 )]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
 pub enum Dedupe {
-    Min,
-    Max,
+    LOCAL,
+    GLOBAL,
+    SELF,
     #[default]
-    Off,
+    OFF,
 }
 
 impl Upstream {

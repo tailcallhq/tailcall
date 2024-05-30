@@ -65,11 +65,11 @@ impl Eval for IO {
         ctx: super::EvaluationContext<'a, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         match ctx.request_ctx.upstream.dedupe {
-            Dedupe::Off => self.eval_inner(ctx),
+            Dedupe::OFF => self.eval_inner(ctx),
             _ => {
                 if let Some(key) = self.cache_key(&ctx) {
                     match ctx.request_ctx.upstream.dedupe {
-                        Dedupe::Min => Box::pin(async move {
+                        Dedupe::LOCAL => Box::pin(async move {
                             ctx.request_ctx
                                 .cache
                                 .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
@@ -77,7 +77,7 @@ impl Eval for IO {
                                 .as_ref()
                                 .clone()
                         }),
-                        _ => Box::pin(async move {
+                        Dedupe::SELF => Box::pin(async move {
                             ctx.request_ctx
                                 .async_loader
                                 .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
@@ -85,6 +85,15 @@ impl Eval for IO {
                                 .as_ref()
                                 .clone()
                         }),
+                        Dedupe::GLOBAL => Box::pin(async move {
+                            ctx.request_ctx
+                                .async_loader
+                                .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
+                                .await
+                                .as_ref()
+                                .clone()
+                        }),
+                        Dedupe::OFF => self.eval_inner(ctx),
                     }
                 } else {
                     self.eval_inner(ctx)

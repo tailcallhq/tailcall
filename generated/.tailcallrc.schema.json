@@ -314,9 +314,10 @@
     "Dedupe": {
       "type": "string",
       "enum": [
-        "min",
-        "max",
-        "off"
+        "LOCAL",
+        "GLOBAL",
+        "SELF",
+        "OFF"
       ]
     },
     "Email": {
