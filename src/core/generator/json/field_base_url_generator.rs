@@ -91,7 +91,7 @@ mod test {
 
     #[test]
     fn should_add_base_url_if_not_present() {
-        let url = Url::parse("https://example.com").unwrap();
+        let url = Url::parse("http://localhost:8080").unwrap();
         let query = "Query";
         let mut field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
 
@@ -121,7 +121,7 @@ mod test {
             "f3".to_string(),
             Field {
                 type_of: "String".to_string(),
-                http: Some(Http { path: "/status".to_string(), ..Default::default() }),
+                http: None,
                 ..Default::default()
             },
         );

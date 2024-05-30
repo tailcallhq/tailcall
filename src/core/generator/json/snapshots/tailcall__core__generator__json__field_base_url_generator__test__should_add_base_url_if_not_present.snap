@@ -4,6 +4,6 @@ expression: config.to_sdl()
 ---
 type Query {
   f1: Int @http(baseURL: "https://calender.com/api/v1/", path: "/day")
-  f2: String @http(baseURL: "https://example.com", path: "/month")
-  f3: String @http(baseURL: "https://example.com", path: "/status")
+  f2: String @http(baseURL: "http://localhost:8080", path: "/month")
+  f3: String
 }
