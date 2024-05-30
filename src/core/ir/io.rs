@@ -64,33 +64,50 @@ impl Eval for IO {
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+        // Note: Handled the case separately to avoid cache key generation when it's not required
         if !(ctx.request_ctx.upstream.dedupe_in_flight
             || ctx.request_ctx.upstream.dedupe_in_request)
         {
             return self.eval_inner(ctx);
         }
+
         if let Some(key) = self.cache_key(&ctx) {
-            if ctx.request_ctx.upstream.dedupe_in_request {
-                Box::pin(async move {
-                    ctx.request_ctx
-                        .cache
-                        .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
-                        .await
-                        .as_ref()
-                        .clone()
-                })
-            } else if ctx.request_ctx.upstream.dedupe_in_flight {
-                Box::pin(async move {
-                    ctx.request_ctx
-                        .async_loader
-                        .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
-                        .await
-                        .as_ref()
-                        .clone()
-                })
-            } else {
-                self.eval_inner(ctx)
-            }
+            Box::pin(async move {
+                let result = match (
+                    ctx.request_ctx.upstream.dedupe_in_request,
+                    ctx.request_ctx.upstream.dedupe_in_flight,
+                ) {
+                    (true, false) => {
+                        ctx.request_ctx
+                            .cache
+                            .get_or_eval(key, || Box::pin(self.eval_inner(ctx)))
+                            .await
+                    }
+                    (false, true) => {
+                        ctx.request_ctx
+                            .cache
+                            .get_or_eval(key, || {
+                                Box::pin(async move {
+                                    ctx.request_ctx
+                                        .async_loader
+                                        .get_or_eval(key, || Box::pin(self.eval_inner(ctx)))
+                                        .await
+                                        .as_ref()
+                                        .clone()
+                                })
+                            })
+                            .await
+                    }
+                    (true, true) => {
+                        ctx.request_ctx
+                            .async_loader
+                            .get_or_eval(key, || Box::pin(self.eval_inner(ctx)))
+                            .await
+                    }
+                    (false, false) => unreachable!(), // This case is handled at the beginning
+                };
+                result.as_ref().clone()
+            })
         } else {
             self.eval_inner(ctx)
         }
