@@ -86,7 +86,7 @@ impl<
                     CacheValue::Ready(value) => value,
                 }
             } else {
-                let (tx, _) = broadcast::channel(1000);
+                let (tx, _) = broadcast::channel(100);
                 self.cache
                     .insert(key.clone(), CacheValue::Pending(tx.clone()));
                 let result = Arc::new(or_else().await);
@@ -117,7 +117,7 @@ impl<
                 }
             }
         } else {
-            let (tx, _) = broadcast::channel(1000);
+            let (tx, _) = broadcast::channel(100);
             self.cache
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
             let result = Arc::new(func().await);
