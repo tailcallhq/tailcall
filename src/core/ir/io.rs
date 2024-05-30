@@ -85,7 +85,7 @@ impl Eval for IO {
                             .get_or_eval(key, || Box::pin(self.eval_inner(ctx)))
                             .await
                     }
-                    (false, true) => {
+                    (true, true) => {
                         ctx.request_ctx
                             .cache
                             .get_or_eval(key, || {
@@ -100,7 +100,7 @@ impl Eval for IO {
                             })
                             .await
                     }
-                    (true, true) => {
+                    (false, true) => {
                         ctx.request_ctx
                             .async_loader
                             .get_or_eval(key, || Box::pin(self.eval_inner(ctx)))
