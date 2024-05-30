@@ -86,7 +86,7 @@ impl<
                     CacheValue::Ready(value) => value,
                 }
             } else {
-                let (tx, _) = broadcast::channel(10000);
+                let (tx, _) = broadcast::channel(1000);
                 self.cache
                     .insert(key.clone(), CacheValue::Pending(tx.clone()));
                 let result = Arc::new(or_else().await);
@@ -108,19 +108,27 @@ impl<
         key: Key,
         func: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
     ) -> Arc<Result<Value, Error>> {
-        if let Some(CacheValue::Pending(tx)) = self.get_cache_value(&key) {
-            return tx.subscribe().recv().await.unwrap();
+        if let Some(cache_value) = self.get_cache_value(&key) {
+            match cache_value {
+                CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
+                CacheValue::Ready(value) => {
+                    self.cache.remove(&key);
+                    value
+                }
+            }
+        } else {
+            let (tx, _) = broadcast::channel(1000);
+            self.cache
+                .insert(key.clone(), CacheValue::Pending(tx.clone()));
+            let result = Arc::new(func().await);
+            let mut guard = self
+                .cache
+                .entry(key)
+                .or_insert(CacheValue::Pending(tx.clone()));
+            *guard = CacheValue::Ready(result.clone());
+            tx.send(result.clone()).ok();
+            result
         }
-
-        let (tx, _) = broadcast::channel(10000);
-        self.cache
-            .insert(key.clone(), CacheValue::Pending(tx.clone()));
-
-        let result = Arc::new(func().await);
-        self.cache.remove(&key);
-        tx.send(result.clone()).ok();
-
-        result
     }
 }
 
