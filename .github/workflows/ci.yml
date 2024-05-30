@@ -392,14 +392,15 @@ jobs:
             os: windows-latest
             rust: stable
             target: aarch64-pc-windows-msvc
-            libc: msvc
             features: --no-default-features --features cli
+            libc: msvc
             ext: ".exe"
 
           - build: win32-ia32-gnu
             os: ubuntu-latest
             rust: stable
             target: i686-pc-windows-gnu
+            features: --no-default-features --features cli
             cross: true
             libc: glibc
             ext: ".exe"
@@ -418,14 +419,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
-
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install cargo-lambda
-        run: pip install cargo-lambda
 
       - name: Build
         env:
