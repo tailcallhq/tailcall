@@ -228,8 +228,18 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y mingw-w64 llvm llvm-dev mingw-w64 libssl-dev
+          sudo apt-get install -y mingw-w64 llvm llvm-dev libssl-dev
           sudo apt install -y openssl
+
+      - name: Build
+        env:
+          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name}}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: ClementTsang/cargo-action@v0.0.6
+        with:
+          use-cross: ${{ matrix.cross }}
+          command: build
+          args: ${{matrix.features}} --target ${{ matrix.target }}
 
       - name: Run Cargo Test
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
@@ -394,6 +404,7 @@ jobs:
             cross: true
             libc: glibc
             ext: ".exe"
+
     permissions:
       contents: write
       pull-requests: write
