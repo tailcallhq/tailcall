@@ -9,8 +9,4 @@ fn run_execution_spec(path: &Path) -> datatest_stable::Result<()> {
     Ok(result?)
 }
 
-datatest_stable::harness!(
-    run_execution_spec,
-    "tests/execution",
-    r"^.*\.md$"
-);
+datatest_stable::harness!(run_execution_spec, "tests/execution", r"^.*\.md$");

@@ -3,9 +3,8 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use url::Url;
-
 use tailcall::core::generator::{from_json, ConfigGenerationRequest};
+use url::Url;
 
 #[derive(Serialize, Deserialize)]
 struct JsonFixture {
@@ -13,12 +12,20 @@ struct JsonFixture {
     body: Value,
 }
 
-datatest_stable::harness!(run_json_to_config_spec, "src/core/generator/tests/fixtures/json", r"^.*\.json");
+datatest_stable::harness!(
+    run_json_to_config_spec,
+    "src/core/generator/tests/fixtures/json",
+    r"^.*\.json"
+);
 
 pub fn run_json_to_config_spec(path: &Path) -> datatest_stable::Result<()> {
     let (url, body) = load_json(path)?;
-    let parsed_url = Url::parse(url.as_str())
-        .unwrap_or_else(|_| panic!("Failed to parse the url. url: {}, test file: {:?}", url, path));
+    let parsed_url = Url::parse(url.as_str()).unwrap_or_else(|_| {
+        panic!(
+            "Failed to parse the url. url: {}, test file: {:?}",
+            url, path
+        )
+    });
     test_spec(path, parsed_url, body)?;
     Ok(())
 }
