@@ -1,6 +1,6 @@
 use serde_json::{Map, Value};
 
-use super::ConfigGenerator;
+use super::ConfigTransformer;
 use crate::core::config::{Config, Field, Type};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 
@@ -146,7 +146,7 @@ where
     }
 }
 
-impl<T> ConfigGenerator for TypesGenerator<'_, T>
+impl<T> ConfigTransformer for TypesGenerator<'_, T>
 where
     T: OperationGenerator,
 {

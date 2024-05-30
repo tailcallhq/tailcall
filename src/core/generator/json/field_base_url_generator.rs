@@ -1,6 +1,6 @@
 use url::Url;
 
-use super::ConfigGenerator;
+use super::ConfigTransformer;
 use crate::core::config::Config;
 
 pub struct FieldBaseUrlGenerator<'a> {
@@ -14,7 +14,7 @@ impl<'a> FieldBaseUrlGenerator<'a> {
     }
 }
 
-impl ConfigGenerator for FieldBaseUrlGenerator<'_> {
+impl ConfigTransformer for FieldBaseUrlGenerator<'_> {
     fn apply(&mut self, mut config: Config) -> Config {
         let base_url = match self.url.host_str() {
             Some(host) => match self.url.port() {
@@ -48,7 +48,7 @@ mod test {
 
     use super::FieldBaseUrlGenerator;
     use crate::core::config::{Config, Field, Http, Type};
-    use crate::core::generator::json::ConfigGenerator;
+    use crate::core::generator::json::ConfigTransformer;
 
     #[test]
     fn should_add_base_url_for_http_fields() {

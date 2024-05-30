@@ -1,7 +1,7 @@
 use url::Url;
 
 use crate::core::config::Config;
-use crate::core::generator::json::ConfigGenerator;
+use crate::core::generator::json::ConfigTransformer;
 
 pub struct SchemaGenerator {
     query_name: Option<String>,
@@ -32,7 +32,7 @@ impl SchemaGenerator {
     }
 }
 
-impl ConfigGenerator for SchemaGenerator {
+impl ConfigTransformer for SchemaGenerator {
     fn apply(&mut self, mut config: Config) -> Config {
         self.generate_schema(&mut config);
         self.generate_upstream(&mut config);
@@ -46,7 +46,7 @@ mod test {
     use url::Url;
 
     use super::SchemaGenerator;
-    use crate::core::generator::json::ConfigGenerator;
+    use crate::core::generator::json::ConfigTransformer;
 
     #[test]
     fn test_schema_generator_with_query() {

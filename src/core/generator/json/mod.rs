@@ -11,17 +11,17 @@ pub use types_generator::TypesGenerator;
 use crate::core::config::Config;
 use crate::core::merge_right::MergeRight;
 
-pub trait ConfigGenerator {
+pub trait ConfigTransformer {
     fn apply(&mut self, config: Config) -> Config;
 }
 
 #[derive(Default)]
-pub struct StepConfigGenerator {
+pub struct ConfigPipeline {
     config: Config,
 }
 
-impl StepConfigGenerator {
-    pub fn pipe(mut self, mut other: impl ConfigGenerator) -> Self {
+impl ConfigPipeline {
+    pub fn then(mut self, mut other: impl ConfigTransformer) -> Self {
         let update_config = other.apply(self.config.clone());
         self.config = self.config.merge_right(update_config);
         self
