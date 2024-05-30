@@ -99,7 +99,6 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: aarch64-pc-windows-msvc
-            cross: true
             features: --no-default-features --features cli
             libc: glibc
             ext: ".exe"
@@ -149,8 +148,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y mingw-w64 llvm llvm-dev mingw-w64 libssl-dev
-          sudo apt install -y openssl
+          sudo apt-get install -y mingw-w64 llvm-dev mingw-w64 libssl-dev
+          sudo apt install -y openssl nsis lld llvm
 
       - name: Build
         env:
