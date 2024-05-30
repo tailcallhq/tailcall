@@ -1,12 +1,12 @@
 schema
-  @server(hostname: "0.0.0.0", port: 8000)
-  @upstream(
-    baseURL: "http://jsonplaceholder.typicode.com"
-    poolMaxIdlePerHost: 200
-    tcpKeepAlive: 60
-    proxy: {url: "http://127.0.0.1:3000"}
-    dedupe: SELF
-  ) {
+@server(hostname: "0.0.0.0", port: 8000)
+@upstream(
+  baseURL: "http://jsonplaceholder.typicode.com"
+  poolMaxIdlePerHost: 200
+  tcpKeepAlive: 60
+  proxy: {url: "http://127.0.0.1:3000"}
+  dedupeInFlight: true
+) {
   query: Query
 }
 
