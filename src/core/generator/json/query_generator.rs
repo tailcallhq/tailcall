@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use regex::Regex;
 use url::Url;
 
@@ -19,15 +21,30 @@ struct UrlQueryParser {
 
 impl UrlQueryParser {
     fn new(url: &Url) -> Self {
-        let query_list: Vec<_> = url
-            .query_pairs()
-            .map(|(k, v)| UrlQuery {
-                key: k.to_string(),
-                data_type: detect_gql_data_type(&v),
-                is_list: v.contains(","), // TODO: improve this.
-            })
-            .collect();
-        Self { queries: query_list }
+        let mut queries: Vec<UrlQuery> = Vec::new();
+        let mut seen_keys = HashSet::new();
+
+        for (query, value) in url.query_pairs() {
+            let key = query.to_string();
+            let value_str = value.to_string();
+
+            if seen_keys.contains(&key) {
+                // Find the existing query and mark it as a list
+                if let Some(existing_query) = queries.iter_mut().find(|q| q.key == key) {
+                    existing_query.is_list = true;
+                }
+            } else {
+                let is_list = value_str.contains(',');
+                queries.push(UrlQuery {
+                    key: key.clone(),
+                    data_type: detect_gql_data_type(&value_str),
+                    is_list,
+                });
+                seen_keys.insert(key);
+            }
+        }
+
+        Self { queries }
     }
 }
 
