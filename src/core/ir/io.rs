@@ -64,9 +64,11 @@ impl Eval for IO {
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
-        // Note: Handled the case separately to avoid cache key generation when it's not required
-        if !(ctx.request_ctx.upstream.dedupe_in_flight
-            || ctx.request_ctx.upstream.dedupe_in_request)
+        // Note: Handled the case separately to avoid cache key generation when it's not
+        // required
+        if (!ctx.request_ctx.upstream.dedupe_in_flight
+            && !ctx.request_ctx.upstream.dedupe_in_request)
+            || !ctx.is_query()
         {
             return self.eval_inner(ctx);
         }
