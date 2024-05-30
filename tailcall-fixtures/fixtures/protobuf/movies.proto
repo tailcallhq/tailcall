@@ -8,8 +8,10 @@ import "google/protobuf/duration.proto";
 
 // This is a comment for Genre enum
 enum Genre {
+    // This is a comment for UNSPECIFIED variant
     UNSPECIFIED = 0;
     ACTION = 1;
+    // This is a comment for DRAMA variant
     DRAMA = 2;
 }
 

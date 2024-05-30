@@ -4,6 +4,7 @@ pub enum PathField {
     Service,
     Field,
     Method,
+    EnumValue,
 }
 
 impl PathField {
@@ -14,6 +15,7 @@ impl PathField {
             PathField::Service => 6,
             PathField::Field => 2,
             PathField::Method => 2,
+            PathField::EnumValue => 2,
         }
     }
 }

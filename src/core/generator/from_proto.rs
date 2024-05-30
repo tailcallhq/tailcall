@@ -78,22 +78,40 @@ impl Context {
         let path_builder = PathBuilder::new(parent_path);
         for (index, enum_) in enums.iter().enumerate() {
             let enum_name = enum_.name();
+            let enum_type_path = path_builder.extend(PathField::EnumType, index as i32);
 
-            let variants = enum_
-                .value
-                .iter()
-                .map(|v| GraphQLType::new(v.name()).into_enum_variant().to_string())
-                .collect::<BTreeSet<String>>();
+            let mut variants_with_comments = BTreeSet::new();
+
+            for (value_index, v) in enum_.value.iter().enumerate() {
+                let variant_name = GraphQLType::new(v.name()).into_enum_variant().to_string();
+
+                // Path to the enum value's comments
+                let value_path = PathBuilder::new(&enum_type_path)
+                    .extend(PathField::EnumValue, value_index as i32); // 2: value field
+
+                // Get comments for the enum value
+                let comment = self.get_comments(&value_path);
+
+                // Format the variant with its comment as description
+                if let Some(comment) = comment {
+                    let variant_with_comment =
+                        format!("\"\"\n  {}\n  \"\"\n  {}", comment, variant_name);
+                    variants_with_comments.insert(variant_with_comment);
+                } else {
+                    variants_with_comments.insert(variant_name);
+                }
+            }
 
             let type_name = GraphQLType::new(enum_name)
                 .extend(self.namespace.as_slice())
                 .into_enum()
                 .to_string();
 
-            let path = path_builder.extend(PathField::EnumType, index as i32);
-            let doc = self.get_comments(&path);
+            let doc = self.get_comments(&enum_type_path);
 
-            self.config.enums.insert(type_name, Enum { variants, doc });
+            self.config
+                .enums
+                .insert(type_name, Enum { variants: variants_with_comments, doc });
         }
         self
     }

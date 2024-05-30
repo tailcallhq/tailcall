@@ -46,9 +46,15 @@ input movies__SearchByCastRequest @tag(id: "movies.SearchByCastRequest") {
 This is a comment for Genre enum
 """
 enum movies__Genre {
-  ACTION
+  ""
+  This is a comment for DRAMA variant
+  ""
   DRAMA
+  ""
+  This is a comment for UNSPECIFIED variant
+  ""
   UNSPECIFIED
+  ACTION
 }
 
 type Query {
