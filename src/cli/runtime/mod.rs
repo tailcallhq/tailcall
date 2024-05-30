@@ -40,7 +40,10 @@ fn init_http_worker_io(
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
-    None
+    {
+        let _ = script;
+        None
+    }
 }
 
 fn init_resolver_worker_io(
@@ -49,7 +52,10 @@ fn init_resolver_worker_io(
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
-    None
+    {
+        let _ = script;
+        None
+    }
 }
 
 // Provides access to http in native rust environment
