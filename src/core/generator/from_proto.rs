@@ -8,6 +8,7 @@ use prost_reflect::prost_types::{
 
 use super::graphql_type::{GraphQLType, Unparsed};
 use super::path_builder::PathBuilder;
+use super::path_field::PathField;
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
@@ -89,7 +90,7 @@ impl Context {
                 .into_enum()
                 .to_string();
 
-            let path = path_builder.extend(&[5, index as i32]); // 5: enum_type field
+            let path = path_builder.extend(PathField::EnumType, index as i32);
             let doc = self.get_comments(&path);
 
             self.config.enums.insert(type_name, Enum { variants, doc });
@@ -127,16 +128,19 @@ impl Context {
 
             // first append the name of current message as namespace
             self.namespace.push(msg_name.to_string());
-            self = self.append_enums(&message.enum_type, &path_builder.extend(&[3, index as i32]));
+            self = self.append_enums(
+                &message.enum_type,
+                &path_builder.extend(PathField::MessageType, index as i32),
+            );
             self = self.append_msg_type(
                 &message.nested_type,
-                &path_builder.extend(&[3, index as i32]),
+                &path_builder.extend(PathField::MessageType, index as i32),
             )?;
             // then drop it after handling nested types
             self.namespace.pop();
 
             let mut ty = Type::default();
-            let path = path_builder.extend(&[4, index as i32]); // 4: message_type field
+            let path = path_builder.extend(PathField::MessageType, index as i32);
             ty.doc = self.get_comments(&path);
 
             for (field_index, field) in message.field.iter().enumerate() {
@@ -174,7 +178,8 @@ impl Context {
                     cfg_field.type_of = type_of;
                 }
 
-                let field_path = PathBuilder::new(&path).extend(&[2, field_index as i32]); // 2: field field
+                let field_path =
+                    PathBuilder::new(&path).extend(PathField::Field, field_index as i32);
                 cfg_field.doc = self.get_comments(&field_path);
 
                 ty.fields.insert(field_name.to_string(), cfg_field);
@@ -200,7 +205,7 @@ impl Context {
         let path_builder = PathBuilder::new(parent_path);
         for (index, service) in services.iter().enumerate() {
             let service_name = service.name();
-            let path = path_builder.extend(&[6, index as i32]); // 6: service field
+            let path = path_builder.extend(PathField::Service, index as i32);
 
             for (method_index, method) in service.method.iter().enumerate() {
                 let field_name = GraphQLType::new(method.name())
@@ -243,7 +248,8 @@ impl Context {
                     method: field_name.id(),
                 });
 
-                let method_path = PathBuilder::new(&path).extend(&[2, method_index as i32]); // 2: method field
+                let method_path =
+                    PathBuilder::new(&path).extend(PathField::Method, method_index as i32);
                 cfg_field.doc = self.get_comments(&method_path);
 
                 let ty = self

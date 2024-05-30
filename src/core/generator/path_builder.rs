@@ -1,3 +1,5 @@
+use super::path_field::PathField;
+
 pub struct PathBuilder {
     base_path: Vec<i32>,
 }
@@ -7,7 +9,10 @@ impl PathBuilder {
         Self { base_path: base_path.to_vec() }
     }
 
-    pub fn extend(&self, extension: &[i32]) -> Vec<i32> {
-        [self.base_path.as_slice(), extension].concat()
+    pub fn extend(&self, field: PathField, index: i32) -> Vec<i32> {
+        let mut extended_path = self.base_path.clone();
+        extended_path.push(field.value());
+        extended_path.push(index);
+        extended_path
     }
 }
