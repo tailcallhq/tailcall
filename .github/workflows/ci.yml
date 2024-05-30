@@ -99,6 +99,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
             target: aarch64-pc-windows-msvc
+            cross: true
             features: --no-default-features --features cli
             libc: glibc
             ext: ".exe"
