@@ -149,7 +149,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y mingw-w64 llvm-dev mingw-w64 libssl-dev
-          sudo apt install -y openssl nsis lld llvm
+          sudo apt install -y openssl nsis lld llvm clang
 
       - name: Build
         env:
