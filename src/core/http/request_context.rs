@@ -15,7 +15,7 @@ use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::core::lambda::EvaluationError;
+use crate::core::ir::EvaluationError;
 use crate::core::runtime::TargetRuntime;
 
 #[derive(Setters)]

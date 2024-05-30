@@ -39,7 +39,7 @@ message NewsList {
 ```graphql @config
 schema
   @server(port: 8000, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42)
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }

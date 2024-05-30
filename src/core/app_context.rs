@@ -11,7 +11,7 @@ use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{DataLoaderRequest, HttpDataLoader};
-use crate::core::lambda::{DataLoaderId, Expression, IO};
+use crate::core::ir::{DataLoaderId, IO, IR};
 use crate::core::rest::{Checked, EndpointSet};
 use crate::core::runtime::TargetRuntime;
 
@@ -43,7 +43,7 @@ impl AppContext {
                     let upstream_batch = &blueprint.upstream.batch;
                     field.map_expr(|expr| {
                         expr.modify(|expr| match expr {
-                            Expression::IO(io) => match io {
+                            IR::IO(io) => match io {
                                 IO::Http { req_template, group_by, .. } => {
                                     let data_loader = HttpDataLoader::new(
                                         runtime.clone(),
@@ -52,7 +52,7 @@ impl AppContext {
                                     )
                                     .to_data_loader(upstream_batch.clone().unwrap_or_default());
 
-                                    let result = Some(Expression::IO(IO::Http {
+                                    let result = Some(IR::IO(IO::Http {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId(http_data_loaders.len())),
@@ -70,7 +70,7 @@ impl AppContext {
                                                 upstream_batch.clone().unwrap_or_default(),
                                             );
 
-                                    let result = Some(Expression::IO(IO::GraphQL {
+                                    let result = Some(IR::IO(IO::GraphQL {
                                         req_template: req_template.clone(),
                                         field_name: field_name.clone(),
                                         batch: *batch,
@@ -92,7 +92,7 @@ impl AppContext {
                                         upstream_batch.clone().unwrap_or_default(),
                                     );
 
-                                    let result = Some(Expression::IO(IO::Grpc {
+                                    let result = Some(IR::IO(IO::Grpc {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId(grpc_data_loaders.len())),
@@ -101,6 +101,9 @@ impl AppContext {
                                     grpc_data_loaders.push(data_loader);
 
                                     result
+                                }
+                                IO::Js { name: method } => {
+                                    Some(IR::IO(IO::Js { name: method.clone() }))
                                 }
                             },
                             _ => None,

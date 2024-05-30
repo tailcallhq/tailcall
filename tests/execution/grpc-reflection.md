@@ -3,7 +3,7 @@
 ```graphql @config
 schema
   @server(port: 8000)
-  @upstream(httpCache: true, baseURL: "http://localhost:50051")
+  @upstream(httpCache: 42, baseURL: "http://localhost:50051")
   @link(src: "http://localhost:50051", type: Grpc) {
   query: Query
 }

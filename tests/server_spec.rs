@@ -58,10 +58,10 @@ pub mod test {
 
             let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-            if upstream.http_cache {
+            if upstream.http_cache > 0 {
                 client = client.with(Cache(HttpCache {
                     mode: CacheMode::Default,
-                    manager: HttpCacheManager::default(),
+                    manager: HttpCacheManager::new(upstream.http_cache),
                     options: HttpCacheOptions::default(),
                 }))
             }
@@ -154,6 +154,8 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
+            http_worker: None,
+            worker: None,
         }
     }
 }

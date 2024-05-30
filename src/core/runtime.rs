@@ -3,7 +3,8 @@ use std::sync::Arc;
 use async_graphql_value::ConstValue;
 
 use crate::core::schema_extension::SchemaExtension;
-use crate::core::{Cache, EnvIO, FileIO, HttpIO};
+use crate::core::worker::{Command, Event};
+use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
 
 /// The TargetRuntime struct unifies the available runtime-specific
 /// IO implementations. This is used to reduce piping IO structs all
@@ -26,6 +27,10 @@ pub struct TargetRuntime {
     /// A list of extensions that can be used to extend the runtime's
     /// functionality or integrate additional features.
     pub extensions: Arc<Vec<SchemaExtension>>,
+    /// Worker middleware for handling HTTP requests.
+    pub http_worker: Option<Arc<dyn WorkerIO<Event, Command>>>,
+    /// Worker middleware for resolving data.
+    pub worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>>,
 }
 
 impl TargetRuntime {
@@ -95,10 +100,10 @@ pub mod test {
 
             let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-            if upstream.http_cache {
+            if upstream.http_cache > 0 {
                 client = client.with(Cache(HttpCache {
                     mode: CacheMode::Default,
-                    manager: HttpCacheManager::default(),
+                    manager: HttpCacheManager::new(upstream.http_cache),
                     options: HttpCacheOptions::default(),
                 }))
             }
@@ -191,6 +196,8 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
+            http_worker: None,
+            worker: None,
         }
     }
 }
