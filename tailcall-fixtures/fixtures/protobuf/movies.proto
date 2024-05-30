@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
+// This is a comment for Genre enum
 enum Genre {
     UNSPECIFIED = 0;
     ACTION = 1;

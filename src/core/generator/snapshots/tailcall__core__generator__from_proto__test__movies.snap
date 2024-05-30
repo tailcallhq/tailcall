@@ -42,6 +42,9 @@ input movies__SearchByCastRequest @tag(id: "movies.SearchByCastRequest") {
   castName: google__protobuf__StringValue
 }
 
+"""
+This is a comment for Genre enum
+"""
 enum movies__Genre {
   ACTION
   DRAMA
