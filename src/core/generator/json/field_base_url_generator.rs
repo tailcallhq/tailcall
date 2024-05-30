@@ -1,5 +1,6 @@
 use url::Url;
 
+use super::url_utils::extract_base_url;
 use super::ConfigTransformer;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
@@ -17,15 +18,12 @@ impl<'a> FieldBaseUrlGenerator<'a> {
 
 impl ConfigTransformer for FieldBaseUrlGenerator<'_> {
     fn apply(&mut self, mut config: Config) -> Valid<Config, String> {
-        let base_url = match self.url.host_str() {
-            Some(host) => match self.url.port() {
-                Some(port) => format!("{}://{}:{}", self.url.scheme(), host, port),
-                None => format!("{}://{}", self.url.scheme(), host),
-            },
+        let base_url = match extract_base_url(self.url) {
+            Some(base_url) => base_url,
             None => {
                 return Valid::fail(format!(
-                    "unable to extract host name from url. url : {}",
-                    self.url
+                    "failed to extract the host url from {} ",
+                    self.url.to_string()
                 ))
             }
         };

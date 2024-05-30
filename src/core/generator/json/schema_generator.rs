@@ -4,6 +4,8 @@ use crate::core::config::Config;
 use crate::core::generator::json::ConfigTransformer;
 use crate::core::valid::Valid;
 
+use super::url_utils::extract_base_url;
+
 pub struct SchemaGenerator {
     query_name: Option<String>,
     url: Option<Url>,
@@ -19,26 +21,27 @@ impl SchemaGenerator {
         // TODO: add support for mutations and subscriptions later on.
     }
 
-    pub fn generate_upstream(&self, config: &mut Config) {
+    pub fn generate_upstream(&self, mut config: Config) -> Valid<Config, String> {
         if let Some(url) = &self.url {
-            let base_url = match url.host_str() {
-                Some(host) => match url.port() {
-                    Some(port) => format!("{}://{}:{}", url.scheme(), host, port),
-                    None => format!("{}://{}", url.scheme(), host),
-                },
-                None => url.to_string(),
+            let base_url = match extract_base_url(url) {
+                Some(base_url) => base_url,
+                None => {
+                    return Valid::fail(format!(
+                        "failed to extract the host url from {} ",
+                        url.to_string()
+                    ))
+                }
             };
             config.upstream.base_url = Some(base_url);
         }
+        Valid::succeed(config)
     }
 }
 
 impl ConfigTransformer for SchemaGenerator {
     fn apply(&mut self, mut config: Config) -> Valid<Config, String> {
         self.generate_schema(&mut config);
-        self.generate_upstream(&mut config);
-
-        Valid::succeed(config)
+        self.generate_upstream(config)
     }
 }
 
