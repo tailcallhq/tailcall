@@ -61,7 +61,7 @@ impl Generator {
         config.links = links;
 
         let module = ConfigModule::from(config)
-            .transform::<AmbiguousType>()
+            .transform_with(AmbiguousType::default())
             .to_result()?;
 
         Ok(module)

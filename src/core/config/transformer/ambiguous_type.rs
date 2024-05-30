@@ -9,7 +9,6 @@ use crate::core::valid::Valid;
 /// detected with the name that has a conflict. The returned value should return
 /// a Resolution object containing the new input and output types.
 /// The function will return a new ConfigModule with the resolved types.
-
 pub struct Resolution {
     pub input: String,
     pub output: String,
@@ -104,7 +103,7 @@ impl Transform for AmbiguousType {
             }
         }
 
-        let keys = c.config.types.keys().cloned().collect::<Vec<String>>();
+        let keys = c.config.types.keys().cloned().collect::<Vec<_>>();
 
         for k in keys {
             if let Some(ty) = c.config.types.get_mut(&k) {
@@ -135,7 +134,7 @@ mod tests {
 
     use maplit::hashset;
 
-    use crate::core::config::transformer::{AmbiguousType, Transform};
+    use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{Config, ConfigModule, Type};
     use crate::core::generator::Source;
     use crate::core::valid::Validator;
@@ -199,10 +198,8 @@ mod tests {
 
         config = build_qry(config);
 
-        let mut config_module = ConfigModule::from(config);
-
-        config_module = AmbiguousType::default()
-            .transform(config_module)
+        let config_module = ConfigModule::from(config)
+            .transform_with(AmbiguousType::default())
             .to_result()
             .unwrap();
 
@@ -228,7 +225,11 @@ mod tests {
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
         let gen = crate::core::generator::Generator::init(crate::core::runtime::test::init(None));
         let news = tailcall_fixtures::protobuf::NEWS;
-        let config_module = gen.read_all(Source::Proto, &[news], "Query").await?;
+        let config_module = gen
+            .read_all(Source::Proto, &[news], "Query")
+            .await?
+            .transform_with(AmbiguousType::default())
+            .to_result()?;
         let actual = config_module
             .config
             .types

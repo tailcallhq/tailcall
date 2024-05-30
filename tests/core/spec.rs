@@ -13,11 +13,12 @@ use serde::{Deserialize, Serialize};
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::reader::ConfigReader;
+use tailcall::core::config::transformer::AmbiguousType;
 use tailcall::core::config::{Config, ConfigModule, Source};
 use tailcall::core::http::{handle_request, AppContext};
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::print_schema::print_schema;
-use tailcall::core::valid::{Cause, ValidationError};
+use tailcall::core::valid::{Cause, ValidationError, Validator};
 use tailcall_prettier::Parser;
 
 use super::file::File;
@@ -64,6 +65,8 @@ async fn is_sdl_error(spec: ExecutionSpec, mock_http_client: Arc<Http>) -> bool 
             Ok(config) => {
                 let mut runtime = runtime::create_runtime(mock_http_client, spec.env.clone(), None);
                 runtime.file = Arc::new(File::new(spec.clone()));
+                println!("hx");
+
                 let reader = ConfigReader::init(runtime);
                 match reader.resolve(config, spec.path.parent()).await {
                     Ok(config) => Blueprint::try_from(&config),
@@ -218,7 +221,21 @@ async fn test_spec(spec: ExecutionSpec) {
     }
 
     // Parse and validate all server configs + check for identity
-    let server = check_server_config(spec.clone()).await;
+    let mut server = check_server_config(spec.clone()).await;
+
+    // if auto_resolve is enabled, resolve ambiguous types
+    if spec.auto_resolve {
+        server = server
+            .into_iter()
+            .map(|config| {
+                ConfigModule::from(config)
+                    .transform_with(AmbiguousType::default())
+                    .to_result()
+                    .unwrap()
+                    .config // TODO check unwrap
+            })
+            .collect::<Vec<_>>();
+    }
 
     // merged: Run merged specs
     let merged = server

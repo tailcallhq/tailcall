@@ -1,3 +1,7 @@
+---
+auto-resolve: true
+---
+
 # test-dbl-usage
 
 ```graphql @config
