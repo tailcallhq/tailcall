@@ -8,7 +8,7 @@ use reqwest::Request;
 
 use super::{CacheKey, Eval, EvaluationContext, IoId, ResolverContextLike};
 use crate::core::config::group_by::GroupBy;
-use crate::core::config::{Dedupe, GraphQLOperationType};
+use crate::core::config::GraphQLOperationType;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::graphql::{self, GraphqlDataLoader};
 use crate::core::grpc::data_loader::GrpcDataLoader;
@@ -64,41 +64,35 @@ impl Eval for IO {
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
-        match ctx.request_ctx.upstream.dedupe {
-            Dedupe::OFF => self.eval_inner(ctx),
-            _ => {
-                if let Some(key) = self.cache_key(&ctx) {
-                    match ctx.request_ctx.upstream.dedupe {
-                        Dedupe::LOCAL => Box::pin(async move {
-                            ctx.request_ctx
-                                .cache
-                                .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
-                                .await
-                                .as_ref()
-                                .clone()
-                        }),
-                        Dedupe::SELF => Box::pin(async move {
-                            ctx.request_ctx
-                                .async_loader
-                                .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
-                                .await
-                                .as_ref()
-                                .clone()
-                        }),
-                        Dedupe::GLOBAL => Box::pin(async move {
-                            ctx.request_ctx
-                                .async_loader
-                                .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
-                                .await
-                                .as_ref()
-                                .clone()
-                        }),
-                        Dedupe::OFF => self.eval_inner(ctx),
-                    }
-                } else {
-                    self.eval_inner(ctx)
-                }
+        if !(ctx.request_ctx.upstream.dedupe_in_flight
+            || ctx.request_ctx.upstream.dedupe_in_request)
+        {
+            return self.eval_inner(ctx);
+        }
+        if let Some(key) = self.cache_key(&ctx) {
+            if ctx.request_ctx.upstream.dedupe_in_request {
+                Box::pin(async move {
+                    ctx.request_ctx
+                        .cache
+                        .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
+                        .await
+                        .as_ref()
+                        .clone()
+                })
+            } else if ctx.request_ctx.upstream.dedupe_in_flight {
+                Box::pin(async move {
+                    ctx.request_ctx
+                        .async_loader
+                        .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
+                        .await
+                        .as_ref()
+                        .clone()
+                })
+            } else {
+                self.eval_inner(ctx)
             }
+        } else {
+            self.eval_inner(ctx)
         }
     }
 }
