@@ -92,16 +92,6 @@ fn create_http_directive(field: &mut Field, url: &Url) -> Http {
     check_n_add_path_variables(field, &mut http, url);
     check_n_add_query_variables(field, &mut http, url);
 
-    let base_url = match url.host_str() {
-        Some(host) => match url.port() {
-            Some(port) => format!("{}://{}:{}", url.scheme(), host, port),
-            None => format!("{}://{}", url.scheme(), host),
-        },
-        None => return http,
-    };
-
-    http.base_url = Some(base_url);
-
     http
 }
 
