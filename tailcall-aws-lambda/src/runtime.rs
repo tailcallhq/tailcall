@@ -60,5 +60,7 @@ pub fn init_runtime() -> TargetRuntime {
         env: init_env(),
         cache: init_cache(),
         extensions: Arc::new(vec![]),
+        http_worker: None,
+        worker: None,
     }
 }

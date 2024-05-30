@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: merged
 ---
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com", httpCache: true) {
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
 }
 

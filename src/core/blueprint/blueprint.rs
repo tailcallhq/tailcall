@@ -11,7 +11,7 @@ use serde_json::Value;
 use super::telemetry::Telemetry;
 use super::GlobalTimeout;
 use crate::core::blueprint::{Server, Upstream};
-use crate::core::lambda::Expression;
+use crate::core::ir::IR;
 use crate::core::schema_extension::SchemaExtension;
 
 /// Blueprint is an intermediary representation that allows us to generate
@@ -138,7 +138,7 @@ pub struct FieldDefinition {
     pub name: String,
     pub args: Vec<InputFieldDefinition>,
     pub of_type: Type,
-    pub resolver: Option<Expression>,
+    pub resolver: Option<IR>,
     pub directives: Vec<Directive>,
     pub description: Option<String>,
 }
@@ -146,7 +146,7 @@ pub struct FieldDefinition {
 impl FieldDefinition {
     ///
     /// Transforms the current expression if it exists on the provided field.
-    pub fn map_expr<F: FnMut(Expression) -> Expression>(&mut self, mut wrapper: F) {
+    pub fn map_expr<F: FnMut(IR) -> IR>(&mut self, mut wrapper: F) {
         if let Some(resolver) = self.resolver.take() {
             self.resolver = Some(wrapper(resolver))
         }

@@ -1,8 +1,7 @@
 use colored::Colorize;
+use tailcall_version::VERSION;
 use update_informer::{registry, Check};
 use which::which;
-
-use crate::cli::command::VERSION;
 
 enum InstallationMethod {
     Npm,
@@ -37,14 +36,14 @@ fn get_installation_method() -> InstallationMethod {
 
 pub async fn check_for_update() {
     tokio::task::spawn_blocking(|| {
-        if VERSION.eq("0.1.0-dev") {
+        if VERSION.is_dev() {
             // skip validation if it's not a release
             return;
         }
 
         let name: &str = "tailcallhq/tailcall";
 
-        let informer = update_informer::new(registry::GitHub, name, VERSION);
+        let informer = update_informer::new(registry::GitHub, name, VERSION.as_str());
 
         if let Some(latest_version) = informer.check_version().ok().flatten() {
             let github_release_url =
@@ -54,7 +53,7 @@ pub async fn check_for_update() {
                 "{}",
                 format!(
                     "A new release of tailcall is available: {} {} {}",
-                    VERSION.cyan(),
+                    VERSION.as_str().cyan(),
                     "➜".white(),
                     latest_version.to_string().cyan()
                 )

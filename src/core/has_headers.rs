@@ -1,6 +1,6 @@
 use hyper::HeaderMap;
 
-use crate::core::lambda::{EvaluationContext, ResolverContextLike};
+use crate::core::ir::{EvaluationContext, ResolverContextLike};
 
 pub trait HasHeaders {
     fn headers(&self) -> &HeaderMap;
