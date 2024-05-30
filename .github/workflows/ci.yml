@@ -419,6 +419,14 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install cargo-lambda
+        run: pip install cargo-lambda
+
       - name: Build
         env:
           APP_VERSION: ${{ needs.draft_release.outputs.create_release_name}}
