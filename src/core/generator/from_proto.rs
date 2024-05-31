@@ -172,8 +172,7 @@ impl Context {
             // then drop it after handling nested types
             self.namespace.pop();
 
-            let mut ty = Type::default();
-            ty.doc = self.get_comments(&msg_path);
+            let mut ty = Type { doc: self.get_comments(&msg_path), ..Default::default() };
 
             for (field_index, field) in message.field.iter().enumerate() {
                 let field_name = GraphQLType::new(field.name())
