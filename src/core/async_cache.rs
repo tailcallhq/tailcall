@@ -86,15 +86,17 @@ impl<
                     CacheValue::Ready(value) => value,
                 }
             } else {
-                let (tx, _) = broadcast::channel(100);
+                let (tx, _) = broadcast::channel(1000);
                 self.cache
                     .write()
                     .unwrap()
                     .insert(key.clone(), CacheValue::Pending(tx.clone()));
                 let result = Arc::new(or_else().await);
-                let mut guard = self.cache.write().unwrap();
-                if let Some(cache_value) = guard.get_mut(&key) {
-                    *cache_value = CacheValue::Ready(result.clone())
+                {
+                    let mut guard = self.cache.write().unwrap();
+                    if let Some(cache_value) = guard.get_mut(&key) {
+                        *cache_value = CacheValue::Ready(result.clone())
+                    }
                 }
                 tx.send(result.clone()).ok();
                 result
@@ -112,20 +114,26 @@ impl<
         if let Some(cache_value) = self.get_cache_value(&key) {
             match cache_value {
                 CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
-                CacheValue::Ready(value) => {
-                    self.cache.write().unwrap().remove(&key);
-                    value
-                }
+                CacheValue::Ready(value) => value,
             }
         } else {
-            let (tx, _) = broadcast::channel(100);
+            let (tx, _) = broadcast::channel(1000);
             self.cache
                 .write()
                 .unwrap()
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
             let result = Arc::new(func().await);
-            self.cache.write().unwrap().remove(&key);
-            tx.send(result.clone()).ok();
+            tracing::info!(
+                "cache length {} receivers {}",
+                self.cache.read().unwrap().len(),
+                tx.receiver_count()
+            );
+            {
+                let mut lock = self.cache.write().unwrap();
+                tx.send(result.clone()).ok();
+                lock.remove(&key);
+                drop(lock);
+            }
             result
         }
     }
@@ -138,6 +146,7 @@ mod tests {
     use futures_util::future;
     use pretty_assertions::assert_eq;
     use tokio::time::sleep;
+    use tracing::Level;
 
     use super::*;
 
@@ -337,36 +346,39 @@ mod tests {
             assert_eq!(result, first_result);
         }
     }
-    #[tokio::test]
+    async fn compute_value(i: usize) -> Result<String, String> {
+        sleep(Duration::from_millis(1)).await;
+        Ok(format!("value{}", i))
+    }
+
+    #[tokio::test(worker_threads = 4, flavor = "multi_thread")]
     async fn test_deadlock_scenario() {
+        // Initialize logging
+        tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+
         let cache = Arc::new(AsyncCache::<u64, String, String, NoCache>::new());
         let key = 1;
 
         let mut handles = Vec::new();
 
         // Spawn multiple tasks to simulate concurrent access
-        for i in 0..100 {
+        for i in 0..1000000 {
             let cache = cache.clone();
-            handles.push(tokio::spawn(async move {
+            let handle = tokio::task::spawn(async move {
                 cache
-                    .get_or_eval(key, || {
-                        Box::pin(async move {
-                            sleep(Duration::from_nanos(100)).await;
-                            Ok(format!("value{}", i))
-                        })
-                    })
+                    .get_or_eval(key, || Box::pin(compute_value(i)))
                     .await
-            }));
+                    .as_ref()
+                    .clone()
+            });
+            handles.push(handle);
         }
 
-        // Wait for all tasks to complete
-        let results = futures_util::future::join_all(handles).await;
-
-        // Check results for any potential errors or deadlocks
-        for (i, result) in results.into_iter().enumerate() {
-            match result {
+        // Await each task and check results for any potential errors or deadlocks
+        for (i, handle) in handles.into_iter().enumerate() {
+            match handle.await {
                 Ok(res) => {
-                    assert!(res.is_ok());
+                    assert!(res.is_ok(), "Task {}: Result: {:?}", i, res);
                 }
                 Err(e) => panic!("Task {}: Error: {:?}", i, e),
             }
