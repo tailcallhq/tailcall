@@ -6,7 +6,6 @@ use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
@@ -18,7 +17,7 @@ use crate::core::json::JsonSchema;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{is_default, scalar};
+use crate::core::{ConstValue, is_default, scalar};
 
 #[derive(
     Serialize,
@@ -385,7 +384,7 @@ pub struct Arg {
     #[serde(default, skip_serializing_if = "is_default")]
     pub modify: Option<Modify>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub default_value: Option<Value>,
+    pub default_value: Option<ConstValue>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
@@ -493,7 +492,7 @@ pub struct Step {
 
     /// The arguments that will override the actual arguments of the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub args: BTreeMap<String, Value>,
+    pub args: BTreeMap<String, ConstValue>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
@@ -591,7 +590,7 @@ impl Display for GraphQLOperationType {
 /// to a value. The expression can be a static value or built form a Mustache
 /// template. schema.
 pub struct Expr {
-    pub body: Value,
+    pub body: ConstValue,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]

@@ -1,5 +1,5 @@
 use async_graphql::validators::email;
-use async_graphql_value::ConstValue;
+use crate::core::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 
@@ -42,22 +42,21 @@ impl super::Scalar for Email {
 #[cfg(test)]
 mod test {
     use anyhow::Result;
-    use async_graphql_value::ConstValue;
-
+    use super::*;
     use crate::core::scalar::{Email, Scalar};
 
     #[tokio::test]
     async fn test_email_valid_req_resp() -> Result<()> {
-        assert!(Email::default().validate()(&ConstValue::String(
-            "valid@email.com".to_string()
+        assert!(Email::default().validate()(&ConstValue::Str(
+            "valid@email.com".to_string().into()
         )));
         Ok(())
     }
 
     #[tokio::test]
     async fn test_email_invalid() -> Result<()> {
-        assert!(!Email::default().validate()(&ConstValue::String(
-            "invalid_email".to_string()
+        assert!(!Email::default().validate()(&ConstValue::Str(
+            "invalid_email".to_string().into()
         )));
         Ok(())
     }

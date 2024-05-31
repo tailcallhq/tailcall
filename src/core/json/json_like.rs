@@ -4,7 +4,7 @@ use async_graphql_value::ConstValue;
 
 pub trait JsonLike {
     type Output;
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str>;
+    fn as_array_ok(&self) -> Result<&[Self::Output], &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;
     fn as_string_ok(&self) -> Result<&String, &str>;
     fn as_i64_ok(&self) -> Result<i64, &str>;
@@ -21,8 +21,8 @@ pub trait JsonLike {
 
 impl JsonLike for serde_json::Value {
     type Output = serde_json::Value;
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
-        self.as_array().ok_or("expected array")
+    fn as_array_ok(&self) -> Result<&[Self::Output], &str> {
+        self.as_array().map(|v| v.as_ref()).ok_or("expected array")
     }
     fn as_str_ok(&self) -> Result<&str, &str> {
         self.as_str().ok_or("expected str")
@@ -79,6 +79,77 @@ impl JsonLike for serde_json::Value {
     fn as_string_ok(&self) -> Result<&String, &str> {
         match self {
             serde_json::Value::String(s) => Ok(s),
+            _ => Err("expected string"),
+        }
+    }
+
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+        let src = gather_path_matches(self, path, vec![]);
+        group_by_key(src)
+    }
+}
+
+
+impl JsonLike for crate::core::ConstValue {
+    type Output = crate::core::ConstValue;
+    fn as_array_ok(&self) -> Result<&[Self::Output], &str> {
+        self.as_array().ok_or("expected array")
+    }
+    fn as_str_ok(&self) -> Result<&str, &str> {
+        self.as_str().ok_or("expected str")
+    }
+    fn as_i64_ok(&self) -> Result<i64, &str> {
+        self.as_i64().ok_or("expected i64")
+    }
+    fn as_u64_ok(&self) -> Result<u64, &str> {
+        self.as_u64().ok_or("expected u64")
+    }
+    fn as_f64_ok(&self) -> Result<f64, &str> {
+        self.as_f64().ok_or("expected f64")
+    }
+    fn as_bool_ok(&self) -> Result<bool, &str> {
+        self.as_bool().ok_or("expected bool")
+    }
+    fn as_null_ok(&self) -> Result<(), &str> {
+        self.as_null().ok_or("expected null")
+    }
+
+    fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str> {
+        match self {
+            crate::core::ConstValue::Null => Ok(None),
+            _ => Ok(Some(self)),
+        }
+    }
+
+    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output> {
+        let mut val = self;
+        for token in path {
+            val = match val {
+                crate::core::ConstValue::Array(arr) => {
+                    let index = token.as_ref().parse::<usize>().ok()?;
+                    arr.get(index)?
+                }
+                crate::core::ConstValue::Object(map) => map.get(token.as_ref())?,
+                _ => return None,
+            };
+        }
+        Some(val)
+    }
+
+    fn new(value: &Self::Output) -> &Self {
+        value
+    }
+
+    fn get_key(&self, path: &str) -> Option<&Self::Output> {
+        match self {
+            crate::core::ConstValue::Object(map) => map.get(path),
+            _ => None,
+        }
+    }
+
+    fn as_string_ok(&self) -> Result<&String, &str> {
+        match self {
+            crate::core::ConstValue::String(s) => Ok(s),
             _ => Err("expected string"),
         }
     }

@@ -42,9 +42,10 @@ use std::borrow::Cow;
 use std::hash::Hash;
 use std::num::NonZeroU64;
 
-use async_graphql_value::ConstValue;
 use http::Response;
 pub use tailcall_macros as macros;
+
+pub type ConstValue = serde_json_borrow::Value<'static>;
 
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;

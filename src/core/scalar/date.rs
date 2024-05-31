@@ -1,4 +1,4 @@
-use async_graphql_value::ConstValue;
+use crate::core::ConstValue;
 use chrono::DateTime;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
@@ -31,7 +31,6 @@ impl super::Scalar for Date {
 
 #[cfg(test)]
 mod test {
-    use async_graphql_value::ConstValue;
 
     use super::*;
     use crate::core::scalar::Scalar;
@@ -39,14 +38,14 @@ mod test {
     #[test]
     fn test_date() {
         let date = Date::default();
-        let validate = date.validate()(&ConstValue::String("2020-01-01T12:00:00Z".to_string()));
+        let validate = date.validate()(&ConstValue::Str("2020-01-01T12:00:00Z".into()));
         assert!(validate);
     }
 
     #[test]
     fn test_invalid_date() {
         let date = Date::default();
-        let validate = date.validate()(&ConstValue::String("2023-03-08T12:45:26".to_string()));
+        let validate = date.validate()(&ConstValue::Str("2023-03-08T12:45:26".into()));
         assert!(!validate);
     }
 

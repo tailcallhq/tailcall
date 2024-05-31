@@ -4,9 +4,8 @@ use std::sync::Arc;
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
-use async_graphql_value::ConstValue;
+use crate::core::ConstValue;
 use derive_setters::Setters;
-use serde_json::Value;
 
 use super::telemetry::Telemetry;
 use super::GlobalTimeout;
@@ -129,7 +128,7 @@ pub struct SchemaDefinition {
 pub struct InputFieldDefinition {
     pub name: String,
     pub of_type: Type,
-    pub default_value: Option<serde_json::Value>,
+    pub default_value: Option<ConstValue>,
     pub description: Option<String>,
 }
 
@@ -156,7 +155,7 @@ impl FieldDefinition {
 #[derive(Clone, Debug)]
 pub struct Directive {
     pub name: String,
-    pub arguments: HashMap<String, Value>,
+    pub arguments: HashMap<String, ConstValue>,
     pub index: usize,
 }
 
