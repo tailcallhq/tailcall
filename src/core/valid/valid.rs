@@ -123,7 +123,7 @@ impl<A, E> Valid<A, E> {
 
     pub fn from_iter<B>(
         iter: impl IntoIterator<Item = A>,
-        mut f: impl FnMut(A) -> Valid<B, E>,
+        f: impl Fn(A) -> Valid<B, E>,
     ) -> Valid<Vec<B>, E> {
         let mut values: Vec<B> = Vec::new();
         let mut errors: ValidationError<E> = ValidationError::empty();
