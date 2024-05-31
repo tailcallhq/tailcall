@@ -146,11 +146,7 @@ impl Context {
 
             // first append the name of current message as namespace
             self.namespace.push(msg_name.to_string());
-            self = self.append_enums(
-                &message.enum_type,
-                &PathBuilder::new(&parent_path.extend(PathField::MessageType, index as i32)),
-                true,
-            );
+            self = self.append_enums(&message.enum_type, &PathBuilder::new(&msg_path), true);
             self =
                 self.append_msg_type(&message.nested_type, &PathBuilder::new(&msg_path), true)?;
             // then drop it after handling nested types
