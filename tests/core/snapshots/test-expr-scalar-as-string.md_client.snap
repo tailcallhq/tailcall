@@ -1,0 +1,40 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+type Entry {
+  arr: String
+  bool: String
+  nested: Nested
+  num: String
+  obj: String
+  str: String
+}
+
+scalar JSON
+
+type Nested {
+  arr: String
+  bool: String
+  num: String
+  obj: String
+  str: String
+}
+
+scalar PhoneNumber
+
+type Query {
+  entry: Entry
+}
+
+scalar Url
+
+schema {
+  query: Query
+}
