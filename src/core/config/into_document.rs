@@ -190,7 +190,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
         };
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
-            description: None,
+            description: type_def.doc.clone().map(pos),
             name: pos(Name::new(type_name.clone())),
             directives: type_def
                 .added_fields
