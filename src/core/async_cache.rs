@@ -86,7 +86,7 @@ impl<
                     CacheValue::Ready(value) => value,
                 }
             } else {
-                let (tx, rx) = broadcast::channel(1000);
+                let (tx, _) = broadcast::channel(1000);
                 self.cache
                     .write()
                     .unwrap()
@@ -111,12 +111,12 @@ impl<
         key: Key,
         func: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
     ) -> Arc<Result<Value, Error>> {
-        let mut subscriber = {
+        let subscriber = {
             let lock = self.cache.read().unwrap();
             if let Some(cache_value) = lock.get(&key) {
                 match cache_value {
                     CacheValue::Pending(tx) => Some(tx.subscribe()),
-                    CacheValue::Ready(value) => unimplemented!(),
+                    CacheValue::Ready(_) => unimplemented!("This should never be reachable"),
                 }
             } else {
                 None
@@ -127,7 +127,7 @@ impl<
             subscriber.recv().await.unwrap()
         } else {
             let (tx, _) = broadcast::channel(1000);
-            let existing = self
+            let _ = self
                 .cache
                 .write()
                 .unwrap()
