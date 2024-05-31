@@ -38,7 +38,7 @@ where
     _behavior: std::marker::PhantomData<Behavior>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum CacheValue<Value, Error> {
     Pending(broadcast::Sender<Arc<Result<Value, Error>>>),
     Ready(Arc<Result<Value, Error>>),
@@ -124,10 +124,7 @@ impl<
                 .unwrap()
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
             let result = Arc::new(func().await);
-            let mut guard = self.cache.write().unwrap();
-            if let Some(cache_value) = guard.get_mut(&key) {
-                *cache_value = CacheValue::Ready(result.clone())
-            }
+            self.cache.write().unwrap().remove(&key);
             tx.send(result.clone()).ok();
             result
         }
@@ -338,6 +335,41 @@ mod tests {
         // Ensure all results are the same to confirm the cache behavior
         for result in results {
             assert_eq!(result, first_result);
+        }
+    }
+    #[tokio::test]
+    async fn test_deadlock_scenario() {
+        let cache = Arc::new(AsyncCache::<u64, String, String, NoCache>::new());
+        let key = 1;
+
+        let mut handles = Vec::new();
+
+        // Spawn multiple tasks to simulate concurrent access
+        for i in 0..100 {
+            let cache = cache.clone();
+            handles.push(tokio::spawn(async move {
+                cache
+                    .get_or_eval(key, || {
+                        Box::pin(async move {
+                            sleep(Duration::from_nanos(100)).await;
+                            Ok(format!("value{}", i))
+                        })
+                    })
+                    .await
+            }));
+        }
+
+        // Wait for all tasks to complete
+        let results = futures_util::future::join_all(handles).await;
+
+        // Check results for any potential errors or deadlocks
+        for (i, result) in results.into_iter().enumerate() {
+            match result {
+                Ok(res) => {
+                    assert!(res.is_ok());
+                }
+                Err(e) => panic!("Task {}: Error: {:?}", i, e),
+            }
         }
     }
 }
