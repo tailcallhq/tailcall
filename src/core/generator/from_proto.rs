@@ -7,8 +7,9 @@ use prost_reflect::prost_types::{
 };
 
 use super::graphql_type::{GraphQLType, Unparsed};
-use super::path_builder::PathBuilder;
-use super::path_field::PathField;
+use super::proto::comments_builder::CommentsBuilder;
+use super::proto::path_builder::PathBuilder;
+use super::proto::path_field::PathField;
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
@@ -29,7 +30,7 @@ struct Context {
 
     /// Optional field to store source code information, including comments, for
     /// each entity.
-    source_code_info: Option<SourceCodeInfo>,
+    comments_builder: CommentsBuilder,
 }
 
 impl Context {
@@ -39,32 +40,14 @@ impl Context {
             namespace: Default::default(),
             config: Default::default(),
             map_types: Default::default(),
-            source_code_info: None,
+            comments_builder: CommentsBuilder::new(None),
         }
     }
 
     /// Sets source code information for preservation of comments.
     fn with_source_code_info(mut self, source_code_info: SourceCodeInfo) -> Self {
-        self.source_code_info = Some(source_code_info);
+        self.comments_builder = CommentsBuilder::new(Some(source_code_info));
         self
-    }
-
-    /// Retrieves comments associated with the source code information.
-    fn get_comments(&self, path: &[i32]) -> Option<String> {
-        self.source_code_info.as_ref().and_then(|info| {
-            info.location
-                .iter()
-                .find(|loc| loc.path == path)
-                .and_then(|loc| {
-                    loc.leading_comments.as_ref().map(|c| {
-                        c.lines()
-                            .map(|line| line.trim_start_matches('*').trim())
-                            .filter(|line| !line.is_empty())
-                            .collect::<Vec<_>>()
-                            .join("\n  ")
-                    })
-                })
-        })
     }
 
     /// Resolves the actual name and inserts the type.
@@ -100,7 +83,7 @@ impl Context {
                     .extend(PathField::EnumValue, value_index as i32); // 2: value field
 
                 // Get comments for the enum value
-                let comment = self.get_comments(&value_path);
+                let comment = self.comments_builder.get_comments(&value_path);
 
                 // Format the variant with its comment as description
                 if let Some(comment) = comment {
@@ -117,7 +100,7 @@ impl Context {
                 .into_enum()
                 .to_string();
 
-            let doc = self.get_comments(&enum_type_path);
+            let doc = self.comments_builder.get_comments(&enum_type_path);
 
             self.config
                 .enums
@@ -172,7 +155,10 @@ impl Context {
             // then drop it after handling nested types
             self.namespace.pop();
 
-            let mut ty = Type { doc: self.get_comments(&msg_path), ..Default::default() };
+            let mut ty = Type {
+                doc: self.comments_builder.get_comments(&msg_path),
+                ..Default::default()
+            };
 
             for (field_index, field) in message.field.iter().enumerate() {
                 let field_name = GraphQLType::new(field.name())
@@ -211,7 +197,7 @@ impl Context {
 
                 let field_path =
                     PathBuilder::new(&msg_path).extend(PathField::Field, field_index as i32);
-                cfg_field.doc = self.get_comments(&field_path);
+                cfg_field.doc = self.comments_builder.get_comments(&field_path);
 
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
@@ -281,7 +267,7 @@ impl Context {
 
                 let method_path =
                     PathBuilder::new(&path).extend(PathField::Method, method_index as i32);
-                cfg_field.doc = self.get_comments(&method_path);
+                cfg_field.doc = self.comments_builder.get_comments(&method_path);
 
                 let ty = self
                     .config
