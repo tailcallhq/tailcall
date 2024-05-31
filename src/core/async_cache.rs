@@ -86,7 +86,7 @@ impl<
                     CacheValue::Ready(value) => value,
                 }
             } else {
-                let (tx, _) = broadcast::channel(1000);
+                let (tx, rx) = broadcast::channel(1000);
                 self.cache
                     .write()
                     .unwrap()
@@ -111,29 +111,41 @@ impl<
         key: Key,
         func: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<Value, Error>> + 'a + Send>> + Send,
     ) -> Arc<Result<Value, Error>> {
-        if let Some(cache_value) = self.get_cache_value(&key) {
-            match cache_value {
-                CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
-                CacheValue::Ready(value) => value,
+        let mut subscriber = {
+            let lock = self.cache.read().unwrap();
+            if let Some(cache_value) = lock.get(&key) {
+                match cache_value {
+                    CacheValue::Pending(tx) => Some(tx.subscribe()),
+                    CacheValue::Ready(value) => unimplemented!(),
+                }
+            } else {
+                None
             }
+        };
+
+        if let Some(mut subscriber) = subscriber {
+            subscriber.recv().await.unwrap()
         } else {
             let (tx, _) = broadcast::channel(1000);
-            self.cache
+            let existing = self
+                .cache
                 .write()
                 .unwrap()
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
             let result = Arc::new(func().await);
-            tracing::info!(
-                "cache length {} receivers {}",
-                self.cache.read().unwrap().len(),
-                tx.receiver_count()
-            );
+            // tracing::info!(
+            //     "cache length {} receivers {}, had key: {}",
+            //     self.cache.read().unwrap().len(),
+            //     tx.receiver_count(),
+            //     existing.is_some()
+            // );
             {
                 let mut lock = self.cache.write().unwrap();
                 tx.send(result.clone()).ok();
                 lock.remove(&key);
                 drop(lock);
             }
+
             result
         }
     }
@@ -351,7 +363,7 @@ mod tests {
         Ok(format!("value{}", i))
     }
 
-    #[tokio::test(worker_threads = 4, flavor = "multi_thread")]
+    #[tokio::test(worker_threads = 16, flavor = "multi_thread")]
     async fn test_deadlock_scenario() {
         // Initialize logging
         tracing_subscriber::fmt().with_max_level(Level::INFO).init();
