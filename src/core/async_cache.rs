@@ -1,9 +1,9 @@
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
-use dashmap::DashMap;
 use futures_util::Future;
 use tokio::sync::broadcast;
 
@@ -34,7 +34,7 @@ pub struct AsyncCache<Key, Value, Error, Behavior>
 where
     Behavior: CachingBehavior,
 {
-    cache: Arc<DashMap<Key, CacheValue<Value, Error>>>,
+    cache: Arc<RwLock<HashMap<Key, CacheValue<Value, Error>>>>,
     _behavior: std::marker::PhantomData<Behavior>,
 }
 
@@ -65,13 +65,13 @@ impl<
 {
     pub fn new() -> Self {
         Self {
-            cache: Arc::new(DashMap::new()),
+            cache: Arc::new(RwLock::new(HashMap::new())),
             _behavior: std::marker::PhantomData,
         }
     }
 
     fn get_cache_value(&self, key: &Key) -> Option<CacheValue<Value, Error>> {
-        self.cache.get(key).map(|v| v.clone())
+        self.cache.read().unwrap().get(key).cloned()
     }
 
     pub async fn get_or_eval<'a>(
@@ -88,13 +88,14 @@ impl<
             } else {
                 let (tx, _) = broadcast::channel(100);
                 self.cache
+                    .write()
+                    .unwrap()
                     .insert(key.clone(), CacheValue::Pending(tx.clone()));
                 let result = Arc::new(or_else().await);
-                let mut guard = self
-                    .cache
-                    .entry(key)
-                    .or_insert(CacheValue::Pending(tx.clone()));
-                *guard = CacheValue::Ready(result.clone());
+                let mut guard = self.cache.write().unwrap();
+                if let Some(cache_value) = guard.get_mut(&key) {
+                    *cache_value = CacheValue::Ready(result.clone())
+                }
                 tx.send(result.clone()).ok();
                 result
             }
@@ -112,20 +113,21 @@ impl<
             match cache_value {
                 CacheValue::Pending(tx) => tx.subscribe().recv().await.unwrap(),
                 CacheValue::Ready(value) => {
-                    self.cache.remove(&key);
+                    self.cache.write().unwrap().remove(&key);
                     value
                 }
             }
         } else {
             let (tx, _) = broadcast::channel(100);
             self.cache
+                .write()
+                .unwrap()
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
             let result = Arc::new(func().await);
-            let mut guard = self
-                .cache
-                .entry(key)
-                .or_insert(CacheValue::Pending(tx.clone()));
-            *guard = CacheValue::Ready(result.clone());
+            let mut guard = self.cache.write().unwrap();
+            if let Some(cache_value) = guard.get_mut(&key) {
+                *cache_value = CacheValue::Ready(result.clone())
+            }
             tx.send(result.clone()).ok();
             result
         }
