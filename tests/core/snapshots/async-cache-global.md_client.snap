@@ -1,0 +1,30 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  userId: Int!
+}
+
+type Query {
+  posts: [Post]
+}
+
+scalar Url
+
+schema {
+  query: Query
+}
