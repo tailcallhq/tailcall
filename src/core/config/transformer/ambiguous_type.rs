@@ -57,47 +57,45 @@ fn insert_resolution(
 
 impl Transform for AmbiguousType {
     fn transform(&self, mut c: ConfigModule) -> Valid<ConfigModule, String> {
-        let valid = Valid::from_iter(
+        Valid::from_iter(
             c.input_types.intersection(&c.output_types),
             |current_name| {
-                let mut resolution_map = HashMap::new();
-                // iterate over intersection of input and output types
+                // Iterate over intersection of input and output types
                 let resolution = (self.resolver)(current_name);
 
                 if !resolution.is_unique() {
-                    return Valid::fail(format!(
+                    Valid::fail(format!(
                         "Unable to auto resolve Input: {} and Output: {} are same",
                         resolution.input, resolution.output,
-                    ));
-                }
-                resolution_map = insert_resolution(resolution_map, current_name, resolution);
-                if let Some(ty) = c.config.types.get(current_name) {
-                    for field in ty.fields.values() {
-                        for args in field.args.values() {
-                            // if arg is of output type then it should be changed to that of newly
-                            // created input type.
-                            if c.output_types.contains(&args.type_of)
-                                && !resolution_map.contains_key(&args.type_of)
-                            {
-                                let resolution = (self.resolver)(args.type_of.as_str());
-                                resolution_map = insert_resolution(
-                                    resolution_map,
-                                    args.type_of.as_str(),
-                                    resolution,
-                                );
+                    ))
+                    .trace(current_name)
+                } else {
+                    let mut resolution_map = HashMap::new();
+                    resolution_map = insert_resolution(resolution_map, current_name, resolution);
+                    if let Some(ty) = c.config.types.get(current_name) {
+                        for field in ty.fields.values() {
+                            for args in field.args.values() {
+                                // if arg is of output type then it should be changed to that of
+                                // newly created input type.
+                                if c.output_types.contains(&args.type_of)
+                                    && !resolution_map.contains_key(&args.type_of)
+                                {
+                                    let resolution = (self.resolver)(args.type_of.as_str());
+                                    resolution_map = insert_resolution(
+                                        resolution_map,
+                                        args.type_of.as_str(),
+                                        resolution,
+                                    );
+                                }
                             }
                         }
                     }
+                    Valid::succeed(resolution_map)
                 }
-                Valid::succeed(resolution_map)
             },
         )
-        .and_then(|v| {
-            let mut map = HashMap::new();
-            v.into_iter().for_each(|v| map.extend(v));
-            Valid::succeed(map)
-        })
-        .and_then(|resolution_map| {
+        .map(|v| v.into_iter().flatten().collect::<HashMap<_, _>>())
+        .map(|resolution_map| {
             // insert newly created types to the config.
             for (current_name, resolution) in &resolution_map {
                 let input_name = &resolution.input;
@@ -119,9 +117,6 @@ impl Transform for AmbiguousType {
                     c.output_types.insert(output_name.clone());
                 }
             }
-            Valid::succeed(resolution_map)
-        })
-        .and_then(|resolution_map| {
             let keys = c.config.types.keys().cloned().collect::<Vec<_>>();
 
             for k in keys {
@@ -142,9 +137,8 @@ impl Transform for AmbiguousType {
                     }
                 }
             }
-            Valid::succeed(c)
-        });
-        valid
+            c
+        })
     }
 }
 
