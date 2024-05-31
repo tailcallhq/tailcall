@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::Transform;
 use crate::core::config::ConfigModule;
-use crate::core::valid::Valid;
+use crate::core::valid::{Valid, Validator};
 
 /// Resolves the ambiguous types by renaming the input and
 /// output types. The resolver function is called whenever is a conflict is
@@ -57,17 +57,15 @@ fn insert_resolution(
 
 impl Transform for AmbiguousType {
     fn transform(&self, mut c: ConfigModule) -> Valid<ConfigModule, String> {
-        let mut resolution_map = HashMap::new();
-
-        // iterate over intersection of input and output types
-        for current_name in c.input_types.intersection(&c.output_types) {
+        let valid = Valid::from_iter(c.input_types.intersection(&c.output_types), |current_name| {
+            let mut resolution_map = HashMap::new();
+            // iterate over intersection of input and output types
             let resolution = (self.resolver)(current_name);
 
             if !resolution.is_unique() {
                 return Valid::fail("Input and output types are same".to_string());
             }
             resolution_map = insert_resolution(resolution_map, current_name, resolution);
-
             if let Some(ty) = c.config.types.get(current_name) {
                 for field in ty.fields.values() {
                     for args in field.args.values() {
@@ -86,52 +84,58 @@ impl Transform for AmbiguousType {
                     }
                 }
             }
-        }
+            Valid::succeed(resolution_map)
+        }).and_then(|v| {
+            let mut map = HashMap::new();
+            v.into_iter().for_each(|v| map.extend(v));
+            Valid::succeed(map)
+        }).and_then(|resolution_map| {
+            // insert newly created types to the config.
+            for (current_name, resolution) in &resolution_map {
+                let input_name = &resolution.input;
+                let output_name = &resolution.output;
 
-        // insert newly created types to the config.
-        for (current_name, resolution) in &resolution_map {
-            let input_name = &resolution.input;
-            let output_name = &resolution.output;
+                let og_ty = c.config.types.get(current_name).cloned();
 
-            let og_ty = c.config.types.get(current_name).cloned();
+                // remove old types
+                c.config.types.remove(current_name);
+                c.input_types.remove(current_name);
+                c.output_types.remove(current_name);
 
-            // remove old types
-            c.config.types.remove(current_name);
-            c.input_types.remove(current_name);
-            c.output_types.remove(current_name);
+                // add new types
+                if let Some(og_ty) = og_ty {
+                    c.config.types.insert(input_name.clone(), og_ty.clone());
+                    c.input_types.insert(input_name.clone());
 
-            // add new types
-            if let Some(og_ty) = og_ty {
-                c.config.types.insert(input_name.clone(), og_ty.clone());
-                c.input_types.insert(input_name.clone());
-
-                c.config.types.insert(output_name.clone(), og_ty);
-                c.output_types.insert(output_name.clone());
+                    c.config.types.insert(output_name.clone(), og_ty);
+                    c.output_types.insert(output_name.clone());
+                }
             }
-        }
+            Valid::succeed(resolution_map)
+        }).and_then(|resolution_map| {
+            let keys = c.config.types.keys().cloned().collect::<Vec<_>>();
 
-        let keys = c.config.types.keys().cloned().collect::<Vec<_>>();
-
-        for k in keys {
-            if let Some(ty) = c.config.types.get_mut(&k) {
-                for field in ty.fields.values_mut() {
-                    if let Some(resolution) = resolution_map.get(&field.type_of) {
-                        if c.output_types.contains(&k) {
-                            field.type_of.clone_from(&resolution.output);
-                        } else if c.input_types.contains(&k) {
-                            field.type_of.clone_from(&resolution.input);
+            for k in keys {
+                if let Some(ty) = c.config.types.get_mut(&k) {
+                    for field in ty.fields.values_mut() {
+                        if let Some(resolution) = resolution_map.get(&field.type_of) {
+                            if c.output_types.contains(&k) {
+                                field.type_of.clone_from(&resolution.output);
+                            } else if c.input_types.contains(&k) {
+                                field.type_of.clone_from(&resolution.input);
+                            }
                         }
-                    }
-                    for arg in field.args.values_mut() {
-                        if let Some(resolution) = resolution_map.get(&arg.type_of) {
-                            arg.type_of.clone_from(&resolution.input);
+                        for arg in field.args.values_mut() {
+                            if let Some(resolution) = resolution_map.get(&arg.type_of) {
+                                arg.type_of.clone_from(&resolution.input);
+                            }
                         }
                     }
                 }
             }
-        }
-
-        Valid::succeed(c)
+            Valid::succeed(c)
+        });
+        valid
     }
 }
 
