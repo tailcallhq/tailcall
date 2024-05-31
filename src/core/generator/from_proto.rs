@@ -401,7 +401,7 @@ mod test {
     #[test]
     fn test_optional_fields() -> Result<()> {
         let set = compile_protobuf(&[protobuf::OPTIONAL])?;
-        let config = from_proto(&[set], "Query")?.to_sdl();
+        let config = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
     }
