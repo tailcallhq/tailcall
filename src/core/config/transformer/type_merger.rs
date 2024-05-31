@@ -232,10 +232,9 @@ mod test {
             "t1".to_string(),
             Field { type_of: "T1".to_string(), ..Default::default() },
         );
-        ty1.fields.insert("lat".to_string(), str_field.clone());
-        ty1.fields.insert("lng".to_string(), int_field.clone());
         ty1.fields.insert("title".to_string(), bool_field.clone());
         ty1.fields.insert("userId".to_string(), float_field.clone());
+        ty.fields.insert("body".to_string(), str_field.clone());
 
         let mut config = Config::default();
 
