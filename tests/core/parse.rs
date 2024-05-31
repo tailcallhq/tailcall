@@ -59,7 +59,6 @@ impl ExecutionSpec {
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
         let mut sdl_error = false;
-        let mut auto_resolve = false;
 
         while let Some(node) = children.next() {
             match node {
@@ -92,8 +91,6 @@ impl ExecutionSpec {
                             let split = expect.value.splitn(2, ':').collect::<Vec<&str>>();
                             match split[..] {
                                 [a, b] => {
-                                    auto_resolve =
-                                        a.contains("auto-resolve") && b.ends_with("true");
                                     check_identity = a.contains("identity") && b.ends_with("true");
                                     sdl_error = a.contains("error") && b.ends_with("true");
                                     if a.contains("skip") && b.ends_with("true") {
@@ -264,7 +261,6 @@ impl ExecutionSpec {
 
             check_identity,
             sdl_error,
-            auto_resolve,
         };
 
         anyhow::Ok(spec)

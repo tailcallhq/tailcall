@@ -34,7 +34,6 @@ pub struct ExecutionSpec {
 
     pub check_identity: bool,
     pub sdl_error: bool,
-    pub auto_resolve: bool,
 }
 
 #[derive(Clone, Debug)]
