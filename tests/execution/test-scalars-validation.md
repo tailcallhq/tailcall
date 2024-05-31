@@ -16,10 +16,10 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ emailInput(x: 123) }'
+    query: "{ emailInput(x: 123) }"
 
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ emailOutput }'
+    query: "{ emailOutput }"
 ```

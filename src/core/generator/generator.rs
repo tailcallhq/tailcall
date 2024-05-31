@@ -72,9 +72,7 @@ impl Generator {
                 }
 
                 config.links = links;
-                Ok(
-                    ConfigModule::from(config)
-                )
+                Ok(ConfigModule::from(config))
             }
             Source::Url => {
                 let results = join_all(
