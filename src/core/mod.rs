@@ -41,11 +41,36 @@ pub mod worker;
 use std::borrow::Cow;
 use std::hash::Hash;
 use std::num::NonZeroU64;
+use async_graphql_value::Name;
 
 use http::Response;
 pub use tailcall_macros as macros;
 
 pub type ConstValue = serde_json_borrow::Value<'static>;
+
+pub trait IntoConst {
+    fn into_const(self) -> async_graphql_value::ConstValue;
+}
+
+impl IntoConst for ConstValue {
+    fn into_const(self) -> async_graphql_value::ConstValue {
+        match self {
+            serde_json_borrow::Value::Null => async_graphql_value::ConstValue::Null,
+            serde_json_borrow::Value::Bool(b) => async_graphql_value::ConstValue::Boolean(b),
+            serde_json_borrow::Value::Number(n) => async_graphql_value::ConstValue::Number(n.into()),
+            serde_json_borrow::Value::Str(s) => async_graphql_value::ConstValue::String(s.into()),
+            serde_json_borrow::Value::Array(a) => {
+                async_graphql_value::ConstValue::List(a.into_iter().map(|v| v.into_const()).collect())
+            }
+            serde_json_borrow::Value::Object(o) => async_graphql_value::ConstValue::Object(
+                o.into_iter()
+                    .map(|(k, v)| (Name::new(k), v.into_const()))
+                    .collect(),
+            ),
+        }
+    }
+}
+
 
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;

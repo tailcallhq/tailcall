@@ -1,4 +1,4 @@
-use async_graphql_value::ConstValue;
+use crate::core::ConstValue;
 
 use crate::core::blueprint::*;
 use crate::core::config;
@@ -25,7 +25,7 @@ fn validate_data_with_schema(
 pub struct CompileExpr<'a> {
     pub config_module: &'a config::ConfigModule,
     pub field: &'a config::Field,
-    pub value: &'a serde_json::Value,
+    pub value: &'a ConstValue,
     pub validate: bool,
 }
 
@@ -36,7 +36,7 @@ pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
     let validate = inputs.validate;
 
     Valid::from(
-        DynamicValue::try_from(&value.clone()).map_err(|e| ValidationError::new(e.to_string())),
+        DynamicValue::try_from(value).map_err(|e| ValidationError::new(e.to_string())),
     )
     .and_then(|value| {
         if !value.is_const() {

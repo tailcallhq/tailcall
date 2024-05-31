@@ -164,7 +164,7 @@ pub struct ScalarTypeDefinition {
     pub name: String,
     pub directive: Vec<Directive>,
     pub description: Option<String>,
-    pub validator: fn(&ConstValue) -> bool,
+    pub validator: fn(&async_graphql_value::ConstValue) -> bool,
 }
 
 #[derive(Clone, Debug)]

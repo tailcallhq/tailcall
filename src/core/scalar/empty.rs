@@ -1,4 +1,4 @@
-use crate::core::ConstValue;
+use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 

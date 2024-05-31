@@ -1,5 +1,4 @@
-use serde_json::Value;
-
+use crate::core::ConstValue;
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::{Field, GraphQLOperationType};
@@ -96,7 +95,7 @@ fn compile_call(
             })
             .fuse(
                 Valid::from(
-                    DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().map(|(k,v)| (k.as_str(), v)).collect::<Vec<_>>().into()))
+                    DynamicValue::try_from(&ConstValue::Object(step.args.clone().into_iter().map(|(k,v)| (k.as_str(), v)).collect::<Vec<_>>().into()))
                         .map_err(|e| ValidationError::new(e.to_string())),
                 )
                 .map(IR::Dynamic),

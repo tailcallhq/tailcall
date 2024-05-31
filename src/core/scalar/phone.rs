@@ -1,4 +1,4 @@
-use crate::core::ConstValue;
+use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 
@@ -15,7 +15,7 @@ impl super::Scalar for PhoneNumber {
     /// Function used to validate the phone number
     fn validate(&self) -> fn(&ConstValue) -> bool {
         |value| {
-            if let Some(phone_str) = value.clone().as_str() {
+            if let Ok(phone_str) = value.clone().as_str_ok() {
                 return phonenumber::parse(None, phone_str).is_ok();
             }
             false

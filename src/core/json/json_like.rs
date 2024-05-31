@@ -163,7 +163,7 @@ impl JsonLike for crate::core::ConstValue {
 impl JsonLike for async_graphql::Value {
     type Output = async_graphql::Value;
 
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
+    fn as_array_ok(&self) -> Result<&[Self::Output], &str> {
         match self {
             ConstValue::List(seq) => Ok(seq),
             _ => Err("array"),

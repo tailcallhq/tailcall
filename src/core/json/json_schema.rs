@@ -3,6 +3,7 @@ use std::collections::{BTreeSet, HashMap};
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
+use crate::core::ConstValue;
 
 use crate::core::valid::{Valid, Validator};
 
@@ -38,28 +39,28 @@ impl Default for JsonSchema {
 
 impl JsonSchema {
     // TODO: validate `JsonLike` instead of fixing on `async_graphql::Value`
-    pub fn validate(&self, value: &async_graphql::Value) -> Valid<(), &'static str> {
+    pub fn validate(&self, value: &ConstValue) -> Valid<(), &'static str> {
         match self {
             JsonSchema::Str => match value {
-                async_graphql::Value::String(_) => Valid::succeed(()),
+                crate::core::ConstValue::Str(_) => Valid::succeed(()),
                 _ => Valid::fail("expected string"),
             },
             JsonSchema::Num => match value {
-                async_graphql::Value::Number(_) => Valid::succeed(()),
+                crate::core::ConstValue::Number(_) => Valid::succeed(()),
                 _ => Valid::fail("expected number"),
             },
             JsonSchema::Bool => match value {
-                async_graphql::Value::Boolean(_) => Valid::succeed(()),
+                crate::core::ConstValue::Boolean(_) => Valid::succeed(()),
                 _ => Valid::fail("expected boolean"),
             },
             JsonSchema::Empty => match value {
-                async_graphql::Value::Null => Valid::succeed(()),
-                async_graphql::Value::Object(obj) if obj.is_empty() => Valid::succeed(()),
+                crate::core::ConstValue::Null => Valid::succeed(()),
+                crate::core::ConstValue::Object(obj) if obj.is_empty() => Valid::succeed(()),
                 _ => Valid::fail("expected empty"),
             },
             JsonSchema::Any => Valid::succeed(()),
             JsonSchema::Arr(schema) => match value {
-                async_graphql::Value::List(list) => {
+                crate::core::ConstValue::Array(list) => {
                     // TODO: add unit tests
                     Valid::from_iter(list.iter().enumerate(), |(i, item)| {
                         schema.validate(item).trace(i.to_string().as_str())
@@ -71,15 +72,15 @@ impl JsonSchema {
             JsonSchema::Obj(fields) => {
                 let field_schema_list: Vec<(&String, &JsonSchema)> = fields.iter().collect();
                 match value {
-                    async_graphql::Value::Object(map) => {
+                    crate::core::ConstValue::Object(map) => {
                         Valid::from_iter(field_schema_list, |(name, schema)| {
                             if schema.is_required() {
-                                if let Some(field_value) = map.get::<str>(name.as_ref()) {
+                                if let Some((_,field_value)) = map.iter().find(|(k,_)| name == *k) {
                                     schema.validate(field_value).trace(name)
                                 } else {
                                     Valid::fail("expected field to be non-nullable").trace(name)
                                 }
-                            } else if let Some(field_value) = map.get::<str>(name.as_ref()) {
+                            } else if let Some((_,field_value)) = map.iter().find(|(k,_)| name == *k) {
                                 schema.validate(field_value).trace(name)
                             } else {
                                 Valid::succeed(())
@@ -91,7 +92,7 @@ impl JsonSchema {
                 }
             }
             JsonSchema::Opt(schema) => match value {
-                async_graphql::Value::Null => Valid::succeed(()),
+                crate::core::ConstValue::Null => Valid::succeed(()),
                 _ => schema.validate(value),
             },
             JsonSchema::Enum(_) => Valid::succeed(()),
@@ -278,7 +279,7 @@ mod tests {
     #[test]
     fn test_validate_string() {
         let schema = JsonSchema::Str;
-        let value = async_graphql::Value::String("hello".to_string());
+        let value = crate::core::ConstValue::Str("hello".into());
         let result = schema.validate(&value);
         assert_eq!(result, Valid::succeed(()));
     }
@@ -286,13 +287,13 @@ mod tests {
     #[test]
     fn test_validate_valid_object() {
         let schema = JsonSchema::from([("name", JsonSchema::Str), ("age", JsonSchema::Num)]);
-        let value = async_graphql::Value::Object({
+        let value = crate::core::ConstValue::Object({
             let mut map = IndexMap::new();
             map.insert(
                 Name::new("name"),
-                async_graphql::Value::String("hello".to_string()),
+                crate::core::ConstValue::String("hello".to_string()),
             );
-            map.insert(Name::new("age"), async_graphql::Value::Number(1.into()));
+            map.insert(Name::new("age"), crate::core::ConstValue::Number(1.into()));
             map
         });
         let result = schema.validate(&value);
@@ -302,15 +303,15 @@ mod tests {
     #[test]
     fn test_validate_invalid_object() {
         let schema = JsonSchema::from([("name", JsonSchema::Str), ("age", JsonSchema::Num)]);
-        let value = async_graphql::Value::Object({
+        let value = crate::core::ConstValue::Object({
             let mut map = IndexMap::new();
             map.insert(
                 Name::new("name"),
-                async_graphql::Value::String("hello".to_string()),
+                crate::core::ConstValue::String("hello".to_string()),
             );
             map.insert(
                 Name::new("age"),
-                async_graphql::Value::String("1".to_string()),
+                crate::core::ConstValue::String("1".to_string()),
             );
             map
         });
@@ -324,9 +325,9 @@ mod tests {
             ("name", JsonSchema::Str.optional()),
             ("age", JsonSchema::Num),
         ]);
-        let value = async_graphql::Value::Object({
+        let value = crate::core::ConstValue::Object({
             let mut map = IndexMap::new();
-            map.insert(Name::new("age"), async_graphql::Value::Number(1.into()));
+            map.insert(Name::new("age"), crate::core::ConstValue::Number(1.into()));
             map
         });
 
@@ -340,13 +341,13 @@ mod tests {
             ("empty1", JsonSchema::Empty.optional()),
             ("empty2", JsonSchema::Empty),
         ]);
-        let value = async_graphql::Value::Object({
+        let value = crate::core::ConstValue::Object({
             let mut map = IndexMap::new();
             map.insert(
                 Name::new("empty1"),
-                async_graphql::Value::Object(Default::default()),
+                crate::core::ConstValue::Object(Default::default()),
             );
-            map.insert(Name::new("empty2"), async_graphql::Value::Null);
+            map.insert(Name::new("empty2"), crate::core::ConstValue::Null);
             map
         });
 
@@ -357,7 +358,7 @@ mod tests {
     #[test]
     fn test_empty_invalid() {
         let schema = JsonSchema::Empty;
-        let value = async_graphql::Value::String("test".to_owned());
+        let value = crate::core::ConstValue::String("test".to_owned());
 
         let result = schema.validate(&value);
         assert_eq!(result, Valid::fail("expected empty"));
@@ -369,15 +370,15 @@ mod tests {
             ("any1", JsonSchema::Any.optional()),
             ("any2", JsonSchema::Any),
         ]);
-        let value = async_graphql::Value::Object({
+        let value = crate::core::ConstValue::Object({
             let mut map = IndexMap::new();
             map.insert(
                 Name::new("any1"),
-                async_graphql::Value::Object(Default::default()),
+                crate::core::ConstValue::Object(Default::default()),
             );
             map.insert(
                 Name::new("any2"),
-                async_graphql::Value::String("test".to_owned()),
+                crate::core::ConstValue::String("test".to_owned()),
             );
             map
         });
