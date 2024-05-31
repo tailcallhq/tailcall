@@ -1,0 +1,13 @@
+{
+	"input": [
+		{
+			"import": {
+				"src": "/home/nixos/Projects/tailcall/tailcall/tailcall-fixtures/fixtures/protobuf/news.proto"
+			}
+		}
+	],
+	"output": {
+		"format": "graphQL",
+		"file": "./output.graphql"
+	}
+}

@@ -1,0 +1,48 @@
+{
+	"input": [
+		{
+			"config": {
+				"src": "https://tailcall.run/configs/abc.json",
+				"headers": {
+					"Content-Type": "application/yaml",
+					"Authorization": "Bearer 123"
+				}
+			}
+		},
+		{
+			"config": {
+				"src": "./jsonplaceholder.graphql"
+			}
+		},
+		{
+			"import": {
+				"src": "https://jsonplaceholder.typicode.com/posts"
+			}
+		}
+	],
+	"generate": {
+		"schema": {
+			"query": "Query"
+		}
+	},
+	"output": {
+		"useLinks": true,
+		"format": "json",
+		"file": "./output.json"
+	},
+	"transform": {
+		"ambiguousNameResolver": {
+			"inputPrefix": "IN",
+			"outputPrefix": "OUT",
+			"inputPostFix": "IN",
+			"outputPostFix": "OUT"
+		},
+		"mergeTypes": {
+			"threshold": 0.9
+		},
+		"js": {
+			"source": "transformer.js",
+			"functionName": "transform"
+		}
+	}
+}

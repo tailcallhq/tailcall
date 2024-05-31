@@ -1,0 +1,54 @@
+---
+source: src/core/generator/config.rs
+expression: "&config"
+---
+GeneratorConfig {
+    input: [
+        Input {
+            source: Config {
+                src: "https://tailcall.run/configs/abc.json",
+            },
+        },
+        Input {
+            source: Config {
+                src: "./jsonplaceholder.graphql",
+            },
+        },
+        Input {
+            source: Import {
+                src: "https://jsonplaceholder.typicode.com/posts",
+            },
+        },
+    ],
+    output: Output {
+        format: "json",
+        file: "./output.json",
+    },
+    generate: GenerateOptions {
+        schema: Schema {
+            query: "Query",
+            mutation: "Mutation",
+        },
+    },
+    transform: Transform {
+        ambiguous_name_resolver: Some(
+            Object {
+                "inputPrefix": String("IN"),
+                "outputPrefix": String("OUT"),
+                "inputPostFix": String("IN"),
+                "outputPostFix": String("OUT"),
+            },
+        ),
+        merge_types: Some(
+            Object {
+                "threshold": Number(0.9),
+            },
+        ),
+        js: Some(
+            Object {
+                "source": String("transformer.js"),
+                "functionName": String("transform"),
+            },
+        ),
+    },
+}
