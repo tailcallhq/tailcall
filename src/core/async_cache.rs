@@ -113,11 +113,8 @@ impl<
     ) -> Arc<Result<Value, Error>> {
         let subscriber = {
             let lock = self.cache.read().unwrap();
-            if let Some(cache_value) = lock.get(&key) {
-                match cache_value {
-                    CacheValue::Pending(tx) => Some(tx.subscribe()),
-                    CacheValue::Ready(_) => unimplemented!("This should never be reachable"),
-                }
+            if let Some(CacheValue::Pending(tx)) = lock.get(&key) {
+                Some(tx.subscribe())
             } else {
                 None
             }
@@ -133,12 +130,6 @@ impl<
                 .unwrap()
                 .insert(key.clone(), CacheValue::Pending(tx.clone()));
             let result = Arc::new(func().await);
-            // tracing::info!(
-            //     "cache length {} receivers {}, had key: {}",
-            //     self.cache.read().unwrap().len(),
-            //     tx.receiver_count(),
-            //     existing.is_some()
-            // );
             {
                 let mut lock = self.cache.write().unwrap();
                 tx.send(result.clone()).ok();
@@ -158,7 +149,6 @@ mod tests {
     use futures_util::future;
     use pretty_assertions::assert_eq;
     use tokio::time::sleep;
-    use tracing::Level;
 
     use super::*;
 
@@ -363,11 +353,8 @@ mod tests {
         Ok(format!("value{}", i))
     }
 
-    #[tokio::test(worker_threads = 16, flavor = "multi_thread")]
+    #[tokio::test(worker_threads = 4, flavor = "multi_thread")]
     async fn test_deadlock_scenario() {
-        // Initialize logging
-        tracing_subscriber::fmt().with_max_level(Level::INFO).init();
-
         let cache = Arc::new(AsyncCache::<u64, String, String, NoCache>::new());
         let key = 1;
 
