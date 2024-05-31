@@ -60,17 +60,16 @@ impl Context {
     fn append_enums(
         mut self,
         enums: &[EnumDescriptorProto],
-        parent_path: &[i32],
+        parent_path: &PathBuilder,
         is_nested: bool,
     ) -> Self {
-        let path_builder = PathBuilder::new(parent_path);
         for (index, enum_) in enums.iter().enumerate() {
             let enum_name = enum_.name();
 
             let enum_type_path = if is_nested {
-                path_builder.extend(PathField::NestedEnum, index as i32)
+                parent_path.extend(PathField::NestedEnum, index as i32)
             } else {
-                path_builder.extend(PathField::EnumType, index as i32)
+                parent_path.extend(PathField::EnumType, index as i32)
             };
 
             let mut variants_with_comments = BTreeSet::new();
@@ -87,6 +86,8 @@ impl Context {
 
                 // Format the variant with its comment as description
                 if let Some(comment) = comment {
+                    // TODO: better support for enum variant descriptions [There is no way to define
+                    // description for enum variant in current config structure]
                     let variant_with_comment =
                         format!("\"\"\n  {}\n  \"\"\n  {}", comment, variant_name);
                     variants_with_comments.insert(variant_with_comment);
@@ -113,10 +114,9 @@ impl Context {
     fn append_msg_type(
         mut self,
         messages: &[DescriptorProto],
-        parent_path: &[i32],
+        parent_path: &PathBuilder,
         is_nested: bool,
     ) -> Result<Self> {
-        let path_builder = PathBuilder::new(parent_path);
         for (index, message) in messages.iter().enumerate() {
             let msg_name = message.name();
 
@@ -139,19 +139,20 @@ impl Context {
             }
 
             let msg_path = if is_nested {
-                path_builder.extend(PathField::NestedType, index as i32)
+                parent_path.extend(PathField::NestedType, index as i32)
             } else {
-                path_builder.extend(PathField::MessageType, index as i32)
+                parent_path.extend(PathField::MessageType, index as i32)
             };
 
             // first append the name of current message as namespace
             self.namespace.push(msg_name.to_string());
             self = self.append_enums(
                 &message.enum_type,
-                &path_builder.extend(PathField::MessageType, index as i32),
+                &PathBuilder::new(&parent_path.extend(PathField::MessageType, index as i32)),
                 true,
             );
-            self = self.append_msg_type(&message.nested_type, &msg_path, true)?;
+            self =
+                self.append_msg_type(&message.nested_type, &PathBuilder::new(&msg_path), true)?;
             // then drop it after handling nested types
             self.namespace.pop();
 
@@ -213,16 +214,15 @@ impl Context {
     fn append_query_service(
         mut self,
         services: &[ServiceDescriptorProto],
-        parent_path: &[i32],
+        parent_path: &PathBuilder,
     ) -> Result<Self> {
         if services.is_empty() {
             return Ok(self);
         }
 
-        let path_builder = PathBuilder::new(parent_path);
         for (index, service) in services.iter().enumerate() {
             let service_name = service.name();
-            let path = path_builder.extend(PathField::Service, index as i32);
+            let path = parent_path.extend(PathField::Service, index as i32);
 
             for (method_index, method) in service.method.iter().enumerate() {
                 let field_name = GraphQLType::new(method.name())
@@ -346,10 +346,12 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<
                 ctx = ctx.with_source_code_info(source_code_info.clone());
             }
 
+            let root_path = PathBuilder::new(&[]);
+
             ctx = ctx
-                .append_enums(&file_descriptor.enum_type, &[], false)
-                .append_msg_type(&file_descriptor.message_type, &[], false)?
-                .append_query_service(&file_descriptor.service, &[])?;
+                .append_enums(&file_descriptor.enum_type, &root_path, false)
+                .append_msg_type(&file_descriptor.message_type, &root_path, false)?
+                .append_query_service(&file_descriptor.service, &root_path)?;
         }
     }
 
