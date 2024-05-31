@@ -18,7 +18,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::http::{HttpFilter, RequestContext, Response};
-use tailcall::core::lambda::{EvaluationContext, ResolverContextLike};
+use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
 use tailcall::core::path::PathString;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
