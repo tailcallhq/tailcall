@@ -2,7 +2,6 @@ use anyhow::Result;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 
-use crate::core::config::transformer::AmbiguousType;
 use crate::core::config::{Config, ConfigModule, Link, LinkType};
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::Source;
