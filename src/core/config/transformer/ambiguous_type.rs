@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::Transform;
-use crate::core::config::ConfigModule;
+use crate::core::config::Config;
 use crate::core::valid::{Valid, Validator};
 
 /// Resolves the ambiguous types by renaming the input and
@@ -56,44 +56,43 @@ fn insert_resolution(
 }
 
 impl Transform for AmbiguousType {
-    fn transform(&self, mut c: ConfigModule) -> Valid<ConfigModule, String> {
-        Valid::from_iter(
-            c.input_types.intersection(&c.output_types),
-            |current_name| {
-                // Iterate over intersection of input and output types
-                let resolution = (self.resolver)(current_name);
+    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+        let mut input_types = config.input_types();
+        let mut output_types = config.output_types();
+        Valid::from_iter(input_types.intersection(&output_types), |current_name| {
+            // Iterate over intersection of input and output types
+            let resolution = (self.resolver)(current_name);
 
-                if !resolution.is_unique() {
-                    Valid::fail(format!(
-                        "Unable to auto resolve Input: {} and Output: {} are same",
-                        resolution.input, resolution.output,
-                    ))
-                    .trace(current_name)
-                } else {
-                    let mut resolution_map = HashMap::new();
-                    resolution_map = insert_resolution(resolution_map, current_name, resolution);
-                    if let Some(ty) = c.config.types.get(current_name) {
-                        for field in ty.fields.values() {
-                            for args in field.args.values() {
-                                // if arg is of output type then it should be changed to that of
-                                // newly created input type.
-                                if c.output_types.contains(&args.type_of)
-                                    && !resolution_map.contains_key(&args.type_of)
-                                {
-                                    let resolution = (self.resolver)(args.type_of.as_str());
-                                    resolution_map = insert_resolution(
-                                        resolution_map,
-                                        args.type_of.as_str(),
-                                        resolution,
-                                    );
-                                }
+            if !resolution.is_unique() {
+                Valid::fail(format!(
+                    "Unable to auto resolve Input: {} and Output: {} are same",
+                    resolution.input, resolution.output,
+                ))
+                .trace(current_name)
+            } else {
+                let mut resolution_map = HashMap::new();
+                resolution_map = insert_resolution(resolution_map, current_name, resolution);
+                if let Some(ty) = config.types.get(current_name) {
+                    for field in ty.fields.values() {
+                        for args in field.args.values() {
+                            // if arg is of output type then it should be changed to that of
+                            // newly created input type.
+                            if output_types.contains(&args.type_of)
+                                && !resolution_map.contains_key(&args.type_of)
+                            {
+                                let resolution = (self.resolver)(args.type_of.as_str());
+                                resolution_map = insert_resolution(
+                                    resolution_map,
+                                    args.type_of.as_str(),
+                                    resolution,
+                                );
                             }
                         }
                     }
-                    Valid::succeed(resolution_map)
                 }
-            },
-        )
+                Valid::succeed(resolution_map)
+            }
+        })
         .map(|v| v.into_iter().flatten().collect::<HashMap<_, _>>())
         .map(|resolution_map| {
             // insert newly created types to the config.
@@ -101,31 +100,31 @@ impl Transform for AmbiguousType {
                 let input_name = &resolution.input;
                 let output_name = &resolution.output;
 
-                let og_ty = c.config.types.get(current_name).cloned();
+                let og_ty = config.types.get(current_name).cloned();
 
                 // remove old types
-                c.config.types.remove(current_name);
-                c.input_types.remove(current_name);
-                c.output_types.remove(current_name);
+                config.types.remove(current_name);
+                input_types.remove(current_name);
+                output_types.remove(current_name);
 
                 // add new types
                 if let Some(og_ty) = og_ty {
-                    c.config.types.insert(input_name.clone(), og_ty.clone());
-                    c.input_types.insert(input_name.clone());
+                    config.types.insert(input_name.clone(), og_ty.clone());
+                    input_types.insert(input_name.clone());
 
-                    c.config.types.insert(output_name.clone(), og_ty);
-                    c.output_types.insert(output_name.clone());
+                    config.types.insert(output_name.clone(), og_ty);
+                    output_types.insert(output_name.clone());
                 }
             }
-            let keys = c.config.types.keys().cloned().collect::<Vec<_>>();
+            let keys = config.types.keys().cloned().collect::<Vec<_>>();
 
             for k in keys {
-                if let Some(ty) = c.config.types.get_mut(&k) {
+                if let Some(ty) = config.types.get_mut(&k) {
                     for field in ty.fields.values_mut() {
                         if let Some(resolution) = resolution_map.get(&field.type_of) {
-                            if c.output_types.contains(&k) {
+                            if output_types.contains(&k) {
                                 field.type_of.clone_from(&resolution.output);
-                            } else if c.input_types.contains(&k) {
+                            } else if input_types.contains(&k) {
                                 field.type_of.clone_from(&resolution.input);
                             }
                         }
@@ -137,7 +136,7 @@ impl Transform for AmbiguousType {
                     }
                 }
             }
-            c
+            config
         })
     }
 }

@@ -14,7 +14,7 @@ type News @tag(id: "News") {
 }
 
 type NewsList @tag(id: "NewsList") {
-  news: [News]!
+  news: [News]
 }
 
 type Query {

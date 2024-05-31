@@ -104,7 +104,8 @@ impl Context {
 
                 let label = field.label().as_str_name().to_lowercase();
                 cfg_field.list = label.contains("repeated");
-                cfg_field.required = label.contains("required") || cfg_field.list;
+                // required only applicable for proto2
+                cfg_field.required = label.contains("required");
 
                 if let Some(type_name) = &field.type_name {
                     // check that current field is map.
@@ -281,14 +282,13 @@ mod test {
     use tailcall_fixtures::protobuf;
 
     use crate::core::config::transformer::{AmbiguousType, Transform};
-    use crate::core::config::{Config, ConfigModule};
+    use crate::core::config::Config;
     use crate::core::valid::Validator;
 
     fn from_proto_resolved(files: &[FileDescriptorSet], query: &str) -> Result<Config> {
         let config = AmbiguousType::default()
-            .transform(ConfigModule::from(super::from_proto(files, query)?))
-            .to_result()?
-            .config;
+            .transform(super::from_proto(files, query)?)
+            .to_result()?;
         Ok(config)
     }
 
@@ -375,9 +375,7 @@ mod test {
     fn test_movies() -> Result<()> {
         let set = compile_protobuf(&[protobuf::MOVIES])?;
         let config = from_proto_resolved(&[set], "Query")?;
-        let config_module = AmbiguousType::default()
-            .transform(ConfigModule::from(config))
-            .to_result()?;
+        let config_module = AmbiguousType::default().transform(config).to_result()?;
         let config = config_module.to_sdl();
         insta::assert_snapshot!(config);
 
@@ -395,6 +393,14 @@ mod test {
     #[test]
     fn test_map_types() -> Result<()> {
         let set = compile_protobuf(&[protobuf::MAP])?;
+        let config = from_proto_resolved(&[set], "Query")?.to_sdl();
+        insta::assert_snapshot!(config);
+        Ok(())
+    }
+
+    #[test]
+    fn test_optional_fields() -> Result<()> {
+        let set = compile_protobuf(&[protobuf::OPTIONAL])?;
         let config = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
         Ok(())
