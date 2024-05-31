@@ -92,8 +92,12 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
         }
         TypeKind::InputObject(input) => {
             let directives = print_directives(&type_def.directives);
+            let doc = type_def.description.as_ref().map_or(String::new(), |d| {
+                format!(r#"  """{}  {}{}  """{}"#, "\n", d.node, "\n", "\n")
+            });
             format!(
-                "input {} {}{{\n{}\n}}\n",
+                "{}input {} {}{{\n{}\n}}\n",
+                doc,
                 type_def.name.node,
                 directives,
                 input
@@ -145,8 +149,12 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
                 String::new()
             };
             let directives = print_directives(&type_def.directives);
+            let doc = type_def.description.as_ref().map_or(String::new(), |d| {
+                format!(r#"  """{}  {}{}  """{}"#, "\n", d.node, "\n", "\n")
+            });
             format!(
-                "type {} {}{}{{\n{}\n}}\n",
+                "{}type {} {}{}{{\n{}\n}}\n",
+                doc,
                 type_def.name.node,
                 implements,
                 directives,
@@ -209,7 +217,13 @@ fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String 
 
 fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition) -> String {
     let directives_str = print_directives(&field.directives);
-    format!("  {}: {}{}", field.name.node, field.ty.node, directives_str)
+    let doc = field.description.as_ref().map_or(String::new(), |d| {
+        format!(r#"  """{}  {}{}  """{}"#, "\n", d.node, "\n", "\n")
+    });
+    format!(
+        "{}  {}: {}{}",
+        doc, field.name.node, field.ty.node, directives_str
+    )
 }
 fn print_directive(directive: &DirectiveDefinition) -> String {
     let args = directive
