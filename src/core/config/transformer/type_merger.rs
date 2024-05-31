@@ -37,8 +37,10 @@ fn is_type_comparable(type_: &str) -> bool {
     )
 }
 
-/// calculate_distance returns pair of u32 ints -> (count of non-similar fields,
+/// calculate_distance returns pair of u32 ints -> (count of similar fields,
 /// total count of fields)
+/// 
+/// TODO: cache the subproblems to avoid recalculating the subproblems.
 fn calculate_distance(
     config: &Config,
     type_1: &Type,
@@ -46,7 +48,6 @@ fn calculate_distance(
     visited_type: &mut HashSet<(String, String)>,
 ) -> (u32, u32) {
     let mut same_field_cnt = 0;
-    let mut not_same_field_count = 0;
     let mut total_field_count = 0;
 
     for (field_name_1, field_1) in type_1.fields.iter() {
@@ -76,16 +77,17 @@ fn calculate_distance(
 
                 let pair = calculate_distance(config, type_a, type_b, visited_type);
 
-                not_same_field_count += pair.0;
+                same_field_cnt += 2;
+
+                same_field_cnt += pair.0;
                 total_field_count += pair.1;
             }
         }
     }
 
-    not_same_field_count += (type_1.fields.len() + type_2.fields.len()) as u32 - same_field_cnt;
     total_field_count += (type_1.fields.len() + type_2.fields.len()) as u32;
 
-    (not_same_field_count, total_field_count)
+    (same_field_cnt, total_field_count)
 }
 
 impl TypeMerger {
@@ -116,7 +118,7 @@ impl TypeMerger {
                 let distance_pair =
                     calculate_distance(&config, type_info_1, type_info_2, &mut HashSet::new());
                 let distance = distance_pair.0 as f32 / distance_pair.1 as f32;
-                if 1.0 - distance >= self.thresh {
+                if distance >= self.thresh {
                     visited_types.insert(type_name_2.clone());
                     type_1_sim.insert(type_name_2.clone());
                 }
