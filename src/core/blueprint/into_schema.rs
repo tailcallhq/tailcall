@@ -95,6 +95,9 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 }
                 object = object.field(dyn_schema_field);
             }
+            if let Some(description) = &def.description {
+                object = object.description(description);
+            }
             for interface in def.implements.iter() {
                 object = object.implement(interface.clone());
             }
@@ -115,10 +118,15 @@ fn to_type(def: &Definition) -> dynamic::Type {
         Definition::InputObject(def) => {
             let mut input_object = dynamic::InputObject::new(def.name.clone());
             for field in def.fields.iter() {
-                input_object = input_object.field(dynamic::InputValue::new(
-                    field.name.clone(),
-                    to_type_ref(&field.of_type),
-                ));
+                let mut input_field =
+                    dynamic::InputValue::new(field.name.clone(), to_type_ref(&field.of_type));
+                if let Some(description) = &field.description {
+                    input_field = input_field.description(description);
+                }
+                input_object = input_object.field(input_field);
+            }
+            if let Some(description) = &def.description {
+                input_object = input_object.description(description);
             }
 
             dynamic::Type::InputObject(input_object)

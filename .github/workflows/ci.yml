@@ -580,3 +580,15 @@ jobs:
 
       - name: Update Homebrew Formula
         run: ./update-formula.sh ${{needs.draft_release.outputs.create_release_name }}
+
+  failure-notification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify failure on Discord
+        if: ${{ always() && contains(needs.*.result, 'failure') }}
+        uses: discord-actions/message@v2
+        with:
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          message: |
+            Build failed on branch: ${{ github.ref }}
+            Link: ${{ github.repository }}/actions/runs/${{ github.run_id }}

@@ -25,7 +25,7 @@ input google__protobuf__TimestampInput @tag(id: "google.protobuf.Timestamp") {
 }
 
 input movies__MovieInput @tag(id: "movies.Movie") {
-  cast: [String]!
+  cast: [String]
   duration: google__protobuf__DurationInput
   genre: movies__GenreInput
   name: String
@@ -134,10 +134,7 @@ type google__protobuf__Timestamp @tag(id: "google.protobuf.Timestamp") {
 }
 
 type movies__Movie @tag(id: "movies.Movie") {
-  """
-  list of cast
-  """
-  cast: [String]!
+  cast: [String]
   duration: google__protobuf__Duration
   genre: movies__Genre
   name: String
@@ -162,8 +159,5 @@ type movies__Movie__SubMovie @tag(id: "movies.Movie.SubMovie") {
 }
 
 type movies__MoviesResult @tag(id: "movies.MoviesResult") {
-  """
-  list of movies
-  """
-  result: [movies__Movie]!
+  result: [movies__Movie]
 }
