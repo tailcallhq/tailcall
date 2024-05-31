@@ -30,12 +30,18 @@ input movies__MovieInput @tag(id: "movies.Movie") {
   genre: movies__GenreInput
   name: String
   rating: Float
+  subMovie: movies__Movie__SubMovieInput
   time: google__protobuf__TimestampInput
   year: google__protobuf__Int32ValueInput
 }
 
 input movies__MovieRequest @tag(id: "movies.MovieRequest") {
   movie: movies__MovieInput
+}
+
+input movies__Movie__SubMovieInput @tag(id: "movies.Movie.SubMovie") {
+  format: movies__Movie__MovieFormatInput
+  subRating: Float
 }
 
 input movies__SearchByCastRequest @tag(id: "movies.SearchByCastRequest") {
@@ -55,6 +61,10 @@ enum movies__Genre {
   ""
   UNSPECIFIED
   ACTION
+}
+
+enum movies__Movie__MovieFormat {
+  IMAX
 }
 
 type Query {
@@ -126,8 +136,23 @@ type movies__Movie @tag(id: "movies.Movie") {
   genre: movies__Genre
   name: String
   rating: Float
+  """
+  SubMovie reference
+  """
+  subMovie: movies__Movie__SubMovie
   time: google__protobuf__Timestamp
   year: google__protobuf__Int32Value
+}
+
+type movies__Movie__SubMovie @tag(id: "movies.Movie.SubMovie") {
+  """
+  This is a comment for movie format in submovie
+  """
+  format: movies__Movie__MovieFormat
+  """
+  This is a comment for sub_rating
+  """
+  subRating: Float
 }
 
 type movies__MoviesResult @tag(id: "movies.MoviesResult") {

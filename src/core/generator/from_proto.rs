@@ -121,6 +121,7 @@ impl Context {
         mut self,
         messages: &[DescriptorProto],
         parent_path: &[i32],
+        is_nested: bool,
     ) -> Result<Self> {
         let path_builder = PathBuilder::new(parent_path);
         for (index, message) in messages.iter().enumerate() {
@@ -144,22 +145,24 @@ impl Context {
                 continue;
             }
 
+            let msg_path = if is_nested {
+                path_builder.extend(PathField::NestedType, index as i32)
+            } else {
+                path_builder.extend(PathField::MessageType, index as i32)
+            };
+
             // first append the name of current message as namespace
             self.namespace.push(msg_name.to_string());
             self = self.append_enums(
                 &message.enum_type,
                 &path_builder.extend(PathField::MessageType, index as i32),
             );
-            self = self.append_msg_type(
-                &message.nested_type,
-                &path_builder.extend(PathField::MessageType, index as i32),
-            )?;
+            self = self.append_msg_type(&message.nested_type, &msg_path, true)?;
             // then drop it after handling nested types
             self.namespace.pop();
 
             let mut ty = Type::default();
-            let path = path_builder.extend(PathField::MessageType, index as i32);
-            ty.doc = self.get_comments(&path);
+            ty.doc = self.get_comments(&msg_path);
 
             for (field_index, field) in message.field.iter().enumerate() {
                 let field_name = GraphQLType::new(field.name())
@@ -197,7 +200,7 @@ impl Context {
                 }
 
                 let field_path =
-                    PathBuilder::new(&path).extend(PathField::Field, field_index as i32);
+                    PathBuilder::new(&msg_path).extend(PathField::Field, field_index as i32);
                 cfg_field.doc = self.get_comments(&field_path);
 
                 ty.fields.insert(field_name.to_string(), cfg_field);
@@ -349,7 +352,7 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<
 
             ctx = ctx
                 .append_enums(&file_descriptor.enum_type, &[])
-                .append_msg_type(&file_descriptor.message_type, &[])?
+                .append_msg_type(&file_descriptor.message_type, &[], false)?
                 .append_query_service(&file_descriptor.service, &[])?;
         }
     }
