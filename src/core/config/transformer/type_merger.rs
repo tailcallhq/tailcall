@@ -1,11 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::core::{
-    config::{Config, ConfigModule, Type},
-    valid::Valid,
-};
-
 use super::Transform;
+use crate::core::config::{Config, Type};
+use crate::core::valid::Valid;
 
 pub struct TypeMerger {
     /// thresh required for the merging process.
@@ -15,7 +12,7 @@ pub struct TypeMerger {
 impl TypeMerger {
     pub fn new(thresh: f32) -> Self {
         let mut validated_thresh = thresh;
-        if thresh < 0.0 || thresh > 1.0 {
+        if !(0.0..=1.0).contains(&thresh) {
             validated_thresh = 1.0;
             tracing::warn!(
                 "Invalid threshold value ({:.2}), reverting to default threshold ({:.2}). allowed range is [0.0 - 1.0] inclusive",
@@ -40,7 +37,8 @@ fn is_type_comparable(type_: &str) -> bool {
     )
 }
 
-/// calculate_distance returns pair of u32 ints -> (count of non-similar fields, total count of fields)
+/// calculate_distance returns pair of u32 ints -> (count of non-similar fields,
+/// total count of fields)
 fn calculate_distance(
     config: &Config,
     type_1: &Type,
@@ -60,7 +58,7 @@ fn calculate_distance(
             let is_field_2_comparable = is_type_comparable(field_2_type_of.as_str());
 
             if is_field_1_comparable && is_field_2_comparable {
-                same_field_cnt += 2;    // 1 from field_1 + 1 from field_2
+                same_field_cnt += 2; // 1 from field_1 + 1 from field_2
             } else if !is_field_1_comparable && !is_field_2_comparable {
                 if visited_type.contains(&(field_1_type_of.clone(), field_2_type_of.clone())) {
                     same_field_cnt += 2;
@@ -97,7 +95,8 @@ impl TypeMerger {
         let mut visited_types = HashSet::new();
         let mut i = 0;
 
-        // step 1: identify all the types that satisfies the thresh criteria and group them.
+        // step 1: identify all the types that satisfies the thresh criteria and group
+        // them.
         let query_name = config.schema.query.clone().unwrap_or_default();
         for (type_name_1, type_info_1) in config.types.iter() {
             if visited_types.contains(type_name_1) || type_name_1 == query_name.as_str() {
@@ -149,7 +148,7 @@ impl TypeMerger {
         }
 
         // step 3: replace typeof of fields with newly merged types.
-        for  type_info in config.types.values_mut() {
+        for type_info in config.types.values_mut() {
             for actual_field in type_info.fields.values_mut() {
                 if let Some(merged_into_type_name) =
                     type_to_merge_type_mapping.get(actual_field.type_of.as_str())
@@ -161,7 +160,7 @@ impl TypeMerger {
 
         // step 4: remove all merged types.
         let unused_types: HashSet<_> = type_to_merge_type_mapping.keys().cloned().collect();
-        let repeat_merging = unused_types.len() > 0;
+        let repeat_merging = !unused_types.is_empty();
         config = config.remove_types(unused_types);
 
         if repeat_merging {
@@ -193,8 +192,11 @@ impl Transform for TypeMerger {
 #[cfg(test)]
 mod test {
     use super::TypeMerger;
-    use crate::core::{config::{transformer::{type_merger::is_type_comparable, Transform}, Config, ConfigModule, Field, Type}, valid::Validator};
-    
+    use crate::core::config::transformer::type_merger::is_type_comparable;
+    use crate::core::config::transformer::Transform;
+    use crate::core::config::{Config, Field, Type};
+    use crate::core::valid::Validator;
+
     #[test]
     fn test_validate_thresh() {
         let ty_merger = TypeMerger::new(0.0);
@@ -250,7 +252,7 @@ mod test {
 
         config.types.insert("Query".to_owned(), q_type);
         config = config.query("Query");
-        
+
         config = TypeMerger::new(0.5).transform(config).to_result()?;
 
         insta::assert_snapshot!(config.to_sdl());
