@@ -37,6 +37,11 @@ fn is_type_comparable(type_: &str) -> bool {
     )
 }
 
+fn has_type_visited(type_1: &str, type_2: &str, visited_types: &HashSet<(String, String)>) -> bool {
+    visited_types.contains(&(type_1.to_owned(), type_2.to_owned()))
+        || visited_types.contains(&(type_2.to_owned(), type_1.to_owned()))
+}
+
 /// calculate_distance returns pair of u32 ints -> (count of similar fields,
 /// total count of fields)
 ///
@@ -61,11 +66,7 @@ fn calculate_distance(
             if is_field_1_comparable && is_field_2_comparable {
                 same_field_cnt += 2; // 1 from field_1 + 1 from field_2
             } else if !is_field_1_comparable && !is_field_2_comparable {
-                if visited_type.contains(&(field_1_type_of.clone(), field_2_type_of.clone())) {
-                    same_field_cnt += 2;
-                    continue;
-                } else if visited_type.contains(&(field_2_type_of.clone(), field_1_type_of.clone()))
-                {
+                if has_type_visited(&field_2_type_of, &field_1_type_of, visited_type) {
                     same_field_cnt += 2;
                     continue;
                 }
@@ -91,9 +92,9 @@ fn calculate_distance(
     (same_field_cnt, total_field_count)
 }
 
-/// Computes the similarity between two types, returning a value in the range [0.0, 1.0].
-/// A value of 1.0 indicates that the types are exactly similar, while a value of 0.0
-/// means the types are not similar at all.
+/// Computes the similarity between two types, returning a value in the range
+/// [0.0, 1.0]. A value of 1.0 indicates that the types are exactly similar,
+/// while a value of 0.0 means the types are not similar at all.
 fn type_distance(
     config: &Config,
     type_1: &Type,
@@ -101,9 +102,10 @@ fn type_distance(
     visited_type: &mut HashSet<(String, String)>,
 ) -> f32 {
     let type_similarity_metric = calculate_distance(config, type_1, type_2, visited_type);
-    let distance = type_similarity_metric.0 as f32 / type_similarity_metric.1 as f32;
-
-    distance
+    if type_similarity_metric.1 == 0 {
+        return 0.0;
+    }
+    type_similarity_metric.0 as f32 / type_similarity_metric.1 as f32
 }
 
 impl TypeMerger {
