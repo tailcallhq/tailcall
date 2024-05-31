@@ -6,15 +6,17 @@ pub mod test {
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
+    use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-    use tailcall::cli::javascript;
+    use tailcall::cli::javascript::init_worker_io;
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
-    use tailcall::core::http::{Response};
+    use tailcall::core::http::Response;
     use tailcall::core::runtime::TargetRuntime;
+    use tailcall::core::worker::{Command, Event};
     use tailcall::core::{EnvIO, FileIO, HttpIO};
     use tailcall_http_cache::HttpCacheManager;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -129,20 +131,8 @@ pub mod test {
     }
 
     pub fn init(script: Option<Script>) -> TargetRuntime {
-        let http = if let Some(script) = script.clone() {
-            javascript::init_http(TestHttp::init(&Default::default()), script)
-        } else {
-            TestHttp::init(&Default::default())
-        };
-
-        let http2 = if let Some(script) = script {
-            javascript::init_http(
-                TestHttp::init(&Upstream::default().http2_only(true)),
-                script,
-            )
-        } else {
-            TestHttp::init(&Upstream::default().http2_only(true))
-        };
+        let http = TestHttp::init(&Default::default());
+        let http2 = TestHttp::init(&Upstream::default().http2_only(true));
 
         let file = TestFileIO::init();
         let env = TestEnvIO::init();
@@ -154,8 +144,14 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
-            http_worker: None,
-            worker: None,
+            cmd_worker: match &script {
+                Some(script) => Some(init_worker_io::<Event, Command>(script.to_owned())),
+                None => None,
+            },
+            worker: match &script {
+                Some(script) => Some(init_worker_io::<Value, Value>(script.to_owned())),
+                None => None,
+            },
         }
     }
 }

@@ -270,15 +270,10 @@ impl ExecutionSpec {
         &self,
         config: &ConfigModule,
         env: HashMap<String, String>,
-        http_client: Arc<Http>,
+        http: Arc<Http>,
     ) -> Arc<AppContext> {
         let blueprint = Blueprint::try_from(config).unwrap();
         let script = blueprint.server.script.clone();
-        let http = if let Some(script) = script.clone() {
-            javascript::init_http(http_client, script)
-        } else {
-            http_client
-        };
 
         let http2_only = http.clone();
 
@@ -303,7 +298,7 @@ impl ExecutionSpec {
             env: Arc::new(Env::init(env)),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
-            http_worker,
+            cmd_worker: http_worker,
             worker,
         };
 

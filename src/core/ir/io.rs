@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use async_graphql::from_value;
 use async_graphql_value::ConstValue;
+use hyper::body::Bytes;
 use reqwest::Request;
 
 use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
@@ -19,7 +20,8 @@ use crate::core::http::{cache_policy, DataLoaderRequest, HttpDataLoader, HttpFil
 use crate::core::ir::EvaluationError;
 use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
-use crate::core::{grpc, http};
+use crate::core::worker::{Command, Event, WorkerRequest};
+use crate::core::{grpc, http, HttpIO, WorkerIO};
 
 #[derive(Clone, Debug, strum_macros::Display)]
 pub enum IO {
@@ -27,7 +29,7 @@ pub enum IO {
         req_template: http::RequestTemplate,
         group_by: Option<GroupBy>,
         dl_id: Option<DataLoaderId>,
-        http_filter: HttpFilter,
+        http_filter: Option<HttpFilter>,
     },
     GraphQL {
         req_template: graphql::RequestTemplate,
@@ -80,7 +82,7 @@ impl IO {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
-                IO::Http { req_template, dl_id,  .. } => {
+                IO::Http { req_template, dl_id, .. } => {
                     let req = req_template.to_request(&ctx)?;
                     let is_get = req.method() == reqwest::Method::GET;
 
@@ -306,4 +308,53 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
         .get_key(field_name)
         .map(|v| v.to_owned())
         .unwrap_or_default())
+}
+
+pub struct CommandExecutor {
+    worker: Arc<dyn WorkerIO<Event, Command>>,
+    client: Arc<dyn HttpIO>,
+}
+
+impl CommandExecutor {
+    pub fn new(
+        client: Arc<dyn HttpIO + 'static>,
+        worker: Arc<dyn WorkerIO<Event, Command>>,
+    ) -> Self {
+        Self { worker, client }
+    }
+
+    #[async_recursion::async_recursion]
+    async fn on_request(
+        &self,
+        mut request: reqwest::Request,
+        http_filter: &HttpFilter,
+    ) -> anyhow::Result<Response<Bytes>> {
+        let js_request = WorkerRequest::try_from(&request)?;
+        let event = Event::Request(js_request);
+
+        let command = self.worker.call(&http_filter.on_request, event).await?;
+
+        match command {
+            Some(command) => match command {
+                Command::Request(js_request) => {
+                    let response = self.client.execute(js_request.into()).await?;
+                    Ok(response)
+                }
+                Command::Response(js_response) => {
+                    // Check if the response is a redirect
+                    if (js_response.status() == 301 || js_response.status() == 302)
+                        && js_response.headers().contains_key("location")
+                    {
+                        request
+                            .url_mut()
+                            .set_path(js_response.headers()["location"].as_str());
+                        self.on_request(request, http_filter).await
+                    } else {
+                        Ok(js_response.try_into()?)
+                    }
+                }
+            },
+            None => self.client.execute(request).await,
+        }
+    }
 }

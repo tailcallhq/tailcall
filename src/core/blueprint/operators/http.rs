@@ -60,13 +60,11 @@ pub fn compile_http(
         })
         .map(|req_template| {
             // marge http and upstream on_request
-            let on_request = http
+            let http_filter = http
                 .on_request
                 .clone()
                 .or(config_module.upstream.on_request.clone())
-                .unwrap_or("onRequest".to_string());
-
-            let http_filter = HttpFilter { on_request };
+                .map(|on_request| HttpFilter { on_request });
 
             if !http.group_by.is_empty() && http.method == Method::GET {
                 IR::IO(IO::Http {
