@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package type;
+
+enum Status {
+  UNSPECIFIED = 0;
+  FIRST = 1;
+  SECOND = 2;
+}
+
+message Type {
+  message Nested {
+    int32 id = 1;
+    string str = 2;
+    optional int32 id_opt = 3;
+    optional string str_opt = 4;
+    repeated float num = 5;
+  }
+
+  int32 id = 1;
+  string str = 2;
+  optional int32 id_opt = 3;
+  optional string str_opt = 4;
+  repeated float num = 5;
+  Nested nested = 50;
+  optional Nested nested_opt = 51;
+  repeated Nested nested_rep = 52;
+}
+
+service TypeService {
+  rpc Get(Type) returns (Type) {}
+}
