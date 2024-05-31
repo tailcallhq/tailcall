@@ -37,21 +37,25 @@ fn init_hook_http(http: Arc<impl HttpIO>, script: Option<blueprint::Script>) -> 
 fn init_http_worker_io(
     script: Option<blueprint::Script>,
 ) -> Option<Arc<dyn WorkerIO<Event, Command>>> {
-    let script = script?;
     #[cfg(feature = "js")]
-    return Some(super::javascript::init_worker_io(script));
+    return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
-    None
+    {
+        let _ = script;
+        None
+    }
 }
 
 fn init_resolver_worker_io(
     script: Option<blueprint::Script>,
 ) -> Option<Arc<dyn WorkerIO<async_graphql::Value, async_graphql::Value>>> {
-    let script = script?;
     #[cfg(feature = "js")]
-    return Some(super::javascript::init_worker_io(script));
+    return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
-    None
+    {
+        let _ = script;
+        None
+    }
 }
 
 // Provides access to http in native rust environment

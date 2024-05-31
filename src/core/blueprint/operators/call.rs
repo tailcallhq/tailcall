@@ -3,7 +3,7 @@ use serde_json::Value;
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::{Field, GraphQLOperationType};
-use crate::core::lambda::Expression;
+use crate::core::ir::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
@@ -99,7 +99,7 @@ fn compile_call(
                     DynamicValue::try_from(&Value::Object(step.args.clone().into_iter().collect()))
                         .map_err(|e| ValidationError::new(e.to_string())),
                 )
-                .map(Expression::Dynamic),
+                .map(IR::Dynamic),
             )
             .map(|(mut b_field, args_expr)| {
                 if !step.args.is_empty() {

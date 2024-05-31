@@ -9,7 +9,7 @@ use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, Type};
 use crate::core::http::RequestContext;
-use crate::core::lambda::{Eval, EvaluationContext, ResolverContext};
+use crate::core::ir::{Eval, EvaluationContext, ResolverContext};
 use crate::core::scalar::CUSTOM_SCALARS;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
@@ -54,8 +54,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 let ctx: ResolverContext = ctx.into();
                                 let ctx = EvaluationContext::new(req_ctx, &ctx);
                                 FieldFuture::from_value(
-                                    ctx.path_value(&[field_name])
-                                        .map(|a| a.into_owned().to_owned()),
+                                    ctx.path_value(&[field_name]).map(|a| a.into_owned()),
                                 )
                             }
                             Some(expr) => {
