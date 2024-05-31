@@ -9,7 +9,7 @@ use async_graphql_value::ConstValue;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
-use crate::core::http::{DataLoaderRequest, HttpFilter, Response};
+use crate::core::http::{DataLoaderRequest, Response};
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
 
@@ -65,7 +65,6 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
     async fn load(
         &self,
         keys: &[DataLoaderRequest],
-        http_filter: HttpFilter,
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if let Some(group_by) = &self.group_by {
             let mut keys = keys.to_vec();
@@ -83,7 +82,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             let res = self
                 .runtime
                 .http
-                .execute_with(request, &http_filter)
+                .execute(request)
                 .await?
                 .to_json::<ConstValue>()?;
             #[allow(clippy::mutable_key_type)]
@@ -103,11 +102,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             Ok(hashmap)
         } else {
             let results = keys.iter().map(|key| async {
-                let result = self
-                    .runtime
-                    .http
-                    .execute_with(key.to_request(), &http_filter)
-                    .await;
+                let result = self.runtime.http.execute(key.to_request()).await;
                 (key.clone(), result)
             });
 

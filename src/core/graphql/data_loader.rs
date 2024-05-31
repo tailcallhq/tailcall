@@ -8,7 +8,7 @@ use async_graphql::futures_util::future::join_all;
 
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
-use crate::core::http::{DataLoaderRequest, HttpFilter, Response};
+use crate::core::http::{DataLoaderRequest, Response};
 use crate::core::runtime::TargetRuntime;
 
 pub struct GraphqlDataLoader {
@@ -40,7 +40,6 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     async fn load(
         &self,
         keys: &[DataLoaderRequest],
-        _http_filter: HttpFilter,
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if self.batch {
             let batched_req = create_batched_request(keys);

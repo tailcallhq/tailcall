@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::core::http::HttpFilter;
-
 /// Trait for batch loading.
 #[async_trait::async_trait]
 pub trait Loader<K: Send + Sync + Hash + Eq + Clone + 'static>: Send + Sync + 'static {
@@ -13,9 +11,5 @@ pub trait Loader<K: Send + Sync + Hash + Eq + Clone + 'static>: Send + Sync + 's
     type Error: Send + Clone + 'static;
 
     /// Load the data set specified by the `keys`.
-    async fn load(
-        &self,
-        keys: &[K],
-        http_filter: HttpFilter,
-    ) -> Result<HashMap<K, Self::Value>, Self::Error>;
+    async fn load(&self, keys: &[K]) -> Result<HashMap<K, Self::Value>, Self::Error>;
 }

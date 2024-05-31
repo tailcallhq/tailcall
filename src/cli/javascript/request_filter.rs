@@ -86,21 +86,21 @@ impl RequestFilter {
 
 #[async_trait::async_trait]
 impl HttpIO for RequestFilter {
-    async fn execute_with(
+    async fn execute(
         &self,
         request: reqwest::Request,
-        http_filter: &'life0 HttpFilter,
     ) -> anyhow::Result<Response<hyper::body::Bytes>> {
         // FIXME: This should accept an option of http-filter
         // FIXME: drop the clones from HTTP_FILTER
         // FIXME: WorkerIO should be called by evaluation runtime
-        self.on_request(request, http_filter.clone()).await
+        // self.on_request(request, http_filter.clone()).await
 
         // if http_filter.on_request.is_some() {
         //     self.on_request(request, http_filter.clone()).await
         // } else {
         //     self.client.execute(request).await
         // }
+        todo!()
     }
 }
 

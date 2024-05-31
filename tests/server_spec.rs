@@ -13,7 +13,7 @@ pub mod test {
     use tailcall::cli::javascript;
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
-    use tailcall::core::http::{HttpFilter, Response};
+    use tailcall::core::http::{Response};
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::{EnvIO, FileIO, HttpIO};
     use tailcall_http_cache::HttpCacheManager;
@@ -72,21 +72,6 @@ pub mod test {
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
         async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
-            let response = self.client.execute(request).await;
-            Response::from_reqwest(
-                response?
-                    .error_for_status()
-                    .map_err(|err| err.without_url())?,
-            )
-            .await
-        }
-
-        // just to satisfy trait
-        async fn execute_with(
-            &self,
-            request: reqwest::Request,
-            _http_filter: &'life0 HttpFilter,
-        ) -> Result<Response<Bytes>> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?
