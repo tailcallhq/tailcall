@@ -39,7 +39,7 @@ fn is_type_comparable(type_: &str) -> bool {
 
 /// calculate_distance returns pair of u32 ints -> (count of similar fields,
 /// total count of fields)
-/// 
+///
 /// TODO: cache the subproblems to avoid recalculating the subproblems.
 fn calculate_distance(
     config: &Config,
@@ -75,12 +75,13 @@ fn calculate_distance(
 
                 visited_type.insert((field_1_type_of, field_2_type_of));
 
-                let pair = calculate_distance(config, type_a, type_b, visited_type);
+                let type_similarity_metric =
+                    calculate_distance(config, type_a, type_b, visited_type);
 
                 same_field_cnt += 2;
 
-                same_field_cnt += pair.0;
-                total_field_count += pair.1;
+                same_field_cnt += type_similarity_metric.0;
+                total_field_count += type_similarity_metric.1;
             }
         }
     }
@@ -88,6 +89,21 @@ fn calculate_distance(
     total_field_count += (type_1.fields.len() + type_2.fields.len()) as u32;
 
     (same_field_cnt, total_field_count)
+}
+
+/// Computes the similarity between two types, returning a value in the range [0.0, 1.0].
+/// A value of 1.0 indicates that the types are exactly similar, while a value of 0.0
+/// means the types are not similar at all.
+fn type_distance(
+    config: &Config,
+    type_1: &Type,
+    type_2: &Type,
+    visited_type: &mut HashSet<(String, String)>,
+) -> f32 {
+    let type_similarity_metric = calculate_distance(config, type_1, type_2, visited_type);
+    let distance = type_similarity_metric.0 as f32 / type_similarity_metric.1 as f32;
+
+    distance
 }
 
 impl TypeMerger {
@@ -115,9 +131,8 @@ impl TypeMerger {
                 {
                     continue;
                 }
-                let distance_pair =
-                    calculate_distance(&config, type_info_1, type_info_2, &mut HashSet::new());
-                let distance = distance_pair.0 as f32 / distance_pair.1 as f32;
+                let distance =
+                    type_distance(&config, type_info_1, type_info_2, &mut HashSet::new());
                 if distance >= self.thresh {
                     visited_types.insert(type_name_2.clone());
                     type_1_sim.insert(type_name_2.clone());
