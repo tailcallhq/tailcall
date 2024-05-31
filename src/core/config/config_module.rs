@@ -113,7 +113,7 @@ impl From<Config> for ConfigModule {
 }
 
 impl ConfigModule {
-    pub fn transform_with<T: Transform>(self, transformer: T) -> Valid<Self, String> {
+    pub fn transform<T: Transform>(self, transformer: T) -> Valid<Self, String> {
         transformer.transform(self)
     }
 }

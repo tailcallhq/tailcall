@@ -213,7 +213,7 @@ mod tests {
         config = build_qry(config);
 
         let config_module = ConfigModule::from(config)
-            .transform_with(AmbiguousType::default())
+            .transform(AmbiguousType::default())
             .to_result()
             .unwrap();
 
@@ -242,7 +242,7 @@ mod tests {
         let config_module = gen
             .read_all(Source::Proto, &[news], "Query")
             .await?
-            .transform_with(AmbiguousType::default())
+            .transform(AmbiguousType::default())
             .to_result()?;
         let actual = config_module
             .config

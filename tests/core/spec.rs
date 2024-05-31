@@ -228,7 +228,7 @@ async fn test_spec(spec: ExecutionSpec) {
             .into_iter()
             .map(|config| {
                 ConfigModule::from(config)
-                    .transform_with(AmbiguousType::default())
+                    .transform(AmbiguousType::default())
                     .to_result()
                     .unwrap()
                     .config // TODO check unwrap
