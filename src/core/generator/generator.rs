@@ -5,7 +5,7 @@ use prost_reflect::DescriptorPool;
 use reqwest::Method;
 use url::Url;
 
-use crate::core::config::{Config, ConfigModule, Link, LinkType, Resolution};
+use crate::core::config::{Config, ConfigModule, Link, LinkType};
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::{from_json, ConfigGenerationRequest, Source};
 use crate::core::merge_right::MergeRight;
@@ -73,10 +73,7 @@ impl Generator {
 
                 config.links = links;
                 Ok(
-                    ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
-                        input: format!("{}Input", v),
-                        output: v.to_owned(),
-                    }),
+                    ConfigModule::from(config)
                 )
             }
             Source::Url => {

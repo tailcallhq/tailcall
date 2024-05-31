@@ -1,0 +1,33 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  user(input: UserInput!): User!
+}
+
+scalar Url
+
+type User {
+  id: ID!
+  name: String!
+}
+
+input UserInput {
+  id: ID!
+  name: String!
+}
+
+schema {
+  query: Query
+}
