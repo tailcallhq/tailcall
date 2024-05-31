@@ -7,7 +7,7 @@ schema @server @upstream {
 }
 
 input map__MapRequest @tag(id: "map.MapRequest") {
-  map: JSON!
+  map: JSON
 }
 
 type Query {
@@ -15,5 +15,5 @@ type Query {
 }
 
 type map__MapResponse @tag(id: "map.MapResponse") {
-  map: JSON!
+  map: JSON
 }
