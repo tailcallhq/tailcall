@@ -75,7 +75,7 @@ pub fn from_json(
         ))
         .then(TypeMerger::new(0.88));
 
-    let mut config = step_config_gen.get();
+    let mut config = step_config_gen.get()?;
 
     let unused_types = config.unused_types();
     config = config.remove_types(unused_types);
