@@ -6,6 +6,7 @@ pub enum PathField {
     Method,
     EnumValue,
     NestedType,
+    NestedEnum,
 }
 
 impl PathField {
@@ -18,6 +19,7 @@ impl PathField {
             PathField::Method => 2,
             PathField::EnumValue => 2,
             PathField::NestedType => 3,
+            PathField::NestedEnum => 4,
         }
     }
 }

@@ -63,7 +63,13 @@ enum movies__Genre {
   ACTION
 }
 
+"""
+Represents the format in which a movie can be released
+"""
 enum movies__Movie__MovieFormat {
+  ""
+  The movie is released in IMAX format
+  ""
   IMAX
 }
 

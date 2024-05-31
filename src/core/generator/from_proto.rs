@@ -74,11 +74,21 @@ impl Context {
     }
 
     /// Processes proto enum types.
-    fn append_enums(mut self, enums: &[EnumDescriptorProto], parent_path: &[i32]) -> Self {
+    fn append_enums(
+        mut self,
+        enums: &[EnumDescriptorProto],
+        parent_path: &[i32],
+        is_nested: bool,
+    ) -> Self {
         let path_builder = PathBuilder::new(parent_path);
         for (index, enum_) in enums.iter().enumerate() {
             let enum_name = enum_.name();
-            let enum_type_path = path_builder.extend(PathField::EnumType, index as i32);
+
+            let enum_type_path = if is_nested {
+                path_builder.extend(PathField::NestedEnum, index as i32)
+            } else {
+                path_builder.extend(PathField::EnumType, index as i32)
+            };
 
             let mut variants_with_comments = BTreeSet::new();
 
@@ -156,6 +166,7 @@ impl Context {
             self = self.append_enums(
                 &message.enum_type,
                 &path_builder.extend(PathField::MessageType, index as i32),
+                true,
             );
             self = self.append_msg_type(&message.nested_type, &msg_path, true)?;
             // then drop it after handling nested types
@@ -351,7 +362,7 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<
             }
 
             ctx = ctx
-                .append_enums(&file_descriptor.enum_type, &[])
+                .append_enums(&file_descriptor.enum_type, &[], false)
                 .append_msg_type(&file_descriptor.message_type, &[], false)?
                 .append_query_service(&file_descriptor.service, &[])?;
         }
