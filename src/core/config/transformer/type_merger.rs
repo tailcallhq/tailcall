@@ -184,9 +184,9 @@ fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
 }
 
 impl Transform for TypeMerger {
-    fn transform(&self, config_module: ConfigModule) -> Valid<ConfigModule, String> {
-        let config = self.merger(1, config_module.config);
-        Valid::succeed(ConfigModule::from(config))
+    fn transform(&self, config: Config) -> Valid<Config, String> {
+        let config = self.merger(1, config);
+        Valid::succeed(config)
     }
 }
 
@@ -251,10 +251,9 @@ mod test {
         config.types.insert("Query".to_owned(), q_type);
         config = config.query("Query");
         
-        let mut cfg_module = ConfigModule::from(config);
-        cfg_module = TypeMerger::new(0.5).transform(cfg_module).to_result()?;
+        config = TypeMerger::new(0.5).transform(config).to_result()?;
 
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(config.to_sdl());
 
         Ok(())
     }
@@ -303,11 +302,10 @@ mod test {
 
         assert_eq!(config.types.len(), 5);
 
-        let mut cfg_module = ConfigModule::from(config);
-        cfg_module = TypeMerger::new(1.0).transform(cfg_module).to_result()?;
+        config = TypeMerger::new(1.0).transform(config).to_result()?;
 
-        assert_eq!(cfg_module.config.types.len(), 2);
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        assert_eq!(config.types.len(), 2);
+        insta::assert_snapshot!(config.to_sdl());
         Ok(())
     }
 
