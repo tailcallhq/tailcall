@@ -130,7 +130,6 @@ fn set_logger_provider(
             .with_exporter(otlp_exporter(config))
             .with_log_config(opentelemetry_sdk::logs::config().with_resource(RESOURCE.clone()))
             .install_batch(runtime::Tokio)?
-            .provider().clone()
         ,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
@@ -138,8 +137,6 @@ fn set_logger_provider(
     };
 
     let otel_tracing_appender = OpenTelemetryTracingBridge::new(&provider);
-
-    global::set_logger_provider(provider);
 
     Ok(Some(otel_tracing_appender))
 }
