@@ -1,6 +1,7 @@
 use std::any::Any;
 
 use anyhow::Result;
+use async_graphql::parser::types::ExecutableDocument;
 use async_graphql::{BatchResponse, Executor, Value};
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
@@ -13,6 +14,8 @@ pub trait GraphQLRequestLike {
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
     where
         E: Executor;
+
+    fn parse_query(&mut self) -> Option<&ExecutableDocument>;
 }
 
 #[derive(Debug, Deserialize)]
@@ -34,6 +37,10 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
     {
         GraphQLResponse(executor.execute_batch(self.0).await)
     }
+
+    fn parse_query(&mut self) -> Option<&ExecutableDocument> {
+        None
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -53,9 +60,11 @@ impl GraphQLRequestLike for GraphQLRequest {
     where
         E: Executor,
     {
-        let mut p = self.0;
-        let _ = p.parsed_query();
-        GraphQLResponse(executor.execute(p).await.into())
+        GraphQLResponse(executor.execute(self.0).await.into())
+    }
+
+    fn parse_query(&mut self) -> Option<&ExecutableDocument> {
+        self.0.parsed_query().ok()
     }
 }
 
