@@ -5,7 +5,7 @@ use std::time::Duration;
 use anyhow::Result;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
-use async_graphql_value::ConstValue;
+use crate::core::ConstValue;
 
 use super::data_loader_request::DataLoaderRequest;
 use super::protobuf::ProtobufOperation;
@@ -35,7 +35,7 @@ impl GrpcDataLoader {
     async fn load_dedupe_only(
         &self,
         keys: &[DataLoaderRequest],
-    ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
+    ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<ConstValue>>> {
         let results = keys.iter().map(|key| async {
             let result = match key.to_request() {
                 Ok(req) => execute_grpc_request(&self.runtime, &self.operation, req).await,
@@ -62,7 +62,7 @@ impl GrpcDataLoader {
         &self,
         group_by: &GroupBy,
         keys: &[DataLoaderRequest],
-    ) -> Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
+    ) -> Result<HashMap<DataLoaderRequest, Response<ConstValue>>> {
         let inputs = keys.iter().map(|key| key.template.body.as_str());
         let (multiple_body, grouped_keys) = self
             .operation
@@ -100,7 +100,7 @@ impl GrpcDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for GrpcDataLoader {
-    type Value = Response<async_graphql::Value>;
+    type Value = Response<ConstValue>;
     type Error = Arc<anyhow::Error>;
 
     async fn load(

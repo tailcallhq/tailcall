@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
-use async_graphql::{Name, Value as GraphQLValue};
-use indexmap::IndexMap;
+use crate::core::ConstValue as GraphQLValue;
 
 use crate::core::blueprint::DynamicValue;
 use crate::core::path::PathString;
@@ -21,24 +20,24 @@ impl ValueExt for DynamicValue {
                     // parsing can fail when Mustache::render returns bare string and since
                     // that string is not wrapped with quotes serde_json will fail to parse it
                     // but, we can just use that string as is
-                    .unwrap_or_else(|_| GraphQLValue::String(rendered.into_owned()))
+                    .unwrap_or_else(|_| GraphQLValue::Str(rendered))
             }
             DynamicValue::Object(obj) => {
-                let out: IndexMap<_, _> = obj
+                let out: Vec<(_, _)> = obj
                     .iter()
                     .map(|(k, v)| {
-                        let key = Cow::Borrowed(k.as_str());
+                        // let key = Cow::Borrowed(k.as_str());
                         let val = v.render_value(ctx);
 
-                        (Name::new(key), val)
+                        (k.to_owned(), val)
                     })
                     .collect();
 
-                GraphQLValue::Object(out)
+                GraphQLValue::Object(out.into())
             }
             DynamicValue::Array(arr) => {
                 let out: Vec<_> = arr.iter().map(|v| v.render_value(ctx)).collect();
-                GraphQLValue::List(out)
+                GraphQLValue::Array(out)
             }
         }
     }

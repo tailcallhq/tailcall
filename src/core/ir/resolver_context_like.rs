@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use async_graphql::context::SelectionField;
-use async_graphql::{Name, ServerError, Value};
-use indexmap::IndexMap;
+use async_graphql::ServerError;
+
+use crate::core::ConstValue;
 
 pub trait ResolverContextLike<'a>: Clone {
-    fn value(&'a self) -> Option<&'a Value>;
-    fn args(&'a self) -> Option<&'a IndexMap<Name, Value>>;
+    fn value(&'a self) -> Option<&'a ConstValue>;
+    fn args(&'a self) -> Option<&'a Vec<(String, ConstValue)>>;
     fn field(&'a self) -> Option<SelectionField>;
     fn add_error(&'a self, error: ServerError);
 }
@@ -15,11 +16,11 @@ pub trait ResolverContextLike<'a>: Clone {
 pub struct EmptyResolverContext;
 
 impl<'a> ResolverContextLike<'a> for EmptyResolverContext {
-    fn value(&'a self) -> Option<&'a Value> {
+    fn value(&'a self) -> Option<&'a ConstValue> {
         None
     }
 
-    fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
+    fn args(&'a self) -> Option<&'a Vec<(String, ConstValue)>> {
         None
     }
 
@@ -42,12 +43,14 @@ impl<'a> From<async_graphql::dynamic::ResolverContext<'a>> for ResolverContext<'
 }
 
 impl<'a> ResolverContextLike<'a> for ResolverContext<'a> {
-    fn value(&'a self) -> Option<&'a Value> {
-        self.inner.parent_value.as_value()
+    fn value(&'a self) -> Option<&'a ConstValue> {
+        // self.inner.parent_value.as_value() // TODO: fixme
+        todo!()
     }
 
-    fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
-        Some(self.inner.args.as_index_map())
+    fn args(&'a self) -> Option<&'a Vec<(String, ConstValue)>> {
+        // Some(self.inner.args.as_index_map()) // TODO: FIXME
+        None
     }
 
     fn field(&'a self) -> Option<SelectionField> {

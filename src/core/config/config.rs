@@ -5,7 +5,9 @@ use std::num::NonZeroU64;
 use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::de::{MapAccess, Visitor};
+use serde_json_borrow::Value;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
@@ -17,7 +19,7 @@ use crate::core::json::JsonSchema;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{ConstValue, is_default, scalar};
+use crate::core::{ConstValue, extend_lifetime, is_default, scalar};
 
 #[derive(
     Serialize,
@@ -371,7 +373,7 @@ pub struct Inline {
     pub path: Vec<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Default, Serialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Arg {
     #[serde(rename = "type")]
     pub type_of: String,
@@ -385,6 +387,101 @@ pub struct Arg {
     pub modify: Option<Modify>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub default_value: Option<ConstValue>,
+}
+
+impl<'de> Deserialize<'de> for Arg {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "snake_case")]
+        enum Field {
+            Type,
+            List,
+            Required,
+            Doc,
+            Modify,
+            DefaultValue,
+        }
+
+        struct ArgVisitor;
+
+        impl<'de> Visitor<'de> for ArgVisitor {
+            type Value = Arg;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Arg")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Arg, V::Error>
+                where
+                    V: MapAccess<'de>,
+            {
+                let mut type_of = None;
+                let mut list = None;
+                let mut required = None;
+                let mut doc = None;
+                let mut modify = None;
+                let mut default_value = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Type => {
+                            if type_of.is_some() {
+                                return Err(de::Error::duplicate_field("type"));
+                            }
+                            type_of = Some(map.next_value()?);
+                        }
+                        Field::List => {
+                            if list.is_some() {
+                                return Err(de::Error::duplicate_field("list"));
+                            }
+                            list = Some(map.next_value()?);
+                        }
+                        Field::Required => {
+                            if required.is_some() {
+                                return Err(de::Error::duplicate_field("required"));
+                            }
+                            required = Some(map.next_value()?);
+                        }
+                        Field::Doc => {
+                            if doc.is_some() {
+                                return Err(de::Error::duplicate_field("doc"));
+                            }
+                            doc = Some(map.next_value()?);
+                        }
+                        Field::Modify => {
+                            if modify.is_some() {
+                                return Err(de::Error::duplicate_field("modify"));
+                            }
+                            modify = Some(map.next_value()?);
+                        }
+                        Field::DefaultValue => {
+                            if default_value.is_some() {
+                                return Err(de::Error::duplicate_field("default_value"));
+                            }
+                            let temp_value: Option<Value<'de>> = map.next_value()?;
+                            default_value = temp_value.map(extend_lifetime);
+                        }
+                    }
+                }
+
+                let type_of = type_of.ok_or_else(|| de::Error::missing_field("type"))?;
+                Ok(Arg {
+                    type_of,
+                    list: list.unwrap_or_default(),
+                    required: required.unwrap_or_default(),
+                    doc,
+                    modify,
+                    default_value,
+                })
+            }
+        }
+
+        const FIELDS: &[&str] = &["type", "list", "required", "doc", "modify", "default_value"];
+        deserializer.deserialize_struct("Arg", FIELDS, ArgVisitor)
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]

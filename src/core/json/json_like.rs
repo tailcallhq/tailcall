@@ -2,11 +2,13 @@ use std::collections::HashMap;
 
 use async_graphql_value::ConstValue;
 
+use crate::core::extend_lifetime_ref;
+
 pub trait JsonLike {
     type Output;
     fn as_array_ok(&self) -> Result<&[Self::Output], &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;
-    fn as_string_ok(&self) -> Result<&String, &str>;
+    fn as_string_ok(&self) -> Result<&str, &str>;
     fn as_i64_ok(&self) -> Result<i64, &str>;
     fn as_u64_ok(&self) -> Result<u64, &str>;
     fn as_f64_ok(&self) -> Result<f64, &str>;
@@ -76,7 +78,7 @@ impl JsonLike for serde_json::Value {
         }
     }
 
-    fn as_string_ok(&self) -> Result<&String, &str> {
+    fn as_string_ok(&self) -> Result<&str, &str> {
         match self {
             serde_json::Value::String(s) => Ok(s),
             _ => Err("expected string"),
@@ -93,7 +95,8 @@ impl JsonLike for serde_json::Value {
 impl JsonLike for crate::core::ConstValue {
     type Output = crate::core::ConstValue;
     fn as_array_ok(&self) -> Result<&[Self::Output], &str> {
-        self.as_array().ok_or("expected array")
+        Err("expected array") // TODO: FIXME
+        // self.as_array().ok_or("expected array")
     }
     fn as_str_ok(&self) -> Result<&str, &str> {
         self.as_str().ok_or("expected str")
@@ -111,7 +114,11 @@ impl JsonLike for crate::core::ConstValue {
         self.as_bool().ok_or("expected bool")
     }
     fn as_null_ok(&self) -> Result<(), &str> {
-        self.as_null().ok_or("expected null")
+        if self.is_null() {
+            Ok(())
+        } else {
+            Err("expected null")
+        }
     }
 
     fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str> {
@@ -122,14 +129,14 @@ impl JsonLike for crate::core::ConstValue {
     }
 
     fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output> {
-        let mut val = self;
+        let mut val = extend_lifetime_ref(self);
         for token in path {
             val = match val {
                 crate::core::ConstValue::Array(arr) => {
                     let index = token.as_ref().parse::<usize>().ok()?;
-                    arr.get(index)?
+                    arr.get(index).map(extend_lifetime_ref)?
                 }
-                crate::core::ConstValue::Object(map) => map.get(token.as_ref())?,
+                crate::core::ConstValue::Object(map) => map.iter().find(|(k,_)| token.as_ref() == *k).map(|(_,v)| v)?,
                 _ => return None,
             };
         }
@@ -142,14 +149,14 @@ impl JsonLike for crate::core::ConstValue {
 
     fn get_key(&self, path: &str) -> Option<&Self::Output> {
         match self {
-            crate::core::ConstValue::Object(map) => map.get(path),
+            crate::core::ConstValue::Object(map) => map.iter().find(|(k,_)| path == *k).map(|(_,v)| extend_lifetime_ref(v)),
             _ => None,
         }
     }
 
-    fn as_string_ok(&self) -> Result<&String, &str> {
+    fn as_string_ok(&self) -> Result<&str, &str> {
         match self {
-            crate::core::ConstValue::String(s) => Ok(s),
+            crate::core::ConstValue::Str(s) => Ok(s.as_ref()),
             _ => Err("expected string"),
         }
     }
@@ -244,7 +251,7 @@ impl JsonLike for async_graphql::Value {
             _ => None,
         }
     }
-    fn as_string_ok(&self) -> Result<&String, &str> {
+    fn as_string_ok(&self) -> Result<&str, &str> {
         match self {
             ConstValue::String(s) => Ok(s),
             _ => Err("expected string"),
@@ -287,7 +294,7 @@ pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String
         // Need to handle number and string keys
         let key_str = key
             .as_string_ok()
-            .cloned()
+            .map(|a| a.to_string())
             .or_else(|_| key.as_f64_ok().map(|a| a.to_string()));
 
         if let Ok(key) = key_str {
@@ -303,7 +310,6 @@ pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String
 
 #[cfg(test)]
 mod tests {
-
     use pretty_assertions::assert_eq;
     use serde_json::json;
 

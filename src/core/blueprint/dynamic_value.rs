@@ -1,4 +1,6 @@
-use crate::core::ConstValue;
+use std::ops::Deref;
+use serde_json_borrow::OwnedValue;
+use crate::core::{ConstValue, extend_lifetime, extend_lifetime_ref};
 use crate::core::mustache::Mustache;
 
 #[derive(Debug, Clone)]
@@ -19,9 +21,9 @@ impl TryFrom<&DynamicValue> for ConstValue {
                 "mustache cannot be converted to const value"
             )),
             DynamicValue::Object(obj) => {
-                let out: Result<Vec<(&str, ConstValue)>, anyhow::Error> = obj
+                let out: Result<Vec<(String, ConstValue)>, anyhow::Error> = obj
                     .into_iter()
-                    .map(|(k, v)| Ok((k.as_str(), ConstValue::try_from(v)?.to_owned())))
+                    .map(|(k, v)| Ok((k.clone(), ConstValue::try_from(v)?)))
                     .collect();
                 Ok(ConstValue::Object(out?.into()))
             }
@@ -53,7 +55,7 @@ impl TryFrom<&ConstValue> for DynamicValue {
         match value {
             ConstValue::Object(obj) => {
                 let mut out = Vec::with_capacity(obj.len());
-                for (k, v) in obj {
+                for (k, v) in obj.iter().map(|(k,v)| (k, extend_lifetime_ref(v))) {
                     let dynamic_value = DynamicValue::try_from(v)?;
                     out.push((k.to_string(), dynamic_value));
                 }
@@ -67,12 +69,12 @@ impl TryFrom<&ConstValue> for DynamicValue {
             ConstValue::Str(s) => {
                 let m = Mustache::parse(s)?;
                 if m.is_const() {
-                    Ok(DynamicValue::Value(value.clone()))
+                    Ok(DynamicValue::Value(value.clone().into()))
                 } else {
                     Ok(DynamicValue::Mustache(m))
                 }
             }
-            _ => Ok(DynamicValue::Value(value.clone())),
+            _ => Ok(DynamicValue::Value(value.clone().into())),
         }
     }
 }

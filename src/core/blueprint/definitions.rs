@@ -326,7 +326,7 @@ pub fn fix_dangling_resolvers<'a>(
                 && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
             {
                 b_field = b_field.resolver(Some(IR::Dynamic(DynamicValue::Value(
-                    ConstValue::Object(Default::default()),
+                    ConstValue::Object(Default::default()).into(),
                 ))));
             }
 

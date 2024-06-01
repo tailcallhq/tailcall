@@ -1,21 +1,23 @@
 use std::collections::BTreeMap;
 
+use async_graphql::Name;
+use async_graphql::parser::Positioned;
 use async_graphql::parser::types::{
     BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition,
     InterfaceType, ObjectType, SchemaDefinition, ServiceDocument, Type, TypeDefinition, TypeKind,
     TypeSystemDefinition, UnionType,
 };
-use async_graphql::parser::Positioned;
-use async_graphql::Name;
 
-use super::telemetry::Telemetry;
-use super::{Tag, JS};
 use crate::core::config::{
     self, Cache, Call, Config, Enum, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
     Server, Union, Upstream,
 };
 use crate::core::directive::DirectiveCodec;
+use crate::core::extend_lifetime;
 use crate::core::valid::{Valid, Validator};
+
+use super::{JS, Tag};
+use super::telemetry::Telemetry;
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,
@@ -137,9 +139,11 @@ fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
 
     RootSchema { query, mutation, subscription }
 }
+
 fn pos_name_to_string(pos: &Positioned<Name>) -> String {
     pos.node.to_string()
 }
+
 fn to_types(
     type_definitions: &Vec<&Positioned<TypeDefinition>>,
 ) -> Valid<BTreeMap<String, config::Type>, String> {
@@ -151,35 +155,37 @@ fn to_types(
                 &type_definition.node.description,
                 &type_definition.node.directives,
             )
-            .some(),
+                .some(),
             TypeKind::Interface(interface_type) => to_object_type(
                 &interface_type,
                 &type_definition.node.description,
                 &type_definition.node.directives,
             )
-            .some(),
+                .some(),
             TypeKind::Enum(_) => Valid::none(),
             TypeKind::InputObject(input_object_type) => to_input_object(
                 input_object_type,
                 &type_definition.node.description,
                 &type_definition.node.directives,
             )
-            .some(),
+                .some(),
             TypeKind::Union(_) => Valid::none(),
             TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
         }
-        .map(|option| (type_name, option))
+            .map(|option| (type_name, option))
     })
-    .map(|vec| {
-        BTreeMap::from_iter(
-            vec.into_iter()
-                .filter_map(|(name, option)| option.map(|tpe| (name, tpe))),
-        )
-    })
+        .map(|vec| {
+            BTreeMap::from_iter(
+                vec.into_iter()
+                    .filter_map(|(name, option)| option.map(|tpe| (name, tpe))),
+            )
+        })
 }
+
 fn to_scalar_type() -> config::Type {
     config::Type { ..Default::default() }
 }
+
 fn to_union_types(
     type_definitions: &[&Positioned<TypeDefinition>],
 ) -> Valid<BTreeMap<String, Union>, String> {
@@ -236,8 +242,8 @@ fn to_object_type<T>(
     description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
 ) -> Valid<config::Type, String>
-where
-    T: ObjectLike,
+    where
+        T: ObjectLike,
 {
     let fields = object.fields();
     let implements = object.implements();
@@ -253,6 +259,7 @@ where
             config::Type { fields, added_fields, doc, implements, cache, protected, tag }
         })
 }
+
 fn to_input_object(
     input_object_type: InputObjectType,
     description: &Option<Positioned<String>>,
@@ -270,38 +277,43 @@ fn to_fields_inner<T, F>(
     fields: &Vec<Positioned<T>>,
     transform: F,
 ) -> Valid<BTreeMap<String, config::Field>, String>
-where
-    F: Fn(&T) -> Valid<config::Field, String>,
-    T: HasName,
+    where
+        F: Fn(&T) -> Valid<config::Field, String>,
+        T: HasName,
 {
     Valid::from_iter(fields, |field| {
         let field_name = pos_name_to_string(field.node.name());
         transform(&field.node).map(|field| (field_name, field))
     })
-    .map(BTreeMap::from_iter)
+        .map(BTreeMap::from_iter)
 }
+
 fn to_fields(
     fields: &Vec<Positioned<FieldDefinition>>,
 ) -> Valid<BTreeMap<String, config::Field>, String> {
     to_fields_inner(fields, to_field)
 }
+
 fn to_input_object_fields(
     input_object_fields: &Vec<Positioned<InputValueDefinition>>,
 ) -> Valid<BTreeMap<String, config::Field>, String> {
     to_fields_inner(input_object_fields, to_input_object_field)
 }
+
 fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> {
     to_common_field(field_definition, to_args(field_definition))
 }
+
 fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
     to_common_field(field_definition, BTreeMap::new())
 }
+
 fn to_common_field<F>(
     field: &F,
     args: BTreeMap<String, config::Arg>,
 ) -> Valid<config::Field, String>
-where
-    F: Fieldlike,
+    where
+        F: Fieldlike,
 {
     let type_of = field.type_of();
     let base = &type_of.base;
@@ -353,6 +365,7 @@ fn to_type_of(type_: &Type) -> String {
         BaseType::List(ty) => to_type_of(ty),
     }
 }
+
 fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> {
     let mut args: BTreeMap<String, config::Arg> = BTreeMap::new();
 
@@ -364,6 +377,7 @@ fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> 
 
     args
 }
+
 fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     let type_of = to_type_of(&input_value_definition.ty.node);
     let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
@@ -378,7 +392,12 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
         .flatten();
     let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
         let value = &pos.node;
-        serde_json::from_value().ok()
+        let v = || {
+            let v = value.clone().into_json().ok()?;
+            let bv = serde_json::from_value::<serde_json_borrow::Value>(v).ok().map(extend_lifetime)?;
+            Some(bv)
+        };
+        v()
     } else {
         None
     };
@@ -402,6 +421,7 @@ fn to_enum(enum_type: EnumType, doc: Option<String>) -> Enum {
         .collect();
     Enum { variants, doc }
 }
+
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
     directives.iter().find_map(|directive| {
         if directive.node.name.node == config::Expr::directive_name() {
@@ -434,11 +454,13 @@ fn to_add_fields_from_directives(
 trait HasName {
     fn name(&self) -> &Positioned<Name>;
 }
+
 impl HasName for FieldDefinition {
     fn name(&self) -> &Positioned<Name> {
         &self.name
     }
 }
+
 impl HasName for InputValueDefinition {
     fn name(&self) -> &Positioned<Name> {
         &self.name
@@ -450,6 +472,7 @@ trait Fieldlike {
     fn description(&self) -> &Option<Positioned<String>>;
     fn directives(&self) -> &[Positioned<ConstDirective>];
 }
+
 impl Fieldlike for FieldDefinition {
     fn type_of(&self) -> &Type {
         &self.ty.node
@@ -461,6 +484,7 @@ impl Fieldlike for FieldDefinition {
         &self.directives
     }
 }
+
 impl Fieldlike for InputValueDefinition {
     fn type_of(&self) -> &Type {
         &self.ty.node
@@ -477,6 +501,7 @@ trait ObjectLike {
     fn fields(&self) -> &Vec<Positioned<FieldDefinition>>;
     fn implements(&self) -> &Vec<Positioned<Name>>;
 }
+
 impl ObjectLike for ObjectType {
     fn fields(&self) -> &Vec<Positioned<FieldDefinition>> {
         &self.fields
@@ -485,6 +510,7 @@ impl ObjectLike for ObjectType {
         &self.implements
     }
 }
+
 impl ObjectLike for InterfaceType {
     fn fields(&self) -> &Vec<Positioned<FieldDefinition>> {
         &self.fields

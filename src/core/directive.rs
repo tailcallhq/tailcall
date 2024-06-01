@@ -1,10 +1,9 @@
 use std::slice::Iter;
-use async_graphql_value::ConstValue;
 
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::{Name, Pos, Positioned};
 use serde::{Deserialize, Serialize};
-use serde_json::Map;
+use serde_json::{Map, Value};
 use serde_path_to_error::deserialize;
 
 use crate::core::blueprint;
@@ -86,12 +85,12 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
             .map(|v| (k.node.as_str().to_string(), v))
         })
         .map(|items| {
-            items.iter().fold(Vec::new(), |mut map, (k, v)| {
-                map.push((k.as_str(), v.to_owned()));
+            items.iter().fold(Map::new(), |mut map, (k, v)| {
+                map.insert(k.clone(), v.clone());
                 map
             })
         })
-        .and_then(|map| match deserialize(ConstValue::Object(map.into())) {
+        .and_then(|map| match deserialize(Value::Object(map)) {
             Ok(a) => Valid::succeed(a),
             Err(e) => Valid::from_validation_err(
                 ValidationError::from(e).trace(format!("@{}", directive.name.node).as_str()),
@@ -123,8 +122,8 @@ mod tests {
     use async_graphql::parser::types::ConstDirective;
     use async_graphql_value::Name;
     use pretty_assertions::assert_eq;
+
     use crate::core::blueprint::Directive;
-    use crate::core::ConstValue;
     use crate::core::directive::{pos, to_const_directive};
     use crate::core::valid::Validator;
 
@@ -132,7 +131,7 @@ mod tests {
     fn test_to_const_directive() {
         let directive = Directive {
             name: "test".to_string(),
-            arguments: vec![("a".to_string(), ConstValue::Number(1.0.into()))]
+            arguments: vec![("a".to_string(), crate::core::ConstValue::Number(1.0.into()))]
                 .into_iter()
                 .collect(),
             index: 0,

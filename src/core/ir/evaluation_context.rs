@@ -2,8 +2,9 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use async_graphql::{SelectionField, ServerError, Value};
+use async_graphql::{SelectionField, ServerError};
 use reqwest::header::HeaderMap;
+use crate::core::{ConstValue, extend_lifetime_ref};
 
 use super::{GraphQLOperationContext, ResolverContextLike};
 use crate::core::http::RequestContext;
@@ -19,20 +20,20 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
     graphql_ctx: &'a Ctx,
 
     // Overridden Value for Async GraphQL Context
-    graphql_ctx_value: Option<Arc<Value>>,
+    graphql_ctx_value: Option<Arc<ConstValue>>,
 
     // Overridden Arguments for Async GraphQL Context
-    graphql_ctx_args: Option<Arc<Value>>,
+    graphql_ctx_args: Option<Arc<ConstValue>>,
 }
 
 impl<'a, A: ResolverContextLike<'a>> EvaluationContext<'a, A> {
-    pub fn with_value(&self, value: Value) -> EvaluationContext<'a, A> {
+    pub fn with_value(&self, value: ConstValue) -> EvaluationContext<'a, A> {
         let mut ctx = self.clone();
         ctx.graphql_ctx_value = Some(Arc::new(value));
         ctx
     }
 
-    pub fn with_args(&self, args: Value) -> EvaluationContext<'a, A> {
+    pub fn with_args(&self, args: ConstValue) -> EvaluationContext<'a, A> {
         let mut ctx = self.clone();
         ctx.graphql_ctx_args = Some(Arc::new(args));
         ctx
@@ -49,25 +50,25 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         }
     }
 
-    pub fn value(&self) -> Option<&Value> {
+    pub fn value(&self) -> Option<&ConstValue> {
         self.graphql_ctx.value()
     }
 
-    pub fn path_arg<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, Value>> {
+    pub fn path_arg<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, ConstValue>> {
         // TODO: add unit tests for this
         if let Some(args) = self.graphql_ctx_args.as_ref() {
             get_path_value(args.as_ref(), path).map(|a| Cow::Owned(a.clone()))
         } else if path.is_empty() {
             self.graphql_ctx
                 .args()
-                .map(|a| Cow::Owned(Value::Object(a.clone())))
+                .map(|a| Cow::Owned(ConstValue::Object(a.iter().map(|(k, v)| (k.as_str(), v.clone())).collect::<Vec<_>>().into())))
         } else {
-            let arg = self.graphql_ctx.args()?.get(path[0].as_ref())?;
+            let (_,arg) = self.graphql_ctx.args()?.iter().find(|(k,_)| k == path[0].as_ref())?;
             get_path_value(arg, &path[1..]).map(Cow::Borrowed)
         }
     }
 
-    pub fn path_value<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, Value>> {
+    pub fn path_value<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, ConstValue>> {
         // TODO: add unit tests for this
         if let Some(value) = self.graphql_ctx_value.as_ref() {
             get_path_value(value.as_ref(), path).map(|a| Cow::Owned(a.clone()))
@@ -164,15 +165,15 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
 }
 
 // TODO: this is the same code as src/json/json_like.rs::get_path
-pub fn get_path_value<'a, T: AsRef<str>>(input: &'a Value, path: &[T]) -> Option<&'a Value> {
-    let mut value = Some(input);
+pub fn get_path_value<'a, T: AsRef<str>>(input: &'a ConstValue, path: &[T]) -> Option<&'a ConstValue> {
+    let mut value = Some(extend_lifetime_ref(input));
     for name in path {
         match value {
-            Some(Value::Object(map)) => {
-                value = map.get(name.as_ref());
+            Some(ConstValue::Object(map)) => {
+                value = map.iter().find(|(k,_)|*k == name.as_ref()).map(|(_,v)|v);
             }
 
-            Some(Value::List(list)) => {
+            Some(ConstValue::Array(list)) => {
                 value = list.get(name.as_ref().parse::<usize>().ok()?);
             }
             _ => return None,

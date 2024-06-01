@@ -6,6 +6,7 @@ use indexmap::IndexMap;
 use prost::Message;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
+use crate::core::{extend_lifetime, FromValue};
 
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::ir::EvaluationError;
@@ -22,29 +23,6 @@ pub struct Response<Body> {
 // It has a limited lifetime tied to the input JSON, making it more
 // efficient. Benchmarking is required to determine the performance If any
 // change is made.
-
-pub trait FromValue {
-    fn from_value(value: serde_json_borrow::Value) -> Self;
-}
-
-impl FromValue for ConstValue {
-    fn from_value(value: serde_json_borrow::Value) -> Self {
-        match value {
-            serde_json_borrow::Value::Null => ConstValue::Null,
-            serde_json_borrow::Value::Bool(b) => ConstValue::Boolean(b),
-            serde_json_borrow::Value::Number(n) => ConstValue::Number(n.into()),
-            serde_json_borrow::Value::Str(s) => ConstValue::String(s.into()),
-            serde_json_borrow::Value::Array(a) => {
-                ConstValue::List(a.into_iter().map(|v| Self::from_value(v)).collect())
-            }
-            serde_json_borrow::Value::Object(o) => ConstValue::Object(
-                o.into_iter()
-                    .map(|(k, v)| (Name::new(k), Self::from_value(v)))
-                    .collect(),
-            ),
-        }
-    }
-}
 
 impl Response<Bytes> {
     pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {
@@ -78,12 +56,25 @@ impl Response<Bytes> {
         Ok(Response { status: self.status, headers: self.headers, body })
     }
 
+    pub fn into_borrowed_json(self) -> Result<Response<crate::core::ConstValue>> {
+        if self.body.is_empty() {
+            return Ok(Response {
+                status: self.status,
+                headers: self.headers,
+                body: crate::core::ConstValue::Null,
+            });
+        }
+        let body = extend_lifetime(serde_json::from_slice::<serde_json_borrow::Value>(self.body.to_vec().as_slice())?);
+        Ok(Response { status: self.status, headers: self.headers, body })
+    }
+
     pub fn to_grpc_value(
         self,
         operation: &ProtobufOperation,
-    ) -> Result<Response<async_graphql::Value>> {
+    ) -> Result<Response<crate::core::ConstValue>> {
         let mut resp = Response::default();
-        let body = operation.convert_output::<async_graphql::Value>(&self.body)?;
+        let body = operation.convert_output::<serde_json::Value>(&self.body)?;
+        let body = crate::core::ConstValue::from(body);
         resp.body = body;
         resp.status = self.status;
         resp.headers = self.headers;

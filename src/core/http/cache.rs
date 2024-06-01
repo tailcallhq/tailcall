@@ -1,8 +1,9 @@
 use cache_control::CacheControl;
+use crate::core::ConstValue;
 
 use super::Response;
 
-pub fn cache_policy(res: &Response<async_graphql::Value>) -> Option<CacheControl> {
+pub fn cache_policy(res: &Response<ConstValue>) -> Option<CacheControl> {
     let header = res.headers.get(hyper::header::CACHE_CONTROL)?;
     let value = header.to_str().ok()?;
 
@@ -16,10 +17,11 @@ mod tests {
 
     use cache_control::Cachability;
     use hyper::HeaderMap;
+    use crate::core::ConstValue;
 
     use crate::core::http::Response;
 
-    pub fn max_age(res: &Response<async_graphql::Value>) -> Option<Duration> {
+    pub fn max_age(res: &Response<ConstValue>) -> Option<Duration> {
         match super::cache_policy(res) {
             Some(value) => value.max_age,
             None => None,

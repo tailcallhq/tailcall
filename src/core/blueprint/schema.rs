@@ -4,7 +4,7 @@ use async_graphql::parser::types::ConstDirective;
 
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Field, Type};
-use crate::core::ConstValue;
+use crate::core::{ConstValue, extend_lifetime};
 use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
@@ -71,7 +71,7 @@ pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String>
         .arguments
         .into_iter()
         .map(|(k, v)| {
-            let value = serde_json::from_value(v.node.into_json()?);
+            let value = serde_json::from_value::<serde_json_borrow::Value>(v.node.into_json()?).map(extend_lifetime);
             if let Ok(value) = value {
                 return Ok((k.node.to_string(), value));
             }

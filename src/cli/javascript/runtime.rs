@@ -2,7 +2,7 @@ use std::cell::{OnceCell, RefCell};
 use std::fmt::{Debug, Formatter};
 use std::thread;
 
-use async_graphql_value::ConstValue;
+use crate::core::{ConstValue, extend_lifetime};
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
 use crate::core::worker::{Command, Event, WorkerRequest};
@@ -186,7 +186,7 @@ fn execute_inner(name: String, value: String) -> anyhow::Result<ConstValue> {
                 .ok_or(anyhow::anyhow!("`{}` is not a function", name))?;
             let val: String = function.call((value, ))
                 .map_err(|_| anyhow::anyhow!("unable to parse value from js function: {} maybe because it's not returning a string?", name,))?;
-            Ok::<_, anyhow::Error>(serde_json::from_str(&val)?)
+            Ok::<_, anyhow::Error>(serde_json::from_str(&val).map(extend_lifetime)?)
         })
     })
 }

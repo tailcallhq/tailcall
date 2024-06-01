@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
-use async_graphql_value::ConstValue;
+use crate::core::ConstValue;
 
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
@@ -21,7 +21,7 @@ fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &st
 }
 
 fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
-    ConstValue::List(
+    ConstValue::Array(
         body_value
             .get(id)
             .unwrap_or(&Vec::new())
@@ -59,7 +59,7 @@ impl HttpDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for HttpDataLoader {
-    type Value = Response<async_graphql::Value>;
+    type Value = Response<ConstValue>;
     type Error = Arc<anyhow::Error>;
 
     async fn load(
@@ -84,7 +84,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 .http
                 .execute(request)
                 .await?
-                .to_json::<ConstValue>()?;
+                .into_borrowed_json()?;
             #[allow(clippy::mutable_key_type)]
             let mut hashmap = HashMap::with_capacity(keys.len());
             let path = &group_by.path();
@@ -111,7 +111,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             #[allow(clippy::mutable_key_type)]
             let mut hashmap = HashMap::new();
             for (key, value) in results {
-                hashmap.insert(key, value?.to_json()?);
+                hashmap.insert(key, value?.into_borrowed_json()?);
             }
 
             Ok(hashmap)

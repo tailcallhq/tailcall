@@ -48,6 +48,57 @@ pub use tailcall_macros as macros;
 
 pub type ConstValue = serde_json_borrow::Value<'static>;
 
+pub trait FromValue {
+    fn from_value(value: serde_json_borrow::Value) -> Self;
+    fn into_bvalue(self) -> ConstValue;
+}
+
+impl FromValue for async_graphql_value::ConstValue {
+    fn from_value(value: serde_json_borrow::Value) -> Self {
+        match value {
+            serde_json_borrow::Value::Null => async_graphql_value::ConstValue::Null,
+            serde_json_borrow::Value::Bool(b) => async_graphql_value::ConstValue::Boolean(b),
+            serde_json_borrow::Value::Number(n) => async_graphql_value::ConstValue::Number(n.into()),
+            serde_json_borrow::Value::Str(s) => async_graphql_value::ConstValue::String(s.into()),
+            serde_json_borrow::Value::Array(a) => {
+                async_graphql_value::ConstValue::List(a.into_iter().map(|v| Self::from_value(v)).collect())
+            }
+            serde_json_borrow::Value::Object(o) => async_graphql_value::ConstValue::Object(
+                o.into_vec().into_iter()
+                    .map(|(k, v)| (Name::new(k), Self::from_value(v)))
+                    .collect(),
+            ),
+        }
+    }
+
+    fn into_bvalue(self) -> ConstValue {
+        match self {
+            async_graphql_value::ConstValue::Null => serde_json_borrow::Value::Null,
+            async_graphql_value::ConstValue::Boolean(b) => serde_json_borrow::Value::Bool(b),
+            async_graphql_value::ConstValue::Number(n) => serde_json_borrow::Value::Number(n.into()),
+            async_graphql_value::ConstValue::String(s) => serde_json_borrow::Value::Str(Cow::Owned(s)),
+            async_graphql_value::ConstValue::List(a) => serde_json_borrow::Value::Array(a.into_iter().map(|v| v.into_bvalue()).collect::<Vec<_>>().into()),
+            async_graphql_value::ConstValue::Object(o) => serde_json_borrow::Value::Object(
+                o.into_iter()
+                    .map(|(k, v)| (k.to_string(), v.into_bvalue()))
+                    .collect::<Vec<_>>().into(),
+            ),
+            async_graphql_value::ConstValue::Binary(_) => todo!(),
+            async_graphql_value::ConstValue::Enum(_) => todo!(),
+        }
+    }
+}
+
+pub fn extend_lifetime<'b>(r: serde_json_borrow::Value<'b>) -> serde_json_borrow::Value<'static> {
+    unsafe { std::mem::transmute::<serde_json_borrow::Value<'b>, serde_json_borrow::Value<'static>>(r) }
+}
+
+pub fn extend_lifetime_ref<'b>(r: &serde_json_borrow::Value<'b>) -> &'static serde_json_borrow::Value<'static> {
+    unsafe { std::mem::transmute::<&serde_json_borrow::Value<'b>, &'static serde_json_borrow::Value<'static>>(r) }
+}
+
+pub type ConstValueDe<'de> = serde_json_borrow::Value<'de>;
+
 pub trait IntoConst {
     fn into_const(self) -> async_graphql_value::ConstValue;
 }
@@ -63,7 +114,8 @@ impl IntoConst for ConstValue {
                 async_graphql_value::ConstValue::List(a.into_iter().map(|v| v.into_const()).collect())
             }
             serde_json_borrow::Value::Object(o) => async_graphql_value::ConstValue::Object(
-                o.into_iter()
+                o.into_vec()
+                    .into_iter()
                     .map(|(k, v)| (Name::new(k), v.into_const()))
                     .collect(),
             ),

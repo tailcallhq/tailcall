@@ -5,6 +5,7 @@ use async_graphql_value::{ConstValue, Name};
 use super::{Config, ConfigModule};
 use crate::core::blueprint::TypeLike;
 use crate::core::directive::DirectiveCodec;
+use crate::core::json::JsonLike;
 
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
@@ -170,7 +171,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                                     default_value: arg
                                         .default_value
                                         .clone()
-                                        .map(|v| pos(ConstValue::String(v.to_string()))),
+                                        .map(|v| pos(ConstValue::String(v.as_string_ok().unwrap().to_string()))), // TODO: check unwrap
                                     directives: Vec::new(),
                                 })
                             })

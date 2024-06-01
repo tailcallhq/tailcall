@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
-use async_graphql_value::ConstValue;
+use crate::core::ConstValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};

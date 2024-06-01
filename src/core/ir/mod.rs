@@ -11,7 +11,7 @@ use core::future::Future;
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
-use async_graphql_value::ConstValue;
+use crate::core::ConstValue;
 pub use cache::*;
 pub use error::*;
 pub use eval::*;
@@ -75,12 +75,12 @@ impl Eval for IR {
             match self {
                 IR::Context(op) => match op {
                     Context::Value => {
-                        Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null))
+                        Ok(ctx.value().cloned().unwrap_or(ConstValue::Null))
                     }
                     Context::Path(path) => Ok(ctx
                         .path_value(path)
                         .map(|a| a.into_owned())
-                        .unwrap_or(async_graphql::Value::Null)),
+                        .unwrap_or(ConstValue::Null)),
                     Context::PushArgs { expr, and_then } => {
                         let args = expr.eval(ctx.clone()).await?;
                         let ctx = ctx.with_args(args).clone();
@@ -96,7 +96,7 @@ impl Eval for IR {
                     let inp = &input.eval(ctx).await?;
                     Ok(inp
                         .get_path(path)
-                        .unwrap_or(&async_graphql::Value::Null)
+                        .unwrap_or(&ConstValue::Null)
                         .clone())
                 }
                 IR::Dynamic(value) => Ok(value.render_value(&ctx)),

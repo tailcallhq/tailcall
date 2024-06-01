@@ -3,7 +3,7 @@ use std::collections::{BTreeSet, HashMap};
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
-use crate::core::ConstValue;
+use crate::core::{ConstValue, extend_lifetime_ref};
 
 use crate::core::valid::{Valid, Validator};
 
@@ -50,7 +50,7 @@ impl JsonSchema {
                 _ => Valid::fail("expected number"),
             },
             JsonSchema::Bool => match value {
-                crate::core::ConstValue::Boolean(_) => Valid::succeed(()),
+                crate::core::ConstValue::Bool(_) => Valid::succeed(()),
                 _ => Valid::fail("expected boolean"),
             },
             JsonSchema::Empty => match value {
@@ -75,12 +75,12 @@ impl JsonSchema {
                     crate::core::ConstValue::Object(map) => {
                         Valid::from_iter(field_schema_list, |(name, schema)| {
                             if schema.is_required() {
-                                if let Some((_,field_value)) = map.iter().find(|(k,_)| name == *k) {
+                                if let Some(field_value) = map.iter().find(|(k,_)| name == *k).map(|(_,v)| extend_lifetime_ref(v)) {
                                     schema.validate(field_value).trace(name)
                                 } else {
                                     Valid::fail("expected field to be non-nullable").trace(name)
                                 }
-                            } else if let Some((_,field_value)) = map.iter().find(|(k,_)| name == *k) {
+                            } else if let Some(field_value) = map.iter().find(|(k,_)| name == *k).map(|(_,v)| extend_lifetime_ref(v)) {
                                 schema.validate(field_value).trace(name)
                             } else {
                                 Valid::succeed(())

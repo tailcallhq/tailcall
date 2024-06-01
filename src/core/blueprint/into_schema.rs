@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql::ErrorExtensions;
-use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use tracing::Instrument;
 
@@ -53,8 +52,9 @@ fn to_type(def: &Definition) -> dynamic::Type {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
                                 let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                use crate::core::FromValue;
                                 FieldFuture::from_value(
-                                    ctx.path_value(&[field_name]).map(|a| a.into_owned()),
+                                    ctx.path_value(&[field_name]).map(|a| a.into_owned()).map(|v| async_graphql_value::ConstValue::from_value(v)),
                                 )
                             }
                             Some(expr) => {
@@ -70,10 +70,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
                                         let const_value =
                                             expr.eval(ctx).await.map_err(|err| err.extend())?;
+                                        use crate::core::FromValue;
                                         let p = match const_value {
-                                            ConstValue::List(a) => Some(FieldValue::list(a)),
-                                            ConstValue::Null => FieldValue::NONE,
-                                            a => Some(FieldValue::from(a)),
+                                            crate::core::ConstValue::Array(a) => Some(FieldValue::list(a.into_iter().map(|v| async_graphql_value::ConstValue::from_value(v)))),
+                                            crate::core::ConstValue::Null => FieldValue::NONE,
+                                            v => Some(FieldValue::from(async_graphql_value::ConstValue::from_value(v))),
                                         };
                                         Ok(p)
                                     }

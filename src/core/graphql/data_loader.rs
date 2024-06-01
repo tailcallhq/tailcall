@@ -7,6 +7,7 @@ use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 
 use crate::core::config::Batch;
+use crate::core::ConstValue;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::http::{DataLoaderRequest, Response};
 use crate::core::runtime::TargetRuntime;
@@ -33,7 +34,7 @@ impl GraphqlDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for GraphqlDataLoader {
-    type Value = Response<async_graphql::Value>;
+    type Value = Response<ConstValue>;
     type Error = Arc<anyhow::Error>;
 
     #[allow(clippy::mutable_key_type)]
@@ -43,7 +44,7 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if self.batch {
             let batched_req = create_batched_request(keys);
-            let result = self.runtime.http.execute(batched_req).await?.to_json();
+            let result = self.runtime.http.execute(batched_req).await?.into_borrowed_json();
             let hashmap = extract_responses(result, keys);
             Ok(hashmap)
         } else {
@@ -55,7 +56,7 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
             #[allow(clippy::mutable_key_type)]
             let mut hashmap = HashMap::new();
             for (key, value) in results {
-                hashmap.insert(key, value?.to_json()?);
+                hashmap.insert(key, value?.into_borrowed_json()?);
             }
 
             Ok(hashmap)
@@ -92,16 +93,16 @@ fn create_batched_request(dataloader_requests: &[DataLoaderRequest]) -> reqwest:
 
 #[allow(clippy::mutable_key_type)]
 fn extract_responses(
-    result: Result<Response<async_graphql::Value>, anyhow::Error>,
+    result: Result<Response<ConstValue>, anyhow::Error>,
     keys: &[DataLoaderRequest],
-) -> HashMap<DataLoaderRequest, Response<async_graphql::Value>> {
+) -> HashMap<DataLoaderRequest, Response<ConstValue>> {
     let mut hashmap = HashMap::new();
     if let Ok(res) = result {
-        if let async_graphql_value::ConstValue::List(values) = res.body {
-            for (i, request) in keys.iter().enumerate() {
+        if let ConstValue::Array(values) = res.body {
+            for (i, request) in keys.into_iter().enumerate() {
                 let value = values
                     .get(i)
-                    .unwrap_or(&async_graphql_value::ConstValue::Null);
+                    .unwrap_or(&ConstValue::Null);
                 hashmap.insert(
                     request.clone(),
                     Response {

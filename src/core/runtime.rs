@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_graphql_value::ConstValue;
+use crate::core::ConstValue;
 
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::worker::{Command, Event};

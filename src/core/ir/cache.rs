@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 use std::ops::Deref;
 use std::pin::Pin;
 
-use async_graphql_value::ConstValue;
+use crate::core::ConstValue;
 
 use super::{Eval, EvaluationContext, EvaluationError, ResolverContextLike, IR};
 
