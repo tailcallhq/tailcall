@@ -26,7 +26,10 @@ jobs:
         run: |
           echo never | sudo tee /sys/devices/system/cpu/cpufreq/boost
           cat /sys/devices/system/cpu/cpufreq/boost
-      - uses: actions/checkout@v4
+          
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
