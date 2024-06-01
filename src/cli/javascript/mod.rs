@@ -3,11 +3,7 @@ use std::sync::Arc;
 
 use hyper::header::{HeaderName, HeaderValue};
 
-mod js_request;
-
-mod js_response;
-
-pub mod request_filter;
+pub mod codec;
 
 mod runtime;
 
