@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use async_graphql::{SelectionField, ServerError};
 use reqwest::header::HeaderMap;
-use crate::core::{ConstValue, extend_lifetime_ref};
+use crate::core::ConstValue;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
 use crate::core::http::RequestContext;

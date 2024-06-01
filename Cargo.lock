@@ -4677,6 +4677,7 @@ dependencies = [
 [[package]]
 name = "serde_json_borrow"
 version = "0.5.0"
+source = "git+https://github.com/tailcallhq/serde_json_borrow?branch=temp#af929274109c540975921cc3268084914848f272"
 dependencies = [
  "schemars",
  "serde",
