@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-package duplicate;
-
-import "src/grpc/tests/proto/greetings.proto";
-import "src/grpc/tests/proto/news.proto";

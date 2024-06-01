@@ -1,5 +1,5 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-grpc-nested-data
@@ -40,10 +40,10 @@ message NewsList {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
-  @server(port: 8000, graphiql: true)
-  @upstream(httpCache: true, batch: {delay: 10})
+  @server(port: 8000)
+  @upstream(httpCache: 42, batch: {delay: 10})
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
@@ -51,7 +51,7 @@ schema
 type Query {
   news: NewsData! @grpc(method: "news.NewsService.GetAllNews", baseURL: "http://localhost:50051")
   newsById(news: NewsInput!): [News]!
-    @grpc(method: "news.NewsService.GetNews", baseURL: "http://localhost:50051", body: "{{args.news}}")
+    @grpc(method: "news.NewsService.GetNews", baseURL: "http://localhost:50051", body: "{{.args.news}}")
 }
 input NewsInput {
   id: Int

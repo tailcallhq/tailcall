@@ -1,12 +1,12 @@
 # Http with args as body
 
-```graphql @server
-schema @server(port: 8000, graphiql: true) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+```graphql @config
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
 type Query {
-  firstUser(id: Int, name: String): User @http(method: POST, path: "/users", body: "{{args}}")
+  firstUser(id: Int, name: String): User @http(method: POST, path: "/users", body: "{{.args}}")
 }
 
 type User {
@@ -19,7 +19,7 @@ type User {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/users
-    body: '{"id":1,"name":"foo"}'
+    body: {"id": 1, "name": "foo"}
   response:
     status: 200
     body:
@@ -27,7 +27,7 @@ type User {
       name: foo
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

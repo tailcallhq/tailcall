@@ -1,48 +1,91 @@
 use std::collections::BTreeMap;
 
 use hyper::body::Bytes;
-use nom::AsBytes;
-use serde::{Deserialize, Serialize};
+use rquickjs::{FromJs, IntoJs};
 
 use super::create_header_map;
-use crate::http::Response;
-use crate::is_default;
+use crate::core::http::Response;
+use crate::core::worker::WorkerResponse;
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct JsResponse {
-    pub status: u16,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub headers: BTreeMap<String, String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub body: Option<String>,
-}
+impl WorkerResponse {
+    pub fn status(&self) -> u16 {
+        self.0.status.as_u16()
+    }
 
-impl TryFrom<JsResponse> for Response<Bytes> {
-    type Error = anyhow::Error;
+    pub fn headers(&self) -> BTreeMap<String, String> {
+        let mut headers = BTreeMap::new();
+        for (key, value) in self.0.headers.iter() {
+            headers.insert(key.to_string(), value.to_str().unwrap().to_string());
+        }
+        headers
+    }
 
-    fn try_from(res: JsResponse) -> Result<Self, Self::Error> {
-        let status = reqwest::StatusCode::from_u16(res.status)?;
-        let headers = create_header_map(res.headers)?;
-        let body = res.body.unwrap_or_default();
-        Ok(Response { status, headers, body: Bytes::from(body) })
+    pub fn body(&self) -> Option<String> {
+        let b = self.0.body.as_bytes();
+        Some(String::from_utf8_lossy(b).to_string())
     }
 }
 
-impl TryFrom<Response<Bytes>> for JsResponse {
+impl<'js> IntoJs<'js> for WorkerResponse {
+    fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
+        let object = rquickjs::Object::new(ctx.clone())?;
+        object.set("status", self.status())?;
+        object.set("headers", self.headers())?;
+        object.set("body", self.body())?;
+        Ok(object.into_value())
+    }
+}
+
+impl<'js> FromJs<'js> for WorkerResponse {
+    fn from_js(_: &rquickjs::Ctx<'js>, value: rquickjs::Value<'js>) -> rquickjs::Result<Self> {
+        let object = value.as_object().ok_or(rquickjs::Error::FromJs {
+            from: value.type_name(),
+            to: "rquickjs::Object",
+            message: Some("unable to cast JS Value as object".to_string()),
+        })?;
+        let status = object.get::<&str, u16>("status")?;
+        let headers = object.get::<&str, BTreeMap<String, String>>("headers")?;
+        let body = object.get::<&str, Option<String>>("body")?;
+        let response = Response {
+            status: reqwest::StatusCode::from_u16(status).map_err(|_| rquickjs::Error::FromJs {
+                from: "u16",
+                to: "reqwest::StatusCode",
+                message: Some("invalid status code".to_string()),
+            })?,
+            headers: create_header_map(headers).map_err(|e| rquickjs::Error::FromJs {
+                from: "BTreeMap<String, String>",
+                to: "reqwest::header::HeaderMap",
+                message: Some(e.to_string()),
+            })?,
+            body: body.unwrap_or_default(),
+        };
+        Ok(WorkerResponse(response))
+    }
+}
+
+impl TryFrom<WorkerResponse> for Response<Bytes> {
+    type Error = anyhow::Error;
+
+    fn try_from(res: WorkerResponse) -> Result<Self, Self::Error> {
+        let res = res.0;
+        Ok(Response {
+            status: res.status,
+            headers: res.headers,
+            body: Bytes::from(res.body.as_bytes().to_vec()),
+        })
+    }
+}
+
+impl TryFrom<Response<Bytes>> for WorkerResponse {
     type Error = anyhow::Error;
 
     fn try_from(res: Response<Bytes>) -> Result<Self, Self::Error> {
-        let status = res.status.as_u16();
-        let mut headers = BTreeMap::new();
-        for (key, value) in res.headers.iter() {
-            let key = key.to_string();
-            let value = value.to_str()?.to_string();
-            headers.insert(key, value);
-        }
-
-        let body = Some(std::str::from_utf8(res.body.as_bytes())?.to_owned());
-        Ok(JsResponse { status, headers, body })
+        let body = String::from_utf8_lossy(res.body.as_ref()).to_string();
+        Ok(WorkerResponse(Response {
+            status: res.status,
+            headers: res.headers,
+            body,
+        }))
     }
 }
 
@@ -51,40 +94,43 @@ mod test {
     use std::collections::BTreeMap;
 
     use anyhow::Result;
+    use headers::{HeaderName, HeaderValue};
     use hyper::body::Bytes;
     use pretty_assertions::assert_eq;
     use reqwest::header::HeaderMap;
+    use rquickjs::{Context, FromJs, IntoJs, Runtime};
 
-    use super::JsResponse;
+    use super::WorkerResponse;
 
-    fn create_test_response() -> Result<JsResponse> {
+    fn create_test_response() -> Result<WorkerResponse> {
         let mut headers = HeaderMap::new();
         headers.insert("content-type", "application/json".parse().unwrap());
-        let response = crate::http::Response {
+        let response = crate::core::http::Response {
             status: reqwest::StatusCode::OK,
             headers,
             body: Bytes::from("Hello, World!"),
         };
-        let js_response: Result<JsResponse> = response.try_into();
+        let js_response: Result<WorkerResponse> = response.try_into();
         js_response
     }
+
     #[test]
     fn test_to_js_response() {
         let js_response = create_test_response();
         assert!(js_response.is_ok());
         let js_response = js_response.unwrap();
-        assert_eq!(js_response.status, 200);
+        assert_eq!(js_response.status(), 200);
         assert_eq!(
-            js_response.headers.get("content-type").unwrap(),
+            js_response.headers().get("content-type").unwrap(),
             "application/json"
         );
-        assert_eq!(js_response.body, Some("Hello, World!".into()));
+        assert_eq!(js_response.body(), Some("Hello, World!".into()));
     }
 
     #[test]
     fn test_from_js_response() {
         let js_response = create_test_response().unwrap();
-        let response: Result<crate::http::Response<Bytes>> = js_response.try_into();
+        let response: Result<crate::core::http::Response<Bytes>> = js_response.try_into();
         assert!(response.is_ok());
         let response = response.unwrap();
         assert_eq!(response.status, reqwest::StatusCode::OK);
@@ -94,35 +140,67 @@ mod test {
         );
         assert_eq!(response.body, Bytes::from("Hello, World!"));
     }
-    #[test]
-    fn test_js_response_with_defaults() {
-        let js_response = JsResponse {
-            status: 200,
-            headers: BTreeMap::new(), // Empty headers
-            body: None,               // No body
-        };
-
-        let response: Result<crate::http::Response<Bytes>, _> = js_response.try_into();
-        assert!(response.is_ok());
-        let response = response.unwrap();
-        assert!(response.headers.is_empty());
-        assert_eq!(response.body, Bytes::new()); // Assuming `Bytes::new()` is
-                                                 // the expected result for no
-                                                 // body
-    }
 
     #[test]
     fn test_unusual_headers() {
         let body = "a";
-        let mut headers = BTreeMap::new();
-        headers.insert("x-unusual-header".to_string(), "🚀".to_string());
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            HeaderName::from_static("x-unusual-header"),
+            HeaderValue::from_str("🚀").unwrap(),
+        );
+        let response = crate::core::http::Response {
+            status: reqwest::StatusCode::OK,
+            headers,
+            body: body.into(),
+        };
+        let js_response = WorkerResponse(response);
 
-        let js_response = JsResponse { status: 200, headers, body: Some(body.into()) };
-
-        let response: Result<crate::http::Response<Bytes>, _> = js_response.try_into();
+        let response: Result<crate::core::http::Response<Bytes>, _> = js_response.try_into();
         assert!(response.is_ok());
         let response = response.unwrap();
         assert_eq!(response.headers.get("x-unusual-header").unwrap(), "🚀");
         assert_eq!(response.body, Bytes::from(body));
+    }
+
+    #[test]
+    fn test_response_into_js() {
+        let runtime = Runtime::new().unwrap();
+        let context = Context::base(&runtime).unwrap();
+        context.with(|ctx| {
+            let value = create_test_response().unwrap().into_js(&ctx).unwrap();
+            let object = value.as_object().unwrap();
+
+            let status = object.get::<&str, u16>("status").unwrap();
+            let headers = object
+                .get::<&str, BTreeMap<String, String>>("headers")
+                .unwrap();
+            let body = object.get::<&str, Option<String>>("body").unwrap();
+
+            assert_eq!(status, reqwest::StatusCode::OK);
+            assert_eq!(body, Some("Hello, World!".to_owned()));
+            assert!(headers.contains_key("content-type"));
+            assert_eq!(
+                headers.get("content-type"),
+                Some(&"application/json".to_owned())
+            );
+        });
+    }
+
+    #[test]
+    fn test_response_from_js() {
+        let runtime = Runtime::new().unwrap();
+        let context = Context::base(&runtime).unwrap();
+        context.with(|ctx| {
+            let js_response = create_test_response().unwrap().into_js(&ctx).unwrap();
+            let response = WorkerResponse::from_js(&ctx, js_response).unwrap();
+
+            assert_eq!(response.status(), reqwest::StatusCode::OK.as_u16());
+            assert_eq!(response.body(), Some("Hello, World!".to_owned()));
+            assert_eq!(
+                response.headers().get("content-type"),
+                Some(&"application/json".to_owned())
+            );
+        });
     }
 }

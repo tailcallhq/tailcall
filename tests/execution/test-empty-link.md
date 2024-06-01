@@ -1,17 +1,17 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-empty-link
 
-```graphql @server
+```graphql @config
 schema @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(type: Config, src: "") @link(type: Config) {
   query: Query
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
 type User {
@@ -28,6 +28,6 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }
 ```

@@ -1,11 +1,11 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-groupby-without-batching
 
-```graphql @server
-schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+```graphql @config
+schema @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
 }
 
@@ -15,6 +15,6 @@ type User {
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}], batchKey: ["id"])
+  user(id: Int!): User @http(path: "/users", query: [{key: "id", value: "{{.args.id}}"}], batchKey: ["id"])
 }
 ```

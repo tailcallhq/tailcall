@@ -1,6 +1,6 @@
 # Graphql datasource
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }
@@ -19,7 +19,7 @@ type Query {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '{ "query": "query { users { name } }" }'
+    textBody: {"query": "query { users { name } }"}
   response:
     status: 200
     body:
@@ -29,7 +29,7 @@ type Query {
           - name: Ervin Howell
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

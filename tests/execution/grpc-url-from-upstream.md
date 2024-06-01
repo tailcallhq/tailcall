@@ -36,17 +36,17 @@ message NewsList {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
-  @server(port: 8000, graphiql: true)
-  @upstream(httpCache: true, batch: {delay: 10}, baseURL: "http://localhost:50051")
+  @server(port: 8000)
+  @upstream(httpCache: 42, batch: {delay: 10}, baseURL: "http://localhost:50051")
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
 
 type Query {
   news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
-  newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{args.news}}")
+  newsById(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{.args.news}}")
 }
 input NewsInput {
   id: Int
@@ -70,13 +70,12 @@ type News {
 - request:
     method: POST
     url: http://localhost:50051/news.NewsService/GetAllNews
-    body: null
   response:
     status: 200
-    body: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
+    textBody: \0\0\0\0t\n#\x08\x01\x12\x06Note 1\x1a\tContent 1\"\x0cPost image 1\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

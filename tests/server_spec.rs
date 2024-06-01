@@ -1,5 +1,3 @@
-use tailcall::{blueprint, EnvIO, FileIO, HttpIO};
-
 #[cfg(test)]
 pub mod test {
     use std::borrow::Cow;
@@ -8,18 +6,18 @@ pub mod test {
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
-    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+    use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
     use reqwest::Client;
     use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-    use tailcall::cache::InMemoryCache;
     use tailcall::cli::javascript;
-    use tailcall::http::Response;
-    use tailcall::runtime::TargetRuntime;
+    use tailcall::core::blueprint::{Script, Upstream};
+    use tailcall::core::cache::InMemoryCache;
+    use tailcall::core::http::Response;
+    use tailcall::core::runtime::TargetRuntime;
+    use tailcall::core::{EnvIO, FileIO, HttpIO};
+    use tailcall_http_cache::HttpCacheManager;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-
-    use crate::blueprint::Upstream;
-    use crate::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -60,10 +58,10 @@ pub mod test {
 
             let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-            if upstream.http_cache {
+            if upstream.http_cache > 0 {
                 client = client.with(Cache(HttpCache {
                     mode: CacheMode::Default,
-                    manager: MokaManager::default(),
+                    manager: HttpCacheManager::new(upstream.http_cache),
                     options: HttpCacheOptions::default(),
                 }))
             }
@@ -130,7 +128,7 @@ pub mod test {
         }
     }
 
-    pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
+    pub fn init(script: Option<Script>) -> TargetRuntime {
         let http = if let Some(script) = script.clone() {
             javascript::init_http(TestHttp::init(&Default::default()), script)
         } else {
@@ -156,6 +154,8 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
+            http_worker: None,
+            worker: None,
         }
     }
 }
@@ -165,7 +165,7 @@ mod server_spec {
     use reqwest::Client;
     use serde_json::json;
     use tailcall::cli::server::Server;
-    use tailcall::config::reader::ConfigReader;
+    use tailcall::core::config::reader::ConfigReader;
 
     async fn test_server(configs: &[&str], url: &str) {
         let runtime = crate::test::init(None);

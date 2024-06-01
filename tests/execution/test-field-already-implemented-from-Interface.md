@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-field-already-implemented-from-Interface
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }
@@ -19,6 +19,6 @@ type User implements IUser {
 }
 
 type Query {
-  user: User @http(path: "/user/{{args.input.id}}", baseURL: "http://localhost:8080")
+  user: User @http(path: "/user/{{.args.input.id}}", baseURL: "http://localhost:8080")
 }
 ```

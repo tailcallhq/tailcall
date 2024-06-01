@@ -1,6 +1,6 @@
 # Cors allow cred true
 
-```graphql @server
+```graphql @config
 schema
   @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000})
   @server(
@@ -22,7 +22,7 @@ type Query {
 }
 ```
 
-```yml @assert
+```yml @test
 # the same request to validate caching
 - method: OPTIONS
   url: http://localhost:8080/graphql

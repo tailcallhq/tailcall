@@ -5,7 +5,7 @@ use std::cell::Cell;
 
 use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
-use tailcall::tracing::default_tracing_tailcall;
+use tailcall::core::tracing::default_tracing_tailcall;
 use tracing::subscriber::DefaultGuard;
 
 #[global_allocator]
@@ -32,6 +32,7 @@ fn run_blocking() -> anyhow::Result<()> {
         .on_thread_stop(|| {
             TRACING_GUARD.take();
         })
+        .enable_all()
         .build()?;
     rt.block_on(async { tailcall::cli::run().await })
 }

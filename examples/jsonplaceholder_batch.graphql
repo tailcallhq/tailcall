@@ -1,6 +1,6 @@
 schema
-  @server(port: 8000, graphiql: true)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 1, maxSize: 1000}) {
+  @server(port: 8000)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 
@@ -22,5 +22,5 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}], batchKey: ["id"])
+  user: User @http(path: "/users", query: [{key: "id", value: "{{.value.userId}}"}], batchKey: ["id"])
 }

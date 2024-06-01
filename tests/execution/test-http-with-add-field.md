@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-http-with-add-field
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
@@ -18,7 +18,7 @@ type Post {
   title: String
   body: String
   userId: Int!
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }
 
 type User {

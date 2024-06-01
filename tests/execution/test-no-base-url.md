@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-no-base-url
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }

@@ -1,0 +1,29 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream(batch: {delay: 1, headers: []}) {
+  query: Query
+}
+
+type Post {
+  id: Int
+  title: String
+  user: User
+    @graphQL(
+      args: [{key: "id", value: "{{.value.userId}}"}]
+      baseURL: "http://upstream/graphql"
+      batch: true
+      name: "user"
+    )
+  userId: Int
+}
+
+type Query {
+  posts: [Post] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts")
+}
+
+type User {
+  id: Int
+  name: String
+}

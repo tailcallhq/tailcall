@@ -1,6 +1,6 @@
 # Showcase GraphQL Request
 
-```graphql @server
+```graphql @config
 schema @server(showcase: true) {
   query: Query
 }
@@ -21,7 +21,6 @@ type Query {
     url: http://jsonplaceholder.typicode.com/users/1
     headers:
       test: test
-    body: null
   response:
     status: 200
     body:
@@ -30,8 +29,7 @@ type Query {
 - request:
     method: GET
     url: http://example.com/simple.graphql
-    body: null
-  expected_hits: 2
+  expectedHits: 2
   response:
     status: 200
     textBody: |2-
@@ -41,13 +39,12 @@ type Query {
 - request:
     method: GET
     url: http://example.com/invalid.graphql
-    body: null
   response:
     status: 200
     body: dsjfsjdfjdsfjkdskjfjkds
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/showcase/graphql?config=http%3A%2F%2Fexample.com%2Fsimple.graphql
   body:

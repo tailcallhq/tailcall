@@ -1,0 +1,50 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+type Mutation {
+  deleteNews(news: NewsId!): Empty!
+}
+
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type NewsData {
+  news: [News]!
+}
+
+input NewsId {
+  id: Int
+}
+
+input NewsInput {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+scalar PhoneNumber
+
+type Query {
+  news: NewsData!
+  newsById(news: NewsInput!): News!
+}
+
+scalar Url
+
+schema {
+  query: Query
+}

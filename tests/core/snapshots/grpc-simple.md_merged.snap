@@ -1,0 +1,41 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(port: 8000)
+  @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: []}, httpCache: 42)
+  @link(id: "news", src: "news.proto", type: Protobuf) {
+  query: Query
+}
+
+input NewsId {
+  id: Int
+}
+
+input NewsInput {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type Mutation {
+  deleteNews(news: NewsId!): Empty! @grpc(body: "{{.args.news}}", method: "news.NewsService.DeleteNews")
+}
+
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type NewsData {
+  news: [News]!
+}
+
+type Query {
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
+  newsById(news: NewsInput!): News! @grpc(body: "{{.args.news}}", method: "news.NewsService.GetNews")
+}

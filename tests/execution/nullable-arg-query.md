@@ -1,13 +1,13 @@
 # Nullable arg query
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }
 
 type Query {
   users(id: ID): [User]
-    @http(path: "/users", query: [{key: "id", value: "{{args.id}}"}], baseURL: "http://jsonplaceholder.typicode.com")
+    @http(path: "/users", query: [{key: "id", value: "{{.args.id}}"}], baseURL: "http://jsonplaceholder.typicode.com")
 }
 
 type User {
@@ -20,7 +20,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users
-    body: null
   response:
     status: 200
     body:
@@ -37,14 +36,13 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users?id=1
-    body: null
   response:
     status: 200
     body:
       - id: 1
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

@@ -1,0 +1,23 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server
+  @upstream(
+    baseURL: "http://jsonplaceholder.typicode.com"
+    batch: {delay: 0, headers: [], maxSize: 100}
+    httpCache: 42
+  ) {
+  query: Query
+}
+
+type Query {
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+}
+
+type User {
+  id: Int
+  name: String
+  username: String
+}

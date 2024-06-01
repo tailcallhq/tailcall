@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-dbl-usage-many
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }
@@ -20,7 +20,7 @@ input Post {
 }
 
 type Query {
-  user(input: User!): User @http(path: "/user/{{args.input.id}}", baseURL: "http://localhost:8080")
-  post(input: Post!): Post @http(path: "/user/{{args.input.id}}", baseURL: "http://localhost:8080")
+  user(input: User!): User @http(path: "/user/{{.args.input.id}}", baseURL: "http://localhost:8080")
+  post(input: Post!): Post @http(path: "/user/{{.args.input.id}}", baseURL: "http://localhost:8080")
 }
 ```

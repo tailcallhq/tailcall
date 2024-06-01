@@ -6,14 +6,13 @@ use std::sync::Arc;
 
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
-use async_trait::async_trait;
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
-use tailcall::config::Batch;
-use tailcall::http::{DataLoaderRequest, HttpDataLoader, Response};
-use tailcall::runtime::TargetRuntime;
-use tailcall::{EnvIO, FileIO, HttpIO};
+use tailcall::core::config::Batch;
+use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
+use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::{EnvIO, FileIO, HttpIO};
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -29,7 +28,6 @@ impl HttpIO for MockHttpClient {
 }
 
 struct Env {}
-#[async_trait]
 impl EnvIO for Env {
     fn get(&self, _: &str) -> Option<Cow<'_, str>> {
         unimplemented!("Not needed for this bench")
@@ -38,7 +36,7 @@ impl EnvIO for Env {
 
 struct File;
 
-#[async_trait]
+#[async_trait::async_trait]
 impl FileIO for File {
     async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
         unimplemented!("Not needed for this bench")
@@ -50,8 +48,8 @@ impl FileIO for File {
 }
 
 struct Cache;
-#[async_trait]
-impl tailcall::Cache for Cache {
+#[async_trait::async_trait]
+impl tailcall::core::Cache for Cache {
     type Key = u64;
     type Value = ConstValue;
 
@@ -68,7 +66,7 @@ impl tailcall::Cache for Cache {
     }
 }
 
-fn benchmark_data_loader(c: &mut Criterion) {
+pub fn benchmark_data_loader(c: &mut Criterion) {
     c.bench_function("test_data_loader", |b| {
         b.iter(|| {
             let client = Arc::new(MockHttpClient { request_count: Arc::new(AtomicUsize::new(0)) });
@@ -81,6 +79,8 @@ fn benchmark_data_loader(c: &mut Criterion) {
                     file: Arc::new(File {}),
                     cache: Arc::new(Cache {}),
                     extensions: Arc::new(vec![]),
+                    http_worker: None,
+                    worker: None,
                 };
                 let loader = HttpDataLoader::new(rt, None, false);
                 let loader = loader.to_data_loader(Batch::default().delay(1));
@@ -111,10 +111,3 @@ fn benchmark_data_loader(c: &mut Criterion) {
         })
     });
 }
-
-criterion_group! {
-    name = benches;
-    config = Criterion::default();
-    targets = benchmark_data_loader
-}
-criterion_main!(benches);

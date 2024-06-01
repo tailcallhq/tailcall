@@ -24,10 +24,10 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{Layer, Registry};
 
 use super::metrics::init_metrics;
-use crate::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::cli::CLIError;
-use crate::runtime::TargetRuntime;
-use crate::tracing::{default_tracing_tailcall, get_log_level, tailcall_filter_target};
+use crate::core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
+use crate::core::runtime::TargetRuntime;
+use crate::core::tracing::{default_tracing_tailcall, get_log_level, tailcall_filter_target};
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     Resource::default().merge(&Resource::new(vec![
@@ -130,7 +130,6 @@ fn set_logger_provider(
             .with_exporter(otlp_exporter(config))
             .with_log_config(opentelemetry_sdk::logs::config().with_resource(RESOURCE.clone()))
             .install_batch(runtime::Tokio)?
-            .provider().clone()
         ,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
@@ -138,8 +137,6 @@ fn set_logger_provider(
     };
 
     let otel_tracing_appender = OpenTelemetryTracingBridge::new(&provider);
-
-    global::set_logger_provider(provider);
 
     Ok(Some(otel_tracing_appender))
 }

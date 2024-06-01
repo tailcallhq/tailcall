@@ -1,5 +1,5 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-grpc-group-by
@@ -40,10 +40,10 @@ message NewsList {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
-  @server(port: 8000, graphiql: true)
-  @upstream(httpCache: true, batch: {delay: 10})
+  @server(port: 8000)
+  @upstream(httpCache: 42, batch: {delay: 10})
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
@@ -53,7 +53,7 @@ type Query {
     @grpc(
       method: "news.NewsService.GetMultipleNews"
       baseURL: "http://localhost:50051"
-      body: "{{args.news}}"
+      body: "{{.args.news}}"
       batchKey: ["id"]
     )
 }

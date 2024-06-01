@@ -6,6 +6,13 @@
     "schema"
   ],
   "properties": {
+    "enums": {
+      "description": "A map of all the enum types in the schema",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Enum"
+      }
+    },
     "links": {
       "description": "A list of all links in the schema.",
       "type": "array",
@@ -103,18 +110,24 @@
         },
         "platform": {
           "description": "Setting `platform` for Apollo.",
-          "default": "platform",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "userVersion": {
           "description": "Setting `userVersion` for Apollo.",
-          "default": "1.0",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "version": {
           "description": "Setting `version` for Apollo.",
-          "default": "1.0",
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },
@@ -170,8 +183,10 @@
           "uniqueItems": true
         },
         "maxSize": {
-          "default": 100,
-          "type": "integer",
+          "type": [
+            "integer",
+            "null"
+          ],
           "format": "uint",
           "minimum": 0.0
         }
@@ -325,6 +340,28 @@
         "ApplicationXWwwFormUrlencoded"
       ]
     },
+    "Enum": {
+      "description": "Definition of GraphQL enum type",
+      "type": "object",
+      "required": [
+        "variants"
+      ],
+      "properties": {
+        "doc": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
     "Expr": {
       "description": "The `@expr` operators allows you to specify an expression that can evaluate to a value. The expression can be a static value or built form a Mustache template. schema.",
       "type": "object",
@@ -452,7 +489,6 @@
         },
         "protected": {
           "description": "Marks field as protected by auth provider",
-          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Protected"
@@ -712,10 +748,10 @@
     "JS": {
       "type": "object",
       "required": [
-        "script"
+        "name"
       ],
       "properties": {
-        "script": {
+        "name": {
           "type": "string"
         }
       }
@@ -784,7 +820,8 @@
         "Key",
         "Operation",
         "Htpasswd",
-        "Jwks"
+        "Jwks",
+        "Grpc"
       ]
     },
     "Method": {
@@ -951,13 +988,6 @@
             "null"
           ],
           "format": "int64"
-        },
-        "graphiql": {
-          "description": "`graphiql` activates the GraphiQL IDE at the root path within Tailcall, a tool for query development and testing. @default `false`.",
-          "type": [
-            "boolean",
-            "null"
-          ]
         },
         "headers": {
           "description": "`headers` contains key-value pairs that are included as default headers in server responses, allowing for consistent header management across all responses.",
@@ -1203,7 +1233,6 @@
         },
         "cache": {
           "description": "Setting to indicate if the type can be cached.",
-          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Cache"
@@ -1220,17 +1249,6 @@
             "null"
           ]
         },
-        "enum": {
-          "description": "Variants for the type if it's an enum",
-          "type": [
-            "array",
-            "null"
-          ],
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true
-        },
         "fields": {
           "description": "A map of field name and its definition.",
           "type": "object",
@@ -1246,13 +1264,8 @@
           },
           "uniqueItems": true
         },
-        "interface": {
-          "description": "Flag to indicate if the type is an interface.",
-          "type": "boolean"
-        },
         "protected": {
           "description": "Marks field as protected by auth providers",
-          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Protected"
@@ -1261,10 +1274,6 @@
               "type": "null"
             }
           ]
-        },
-        "scalar": {
-          "description": "Flag to indicate if the type is a scalar.",
-          "type": "boolean"
         },
         "tag": {
           "description": "Contains source information for the type.",
@@ -1342,6 +1351,13 @@
           "format": "uint64",
           "minimum": 0.0
         },
+        "dedupe": {
+          "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once within the context of a single GraphQL request.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "http2Only": {
           "description": "The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.",
           "type": [
@@ -1350,11 +1366,13 @@
           ]
         },
         "httpCache": {
-          "description": "Activating this enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `false` if unspecified.",
+          "description": "Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.",
           "type": [
-            "boolean",
+            "integer",
             "null"
-          ]
+          ],
+          "format": "uint64",
+          "minimum": 0.0
         },
         "keepAliveInterval": {
           "description": "The time in seconds between each keep-alive message sent to maintain the connection.",
@@ -1458,7 +1476,9 @@
           "enum": [
             "Str",
             "Num",
-            "Bool"
+            "Bool",
+            "Empty",
+            "Any"
           ]
         },
         {

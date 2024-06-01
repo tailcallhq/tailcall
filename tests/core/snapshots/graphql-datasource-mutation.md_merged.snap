@@ -1,0 +1,28 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+  mutation: Mutation
+}
+
+input UserInput {
+  email: String!
+  name: String!
+  phone: String
+}
+
+type Mutation {
+  createUser(user: UserInput!): User
+    @graphQL(args: [{key: "user", value: "{{.args.user}}"}], baseURL: "http://upstream/graphql", name: "createUser")
+}
+
+type Query {
+  users: [User] @graphQL(baseURL: "http://upstream/graphql", name: "users")
+}
+
+type User {
+  id: Int
+  name: String
+}

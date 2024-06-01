@@ -1,6 +1,6 @@
 # With args URL
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {
@@ -21,7 +21,7 @@
             }
           },
           "http": {
-            "path": "/users/{{args.id}}",
+            "path": "/users/{{.args.id}}",
             "baseURL": "http://jsonplaceholder.typicode.com"
           },
           "cache": null
@@ -52,7 +52,6 @@
     url: http://jsonplaceholder.typicode.com/users/1
     headers:
       test: test
-    body: null
   response:
     status: 200
     body:
@@ -60,7 +59,7 @@
       name: foo
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

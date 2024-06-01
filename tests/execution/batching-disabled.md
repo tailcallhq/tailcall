@@ -1,11 +1,11 @@
 # Batching disabled
 
-```json @server
+```json @config
 {
   "server": {},
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com",
-    "httpCache": true,
+    "httpCache": 42,
     "batch": {
       "maxSize": 100,
       "delay": 0,
@@ -27,7 +27,7 @@
             }
           },
           "http": {
-            "path": "/users/{{args.id}}"
+            "path": "/users/{{.args.id}}"
           },
           "cache": null
         }
@@ -59,7 +59,6 @@
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -68,7 +67,6 @@
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/2
-    body: null
   response:
     status: 200
     body:
@@ -76,7 +74,7 @@
       name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

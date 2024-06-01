@@ -1,0 +1,38 @@
+---
+source: tests/core/spec.rs
+expression: client
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+type NEWS {
+  getAllNews: News__NewsList!
+}
+
+type News__News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type News__NewsList {
+  news: [News__News]
+}
+
+scalar PhoneNumber
+
+type Query {
+  news: NEWS
+}
+
+scalar Url
+
+schema {
+  query: Query
+}

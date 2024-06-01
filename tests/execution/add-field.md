@@ -1,6 +1,6 @@
 # Add field
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }
@@ -26,7 +26,6 @@ type Query {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -37,7 +36,7 @@ type Query {
       name: foo
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

@@ -1,6 +1,6 @@
 # Resolve with headers
 
-```graphql @server
+```graphql @config
 schema @upstream(allowedHeaders: ["authorization"]) {
   query: Query
 }
@@ -13,7 +13,7 @@ type Post {
 }
 
 type Query {
-  post1: Post @http(path: "/posts/{{headers.authorization}}", baseURL: "http://jsonplaceholder.typicode.com")
+  post1: Post @http(path: "/posts/{{.headers.authorization}}", baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```
 
@@ -32,7 +32,7 @@ type Query {
       title: post title
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   headers:

@@ -1,0 +1,25 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(port: 8000)
+  @upstream(baseURL: "http://localhost:50051", httpCache: 42)
+  @link(src: "http://localhost:50051", type: Grpc) {
+  query: Query
+}
+
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type NewsData {
+  news: [News]!
+}
+
+type Query {
+  news: NewsData! @grpc(method: "news.NewsService.GetAllNews")
+}

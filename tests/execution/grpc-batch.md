@@ -36,10 +36,10 @@ message NewsList {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
-  @server(port: 8000, graphiql: true)
-  @upstream(httpCache: true, batch: {delay: 10})
+  @server(port: 8000)
+  @upstream(httpCache: 42, batch: {delay: 10})
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }
@@ -50,7 +50,7 @@ type Query {
     @grpc(
       method: "news.NewsService.GetMultipleNews"
       baseURL: "http://localhost:50051"
-      body: "{{args.news}}"
+      body: "{{.args.news}}"
       batchKey: ["news", "id"]
     )
 }
@@ -76,13 +76,22 @@ type News {
 - request:
     method: POST
     url: http://localhost:50051/news.NewsService/GetMultipleNews
-    body: \0\0\0\0\n\x02\x08\x02\n\x02\x08\x03
+    textBody: \0\0\0\0\x08\n\x02\x08\x02\n\x02\x08\x03
+  assertHits: false
   response:
     status: 200
-    body: \0\0\0\0t\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3
+    textBody: \0\0\0\0t\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3
+- request:
+    method: POST
+    url: http://localhost:50051/news.NewsService/GetMultipleNews
+    textBody: \0\0\0\0\x08\n\x02\x08\x03\n\x02\x08\x02
+  assertHits: false
+  response:
+    status: 200
+    textBody: \0\0\0\0t\n#\x08\x03\x12\x06Note 3\x1a\tContent 3\"\x0cPost image 3\n#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

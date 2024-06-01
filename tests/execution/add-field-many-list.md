@@ -1,10 +1,10 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # add-field-many-list
 
-```graphql @server
+```graphql @config
 schema @server @upstream {
   query: Query
 }
@@ -19,7 +19,10 @@ type Query {
   u: U @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/us/1")
 }
 
-type U @addField(name: "b", path: ["a", "b"]) @addField(name: "c", path: ["a", "c"]) @addField(name: "d", path: ["a", "d"]) {
+type U
+  @addField(name: "b", path: ["a", "b"])
+  @addField(name: "c", path: ["a", "c"])
+  @addField(name: "d", path: ["a", "d"]) {
   a: A
   e: String
 }

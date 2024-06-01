@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-invalid-query-in-http
 
-```graphql @server
+```graphql @config
 schema @server(vars: [{key: "id", value: "1"}]) {
   query: Query
 }
@@ -16,6 +16,6 @@ type User {
 
 type Query {
   user: [User]
-    @http(path: "/users", query: {key: "id", value: "{{vars.id}}"}, baseURL: "http://jsonplaceholder.typicode.com")
+    @http(path: "/users", query: {key: "id", value: "{{.vars.id}}"}, baseURL: "http://jsonplaceholder.typicode.com")
 }
 ```

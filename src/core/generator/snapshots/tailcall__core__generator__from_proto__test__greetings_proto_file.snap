@@ -1,0 +1,19 @@
+---
+source: src/core/generator/from_proto.rs
+expression: result
+---
+schema @server @upstream {
+  query: Query
+}
+
+input greetings__HelloRequest @tag(id: "greetings.HelloRequest") {
+  name: String
+}
+
+type Query {
+  greetings__Greeter__SayHello(helloRequest: greetings__HelloRequest!): greetings__HelloReply! @grpc(body: "{{.args.helloRequest}}", method: "greetings.Greeter.SayHello")
+}
+
+type greetings__HelloReply @tag(id: "greetings.HelloReply") {
+  message: String
+}

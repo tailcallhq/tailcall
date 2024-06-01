@@ -1,9 +1,9 @@
 # Batching group by
 
-```graphql @server
+```graphql @config
 schema
   @server(port: 8000, queryValidation: false)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 1, maxSize: 1000}) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
 
@@ -17,7 +17,11 @@ type Post {
   body: String
   userId: Int!
   user: User
-    @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}, {key: "foo", value: "bar"}], batchKey: ["id"])
+    @http(
+      path: "/users"
+      query: [{key: "id", value: "{{.value.userId}}"}, {key: "foo", value: "bar"}]
+      batchKey: ["id"]
+    )
 }
 
 type User {
@@ -30,7 +34,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
-    body: null
   response:
     status: 200
     body:
@@ -45,7 +48,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users?id=1&foo=bar&id=2&foo=bar
-    body: null
   response:
     status: 200
     body:
@@ -55,7 +57,7 @@ type User {
         name: Ervin Howell
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

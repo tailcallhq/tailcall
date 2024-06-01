@@ -1,6 +1,6 @@
 # With nesting
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
@@ -16,7 +16,7 @@ type User {
   email: String!
   phone: String
   website: String
-  posts: [Post] @http(path: "/users/{{value.id}}/posts")
+  posts: [Post] @http(path: "/users/{{.value.id}}/posts")
 }
 
 type Post {
@@ -31,7 +31,6 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body:
@@ -42,7 +41,6 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1/posts
-    body: null
   response:
     status: 200
     body:
@@ -51,7 +49,7 @@ type Post {
       - title: title3
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

@@ -1,16 +1,16 @@
 # Call operator with graphQL datasource
 
-```graphql @server
+```graphql @config
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true) {
+  @server(port: 8000, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
   user(id: Int!): User
-    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{args.id}}"}])
+    @graphQL(baseURL: "http://upstream/graphql", name: "user", args: [{key: "id", value: "{{.args.id}}"}])
 }
 
 type User {
@@ -27,7 +27,7 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @call(steps: [{query: "user", args: {id: "{{value.userId}}"}}])
+  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
 }
 ```
 
@@ -35,7 +35,6 @@ type Post {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/posts
-    body: null
   response:
     status: 200
     body:
@@ -54,8 +53,8 @@ type Post {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '{ "query": "query { user(id: 1) { name } }" }'
-  expected_hits: 1
+    textBody: '{ "query": "query { user(id: 1) { name } }" }'
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -65,8 +64,8 @@ type Post {
 - request:
     method: POST
     url: http://upstream/graphql
-    body: '{ "query": "query { user(id: 2) { name } }" }'
-  expected_hits: 1
+    textBody: '{ "query": "query { user(id: 2) { name } }" }'
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -75,7 +74,7 @@ type Post {
           name: Ervin Howell
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

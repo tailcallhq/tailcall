@@ -1,6 +1,6 @@
 # Experimental headers
 
-```graphql @server
+```graphql @config
 schema @server(headers: {experimental: ["x-tailcall", "X-experimental"]}) {
   query: Query
 }
@@ -19,7 +19,6 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users
-    body: null
   response:
     status: 200
     headers:
@@ -31,7 +30,7 @@ type User {
         name: Leanne Graham
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

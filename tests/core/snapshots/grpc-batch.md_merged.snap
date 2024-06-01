@@ -1,0 +1,39 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(port: 8000)
+  @upstream(batch: {delay: 10, headers: []}, httpCache: 42)
+  @link(id: "news", src: "news.proto", type: Protobuf) {
+  query: Query
+}
+
+input NewsInput {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
+}
+
+type NewsData {
+  news: [News]!
+}
+
+type Query {
+  news: NewsData! @grpc(baseURL: "http://localhost:50051", method: "news.NewsService.GetAllNews")
+  newsById(news: NewsInput!): News!
+    @grpc(
+      baseURL: "http://localhost:50051"
+      body: "{{.args.news}}"
+      batchKey: ["news", "id"]
+      method: "news.NewsService.GetMultipleNews"
+    )
+}

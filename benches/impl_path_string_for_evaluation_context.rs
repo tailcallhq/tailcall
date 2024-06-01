@@ -6,8 +6,8 @@ use std::time::Duration;
 use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
 use async_trait::async_trait;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
+use criterion::{BenchmarkId, Criterion};
+use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use hyper::header::HeaderValue;
 use hyper::HeaderMap;
@@ -15,13 +15,14 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::blueprint::{Server, Upstream};
-use tailcall::cache::InMemoryCache;
-use tailcall::http::{RequestContext, Response};
-use tailcall::lambda::{EvaluationContext, ResolverContextLike};
-use tailcall::path::PathString;
-use tailcall::runtime::TargetRuntime;
-use tailcall::{EnvIO, FileIO, HttpIO};
+use tailcall::core::blueprint::{Server, Upstream};
+use tailcall::core::cache::InMemoryCache;
+use tailcall::core::http::{RequestContext, Response};
+use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
+use tailcall::core::path::PathString;
+use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::{EnvIO, FileIO, HttpIO};
+use tailcall_http_cache::HttpCacheManager;
 
 struct Http {
     client: ClientWithMiddleware,
@@ -56,10 +57,10 @@ impl Http {
 
         let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-        if upstream.http_cache {
+        if upstream.http_cache > 0 {
             client = client.with(Cache(HttpCache {
                 mode: CacheMode::Default,
-                manager: MokaManager::default(),
+                manager: HttpCacheManager::new(upstream.http_cache),
                 options: HttpCacheOptions::default(),
             }))
         }
@@ -231,7 +232,7 @@ fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
 }
 
 fn request_context() -> RequestContext {
-    let config_module = tailcall::config::ConfigModule::default();
+    let config_module = tailcall::core::config::ConfigModule::default();
 
     //TODO: default is used only in tests. Drop default and move it to test.
     let upstream = Upstream::try_from(&config_module).unwrap();
@@ -245,13 +246,15 @@ fn request_context() -> RequestContext {
         file: Arc::new(File {}),
         cache: Arc::new(InMemoryCache::new()),
         extensions: Arc::new(vec![]),
+        http_worker: None,
+        worker: None,
     };
     RequestContext::new(runtime)
         .server(server)
         .upstream(upstream)
 }
 
-fn bench_main(c: &mut Criterion) {
+pub fn bench_main(c: &mut Criterion) {
     let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
 
     req_ctx.server.vars = TEST_VARS.clone();
@@ -271,6 +274,3 @@ fn bench_main(c: &mut Criterion) {
         });
     }
 }
-
-criterion_group!(benches, bench_main);
-criterion_main!(benches);

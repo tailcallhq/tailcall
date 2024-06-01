@@ -1,6 +1,6 @@
 # Sending requests to verify Cache-Control behavior
 
-```json @server
+```json @config
 {
   "server": {
     "headers": {
@@ -26,7 +26,7 @@
             "query": [
               {
                 "key": "id",
-                "value": "{{args.id}}"
+                "value": "{{.args.id}}"
               }
             ],
             "baseURL": "http://jsonplaceholder.typicode.com"
@@ -59,8 +59,7 @@
     url: http://jsonplaceholder.typicode.com/users?id=1
     headers:
       test: test
-    body: null
-  expected_hits: 3
+  expectedHits: 3
   response:
     status: 200
     headers:
@@ -73,7 +72,6 @@
     url: http://jsonplaceholder.typicode.com/users?id=2
     headers:
       test: test
-    body: null
   response:
     status: 200
     headers:
@@ -86,8 +84,7 @@
     url: http://jsonplaceholder.typicode.com/users?id=3
     headers:
       test: test
-    body: null
-  expected_hits: 2
+  expectedHits: 2
   response:
     status: 200
     headers:
@@ -100,8 +97,7 @@
     url: http://jsonplaceholder.typicode.com/users?id=4
     headers:
       test: test
-    body: null
-  expected_hits: 2
+  expectedHits: 2
   response:
     status: 200
     headers:
@@ -111,7 +107,7 @@
       name: barfoo
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

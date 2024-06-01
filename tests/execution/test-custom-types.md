@@ -1,10 +1,10 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-custom-types
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Que
   mutation: Mut
@@ -17,7 +17,7 @@ input PostInput {
 }
 
 type Mut {
-  insertPost(input: PostInput): Post @http(body: "{{args.input}}", method: "POST", path: "/posts")
+  insertPost(input: PostInput): Post @http(body: "{{.args.input}}", method: "POST", path: "/posts")
 }
 
 type Post {

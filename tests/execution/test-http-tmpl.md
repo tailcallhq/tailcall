@@ -1,17 +1,17 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-http-tmpl
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
 type Post {
   id: Int
-  user: User @http(path: "/users", query: [{key: "id", value: "{{value.userId}}"}])
+  user: User @http(path: "/users", query: [{key: "id", value: "{{.value.userId}}"}])
   userId: Int!
 }
 

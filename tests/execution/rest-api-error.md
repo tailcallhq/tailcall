@@ -9,7 +9,7 @@ query ($id: Int!) @rest(method: GET, path: "/user/$id") {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
   @server
   @upstream(baseURL: "http://jsonplaceholder.typicode.com")
@@ -18,7 +18,7 @@ schema
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
 type User {
@@ -31,13 +31,12 @@ type User {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/users/1
-    body: null
   response:
     status: 200
     body: {}
 ```
 
-```yml @assert
+```yml @test
 - method: GET
   url: http://localhost:8080/api/user/1
 ```

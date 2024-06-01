@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-missing-mutation-resolver
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
   mutation: Mutation

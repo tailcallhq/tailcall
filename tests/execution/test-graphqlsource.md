@@ -1,22 +1,22 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # test-graphqlsource
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://localhost:8000/graphql") {
   query: Query
 }
 
 type Post {
   id: Int!
-  user: User @graphQL(args: [{key: "id", value: "{{value.userId}}"}], name: "user")
+  user: User @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], name: "user")
   userId: Int!
 }
 
 type Query {
-  post(id: Int!): Post @http(baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{args.id}}")
+  post(id: Int!): Post @http(baseURL: "http://jsonplacheholder.typicode.com", path: "/posts/{{.args.id}}")
 }
 
 type User {

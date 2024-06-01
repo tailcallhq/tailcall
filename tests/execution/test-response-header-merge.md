@@ -1,6 +1,6 @@
 # test-response-header-value
 
-```graphql @server
+```graphql @config
 schema @server(headers: {custom: [{key: "a", value: "a"}]}) {
   query: Query
 }
@@ -15,7 +15,7 @@ type Query {
 }
 ```
 
-```graphql @server
+```graphql @config
 schema @server(headers: {custom: [{key: "a", value: "b"}]}) {
   query: Query
 }

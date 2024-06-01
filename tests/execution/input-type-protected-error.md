@@ -1,10 +1,10 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # input-type-protected-error
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
   mutation: Mutation
@@ -16,7 +16,7 @@ type Query {
 
 type Mutation {
   data(input: Input): String @expr(body: "value")
-  newPost(post: NewPost): Post @http(baseURL: "", path: "/posts", method: POST, body: "{{args.post}}")
+  newPost(post: NewPost): Post @http(baseURL: "", path: "/posts", method: POST, body: "{{.args.post}}")
 }
 
 input Input @protected {

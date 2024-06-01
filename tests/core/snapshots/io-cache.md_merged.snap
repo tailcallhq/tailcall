@@ -1,0 +1,26 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(hostname: "0.0.0.0", port: 8000)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
+  query: Query
+}
+
+type Post {
+  body: String!
+  id: Int!
+  title: String!
+  user: User @http(path: "/users/{{.value.userId}}")
+  userId: Int!
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+}
+
+type User {
+  id: Int!
+  name: String!
+}

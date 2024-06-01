@@ -1,6 +1,6 @@
 # Test expr with mustache
 
-```graphql @server
+```graphql @config
 schema {
   query: Query
 }
@@ -15,7 +15,7 @@ type A {
   c: String @modify(omit: true)
   g: Boolean @modify(omit: true)
   d: D @modify(omit: true)
-  bc: BC @expr(body: {b: "{{value.b}}", c: "{{value.c}}", d: "{{value.d.e}}", f: "{{value.d}}", g: "{{value.g}}"})
+  bc: BC @expr(body: {b: "{{.value.b}}", c: "{{.value.c}}", d: "{{.value.d.e}}", f: "{{.value.d}}", g: "{{.value.g}}"})
 }
 
 type BC {
@@ -30,7 +30,7 @@ type D {
 }
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8000/graphql
   body:

@@ -1,20 +1,20 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-undefined-query
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
   query: Query
 }
 
 type Post {
   id: Int
-  user: User! @http(path: "/users", query: [{key: "id", value: "{{value.test.id}}"}])
-  nested: User! @http(path: "/users", query: [{key: "id", value: "{{value.user.nested.test}}"}])
-  innerNested: User! @http(path: "/users", query: [{key: "id", value: "{{value.user.nested.inner.test.id}}"}])
-  innerIdNested: User! @http(path: "/users", query: [{key: "id", value: "{{value.user.nested.inner.id.test}}"}])
+  user: User! @http(path: "/users", query: [{key: "id", value: "{{.value.test.id}}"}])
+  nested: User! @http(path: "/users", query: [{key: "id", value: "{{.value.user.nested.test}}"}])
+  innerNested: User! @http(path: "/users", query: [{key: "id", value: "{{.value.user.nested.inner.test.id}}"}])
+  innerIdNested: User! @http(path: "/users", query: [{key: "id", value: "{{.value.user.nested.inner.id.test}}"}])
 }
 
 type Query {

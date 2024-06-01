@@ -1,10 +1,10 @@
 ---
-check_identity: true
+identity: true
 ---
 
 # omit-many
 
-```graphql @server
+```graphql @config
 schema @server @upstream {
   query: Query
 }
@@ -20,7 +20,9 @@ type Query {
   user: User @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/1")
 }
 
-type User @addField(name: "zipcode", path: ["address", "zipcode"]) @addField(name: "complements", path: ["address", "complements"]) {
+type User
+  @addField(name: "zipcode", path: ["address", "zipcode"])
+  @addField(name: "complements", path: ["address", "complements"]) {
   address: Address @omit
   name: String
 }

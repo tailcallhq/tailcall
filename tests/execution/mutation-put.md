@@ -1,6 +1,6 @@
 # Mutation put
 
-```graphql @server
+```graphql @config
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
   mutation: Mutation
@@ -14,7 +14,7 @@ input PostInput {
 }
 
 type Mutation {
-  insertPost(input: PostInput!): Post @http(body: "{{args.input}}", method: "PUT", path: "/posts/{{args.input.id}}")
+  insertPost(input: PostInput!): Post @http(body: "{{.args.input}}", method: "PUT", path: "/posts/{{.args.input.id}}")
 }
 
 type Post {
@@ -38,14 +38,14 @@ type User {
 - request:
     method: PUT
     url: http://jsonplaceholder.typicode.com/posts/100
-    body: '{"body":"abc","id":100,"title":"bar","userId":1}'
+    body: {"body": "abc", "id": 100, "title": "bar", "userId": 1}
   response:
     status: 200
     body:
       body: abc
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

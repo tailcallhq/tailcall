@@ -1,9 +1,8 @@
 server:
   port: 8000
-  graphiql: true
 upstream:
   baseURL: http://jsonplaceholder.typicode.com
-  httpCache: true
+  httpCache: 42
   batch:
     maxSize: 1000
     delay: 1

@@ -1,0 +1,36 @@
+---
+source: src/core/generator/from_proto.rs
+expression: config
+---
+schema @server @upstream {
+  query: Query
+}
+
+input type__Type @tag(id: "type.Type") {
+  id: Int
+  idOpt: Int
+  nested: type__Type__Nested
+  nestedOpt: type__Type__Nested
+  nestedRep: [type__Type__Nested]
+  num: [Float]
+  str: String
+  strOpt: String
+}
+
+input type__Type__Nested @tag(id: "type.Type.Nested") {
+  id: Int
+  idOpt: Int
+  num: [Float]
+  str: String
+  strOpt: String
+}
+
+enum type__Status {
+  FIRST
+  SECOND
+  UNSPECIFIED
+}
+
+type Query {
+  type__TypeService__Get(type: type__Type!): type__Type! @grpc(body: "{{.args.type}}", method: "type.TypeService.Get")
+}

@@ -1,7 +1,7 @@
 # Auth with BasicAuth
 
-```graphql @server
-schema @server(port: 8000, graphiql: true) @link(id: "htpasswd", type: Htpasswd, src: ".htpasswd") {
+```graphql @config
+schema @server(port: 8000) @link(id: "htpasswd", type: Htpasswd, src: ".htpasswd") {
   query: Query
   mutation: Mutation
 }
@@ -47,7 +47,7 @@ testuser3:{SHA}Y2fEjdGT1W6nsLqtJbGUVeUp9e4=
       nested: mutation nested
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:

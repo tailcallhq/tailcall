@@ -1,0 +1,5 @@
+---
+source: src/query_plan/tests.rs
+expression: execution_plan
+---
+Resolve(3)

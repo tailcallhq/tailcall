@@ -1,11 +1,9 @@
 use clap::{Parser, Subcommand};
+use strum_macros::Display;
+use tailcall_version::VERSION;
 
-use crate::{config, generator};
+use crate::core::{config, generator};
 
-pub const VERSION: &str = match option_env!("APP_VERSION") {
-    Some(version) => version,
-    _ => "0.1.0-dev",
-};
 const ABOUT: &str = r"
    __        _ __           ____
   / /_____ _(_) /________ _/ / /
@@ -14,13 +12,13 @@ const ABOUT: &str = r"
 \__/\__,_/_/_/\___/\__,_/_/_/";
 
 #[derive(Parser)]
-#[command(name = "tailcall", author, version = VERSION, about, long_about = Some(ABOUT))]
+#[command(name = "tailcall", author, version = VERSION.as_str(), about, long_about = Some(ABOUT))]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Display)]
 pub enum Command {
     /// Starts the GraphQL server on the configured port
     Start {

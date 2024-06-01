@@ -1,20 +1,20 @@
 ---
-expect_validation_error: true
+error: true
 ---
 
 # test-duplicated-link
 
 ```graphql @file:jsonplaceholder.graphql
 schema
-  @server(port: 8000, graphiql: true, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: true, batch: {delay: 100}) {
+  @server(port: 8000, hostname: "0.0.0.0")
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
   query: Query
 }
 
 type Query {
   posts: [Post] @http(path: "/posts")
   users: [User] @http(path: "/users")
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
 type User {
@@ -31,11 +31,11 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }
 ```
 
-```graphql @server
+```graphql @config
 schema
   @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder")
   @link(type: Config, src: "jsonplaceholder.graphql", id: "placeholder1")
@@ -47,7 +47,7 @@ schema
 
 type Query {
   posts: [Post] @http(path: "/posts")
-  user(id: Int!): User @http(path: "/users/{{args.id}}")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
 type User {
@@ -64,6 +64,6 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @http(path: "/users/{{value.userId}}")
+  user: User @http(path: "/users/{{.value.userId}}")
 }
 ```

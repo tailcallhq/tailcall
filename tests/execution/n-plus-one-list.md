@@ -1,6 +1,6 @@
 # n + 1 Request List
 
-```graphql @server
+```graphql @config
 schema @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000}) {
   query: Query
 }
@@ -13,13 +13,13 @@ type Query {
 type Foo {
   id: Int!
   name: String!
-  bar: Bar @http(path: "/bars", query: [{key: "fooId", value: "{{value.id}}"}], batchKey: ["fooId"])
+  bar: Bar @http(path: "/bars", query: [{key: "fooId", value: "{{.value.id}}"}], batchKey: ["fooId"])
 }
 
 type Bar {
   id: Int!
   fooId: Int!
-  foo: [Foo] @http(path: "/foos", query: [{key: "id", value: "{{value.fooId}}"}], batchKey: ["id"])
+  foo: [Foo] @http(path: "/foos", query: [{key: "id", value: "{{.value.fooId}}"}], batchKey: ["id"])
 }
 ```
 
@@ -27,7 +27,6 @@ type Bar {
 - request:
     method: GET
     url: http://example.com/bars
-    body: null
   response:
     status: 200
     body:
@@ -42,7 +41,6 @@ type Bar {
 - request:
     method: GET
     url: http://example.com/foos?id=1&id=2
-    body: null
   response:
     status: 200
     body:
@@ -52,7 +50,7 @@ type Bar {
         name: foo2
 ```
 
-```yml @assert
+```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:
