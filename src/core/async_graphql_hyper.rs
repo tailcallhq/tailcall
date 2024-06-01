@@ -53,7 +53,9 @@ impl GraphQLRequestLike for GraphQLRequest {
     where
         E: Executor,
     {
-        GraphQLResponse(executor.execute(self.0).await.into())
+        let mut p = self.0;
+        let _ = p.parsed_query();
+        GraphQLResponse(executor.execute(p).await.into())
     }
 }
 
