@@ -51,10 +51,7 @@ mod model {
 }
 
 mod value {
-
-    #[derive(Default)]
-    pub struct OwnedValue;
-    pub struct Value<'a>(&'a OwnedValue);
+    pub use serde_json_borrow::{OwnedValue, Value};
 }
 
 mod cache {
@@ -90,48 +87,52 @@ mod executor {
     }
 
     impl ExecutionContext {
-        pub async fn execute_ir(&self, ir: &IR, parent: &OwnedValue) -> anyhow::Result<OwnedValue> {
+        pub async fn execute_ir(
+            &self,
+            ir: &IR,
+            parent: Option<&OwnedValue>,
+        ) -> anyhow::Result<OwnedValue> {
             todo!()
         }
 
-        pub fn find_children(&self, id: &FieldId) -> Vec<Field> {
+        fn find_children(&self, id: FieldId) -> Vec<Field> {
             todo!()
         }
 
-        pub fn with_context(&self, id: &FieldId) -> Self {
+        fn insert_field_value(&self, id: FieldId, value: OwnedValue) {
             todo!()
         }
 
-        pub fn insert_field_value(&self, id: &FieldId, value: OwnedValue) {
-            todo!()
-        }
-
-        pub fn find_field(&self, id: FieldId) -> Option<&Field> {
+        fn find_field(&self, id: FieldId) -> Option<&Field> {
             self.blueprint.fields.iter().find(|field| field.id == id)
         }
 
-        async fn execute_field(&self, id: FieldId, parent: &OwnedValue) -> anyhow::Result<()> {
-            if let Some(field) = self.find_field(id) {
+        async fn execute_field(
+            &self,
+            id: FieldId,
+            parent: Option<&OwnedValue>,
+        ) -> anyhow::Result<()> {
+            if let Some(field) = self.find_field(id.clone()) {
                 if let Some(ir) = &field.ir {
                     let value = self.execute_ir(ir, parent).await?;
 
-                    let children = self.find_children(&field.id);
+                    let children = self.find_children(id.clone());
                     future::join_all(
                         children
                             .into_iter()
-                            .map(|child| self.execute_field(child.id, &value)),
+                            .map(|child| self.execute_field(child.id, Some(&value))),
                     )
                     .await
                     .into_iter()
                     .collect::<anyhow::Result<Vec<_>>>()?;
 
-                    self.insert_field_value(&field.id, value);
+                    self.insert_field_value(id, value);
                 }
             }
             Ok(())
         }
 
-        fn root_fields(&self) -> Vec<&Field> {
+        fn root(&self) -> Vec<&Field> {
             self.blueprint
                 .fields
                 .iter()
@@ -140,12 +141,10 @@ mod executor {
         }
 
         pub async fn execute(&self) -> anyhow::Result<()> {
-            let fields = self.root_fields();
-            let value = OwnedValue;
             future::join_all(
-                fields
+                self.root()
                     .iter()
-                    .map(|field| self.execute_field(field.id.to_owned(), &value)),
+                    .map(|field| self.execute_field(field.id.to_owned(), None)),
             )
             .await
             .into_iter()
