@@ -105,7 +105,8 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
-        Ok(request) => {
+        Ok(mut request) => {
+            let _ = request.parse_query();
             let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
 
             response = update_cache_control_header(response, app_ctx, req_ctx.clone());
