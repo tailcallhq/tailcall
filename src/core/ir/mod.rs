@@ -4,6 +4,7 @@ mod eval;
 mod evaluation_context;
 mod graphql_operation_context;
 mod io;
+mod jit;
 mod modify;
 mod resolver_context_like;
 
