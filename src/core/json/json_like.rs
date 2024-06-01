@@ -92,8 +92,8 @@ impl JsonLike for serde_json::Value {
 }
 
 
-impl JsonLike for crate::core::ConstValue {
-    type Output = crate::core::ConstValue;
+impl JsonLike for crate::core::BorrowedValue {
+    type Output = crate::core::BorrowedValue;
     fn as_array_ok(&self) -> Result<&[Self::Output], &str> {
         Err("expected array") // TODO: FIXME
         // self.as_array().ok_or("expected array")
@@ -123,7 +123,7 @@ impl JsonLike for crate::core::ConstValue {
 
     fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str> {
         match self {
-            crate::core::ConstValue::Null => Ok(None),
+            crate::core::BorrowedValue::Null => Ok(None),
             _ => Ok(Some(self)),
         }
     }
@@ -132,11 +132,11 @@ impl JsonLike for crate::core::ConstValue {
         let mut val = extend_lifetime_ref(self);
         for token in path {
             val = match val {
-                crate::core::ConstValue::Array(arr) => {
+                crate::core::BorrowedValue::Array(arr) => {
                     let index = token.as_ref().parse::<usize>().ok()?;
                     arr.get(index).map(extend_lifetime_ref)?
                 }
-                crate::core::ConstValue::Object(map) => map.iter().find(|(k,_)| token.as_ref() == *k).map(|(_,v)| v)?,
+                crate::core::BorrowedValue::Object(map) => map.iter().find(|(k,_)| token.as_ref() == *k).map(|(_,v)| v)?,
                 _ => return None,
             };
         }
@@ -149,14 +149,14 @@ impl JsonLike for crate::core::ConstValue {
 
     fn get_key(&self, path: &str) -> Option<&Self::Output> {
         match self {
-            crate::core::ConstValue::Object(map) => map.iter().find(|(k,_)| path == *k).map(|(_,v)| extend_lifetime_ref(v)),
+            crate::core::BorrowedValue::Object(map) => map.iter().find(|(k,_)| path == *k).map(|(_,v)| extend_lifetime_ref(v)),
             _ => None,
         }
     }
 
     fn as_string_ok(&self) -> Result<&str, &str> {
         match self {
-            crate::core::ConstValue::Str(s) => Ok(s.as_ref()),
+            crate::core::BorrowedValue::Str(s) => Ok(s.as_ref()),
             _ => Err("expected string"),
         }
     }

@@ -18,7 +18,7 @@ use crate::core::json::JsonSchema;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{ConstValue, extend_lifetime, is_default, scalar};
+use crate::core::{BorrowedValue, extend_lifetime, is_default, scalar};
 
 #[derive(
     Serialize,
@@ -385,7 +385,7 @@ pub struct Arg {
     #[serde(default, skip_serializing_if = "is_default")]
     pub modify: Option<Modify>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub default_value: Option<ConstValue>,
+    pub default_value: Option<BorrowedValue>,
 }
 
 impl<'de> Deserialize<'de> for Arg {
@@ -588,7 +588,7 @@ pub struct Step {
 
     /// The arguments that will override the actual arguments of the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub args: BTreeMap<String, ConstValue>,
+    pub args: BTreeMap<String, BorrowedValue>,
 }
 
 impl<'de> Deserialize<'de> for Step {
@@ -749,7 +749,7 @@ impl Display for GraphQLOperationType {
 /// to a value. The expression can be a static value or built form a Mustache
 /// template. schema.
 pub struct Expr {
-    pub body: ConstValue,
+    pub body: BorrowedValue,
 }
 
 

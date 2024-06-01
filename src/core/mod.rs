@@ -47,11 +47,11 @@ use async_graphql_value::Name;
 use http::Response;
 pub use tailcall_macros as macros;
 
-pub type ConstValue = serde_json_borrow::Value<'static>;
+pub type BorrowedValue = serde_json_borrow::Value<'static>;
 
 pub trait FromValue {
     fn from_value(value: serde_json_borrow::Value) -> Self;
-    fn into_bvalue(self) -> ConstValue;
+    fn into_bvalue(self) -> BorrowedValue;
 }
 
 impl FromValue for async_graphql_value::ConstValue {
@@ -72,7 +72,7 @@ impl FromValue for async_graphql_value::ConstValue {
         }
     }
 
-    fn into_bvalue(self) -> ConstValue {
+    fn into_bvalue(self) -> BorrowedValue {
         match self {
             async_graphql_value::ConstValue::Null => serde_json_borrow::Value::Null,
             async_graphql_value::ConstValue::Boolean(b) => serde_json_borrow::Value::Bool(b),
@@ -104,7 +104,7 @@ pub trait IntoConst {
     fn into_const(self) -> async_graphql_value::ConstValue;
 }
 
-impl IntoConst for ConstValue {
+impl IntoConst for BorrowedValue {
     fn into_const(self) -> async_graphql_value::ConstValue {
         match self {
             serde_json_borrow::Value::Null => async_graphql_value::ConstValue::Null,
@@ -158,7 +158,7 @@ pub trait Cache: Send + Sync {
     fn hit_rate(&self) -> Option<f64>;
 }
 
-pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
+pub type EntityCache = dyn Cache<Key = u64, Value =BorrowedValue>;
 
 #[async_trait::async_trait]
 pub trait WorkerIO<In, Out>: Send + Sync + 'static {

@@ -56,12 +56,12 @@ impl Response<Bytes> {
         Ok(Response { status: self.status, headers: self.headers, body })
     }
 
-    pub fn into_borrowed_json(self) -> Result<Response<crate::core::ConstValue>> {
+    pub fn into_borrowed_json(self) -> Result<Response<crate::core::BorrowedValue>> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
                 headers: self.headers,
-                body: crate::core::ConstValue::Null,
+                body: crate::core::BorrowedValue::Null,
             });
         }
         let body = extend_lifetime(serde_json::from_slice::<serde_json_borrow::Value>(self.body.to_vec().as_slice())?);
@@ -71,10 +71,10 @@ impl Response<Bytes> {
     pub fn to_grpc_value(
         self,
         operation: &ProtobufOperation,
-    ) -> Result<Response<crate::core::ConstValue>> {
+    ) -> Result<Response<crate::core::BorrowedValue>> {
         let mut resp = Response::default();
         let body = operation.convert_output::<serde_json::Value>(&self.body)?;
-        let body = crate::core::ConstValue::from(body);
+        let body = crate::core::BorrowedValue::from(body);
         resp.body = body;
         resp.status = self.status;
         resp.headers = self.headers;

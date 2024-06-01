@@ -392,7 +392,7 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
         let v = move || {
             let v = pos.node.to_owned().into_json().ok()?;
-            let bv = crate::core::ConstValue::from(v);
+            let bv = crate::core::BorrowedValue::from(v);
             Some(bv)
         };
         v()

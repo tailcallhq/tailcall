@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use async_graphql::{SelectionField, ServerError};
 use reqwest::header::HeaderMap;
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
 use crate::core::http::RequestContext;
@@ -20,20 +20,20 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
     graphql_ctx: &'a Ctx,
 
     // Overridden Value for Async GraphQL Context
-    graphql_ctx_value: Option<Arc<ConstValue>>,
+    graphql_ctx_value: Option<Arc<BorrowedValue>>,
 
     // Overridden Arguments for Async GraphQL Context
-    graphql_ctx_args: Option<Arc<ConstValue>>,
+    graphql_ctx_args: Option<Arc<BorrowedValue>>,
 }
 
 impl<'a, A: ResolverContextLike<'a>> EvaluationContext<'a, A> {
-    pub fn with_value(&self, value: ConstValue) -> EvaluationContext<'a, A> {
+    pub fn with_value(&self, value: BorrowedValue) -> EvaluationContext<'a, A> {
         let mut ctx = self.clone();
         ctx.graphql_ctx_value = Some(Arc::new(value));
         ctx
     }
 
-    pub fn with_args(&self, args: ConstValue) -> EvaluationContext<'a, A> {
+    pub fn with_args(&self, args: BorrowedValue) -> EvaluationContext<'a, A> {
         let mut ctx = self.clone();
         ctx.graphql_ctx_args = Some(Arc::new(args));
         ctx
@@ -50,27 +50,27 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         }
     }
 
-    pub fn value(&self) -> Option<&ConstValue> {
+    pub fn value(&self) -> Option<&BorrowedValue> {
         let x = self.graphql_ctx.value();
         println!("{}", x.is_some());
         x
     }
 
-    pub fn path_arg<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, ConstValue>> {
+    pub fn path_arg<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, BorrowedValue>> {
         // TODO: add unit tests for this
         if let Some(args) = self.graphql_ctx_args.as_ref() {
             get_path_value(args.as_ref(), path).map(|a| Cow::Owned(a.clone()))
         } else if path.is_empty() {
             self.graphql_ctx
                 .args()
-                .map(|a| Cow::Owned(ConstValue::Object(a.iter().map(|(k, v)| (k.as_str().to_string(), v.clone())).collect::<Vec<_>>().into()))) // TODO handle clones
+                .map(|a| Cow::Owned(BorrowedValue::Object(a.iter().map(|(k, v)| (k.as_str().to_string(), v.clone())).collect::<Vec<_>>().into()))) // TODO handle clones
         } else {
             let (_,arg) = self.graphql_ctx.args()?.iter().find(|(k,_)| k == path[0].as_ref())?;
             get_path_value(arg, &path[1..]).map(Cow::Borrowed)
         }
     }
 
-    pub fn path_value<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, ConstValue>> {
+    pub fn path_value<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, BorrowedValue>> {
         // TODO: add unit tests for this
         if let Some(value) = self.graphql_ctx_value.as_ref() {
             get_path_value(value.as_ref(), path).map(|a| Cow::Owned(a.clone()))
@@ -169,19 +169,19 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
 }
 
 // TODO: this is the same code as src/json/json_like.rs::get_path
-pub fn get_path_value<'a, T: AsRef<str>>(input: &'a ConstValue, path: &[T]) -> Option<&'a ConstValue> {
+pub fn get_path_value<'a, T: AsRef<str>>(input: &'a BorrowedValue, path: &[T]) -> Option<&'a BorrowedValue> {
     println!("{}", input.to_string());
     let mut value = Some(input);
     let path = path.iter().map(|v| v.as_ref().to_string()).collect::<Vec<_>>();
     for name in path {
         match value {
-            Some(ConstValue::Object(map)) => {
+            Some(BorrowedValue::Object(map)) => {
                 println!("hj: {}", name);
                 println!("hm: {:?}", map.iter().map(|(k,v)| (k.to_string(), v.to_string())).collect::<Vec<_>>());
                 value = None;
             }
 
-            Some(ConstValue::Array(list)) => {
+            Some(BorrowedValue::Array(list)) => {
                 println!("hk");
                 value = list.get(name.as_str().parse::<usize>().ok()?);
             }

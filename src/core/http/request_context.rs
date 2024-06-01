@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -34,7 +34,7 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
-    pub cache: AsyncCache<u64, ConstValue, EvaluationError>,
+    pub cache: AsyncCache<u64, BorrowedValue, EvaluationError>,
 }
 
 impl RequestContext {
@@ -134,7 +134,7 @@ impl RequestContext {
         }
     }
 
-    pub async fn cache_get(&self, key: &u64) -> anyhow::Result<Option<ConstValue>> {
+    pub async fn cache_get(&self, key: &u64) -> anyhow::Result<Option<BorrowedValue>> {
         self.runtime.cache.get(key).await
     }
 
@@ -142,7 +142,7 @@ impl RequestContext {
     pub async fn cache_insert(
         &self,
         key: u64,
-        value: ConstValue,
+        value: BorrowedValue,
         ttl: NonZeroU64,
     ) -> anyhow::Result<()> {
         self.runtime.cache.set(key, value, ttl).await

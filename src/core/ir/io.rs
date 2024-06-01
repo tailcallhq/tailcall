@@ -3,7 +3,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use async_graphql::from_value;
-use crate::core::{ConstValue, FromValue};
+use crate::core::{BorrowedValue, FromValue};
 use reqwest::Request;
 
 use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
@@ -51,7 +51,7 @@ impl Eval for IO {
     fn eval<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<BorrowedValue, EvaluationError>> + 'a + Send>> {
         if ctx.request_ctx.upstream.dedupe {
             Box::pin(async move {
                 let key = self.cache_key(&ctx); // TODO convert values here maybe
@@ -76,7 +76,7 @@ impl IO {
     fn eval_inner<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: super::EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<BorrowedValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 IO::Http { req_template, dl_id, .. } => {
@@ -149,9 +149,9 @@ impl IO {
                         .zip(ctx.value().cloned())
                     {
                         let val = worker.call(name, value).await?;
-                        Ok(val.unwrap_or(ConstValue::Null))
+                        Ok(val.unwrap_or(BorrowedValue::Null))
                     } else {
-                        Ok(ConstValue::Null)
+                        Ok(BorrowedValue::Null)
                     }
                 }
             }
@@ -172,7 +172,7 @@ impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<
 
 fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
-    res: &Response<ConstValue>,
+    res: &Response<BorrowedValue>,
 ) {
     set_cache_control(ctx, res);
     set_cookie_headers(ctx, res);
@@ -181,7 +181,7 @@ fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 
 fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
-    res: &Response<ConstValue>,
+    res: &Response<BorrowedValue>,
 ) {
     if ctx.request_ctx.server.get_enable_cache_control() && res.status.is_success() {
         if let Some(policy) = cache_policy(res) {
@@ -192,14 +192,14 @@ fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
 
 fn set_experimental_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
-    res: &Response<ConstValue>,
+    res: &Response<BorrowedValue>,
 ) {
     ctx.request_ctx.add_x_headers(&res.headers);
 }
 
 fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
-    res: &Response<ConstValue>,
+    res: &Response<BorrowedValue>,
 ) {
     if res.status.is_success() {
         ctx.request_ctx.set_cookie_headers(&res.headers);
@@ -209,7 +209,7 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
-) -> Result<Response<ConstValue>, EvaluationError> {
+) -> Result<Response<BorrowedValue>, EvaluationError> {
     let response = ctx
         .request_ctx
         .runtime
@@ -226,7 +226,7 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
     operation: &ProtobufOperation,
-) -> Result<Response<ConstValue>, EvaluationError> {
+) -> Result<Response<BorrowedValue>, EvaluationError> {
     execute_grpc_request(&ctx.request_ctx.runtime, operation, req)
         .await
         .map_err(EvaluationError::from)
@@ -237,14 +237,14 @@ async fn execute_grpc_request_with_dl<
     Ctx: ResolverContextLike<'ctx>,
     Dl: Loader<
         grpc::DataLoaderRequest,
-        Value = Response<ConstValue>,
+        Value = Response<BorrowedValue>,
         Error = Arc<anyhow::Error>,
     >,
 >(
     ctx: &EvaluationContext<'ctx, Ctx>,
     rendered: RenderedRequestTemplate,
     data_loader: Option<&DataLoader<grpc::DataLoaderRequest, Dl>>,
-) -> Result<Response<ConstValue>, EvaluationError> {
+) -> Result<Response<BorrowedValue>, EvaluationError> {
     let headers = ctx
         .request_ctx
         .upstream
@@ -265,12 +265,12 @@ async fn execute_grpc_request_with_dl<
 async fn execute_request_with_dl<
     'ctx,
     Ctx: ResolverContextLike<'ctx>,
-    Dl: Loader<DataLoaderRequest, Value = Response<ConstValue>, Error = Arc<anyhow::Error>>,
+    Dl: Loader<DataLoaderRequest, Value = Response<BorrowedValue>, Error = Arc<anyhow::Error>>,
 >(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
     data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
-) -> Result<Response<ConstValue>, EvaluationError> {
+) -> Result<Response<BorrowedValue>, EvaluationError> {
     let headers = ctx
         .request_ctx
         .upstream
@@ -290,9 +290,9 @@ async fn execute_request_with_dl<
 
 fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
     ctx: &EvaluationContext<'ctx, Ctx>,
-    res: Response<ConstValue>,
+    res: Response<BorrowedValue>,
     field_name: &str,
-) -> Result<ConstValue, EvaluationError> {
+) -> Result<BorrowedValue, EvaluationError> {
     let res: async_graphql::Response =
         from_value(async_graphql_value::ConstValue::from_value(res.body)).map_err(|err| EvaluationError::DeserializeError(err.to_string()))?;
 

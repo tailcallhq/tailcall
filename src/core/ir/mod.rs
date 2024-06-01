@@ -11,7 +11,7 @@ use core::future::Future;
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
 
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 pub use cache::*;
 pub use error::*;
 pub use eval::*;
@@ -70,19 +70,19 @@ impl Eval for IR {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<BorrowedValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 IR::Context(op) => match op {
                     Context::Value => {
-                        Ok(ctx.value().cloned().unwrap_or(ConstValue::Null))
+                        Ok(ctx.value().cloned().unwrap_or(BorrowedValue::Null))
                     }
                     Context::Path(path) => {
                         println!("hx");
                         Ok(ctx
                             .path_value(path)
                             .map(|a| a.into_owned())
-                            .unwrap_or(ConstValue::Null))
+                            .unwrap_or(BorrowedValue::Null))
                     },
                     Context::PushArgs { expr, and_then } => {
                         let args = expr.eval(ctx.clone()).await?;
@@ -99,7 +99,7 @@ impl Eval for IR {
                     let inp = &input.eval(ctx).await?;
                     Ok(inp
                         .get_path(path)
-                        .unwrap_or(&ConstValue::Null)
+                        .unwrap_or(&BorrowedValue::Null)
                         .clone())
                 }
                 IR::Dynamic(value) => Ok(value.render_value(&ctx)),

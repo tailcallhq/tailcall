@@ -1,15 +1,15 @@
-use crate::core::{ConstValue, extend_lifetime_ref};
+use crate::core::{BorrowedValue, extend_lifetime_ref};
 use crate::core::mustache::Mustache;
 
 #[derive(Debug, Clone)]
 pub enum DynamicValue {
-    Value(ConstValue),
+    Value(BorrowedValue),
     Mustache(Mustache),
     Object(Vec<(String, DynamicValue)>),
     Array(Vec<DynamicValue>),
 }
 
-impl TryFrom<&DynamicValue> for ConstValue {
+impl TryFrom<&DynamicValue> for BorrowedValue {
     type Error = anyhow::Error;
 
     fn try_from(value: &DynamicValue) -> Result<Self, Self::Error> {
@@ -19,16 +19,16 @@ impl TryFrom<&DynamicValue> for ConstValue {
                 "mustache cannot be converted to const value"
             )),
             DynamicValue::Object(obj) => {
-                let out: Result<Vec<(String, ConstValue)>, anyhow::Error> = obj
+                let out: Result<Vec<(String, BorrowedValue)>, anyhow::Error> = obj
                     .into_iter()
-                    .map(|(k, v)| Ok((k.clone(), ConstValue::try_from(v)?)))
+                    .map(|(k, v)| Ok((k.clone(), BorrowedValue::try_from(v)?)))
                     .collect();
-                Ok(ConstValue::Object(out?.into()))
+                Ok(BorrowedValue::Object(out?.into()))
             }
             DynamicValue::Array(arr) => {
-                let out: Result<Vec<ConstValue>, anyhow::Error> =
-                    arr.iter().map(ConstValue::try_from).collect();
-                Ok(ConstValue::Array(out?))
+                let out: Result<Vec<BorrowedValue>, anyhow::Error> =
+                    arr.iter().map(BorrowedValue::try_from).collect();
+                Ok(BorrowedValue::Array(out?))
             }
         }
     }
@@ -46,12 +46,12 @@ impl DynamicValue {
     }
 }
 
-impl TryFrom<&ConstValue> for DynamicValue {
+impl TryFrom<&BorrowedValue> for DynamicValue {
     type Error = anyhow::Error;
 
-    fn try_from(value: &ConstValue) -> Result<Self, Self::Error> {
+    fn try_from(value: &BorrowedValue) -> Result<Self, Self::Error> {
         match value {
-            ConstValue::Object(obj) => {
+            BorrowedValue::Object(obj) => {
                 let mut out = Vec::with_capacity(obj.len());
                 for (k, v) in obj.iter().map(|(k,v)| (k, extend_lifetime_ref(v))) {
                     let dynamic_value = DynamicValue::try_from(v)?;
@@ -59,12 +59,12 @@ impl TryFrom<&ConstValue> for DynamicValue {
                 }
                 Ok(DynamicValue::Object(out))
             }
-            ConstValue::Array(arr) => {
+            BorrowedValue::Array(arr) => {
                 let out: Result<Vec<DynamicValue>, Self::Error> =
                     arr.iter().map(DynamicValue::try_from).collect();
                 Ok(DynamicValue::Array(out?))
             }
-            ConstValue::Str(s) => {
+            BorrowedValue::Str(s) => {
                 let m = Mustache::parse(s)?;
                 if m.is_const() {
                     Ok(DynamicValue::Value(value.clone().into()))

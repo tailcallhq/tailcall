@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::core::{ConstValue as GraphQLValue, extend_lifetime};
+use crate::core::{BorrowedValue as GraphQLValue, extend_lifetime};
 
 use crate::core::blueprint::DynamicValue;
 use crate::core::path::PathString;

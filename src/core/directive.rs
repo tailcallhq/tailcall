@@ -131,7 +131,7 @@ mod tests {
     fn test_to_const_directive() {
         let directive = Directive {
             name: "test".to_string(),
-            arguments: vec![("a".to_string(), crate::core::ConstValue::Number(1.0.into()))]
+            arguments: vec![("a".to_string(), crate::core::BorrowedValue::Number(1.0.into()))]
                 .into_iter()
                 .collect(),
             index: 0,

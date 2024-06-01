@@ -2,7 +2,7 @@ use anyhow::{bail, Result};
 use hyper::{HeaderMap, Method};
 use reqwest::Request;
 use url::Url;
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 
 use super::protobuf::ProtobufOperation;
 use crate::core::http::Response;
@@ -22,7 +22,7 @@ pub async fn execute_grpc_request(
     runtime: &TargetRuntime,
     operation: &ProtobufOperation,
     request: Request,
-) -> Result<Response<ConstValue>> {
+) -> Result<Response<BorrowedValue>> {
     let response = runtime.http2_only.execute(request).await?;
 
     let grpc_status = response

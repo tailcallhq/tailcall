@@ -2,7 +2,7 @@ use std::cell::{OnceCell, RefCell};
 use std::fmt::{Debug, Formatter};
 use std::thread;
 
-use crate::core::{ConstValue, extend_lifetime};
+use crate::core::{BorrowedValue, extend_lifetime};
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
 use crate::core::worker::{Command, Event, WorkerRequest};
@@ -99,12 +99,12 @@ impl WorkerIO<Event, Command> for Runtime {
 }
 
 #[async_trait::async_trait]
-impl WorkerIO<ConstValue, ConstValue> for Runtime {
+impl WorkerIO<BorrowedValue, BorrowedValue> for Runtime {
     async fn call(
         &self,
         name: &'async_trait str,
-        input: ConstValue,
-    ) -> anyhow::Result<Option<ConstValue>> {
+        input: BorrowedValue,
+    ) -> anyhow::Result<Option<BorrowedValue>> {
         let script = self.script.clone();
         let name = name.to_string();
         let value = serde_json::to_string(&input)?;
@@ -170,7 +170,7 @@ fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
     })
 }
 
-fn execute_inner(name: String, value: String) -> anyhow::Result<ConstValue> {
+fn execute_inner(name: String, value: String) -> anyhow::Result<BorrowedValue> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
         let runtime = cell
             .get_mut()

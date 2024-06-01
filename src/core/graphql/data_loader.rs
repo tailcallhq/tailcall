@@ -7,7 +7,7 @@ use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 
 use crate::core::config::Batch;
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::http::{DataLoaderRequest, Response};
 use crate::core::runtime::TargetRuntime;
@@ -34,7 +34,7 @@ impl GraphqlDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for GraphqlDataLoader {
-    type Value = Response<ConstValue>;
+    type Value = Response<BorrowedValue>;
     type Error = Arc<anyhow::Error>;
 
     #[allow(clippy::mutable_key_type)]
@@ -93,16 +93,16 @@ fn create_batched_request(dataloader_requests: &[DataLoaderRequest]) -> reqwest:
 
 #[allow(clippy::mutable_key_type)]
 fn extract_responses(
-    result: Result<Response<ConstValue>, anyhow::Error>,
+    result: Result<Response<BorrowedValue>, anyhow::Error>,
     keys: &[DataLoaderRequest],
-) -> HashMap<DataLoaderRequest, Response<ConstValue>> {
+) -> HashMap<DataLoaderRequest, Response<BorrowedValue>> {
     let mut hashmap = HashMap::new();
     if let Ok(res) = result {
-        if let ConstValue::Array(values) = res.body {
+        if let BorrowedValue::Array(values) = res.body {
             for (i, request) in keys.into_iter().enumerate() {
                 let value = values
                     .get(i)
-                    .unwrap_or(&ConstValue::Null);
+                    .unwrap_or(&BorrowedValue::Null);
                 hashmap.insert(
                     request.clone(),
                     Response {

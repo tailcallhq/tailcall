@@ -1,4 +1,4 @@
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::{Field, GraphQLOperationType};
@@ -95,7 +95,7 @@ fn compile_call(
             })
             .fuse(
                 Valid::from(
-                    DynamicValue::try_from(&ConstValue::Object(step.args.clone().into_iter().map(|(k,v)| (k, v)).collect::<Vec<(_,_)>>().into()))
+                    DynamicValue::try_from(&BorrowedValue::Object(step.args.clone().into_iter().map(|(k,v)| (k, v)).collect::<Vec<(_, _)>>().into()))
                         .map_err(|e| ValidationError::new(e.to_string())),
                 )
                 .map(IR::Dynamic),

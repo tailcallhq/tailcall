@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use serde_json::json;
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 
 use crate::core::ir::{EvaluationContext, ResolverContextLike};
 use crate::core::json::JsonLike;
@@ -35,18 +35,18 @@ impl PathString for serde_json::Value {
 }
 
 // TODO: avoid converting map/arr to serde_json
-fn convert_value(value: Cow<'_, ConstValue>) -> Option<Cow<'_, str>> {
+fn convert_value(value: Cow<'_, BorrowedValue>) -> Option<Cow<'_, str>> {
     match value {
-        Cow::Owned(ConstValue::Str(s)) => Some(s),
-        Cow::Owned(ConstValue::Number(n)) => Some(Cow::Owned(serde_json::Number::from(n.clone()).to_string())),
-        Cow::Owned(ConstValue::Bool(b)) => Some(Cow::Owned(b.to_string())),
-        Cow::Owned(ConstValue::Object(map)) => Some(json!(map).to_string().into()),
-        Cow::Owned(ConstValue::Array(list)) => Some(json!(list).to_string().into()),
-        Cow::Borrowed(ConstValue::Str(s)) => Some(Cow::Borrowed(s.as_ref())),
-        Cow::Borrowed(ConstValue::Number(n)) => Some(Cow::Owned(serde_json::Number::from(n.clone()).to_string())),
-        Cow::Borrowed(ConstValue::Bool(b)) => Some(Cow::Owned(b.to_string())),
-        Cow::Borrowed(ConstValue::Object(map)) => Some(json!(map).to_string().into()),
-        Cow::Borrowed(ConstValue::Array(list)) => Some(json!(list).to_string().into()),
+        Cow::Owned(BorrowedValue::Str(s)) => Some(s),
+        Cow::Owned(BorrowedValue::Number(n)) => Some(Cow::Owned(serde_json::Number::from(n.clone()).to_string())),
+        Cow::Owned(BorrowedValue::Bool(b)) => Some(Cow::Owned(b.to_string())),
+        Cow::Owned(BorrowedValue::Object(map)) => Some(json!(map).to_string().into()),
+        Cow::Owned(BorrowedValue::Array(list)) => Some(json!(list).to_string().into()),
+        Cow::Borrowed(BorrowedValue::Str(s)) => Some(Cow::Borrowed(s.as_ref())),
+        Cow::Borrowed(BorrowedValue::Number(n)) => Some(Cow::Owned(serde_json::Number::from(n.clone()).to_string())),
+        Cow::Borrowed(BorrowedValue::Bool(b)) => Some(Cow::Owned(b.to_string())),
+        Cow::Borrowed(BorrowedValue::Object(map)) => Some(json!(map).to_string().into()),
+        Cow::Borrowed(BorrowedValue::Array(list)) => Some(json!(list).to_string().into()),
         _ => None,
     }
 }

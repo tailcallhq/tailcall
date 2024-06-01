@@ -76,8 +76,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                             expr.eval(ctx).await.map_err(|err| err.extend())?;
                                         use crate::core::FromValue;
                                         let p = match const_value {
-                                            crate::core::ConstValue::Array(a) => Some(FieldValue::list(a.into_iter().map(|v| async_graphql_value::ConstValue::from_value(v)))),
-                                            crate::core::ConstValue::Null => FieldValue::NONE,
+                                            crate::core::BorrowedValue::Array(a) => Some(FieldValue::list(a.into_iter().map(|v| async_graphql_value::ConstValue::from_value(v)))),
+                                            crate::core::BorrowedValue::Null => FieldValue::NONE,
                                             v => Some(FieldValue::from(async_graphql_value::ConstValue::from_value(v))),
                                         };
                                         Ok(p)

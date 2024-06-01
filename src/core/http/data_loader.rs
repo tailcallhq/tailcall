@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
@@ -13,15 +13,15 @@ use crate::core::http::{DataLoaderRequest, Response};
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
 
-fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
+fn get_body_value_single(body_value: &HashMap<String, Vec<&BorrowedValue>>, id: &str) -> BorrowedValue {
     body_value
         .get(id)
         .and_then(|a| a.first().cloned().cloned())
-        .unwrap_or(ConstValue::Null)
+        .unwrap_or(BorrowedValue::Null)
 }
 
-fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
-    ConstValue::Array(
+fn get_body_value_list(body_value: &HashMap<String, Vec<&BorrowedValue>>, id: &str) -> BorrowedValue {
+    BorrowedValue::Array(
         body_value
             .get(id)
             .unwrap_or(&Vec::new())
@@ -35,7 +35,7 @@ fn get_body_value_list(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str)
 pub struct HttpDataLoader {
     pub runtime: TargetRuntime,
     pub group_by: Option<GroupBy>,
-    pub body: fn(&HashMap<String, Vec<&ConstValue>>, &str) -> ConstValue,
+    pub body: fn(&HashMap<String, Vec<&BorrowedValue>>, &str) -> BorrowedValue,
 }
 impl HttpDataLoader {
     pub fn new(runtime: TargetRuntime, group_by: Option<GroupBy>, is_list: bool) -> Self {
@@ -59,7 +59,7 @@ impl HttpDataLoader {
 
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for HttpDataLoader {
-    type Value = Response<ConstValue>;
+    type Value = Response<BorrowedValue>;
     type Error = Arc<anyhow::Error>;
 
     async fn load(

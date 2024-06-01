@@ -1,4 +1,4 @@
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 
 use crate::core::blueprint::*;
 use crate::core::config;
@@ -11,7 +11,7 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 fn validate_data_with_schema(
     config: &config::Config,
     field: &config::Field,
-    gql_value: ConstValue,
+    gql_value: BorrowedValue,
 ) -> Valid<(), String> {
     match to_json_schema_for_field(field, config)
         .validate(&gql_value)
@@ -25,7 +25,7 @@ fn validate_data_with_schema(
 pub struct CompileExpr<'a> {
     pub config_module: &'a config::ConfigModule,
     pub field: &'a config::Field,
-    pub value: &'a ConstValue,
+    pub value: &'a BorrowedValue,
     pub validate: bool,
 }
 

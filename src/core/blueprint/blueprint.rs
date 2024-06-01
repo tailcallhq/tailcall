@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 use derive_setters::Setters;
 
 use super::telemetry::Telemetry;
@@ -128,7 +128,7 @@ pub struct SchemaDefinition {
 pub struct InputFieldDefinition {
     pub name: String,
     pub of_type: Type,
-    pub default_value: Option<ConstValue>,
+    pub default_value: Option<BorrowedValue>,
     pub description: Option<String>,
 }
 
@@ -155,7 +155,7 @@ impl FieldDefinition {
 #[derive(Clone, Debug)]
 pub struct Directive {
     pub name: String,
-    pub arguments: HashMap<String, ConstValue>,
+    pub arguments: HashMap<String, BorrowedValue>,
     pub index: usize,
 }
 

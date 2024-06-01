@@ -1,10 +1,10 @@
 use core::future::Future;
 use std::pin::Pin;
-use crate::core::ConstValue;
+use crate::core::BorrowedValue;
 
 use super::{EvaluationContext, EvaluationError, ResolverContextLike};
 
-pub trait Eval<Output = ConstValue>
+pub trait Eval<Output = BorrowedValue>
 where
     Self: Send + Sync,
 {

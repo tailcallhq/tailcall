@@ -3,7 +3,7 @@ use std::collections::{BTreeSet, HashMap};
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
 use serde::{Deserialize, Serialize};
-use crate::core::{ConstValue, extend_lifetime_ref};
+use crate::core::{BorrowedValue, extend_lifetime_ref};
 
 use crate::core::valid::{Valid, Validator};
 
@@ -39,28 +39,28 @@ impl Default for JsonSchema {
 
 impl JsonSchema {
     // TODO: validate `JsonLike` instead of fixing on `async_graphql::Value`
-    pub fn validate(&self, value: &ConstValue) -> Valid<(), &'static str> {
+    pub fn validate(&self, value: &BorrowedValue) -> Valid<(), &'static str> {
         match self {
             JsonSchema::Str => match value {
-                crate::core::ConstValue::Str(_) => Valid::succeed(()),
+                crate::core::BorrowedValue::Str(_) => Valid::succeed(()),
                 _ => Valid::fail("expected string"),
             },
             JsonSchema::Num => match value {
-                crate::core::ConstValue::Number(_) => Valid::succeed(()),
+                crate::core::BorrowedValue::Number(_) => Valid::succeed(()),
                 _ => Valid::fail("expected number"),
             },
             JsonSchema::Bool => match value {
-                crate::core::ConstValue::Bool(_) => Valid::succeed(()),
+                crate::core::BorrowedValue::Bool(_) => Valid::succeed(()),
                 _ => Valid::fail("expected boolean"),
             },
             JsonSchema::Empty => match value {
-                crate::core::ConstValue::Null => Valid::succeed(()),
-                crate::core::ConstValue::Object(obj) if obj.is_empty() => Valid::succeed(()),
+                crate::core::BorrowedValue::Null => Valid::succeed(()),
+                crate::core::BorrowedValue::Object(obj) if obj.is_empty() => Valid::succeed(()),
                 _ => Valid::fail("expected empty"),
             },
             JsonSchema::Any => Valid::succeed(()),
             JsonSchema::Arr(schema) => match value {
-                crate::core::ConstValue::Array(list) => {
+                crate::core::BorrowedValue::Array(list) => {
                     // TODO: add unit tests
                     Valid::from_iter(list.iter().enumerate(), |(i, item)| {
                         schema.validate(item).trace(i.to_string().as_str())
@@ -72,7 +72,7 @@ impl JsonSchema {
             JsonSchema::Obj(fields) => {
                 let field_schema_list: Vec<(&String, &JsonSchema)> = fields.iter().collect();
                 match value {
-                    crate::core::ConstValue::Object(map) => {
+                    crate::core::BorrowedValue::Object(map) => {
                         Valid::from_iter(field_schema_list, |(name, schema)| {
                             if schema.is_required() {
                                 if let Some(field_value) = map.iter().find(|(k,_)| name == *k).map(|(_,v)| extend_lifetime_ref(v)) {
@@ -92,7 +92,7 @@ impl JsonSchema {
                 }
             }
             JsonSchema::Opt(schema) => match value {
-                crate::core::ConstValue::Null => Valid::succeed(()),
+                crate::core::BorrowedValue::Null => Valid::succeed(()),
                 _ => schema.validate(value),
             },
             JsonSchema::Enum(_) => Valid::succeed(()),
@@ -279,7 +279,7 @@ mod tests {
     #[test]
     fn test_validate_string() {
         let schema = JsonSchema::Str;
-        let value = crate::core::ConstValue::Str("hello".into());
+        let value = crate::core::BorrowedValue::Str("hello".into());
         let result = schema.validate(&value);
         assert_eq!(result, Valid::succeed(()));
     }
@@ -287,13 +287,13 @@ mod tests {
     #[test]
     fn test_validate_valid_object() {
         let schema = JsonSchema::from([("name", JsonSchema::Str), ("age", JsonSchema::Num)]);
-        let value = crate::core::ConstValue::Object({
+        let value = crate::core::BorrowedValue::Object({
             let mut map = IndexMap::new();
             map.insert(
                 Name::new("name"),
-                crate::core::ConstValue::String("hello".to_string()),
+                crate::core::BorrowedValue::String("hello".to_string()),
             );
-            map.insert(Name::new("age"), crate::core::ConstValue::Number(1.into()));
+            map.insert(Name::new("age"), crate::core::BorrowedValue::Number(1.into()));
             map
         });
         let result = schema.validate(&value);
@@ -303,15 +303,15 @@ mod tests {
     #[test]
     fn test_validate_invalid_object() {
         let schema = JsonSchema::from([("name", JsonSchema::Str), ("age", JsonSchema::Num)]);
-        let value = crate::core::ConstValue::Object({
+        let value = crate::core::BorrowedValue::Object({
             let mut map = IndexMap::new();
             map.insert(
                 Name::new("name"),
-                crate::core::ConstValue::String("hello".to_string()),
+                crate::core::BorrowedValue::String("hello".to_string()),
             );
             map.insert(
                 Name::new("age"),
-                crate::core::ConstValue::String("1".to_string()),
+                crate::core::BorrowedValue::String("1".to_string()),
             );
             map
         });
@@ -325,9 +325,9 @@ mod tests {
             ("name", JsonSchema::Str.optional()),
             ("age", JsonSchema::Num),
         ]);
-        let value = crate::core::ConstValue::Object({
+        let value = crate::core::BorrowedValue::Object({
             let mut map = IndexMap::new();
-            map.insert(Name::new("age"), crate::core::ConstValue::Number(1.into()));
+            map.insert(Name::new("age"), crate::core::BorrowedValue::Number(1.into()));
             map
         });
 
@@ -341,13 +341,13 @@ mod tests {
             ("empty1", JsonSchema::Empty.optional()),
             ("empty2", JsonSchema::Empty),
         ]);
-        let value = crate::core::ConstValue::Object({
+        let value = crate::core::BorrowedValue::Object({
             let mut map = IndexMap::new();
             map.insert(
                 Name::new("empty1"),
-                crate::core::ConstValue::Object(Default::default()),
+                crate::core::BorrowedValue::Object(Default::default()),
             );
-            map.insert(Name::new("empty2"), crate::core::ConstValue::Null);
+            map.insert(Name::new("empty2"), crate::core::BorrowedValue::Null);
             map
         });
 
@@ -358,7 +358,7 @@ mod tests {
     #[test]
     fn test_empty_invalid() {
         let schema = JsonSchema::Empty;
-        let value = crate::core::ConstValue::String("test".to_owned());
+        let value = crate::core::BorrowedValue::String("test".to_owned());
 
         let result = schema.validate(&value);
         assert_eq!(result, Valid::fail("expected empty"));
@@ -370,15 +370,15 @@ mod tests {
             ("any1", JsonSchema::Any.optional()),
             ("any2", JsonSchema::Any),
         ]);
-        let value = crate::core::ConstValue::Object({
+        let value = crate::core::BorrowedValue::Object({
             let mut map = IndexMap::new();
             map.insert(
                 Name::new("any1"),
-                crate::core::ConstValue::Object(Default::default()),
+                crate::core::BorrowedValue::Object(Default::default()),
             );
             map.insert(
                 Name::new("any2"),
-                crate::core::ConstValue::String("test".to_owned()),
+                crate::core::BorrowedValue::String("test".to_owned()),
             );
             map
         });

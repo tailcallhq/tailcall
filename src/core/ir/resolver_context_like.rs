@@ -3,11 +3,11 @@ use std::sync::Arc;
 use async_graphql::context::SelectionField;
 use async_graphql::ServerError;
 
-use crate::core::{ConstValue, extend_lifetime_ref, FromValue};
+use crate::core::{BorrowedValue, extend_lifetime_ref, FromValue};
 
 pub trait ResolverContextLike<'a>: Clone {
-    fn value(&'a self) -> Option<&'a ConstValue>;
-    fn args(&'a self) -> Option<&'a Vec<(String, ConstValue)>>;
+    fn value(&'a self) -> Option<&'a BorrowedValue>;
+    fn args(&'a self) -> Option<&'a Vec<(String, BorrowedValue)>>;
     fn field(&'a self) -> Option<SelectionField>;
     fn add_error(&'a self, error: ServerError);
 }
@@ -16,11 +16,11 @@ pub trait ResolverContextLike<'a>: Clone {
 pub struct EmptyResolverContext;
 
 impl<'a> ResolverContextLike<'a> for EmptyResolverContext {
-    fn value(&'a self) -> Option<&'a ConstValue> {
+    fn value(&'a self) -> Option<&'a BorrowedValue> {
         None
     }
 
-    fn args(&'a self) -> Option<&'a Vec<(String, ConstValue)>> {
+    fn args(&'a self) -> Option<&'a Vec<(String, BorrowedValue)>> {
         None
     }
 
@@ -43,7 +43,7 @@ impl<'a> From<async_graphql::dynamic::ResolverContext<'a>> for ResolverContext<'
 }
 
 impl<'a> ResolverContextLike<'a> for ResolverContext<'a> {
-    fn value(&'a self) -> Option<&'a ConstValue> {
+    fn value(&'a self) -> Option<&'a BorrowedValue> {
         self.inner.parent_value.as_value().map(|v| v.clone().into_bvalue()).map(|v|{
             println!("i: {:?}", v);
             let x = extend_lifetime_ref(&v);
@@ -52,7 +52,7 @@ impl<'a> ResolverContextLike<'a> for ResolverContext<'a> {
         })
     }
 
-    fn args(&'a self) -> Option<&'a Vec<(String, ConstValue)>> {
+    fn args(&'a self) -> Option<&'a Vec<(String, BorrowedValue)>> {
         // Some(self.inner.args.as_index_map()) // TODO: FIXME
         None
     }
