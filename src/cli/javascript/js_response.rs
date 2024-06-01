@@ -1,30 +1,10 @@
 use std::collections::BTreeMap;
 
-use hyper::body::Bytes;
 use rquickjs::{FromJs, IntoJs};
 
 use super::create_header_map;
 use crate::core::http::Response;
 use crate::core::worker::WorkerResponse;
-
-impl WorkerResponse {
-    pub fn status(&self) -> u16 {
-        self.0.status.as_u16()
-    }
-
-    pub fn headers(&self) -> BTreeMap<String, String> {
-        let mut headers = BTreeMap::new();
-        for (key, value) in self.0.headers.iter() {
-            headers.insert(key.to_string(), value.to_str().unwrap().to_string());
-        }
-        headers
-    }
-
-    pub fn body(&self) -> Option<String> {
-        let b = self.0.body.as_bytes();
-        Some(String::from_utf8_lossy(b).to_string())
-    }
-}
 
 impl<'js> IntoJs<'js> for WorkerResponse {
     fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
@@ -60,32 +40,6 @@ impl<'js> FromJs<'js> for WorkerResponse {
             body: body.unwrap_or_default(),
         };
         Ok(WorkerResponse(response))
-    }
-}
-
-impl TryFrom<WorkerResponse> for Response<Bytes> {
-    type Error = anyhow::Error;
-
-    fn try_from(res: WorkerResponse) -> Result<Self, Self::Error> {
-        let res = res.0;
-        Ok(Response {
-            status: res.status,
-            headers: res.headers,
-            body: Bytes::from(res.body.as_bytes().to_vec()),
-        })
-    }
-}
-
-impl TryFrom<Response<Bytes>> for WorkerResponse {
-    type Error = anyhow::Error;
-
-    fn try_from(res: Response<Bytes>) -> Result<Self, Self::Error> {
-        let body = String::from_utf8_lossy(res.body.as_ref()).to_string();
-        Ok(WorkerResponse(Response {
-            status: res.status,
-            headers: res.headers,
-            body,
-        }))
     }
 }
 

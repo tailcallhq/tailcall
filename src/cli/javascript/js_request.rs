@@ -1,60 +1,11 @@
 use std::collections::BTreeMap;
-use std::fmt::Display;
 use std::str::FromStr;
 
 use headers::HeaderValue;
 use reqwest::header::HeaderName;
-use reqwest::Request;
 use rquickjs::{FromJs, IntoJs};
-use serde::{Deserialize, Serialize};
 
-use crate::core::is_default;
-use crate::core::worker::WorkerRequest;
-
-impl WorkerRequest {
-    fn uri(&self) -> Uri {
-        self.0.url().into()
-    }
-
-    fn method(&self) -> String {
-        self.0.method().to_string()
-    }
-
-    fn headers(&self) -> anyhow::Result<BTreeMap<String, String>> {
-        let headers = self.0.headers();
-        let mut map = BTreeMap::new();
-        for (k, v) in headers.iter() {
-            map.insert(k.to_string(), v.to_str()?.to_string());
-        }
-        Ok(map)
-    }
-
-    fn body(&self) -> Option<String> {
-        if let Some(body) = self.0.body() {
-            let bytes = body.as_bytes()?;
-            Some(String::from_utf8_lossy(bytes).to_string())
-        } else {
-            None
-        }
-    }
-}
-
-impl TryFrom<&reqwest::Request> for WorkerRequest {
-    type Error = anyhow::Error;
-
-    fn try_from(value: &Request) -> Result<Self, Self::Error> {
-        let request = value
-            .try_clone()
-            .ok_or(anyhow::anyhow!("unable to clone request"))?;
-        Ok(WorkerRequest(request))
-    }
-}
-
-impl From<WorkerRequest> for reqwest::Request {
-    fn from(val: WorkerRequest) -> Self {
-        val.0
-    }
-}
+use crate::core::worker::*;
 
 impl<'js> IntoJs<'js> for WorkerRequest {
     fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
@@ -122,13 +73,6 @@ impl<'js> FromJs<'js> for WorkerRequest {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
-pub enum Scheme {
-    #[default]
-    Http,
-    Https,
-}
-
 impl<'js> IntoJs<'js> for Scheme {
     fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
         match self {
@@ -161,20 +105,6 @@ impl<'js> FromJs<'js> for Scheme {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct Uri {
-    path: String,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    query: BTreeMap<String, String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    scheme: Scheme,
-    #[serde(default, skip_serializing_if = "is_default")]
-    host: Option<String>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    port: Option<u16>,
-}
-
 impl<'js> IntoJs<'js> for Uri {
     fn into_js(self, ctx: &rquickjs::Ctx<'js>) -> rquickjs::Result<rquickjs::Value<'js>> {
         let object = rquickjs::Object::new(ctx.clone())?;
@@ -204,50 +134,10 @@ impl<'js> FromJs<'js> for Uri {
     }
 }
 
-impl From<&reqwest::Url> for Uri {
-    fn from(value: &reqwest::Url) -> Self {
-        Self {
-            path: value.path().to_string(),
-            query: value.query_pairs().into_owned().collect(),
-            scheme: match value.scheme() {
-                "https" => Scheme::Https,
-                _ => Scheme::Http,
-            },
-            host: value.host_str().map(|u| u.to_string()),
-            port: value.port(),
-        }
-    }
-}
-
-impl Display for Uri {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let host = self.host.as_deref().unwrap_or("localhost");
-        let port = self.port.map(|p| format!(":{}", p)).unwrap_or_default();
-        let scheme = match self.scheme {
-            Scheme::Https => "https",
-            _ => "http",
-        };
-        let path = self.path.as_str();
-        let query = self
-            .query
-            .iter()
-            .map(|(k, v)| format!("{}={}", k, v))
-            .collect::<Vec<String>>()
-            .join("&");
-
-        write!(f, "{}://{}{}{}", scheme, host, port, path)?;
-
-        if !query.is_empty() {
-            write!(f, "?{}", query)?;
-        }
-
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
+    use reqwest::Request;
     use rquickjs::{Context, Runtime};
 
     use super::*;
