@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  bool(x: Boolean!): Boolean!
+  float(x: Float!): Float!
+  id(x: ID!): ID
+  int(x: Int!): Int!
+  string(x: String!): String!
+}
+
+scalar Url
+
+schema {
+  query: Query
+}
