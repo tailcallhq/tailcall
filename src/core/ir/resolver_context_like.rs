@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::context::SelectionField;
 use async_graphql::ServerError;
 
-use crate::core::ConstValue;
+use crate::core::{ConstValue, extend_lifetime_ref, FromValue};
 
 pub trait ResolverContextLike<'a>: Clone {
     fn value(&'a self) -> Option<&'a ConstValue>;
@@ -44,8 +44,12 @@ impl<'a> From<async_graphql::dynamic::ResolverContext<'a>> for ResolverContext<'
 
 impl<'a> ResolverContextLike<'a> for ResolverContext<'a> {
     fn value(&'a self) -> Option<&'a ConstValue> {
-        // self.inner.parent_value.as_value() // TODO: fixme
-        todo!()
+        self.inner.parent_value.as_value().map(|v| v.clone().into_bvalue()).map(|v|{
+            println!("i: {:?}", v);
+            let x = extend_lifetime_ref(&v);
+            println!("i: {:?}", x);
+            x
+        })
     }
 
     fn args(&'a self) -> Option<&'a Vec<(String, ConstValue)>> {

@@ -1,6 +1,4 @@
-use std::ops::Deref;
-use serde_json_borrow::OwnedValue;
-use crate::core::{ConstValue, extend_lifetime, extend_lifetime_ref};
+use crate::core::{ConstValue, extend_lifetime_ref};
 use crate::core::mustache::Mustache;
 
 #[derive(Debug, Clone)]

@@ -53,8 +53,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 let ctx: ResolverContext = ctx.into();
                                 let ctx = EvaluationContext::new(req_ctx, &ctx);
                                 use crate::core::FromValue;
+                                let val = ctx.path_value(&[field_name]);
+                                println!("val1: {:?}", val);
+                                let val = val.map(|a| async_graphql_value::ConstValue::from_value(a.as_ref().clone()));
+                                println!("val: {:?}", val);
                                 FieldFuture::from_value(
-                                    ctx.path_value(&[field_name]).map(|a| a.into_owned()).map(|v| async_graphql_value::ConstValue::from_value(v)),
+                                    val
                                 )
                             }
                             Some(expr) => {

@@ -7,7 +7,6 @@ use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde::de::{MapAccess, Visitor};
-use serde_json_borrow::Value;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
@@ -461,7 +460,7 @@ impl<'de> Deserialize<'de> for Arg {
                             if default_value.is_some() {
                                 return Err(de::Error::duplicate_field("default_value"));
                             }
-                            let temp_value: Option<Value<'de>> = map.next_value()?;
+                            let temp_value: Option<serde_json_borrow::Value> = map.next_value()?;
                             default_value = temp_value.map(extend_lifetime);
                         }
                     }
@@ -577,7 +576,7 @@ pub struct Call {
 ///
 /// Provides the ability to refer to a field defined in the root Query or
 /// Mutation.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Serialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Step {
     #[serde(default, skip_serializing_if = "is_default")]
     /// The name of the field on the `Query` type that you want to call.
@@ -591,6 +590,69 @@ pub struct Step {
     #[serde(default, skip_serializing_if = "is_default")]
     pub args: BTreeMap<String, ConstValue>,
 }
+
+impl<'de> Deserialize<'de> for Step {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        struct StepVisitor;
+
+        impl<'de> Visitor<'de> for StepVisitor {
+            type Value = Step;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Step")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Step, V::Error>
+                where
+                    V: MapAccess<'de>,
+            {
+                let mut query = None;
+                let mut mutation = None;
+                let mut args = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        "query" => {
+                            if query.is_some() {
+                                return Err(de::Error::duplicate_field("query"));
+                            }
+                            query = Some(map.next_value()?);
+                        }
+                        "mutation" => {
+                            if mutation.is_some() {
+                                return Err(de::Error::duplicate_field("mutation"));
+                            }
+                            mutation = Some(map.next_value()?);
+                        }
+                        "args" => {
+                            if args.is_some() {
+                                return Err(de::Error::duplicate_field("args"));
+                            }
+                            let temp_args: BTreeMap<String, serde_json_borrow::Value> = map.next_value()?;
+                            args = Some(temp_args.into_iter().map(|(k, v)| (k, extend_lifetime(v))).collect());
+                        }
+                        _ => {
+                            return Err(de::Error::unknown_field(key, &["query", "mutation", "args"]));
+                        }
+                    }
+                }
+
+                Ok(Step {
+                    query: query.unwrap_or_default(),
+                    mutation: mutation.unwrap_or_default(),
+                    args: args.unwrap_or_default(),
+                })
+            }
+        }
+
+        const FIELDS: &[&str] = &["query", "mutation", "args"];
+        deserializer.deserialize_struct("Step", FIELDS, StepVisitor)
+    }
+}
+
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -681,13 +743,59 @@ impl Display for GraphQLOperationType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Serialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 /// The `@expr` operators allows you to specify an expression that can evaluate
 /// to a value. The expression can be a static value or built form a Mustache
 /// template. schema.
 pub struct Expr {
     pub body: ConstValue,
+}
+
+
+impl<'de> Deserialize<'de> for Expr {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        struct ExprVisitor;
+
+        impl<'de> Visitor<'de> for ExprVisitor {
+            type Value = Expr;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Expr")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Expr, V::Error>
+                where
+                    V: MapAccess<'de>,
+            {
+                let mut body = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        "body" => {
+                            if body.is_some() {
+                                return Err(de::Error::duplicate_field("body"));
+                            }
+                            let temp_body: serde_json_borrow::Value = map.next_value()?;
+                            body = Some(extend_lifetime(temp_body));
+                        }
+                        _ => {
+                            return Err(de::Error::unknown_field(key, &["body"]));
+                        }
+                    }
+                }
+
+                let body = body.ok_or_else(|| de::Error::missing_field("body"))?;
+                Ok(Expr { body })
+            }
+        }
+
+        const FIELDS: &[&str] = &["body"];
+        deserializer.deserialize_struct("Expr", FIELDS, ExprVisitor)
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]

@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::core::ConstValue as GraphQLValue;
+use crate::core::{ConstValue as GraphQLValue, extend_lifetime};
 
 use crate::core::blueprint::DynamicValue;
 use crate::core::path::PathString;
@@ -14,9 +14,9 @@ impl ValueExt for DynamicValue {
         match self {
             DynamicValue::Value(value) => value.to_owned(),
             DynamicValue::Mustache(m) => {
-                let rendered: Cow<'a, str> = Cow::Owned(m.render(ctx));
+                let rendered: Cow<'static, str> = Cow::Owned(m.render(ctx));
 
-                serde_json::from_str::<GraphQLValue>(rendered.as_ref())
+                serde_json::from_str::<serde_json_borrow::Value>(rendered.as_ref()).map(extend_lifetime)
                     // parsing can fail when Mustache::render returns bare string and since
                     // that string is not wrapped with quotes serde_json will fail to parse it
                     // but, we can just use that string as is

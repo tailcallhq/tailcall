@@ -51,7 +51,9 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     }
 
     pub fn value(&self) -> Option<&ConstValue> {
-        self.graphql_ctx.value()
+        let x = self.graphql_ctx.value();
+        println!("{}", x.is_some());
+        x
     }
 
     pub fn path_arg<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, ConstValue>> {
@@ -61,7 +63,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         } else if path.is_empty() {
             self.graphql_ctx
                 .args()
-                .map(|a| Cow::Owned(ConstValue::Object(a.iter().map(|(k, v)| (k.as_str(), v.clone())).collect::<Vec<_>>().into())))
+                .map(|a| Cow::Owned(ConstValue::Object(a.iter().map(|(k, v)| (k.as_str().to_string(), v.clone())).collect::<Vec<_>>().into()))) // TODO handle clones
         } else {
             let (_,arg) = self.graphql_ctx.args()?.iter().find(|(k,_)| k == path[0].as_ref())?;
             get_path_value(arg, &path[1..]).map(Cow::Borrowed)
@@ -73,7 +75,9 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
         if let Some(value) = self.graphql_ctx_value.as_ref() {
             get_path_value(value.as_ref(), path).map(|a| Cow::Owned(a.clone()))
         } else {
-            get_path_value(self.graphql_ctx.value()?, path).map(Cow::Borrowed)
+            let val = self.graphql_ctx.value();
+
+            get_path_value(val?, path).map(Cow::Borrowed)
         }
     }
 
@@ -166,15 +170,20 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
 
 // TODO: this is the same code as src/json/json_like.rs::get_path
 pub fn get_path_value<'a, T: AsRef<str>>(input: &'a ConstValue, path: &[T]) -> Option<&'a ConstValue> {
-    let mut value = Some(extend_lifetime_ref(input));
+    println!("{}", input.to_string());
+    let mut value = Some(input);
+    let path = path.iter().map(|v| v.as_ref().to_string()).collect::<Vec<_>>();
     for name in path {
         match value {
             Some(ConstValue::Object(map)) => {
-                value = map.iter().find(|(k,_)|*k == name.as_ref()).map(|(_,v)|v);
+                println!("hj: {}", name);
+                println!("hm: {:?}", map.iter().map(|(k,v)| (k.to_string(), v.to_string())).collect::<Vec<_>>());
+                value = None;
             }
 
             Some(ConstValue::Array(list)) => {
-                value = list.get(name.as_ref().parse::<usize>().ok()?);
+                println!("hk");
+                value = list.get(name.as_str().parse::<usize>().ok()?);
             }
             _ => return None,
         }

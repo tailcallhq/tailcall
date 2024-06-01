@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use serde_json::json;
+use crate::core::ConstValue;
 
 use crate::core::ir::{EvaluationContext, ResolverContextLike};
 use crate::core::json::JsonLike;
@@ -33,18 +34,19 @@ impl PathString for serde_json::Value {
     }
 }
 
-fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
+// TODO: avoid converting map/arr to serde_json
+fn convert_value(value: Cow<'_, ConstValue>) -> Option<Cow<'_, str>> {
     match value {
-        Cow::Owned(async_graphql::Value::String(s)) => Some(Cow::Owned(s)),
-        Cow::Owned(async_graphql::Value::Number(n)) => Some(Cow::Owned(n.to_string())),
-        Cow::Owned(async_graphql::Value::Boolean(b)) => Some(Cow::Owned(b.to_string())),
-        Cow::Owned(async_graphql::Value::Object(map)) => Some(json!(map).to_string().into()),
-        Cow::Owned(async_graphql::Value::List(list)) => Some(json!(list).to_string().into()),
-        Cow::Borrowed(async_graphql::Value::String(s)) => Some(Cow::Borrowed(s.as_str())),
-        Cow::Borrowed(async_graphql::Value::Number(n)) => Some(Cow::Owned(n.to_string())),
-        Cow::Borrowed(async_graphql::Value::Boolean(b)) => Some(Cow::Owned(b.to_string())),
-        Cow::Borrowed(async_graphql::Value::Object(map)) => Some(json!(map).to_string().into()),
-        Cow::Borrowed(async_graphql::Value::List(list)) => Some(json!(list).to_string().into()),
+        Cow::Owned(ConstValue::Str(s)) => Some(s),
+        Cow::Owned(ConstValue::Number(n)) => Some(Cow::Owned(serde_json::Number::from(n.clone()).to_string())),
+        Cow::Owned(ConstValue::Bool(b)) => Some(Cow::Owned(b.to_string())),
+        Cow::Owned(ConstValue::Object(map)) => Some(json!(map).to_string().into()),
+        Cow::Owned(ConstValue::Array(list)) => Some(json!(list).to_string().into()),
+        Cow::Borrowed(ConstValue::Str(s)) => Some(Cow::Borrowed(s.as_ref())),
+        Cow::Borrowed(ConstValue::Number(n)) => Some(Cow::Owned(serde_json::Number::from(n.clone()).to_string())),
+        Cow::Borrowed(ConstValue::Bool(b)) => Some(Cow::Owned(b.to_string())),
+        Cow::Borrowed(ConstValue::Object(map)) => Some(json!(map).to_string().into()),
+        Cow::Borrowed(ConstValue::Array(list)) => Some(json!(list).to_string().into()),
         _ => None,
     }
 }
@@ -52,6 +54,7 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
 impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         let ctx = self;
+        println!("h1x");
 
         if path.is_empty() {
             return None;
@@ -87,13 +90,16 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx
         }
 
         path.split_first()
-            .and_then(|(head, tail)| match head.as_ref() {
-                "value" => Some(ctx.path_value(tail)?.to_string()),
-                "args" => Some(ctx.path_arg(tail)?.to_string()),
-                "headers" => ctx.header(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
-                "vars" => ctx.var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
-                "env" => ctx.env_var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
-                _ => None,
+            .and_then(|(head, tail)| {
+                println!("h2x");
+                match head.as_ref() {
+                    "value" => Some(ctx.path_value(tail)?.to_string()),
+                    "args" => Some(ctx.path_arg(tail)?.to_string()),
+                    "headers" => ctx.header(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
+                    "vars" => ctx.var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
+                    "env" => ctx.env_var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
+                    _ => None,
+                }
             })
     }
 }

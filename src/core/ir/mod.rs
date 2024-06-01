@@ -77,10 +77,13 @@ impl Eval for IR {
                     Context::Value => {
                         Ok(ctx.value().cloned().unwrap_or(ConstValue::Null))
                     }
-                    Context::Path(path) => Ok(ctx
-                        .path_value(path)
-                        .map(|a| a.into_owned())
-                        .unwrap_or(ConstValue::Null)),
+                    Context::Path(path) => {
+                        println!("hx");
+                        Ok(ctx
+                            .path_value(path)
+                            .map(|a| a.into_owned())
+                            .unwrap_or(ConstValue::Null))
+                    },
                     Context::PushArgs { expr, and_then } => {
                         let args = expr.eval(ctx.clone()).await?;
                         let ctx = ctx.with_args(args).clone();

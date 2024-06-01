@@ -13,7 +13,6 @@ use crate::core::config::{
     Server, Union, Upstream,
 };
 use crate::core::directive::DirectiveCodec;
-use crate::core::extend_lifetime;
 use crate::core::valid::{Valid, Validator};
 
 use super::{JS, Tag};
@@ -391,10 +390,9 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
         .ok()
         .flatten();
     let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
-        let value = &pos.node;
-        let v = || {
-            let v = value.clone().into_json().ok()?;
-            let bv = serde_json::from_value::<serde_json_borrow::Value>(v).ok().map(extend_lifetime)?;
+        let v = move || {
+            let v = pos.node.to_owned().into_json().ok()?;
+            let bv = crate::core::ConstValue::from(v);
             Some(bv)
         };
         v()
