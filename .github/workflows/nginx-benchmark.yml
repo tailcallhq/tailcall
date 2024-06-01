@@ -22,6 +22,10 @@ jobs:
       pull-requests: write
       contents: write
     steps:
+      - name: Disable Boost
+        run: |
+          echo never | sudo tee /sys/devices/system/cpu/cpufreq/boost
+          cat /sys/devices/system/cpu/cpufreq/boost
       - uses: actions/checkout@v4
       - name: Install Stable Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -31,7 +35,6 @@ jobs:
 
       - name: Run Tailcall
         run: |
-          echo "0" | sudo tee /sys/devices/system/cpu/cpufreq/boost
           TAILCALL_LOG_LEVEL=error ./target/release/tailcall start ci-benchmark/nginx-benchmark.graphql &
 
       - name: Install Nginx
