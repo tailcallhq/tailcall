@@ -9,7 +9,8 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::core::auth::context::AuthContext;
 use crate::core::blueprint::{Server, Upstream};
-use crate::core::data_loader::{AsyncCache, Cache, DataLoader, NoCache};
+use crate::core::data_loader::v2::{AsyncCache, Cache, NoCache};
+use crate::core::data_loader::DataLoader;
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
