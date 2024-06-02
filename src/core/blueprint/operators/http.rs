@@ -10,7 +10,7 @@ use crate::core::{config, helpers};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
-    field: &config::Field,
+    _field: &config::Field,
     http: &config::Http,
 ) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())

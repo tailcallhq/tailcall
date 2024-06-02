@@ -19,7 +19,6 @@ use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{is_default, scalar};
-use crate::core::generator::from_openapi::OpenApiToGraphQLConverter;
 
 #[derive(
     Serialize,
@@ -668,7 +667,7 @@ impl Config {
     }
 
     pub fn from_yaml(yaml: &str) -> Result<Self> {
-        Ok(OpenApiToGraphQLConverter::new(yaml)?.convert())
+        Ok(serde_yaml::from_str(yaml)?)
     }
 
     pub fn from_sdl(sdl: &str) -> Valid<Self, String> {

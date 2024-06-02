@@ -4,7 +4,9 @@ use convert_case::{Case, Casing};
 use oas3::spec::{ObjectOrReference, SchemaType};
 use oas3::{Schema, Spec};
 
-use crate::core::config::{Arg, Config, Enum, Field, Http, KeyValue, RootSchema, Type, Union, Upstream};
+use crate::core::config::{
+    Arg, Config, Enum, Field, Http, KeyValue, RootSchema, Type, Union, Upstream,
+};
 use crate::core::http::Method;
 
 fn schema_type_to_string(typ: &SchemaType) -> String {
@@ -30,7 +32,7 @@ fn schema_to_primitive_type(typ: &SchemaType) -> Option<String> {
 enum UnionOrType {
     Union(Union),
     Type(Type),
-    Enum(Enum)
+    Enum(Enum),
 }
 
 enum TypeName {
@@ -64,7 +66,8 @@ fn name_from_ref_path<T>(obj_or_ref: &ObjectOrReference<T>) -> Option<String> {
 }
 
 #[derive(Default)]
-pub struct OpenApiToGraphQLConverter {
+pub struct OpenApiToConfigConverter {
+    pub query: String,
     pub spec: Spec,
     pub inline_types: VecDeque<Schema>,
     pub inline_types_frozen: bool,
@@ -72,10 +75,10 @@ pub struct OpenApiToGraphQLConverter {
     pub unions: BTreeMap<String, Vec<Schema>>,
 }
 
-impl OpenApiToGraphQLConverter {
-    pub fn new(spec_str: impl AsRef<str>) -> anyhow::Result<Self> {
+impl OpenApiToConfigConverter {
+    pub fn new(query: impl AsRef<str>, spec_str: impl AsRef<str>) -> anyhow::Result<Self> {
         let spec = oas3::from_reader(spec_str.as_ref().as_bytes())?;
-        Ok(Self { spec, ..Default::default() })
+        Ok(Self { query: query.as_ref().to_string(), spec, ..Default::default() })
     }
 
     fn get_schema_type(&mut self, schema: Schema, name: Option<String>) -> TypeName {
@@ -219,7 +222,7 @@ impl OpenApiToGraphQLConverter {
                 .collect();
             Some(UnionOrType::Enum(Enum {
                 variants,
-                doc: schema.description
+                doc: schema.description,
             }))
         } else {
             None
@@ -340,12 +343,10 @@ impl OpenApiToGraphQLConverter {
 
             let query_params = args
                 .iter()
-                .filter_map(|(key, _)| (!url_params.contains(key))
-                    .then(|| KeyValue {
+                .filter(|&(key, _)| (!url_params.contains(key))).map(|(key, _)| KeyValue {
                         key: key.to_string(),
-                        value: format!("{{{{args.{}}}}}", key.to_case(Case::Camel))
+                        value: format!("{{{{args.{}}}}}", key.to_case(Case::Camel)),
                     })
-                )
                 .collect();
 
             let field = Field {
@@ -413,15 +414,18 @@ mod tests {
 
     #[test]
     fn test_config_from_openapi_spec() {
-        let spec_folder_path = Path::new("src").join("core").join("generator").join("openapi");
+        let spec_folder_path = Path::new("src")
+            .join("core")
+            .join("generator")
+            .join("openapi");
 
         for spec_path in fs::read_dir(spec_folder_path).unwrap() {
             let spec_path = spec_path.unwrap().path();
             let content = fs::read_to_string(&spec_path).unwrap();
-            insta::assert_snapshot!(OpenApiToGraphQLConverter::new(content.as_str())
-            .unwrap()
-            .convert()
-            .to_sdl());
+            insta::assert_snapshot!(OpenApiToConfigConverter::new("Query", content.as_str())
+                .unwrap()
+                .convert()
+                .to_sdl());
         }
     }
 }

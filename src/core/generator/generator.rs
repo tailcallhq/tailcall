@@ -3,6 +3,7 @@ use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 
 use crate::core::config::{Config, ConfigModule, Link, LinkType};
+use crate::core::generator::from_openapi::OpenApiToConfigConverter;
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::Source;
 use crate::core::merge_right::MergeRight;
@@ -26,39 +27,58 @@ fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<File
     Ok(descriptor_set)
 }
 
-pub struct Generator {
-    proto_reader: ProtoReader,
+pub enum Generator {
+    ProtoGenerator { proto_reader: ProtoReader },
+    OpenAPIGenerator
 }
 impl Generator {
-    pub fn init(runtime: TargetRuntime) -> Self {
-        Self {
-            proto_reader: ProtoReader::init(ResourceReader::cached(runtime.clone()), runtime),
+    pub fn init(input_source: Source, runtime: TargetRuntime) -> Self {
+        match input_source {
+            Source::Proto => Self::ProtoGenerator {
+                proto_reader: ProtoReader::init(ResourceReader::cached(runtime.clone()), runtime),
+            },
+            Source::OpenAPI => Self::OpenAPIGenerator
         }
     }
 
-    pub async fn read_all<T: AsRef<str>>(
-        &self,
-        input_source: Source,
-        files: &[T],
-        query: &str,
-    ) -> Result<ConfigModule> {
+    async fn read_all_proto(proto_reader: &ProtoReader, files: &[impl AsRef<str>], query: &str) -> Result<ConfigModule> {
         let mut links = vec![];
-        let proto_metadata = self.proto_reader.read_all(files).await?;
+        let proto_metadata = proto_reader.read_all(files).await?;
 
         let mut config = Config::default();
         for metadata in proto_metadata {
-            match input_source {
-                Source::Proto => {
-                    links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
-                    let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set)?;
-                    config = config.merge_right(from_proto(&[descriptor_set], query)?);
-                }
-            }
+            links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
+            let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set)?;
+            config = config.merge_right(from_proto(&[descriptor_set], query)?);
         }
 
         config.links = links;
 
         Ok(ConfigModule::from(config))
+    }
+
+    fn read_all_openapi(files: &[impl AsRef<str>], query: &str) -> Result<ConfigModule> {
+        files
+            .iter()
+            .try_fold(ConfigModule::default(), |config_module, path| {
+                let content = std::fs::read_to_string(path.as_ref())?;
+                let mut converter = OpenApiToConfigConverter::new(query, content)?;
+                let config = converter.convert();
+                Ok(config_module.merge_right(ConfigModule::from(config)))
+            })
+    }
+
+    pub async fn read_all<T: AsRef<str>>(
+        &self,
+        files: &[T],
+        query: &str,
+    ) -> Result<ConfigModule> {
+        match self {
+            Self::ProtoGenerator { proto_reader } => {
+                Self::read_all_proto(proto_reader, files, query).await
+            }
+            Self::OpenAPIGenerator => Self::read_all_openapi(files, query),
+        }
     }
 }
 
@@ -98,7 +118,7 @@ mod test {
                 .body(&greetings_a);
         });
 
-        let generator = Generator::init(runtime);
+        let generator = Generator::init(Source::Proto, runtime);
         let news = format!("http://localhost:{}/news.proto", server.port());
         let greetings_a = format!("http://localhost:{}/greetings_a.proto", server.port());
         let greetings_b = test_dir
@@ -108,7 +128,7 @@ mod test {
             .to_string();
 
         let config = generator
-            .read_all(Source::Proto, &[news, greetings_a, greetings_b], "Query")
+            .read_all(&[news, greetings_a, greetings_b], "Query")
             .await
             .unwrap();
 

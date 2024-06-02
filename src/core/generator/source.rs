@@ -6,6 +6,7 @@ use thiserror::Error;
 pub enum Source {
     #[default]
     Proto,
+    OpenAPI,
 }
 
 #[derive(Debug, Error, PartialEq)]
