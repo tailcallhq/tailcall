@@ -14,9 +14,11 @@ mod server;
 pub mod telemetry;
 mod timeout;
 mod upstream;
+mod blueprint_index;
 
 pub use auth::*;
 pub use blueprint::*;
+pub use blueprint_index::*;
 pub use cors::*;
 pub use definitions::*;
 pub use dynamic_value::*;
