@@ -1,0 +1,12 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(hostname: "localhost", port: 8000) @upstream {
+  query: Query
+}
+
+type Query {
+  emailInput(x: Email!): Boolean @expr(body: "{{.args.x}}")
+  emailOutput: Email! @expr(body: 125)
+}

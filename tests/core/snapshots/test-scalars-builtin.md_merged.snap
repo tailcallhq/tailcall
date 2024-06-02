@@ -1,0 +1,15 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(hostname: "localhost", port: 8000) @upstream {
+  query: Query
+}
+
+type Query {
+  bool(x: Boolean!): Boolean! @expr(body: "{{.args.x}}")
+  float(x: Float!): Float! @expr(body: "{{.args.x}}")
+  id(x: ID!): ID @expr(body: "{{.args.x}}")
+  int(x: Int!): Int! @expr(body: "{{.args.x}}")
+  string(x: String!): String! @expr(body: "{{.args.x}}")
+}

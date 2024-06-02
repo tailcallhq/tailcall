@@ -1,0 +1,48 @@
+---
+source: tests/core/spec.rs
+assertion_line: 278
+expression: formatted
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+"""
+Test input documentation
+"""
+input Foo {
+  """
+  Test input field documentation
+  """
+  id: Int
+}
+
+scalar JSON
+
+type Mutation {
+  testDocumentation(input: Foo!): Post
+}
+
+scalar PhoneNumber
+
+type Post {
+  body: String
+  id: Int!
+}
+
+"""
+Some Documentation
+"""
+type Query {
+  foo: String
+  postFromFoo(id: Int!): Post
+}
+
+scalar Url
+
+schema {
+  query: Query
+  mutation: Mutation
+}
