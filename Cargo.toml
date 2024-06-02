@@ -56,7 +56,7 @@ tailcall-version = { path = "./tailcall-version", optional = true }
 # dependencies safe for wasm:
 
 rustls-pemfile = { version = "1.0.4" }
-schemars = { version = "0.8.17", features = ["derive"] }
+schemars = { version = "0.8.21", features = ["derive"] }
 hyper = { version = "0.14.28", features = ["server"], default-features = false }
 tokio = { workspace = true }
 anyhow = { workspace = true }
@@ -141,6 +141,7 @@ mime = "0.3.17"
 htpasswd-verify = { version = "0.3.0", git = "https://github.com/twistedfall/htpasswd-verify", rev = "ff14703083cbd639f7d05622b398926f3e718d61" } # fork version that is wasm compatible
 jsonwebtoken = "9.3.0"
 async-graphql-value = "7.0.3"
+async-graphql-parser = "7.0.5"
 async-graphql = { workspace = true, features = [
     "dynamic-schema",
     "dataloader",
@@ -157,7 +158,7 @@ datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
-serde_json_borrow = "0.5.0"
+serde_json_borrow = {git = "https://github.com/tailcallhq/serde_json_borrow", branch = "temp"}
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }

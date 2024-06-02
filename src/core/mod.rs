@@ -41,10 +41,63 @@ pub mod worker;
 use std::borrow::Cow;
 use std::hash::Hash;
 use std::num::NonZeroU64;
+use std::str::FromStr;
 
-use async_graphql_value::ConstValue;
+use async_graphql_value::{ConstValue, Name};
 use http::Response;
 pub use tailcall_macros as macros;
+
+pub type BorrowedValue = serde_json_borrow::Value<'static>;
+
+pub trait FromValue {
+    fn from_value(value: serde_json_borrow::Value) -> Self;
+    fn into_bvalue(self) -> BorrowedValue;
+}
+
+impl FromValue for async_graphql_value::ConstValue {
+    fn from_value(value: serde_json_borrow::Value) -> Self {
+        match value {
+            serde_json_borrow::Value::Null => ConstValue::Null,
+            serde_json_borrow::Value::Bool(b) => ConstValue::Boolean(b),
+            serde_json_borrow::Value::Number(n) => ConstValue::Number(n.into()),
+            serde_json_borrow::Value::Str(s) => ConstValue::String(s.into()),
+            serde_json_borrow::Value::Array(a) => {
+                ConstValue::List(a.into_iter().map(|v| Self::from_value(v)).collect())
+            }
+            serde_json_borrow::Value::Object(o) => ConstValue::Object(
+                o.iter()
+                    .map(|(k, v)| (Name::new(k), Self::from_value(v.to_owned())))
+                    .collect(),
+            ),
+        }
+    }
+
+    fn into_bvalue(self) -> BorrowedValue {
+        match self {
+            async_graphql_value::ConstValue::Null => serde_json_borrow::Value::Null,
+            async_graphql_value::ConstValue::Boolean(b) => serde_json_borrow::Value::Bool(b),
+            async_graphql_value::ConstValue::Number(n) => serde_json_borrow::Value::Number(
+                serde_json_borrow::Number::from_str(&n.to_string()).unwrap(),
+            ), // TODO: FIXME
+            async_graphql_value::ConstValue::String(s) => {
+                serde_json_borrow::Value::Str(Cow::Owned(s))
+            }
+            async_graphql_value::ConstValue::List(a) => serde_json_borrow::Value::Array(
+                a.into_iter()
+                    .map(|v| v.into_bvalue())
+                    .collect::<Vec<_>>(),
+            ),
+            async_graphql_value::ConstValue::Object(o) => serde_json_borrow::Value::Object(
+                o.into_iter()
+                    .map(|(k, v)| (k.to_string(), v.into_bvalue()))
+                    .collect::<Vec<_>>()
+                    .into(),
+            ),
+            async_graphql_value::ConstValue::Binary(_) => todo!(),
+            async_graphql_value::ConstValue::Enum(_) => todo!(),
+        }
+    }
+}
 
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;

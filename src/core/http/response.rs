@@ -1,3 +1,4 @@
+
 use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
@@ -9,6 +10,7 @@ use tonic_types::Status as GrpcStatus;
 
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::ir::EvaluationError;
+use crate::core::{FromValue};
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
@@ -22,29 +24,6 @@ pub struct Response<Body> {
 // It has a limited lifetime tied to the input JSON, making it more
 // efficient. Benchmarking is required to determine the performance If any
 // change is made.
-
-pub trait FromValue {
-    fn from_value(value: serde_json_borrow::Value) -> Self;
-}
-
-impl FromValue for ConstValue {
-    fn from_value(value: serde_json_borrow::Value) -> Self {
-        match value {
-            serde_json_borrow::Value::Null => ConstValue::Null,
-            serde_json_borrow::Value::Bool(b) => ConstValue::Boolean(b),
-            serde_json_borrow::Value::Number(n) => ConstValue::Number(n.into()),
-            serde_json_borrow::Value::Str(s) => ConstValue::String(s.into()),
-            serde_json_borrow::Value::Array(a) => {
-                ConstValue::List(a.into_iter().map(|v| Self::from_value(v)).collect())
-            }
-            serde_json_borrow::Value::Object(o) => ConstValue::Object(
-                o.iter()
-                    .map(|(k, v)| (Name::new(k), Self::from_value(v.to_owned())))
-                    .collect(),
-            ),
-        }
-    }
-}
 
 impl Response<Bytes> {
     pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {

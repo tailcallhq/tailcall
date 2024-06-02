@@ -7,34 +7,85 @@
 ///    made.
 
 mod model {
-    use async_graphql::parser::types::ExecutableDocument;
+    use std::collections::HashMap;
+    use std::fmt::{Debug, Formatter};
 
+    use async_graphql::parser::types::{DocumentOperations, ExecutableDocument, Selection};
+    use async_graphql::Positioned;
+    
+    use serde_json_borrow::{OwnedValue};
+
+    use crate::core::blueprint::{Blueprint, Definition, FieldDefinition, InputFieldDefinition};
     use crate::core::ir::IR;
+    use crate::core::merge_right::MergeRight;
+    use crate::core::FromValue;
 
+    trait IncrGen {
+        fn gen(&mut self) -> Self;
+    }
+
+    #[derive(Debug)]
     pub enum Type {
         Named(String),
         List(Box<Type>),
         Required(Box<Type>),
     }
 
+    #[derive(Debug)]
     pub struct Arg {
         pub id: ArgId,
         pub name: String,
-        pub type_of: Type,
+        pub type_of: crate::core::blueprint::Type,
+        pub value: Option<OwnedValue>,
+        pub default_value: Option<OwnedValue>,
     }
 
     pub struct ArgId(usize);
+
+    impl Debug for ArgId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+
+    impl IncrGen for ArgId {
+        fn gen(&mut self) -> Self {
+            let id = self.0;
+            self.0 += 1;
+            Self(id)
+        }
+    }
+
     impl ArgId {
         fn new(id: usize) -> Self {
             ArgId(id)
         }
     }
 
+    trait Id {
+        fn as_usize(&self) -> usize;
+    }
+
     #[derive(Clone, PartialEq, Eq)]
     pub struct FieldId(usize);
+
+    impl Debug for FieldId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+
     impl FieldId {
         fn new(id: usize) -> Self {
             FieldId(id)
+        }
+    }
+
+    impl IncrGen for FieldId {
+        fn gen(&mut self) -> Self {
+            let id = self.0;
+            self.0 += 1;
+            Self(id)
         }
     }
 
@@ -42,25 +93,190 @@ mod model {
         pub id: FieldId,
         pub name: String,
         pub ir: Option<IR>,
-        pub type_of: Type,
+        pub type_of: crate::core::blueprint::Type,
         pub args: Vec<Arg>,
         pub refs: Option<A>,
     }
 
+    impl<A> Debug for Field<A> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            let mut debug_struct = f.debug_struct("Field");
+            debug_struct.field("id", &self.id);
+            debug_struct.field("name", &self.name);
+            if self.ir.is_some() {
+                debug_struct.field("ir", &"Some(..)");
+            }
+            debug_struct.field("type_of", &self.type_of);
+            if !self.args.is_empty() {
+                debug_struct.field("args", &self.args);
+            }
+            if self.refs.is_some() {
+                debug_struct.field("refs", &"Some(..)");
+            }
+            debug_struct.finish()
+        }
+    }
+
+    #[derive(Debug)]
     pub struct Parent(FieldId);
+
     pub struct Children(Vec<FieldId>);
 
+    #[derive(Debug)]
     pub struct QueryBlueprint {
         pub fields: Vec<Field<Parent>>,
     }
 
-    impl From<ExecutableDocument> for QueryBlueprint {
-        fn from(value: ExecutableDocument) -> Self {
-            // TODO: @ssddOnTop
-            // 1. Handle all edge-cases
-            // 2. Add unit tests
-            todo!()
+    impl QueryBlueprint {
+        pub fn from_document(document: ExecutableDocument, blueprint: Blueprint) -> Self {
+            let fields = convert_query_to_field(document, &blueprint.definitions).unwrap();
+            Self { fields }
         }
+    }
+
+    fn convert_query_to_field<A>(
+        document: ExecutableDocument,
+        schema_definitions: &[Definition],
+    ) -> anyhow::Result<Vec<Field<A>>> {
+        let mut id = FieldId::new(0);
+        let mut arg_id = ArgId::new(0);
+
+        let mut fields = Vec::new();
+
+        fn resolve_selection_set<A>(
+            selection_set: Positioned<async_graphql_parser::types::SelectionSet>,
+            schema_definitions: &[Definition],
+            id: &mut FieldId,
+            arg_id: &mut ArgId,
+        ) -> Vec<Field<A>> {
+            let mut fields = Vec::new();
+
+            for selection in selection_set.node.items {
+                if let Selection::Field(gql_field) = selection.node {
+                    let field_name = gql_field.node.name.node.as_str();
+                    let field_args = gql_field
+                        .node
+                        .arguments
+                        .into_iter()
+                        .map(|(k, v)| (k.node.as_str().to_string(), v.node.into_const().unwrap()))
+                        .collect::<HashMap<String, async_graphql::Value>>();
+
+                    if let Some(definition) = find_definition(field_name, schema_definitions) {
+                        let mut args = vec![];
+                        field_args.into_iter().for_each(|(k, v)| {
+                            if let Some(arg) = find_definition_arg(&k, schema_definitions) {
+                                let type_of = arg.of_type.clone();
+                                let id = arg_id.gen();
+                                let arg = Arg {
+                                    id,
+                                    name: k,
+                                    type_of,
+                                    value: Some(v.into_bvalue().into()),
+                                    default_value: None,
+                                };
+                                args.push(arg);
+                            }
+                        });
+
+                        let type_of = definition.of_type.clone();
+                        fields = fields.merge_right(resolve_selection_set(
+                            gql_field.node.selection_set.clone(),
+                            schema_definitions,
+                            id,
+                            arg_id,
+                        ));
+
+                        let id = id.gen();
+                        let field = Field {
+                            id,
+                            name: field_name.to_string(),
+                            ir: definition.resolver.clone(),
+                            type_of,
+                            args,
+                            refs: None,
+                        };
+                        fields.push(field);
+                    }
+                }
+            }
+
+            fields
+        }
+
+        match document.operations {
+            DocumentOperations::Single(single) => {
+                fields = resolve_selection_set(
+                    single.node.selection_set,
+                    schema_definitions,
+                    &mut id,
+                    &mut arg_id,
+                );
+            }
+            DocumentOperations::Multiple(_) => {}
+        }
+
+        Ok(fields)
+    }
+
+    fn find_definition<'a>(
+        name: &str,
+        definitions: &'a [Definition],
+    ) -> Option<&'a FieldDefinition> {
+        for def in definitions {
+            if let Definition::Object(object) = def {
+                for field in &object.fields {
+                    if field.name == name {
+                        return Some(field);
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    fn find_definition_arg<'a>(
+        name: &str,
+        definitions: &'a [Definition],
+    ) -> Option<&'a InputFieldDefinition> {
+        for def in definitions {
+            if let Definition::Object(object) = def {
+                for field in &object.fields {
+                    for arg in &field.args {
+                        if arg.name == name {
+                            return Some(arg);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::reader::ConfigReader;
+
+    #[tokio::test]
+    async fn test_from_document() {
+        let rt = crate::core::runtime::test::init(None);
+        let reader = ConfigReader::init(rt);
+        let config = reader
+            .read("examples/jsonplaceholder.graphql")
+            .await
+            .unwrap();
+        let blueprint = Blueprint::try_from(&config).unwrap();
+        let query = r#"
+            query {
+                posts { user { id } }
+            }
+        "#;
+        let document = async_graphql::parser::parse_query(query).unwrap();
+        let q_blueprint = model::QueryBlueprint::from_document(document, blueprint);
+        // insta::assert_snapshot!();
+        println!("{:#?}", q_blueprint);
     }
 }
 
@@ -69,7 +285,6 @@ mod value {
 }
 
 mod cache {
-
     use super::model::FieldId;
     use super::value::OwnedValue;
 
@@ -172,7 +387,6 @@ mod executor {
 }
 
 mod synth {
-
     pub use serde_json_borrow::*;
 
     use super::cache::Cache;
