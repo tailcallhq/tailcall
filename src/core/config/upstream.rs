@@ -28,16 +28,6 @@ impl Default for Batch {
         }
     }
 }
-
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
-#[derive(Default)]
-pub enum CacheType {
-    ByteBased,
-    #[default]
-    NumberOfEntryBased,
-}
-
-
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
 pub struct Proxy {
     pub url: String,
@@ -92,10 +82,9 @@ pub struct Upstream {
     pub http_cache: Option<u64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The type of cache to be used. The two options are `ByteBased` and
-    /// `NumberOfEntryBased`. If not specified, the default is
-    /// `NumberOfEntryBased`.
-    pub http_cache_type: Option<CacheType>,
+    /// Providing httpCachePercentage allocates a maximum of that percentage of
+    /// RAM to the HTTP cache. Defaults to `0` if unspecified.
+    pub http_cache_percentage: Option<String>,
 
     #[setters(strip_option)]
     #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
@@ -190,8 +179,10 @@ impl Upstream {
     pub fn get_http_cache_size(&self) -> u64 {
         self.http_cache.unwrap_or(0)
     }
-    pub fn get_http_cache_type(&self) -> CacheType {
-        self.http_cache_type.clone().unwrap_or_default()
+    pub fn get_http_cache_percentage(&self) -> Option<String> {
+        self.http_cache_percentage
+            .clone()
+            .or_else(|| Some(String::from("0")))
     }
     pub fn get_allowed_headers(&self) -> BTreeSet<String> {
         self.allowed_headers.clone().unwrap_or_default()

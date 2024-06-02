@@ -80,7 +80,6 @@ impl HttpCacheManager {
     }
 }
 
-
 impl HttpCacheManagerByteBased {
     pub fn new(cache_size: u64) -> Self {
         let cache = Cache::builder()
@@ -157,8 +156,6 @@ impl CacheManager for HttpCacheManagerByteBased {
         Ok(())
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
