@@ -52,34 +52,11 @@ jobs:
         run: |
           wrk -d 30 -t 4 -c 100 -s wrk.lua http://localhost:8000/graphql > wrk-output.txt
 
-      - id: convert_wrk_output_json
-        name: Convert Output to JSON
-        working-directory: ci-benchmark
-        run: |
-          node wrk-output-to-json.js wrk-output.txt > results.json
-
-      - id: push_to_bencher
-        working-directory: ci-benchmark
-        uses: bencherdev/bencher@main
-        run: |
-          bencher run \
-            --project tailcall \
-            --token '${{ secrets.BENCHER_API_TOKEN }}' \
-            --branch '${{ github.head_ref }}' \
-            --branch-start-point '${{ github.base_ref }}' \
-            --branch-start-point-hash '${{ github.base_sha }}' \
-            --testbed ubuntu-latest \
-            --adapter json \
-            --err \
-            --file "results.json"
-            --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-
       - id: convert_wrk_output_markdown
         name: Convert Output to Markdown
         working-directory: ci-benchmark
         run: |
           node wrk-output-to-md.js wrk-output.txt > body.md
-
       - id: cat_md
         name: Cat Markdown
         working-directory: ci-benchmark
