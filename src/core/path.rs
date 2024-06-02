@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use serde_json::json;
 
+use crate::core::ir::{EvaluationContext, ResolverContextLike};
 use crate::core::json::JsonLike;
-use crate::core::lambda::{EvaluationContext, ResolverContextLike};
 
 ///
 /// The path module provides a trait for accessing values from a JSON-like
@@ -114,7 +114,7 @@ mod tests {
         use once_cell::sync::Lazy;
 
         use crate::core::http::RequestContext;
-        use crate::core::lambda::{EvaluationContext, ResolverContextLike};
+        use crate::core::ir::{EvaluationContext, ResolverContextLike};
         use crate::core::path::{PathGraphql, PathString};
         use crate::core::EnvIO;
 

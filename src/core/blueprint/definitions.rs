@@ -5,7 +5,7 @@ use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
-use crate::core::lambda::{Cache, Context, Expression};
+use crate::core::ir::{Cache, Context, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{config, scalar};
@@ -297,7 +297,7 @@ fn update_resolver_from_path(
 
     process_path(context.clone()).and_then(|of_type| {
         let mut updated_base_field = base_field;
-        let resolver = Expression::Context(Context::Path(context.path.to_owned()));
+        let resolver = IR::Context(Context::Path(context.path.to_owned()));
         if has_index {
             updated_base_field.of_type =
                 Type::NamedType { name: of_type.name().to_string(), non_null: false }
@@ -306,7 +306,7 @@ fn update_resolver_from_path(
         }
         let resolver = match updated_base_field.resolver.clone() {
             None => resolver,
-            Some(resolver) => Expression::Path(Box::new(resolver), context.path.to_owned()),
+            Some(resolver) => IR::Path(Box::new(resolver), context.path.to_owned()),
         };
         Valid::succeed(updated_base_field.resolver(Some(resolver)))
     })
@@ -325,7 +325,7 @@ pub fn fix_dangling_resolvers<'a>(
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
             {
-                b_field = b_field.resolver(Some(Expression::Dynamic(DynamicValue::Value(
+                b_field = b_field.resolver(Some(IR::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
                 ))));
             }
@@ -500,6 +500,7 @@ pub fn to_field_definition(
         .and(update_http().trace(config::Http::trace_name().as_str()))
         .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
         .and(update_const_field().trace(config::Expr::trace_name().as_str()))
+        .and(update_js_field().trace(config::JS::trace_name().as_str()))
         .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
         .and(update_modify().trace(config::Modify::trace_name().as_str()))
         .and(update_call(operation_type, object_name).trace(config::Call::trace_name().as_str()))

@@ -6,9 +6,12 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
+// This is a comment for Genre enum
 enum Genre {
+    // This is a comment for UNSPECIFIED variant
     UNSPECIFIED = 0;
     ACTION = 1;
+    // This is a comment for DRAMA variant
     DRAMA = 2;
 }
 
@@ -27,6 +30,25 @@ message Movie {
     google.protobuf.Timestamp time = 5;
     Genre genre = 6;
 	google.protobuf.Duration duration = 7;
+
+    // Represents the format in which a movie can be released
+    enum MovieFormat {
+        // The movie is released in IMAX format
+        IMAX = 0;
+    }
+    
+    /**
+     * SubMovie reference
+     */
+    SubMovie sub_movie = 8;
+
+    // This is a comment for submovie
+    message SubMovie {
+        // This is a comment for sub_rating
+        float sub_rating = 1;
+        // This is a comment for movie format in submovie
+        MovieFormat format = 2;
+    }
 }
 
 message EmptyRequest {}
