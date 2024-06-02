@@ -10,6 +10,9 @@ input greetings__HelloRequest @tag(id: "greetings.HelloRequest") {
   name: String
 }
 
+  """
+  The request message containing the user's name.
+  """
 input greetings_a__b__HelloRequest @tag(id: "greetings_a.b.HelloRequest") {
   name: String
 }
@@ -37,7 +40,13 @@ enum news__Status {
 }
 
 type Query {
+  """
+  Sends a greeting
+  """
   greetings_a__b__Greeter__SayHello(helloRequest: greetings_a__b__HelloRequest!): greetings_a__b__HelloReply! @grpc(body: "{{.args.helloRequest}}", method: "greetings_a.b.Greeter.SayHello")
+  """
+  Sends a greeting
+  """
   greetings_b__c__Greeter__SayHello(helloRequest: greetings__HelloRequest!): greetings__HelloReply! @grpc(body: "{{.args.helloRequest}}", method: "greetings_b.c.Greeter.SayHello")
   news__NewsService__AddNews(news: news__NewsInput!): news__News! @grpc(body: "{{.args.news}}", method: "news.NewsService.AddNews")
   news__NewsService__DeleteNews(newsId: news__NewsId!): Empty! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.DeleteNews")
@@ -51,6 +60,9 @@ type greetings__HelloReply @tag(id: "greetings.HelloReply") {
   message: String
 }
 
+  """
+  The response message containing the greetings
+  """
 type greetings_a__b__HelloReply @tag(id: "greetings_a.b.HelloReply") {
   message: String
 }

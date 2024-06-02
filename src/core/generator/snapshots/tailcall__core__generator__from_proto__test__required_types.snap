@@ -10,6 +10,9 @@ type Query {
   person__PersonService__GetPerson: person__Person! @grpc(method: "person.PersonService.GetPerson")
 }
 
+  """
+  Defines a person
+  """
 type person__Person @tag(id: "person.Person") {
   email: String
   id: Int!
@@ -18,6 +21,9 @@ type person__Person @tag(id: "person.Person") {
   stringMap: JSON
 }
 
+  """
+  Defines a phone number
+  """
 type person__PhoneNumber @tag(id: "person.PhoneNumber") {
   number: String!
   type: String
