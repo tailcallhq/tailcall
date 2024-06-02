@@ -212,7 +212,16 @@ mod model {
                     &mut arg_id,
                 );
             }
-            DocumentOperations::Multiple(_) => {}
+            DocumentOperations::Multiple(multiple) => {
+                for (_, single) in multiple {
+                    fields = resolve_selection_set(
+                        single.node.selection_set,
+                        schema_definitions,
+                        &mut id,
+                        &mut arg_id,
+                    );
+                }
+            }
         }
 
         Ok(fields)
@@ -275,8 +284,7 @@ mod tests {
         "#;
         let document = async_graphql::parser::parse_query(query).unwrap();
         let q_blueprint = model::QueryBlueprint::from_document(document, blueprint);
-        // insta::assert_snapshot!();
-        println!("{:#?}", q_blueprint);
+        insta::assert_snapshot!(format!("{:#?}", q_blueprint));
     }
 }
 
