@@ -38,8 +38,8 @@ impl FromValue for ConstValue {
                 ConstValue::List(a.into_iter().map(|v| Self::from_value(v)).collect())
             }
             serde_json_borrow::Value::Object(o) => ConstValue::Object(
-                o.into_iter()
-                    .map(|(k, v)| (Name::new(k), Self::from_value(v)))
+                o.iter()
+                    .map(|(k, v)| (Name::new(k), Self::from_value(v.to_owned())))
                     .collect(),
             ),
         }

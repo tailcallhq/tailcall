@@ -51,7 +51,7 @@ mod model {
 }
 
 mod value {
-    pub use serde_json_borrow::{OwnedValue, Value};
+    pub use serde_json_borrow::*;
 }
 
 mod cache {
@@ -68,6 +68,9 @@ mod cache {
             Cache { map: Vec::new() }
         }
         pub fn join(caches: Vec<Cache>) -> Self {
+            todo!()
+        }
+        pub fn get(&self, key: FieldId) -> Option<&OwnedValue> {
             todo!()
         }
     }
@@ -155,9 +158,11 @@ mod executor {
 }
 
 mod synth {
+    use serde_json_borrow::Map;
+
     use super::cache::Cache;
     use super::model::QueryBlueprint;
-    use super::value::Value;
+    pub use serde_json_borrow::*;
 
     struct Synth {
         blueprint: QueryBlueprint,
@@ -170,7 +175,26 @@ mod synth {
         }
 
         pub fn synthesize<'a>(&'a self) -> Value<'a> {
-            todo!()
+            let mut object = ObjectAsVec::default();
+
+            let root_fields = self
+                .blueprint
+                .fields
+                .iter()
+                .filter(|a| a.parent_id.is_none());
+
+            for root_field in root_fields {
+                let key = &root_field.name;
+                let id = root_field.id.to_owned();
+                match self.cache.get(id) {
+                    Some(value) => {
+                        object.insert(key, value.get_value().to_owned());
+                    }
+                    None => (),
+                }
+            }
+
+            Value::Object(object)
         }
     }
 }
