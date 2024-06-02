@@ -51,8 +51,8 @@ fn calculate_distance(
     type_1: &Type,
     type_2: &Type,
     visited_type: &mut HashSet<(String, String)>,
-) -> (u32, u32) {
-    let mut same_field_cnt = 0;
+) -> (f32, i32) {
+    let mut same_field_cnt = 0.0;
     let mut total_field_count = 0;
 
     for (field_name_1, field_1) in type_1.fields.iter() {
@@ -63,11 +63,12 @@ fn calculate_distance(
             let is_field_1_comparable = is_type_comparable(field_1_type_of.as_str());
             let is_field_2_comparable = is_type_comparable(field_2_type_of.as_str());
 
-            if is_field_1_comparable && is_field_2_comparable {
-                same_field_cnt += 2; // 1 from field_1 + 1 from field_2
+            if is_field_1_comparable && is_field_2_comparable && field_1_type_of == field_2_type_of
+            {
+                same_field_cnt += 2.0; // 1 from field_1 + 1 from field_2
             } else if !is_field_1_comparable && !is_field_2_comparable {
                 if has_type_visited(&field_2_type_of, &field_1_type_of, visited_type) {
-                    same_field_cnt += 2;
+                    same_field_cnt += 2.0;
                     continue;
                 }
 
@@ -79,7 +80,7 @@ fn calculate_distance(
                 let type_similarity_metric =
                     calculate_distance(config, type_a, type_b, visited_type);
 
-                same_field_cnt += 2;
+                total_field_count -= 2; // don't count the non-comparable field, it'll get counted by recursive call.
 
                 same_field_cnt += type_similarity_metric.0;
                 total_field_count += type_similarity_metric.1;
@@ -87,7 +88,7 @@ fn calculate_distance(
         }
     }
 
-    total_field_count += (type_1.fields.len() + type_2.fields.len()) as u32;
+    total_field_count += (type_1.fields.len() + type_2.fields.len()) as i32;
 
     (same_field_cnt, total_field_count)
 }
@@ -155,15 +156,23 @@ impl TypeMerger {
         for same_types in similar_type_group_list {
             let mut merged_into = Type::default();
             let merged_type_name = format!("M{}", merge_counter);
-            merge_counter += 1;
-
+            let mut did_we_merge = false;
             for type_name in same_types {
-                type_to_merge_type_mapping.insert(type_name.clone(), merged_type_name.clone());
-                let type_ = config.types.get(type_name.as_str()).unwrap();
-                merged_into = merge_type(type_, merged_into);
+                if let Some(type_) = config.types.get(type_name.as_str()) {
+                    type_to_merge_type_mapping.insert(type_name.clone(), merged_type_name.clone());
+                    merged_into = merge_type(type_, merged_into);
+                    did_we_merge = true;
+                }
             }
 
-            config.types.insert(merged_type_name, merged_into);
+            if did_we_merge {
+                config.types.insert(merged_type_name, merged_into);
+                merge_counter += 1;
+            }
+        }
+
+        if type_to_merge_type_mapping.is_empty() {
+            return config;
         }
 
         // step 3: replace typeof of fields with newly merged types.
