@@ -1,7 +1,6 @@
 # Test builtin GraphQL scalars
 
 ```graphql @config
-
 schema @server(port: 8000, hostname: "localhost") {
   query: Query
 }
@@ -20,12 +19,12 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ a: int(x: 2485165) b: int(x: -543521) }'
+    query: "{ a: int(x: 2485165) b: int(x: -543521) }"
 
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ a: float(x: 1.256) b: float(x: -15651) }'
+    query: "{ a: float(x: 1.256) b: float(x: -15651) }"
 
 - method: POST
   url: http://localhost:8000/graphql
@@ -35,7 +34,7 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ a: bool(x: true) b: bool(x: false) }'
+    query: "{ a: bool(x: true) b: bool(x: false) }"
 
 - method: POST
   url: http://localhost:8000/graphql
@@ -56,7 +55,7 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ a: string(x: true) b: string(x: 123) }'
+    query: "{ a: string(x: true) b: string(x: 123) }"
 
 - method: POST
   url: http://localhost:8000/graphql
@@ -66,5 +65,5 @@ type Query {
 - method: POST
   url: http://localhost:8000/graphql
   body:
-    query: '{ a: id(x: true) b: id(x: 1.25) }'
+    query: "{ a: id(x: true) b: id(x: 1.25) }"
 ```
