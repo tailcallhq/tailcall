@@ -36,17 +36,20 @@ mod model {
         }
     }
 
-    pub struct Field {
-        pub parent_id: Option<FieldId>,
+    pub struct Field<A> {
         pub id: FieldId,
         pub name: String,
         pub ir: Option<IR>,
         pub type_of: Type,
         pub args: Vec<Arg>,
+        pub refs: Option<A>,
     }
 
+    pub struct Parent(FieldId);
+    pub struct Children(Vec<FieldId>);
+
     pub struct QueryBlueprint {
-        pub fields: Vec<Field>,
+        pub fields: Vec<Field<Parent>>,
     }
 }
 
@@ -80,7 +83,7 @@ mod executor {
     use futures_util::future;
 
     use super::cache::Cache;
-    use super::model::{Field, FieldId, QueryBlueprint};
+    use super::model::{Field, FieldId, Parent, QueryBlueprint};
     use super::value::OwnedValue;
     use crate::core::ir::IR;
 
@@ -98,7 +101,7 @@ mod executor {
             todo!()
         }
 
-        fn find_children(&self, id: FieldId) -> Vec<Field> {
+        fn find_children(&self, id: FieldId) -> Vec<Field<Parent>> {
             todo!()
         }
 
@@ -106,7 +109,7 @@ mod executor {
             todo!()
         }
 
-        fn find_field(&self, id: FieldId) -> Option<&Field> {
+        fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
             self.blueprint.fields.iter().find(|field| field.id == id)
         }
 
@@ -135,11 +138,11 @@ mod executor {
             Ok(())
         }
 
-        fn root(&self) -> Vec<&Field> {
+        fn root(&self) -> Vec<&Field<Parent>> {
             self.blueprint
                 .fields
                 .iter()
-                .filter(|field| field.parent_id.is_none())
+                .filter(|field| field.refs.is_none())
                 .collect::<Vec<_>>()
         }
 
@@ -159,10 +162,10 @@ mod executor {
 
 mod synth {
     use serde_json_borrow::Map;
+    pub use serde_json_borrow::*;
 
     use super::cache::Cache;
     use super::model::QueryBlueprint;
-    pub use serde_json_borrow::*;
 
     struct Synth {
         blueprint: QueryBlueprint,
@@ -177,11 +180,7 @@ mod synth {
         pub fn synthesize<'a>(&'a self) -> Value<'a> {
             let mut object = ObjectAsVec::default();
 
-            let root_fields = self
-                .blueprint
-                .fields
-                .iter()
-                .filter(|a| a.parent_id.is_none());
+            let root_fields = self.blueprint.fields.iter().filter(|a| a.refs.is_none());
 
             for root_field in root_fields {
                 let key = &root_field.name;
