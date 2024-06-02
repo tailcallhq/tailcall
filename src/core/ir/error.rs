@@ -1,15 +1,16 @@
+use std::fmt::Display;
 use std::sync::Arc;
 
 use async_graphql::{ErrorExtensions, Value as ConstValue};
 use thiserror::Error;
 
+use crate::cli::CLIError;
 use crate::core::auth;
+
 #[derive(Debug, Error, Clone)]
 pub enum EvaluationError {
-    #[error("IOException: {0}")]
     IOException(String),
 
-    #[error("gRPC Error: status: {grpc_code}, description: `{grpc_description}`, message: `{grpc_status_message}`")]
     GRPCError {
         grpc_code: i32,
         grpc_description: String,
@@ -17,17 +18,64 @@ pub enum EvaluationError {
         grpc_status_details: ConstValue,
     },
 
-    #[error("APIValidationError: {0:?}")]
     APIValidationError(Vec<String>),
 
-    #[error("ExprEvalError: {0}")]
     ExprEvalError(String),
 
-    #[error("DeserializeError: {0}")]
     DeserializeError(String),
 
-    #[error("Authentication Failure: {0}")]
-    AuthError(auth::error::Error),
+    AuthError(String),
+}
+
+impl Display for EvaluationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EvaluationError::IOException(msg) => {
+                write!(
+                    f,
+                    "{}",
+                    CLIError::new("IO Exception").caused_by(vec![CLIError::new(msg)])
+                )
+            }
+            EvaluationError::APIValidationError(errors) => {
+                let cli_errors: Vec<CLIError> = errors.iter().map(|e| CLIError::new(e)).collect();
+                write!(
+                    f,
+                    "{}",
+                    CLIError::new("API Validation Error").caused_by(cli_errors)
+                )
+            }
+            EvaluationError::ExprEvalError(msg) => write!(
+                f,
+                "{}",
+                CLIError::new("Expr Eval Error").caused_by(vec![CLIError::new(msg)])
+            ),
+            EvaluationError::DeserializeError(msg) => write!(
+                f,
+                "{}",
+                CLIError::new("Deserialize Error").caused_by(vec![CLIError::new(msg)])
+            ),
+            EvaluationError::AuthError(msg) => write!(
+                f,
+                "{}",
+                CLIError::new("Authentication Failure").caused_by(vec![CLIError::new(msg)])
+            ),
+            EvaluationError::GRPCError {
+                grpc_code,
+                grpc_description,
+                grpc_status_message,
+                grpc_status_details: _,
+            } => write!(
+                f,
+                "{}",
+                CLIError::new("GRPC Error").caused_by(vec![
+                    CLIError::new(format!("Status: {}", grpc_code).as_str()),
+                    CLIError::new(format!("Message: {}", grpc_status_message).as_str()),
+                    CLIError::new(format!("Description: {}", grpc_description).as_str())
+                ])
+            ),
+        }
+    }
 }
 
 impl ErrorExtensions for EvaluationError {
@@ -51,7 +99,7 @@ impl ErrorExtensions for EvaluationError {
 
 impl From<auth::error::Error> for EvaluationError {
     fn from(value: auth::error::Error) -> Self {
-        EvaluationError::AuthError(value)
+        EvaluationError::AuthError(value.to_string())
     }
 }
 

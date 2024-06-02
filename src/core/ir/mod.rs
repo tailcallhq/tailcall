@@ -66,7 +66,7 @@ impl IR {
 }
 
 impl Eval for IR {
-    #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
+    #[tracing::instrument(skip_all, fields(otel.name = %self))]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
