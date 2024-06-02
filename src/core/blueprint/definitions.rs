@@ -504,7 +504,7 @@ pub fn to_field_definition(
         .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
         .and(update_modify().trace(config::Modify::trace_name().as_str()))
         .and(update_call(operation_type, object_name).trace(config::Call::trace_name().as_str()))
-        // .and(fix_dangling_resolvers())
+        .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
         .try_fold(

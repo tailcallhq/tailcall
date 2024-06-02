@@ -29,7 +29,7 @@ fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<File
 
 pub enum Generator {
     ProtoGenerator { proto_reader: ProtoReader },
-    OpenAPIGenerator
+    OpenAPIGenerator,
 }
 impl Generator {
     pub fn init(input_source: Source, runtime: TargetRuntime) -> Self {
@@ -37,11 +37,15 @@ impl Generator {
             Source::Proto => Self::ProtoGenerator {
                 proto_reader: ProtoReader::init(ResourceReader::cached(runtime.clone()), runtime),
             },
-            Source::OpenAPI => Self::OpenAPIGenerator
+            Source::OpenAPI => Self::OpenAPIGenerator,
         }
     }
 
-    async fn read_all_proto(proto_reader: &ProtoReader, files: &[impl AsRef<str>], query: &str) -> Result<ConfigModule> {
+    async fn read_all_proto(
+        proto_reader: &ProtoReader,
+        files: &[impl AsRef<str>],
+        query: &str,
+    ) -> Result<ConfigModule> {
         let mut links = vec![];
         let proto_metadata = proto_reader.read_all(files).await?;
 
@@ -68,11 +72,7 @@ impl Generator {
             })
     }
 
-    pub async fn read_all<T: AsRef<str>>(
-        &self,
-        files: &[T],
-        query: &str,
-    ) -> Result<ConfigModule> {
+    pub async fn read_all<T: AsRef<str>>(&self, files: &[T], query: &str) -> Result<ConfigModule> {
         match self {
             Self::ProtoGenerator { proto_reader } => {
                 Self::read_all_proto(proto_reader, files, query).await

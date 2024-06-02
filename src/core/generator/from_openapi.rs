@@ -78,7 +78,11 @@ pub struct OpenApiToConfigConverter {
 impl OpenApiToConfigConverter {
     pub fn new(query: impl AsRef<str>, spec_str: impl AsRef<str>) -> anyhow::Result<Self> {
         let spec = oas3::from_reader(spec_str.as_ref().as_bytes())?;
-        Ok(Self { query: query.as_ref().to_string(), spec, ..Default::default() })
+        Ok(Self {
+            query: query.as_ref().to_string(),
+            spec,
+            ..Default::default()
+        })
     }
 
     fn get_schema_type(&mut self, schema: Schema, name: Option<String>) -> TypeName {
@@ -343,10 +347,11 @@ impl OpenApiToConfigConverter {
 
             let query_params = args
                 .iter()
-                .filter(|&(key, _)| (!url_params.contains(key))).map(|(key, _)| KeyValue {
-                        key: key.to_string(),
-                        value: format!("{{{{args.{}}}}}", key.to_case(Case::Camel)),
-                    })
+                .filter(|&(key, _)| (!url_params.contains(key)))
+                .map(|(key, _)| KeyValue {
+                    key: key.to_string(),
+                    value: format!("{{{{args.{}}}}}", key.to_case(Case::Camel)),
+                })
                 .collect();
 
             let field = Field {
