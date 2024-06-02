@@ -323,6 +323,19 @@ mod tests {
     async fn test_native_http_get_request_with_cache_percentage_based() {
         let server = start_mock_server();
 
+        let mut sys = System::new();
+        // Refresh system information
+        sys.refresh_all();
+        // Get total memory in bytes
+        let total_memory: u64 = sys.get_total_memory() * 1024;
+
+        // Calculate the percentage needed for total_memory to be 1243
+        let target_memory: u64 = 1243;
+        let percentage: f64 = target_memory as f64 / total_memory as f64;
+
+        // Convert the percentage to a string
+        let percentage_str = percentage.to_string();
+
         server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/test-1");
             then.status(200).body("Hello");
@@ -340,7 +353,7 @@ mod tests {
         // 616 is the body length without "Hello" 616+5(size of hello in bytes) = 621 ,
         // 1242 = 621*2
         let upstream = Upstream {
-            http_cache_percentage: Some("0.0000000752861707".to_string()),
+            http_cache_percentage: Some(percentage_str),
             ..Default::default()
         };
         let native_http = NativeHttp::init(&upstream, &Default::default());
