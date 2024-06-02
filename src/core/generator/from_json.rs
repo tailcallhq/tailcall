@@ -1,13 +1,16 @@
 use serde_json::Value;
 use url::Url;
 
-use super::{
-    json::{
-        ConfigPipeline, FieldBaseUrlGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
-    },
-    transformations::TypeMerger,
+use super::json::{
+    ConfigPipeline, FieldBaseUrlGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
 };
-use crate::core::config::Config;
+use crate::core::{
+    config::{
+        transformer::{Transform, TypeMerger},
+        Config,
+    },
+    valid::Validator,
+};
 
 pub struct ConfigGenerationRequest {
     url: Url,
@@ -68,17 +71,18 @@ pub fn from_json(
         }
     }
 
-    step_config_gen = step_config_gen
-        .then(SchemaGenerator::new(
-            Some(query.to_string()),
-            url_for_schema,
-        ))
-        .then(TypeMerger::new(0.88));
+    step_config_gen = step_config_gen.then(SchemaGenerator::new(
+        Some(query.to_string()),
+        url_for_schema,
+    ));
 
     let mut config = step_config_gen.get()?;
 
+
     let unused_types = config.unused_types();
     config = config.remove_types(unused_types);
+
+    config = TypeMerger::new(0.8).transform(config).to_result()?;
 
     Ok(config)
 }
