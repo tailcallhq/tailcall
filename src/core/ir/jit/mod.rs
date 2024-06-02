@@ -7,6 +7,8 @@
 ///    made.
 
 mod model {
+    use async_graphql::parser::types::ExecutableDocument;
+
     use crate::core::ir::IR;
 
     pub enum Type {
@@ -50,6 +52,15 @@ mod model {
 
     pub struct QueryBlueprint {
         pub fields: Vec<Field<Parent>>,
+    }
+
+    impl From<ExecutableDocument> for QueryBlueprint {
+        fn from(value: ExecutableDocument) -> Self {
+            // TODO: @ssddOnTop
+            // 1. Handle all edge-cases
+            // 2. Add unit tests
+            todo!()
+        }
     }
 }
 
@@ -161,7 +172,7 @@ mod executor {
 }
 
 mod synth {
-    use serde_json_borrow::Map;
+
     pub use serde_json_borrow::*;
 
     use super::cache::Cache;
@@ -177,7 +188,7 @@ mod synth {
             Synth { blueprint, cache: Cache::empty() }
         }
 
-        pub fn synthesize<'a>(&'a self) -> Value<'a> {
+        pub fn synthesize(&self) -> Value<'_> {
             let mut object = ObjectAsVec::default();
 
             let root_fields = self.blueprint.fields.iter().filter(|a| a.refs.is_none());
@@ -185,11 +196,8 @@ mod synth {
             for root_field in root_fields {
                 let key = &root_field.name;
                 let id = root_field.id.to_owned();
-                match self.cache.get(id) {
-                    Some(value) => {
-                        object.insert(key, value.get_value().to_owned());
-                    }
-                    None => (),
+                if let Some(value) = self.cache.get(id) {
+                    object.insert(key, value.get_value().to_owned());
                 }
             }
 
