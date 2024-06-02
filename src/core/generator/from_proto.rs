@@ -283,6 +283,7 @@ mod test {
 
     use crate::core::config::transformer::{AmbiguousType, Transform};
     use crate::core::config::Config;
+    use crate::core::generator::from_proto::from_proto;
     use crate::core::valid::Validator;
 
     fn from_proto_resolved(files: &[FileDescriptorSet], query: &str) -> Result<Config> {

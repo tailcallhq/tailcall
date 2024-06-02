@@ -42,15 +42,15 @@ pub fn compile_http(
                 .iter()
                 .map(|key_value| (key_value.key.clone(), key_value.value.clone()))
                 .collect();
-            let output_schema = to_json_schema_for_field(field, config_module);
-            let input_schema = to_json_schema_for_args(&field.args, config_module);
+            // let output_schema = to_json_schema_for_field(field, config_module);
+            // let input_schema = to_json_schema_for_args(&field.args, config_module);
 
             RequestTemplate::try_from(
                 Endpoint::new(base_url.to_string())
                     .method(http.method.clone())
                     .query(query)
-                    .output(output_schema)
-                    .input(input_schema)
+                    // .output(output_schema)
+                    // .input(input_schema)
                     .body(http.body.clone())
                     .encoding(http.encoding.clone()),
             )

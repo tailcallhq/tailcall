@@ -11,7 +11,7 @@ fn schema_type_to_string(typ: &SchemaType) -> String {
     let typ_str = match typ {
         SchemaType::Boolean => "Boolean",
         SchemaType::Integer => "Int",
-        SchemaType::Number => "Number",
+        SchemaType::Number => "Int",
         SchemaType::String => "String",
         SchemaType::Array => "Array",
         SchemaType::Object => "Object",
@@ -331,7 +331,7 @@ impl OpenApiToGraphQLConverter {
                 path = re
                     .replacen(path.as_str(), 0, |cap: &regex::Captures| {
                         let arg_name = &cap[0][1..cap[0].len() - 1];
-                        format!("{{{{args.{}}}}}", arg_name)
+                        format!("{{{{args.{}}}}}", arg_name.to_case(Case::Camel))
                     })
                     .to_string();
             }
@@ -401,15 +401,15 @@ mod tests {
 
     #[test]
     fn test_config_from_openapi_spec() {
-        let spec_folder_path = Path::new("src").join("generator").join("openapi");
+        let spec_folder_path = Path::new("src").join("core").join("generator").join("openapi");
 
         for spec_path in fs::read_dir(spec_folder_path).unwrap() {
             let spec_path = spec_path.unwrap().path();
             let content = fs::read_to_string(&spec_path).unwrap();
             insta::assert_snapshot!(OpenApiToGraphQLConverter::new(content.as_str())
-                .unwrap()
-                .convert()
-                .to_sdl());
+            .unwrap()
+            .convert()
+            .to_sdl());
         }
     }
 }
