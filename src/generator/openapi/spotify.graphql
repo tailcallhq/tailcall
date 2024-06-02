@@ -1,4 +1,4 @@
-schema @server @upstream(baseURL: "http://api.spotify.com/v1", allowedHeaders: ["authorization", "host"]) {
+schema @server @upstream(baseURL: "https://api.spotify.com/v1", allowedHeaders: ["Authorization"]) {
 query: Query
 }
 
