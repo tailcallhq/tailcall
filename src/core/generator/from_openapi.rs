@@ -1,10 +1,10 @@
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, HashSet, VecDeque};
 
 use convert_case::{Case, Casing};
 use oas3::spec::{ObjectOrReference, SchemaType};
 use oas3::{Schema, Spec};
 
-use crate::core::config::{Arg, Config, Enum, Field, Http, RootSchema, Type, Union, Upstream};
+use crate::core::config::{Arg, Config, Enum, Field, Http, KeyValue, RootSchema, Type, Union, Upstream};
 use crate::core::http::Method;
 
 fn schema_type_to_string(typ: &SchemaType) -> String {
@@ -326,21 +326,33 @@ impl OpenApiToGraphQLConverter {
                 )
                 .into_tuple();
 
+            let mut url_params = HashSet::new();
             if !args.is_empty() {
                 let re = regex::Regex::new(r"\{\w+\}").unwrap();
                 path = re
                     .replacen(path.as_str(), 0, |cap: &regex::Captures| {
                         let arg_name = &cap[0][1..cap[0].len() - 1];
+                        url_params.insert(arg_name.to_string());
                         format!("{{{{args.{}}}}}", arg_name.to_case(Case::Camel))
                     })
                     .to_string();
             }
 
+            let query_params = args
+                .iter()
+                .filter_map(|(key, _)| (!url_params.contains(key))
+                    .then(|| KeyValue {
+                        key: key.to_string(),
+                        value: format!("{{{{args.{}}}}}", key.to_case(Case::Camel))
+                    })
+                )
+                .collect();
+
             let field = Field {
                 type_of: name,
                 list: is_list,
                 args,
-                http: Some(Http { path, method, ..Default::default() }),
+                http: Some(Http { path, method, query: query_params, ..Default::default() }),
                 doc: operation.description,
                 ..Default::default()
             };

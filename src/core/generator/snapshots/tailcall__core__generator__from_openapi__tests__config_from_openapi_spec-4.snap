@@ -1587,70 +1587,70 @@ type Query {
   Check to see if the current user is following one or more artists or other Spotify users.
 
   """
-  checkCurrentUserFollows(ids: String!, type: String!): [Boolean] @http(path: "/me/following/contains")
+  checkCurrentUserFollows(ids: String!, type: String!): [Boolean] @http(path: "/me/following/contains", query: [{key: "ids", value: "{{args.ids}}"}, {key: "type", value: "{{args.type}}"}])
   """
   Check to see if one or more Spotify users are following a specified playlist.
 
   """
-  checkIfUserFollowsPlaylist(ids: String!, playlistId: String!): [Boolean] @http(path: "/playlists/{{args.playlistId}}/followers/contains")
+  checkIfUserFollowsPlaylist(ids: String!, playlistId: String!): [Boolean] @http(path: "/playlists/{{args.playlistId}}/followers/contains", query: [{key: "ids", value: "{{args.ids}}"}, {key: "playlistId", value: "{{args.playlistId}}"}])
   """
   Check if one or more albums is already saved in the current Spotify user's 'Your Music' library.
 
   """
-  checkUsersSavedAlbums(ids: String!): [Boolean] @http(path: "/me/albums/contains")
+  checkUsersSavedAlbums(ids: String!): [Boolean] @http(path: "/me/albums/contains", query: [{key: "ids", value: "{{args.ids}}"}])
   """
   Check if one or more audiobooks are already saved in the current Spotify user's library.
 
   """
-  checkUsersSavedAudiobooks(ids: String!): [Boolean] @http(path: "/me/audiobooks/contains")
+  checkUsersSavedAudiobooks(ids: String!): [Boolean] @http(path: "/me/audiobooks/contains", query: [{key: "ids", value: "{{args.ids}}"}])
   """
   Check if one or more episodes is already saved in the current Spotify user's 'Your Episodes' library.<br/>
 This API endpoint is in __beta__ and could change without warning. Please share any feedback that you have, or issues that you discover, in our [developer community forum](https://community.spotify.com/t5/Spotify-for-Developers/bd-p/Spotify_Developer)..
 
   """
-  checkUsersSavedEpisodes(ids: String!): [Boolean] @http(path: "/me/episodes/contains")
+  checkUsersSavedEpisodes(ids: String!): [Boolean] @http(path: "/me/episodes/contains", query: [{key: "ids", value: "{{args.ids}}"}])
   """
   Check if one or more shows is already saved in the current Spotify user's library.
 
   """
-  checkUsersSavedShows(ids: String!): [Boolean] @http(path: "/me/shows/contains")
+  checkUsersSavedShows(ids: String!): [Boolean] @http(path: "/me/shows/contains", query: [{key: "ids", value: "{{args.ids}}"}])
   """
   Check if one or more tracks is already saved in the current Spotify user's 'Your Music' library.
 
   """
-  checkUsersSavedTracks(ids: String!): [Boolean] @http(path: "/me/tracks/contains")
+  checkUsersSavedTracks(ids: String!): [Boolean] @http(path: "/me/tracks/contains", query: [{key: "ids", value: "{{args.ids}}"}])
   """
   Get a list of Spotify playlists tagged with a particular category.
 
   """
-  getACategoriesPlaylists(categoryId: String!, limit: Int, offset: Int): PagingFeaturedPlaylistObject @http(path: "/browse/categories/{{args.categoryId}}/playlists")
+  getACategoriesPlaylists(categoryId: String!, limit: Int, offset: Int): PagingFeaturedPlaylistObject @http(path: "/browse/categories/{{args.categoryId}}/playlists", query: [{key: "categoryId", value: "{{args.categoryId}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get a single category used to tag items in Spotify (on, for example, the Spotify player’s “Browse” tab).
 
   """
-  getACategory(categoryId: String!, locale: String): CategoryObject @http(path: "/browse/categories/{{args.categoryId}}")
+  getACategory(categoryId: String!, locale: String): CategoryObject @http(path: "/browse/categories/{{args.categoryId}}", query: [{key: "categoryId", value: "{{args.categoryId}}"}, {key: "locale", value: "{{args.locale}}"}])
   """
   Get Spotify catalog information for a single audiobook chapter. Chapters are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
 
   """
-  getAChapter(id: String!, market: String): ChapterObject @http(path: "/chapters/{{args.id}}")
+  getAChapter(id: String!, market: String): ChapterObject @http(path: "/chapters/{{args.id}}", query: [{key: "market", value: "{{args.market}}"}])
   """
   Get a list of the playlists owned or followed by the current Spotify
 user.
 
   """
-  getAListOfCurrentUsersPlaylists(limit: Int, offset: Int): PagingPlaylistObject @http(path: "/me/playlists")
+  getAListOfCurrentUsersPlaylists(limit: Int, offset: Int): PagingPlaylistObject @http(path: "/me/playlists", query: [{key: "limit", value: "{{args.limit}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get Spotify catalog information for a single show identified by its
 unique Spotify ID.
 
   """
-  getAShow(id: String!, market: String): ShowObject @http(path: "/shows/{{args.id}}")
+  getAShow(id: String!, market: String): ShowObject @http(path: "/shows/{{args.id}}", query: [{key: "market", value: "{{args.market}}"}])
   """
   Get Spotify catalog information about an show’s episodes. Optional parameters can be used to limit the number of episodes returned.
 
   """
-  getAShowsEpisodes(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedEpisodeObject @http(path: "/shows/{{args.id}}/episodes")
+  getAShowsEpisodes(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedEpisodeObject @http(path: "/shows/{{args.id}}/episodes", query: [{key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get information about a user’s available Spotify Connect devices. Some device models are not supported and will not be listed in the API response.
 
@@ -1660,13 +1660,13 @@ unique Spotify ID.
   Get Spotify catalog information for a single album.
 
   """
-  getAnAlbum(id: String!, market: String): AlbumObject @http(path: "/albums/{{args.id}}")
+  getAnAlbum(id: String!, market: String): AlbumObject @http(path: "/albums/{{args.id}}", query: [{key: "market", value: "{{args.market}}"}])
   """
   Get Spotify catalog information about an album’s tracks.
 Optional parameters can be used to limit the number of tracks returned.
 
   """
-  getAnAlbumsTracks(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedTrackObject @http(path: "/albums/{{args.id}}/tracks")
+  getAnAlbumsTracks(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedTrackObject @http(path: "/albums/{{args.id}}/tracks", query: [{key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get Spotify catalog information for a single artist identified by their unique Spotify ID.
 
@@ -1676,7 +1676,7 @@ Optional parameters can be used to limit the number of tracks returned.
   Get Spotify catalog information about an artist's albums.
 
   """
-  getAnArtistsAlbums(id: String!, includeGroups: String, limit: Int, market: String, offset: Int): PagingArtistDiscographyAlbumObject @http(path: "/artists/{{args.id}}/albums")
+  getAnArtistsAlbums(id: String!, includeGroups: String, limit: Int, market: String, offset: Int): PagingArtistDiscographyAlbumObject @http(path: "/artists/{{args.id}}/albums", query: [{key: "includeGroups", value: "{{args.includeGroups}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get Spotify catalog information about artists similar to a given artist. Similarity is based on analysis of the Spotify community's listening history.
 
@@ -1686,18 +1686,18 @@ Optional parameters can be used to limit the number of tracks returned.
   Get Spotify catalog information about an artist's top tracks by country.
 
   """
-  getAnArtistsTopTracks(id: String!, market: String): Type3 @http(path: "/artists/{{args.id}}/top-tracks")
+  getAnArtistsTopTracks(id: String!, market: String): Type3 @http(path: "/artists/{{args.id}}/top-tracks", query: [{key: "market", value: "{{args.market}}"}])
   """
   Get Spotify catalog information for a single audiobook. Audiobooks are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
 
   """
-  getAnAudiobook(id: String!, market: String): AudiobookObject @http(path: "/audiobooks/{{args.id}}")
+  getAnAudiobook(id: String!, market: String): AudiobookObject @http(path: "/audiobooks/{{args.id}}", query: [{key: "market", value: "{{args.market}}"}])
   """
   Get Spotify catalog information for a single episode identified by its
 unique Spotify ID.
 
   """
-  getAnEpisode(id: String!, market: String): EpisodeObject @http(path: "/episodes/{{args.id}}")
+  getAnEpisode(id: String!, market: String): EpisodeObject @http(path: "/episodes/{{args.id}}", query: [{key: "market", value: "{{args.market}}"}])
   """
   Get a low-level audio analysis for a track in the Spotify catalog. The audio analysis describes the track’s structure and musical content, including rhythm, pitch, and timbre.
 
@@ -1713,7 +1713,7 @@ Spotify ID.
   Get Spotify catalog information about an audiobook's chapters. Audiobooks are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
 
   """
-  getAudiobookChapters(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedChapterObject @http(path: "/audiobooks/{{args.id}}/chapters")
+  getAudiobookChapters(id: String!, limit: Int, market: String, offset: Int): PagingSimplifiedChapterObject @http(path: "/audiobooks/{{args.id}}/chapters", query: [{key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get the list of markets where Spotify is available.
 
@@ -1723,7 +1723,7 @@ Spotify ID.
   Get a list of categories used to tag items in Spotify (on, for example, the Spotify player’s “Browse” tab).
 
   """
-  getCategories(limit: Int, locale: String, offset: Int): Type6 @http(path: "/browse/categories")
+  getCategories(limit: Int, locale: String, offset: Int): Type6 @http(path: "/browse/categories", query: [{key: "limit", value: "{{args.limit}}"}, {key: "locale", value: "{{args.locale}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get detailed profile information about the current user (including the
 current user's username).
@@ -1734,67 +1734,67 @@ current user's username).
   Get a list of Spotify featured playlists (shown, for example, on a Spotify player's 'Browse' tab).
 
   """
-  getFeaturedPlaylists(limit: Int, locale: String, offset: Int): PagingFeaturedPlaylistObject @http(path: "/browse/featured-playlists")
+  getFeaturedPlaylists(limit: Int, locale: String, offset: Int): PagingFeaturedPlaylistObject @http(path: "/browse/featured-playlists", query: [{key: "limit", value: "{{args.limit}}"}, {key: "locale", value: "{{args.locale}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get the current user's followed artists.
 
   """
-  getFollowed(after: String, limit: Int, type: String!): Type11 @http(path: "/me/following")
+  getFollowed(after: String, limit: Int, type: String!): Type11 @http(path: "/me/following", query: [{key: "after", value: "{{args.after}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "type", value: "{{args.type}}"}])
   """
   Get information about the user’s current playback state, including track or episode, progress, and active device.
 
   """
-  getInformationAboutTheUsersCurrentPlayback(additionalTypes: String, market: String): CurrentlyPlayingContextObject @http(path: "/me/player")
+  getInformationAboutTheUsersCurrentPlayback(additionalTypes: String, market: String): CurrentlyPlayingContextObject @http(path: "/me/player", query: [{key: "additionalTypes", value: "{{args.additionalTypes}}"}, {key: "market", value: "{{args.market}}"}])
   """
   Get a list of the playlists owned or followed by a Spotify user.
 
   """
-  getListUsersPlaylists(limit: Int, offset: Int, userId: String!): PagingPlaylistObject @http(path: "/users/{{args.userId}}/playlists")
+  getListUsersPlaylists(limit: Int, offset: Int, userId: String!): PagingPlaylistObject @http(path: "/users/{{args.userId}}/playlists", query: [{key: "limit", value: "{{args.limit}}"}, {key: "offset", value: "{{args.offset}}"}, {key: "userId", value: "{{args.userId}}"}])
   """
   Get Spotify catalog information for multiple albums identified by their Spotify IDs.
 
   """
-  getMultipleAlbums(ids: String!, market: String): Type0 @http(path: "/albums")
+  getMultipleAlbums(ids: String!, market: String): Type0 @http(path: "/albums", query: [{key: "ids", value: "{{args.ids}}"}, {key: "market", value: "{{args.market}}"}])
   """
   Get Spotify catalog information for several artists based on their Spotify IDs.
 
   """
-  getMultipleArtists(ids: String!): Type1 @http(path: "/artists")
+  getMultipleArtists(ids: String!): Type1 @http(path: "/artists", query: [{key: "ids", value: "{{args.ids}}"}])
   """
   Get Spotify catalog information for several audiobooks identified by their Spotify IDs. Audiobooks are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
 
   """
-  getMultipleAudiobooks(ids: String!, market: String): Type5 @http(path: "/audiobooks")
+  getMultipleAudiobooks(ids: String!, market: String): Type5 @http(path: "/audiobooks", query: [{key: "ids", value: "{{args.ids}}"}, {key: "market", value: "{{args.market}}"}])
   """
   Get Spotify catalog information for several episodes based on their Spotify IDs.
 
   """
-  getMultipleEpisodes(ids: String!, market: String): Type9 @http(path: "/episodes")
+  getMultipleEpisodes(ids: String!, market: String): Type9 @http(path: "/episodes", query: [{key: "ids", value: "{{args.ids}}"}, {key: "market", value: "{{args.market}}"}])
   """
   Get Spotify catalog information for several shows based on their Spotify IDs.
 
   """
-  getMultipleShows(ids: String!, market: String): Type15 @http(path: "/shows")
+  getMultipleShows(ids: String!, market: String): Type15 @http(path: "/shows", query: [{key: "ids", value: "{{args.ids}}"}, {key: "market", value: "{{args.market}}"}])
   """
   Get a list of new album releases featured in Spotify (shown, for example, on a Spotify player’s “Browse” tab).
 
   """
-  getNewReleases(limit: Int, offset: Int): Type7 @http(path: "/browse/new-releases")
+  getNewReleases(limit: Int, offset: Int): Type7 @http(path: "/browse/new-releases", query: [{key: "limit", value: "{{args.limit}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get a playlist owned by a Spotify user.
 
   """
-  getPlaylist(additionalTypes: String, fields: String, market: String, playlistId: String!): PlaylistObject @http(path: "/playlists/{{args.playlistId}}")
+  getPlaylist(additionalTypes: String, fields: String, market: String, playlistId: String!): PlaylistObject @http(path: "/playlists/{{args.playlistId}}", query: [{key: "additionalTypes", value: "{{args.additionalTypes}}"}, {key: "fields", value: "{{args.fields}}"}, {key: "market", value: "{{args.market}}"}, {key: "playlistId", value: "{{args.playlistId}}"}])
   """
   Get the current image associated with a specific playlist.
 
   """
-  getPlaylistCover(playlistId: String!): [ImageObject] @http(path: "/playlists/{{args.playlistId}}/images")
+  getPlaylistCover(playlistId: String!): [ImageObject] @http(path: "/playlists/{{args.playlistId}}/images", query: [{key: "playlistId", value: "{{args.playlistId}}"}])
   """
   Get full details of the items of a playlist owned by a Spotify user.
 
   """
-  getPlaylistsTracks(additionalTypes: String, fields: String, limit: Int, market: String, offset: Int, playlistId: String!): PagingPlaylistTrackObject @http(path: "/playlists/{{args.playlistId}}/tracks")
+  getPlaylistsTracks(additionalTypes: String, fields: String, limit: Int, market: String, offset: Int, playlistId: String!): PagingPlaylistTrackObject @http(path: "/playlists/{{args.playlistId}}/tracks", query: [{key: "additionalTypes", value: "{{args.additionalTypes}}"}, {key: "fields", value: "{{args.fields}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}, {key: "playlistId", value: "{{args.playlistId}}"}])
   """
   Get the list of objects that make up the user's queue.
 
@@ -1805,7 +1805,7 @@ current user's username).
 _**Note**: Currently doesn't support podcast episodes._
 
   """
-  getRecentlyPlayed(after: Int, before: Int, limit: Int): CursorPagingPlayHistoryObject @http(path: "/me/player/recently-played")
+  getRecentlyPlayed(after: Int, before: Int, limit: Int): CursorPagingPlayHistoryObject @http(path: "/me/player/recently-played", query: [{key: "after", value: "{{args.after}}"}, {key: "before", value: "{{args.before}}"}, {key: "limit", value: "{{args.limit}}"}])
   """
   Retrieve a list of available genres seed parameter values for [recommendations](/documentation/web-api/reference/get-recommendations).
 
@@ -1817,80 +1817,80 @@ _**Note**: Currently doesn't support podcast episodes._
 For artists and tracks that are very new or obscure there might not be enough data to generate a list of tracks.
 
   """
-  getRecommendations(limit: Int, market: String, maxAcousticness: Int, maxDanceability: Int, maxDurationMs: Int, maxEnergy: Int, maxInstrumentalness: Int, maxKey: Int, maxLiveness: Int, maxLoudness: Int, maxMode: Int, maxPopularity: Int, maxSpeechiness: Int, maxTempo: Int, maxTimeSignature: Int, maxValence: Int, minAcousticness: Int, minDanceability: Int, minDurationMs: Int, minEnergy: Int, minInstrumentalness: Int, minKey: Int, minLiveness: Int, minLoudness: Int, minMode: Int, minPopularity: Int, minSpeechiness: Int, minTempo: Int, minTimeSignature: Int, minValence: Int, seedArtists: String, seedGenres: String, seedTracks: String, targetAcousticness: Int, targetDanceability: Int, targetDurationMs: Int, targetEnergy: Int, targetInstrumentalness: Int, targetKey: Int, targetLiveness: Int, targetLoudness: Int, targetMode: Int, targetPopularity: Int, targetSpeechiness: Int, targetTempo: Int, targetTimeSignature: Int, targetValence: Int): RecommendationsObject @http(path: "/recommendations")
+  getRecommendations(limit: Int, market: String, maxAcousticness: Int, maxDanceability: Int, maxDurationMs: Int, maxEnergy: Int, maxInstrumentalness: Int, maxKey: Int, maxLiveness: Int, maxLoudness: Int, maxMode: Int, maxPopularity: Int, maxSpeechiness: Int, maxTempo: Int, maxTimeSignature: Int, maxValence: Int, minAcousticness: Int, minDanceability: Int, minDurationMs: Int, minEnergy: Int, minInstrumentalness: Int, minKey: Int, minLiveness: Int, minLoudness: Int, minMode: Int, minPopularity: Int, minSpeechiness: Int, minTempo: Int, minTimeSignature: Int, minValence: Int, seedArtists: String, seedGenres: String, seedTracks: String, targetAcousticness: Int, targetDanceability: Int, targetDurationMs: Int, targetEnergy: Int, targetInstrumentalness: Int, targetKey: Int, targetLiveness: Int, targetLoudness: Int, targetMode: Int, targetPopularity: Int, targetSpeechiness: Int, targetTempo: Int, targetTimeSignature: Int, targetValence: Int): RecommendationsObject @http(path: "/recommendations", query: [{key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "maxAcousticness", value: "{{args.maxAcousticness}}"}, {key: "maxDanceability", value: "{{args.maxDanceability}}"}, {key: "maxDurationMs", value: "{{args.maxDurationMs}}"}, {key: "maxEnergy", value: "{{args.maxEnergy}}"}, {key: "maxInstrumentalness", value: "{{args.maxInstrumentalness}}"}, {key: "maxKey", value: "{{args.maxKey}}"}, {key: "maxLiveness", value: "{{args.maxLiveness}}"}, {key: "maxLoudness", value: "{{args.maxLoudness}}"}, {key: "maxMode", value: "{{args.maxMode}}"}, {key: "maxPopularity", value: "{{args.maxPopularity}}"}, {key: "maxSpeechiness", value: "{{args.maxSpeechiness}}"}, {key: "maxTempo", value: "{{args.maxTempo}}"}, {key: "maxTimeSignature", value: "{{args.maxTimeSignature}}"}, {key: "maxValence", value: "{{args.maxValence}}"}, {key: "minAcousticness", value: "{{args.minAcousticness}}"}, {key: "minDanceability", value: "{{args.minDanceability}}"}, {key: "minDurationMs", value: "{{args.minDurationMs}}"}, {key: "minEnergy", value: "{{args.minEnergy}}"}, {key: "minInstrumentalness", value: "{{args.minInstrumentalness}}"}, {key: "minKey", value: "{{args.minKey}}"}, {key: "minLiveness", value: "{{args.minLiveness}}"}, {key: "minLoudness", value: "{{args.minLoudness}}"}, {key: "minMode", value: "{{args.minMode}}"}, {key: "minPopularity", value: "{{args.minPopularity}}"}, {key: "minSpeechiness", value: "{{args.minSpeechiness}}"}, {key: "minTempo", value: "{{args.minTempo}}"}, {key: "minTimeSignature", value: "{{args.minTimeSignature}}"}, {key: "minValence", value: "{{args.minValence}}"}, {key: "seedArtists", value: "{{args.seedArtists}}"}, {key: "seedGenres", value: "{{args.seedGenres}}"}, {key: "seedTracks", value: "{{args.seedTracks}}"}, {key: "targetAcousticness", value: "{{args.targetAcousticness}}"}, {key: "targetDanceability", value: "{{args.targetDanceability}}"}, {key: "targetDurationMs", value: "{{args.targetDurationMs}}"}, {key: "targetEnergy", value: "{{args.targetEnergy}}"}, {key: "targetInstrumentalness", value: "{{args.targetInstrumentalness}}"}, {key: "targetKey", value: "{{args.targetKey}}"}, {key: "targetLiveness", value: "{{args.targetLiveness}}"}, {key: "targetLoudness", value: "{{args.targetLoudness}}"}, {key: "targetMode", value: "{{args.targetMode}}"}, {key: "targetPopularity", value: "{{args.targetPopularity}}"}, {key: "targetSpeechiness", value: "{{args.targetSpeechiness}}"}, {key: "targetTempo", value: "{{args.targetTempo}}"}, {key: "targetTimeSignature", value: "{{args.targetTimeSignature}}"}, {key: "targetValence", value: "{{args.targetValence}}"}])
   """
   Get audio features for multiple tracks based on their Spotify IDs.
 
   """
-  getSeveralAudioFeatures(ids: String!): Type4 @http(path: "/audio-features")
+  getSeveralAudioFeatures(ids: String!): Type4 @http(path: "/audio-features", query: [{key: "ids", value: "{{args.ids}}"}])
   """
   Get Spotify catalog information for several audiobook chapters identified by their Spotify IDs. Chapters are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
 
   """
-  getSeveralChapters(ids: String!, market: String): Type8 @http(path: "/chapters")
+  getSeveralChapters(ids: String!, market: String): Type8 @http(path: "/chapters", query: [{key: "ids", value: "{{args.ids}}"}, {key: "market", value: "{{args.market}}"}])
   """
   Get Spotify catalog information for multiple tracks based on their Spotify IDs.
 
   """
-  getSeveralTracks(ids: String!, market: String): Type16 @http(path: "/tracks")
+  getSeveralTracks(ids: String!, market: String): Type16 @http(path: "/tracks", query: [{key: "ids", value: "{{args.ids}}"}, {key: "market", value: "{{args.market}}"}])
   """
   Get the object currently being played on the user's Spotify account.
 
   """
-  getTheUsersCurrentlyPlayingTrack(additionalTypes: String, market: String): CurrentlyPlayingObject @http(path: "/me/player/currently-playing")
+  getTheUsersCurrentlyPlayingTrack(additionalTypes: String, market: String): CurrentlyPlayingObject @http(path: "/me/player/currently-playing", query: [{key: "additionalTypes", value: "{{args.additionalTypes}}"}, {key: "market", value: "{{args.market}}"}])
   """
   Get Spotify catalog information for a single track identified by its
 unique Spotify ID.
 
   """
-  getTrack(id: String!, market: String): TrackObject @http(path: "/tracks/{{args.id}}")
+  getTrack(id: String!, market: String): TrackObject @http(path: "/tracks/{{args.id}}", query: [{key: "market", value: "{{args.market}}"}])
   """
   Get public profile information about a Spotify user.
 
   """
-  getUsersProfile(userId: String!): PublicUserObject @http(path: "/users/{{args.userId}}")
+  getUsersProfile(userId: String!): PublicUserObject @http(path: "/users/{{args.userId}}", query: [{key: "userId", value: "{{args.userId}}"}])
   """
   Get a list of the albums saved in the current Spotify user's 'Your Music' library.
 
   """
-  getUsersSavedAlbums(limit: Int, market: String, offset: Int): PagingSavedAlbumObject @http(path: "/me/albums")
+  getUsersSavedAlbums(limit: Int, market: String, offset: Int): PagingSavedAlbumObject @http(path: "/me/albums", query: [{key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get a list of the audiobooks saved in the current Spotify user's 'Your Music' library.
 
   """
-  getUsersSavedAudiobooks(limit: Int, offset: Int): PagingSavedAudiobookObject @http(path: "/me/audiobooks")
+  getUsersSavedAudiobooks(limit: Int, offset: Int): PagingSavedAudiobookObject @http(path: "/me/audiobooks", query: [{key: "limit", value: "{{args.limit}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get a list of the episodes saved in the current Spotify user's library.<br/>
 This API endpoint is in __beta__ and could change without warning. Please share any feedback that you have, or issues that you discover, in our [developer community forum](https://community.spotify.com/t5/Spotify-for-Developers/bd-p/Spotify_Developer).
 
   """
-  getUsersSavedEpisodes(limit: Int, market: String, offset: Int): PagingSavedEpisodeObject @http(path: "/me/episodes")
+  getUsersSavedEpisodes(limit: Int, market: String, offset: Int): PagingSavedEpisodeObject @http(path: "/me/episodes", query: [{key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get a list of shows saved in the current Spotify user's library. Optional parameters can be used to limit the number of shows returned.
 
   """
-  getUsersSavedShows(limit: Int, offset: Int): PagingSavedShowObject @http(path: "/me/shows")
+  getUsersSavedShows(limit: Int, offset: Int): PagingSavedShowObject @http(path: "/me/shows", query: [{key: "limit", value: "{{args.limit}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get a list of the songs saved in the current Spotify user's 'Your Music' library.
 
   """
-  getUsersSavedTracks(limit: Int, market: String, offset: Int): PagingSavedTrackObject @http(path: "/me/tracks")
+  getUsersSavedTracks(limit: Int, market: String, offset: Int): PagingSavedTrackObject @http(path: "/me/tracks", query: [{key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}])
   """
   Get the current user's top artists based on calculated affinity.
 
   """
-  getUsersTopArtists(limit: Int, offset: Int, timeRange: String): PagingArtistObject @http(path: "/me/top/artists")
+  getUsersTopArtists(limit: Int, offset: Int, timeRange: String): PagingArtistObject @http(path: "/me/top/artists", query: [{key: "limit", value: "{{args.limit}}"}, {key: "offset", value: "{{args.offset}}"}, {key: "timeRange", value: "{{args.timeRange}}"}])
   """
   Get the current user's top tracks based on calculated affinity.
 
   """
-  getUsersTopTracks(limit: Int, offset: Int, timeRange: String): PagingTrackObject @http(path: "/me/top/tracks")
+  getUsersTopTracks(limit: Int, offset: Int, timeRange: String): PagingTrackObject @http(path: "/me/top/tracks", query: [{key: "limit", value: "{{args.limit}}"}, {key: "offset", value: "{{args.offset}}"}, {key: "timeRange", value: "{{args.timeRange}}"}])
   """
   Get Spotify catalog information about albums, artists, playlists, tracks, shows, episodes or audiobooks
 that match a keyword string. Audiobooks are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
 
   """
-  search(includeExternal: String, limit: Int, market: String, offset: Int, q: String!, type: [String]!): Type14 @http(path: "/search")
+  search(includeExternal: String, limit: Int, market: String, offset: Int, q: String!, type: [String]!): Type14 @http(path: "/search", query: [{key: "includeExternal", value: "{{args.includeExternal}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}, {key: "q", value: "{{args.q}}"}, {key: "type", value: "{{args.type}}"}])
 }
 
 type QueueObject {

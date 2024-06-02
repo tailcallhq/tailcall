@@ -18907,451 +18907,451 @@ type Query {
   """
   <p>Removes the currently applied discount on a subscription.</p>
   """
-  deleteSubscriptionsSubscriptionExposedIdDiscount(subscriptionExposedId: String!): DeletedDiscount @http(method: "DELETE", path: "/v1/subscriptions/{{args.subscriptionExposedId}}/discount")
+  deleteSubscriptionsSubscriptionExposedIdDiscount(subscriptionExposedId: String!): DeletedDiscount @http(method: "DELETE", path: "/v1/subscriptions/{{args.subscriptionExposedId}}/discount", query: [{key: "subscriptionExposedId", value: "{{args.subscriptionExposedId}}"}])
   """
   <p>Retrieves the details of an account.</p>
   """
-  getAccount(expand: [String]): Account @http(path: "/v1/account")
+  getAccount(expand: [String]): Account @http(path: "/v1/account", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of accounts connected to your platform via <a href="/docs/connect">Connect</a>. If you’re not a platform, the list is empty.</p>
   """
-  getAccounts(created: Type0, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type1 @http(path: "/v1/accounts")
+  getAccounts(created: Type0, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type1 @http(path: "/v1/accounts", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an account.</p>
   """
-  getAccountsAccount(account: String!, expand: [String]): Account @http(path: "/v1/accounts/{{args.account}}")
+  getAccountsAccount(account: String!, expand: [String]): Account @http(path: "/v1/accounts/{{args.account}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieve a specified external account for a given account.</p>
   """
-  getAccountsAccountBankAccountsId(account: String!, expand: [String], id: String!): ExternalAccount @http(path: "/v1/accounts/{{args.account}}/bank_accounts/{{args.id}}")
+  getAccountsAccountBankAccountsId(account: String!, expand: [String], id: String!): ExternalAccount @http(path: "/v1/accounts/{{args.account}}/bank_accounts/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of capabilities associated with the account. The capabilities are returned sorted by creation date, with the most recent capability appearing first.</p>
   """
-  getAccountsAccountCapabilities(account: String!, expand: [String]): Type2 @http(path: "/v1/accounts/{{args.account}}/capabilities")
+  getAccountsAccountCapabilities(account: String!, expand: [String]): Type2 @http(path: "/v1/accounts/{{args.account}}/capabilities", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves information about the specified Account Capability.</p>
   """
-  getAccountsAccountCapabilitiesCapability(account: String!, capability: String!, expand: [String]): Capability @http(path: "/v1/accounts/{{args.account}}/capabilities/{{args.capability}}")
+  getAccountsAccountCapabilitiesCapability(account: String!, capability: String!, expand: [String]): Capability @http(path: "/v1/accounts/{{args.account}}/capabilities/{{args.capability}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>List external accounts for an account.</p>
   """
-  getAccountsAccountExternalAccounts(account: String!, endingBefore: String, expand: [String], limit: Int, object: String, startingAfter: String): Type3 @http(path: "/v1/accounts/{{args.account}}/external_accounts")
+  getAccountsAccountExternalAccounts(account: String!, endingBefore: String, expand: [String], limit: Int, object: String, startingAfter: String): Type3 @http(path: "/v1/accounts/{{args.account}}/external_accounts", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "object", value: "{{args.object}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieve a specified external account for a given account.</p>
   """
-  getAccountsAccountExternalAccountsId(account: String!, expand: [String], id: String!): ExternalAccount @http(path: "/v1/accounts/{{args.account}}/external_accounts/{{args.id}}")
+  getAccountsAccountExternalAccountsId(account: String!, expand: [String], id: String!): ExternalAccount @http(path: "/v1/accounts/{{args.account}}/external_accounts/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of people associated with the account’s legal entity. The people are returned sorted by creation date, with the most recent people appearing first.</p>
   """
-  getAccountsAccountPeople(account: String!, endingBefore: String, expand: [String], limit: Int, relationship: Type4, startingAfter: String): Type5 @http(path: "/v1/accounts/{{args.account}}/people")
+  getAccountsAccountPeople(account: String!, endingBefore: String, expand: [String], limit: Int, relationship: Type4, startingAfter: String): Type5 @http(path: "/v1/accounts/{{args.account}}/people", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "relationship", value: "{{args.relationship}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves an existing person.</p>
   """
-  getAccountsAccountPeoplePerson(account: String!, expand: [String], person: String!): Person @http(path: "/v1/accounts/{{args.account}}/people/{{args.person}}")
+  getAccountsAccountPeoplePerson(account: String!, expand: [String], person: String!): Person @http(path: "/v1/accounts/{{args.account}}/people/{{args.person}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of people associated with the account’s legal entity. The people are returned sorted by creation date, with the most recent people appearing first.</p>
   """
-  getAccountsAccountPersons(account: String!, endingBefore: String, expand: [String], limit: Int, relationship: Type6, startingAfter: String): Type7 @http(path: "/v1/accounts/{{args.account}}/persons")
+  getAccountsAccountPersons(account: String!, endingBefore: String, expand: [String], limit: Int, relationship: Type6, startingAfter: String): Type7 @http(path: "/v1/accounts/{{args.account}}/persons", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "relationship", value: "{{args.relationship}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves an existing person.</p>
   """
-  getAccountsAccountPersonsPerson(account: String!, expand: [String], person: String!): Person @http(path: "/v1/accounts/{{args.account}}/persons/{{args.person}}")
+  getAccountsAccountPersonsPerson(account: String!, expand: [String], person: String!): Person @http(path: "/v1/accounts/{{args.account}}/persons/{{args.person}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>List apple pay domains.</p>
   """
-  getApplePayDomains(domainName: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type8 @http(path: "/v1/apple_pay/domains")
+  getApplePayDomains(domainName: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type8 @http(path: "/v1/apple_pay/domains", query: [{key: "domainName", value: "{{args.domainName}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieve an apple pay domain.</p>
   """
-  getApplePayDomainsDomain(domain: String!, expand: [String]): ApplePayDomain @http(path: "/v1/apple_pay/domains/{{args.domain}}")
+  getApplePayDomainsDomain(domain: String!, expand: [String]): ApplePayDomain @http(path: "/v1/apple_pay/domains/{{args.domain}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of application fees you’ve previously collected. The application fees are returned in sorted order, with the most recent fees appearing first.</p>
   """
-  getApplicationFees(charge: String, created: Type9, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type10 @http(path: "/v1/application_fees")
+  getApplicationFees(charge: String, created: Type9, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type10 @http(path: "/v1/application_fees", query: [{key: "charge", value: "{{args.charge}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>By default, you can see the 10 most recent refunds stored directly on the application fee object, but you can also retrieve details about a specific refund stored on the application fee.</p>
   """
-  getApplicationFeesFeeRefundsId(expand: [String], fee: String!, id: String!): FeeRefund @http(path: "/v1/application_fees/{{args.fee}}/refunds/{{args.id}}")
+  getApplicationFeesFeeRefundsId(expand: [String], fee: String!, id: String!): FeeRefund @http(path: "/v1/application_fees/{{args.fee}}/refunds/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves the details of an application fee that your account has collected. The same information is returned when refunding the application fee.</p>
   """
-  getApplicationFeesId(expand: [String], id: String!): ApplicationFee @http(path: "/v1/application_fees/{{args.id}}")
+  getApplicationFeesId(expand: [String], id: String!): ApplicationFee @http(path: "/v1/application_fees/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>You can see a list of the refunds belonging to a specific application fee. Note that the 10 most recent refunds are always available by default on the application fee object. If you need more than those 10, you can use this API method and the <code>limit</code> and <code>starting_after</code> parameters to page through additional refunds.</p>
   """
-  getApplicationFeesIdRefunds(endingBefore: String, expand: [String], id: String!, limit: Int, startingAfter: String): Type11 @http(path: "/v1/application_fees/{{args.id}}/refunds")
+  getApplicationFeesIdRefunds(endingBefore: String, expand: [String], id: String!, limit: Int, startingAfter: String): Type11 @http(path: "/v1/application_fees/{{args.id}}/refunds", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>List all secrets stored on the given scope.</p>
   """
-  getAppsSecrets(endingBefore: String, expand: [String], limit: Int, scope: Type12!, startingAfter: String): Type13 @http(path: "/v1/apps/secrets")
+  getAppsSecrets(endingBefore: String, expand: [String], limit: Int, scope: Type12!, startingAfter: String): Type13 @http(path: "/v1/apps/secrets", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "scope", value: "{{args.scope}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Finds a secret in the secret store by name and scope.</p>
   """
-  getAppsSecretsFind(expand: [String], name: String!, scope: Type14!): Apps.secret @http(path: "/v1/apps/secrets/find")
+  getAppsSecretsFind(expand: [String], name: String!, scope: Type14!): Apps.secret @http(path: "/v1/apps/secrets/find", query: [{key: "expand", value: "{{args.expand}}"}, {key: "name", value: "{{args.name}}"}, {key: "scope", value: "{{args.scope}}"}])
   """
   <p>Retrieves the current account balance, based on the authentication that was used to make the request.
  For a sample request, see <a href="/docs/connect/account-balances#accounting-for-negative-balances">Accounting for negative balances</a>.</p>
   """
-  getBalance(expand: [String]): Balance @http(path: "/v1/balance")
+  getBalance(expand: [String]): Balance @http(path: "/v1/balance", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of transactions that have contributed to the Stripe account balance (e.g., charges, transfers, and so forth). The transactions are returned in sorted order, with the most recent transactions appearing first.</p>
 
 <p>Note that this endpoint was previously called “Balance history” and used the path <code>/v1/balance/history</code>.</p>
   """
-  getBalanceHistory(created: Type15, currency: String, endingBefore: String, expand: [String], limit: Int, payout: String, source: String, startingAfter: String, type: String): Type16 @http(path: "/v1/balance/history")
+  getBalanceHistory(created: Type15, currency: String, endingBefore: String, expand: [String], limit: Int, payout: String, source: String, startingAfter: String, type: String): Type16 @http(path: "/v1/balance/history", query: [{key: "created", value: "{{args.created}}"}, {key: "currency", value: "{{args.currency}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "payout", value: "{{args.payout}}"}, {key: "source", value: "{{args.source}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "type", value: "{{args.type}}"}])
   """
   <p>Retrieves the balance transaction with the given ID.</p>
 
 <p>Note that this endpoint previously used the path <code>/v1/balance/history/:id</code>.</p>
   """
-  getBalanceHistoryId(expand: [String], id: String!): BalanceTransaction @http(path: "/v1/balance/history/{{args.id}}")
+  getBalanceHistoryId(expand: [String], id: String!): BalanceTransaction @http(path: "/v1/balance/history/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of transactions that have contributed to the Stripe account balance (e.g., charges, transfers, and so forth). The transactions are returned in sorted order, with the most recent transactions appearing first.</p>
 
 <p>Note that this endpoint was previously called “Balance history” and used the path <code>/v1/balance/history</code>.</p>
   """
-  getBalanceTransactions(created: Type17, currency: String, endingBefore: String, expand: [String], limit: Int, payout: String, source: String, startingAfter: String, type: String): Type18 @http(path: "/v1/balance_transactions")
+  getBalanceTransactions(created: Type17, currency: String, endingBefore: String, expand: [String], limit: Int, payout: String, source: String, startingAfter: String, type: String): Type18 @http(path: "/v1/balance_transactions", query: [{key: "created", value: "{{args.created}}"}, {key: "currency", value: "{{args.currency}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "payout", value: "{{args.payout}}"}, {key: "source", value: "{{args.source}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "type", value: "{{args.type}}"}])
   """
   <p>Retrieves the balance transaction with the given ID.</p>
 
 <p>Note that this endpoint previously used the path <code>/v1/balance/history/:id</code>.</p>
   """
-  getBalanceTransactionsId(expand: [String], id: String!): BalanceTransaction @http(path: "/v1/balance_transactions/{{args.id}}")
+  getBalanceTransactionsId(expand: [String], id: String!): BalanceTransaction @http(path: "/v1/balance_transactions/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieve a list of billing meters.</p>
   """
-  getBillingMeters(endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type19 @http(path: "/v1/billing/meters")
+  getBillingMeters(endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type19 @http(path: "/v1/billing/meters", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves a billing meter given an ID</p>
   """
-  getBillingMetersId(expand: [String], id: String!): Billing.meter @http(path: "/v1/billing/meters/{{args.id}}")
+  getBillingMetersId(expand: [String], id: String!): Billing.meter @http(path: "/v1/billing/meters/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieve a list of billing meter event summaries.</p>
   """
-  getBillingMetersIdEventSummaries(customer: String!, endTime: Int!, endingBefore: String, expand: [String], id: String!, limit: Int, startTime: Int!, startingAfter: String, valueGroupingWindow: String): Type20 @http(path: "/v1/billing/meters/{{args.id}}/event_summaries")
+  getBillingMetersIdEventSummaries(customer: String!, endTime: Int!, endingBefore: String, expand: [String], id: String!, limit: Int, startTime: Int!, startingAfter: String, valueGroupingWindow: String): Type20 @http(path: "/v1/billing/meters/{{args.id}}/event_summaries", query: [{key: "customer", value: "{{args.customer}}"}, {key: "endTime", value: "{{args.endTime}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startTime", value: "{{args.startTime}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "valueGroupingWindow", value: "{{args.valueGroupingWindow}}"}])
   """
   <p>Returns a list of configurations that describe the functionality of the customer portal.</p>
   """
-  getBillingPortalConfigurations(active: Boolean, endingBefore: String, expand: [String], isDefault: Boolean, limit: Int, startingAfter: String): Type21 @http(path: "/v1/billing_portal/configurations")
+  getBillingPortalConfigurations(active: Boolean, endingBefore: String, expand: [String], isDefault: Boolean, limit: Int, startingAfter: String): Type21 @http(path: "/v1/billing_portal/configurations", query: [{key: "active", value: "{{args.active}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "isDefault", value: "{{args.isDefault}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a configuration that describes the functionality of the customer portal.</p>
   """
-  getBillingPortalConfigurationsConfiguration(configuration: String!, expand: [String]): BillingPortal.configuration @http(path: "/v1/billing_portal/configurations/{{args.configuration}}")
+  getBillingPortalConfigurationsConfiguration(configuration: String!, expand: [String]): BillingPortal.configuration @http(path: "/v1/billing_portal/configurations/{{args.configuration}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of charges you’ve previously created. The charges are returned in sorted order, with the most recent charges appearing first.</p>
   """
-  getCharges(created: Type22, customer: String, endingBefore: String, expand: [String], limit: Int, paymentIntent: String, startingAfter: String, transferGroup: String): Type23 @http(path: "/v1/charges")
+  getCharges(created: Type22, customer: String, endingBefore: String, expand: [String], limit: Int, paymentIntent: String, startingAfter: String, transferGroup: String): Type23 @http(path: "/v1/charges", query: [{key: "created", value: "{{args.created}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "paymentIntent", value: "{{args.paymentIntent}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "transferGroup", value: "{{args.transferGroup}}"}])
   """
   <p>Retrieves the details of a charge that has previously been created. Supply the unique charge ID that was returned from your previous request, and Stripe will return the corresponding charge information. The same information is returned when creating or refunding the charge.</p>
   """
-  getChargesCharge(charge: String!, expand: [String]): Charge @http(path: "/v1/charges/{{args.charge}}")
+  getChargesCharge(charge: String!, expand: [String]): Charge @http(path: "/v1/charges/{{args.charge}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieve a dispute for a specified charge.</p>
   """
-  getChargesChargeDispute(charge: String!, expand: [String]): Dispute @http(path: "/v1/charges/{{args.charge}}/dispute")
+  getChargesChargeDispute(charge: String!, expand: [String]): Dispute @http(path: "/v1/charges/{{args.charge}}/dispute", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>You can see a list of the refunds belonging to a specific charge. Note that the 10 most recent refunds are always available by default on the charge object. If you need more than those 10, you can use this API method and the <code>limit</code> and <code>starting_after</code> parameters to page through additional refunds.</p>
   """
-  getChargesChargeRefunds(charge: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type25 @http(path: "/v1/charges/{{args.charge}}/refunds")
+  getChargesChargeRefunds(charge: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type25 @http(path: "/v1/charges/{{args.charge}}/refunds", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an existing refund.</p>
   """
-  getChargesChargeRefundsRefund(charge: String!, expand: [String], refund: String!): Refund @http(path: "/v1/charges/{{args.charge}}/refunds/{{args.refund}}")
+  getChargesChargeRefundsRefund(charge: String!, expand: [String], refund: String!): Refund @http(path: "/v1/charges/{{args.charge}}/refunds/{{args.refund}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Search for charges you’ve previously created using Stripe’s <a href="/docs/search#search-query-language">Search Query Language</a>.
 Don’t use search in read-after-write flows where strict consistency is necessary. Under normal operating
 conditions, data is searchable in less than a minute. Occasionally, propagation of new or updated data can be up
 to an hour behind during outages. Search functionality is not available to merchants in India.</p>
   """
-  getChargesSearch(expand: [String], limit: Int, page: String, query: String!): Type24 @http(path: "/v1/charges/search")
+  getChargesSearch(expand: [String], limit: Int, page: String, query: String!): Type24 @http(path: "/v1/charges/search", query: [{key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "page", value: "{{args.page}}"}, {key: "query", value: "{{args.query}}"}])
   """
   <p>Returns a list of Checkout Sessions.</p>
   """
-  getCheckoutSessions(created: Type26, customer: String, customerDetails: Type27, endingBefore: String, expand: [String], limit: Int, paymentIntent: String, paymentLink: String, startingAfter: String, status: String, subscription: String): Type28 @http(path: "/v1/checkout/sessions")
+  getCheckoutSessions(created: Type26, customer: String, customerDetails: Type27, endingBefore: String, expand: [String], limit: Int, paymentIntent: String, paymentLink: String, startingAfter: String, status: String, subscription: String): Type28 @http(path: "/v1/checkout/sessions", query: [{key: "created", value: "{{args.created}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "customerDetails", value: "{{args.customerDetails}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "paymentIntent", value: "{{args.paymentIntent}}"}, {key: "paymentLink", value: "{{args.paymentLink}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}, {key: "subscription", value: "{{args.subscription}}"}])
   """
   <p>Retrieves a Session object.</p>
   """
-  getCheckoutSessionsSession(expand: [String], session: String!): Checkout.session @http(path: "/v1/checkout/sessions/{{args.session}}")
+  getCheckoutSessionsSession(expand: [String], session: String!): Checkout.session @http(path: "/v1/checkout/sessions/{{args.session}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>When retrieving a Checkout Session, there is an includable <strong>line_items</strong> property containing the first handful of those items. There is also a URL where you can retrieve the full (paginated) list of line items.</p>
   """
-  getCheckoutSessionsSessionLineItems(endingBefore: String, expand: [String], limit: Int, session: String!, startingAfter: String): Type29 @http(path: "/v1/checkout/sessions/{{args.session}}/line_items")
+  getCheckoutSessionsSessionLineItems(endingBefore: String, expand: [String], limit: Int, session: String!, startingAfter: String): Type29 @http(path: "/v1/checkout/sessions/{{args.session}}/line_items", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Lists all Climate order objects. The orders are returned sorted by creation date, with the
 most recently created orders appearing first.</p>
   """
-  getClimateOrders(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type30 @http(path: "/v1/climate/orders")
+  getClimateOrders(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type30 @http(path: "/v1/climate/orders", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of a Climate order object with the given ID.</p>
   """
-  getClimateOrdersOrder(expand: [String], order: String!): Climate.order @http(path: "/v1/climate/orders/{{args.order}}")
+  getClimateOrdersOrder(expand: [String], order: String!): Climate.order @http(path: "/v1/climate/orders/{{args.order}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Lists all available Climate product objects.</p>
   """
-  getClimateProducts(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type31 @http(path: "/v1/climate/products")
+  getClimateProducts(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type31 @http(path: "/v1/climate/products", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of a Climate product with the given ID.</p>
   """
-  getClimateProductsProduct(expand: [String], product: String!): Climate.product @http(path: "/v1/climate/products/{{args.product}}")
+  getClimateProductsProduct(expand: [String], product: String!): Climate.product @http(path: "/v1/climate/products/{{args.product}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Lists all available Climate supplier objects.</p>
   """
-  getClimateSuppliers(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type32 @http(path: "/v1/climate/suppliers")
+  getClimateSuppliers(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type32 @http(path: "/v1/climate/suppliers", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a Climate supplier object.</p>
   """
-  getClimateSuppliersSupplier(expand: [String], supplier: String!): Climate.supplier @http(path: "/v1/climate/suppliers/{{args.supplier}}")
+  getClimateSuppliersSupplier(expand: [String], supplier: String!): Climate.supplier @http(path: "/v1/climate/suppliers/{{args.supplier}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves an existing ConfirmationToken object</p>
   """
-  getConfirmationTokensConfirmationToken(confirmationToken: String!, expand: [String]): ConfirmationToken @http(path: "/v1/confirmation_tokens/{{args.confirmationToken}}")
+  getConfirmationTokensConfirmationToken(confirmationToken: String!, expand: [String]): ConfirmationToken @http(path: "/v1/confirmation_tokens/{{args.confirmationToken}}", query: [{key: "confirmationToken", value: "{{args.confirmationToken}}"}, {key: "expand", value: "{{args.expand}}"}])
   """
   <p>Lists all Country Spec objects available in the API.</p>
   """
-  getCountrySpecs(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type33 @http(path: "/v1/country_specs")
+  getCountrySpecs(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type33 @http(path: "/v1/country_specs", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Returns a Country Spec for a given Country code.</p>
   """
-  getCountrySpecsCountry(country: String!, expand: [String]): CountrySpec @http(path: "/v1/country_specs/{{args.country}}")
+  getCountrySpecsCountry(country: String!, expand: [String]): CountrySpec @http(path: "/v1/country_specs/{{args.country}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of your coupons.</p>
   """
-  getCoupons(created: Type34, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type35 @http(path: "/v1/coupons")
+  getCoupons(created: Type34, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type35 @http(path: "/v1/coupons", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the coupon with the given ID.</p>
   """
-  getCouponsCoupon(coupon: String!, expand: [String]): Coupon @http(path: "/v1/coupons/{{args.coupon}}")
+  getCouponsCoupon(coupon: String!, expand: [String]): Coupon @http(path: "/v1/coupons/{{args.coupon}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of credit notes.</p>
   """
-  getCreditNotes(created: Type36, customer: String, endingBefore: String, expand: [String], invoice: String, limit: Int, startingAfter: String): Type37 @http(path: "/v1/credit_notes")
+  getCreditNotes(created: Type36, customer: String, endingBefore: String, expand: [String], invoice: String, limit: Int, startingAfter: String): Type37 @http(path: "/v1/credit_notes", query: [{key: "created", value: "{{args.created}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "invoice", value: "{{args.invoice}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>When retrieving a credit note, you’ll get a <strong>lines</strong> property containing the the first handful of those items. There is also a URL where you can retrieve the full (paginated) list of line items.</p>
   """
-  getCreditNotesCreditNoteLines(creditNote: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type43 @http(path: "/v1/credit_notes/{{args.creditNote}}/lines")
+  getCreditNotesCreditNoteLines(creditNote: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type43 @http(path: "/v1/credit_notes/{{args.creditNote}}/lines", query: [{key: "creditNote", value: "{{args.creditNote}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the credit note object with the given identifier.</p>
   """
-  getCreditNotesId(expand: [String], id: String!): CreditNote @http(path: "/v1/credit_notes/{{args.id}}")
+  getCreditNotesId(expand: [String], id: String!): CreditNote @http(path: "/v1/credit_notes/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Get a preview of a credit note without creating it.</p>
   """
-  getCreditNotesPreview(amount: Int, creditAmount: Int, effectiveAt: Int, expand: [String], invoice: String!, lines: [Type38], memo: String, metadata: JSON, outOfBandAmount: Int, reason: String, refund: String, refundAmount: Int, shippingCost: Type39): CreditNote @http(path: "/v1/credit_notes/preview")
+  getCreditNotesPreview(amount: Int, creditAmount: Int, effectiveAt: Int, expand: [String], invoice: String!, lines: [Type38], memo: String, metadata: JSON, outOfBandAmount: Int, reason: String, refund: String, refundAmount: Int, shippingCost: Type39): CreditNote @http(path: "/v1/credit_notes/preview", query: [{key: "amount", value: "{{args.amount}}"}, {key: "creditAmount", value: "{{args.creditAmount}}"}, {key: "effectiveAt", value: "{{args.effectiveAt}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "invoice", value: "{{args.invoice}}"}, {key: "lines", value: "{{args.lines}}"}, {key: "memo", value: "{{args.memo}}"}, {key: "metadata", value: "{{args.metadata}}"}, {key: "outOfBandAmount", value: "{{args.outOfBandAmount}}"}, {key: "reason", value: "{{args.reason}}"}, {key: "refund", value: "{{args.refund}}"}, {key: "refundAmount", value: "{{args.refundAmount}}"}, {key: "shippingCost", value: "{{args.shippingCost}}"}])
   """
   <p>When retrieving a credit note preview, you’ll get a <strong>lines</strong> property containing the first handful of those items. This URL you can retrieve the full (paginated) list of line items.</p>
   """
-  getCreditNotesPreviewLines(amount: Int, creditAmount: Int, effectiveAt: Int, endingBefore: String, expand: [String], invoice: String!, limit: Int, lines: [Type40], memo: String, metadata: JSON, outOfBandAmount: Int, reason: String, refund: String, refundAmount: Int, shippingCost: Type41, startingAfter: String): Type42 @http(path: "/v1/credit_notes/preview/lines")
+  getCreditNotesPreviewLines(amount: Int, creditAmount: Int, effectiveAt: Int, endingBefore: String, expand: [String], invoice: String!, limit: Int, lines: [Type40], memo: String, metadata: JSON, outOfBandAmount: Int, reason: String, refund: String, refundAmount: Int, shippingCost: Type41, startingAfter: String): Type42 @http(path: "/v1/credit_notes/preview/lines", query: [{key: "amount", value: "{{args.amount}}"}, {key: "creditAmount", value: "{{args.creditAmount}}"}, {key: "effectiveAt", value: "{{args.effectiveAt}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "invoice", value: "{{args.invoice}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "lines", value: "{{args.lines}}"}, {key: "memo", value: "{{args.memo}}"}, {key: "metadata", value: "{{args.metadata}}"}, {key: "outOfBandAmount", value: "{{args.outOfBandAmount}}"}, {key: "reason", value: "{{args.reason}}"}, {key: "refund", value: "{{args.refund}}"}, {key: "refundAmount", value: "{{args.refundAmount}}"}, {key: "shippingCost", value: "{{args.shippingCost}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Returns a list of your customers. The customers are returned sorted by creation date, with the most recent customers appearing first.</p>
   """
-  getCustomers(created: Type44, email: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String, testClock: String): Type45 @http(path: "/v1/customers")
+  getCustomers(created: Type44, email: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String, testClock: String): Type45 @http(path: "/v1/customers", query: [{key: "created", value: "{{args.created}}"}, {key: "email", value: "{{args.email}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "testClock", value: "{{args.testClock}}"}])
   """
   <p>Retrieves a Customer object.</p>
   """
-  getCustomersCustomer(customer: String!, expand: [String]): Type47 @http(path: "/v1/customers/{{args.customer}}")
+  getCustomersCustomer(customer: String!, expand: [String]): Type47 @http(path: "/v1/customers/{{args.customer}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of transactions that updated the customer’s <a href="/docs/billing/customer/balance">balances</a>.</p>
   """
-  getCustomersCustomerBalanceTransactions(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type48 @http(path: "/v1/customers/{{args.customer}}/balance_transactions")
+  getCustomersCustomerBalanceTransactions(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type48 @http(path: "/v1/customers/{{args.customer}}/balance_transactions", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a specific customer balance transaction that updated the customer’s <a href="/docs/billing/customer/balance">balances</a>.</p>
   """
-  getCustomersCustomerBalanceTransactionsTransaction(customer: String!, expand: [String], transaction: String!): CustomerBalanceTransaction @http(path: "/v1/customers/{{args.customer}}/balance_transactions/{{args.transaction}}")
+  getCustomersCustomerBalanceTransactionsTransaction(customer: String!, expand: [String], transaction: String!): CustomerBalanceTransaction @http(path: "/v1/customers/{{args.customer}}/balance_transactions/{{args.transaction}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>You can see a list of the bank accounts belonging to a Customer. Note that the 10 most recent sources are always available by default on the Customer. If you need more than those 10, you can use this API method and the <code>limit</code> and <code>starting_after</code> parameters to page through additional bank accounts.</p>
   """
-  getCustomersCustomerBankAccounts(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type49 @http(path: "/v1/customers/{{args.customer}}/bank_accounts")
+  getCustomersCustomerBankAccounts(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type49 @http(path: "/v1/customers/{{args.customer}}/bank_accounts", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>By default, you can see the 10 most recent sources stored on a Customer directly on the object, but you can also retrieve details about a specific bank account stored on the Stripe account.</p>
   """
-  getCustomersCustomerBankAccountsId(customer: String!, expand: [String], id: String!): BankAccount @http(path: "/v1/customers/{{args.customer}}/bank_accounts/{{args.id}}")
+  getCustomersCustomerBankAccountsId(customer: String!, expand: [String], id: String!): BankAccount @http(path: "/v1/customers/{{args.customer}}/bank_accounts/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>You can see a list of the cards belonging to a customer.
 Note that the 10 most recent sources are always available on the <code>Customer</code> object.
 If you need more than those 10, you can use this API method and the <code>limit</code> and <code>starting_after</code> parameters to page through additional cards.</p>
   """
-  getCustomersCustomerCards(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type50 @http(path: "/v1/customers/{{args.customer}}/cards")
+  getCustomersCustomerCards(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type50 @http(path: "/v1/customers/{{args.customer}}/cards", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>You can always see the 10 most recent cards directly on a customer; this method lets you retrieve details about a specific card stored on the customer.</p>
   """
-  getCustomersCustomerCardsId(customer: String!, expand: [String], id: String!): Card @http(path: "/v1/customers/{{args.customer}}/cards/{{args.id}}")
+  getCustomersCustomerCardsId(customer: String!, expand: [String], id: String!): Card @http(path: "/v1/customers/{{args.customer}}/cards/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves a customer’s cash balance.</p>
   """
-  getCustomersCustomerCashBalance(customer: String!, expand: [String]): CashBalance @http(path: "/v1/customers/{{args.customer}}/cash_balance")
+  getCustomersCustomerCashBalance(customer: String!, expand: [String]): CashBalance @http(path: "/v1/customers/{{args.customer}}/cash_balance", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of transactions that modified the customer’s <a href="/docs/payments/customer-balance">cash balance</a>.</p>
   """
-  getCustomersCustomerCashBalanceTransactions(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type51 @http(path: "/v1/customers/{{args.customer}}/cash_balance_transactions")
+  getCustomersCustomerCashBalanceTransactions(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type51 @http(path: "/v1/customers/{{args.customer}}/cash_balance_transactions", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a specific cash balance transaction, which updated the customer’s <a href="/docs/payments/customer-balance">cash balance</a>.</p>
   """
-  getCustomersCustomerCashBalanceTransactionsTransaction(customer: String!, expand: [String], transaction: String!): CustomerCashBalanceTransaction @http(path: "/v1/customers/{{args.customer}}/cash_balance_transactions/{{args.transaction}}")
+  getCustomersCustomerCashBalanceTransactionsTransaction(customer: String!, expand: [String], transaction: String!): CustomerCashBalanceTransaction @http(path: "/v1/customers/{{args.customer}}/cash_balance_transactions/{{args.transaction}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   
   """
-  getCustomersCustomerDiscount(customer: String!, expand: [String]): Discount @http(path: "/v1/customers/{{args.customer}}/discount")
+  getCustomersCustomerDiscount(customer: String!, expand: [String]): Discount @http(path: "/v1/customers/{{args.customer}}/discount", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of PaymentMethods for a given Customer</p>
   """
-  getCustomersCustomerPaymentMethods(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String, type: String): Type52 @http(path: "/v1/customers/{{args.customer}}/payment_methods")
+  getCustomersCustomerPaymentMethods(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String, type: String): Type52 @http(path: "/v1/customers/{{args.customer}}/payment_methods", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "type", value: "{{args.type}}"}])
   """
   <p>Retrieves a PaymentMethod object for a given Customer.</p>
   """
-  getCustomersCustomerPaymentMethodsPaymentMethod(customer: String!, expand: [String], paymentMethod: String!): PaymentMethod @http(path: "/v1/customers/{{args.customer}}/payment_methods/{{args.paymentMethod}}")
+  getCustomersCustomerPaymentMethodsPaymentMethod(customer: String!, expand: [String], paymentMethod: String!): PaymentMethod @http(path: "/v1/customers/{{args.customer}}/payment_methods/{{args.paymentMethod}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "paymentMethod", value: "{{args.paymentMethod}}"}])
   """
   <p>List sources for a specified customer.</p>
   """
-  getCustomersCustomerSources(customer: String!, endingBefore: String, expand: [String], limit: Int, object: String, startingAfter: String): Type53 @http(path: "/v1/customers/{{args.customer}}/sources")
+  getCustomersCustomerSources(customer: String!, endingBefore: String, expand: [String], limit: Int, object: String, startingAfter: String): Type53 @http(path: "/v1/customers/{{args.customer}}/sources", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "object", value: "{{args.object}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieve a specified source for a given customer.</p>
   """
-  getCustomersCustomerSourcesId(customer: String!, expand: [String], id: String!): PaymentSource @http(path: "/v1/customers/{{args.customer}}/sources/{{args.id}}")
+  getCustomersCustomerSourcesId(customer: String!, expand: [String], id: String!): PaymentSource @http(path: "/v1/customers/{{args.customer}}/sources/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>You can see a list of the customer’s active subscriptions. Note that the 10 most recent active subscriptions are always available by default on the customer object. If you need more than those 10, you can use the limit and starting_after parameters to page through additional subscriptions.</p>
   """
-  getCustomersCustomerSubscriptions(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type54 @http(path: "/v1/customers/{{args.customer}}/subscriptions")
+  getCustomersCustomerSubscriptions(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type54 @http(path: "/v1/customers/{{args.customer}}/subscriptions", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the subscription with the given ID.</p>
   """
-  getCustomersCustomerSubscriptionsSubscriptionExposedId(customer: String!, expand: [String], subscriptionExposedId: String!): Subscription @http(path: "/v1/customers/{{args.customer}}/subscriptions/{{args.subscriptionExposedId}}")
+  getCustomersCustomerSubscriptionsSubscriptionExposedId(customer: String!, expand: [String], subscriptionExposedId: String!): Subscription @http(path: "/v1/customers/{{args.customer}}/subscriptions/{{args.subscriptionExposedId}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "subscriptionExposedId", value: "{{args.subscriptionExposedId}}"}])
   """
   
   """
-  getCustomersCustomerSubscriptionsSubscriptionExposedIdDiscount(customer: String!, expand: [String], subscriptionExposedId: String!): Discount @http(path: "/v1/customers/{{args.customer}}/subscriptions/{{args.subscriptionExposedId}}/discount")
+  getCustomersCustomerSubscriptionsSubscriptionExposedIdDiscount(customer: String!, expand: [String], subscriptionExposedId: String!): Discount @http(path: "/v1/customers/{{args.customer}}/subscriptions/{{args.subscriptionExposedId}}/discount", query: [{key: "expand", value: "{{args.expand}}"}, {key: "subscriptionExposedId", value: "{{args.subscriptionExposedId}}"}])
   """
   <p>Returns a list of tax IDs for a customer.</p>
   """
-  getCustomersCustomerTaxIds(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type55 @http(path: "/v1/customers/{{args.customer}}/tax_ids")
+  getCustomersCustomerTaxIds(customer: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type55 @http(path: "/v1/customers/{{args.customer}}/tax_ids", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the <code>tax_id</code> object with the given identifier.</p>
   """
-  getCustomersCustomerTaxIdsId(customer: String!, expand: [String], id: String!): TaxId @http(path: "/v1/customers/{{args.customer}}/tax_ids/{{args.id}}")
+  getCustomersCustomerTaxIdsId(customer: String!, expand: [String], id: String!): TaxId @http(path: "/v1/customers/{{args.customer}}/tax_ids/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Search for customers you’ve previously created using Stripe’s <a href="/docs/search#search-query-language">Search Query Language</a>.
 Don’t use search in read-after-write flows where strict consistency is necessary. Under normal operating
 conditions, data is searchable in less than a minute. Occasionally, propagation of new or updated data can be up
 to an hour behind during outages. Search functionality is not available to merchants in India.</p>
   """
-  getCustomersSearch(expand: [String], limit: Int, page: String, query: String!): Type46 @http(path: "/v1/customers/search")
+  getCustomersSearch(expand: [String], limit: Int, page: String, query: String!): Type46 @http(path: "/v1/customers/search", query: [{key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "page", value: "{{args.page}}"}, {key: "query", value: "{{args.query}}"}])
   """
   <p>Returns a list of your disputes.</p>
   """
-  getDisputes(charge: String, created: Type56, endingBefore: String, expand: [String], limit: Int, paymentIntent: String, startingAfter: String): Type57 @http(path: "/v1/disputes")
+  getDisputes(charge: String, created: Type56, endingBefore: String, expand: [String], limit: Int, paymentIntent: String, startingAfter: String): Type57 @http(path: "/v1/disputes", query: [{key: "charge", value: "{{args.charge}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "paymentIntent", value: "{{args.paymentIntent}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the dispute with the given ID.</p>
   """
-  getDisputesDispute(dispute: String!, expand: [String]): Dispute @http(path: "/v1/disputes/{{args.dispute}}")
+  getDisputesDispute(dispute: String!, expand: [String]): Dispute @http(path: "/v1/disputes/{{args.dispute}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>List events, going back up to 30 days. Each event data is rendered according to Stripe API version at its creation time, specified in <a href="/docs/api/events/object">event object</a> <code>api_version</code> attribute (not according to your current Stripe API version or <code>Stripe-Version</code> header).</p>
   """
-  getEvents(created: Type58, deliverySuccess: Boolean, endingBefore: String, expand: [String], limit: Int, startingAfter: String, type: String, types: [String]): Type59 @http(path: "/v1/events")
+  getEvents(created: Type58, deliverySuccess: Boolean, endingBefore: String, expand: [String], limit: Int, startingAfter: String, type: String, types: [String]): Type59 @http(path: "/v1/events", query: [{key: "created", value: "{{args.created}}"}, {key: "deliverySuccess", value: "{{args.deliverySuccess}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "type", value: "{{args.type}}"}, {key: "types", value: "{{args.types}}"}])
   """
   <p>Retrieves the details of an event. Supply the unique identifier of the event, which you might have received in a webhook.</p>
   """
-  getEventsId(expand: [String], id: String!): Event @http(path: "/v1/events/{{args.id}}")
+  getEventsId(expand: [String], id: String!): Event @http(path: "/v1/events/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of objects that contain the rates at which foreign currencies are converted to one another. Only shows the currencies for which Stripe supports.</p>
   """
-  getExchangeRates(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type60 @http(path: "/v1/exchange_rates")
+  getExchangeRates(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type60 @http(path: "/v1/exchange_rates", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the exchange rates from the given currency to every supported currency.</p>
   """
-  getExchangeRatesRateId(expand: [String], rateId: String!): ExchangeRate @http(path: "/v1/exchange_rates/{{args.rateId}}")
+  getExchangeRatesRateId(expand: [String], rateId: String!): ExchangeRate @http(path: "/v1/exchange_rates/{{args.rateId}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "rateId", value: "{{args.rateId}}"}])
   """
   <p>Returns a list of file links.</p>
   """
-  getFileLinks(created: Type61, endingBefore: String, expand: [String], expired: Boolean, file: String, limit: Int, startingAfter: String): Type62 @http(path: "/v1/file_links")
+  getFileLinks(created: Type61, endingBefore: String, expand: [String], expired: Boolean, file: String, limit: Int, startingAfter: String): Type62 @http(path: "/v1/file_links", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "expired", value: "{{args.expired}}"}, {key: "file", value: "{{args.file}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the file link with the given ID.</p>
   """
-  getFileLinksLink(expand: [String], link: String!): FileLink @http(path: "/v1/file_links/{{args.link}}")
+  getFileLinksLink(expand: [String], link: String!): FileLink @http(path: "/v1/file_links/{{args.link}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of the files that your account has access to. Stripe sorts and returns the files by their creation dates, placing the most recently created files at the top.</p>
   """
-  getFiles(created: Type63, endingBefore: String, expand: [String], limit: Int, purpose: String, startingAfter: String): Type64 @http(path: "/v1/files")
+  getFiles(created: Type63, endingBefore: String, expand: [String], limit: Int, purpose: String, startingAfter: String): Type64 @http(path: "/v1/files", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "purpose", value: "{{args.purpose}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an existing file object. After you supply a unique file ID, Stripe returns the corresponding file object. Learn how to <a href="/docs/file-upload#download-file-contents">access file contents</a>.</p>
   """
-  getFilesFile(expand: [String], file: String!): File @http(path: "/v1/files/{{args.file}}")
+  getFilesFile(expand: [String], file: String!): File @http(path: "/v1/files/{{args.file}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of Financial Connections <code>Account</code> objects.</p>
   """
-  getFinancialConnectionsAccounts(accountHolder: Type65, endingBefore: String, expand: [String], limit: Int, session: String, startingAfter: String): Type66 @http(path: "/v1/financial_connections/accounts")
+  getFinancialConnectionsAccounts(accountHolder: Type65, endingBefore: String, expand: [String], limit: Int, session: String, startingAfter: String): Type66 @http(path: "/v1/financial_connections/accounts", query: [{key: "accountHolder", value: "{{args.accountHolder}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "session", value: "{{args.session}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an Financial Connections <code>Account</code>.</p>
   """
-  getFinancialConnectionsAccountsAccount(account: String!, expand: [String]): FinancialConnections.account @http(path: "/v1/financial_connections/accounts/{{args.account}}")
+  getFinancialConnectionsAccountsAccount(account: String!, expand: [String]): FinancialConnections.account @http(path: "/v1/financial_connections/accounts/{{args.account}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Lists all owners for a given <code>Account</code></p>
   """
-  getFinancialConnectionsAccountsAccountOwners(account: String!, endingBefore: String, expand: [String], limit: Int, ownership: String!, startingAfter: String): Type67 @http(path: "/v1/financial_connections/accounts/{{args.account}}/owners")
+  getFinancialConnectionsAccountsAccountOwners(account: String!, endingBefore: String, expand: [String], limit: Int, ownership: String!, startingAfter: String): Type67 @http(path: "/v1/financial_connections/accounts/{{args.account}}/owners", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "ownership", value: "{{args.ownership}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of a Financial Connections <code>Session</code></p>
   """
-  getFinancialConnectionsSessionsSession(expand: [String], session: String!): FinancialConnections.session @http(path: "/v1/financial_connections/sessions/{{args.session}}")
+  getFinancialConnectionsSessionsSession(expand: [String], session: String!): FinancialConnections.session @http(path: "/v1/financial_connections/sessions/{{args.session}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of Financial Connections <code>Transaction</code> objects.</p>
   """
-  getFinancialConnectionsTransactions(account: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String, transactedAt: Type68, transactionRefresh: Type69): Type70 @http(path: "/v1/financial_connections/transactions")
+  getFinancialConnectionsTransactions(account: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String, transactedAt: Type68, transactionRefresh: Type69): Type70 @http(path: "/v1/financial_connections/transactions", query: [{key: "account", value: "{{args.account}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "transactedAt", value: "{{args.transactedAt}}"}, {key: "transactionRefresh", value: "{{args.transactionRefresh}}"}])
   """
   <p>Retrieves the details of a Financial Connections <code>Transaction</code></p>
   """
-  getFinancialConnectionsTransactionsTransaction(expand: [String], transaction: String!): FinancialConnections.transaction @http(path: "/v1/financial_connections/transactions/{{args.transaction}}")
+  getFinancialConnectionsTransactionsTransaction(expand: [String], transaction: String!): FinancialConnections.transaction @http(path: "/v1/financial_connections/transactions/{{args.transaction}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Lists all ForwardingRequest objects.</p>
   """
-  getForwardingRequests(created: Type71, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type72 @http(path: "/v1/forwarding/requests")
+  getForwardingRequests(created: Type71, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type72 @http(path: "/v1/forwarding/requests", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a ForwardingRequest object.</p>
   """
-  getForwardingRequestsId(expand: [String], id: String!): Forwarding.request @http(path: "/v1/forwarding/requests/{{args.id}}")
+  getForwardingRequestsId(expand: [String], id: String!): Forwarding.request @http(path: "/v1/forwarding/requests/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>List all verification reports.</p>
   """
-  getIdentityVerificationReports(clientReferenceId: String, created: Type73, endingBefore: String, expand: [String], limit: Int, startingAfter: String, type: String, verificationSession: String): Type74 @http(path: "/v1/identity/verification_reports")
+  getIdentityVerificationReports(clientReferenceId: String, created: Type73, endingBefore: String, expand: [String], limit: Int, startingAfter: String, type: String, verificationSession: String): Type74 @http(path: "/v1/identity/verification_reports", query: [{key: "clientReferenceId", value: "{{args.clientReferenceId}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "type", value: "{{args.type}}"}, {key: "verificationSession", value: "{{args.verificationSession}}"}])
   """
   <p>Retrieves an existing VerificationReport</p>
   """
-  getIdentityVerificationReportsReport(expand: [String], report: String!): Identity.verificationReport @http(path: "/v1/identity/verification_reports/{{args.report}}")
+  getIdentityVerificationReportsReport(expand: [String], report: String!): Identity.verificationReport @http(path: "/v1/identity/verification_reports/{{args.report}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of VerificationSessions</p>
   """
-  getIdentityVerificationSessions(clientReferenceId: String, created: Type75, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type76 @http(path: "/v1/identity/verification_sessions")
+  getIdentityVerificationSessions(clientReferenceId: String, created: Type75, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type76 @http(path: "/v1/identity/verification_sessions", query: [{key: "clientReferenceId", value: "{{args.clientReferenceId}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves the details of a VerificationSession that was previously created.</p>
 
 <p>When the session status is <code>requires_input</code>, you can use this method to retrieve a valid
 <code>client_secret</code> or <code>url</code> to allow re-submission.</p>
   """
-  getIdentityVerificationSessionsSession(expand: [String], session: String!): Identity.verificationSession @http(path: "/v1/identity/verification_sessions/{{args.session}}")
+  getIdentityVerificationSessionsSession(expand: [String], session: String!): Identity.verificationSession @http(path: "/v1/identity/verification_sessions/{{args.session}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of your invoice items. Invoice items are returned sorted by creation date, with the most recently created invoice items appearing first.</p>
   """
-  getInvoiceitems(created: Type77, customer: String, endingBefore: String, expand: [String], invoice: String, limit: Int, pending: Boolean, startingAfter: String): Type78 @http(path: "/v1/invoiceitems")
+  getInvoiceitems(created: Type77, customer: String, endingBefore: String, expand: [String], invoice: String, limit: Int, pending: Boolean, startingAfter: String): Type78 @http(path: "/v1/invoiceitems", query: [{key: "created", value: "{{args.created}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "invoice", value: "{{args.invoice}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "pending", value: "{{args.pending}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the invoice item with the given ID.</p>
   """
-  getInvoiceitemsInvoiceitem(expand: [String], invoiceitem: String!): Invoiceitem @http(path: "/v1/invoiceitems/{{args.invoiceitem}}")
+  getInvoiceitemsInvoiceitem(expand: [String], invoiceitem: String!): Invoiceitem @http(path: "/v1/invoiceitems/{{args.invoiceitem}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>You can list all invoices, or list the invoices for a specific customer. The invoices are returned sorted by creation date, with the most recently created invoices appearing first.</p>
   """
-  getInvoices(collectionMethod: String, created: Type79, customer: String, dueDate: Type80, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String, subscription: String): Type81 @http(path: "/v1/invoices")
+  getInvoices(collectionMethod: String, created: Type79, customer: String, dueDate: Type80, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String, subscription: String): Type81 @http(path: "/v1/invoices", query: [{key: "collectionMethod", value: "{{args.collectionMethod}}"}, {key: "created", value: "{{args.created}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "dueDate", value: "{{args.dueDate}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}, {key: "subscription", value: "{{args.subscription}}"}])
   """
   <p>Retrieves the invoice with the given ID.</p>
   """
-  getInvoicesInvoice(expand: [String], invoice: String!): Invoice @http(path: "/v1/invoices/{{args.invoice}}")
+  getInvoicesInvoice(expand: [String], invoice: String!): Invoice @http(path: "/v1/invoices/{{args.invoice}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>When retrieving an invoice, you’ll get a <strong>lines</strong> property containing the total count of line items and the first handful of those items. There is also a URL where you can retrieve the full (paginated) list of line items.</p>
   """
-  getInvoicesInvoiceLines(endingBefore: String, expand: [String], invoice: String!, limit: Int, startingAfter: String): Type106 @http(path: "/v1/invoices/{{args.invoice}}/lines")
+  getInvoicesInvoiceLines(endingBefore: String, expand: [String], invoice: String!, limit: Int, startingAfter: String): Type106 @http(path: "/v1/invoices/{{args.invoice}}/lines", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Search for invoices you’ve previously created using Stripe’s <a href="/docs/search#search-query-language">Search Query Language</a>.
 Don’t use search in read-after-write flows where strict consistency is necessary. Under normal operating
 conditions, data is searchable in less than a minute. Occasionally, propagation of new or updated data can be up
 to an hour behind during outages. Search functionality is not available to merchants in India.</p>
   """
-  getInvoicesSearch(expand: [String], limit: Int, page: String, query: String!): Type82 @http(path: "/v1/invoices/search")
+  getInvoicesSearch(expand: [String], limit: Int, page: String, query: String!): Type82 @http(path: "/v1/invoices/search", query: [{key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "page", value: "{{args.page}}"}, {key: "query", value: "{{args.query}}"}])
   """
   <p>At any time, you can preview the upcoming invoice for a customer. This will show you all the charges that are pending, including subscription renewal charges, invoice item charges, etc. It will also show you any discounts that are applicable to the invoice.</p>
 
@@ -19359,107 +19359,107 @@ to an hour behind during outages. Search functionality is not available to merch
 
 <p>You can preview the effects of updating a subscription, including a preview of what proration will take place. To ensure that the actual proration is calculated exactly the same as the previewed proration, you should pass a <code>proration_date</code> parameter when doing the actual subscription update. The value passed in should be the same as the <code>subscription_proration_date</code> returned on the upcoming invoice resource. The recommended way to get only the prorations being previewed is to consider only proration line items where <code>period[start]</code> is equal to the <code>subscription_proration_date</code> on the upcoming invoice resource.</p>
   """
-  getInvoicesUpcoming(automaticTax: Type83, coupon: String, currency: String, customer: String, customerDetails: Type84, discounts: Type85, expand: [String], invoiceItems: [Type86], issuer: Type87, onBehalfOf: Type88, schedule: String, subscription: String, subscriptionBillingCycleAnchor: Type89, subscriptionCancelAt: Type90, subscriptionCancelAtPeriodEnd: Boolean, subscriptionCancelNow: Boolean, subscriptionDefaultTaxRates: Type91, subscriptionItems: [Type92], subscriptionProrationBehavior: String, subscriptionProrationDate: Int, subscriptionResumeAt: String, subscriptionStartDate: Int, subscriptionTrialEnd: Type93, subscriptionTrialFromPlan: Boolean): Invoice @http(path: "/v1/invoices/upcoming")
+  getInvoicesUpcoming(automaticTax: Type83, coupon: String, currency: String, customer: String, customerDetails: Type84, discounts: Type85, expand: [String], invoiceItems: [Type86], issuer: Type87, onBehalfOf: Type88, schedule: String, subscription: String, subscriptionBillingCycleAnchor: Type89, subscriptionCancelAt: Type90, subscriptionCancelAtPeriodEnd: Boolean, subscriptionCancelNow: Boolean, subscriptionDefaultTaxRates: Type91, subscriptionItems: [Type92], subscriptionProrationBehavior: String, subscriptionProrationDate: Int, subscriptionResumeAt: String, subscriptionStartDate: Int, subscriptionTrialEnd: Type93, subscriptionTrialFromPlan: Boolean): Invoice @http(path: "/v1/invoices/upcoming", query: [{key: "automaticTax", value: "{{args.automaticTax}}"}, {key: "coupon", value: "{{args.coupon}}"}, {key: "currency", value: "{{args.currency}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "customerDetails", value: "{{args.customerDetails}}"}, {key: "discounts", value: "{{args.discounts}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "invoiceItems", value: "{{args.invoiceItems}}"}, {key: "issuer", value: "{{args.issuer}}"}, {key: "onBehalfOf", value: "{{args.onBehalfOf}}"}, {key: "schedule", value: "{{args.schedule}}"}, {key: "subscription", value: "{{args.subscription}}"}, {key: "subscriptionBillingCycleAnchor", value: "{{args.subscriptionBillingCycleAnchor}}"}, {key: "subscriptionCancelAt", value: "{{args.subscriptionCancelAt}}"}, {key: "subscriptionCancelAtPeriodEnd", value: "{{args.subscriptionCancelAtPeriodEnd}}"}, {key: "subscriptionCancelNow", value: "{{args.subscriptionCancelNow}}"}, {key: "subscriptionDefaultTaxRates", value: "{{args.subscriptionDefaultTaxRates}}"}, {key: "subscriptionItems", value: "{{args.subscriptionItems}}"}, {key: "subscriptionProrationBehavior", value: "{{args.subscriptionProrationBehavior}}"}, {key: "subscriptionProrationDate", value: "{{args.subscriptionProrationDate}}"}, {key: "subscriptionResumeAt", value: "{{args.subscriptionResumeAt}}"}, {key: "subscriptionStartDate", value: "{{args.subscriptionStartDate}}"}, {key: "subscriptionTrialEnd", value: "{{args.subscriptionTrialEnd}}"}, {key: "subscriptionTrialFromPlan", value: "{{args.subscriptionTrialFromPlan}}"}])
   """
   <p>When retrieving an upcoming invoice, you’ll get a <strong>lines</strong> property containing the total count of line items and the first handful of those items. There is also a URL where you can retrieve the full (paginated) list of line items.</p>
   """
-  getInvoicesUpcomingLines(automaticTax: Type94, coupon: String, currency: String, customer: String, customerDetails: Type95, discounts: Type96, endingBefore: String, expand: [String], invoiceItems: [Type97], issuer: Type98, limit: Int, onBehalfOf: Type99, schedule: String, startingAfter: String, subscription: String, subscriptionBillingCycleAnchor: Type100, subscriptionCancelAt: Type101, subscriptionCancelAtPeriodEnd: Boolean, subscriptionCancelNow: Boolean, subscriptionDefaultTaxRates: Type102, subscriptionItems: [Type103], subscriptionProrationBehavior: String, subscriptionProrationDate: Int, subscriptionResumeAt: String, subscriptionStartDate: Int, subscriptionTrialEnd: Type104, subscriptionTrialFromPlan: Boolean): Type105 @http(path: "/v1/invoices/upcoming/lines")
+  getInvoicesUpcomingLines(automaticTax: Type94, coupon: String, currency: String, customer: String, customerDetails: Type95, discounts: Type96, endingBefore: String, expand: [String], invoiceItems: [Type97], issuer: Type98, limit: Int, onBehalfOf: Type99, schedule: String, startingAfter: String, subscription: String, subscriptionBillingCycleAnchor: Type100, subscriptionCancelAt: Type101, subscriptionCancelAtPeriodEnd: Boolean, subscriptionCancelNow: Boolean, subscriptionDefaultTaxRates: Type102, subscriptionItems: [Type103], subscriptionProrationBehavior: String, subscriptionProrationDate: Int, subscriptionResumeAt: String, subscriptionStartDate: Int, subscriptionTrialEnd: Type104, subscriptionTrialFromPlan: Boolean): Type105 @http(path: "/v1/invoices/upcoming/lines", query: [{key: "automaticTax", value: "{{args.automaticTax}}"}, {key: "coupon", value: "{{args.coupon}}"}, {key: "currency", value: "{{args.currency}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "customerDetails", value: "{{args.customerDetails}}"}, {key: "discounts", value: "{{args.discounts}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "invoiceItems", value: "{{args.invoiceItems}}"}, {key: "issuer", value: "{{args.issuer}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "onBehalfOf", value: "{{args.onBehalfOf}}"}, {key: "schedule", value: "{{args.schedule}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "subscription", value: "{{args.subscription}}"}, {key: "subscriptionBillingCycleAnchor", value: "{{args.subscriptionBillingCycleAnchor}}"}, {key: "subscriptionCancelAt", value: "{{args.subscriptionCancelAt}}"}, {key: "subscriptionCancelAtPeriodEnd", value: "{{args.subscriptionCancelAtPeriodEnd}}"}, {key: "subscriptionCancelNow", value: "{{args.subscriptionCancelNow}}"}, {key: "subscriptionDefaultTaxRates", value: "{{args.subscriptionDefaultTaxRates}}"}, {key: "subscriptionItems", value: "{{args.subscriptionItems}}"}, {key: "subscriptionProrationBehavior", value: "{{args.subscriptionProrationBehavior}}"}, {key: "subscriptionProrationDate", value: "{{args.subscriptionProrationDate}}"}, {key: "subscriptionResumeAt", value: "{{args.subscriptionResumeAt}}"}, {key: "subscriptionStartDate", value: "{{args.subscriptionStartDate}}"}, {key: "subscriptionTrialEnd", value: "{{args.subscriptionTrialEnd}}"}, {key: "subscriptionTrialFromPlan", value: "{{args.subscriptionTrialFromPlan}}"}])
   """
   <p>Returns a list of Issuing <code>Authorization</code> objects. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getIssuingAuthorizations(card: String, cardholder: String, created: Type107, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type108 @http(path: "/v1/issuing/authorizations")
+  getIssuingAuthorizations(card: String, cardholder: String, created: Type107, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type108 @http(path: "/v1/issuing/authorizations", query: [{key: "card", value: "{{args.card}}"}, {key: "cardholder", value: "{{args.cardholder}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves an Issuing <code>Authorization</code> object.</p>
   """
-  getIssuingAuthorizationsAuthorization(authorization: String!, expand: [String]): Issuing.authorization @http(path: "/v1/issuing/authorizations/{{args.authorization}}")
+  getIssuingAuthorizationsAuthorization(authorization: String!, expand: [String]): Issuing.authorization @http(path: "/v1/issuing/authorizations/{{args.authorization}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of Issuing <code>Cardholder</code> objects. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getIssuingCardholders(created: Type109, email: String, endingBefore: String, expand: [String], limit: Int, phoneNumber: String, startingAfter: String, status: String, type: String): Type110 @http(path: "/v1/issuing/cardholders")
+  getIssuingCardholders(created: Type109, email: String, endingBefore: String, expand: [String], limit: Int, phoneNumber: String, startingAfter: String, status: String, type: String): Type110 @http(path: "/v1/issuing/cardholders", query: [{key: "created", value: "{{args.created}}"}, {key: "email", value: "{{args.email}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "phoneNumber", value: "{{args.phoneNumber}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}, {key: "type", value: "{{args.type}}"}])
   """
   <p>Retrieves an Issuing <code>Cardholder</code> object.</p>
   """
-  getIssuingCardholdersCardholder(cardholder: String!, expand: [String]): Issuing.cardholder @http(path: "/v1/issuing/cardholders/{{args.cardholder}}")
+  getIssuingCardholdersCardholder(cardholder: String!, expand: [String]): Issuing.cardholder @http(path: "/v1/issuing/cardholders/{{args.cardholder}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of Issuing <code>Card</code> objects. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getIssuingCards(cardholder: String, created: Type111, endingBefore: String, expMonth: Int, expYear: Int, expand: [String], last4: String, limit: Int, personalizationDesign: String, startingAfter: String, status: String, type: String): Type112 @http(path: "/v1/issuing/cards")
+  getIssuingCards(cardholder: String, created: Type111, endingBefore: String, expMonth: Int, expYear: Int, expand: [String], last4: String, limit: Int, personalizationDesign: String, startingAfter: String, status: String, type: String): Type112 @http(path: "/v1/issuing/cards", query: [{key: "cardholder", value: "{{args.cardholder}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expMonth", value: "{{args.expMonth}}"}, {key: "expYear", value: "{{args.expYear}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "last4", value: "{{args.last4}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "personalizationDesign", value: "{{args.personalizationDesign}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}, {key: "type", value: "{{args.type}}"}])
   """
   <p>Retrieves an Issuing <code>Card</code> object.</p>
   """
-  getIssuingCardsCard(card: String!, expand: [String]): Issuing.card @http(path: "/v1/issuing/cards/{{args.card}}")
+  getIssuingCardsCard(card: String!, expand: [String]): Issuing.card @http(path: "/v1/issuing/cards/{{args.card}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of Issuing <code>Dispute</code> objects. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getIssuingDisputes(created: Type113, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String, transaction: String): Type114 @http(path: "/v1/issuing/disputes")
+  getIssuingDisputes(created: Type113, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String, transaction: String): Type114 @http(path: "/v1/issuing/disputes", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}, {key: "transaction", value: "{{args.transaction}}"}])
   """
   <p>Retrieves an Issuing <code>Dispute</code> object.</p>
   """
-  getIssuingDisputesDispute(dispute: String!, expand: [String]): Issuing.dispute @http(path: "/v1/issuing/disputes/{{args.dispute}}")
+  getIssuingDisputesDispute(dispute: String!, expand: [String]): Issuing.dispute @http(path: "/v1/issuing/disputes/{{args.dispute}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of personalization design objects. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getIssuingPersonalizationDesigns(endingBefore: String, expand: [String], limit: Int, lookupKeys: [String], preferences: Type115, startingAfter: String, status: String): Type116 @http(path: "/v1/issuing/personalization_designs")
+  getIssuingPersonalizationDesigns(endingBefore: String, expand: [String], limit: Int, lookupKeys: [String], preferences: Type115, startingAfter: String, status: String): Type116 @http(path: "/v1/issuing/personalization_designs", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "lookupKeys", value: "{{args.lookupKeys}}"}, {key: "preferences", value: "{{args.preferences}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves a personalization design object.</p>
   """
-  getIssuingPersonalizationDesignsPersonalizationDesign(expand: [String], personalizationDesign: String!): Issuing.personalizationDesign @http(path: "/v1/issuing/personalization_designs/{{args.personalizationDesign}}")
+  getIssuingPersonalizationDesignsPersonalizationDesign(expand: [String], personalizationDesign: String!): Issuing.personalizationDesign @http(path: "/v1/issuing/personalization_designs/{{args.personalizationDesign}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "personalizationDesign", value: "{{args.personalizationDesign}}"}])
   """
   <p>Returns a list of physical bundle objects. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getIssuingPhysicalBundles(endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String, type: String): Type117 @http(path: "/v1/issuing/physical_bundles")
+  getIssuingPhysicalBundles(endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String, type: String): Type117 @http(path: "/v1/issuing/physical_bundles", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}, {key: "type", value: "{{args.type}}"}])
   """
   <p>Retrieves a physical bundle object.</p>
   """
-  getIssuingPhysicalBundlesPhysicalBundle(expand: [String], physicalBundle: String!): Issuing.physicalBundle @http(path: "/v1/issuing/physical_bundles/{{args.physicalBundle}}")
+  getIssuingPhysicalBundlesPhysicalBundle(expand: [String], physicalBundle: String!): Issuing.physicalBundle @http(path: "/v1/issuing/physical_bundles/{{args.physicalBundle}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "physicalBundle", value: "{{args.physicalBundle}}"}])
   """
   <p>Returns a list of Issuing <code>Settlement</code> objects. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getIssuingSettlements(created: Type118, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type119 @http(path: "/v1/issuing/settlements")
+  getIssuingSettlements(created: Type118, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type119 @http(path: "/v1/issuing/settlements", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves an Issuing <code>Settlement</code> object.</p>
   """
-  getIssuingSettlementsSettlement(expand: [String], settlement: String!): Issuing.settlement @http(path: "/v1/issuing/settlements/{{args.settlement}}")
+  getIssuingSettlementsSettlement(expand: [String], settlement: String!): Issuing.settlement @http(path: "/v1/issuing/settlements/{{args.settlement}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Lists all Issuing <code>Token</code> objects for a given card.</p>
   """
-  getIssuingTokens(card: String!, created: Type120, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type121 @http(path: "/v1/issuing/tokens")
+  getIssuingTokens(card: String!, created: Type120, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type121 @http(path: "/v1/issuing/tokens", query: [{key: "card", value: "{{args.card}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves an Issuing <code>Token</code> object.</p>
   """
-  getIssuingTokensToken(expand: [String], token: String!): Issuing.token @http(path: "/v1/issuing/tokens/{{args.token}}")
+  getIssuingTokensToken(expand: [String], token: String!): Issuing.token @http(path: "/v1/issuing/tokens/{{args.token}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of Issuing <code>Transaction</code> objects. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getIssuingTransactions(card: String, cardholder: String, created: Type122, endingBefore: String, expand: [String], limit: Int, startingAfter: String, type: String): Type123 @http(path: "/v1/issuing/transactions")
+  getIssuingTransactions(card: String, cardholder: String, created: Type122, endingBefore: String, expand: [String], limit: Int, startingAfter: String, type: String): Type123 @http(path: "/v1/issuing/transactions", query: [{key: "card", value: "{{args.card}}"}, {key: "cardholder", value: "{{args.cardholder}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "type", value: "{{args.type}}"}])
   """
   <p>Retrieves an Issuing <code>Transaction</code> object.</p>
   """
-  getIssuingTransactionsTransaction(expand: [String], transaction: String!): Issuing.transaction @http(path: "/v1/issuing/transactions/{{args.transaction}}")
+  getIssuingTransactionsTransaction(expand: [String], transaction: String!): Issuing.transaction @http(path: "/v1/issuing/transactions/{{args.transaction}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves the details of a Financial Connections <code>Session</code></p>
   """
-  getLinkAccountSessionsSession(expand: [String], session: String!): FinancialConnections.session @http(path: "/v1/link_account_sessions/{{args.session}}")
+  getLinkAccountSessionsSession(expand: [String], session: String!): FinancialConnections.session @http(path: "/v1/link_account_sessions/{{args.session}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of Financial Connections <code>Account</code> objects.</p>
   """
-  getLinkedAccounts(accountHolder: Type124, endingBefore: String, expand: [String], limit: Int, session: String, startingAfter: String): Type125 @http(path: "/v1/linked_accounts")
+  getLinkedAccounts(accountHolder: Type124, endingBefore: String, expand: [String], limit: Int, session: String, startingAfter: String): Type125 @http(path: "/v1/linked_accounts", query: [{key: "accountHolder", value: "{{args.accountHolder}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "session", value: "{{args.session}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an Financial Connections <code>Account</code>.</p>
   """
-  getLinkedAccountsAccount(account: String!, expand: [String]): FinancialConnections.account @http(path: "/v1/linked_accounts/{{args.account}}")
+  getLinkedAccountsAccount(account: String!, expand: [String]): FinancialConnections.account @http(path: "/v1/linked_accounts/{{args.account}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Lists all owners for a given <code>Account</code></p>
   """
-  getLinkedAccountsAccountOwners(account: String!, endingBefore: String, expand: [String], limit: Int, ownership: String!, startingAfter: String): Type126 @http(path: "/v1/linked_accounts/{{args.account}}/owners")
+  getLinkedAccountsAccountOwners(account: String!, endingBefore: String, expand: [String], limit: Int, ownership: String!, startingAfter: String): Type126 @http(path: "/v1/linked_accounts/{{args.account}}/owners", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "ownership", value: "{{args.ownership}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a Mandate object.</p>
   """
-  getMandatesMandate(expand: [String], mandate: String!): Mandate @http(path: "/v1/mandates/{{args.mandate}}")
+  getMandatesMandate(expand: [String], mandate: String!): Mandate @http(path: "/v1/mandates/{{args.mandate}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of PaymentIntents.</p>
   """
-  getPaymentIntents(created: Type127, customer: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type128 @http(path: "/v1/payment_intents")
+  getPaymentIntents(created: Type127, customer: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type128 @http(path: "/v1/payment_intents", query: [{key: "created", value: "{{args.created}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of a PaymentIntent that has previously been created. </p>
 
@@ -19467,190 +19467,190 @@ to an hour behind during outages. Search functionality is not available to merch
 
 <p>If you retrieve a PaymentIntent with a publishable key, it only returns a subset of properties. Refer to the <a href="#payment_intent_object">payment intent</a> object reference for more details.</p>
   """
-  getPaymentIntentsIntent(clientSecret: String, expand: [String], intent: String!): PaymentIntent @http(path: "/v1/payment_intents/{{args.intent}}")
+  getPaymentIntentsIntent(clientSecret: String, expand: [String], intent: String!): PaymentIntent @http(path: "/v1/payment_intents/{{args.intent}}", query: [{key: "clientSecret", value: "{{args.clientSecret}}"}, {key: "expand", value: "{{args.expand}}"}])
   """
   <p>Search for PaymentIntents you’ve previously created using Stripe’s <a href="/docs/search#search-query-language">Search Query Language</a>.
 Don’t use search in read-after-write flows where strict consistency is necessary. Under normal operating
 conditions, data is searchable in less than a minute. Occasionally, propagation of new or updated data can be up
 to an hour behind during outages. Search functionality is not available to merchants in India.</p>
   """
-  getPaymentIntentsSearch(expand: [String], limit: Int, page: String, query: String!): Type129 @http(path: "/v1/payment_intents/search")
+  getPaymentIntentsSearch(expand: [String], limit: Int, page: String, query: String!): Type129 @http(path: "/v1/payment_intents/search", query: [{key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "page", value: "{{args.page}}"}, {key: "query", value: "{{args.query}}"}])
   """
   <p>Returns a list of your payment links.</p>
   """
-  getPaymentLinks(active: Boolean, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type130 @http(path: "/v1/payment_links")
+  getPaymentLinks(active: Boolean, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type130 @http(path: "/v1/payment_links", query: [{key: "active", value: "{{args.active}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieve a payment link.</p>
   """
-  getPaymentLinksPaymentLink(expand: [String], paymentLink: String!): PaymentLink @http(path: "/v1/payment_links/{{args.paymentLink}}")
+  getPaymentLinksPaymentLink(expand: [String], paymentLink: String!): PaymentLink @http(path: "/v1/payment_links/{{args.paymentLink}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "paymentLink", value: "{{args.paymentLink}}"}])
   """
   <p>When retrieving a payment link, there is an includable <strong>line_items</strong> property containing the first handful of those items. There is also a URL where you can retrieve the full (paginated) list of line items.</p>
   """
-  getPaymentLinksPaymentLinkLineItems(endingBefore: String, expand: [String], limit: Int, paymentLink: String!, startingAfter: String): Type131 @http(path: "/v1/payment_links/{{args.paymentLink}}/line_items")
+  getPaymentLinksPaymentLinkLineItems(endingBefore: String, expand: [String], limit: Int, paymentLink: String!, startingAfter: String): Type131 @http(path: "/v1/payment_links/{{args.paymentLink}}/line_items", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "paymentLink", value: "{{args.paymentLink}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>List payment method configurations</p>
   """
-  getPaymentMethodConfigurations(application: Type132, expand: [String]): Type133 @http(path: "/v1/payment_method_configurations")
+  getPaymentMethodConfigurations(application: Type132, expand: [String]): Type133 @http(path: "/v1/payment_method_configurations", query: [{key: "application", value: "{{args.application}}"}, {key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieve payment method configuration</p>
   """
-  getPaymentMethodConfigurationsConfiguration(configuration: String!, expand: [String]): PaymentMethodConfiguration @http(path: "/v1/payment_method_configurations/{{args.configuration}}")
+  getPaymentMethodConfigurationsConfiguration(configuration: String!, expand: [String]): PaymentMethodConfiguration @http(path: "/v1/payment_method_configurations/{{args.configuration}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Lists the details of existing payment method domains.</p>
   """
-  getPaymentMethodDomains(domainName: String, enabled: Boolean, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type134 @http(path: "/v1/payment_method_domains")
+  getPaymentMethodDomains(domainName: String, enabled: Boolean, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type134 @http(path: "/v1/payment_method_domains", query: [{key: "domainName", value: "{{args.domainName}}"}, {key: "enabled", value: "{{args.enabled}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an existing payment method domain.</p>
   """
-  getPaymentMethodDomainsPaymentMethodDomain(expand: [String], paymentMethodDomain: String!): PaymentMethodDomain @http(path: "/v1/payment_method_domains/{{args.paymentMethodDomain}}")
+  getPaymentMethodDomainsPaymentMethodDomain(expand: [String], paymentMethodDomain: String!): PaymentMethodDomain @http(path: "/v1/payment_method_domains/{{args.paymentMethodDomain}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "paymentMethodDomain", value: "{{args.paymentMethodDomain}}"}])
   """
   <p>Returns a list of PaymentMethods for Treasury flows. If you want to list the PaymentMethods attached to a Customer for payments, you should use the <a href="/docs/api/payment_methods/customer_list">List a Customer’s PaymentMethods</a> API instead.</p>
   """
-  getPaymentMethods(customer: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String, type: String): Type135 @http(path: "/v1/payment_methods")
+  getPaymentMethods(customer: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String, type: String): Type135 @http(path: "/v1/payment_methods", query: [{key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "type", value: "{{args.type}}"}])
   """
   <p>Retrieves a PaymentMethod object attached to the StripeAccount. To retrieve a payment method attached to a Customer, you should use <a href="/docs/api/payment_methods/customer">Retrieve a Customer’s PaymentMethods</a></p>
   """
-  getPaymentMethodsPaymentMethod(expand: [String], paymentMethod: String!): PaymentMethod @http(path: "/v1/payment_methods/{{args.paymentMethod}}")
+  getPaymentMethodsPaymentMethod(expand: [String], paymentMethod: String!): PaymentMethod @http(path: "/v1/payment_methods/{{args.paymentMethod}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "paymentMethod", value: "{{args.paymentMethod}}"}])
   """
   <p>Returns a list of existing payouts sent to third-party bank accounts or payouts that Stripe sent to you. The payouts return in sorted order, with the most recently created payouts appearing first.</p>
   """
-  getPayouts(arrivalDate: Type136, created: Type137, destination: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type138 @http(path: "/v1/payouts")
+  getPayouts(arrivalDate: Type136, created: Type137, destination: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type138 @http(path: "/v1/payouts", query: [{key: "arrivalDate", value: "{{args.arrivalDate}}"}, {key: "created", value: "{{args.created}}"}, {key: "destination", value: "{{args.destination}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves the details of an existing payout. Supply the unique payout ID from either a payout creation request or the payout list. Stripe returns the corresponding payout information.</p>
   """
-  getPayoutsPayout(expand: [String], payout: String!): Payout @http(path: "/v1/payouts/{{args.payout}}")
+  getPayoutsPayout(expand: [String], payout: String!): Payout @http(path: "/v1/payouts/{{args.payout}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of your plans.</p>
   """
-  getPlans(active: Boolean, created: Type139, endingBefore: String, expand: [String], limit: Int, product: String, startingAfter: String): Type140 @http(path: "/v1/plans")
+  getPlans(active: Boolean, created: Type139, endingBefore: String, expand: [String], limit: Int, product: String, startingAfter: String): Type140 @http(path: "/v1/plans", query: [{key: "active", value: "{{args.active}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "product", value: "{{args.product}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the plan with the given ID.</p>
   """
-  getPlansPlan(expand: [String], plan: String!): Plan @http(path: "/v1/plans/{{args.plan}}")
+  getPlansPlan(expand: [String], plan: String!): Plan @http(path: "/v1/plans/{{args.plan}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of your active prices, excluding <a href="/docs/products-prices/pricing-models#inline-pricing">inline prices</a>. For the list of inactive prices, set <code>active</code> to false.</p>
   """
-  getPrices(active: Boolean, created: Type141, currency: String, endingBefore: String, expand: [String], limit: Int, lookupKeys: [String], product: String, recurring: Type142, startingAfter: String, type: String): Type143 @http(path: "/v1/prices")
+  getPrices(active: Boolean, created: Type141, currency: String, endingBefore: String, expand: [String], limit: Int, lookupKeys: [String], product: String, recurring: Type142, startingAfter: String, type: String): Type143 @http(path: "/v1/prices", query: [{key: "active", value: "{{args.active}}"}, {key: "created", value: "{{args.created}}"}, {key: "currency", value: "{{args.currency}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "lookupKeys", value: "{{args.lookupKeys}}"}, {key: "product", value: "{{args.product}}"}, {key: "recurring", value: "{{args.recurring}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "type", value: "{{args.type}}"}])
   """
   <p>Retrieves the price with the given ID.</p>
   """
-  getPricesPrice(expand: [String], price: String!): Price @http(path: "/v1/prices/{{args.price}}")
+  getPricesPrice(expand: [String], price: String!): Price @http(path: "/v1/prices/{{args.price}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Search for prices you’ve previously created using Stripe’s <a href="/docs/search#search-query-language">Search Query Language</a>.
 Don’t use search in read-after-write flows where strict consistency is necessary. Under normal operating
 conditions, data is searchable in less than a minute. Occasionally, propagation of new or updated data can be up
 to an hour behind during outages. Search functionality is not available to merchants in India.</p>
   """
-  getPricesSearch(expand: [String], limit: Int, page: String, query: String!): Type144 @http(path: "/v1/prices/search")
+  getPricesSearch(expand: [String], limit: Int, page: String, query: String!): Type144 @http(path: "/v1/prices/search", query: [{key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "page", value: "{{args.page}}"}, {key: "query", value: "{{args.query}}"}])
   """
   <p>Returns a list of your products. The products are returned sorted by creation date, with the most recently created products appearing first.</p>
   """
-  getProducts(active: Boolean, created: Type145, endingBefore: String, expand: [String], ids: [String], limit: Int, shippable: Boolean, startingAfter: String, url: String): Type146 @http(path: "/v1/products")
+  getProducts(active: Boolean, created: Type145, endingBefore: String, expand: [String], ids: [String], limit: Int, shippable: Boolean, startingAfter: String, url: String): Type146 @http(path: "/v1/products", query: [{key: "active", value: "{{args.active}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "ids", value: "{{args.ids}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "shippable", value: "{{args.shippable}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "url", value: "{{args.url}}"}])
   """
   <p>Retrieves the details of an existing product. Supply the unique product ID from either a product creation request or the product list, and Stripe will return the corresponding product information.</p>
   """
-  getProductsId(expand: [String], id: String!): Product @http(path: "/v1/products/{{args.id}}")
+  getProductsId(expand: [String], id: String!): Product @http(path: "/v1/products/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Search for products you’ve previously created using Stripe’s <a href="/docs/search#search-query-language">Search Query Language</a>.
 Don’t use search in read-after-write flows where strict consistency is necessary. Under normal operating
 conditions, data is searchable in less than a minute. Occasionally, propagation of new or updated data can be up
 to an hour behind during outages. Search functionality is not available to merchants in India.</p>
   """
-  getProductsSearch(expand: [String], limit: Int, page: String, query: String!): Type147 @http(path: "/v1/products/search")
+  getProductsSearch(expand: [String], limit: Int, page: String, query: String!): Type147 @http(path: "/v1/products/search", query: [{key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "page", value: "{{args.page}}"}, {key: "query", value: "{{args.query}}"}])
   """
   <p>Returns a list of your promotion codes.</p>
   """
-  getPromotionCodes(active: Boolean, code: String, coupon: String, created: Type148, customer: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type149 @http(path: "/v1/promotion_codes")
+  getPromotionCodes(active: Boolean, code: String, coupon: String, created: Type148, customer: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type149 @http(path: "/v1/promotion_codes", query: [{key: "active", value: "{{args.active}}"}, {key: "code", value: "{{args.code}}"}, {key: "coupon", value: "{{args.coupon}}"}, {key: "created", value: "{{args.created}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the promotion code with the given ID. In order to retrieve a promotion code by the customer-facing <code>code</code> use <a href="/docs/api/promotion_codes/list">list</a> with the desired <code>code</code>.</p>
   """
-  getPromotionCodesPromotionCode(expand: [String], promotionCode: String!): PromotionCode @http(path: "/v1/promotion_codes/{{args.promotionCode}}")
+  getPromotionCodesPromotionCode(expand: [String], promotionCode: String!): PromotionCode @http(path: "/v1/promotion_codes/{{args.promotionCode}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "promotionCode", value: "{{args.promotionCode}}"}])
   """
   <p>Returns a list of your quotes.</p>
   """
-  getQuotes(customer: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String, testClock: String): Type150 @http(path: "/v1/quotes")
+  getQuotes(customer: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String, testClock: String): Type150 @http(path: "/v1/quotes", query: [{key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}, {key: "testClock", value: "{{args.testClock}}"}])
   """
   <p>Retrieves the quote with the given ID.</p>
   """
-  getQuotesQuote(expand: [String], quote: String!): Quote @http(path: "/v1/quotes/{{args.quote}}")
+  getQuotesQuote(expand: [String], quote: String!): Quote @http(path: "/v1/quotes/{{args.quote}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>When retrieving a quote, there is an includable <a href="https://stripe.com/docs/api/quotes/object#quote_object-computed-upfront-line_items"><strong>computed.upfront.line_items</strong></a> property containing the first handful of those items. There is also a URL where you can retrieve the full (paginated) list of upfront line items.</p>
   """
-  getQuotesQuoteComputedUpfrontLineItems(endingBefore: String, expand: [String], limit: Int, quote: String!, startingAfter: String): Type151 @http(path: "/v1/quotes/{{args.quote}}/computed_upfront_line_items")
+  getQuotesQuoteComputedUpfrontLineItems(endingBefore: String, expand: [String], limit: Int, quote: String!, startingAfter: String): Type151 @http(path: "/v1/quotes/{{args.quote}}/computed_upfront_line_items", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>When retrieving a quote, there is an includable <strong>line_items</strong> property containing the first handful of those items. There is also a URL where you can retrieve the full (paginated) list of line items.</p>
   """
-  getQuotesQuoteLineItems(endingBefore: String, expand: [String], limit: Int, quote: String!, startingAfter: String): Type152 @http(path: "/v1/quotes/{{args.quote}}/line_items")
+  getQuotesQuoteLineItems(endingBefore: String, expand: [String], limit: Int, quote: String!, startingAfter: String): Type152 @http(path: "/v1/quotes/{{args.quote}}/line_items", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Download the PDF for a finalized quote. Explanation for special handling can be found <a href="https://docs.corp.stripe.com/quotes/overview#quote_pdf">here</a></p>
   """
-  getQuotesQuotePdf(expand: [String], quote: String!): String @http(path: "/v1/quotes/{{args.quote}}/pdf")
+  getQuotesQuotePdf(expand: [String], quote: String!): String @http(path: "/v1/quotes/{{args.quote}}/pdf", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of early fraud warnings.</p>
   """
-  getRadarEarlyFraudWarnings(charge: String, created: Type153, endingBefore: String, expand: [String], limit: Int, paymentIntent: String, startingAfter: String): Type154 @http(path: "/v1/radar/early_fraud_warnings")
+  getRadarEarlyFraudWarnings(charge: String, created: Type153, endingBefore: String, expand: [String], limit: Int, paymentIntent: String, startingAfter: String): Type154 @http(path: "/v1/radar/early_fraud_warnings", query: [{key: "charge", value: "{{args.charge}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "paymentIntent", value: "{{args.paymentIntent}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an early fraud warning that has previously been created. </p>
 
 <p>Please refer to the <a href="#early_fraud_warning_object">early fraud warning</a> object reference for more details.</p>
   """
-  getRadarEarlyFraudWarningsEarlyFraudWarning(earlyFraudWarning: String!, expand: [String]): Radar.earlyFraudWarning @http(path: "/v1/radar/early_fraud_warnings/{{args.earlyFraudWarning}}")
+  getRadarEarlyFraudWarningsEarlyFraudWarning(earlyFraudWarning: String!, expand: [String]): Radar.earlyFraudWarning @http(path: "/v1/radar/early_fraud_warnings/{{args.earlyFraudWarning}}", query: [{key: "earlyFraudWarning", value: "{{args.earlyFraudWarning}}"}, {key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of <code>ValueListItem</code> objects. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getRadarValueListItems(created: Type155, endingBefore: String, expand: [String], limit: Int, startingAfter: String, value: String, valueList: String!): Type156 @http(path: "/v1/radar/value_list_items")
+  getRadarValueListItems(created: Type155, endingBefore: String, expand: [String], limit: Int, startingAfter: String, value: String, valueList: String!): Type156 @http(path: "/v1/radar/value_list_items", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "value", value: "{{args.value}}"}, {key: "valueList", value: "{{args.valueList}}"}])
   """
   <p>Retrieves a <code>ValueListItem</code> object.</p>
   """
-  getRadarValueListItemsItem(expand: [String], item: String!): Radar.valueListItem @http(path: "/v1/radar/value_list_items/{{args.item}}")
+  getRadarValueListItemsItem(expand: [String], item: String!): Radar.valueListItem @http(path: "/v1/radar/value_list_items/{{args.item}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of <code>ValueList</code> objects. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getRadarValueLists(alias: String, contains: String, created: Type157, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type158 @http(path: "/v1/radar/value_lists")
+  getRadarValueLists(alias: String, contains: String, created: Type157, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type158 @http(path: "/v1/radar/value_lists", query: [{key: "alias", value: "{{args.alias}}"}, {key: "contains", value: "{{args.contains}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a <code>ValueList</code> object.</p>
   """
-  getRadarValueListsValueList(expand: [String], valueList: String!): Radar.valueList @http(path: "/v1/radar/value_lists/{{args.valueList}}")
+  getRadarValueListsValueList(expand: [String], valueList: String!): Radar.valueList @http(path: "/v1/radar/value_lists/{{args.valueList}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "valueList", value: "{{args.valueList}}"}])
   """
   <p>Returns a list of all refunds you created. We return the refunds in sorted order, with the most recent refunds appearing first The 10 most recent refunds are always available by default on the Charge object.</p>
   """
-  getRefunds(charge: String, created: Type159, endingBefore: String, expand: [String], limit: Int, paymentIntent: String, startingAfter: String): Type160 @http(path: "/v1/refunds")
+  getRefunds(charge: String, created: Type159, endingBefore: String, expand: [String], limit: Int, paymentIntent: String, startingAfter: String): Type160 @http(path: "/v1/refunds", query: [{key: "charge", value: "{{args.charge}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "paymentIntent", value: "{{args.paymentIntent}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an existing refund.</p>
   """
-  getRefundsRefund(expand: [String], refund: String!): Refund @http(path: "/v1/refunds/{{args.refund}}")
+  getRefundsRefund(expand: [String], refund: String!): Refund @http(path: "/v1/refunds/{{args.refund}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of Report Runs, with the most recent appearing first.</p>
   """
-  getReportingReportRuns(created: Type161, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type162 @http(path: "/v1/reporting/report_runs")
+  getReportingReportRuns(created: Type161, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type162 @http(path: "/v1/reporting/report_runs", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an existing Report Run.</p>
   """
-  getReportingReportRunsReportRun(expand: [String], reportRun: String!): Reporting.reportRun @http(path: "/v1/reporting/report_runs/{{args.reportRun}}")
+  getReportingReportRunsReportRun(expand: [String], reportRun: String!): Reporting.reportRun @http(path: "/v1/reporting/report_runs/{{args.reportRun}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "reportRun", value: "{{args.reportRun}}"}])
   """
   <p>Returns a full list of Report Types.</p>
   """
-  getReportingReportTypes(expand: [String]): Type163 @http(path: "/v1/reporting/report_types")
+  getReportingReportTypes(expand: [String]): Type163 @http(path: "/v1/reporting/report_types", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves the details of a Report Type. (Certain report types require a <a href="https://stripe.com/docs/keys#test-live-modes">live-mode API key</a>.)</p>
   """
-  getReportingReportTypesReportType(expand: [String], reportType: String!): Reporting.reportType @http(path: "/v1/reporting/report_types/{{args.reportType}}")
+  getReportingReportTypesReportType(expand: [String], reportType: String!): Reporting.reportType @http(path: "/v1/reporting/report_types/{{args.reportType}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "reportType", value: "{{args.reportType}}"}])
   """
   <p>Returns a list of <code>Review</code> objects that have <code>open</code> set to <code>true</code>. The objects are sorted in descending order by creation date, with the most recently created object appearing first.</p>
   """
-  getReviews(created: Type164, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type165 @http(path: "/v1/reviews")
+  getReviews(created: Type164, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type165 @http(path: "/v1/reviews", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a <code>Review</code> object.</p>
   """
-  getReviewsReview(expand: [String], review: String!): Review @http(path: "/v1/reviews/{{args.review}}")
+  getReviewsReview(expand: [String], review: String!): Review @http(path: "/v1/reviews/{{args.review}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of SetupAttempts that associate with a provided SetupIntent.</p>
   """
-  getSetupAttempts(created: Type166, endingBefore: String, expand: [String], limit: Int, setupIntent: String!, startingAfter: String): Type167 @http(path: "/v1/setup_attempts")
+  getSetupAttempts(created: Type166, endingBefore: String, expand: [String], limit: Int, setupIntent: String!, startingAfter: String): Type167 @http(path: "/v1/setup_attempts", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "setupIntent", value: "{{args.setupIntent}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Returns a list of SetupIntents.</p>
   """
-  getSetupIntents(attachToSelf: Boolean, created: Type168, customer: String, endingBefore: String, expand: [String], limit: Int, paymentMethod: String, startingAfter: String): Type169 @http(path: "/v1/setup_intents")
+  getSetupIntents(attachToSelf: Boolean, created: Type168, customer: String, endingBefore: String, expand: [String], limit: Int, paymentMethod: String, startingAfter: String): Type169 @http(path: "/v1/setup_intents", query: [{key: "attachToSelf", value: "{{args.attachToSelf}}"}, {key: "created", value: "{{args.created}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "paymentMethod", value: "{{args.paymentMethod}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of a SetupIntent that has previously been created. </p>
 
@@ -19658,276 +19658,276 @@ to an hour behind during outages. Search functionality is not available to merch
 
 <p>When retrieved with a publishable key, only a subset of properties will be returned. Please refer to the <a href="#setup_intent_object">SetupIntent</a> object reference for more details.</p>
   """
-  getSetupIntentsIntent(clientSecret: String, expand: [String], intent: String!): SetupIntent @http(path: "/v1/setup_intents/{{args.intent}}")
+  getSetupIntentsIntent(clientSecret: String, expand: [String], intent: String!): SetupIntent @http(path: "/v1/setup_intents/{{args.intent}}", query: [{key: "clientSecret", value: "{{args.clientSecret}}"}, {key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of your shipping rates.</p>
   """
-  getShippingRates(active: Boolean, created: Type170, currency: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type171 @http(path: "/v1/shipping_rates")
+  getShippingRates(active: Boolean, created: Type170, currency: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type171 @http(path: "/v1/shipping_rates", query: [{key: "active", value: "{{args.active}}"}, {key: "created", value: "{{args.created}}"}, {key: "currency", value: "{{args.currency}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Returns the shipping rate object with the given ID.</p>
   """
-  getShippingRatesShippingRateToken(expand: [String], shippingRateToken: String!): ShippingRate @http(path: "/v1/shipping_rates/{{args.shippingRateToken}}")
+  getShippingRatesShippingRateToken(expand: [String], shippingRateToken: String!): ShippingRate @http(path: "/v1/shipping_rates/{{args.shippingRateToken}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "shippingRateToken", value: "{{args.shippingRateToken}}"}])
   """
   <p>Returns a list of scheduled query runs.</p>
   """
-  getSigmaScheduledQueryRuns(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type172 @http(path: "/v1/sigma/scheduled_query_runs")
+  getSigmaScheduledQueryRuns(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type172 @http(path: "/v1/sigma/scheduled_query_runs", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an scheduled query run.</p>
   """
-  getSigmaScheduledQueryRunsScheduledQueryRun(expand: [String], scheduledQueryRun: String!): ScheduledQueryRun @http(path: "/v1/sigma/scheduled_query_runs/{{args.scheduledQueryRun}}")
+  getSigmaScheduledQueryRunsScheduledQueryRun(expand: [String], scheduledQueryRun: String!): ScheduledQueryRun @http(path: "/v1/sigma/scheduled_query_runs/{{args.scheduledQueryRun}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "scheduledQueryRun", value: "{{args.scheduledQueryRun}}"}])
   """
   <p>Retrieves an existing source object. Supply the unique source ID from a source creation request and Stripe will return the corresponding up-to-date source object information.</p>
   """
-  getSourcesSource(clientSecret: String, expand: [String], source: String!): Source @http(path: "/v1/sources/{{args.source}}")
+  getSourcesSource(clientSecret: String, expand: [String], source: String!): Source @http(path: "/v1/sources/{{args.source}}", query: [{key: "clientSecret", value: "{{args.clientSecret}}"}, {key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves a new Source MandateNotification.</p>
   """
-  getSourcesSourceMandateNotificationsMandateNotification(expand: [String], mandateNotification: String!, source: String!): SourceMandateNotification @http(path: "/v1/sources/{{args.source}}/mandate_notifications/{{args.mandateNotification}}")
+  getSourcesSourceMandateNotificationsMandateNotification(expand: [String], mandateNotification: String!, source: String!): SourceMandateNotification @http(path: "/v1/sources/{{args.source}}/mandate_notifications/{{args.mandateNotification}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "mandateNotification", value: "{{args.mandateNotification}}"}])
   """
   <p>List source transactions for a given source.</p>
   """
-  getSourcesSourceSourceTransactions(endingBefore: String, expand: [String], limit: Int, source: String!, startingAfter: String): Type173 @http(path: "/v1/sources/{{args.source}}/source_transactions")
+  getSourcesSourceSourceTransactions(endingBefore: String, expand: [String], limit: Int, source: String!, startingAfter: String): Type173 @http(path: "/v1/sources/{{args.source}}/source_transactions", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieve an existing source transaction object. Supply the unique source ID from a source creation request and the source transaction ID and Stripe will return the corresponding up-to-date source object information.</p>
   """
-  getSourcesSourceSourceTransactionsSourceTransaction(expand: [String], source: String!, sourceTransaction: String!): SourceTransaction @http(path: "/v1/sources/{{args.source}}/source_transactions/{{args.sourceTransaction}}")
+  getSourcesSourceSourceTransactionsSourceTransaction(expand: [String], source: String!, sourceTransaction: String!): SourceTransaction @http(path: "/v1/sources/{{args.source}}/source_transactions/{{args.sourceTransaction}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "sourceTransaction", value: "{{args.sourceTransaction}}"}])
   """
   <p>Returns a list of your subscription items for a given subscription.</p>
   """
-  getSubscriptionItems(endingBefore: String, expand: [String], limit: Int, startingAfter: String, subscription: String!): Type174 @http(path: "/v1/subscription_items")
+  getSubscriptionItems(endingBefore: String, expand: [String], limit: Int, startingAfter: String, subscription: String!): Type174 @http(path: "/v1/subscription_items", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "subscription", value: "{{args.subscription}}"}])
   """
   <p>Retrieves the subscription item with the given ID.</p>
   """
-  getSubscriptionItemsItem(expand: [String], item: String!): SubscriptionItem @http(path: "/v1/subscription_items/{{args.item}}")
+  getSubscriptionItemsItem(expand: [String], item: String!): SubscriptionItem @http(path: "/v1/subscription_items/{{args.item}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>For the specified subscription item, returns a list of summary objects. Each object in the list provides usage information that’s been summarized from multiple usage records and over a subscription billing period (e.g., 15 usage records in the month of September).</p>
 
 <p>The list is sorted in reverse-chronological order (newest first). The first list item represents the most current usage period that hasn’t ended yet. Since new usage records can still be added, the returned summary information for the subscription item’s ID should be seen as unstable until the subscription billing period ends.</p>
   """
-  getSubscriptionItemsSubscriptionItemUsageRecordSummaries(endingBefore: String, expand: [String], limit: Int, startingAfter: String, subscriptionItem: String!): Type175 @http(path: "/v1/subscription_items/{{args.subscriptionItem}}/usage_record_summaries")
+  getSubscriptionItemsSubscriptionItemUsageRecordSummaries(endingBefore: String, expand: [String], limit: Int, startingAfter: String, subscriptionItem: String!): Type175 @http(path: "/v1/subscription_items/{{args.subscriptionItem}}/usage_record_summaries", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "subscriptionItem", value: "{{args.subscriptionItem}}"}])
   """
   <p>Retrieves the list of your subscription schedules.</p>
   """
-  getSubscriptionSchedules(canceledAt: Type176, completedAt: Type177, created: Type178, customer: String, endingBefore: String, expand: [String], limit: Int, releasedAt: Type179, scheduled: Boolean, startingAfter: String): Type180 @http(path: "/v1/subscription_schedules")
+  getSubscriptionSchedules(canceledAt: Type176, completedAt: Type177, created: Type178, customer: String, endingBefore: String, expand: [String], limit: Int, releasedAt: Type179, scheduled: Boolean, startingAfter: String): Type180 @http(path: "/v1/subscription_schedules", query: [{key: "canceledAt", value: "{{args.canceledAt}}"}, {key: "completedAt", value: "{{args.completedAt}}"}, {key: "created", value: "{{args.created}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "releasedAt", value: "{{args.releasedAt}}"}, {key: "scheduled", value: "{{args.scheduled}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an existing subscription schedule. You only need to supply the unique subscription schedule identifier that was returned upon subscription schedule creation.</p>
   """
-  getSubscriptionSchedulesSchedule(expand: [String], schedule: String!): SubscriptionSchedule @http(path: "/v1/subscription_schedules/{{args.schedule}}")
+  getSubscriptionSchedulesSchedule(expand: [String], schedule: String!): SubscriptionSchedule @http(path: "/v1/subscription_schedules/{{args.schedule}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>By default, returns a list of subscriptions that have not been canceled. In order to list canceled subscriptions, specify <code>status=canceled</code>.</p>
   """
-  getSubscriptions(automaticTax: Type181, collectionMethod: String, created: Type182, currentPeriodEnd: Type183, currentPeriodStart: Type184, customer: String, endingBefore: String, expand: [String], limit: Int, price: String, startingAfter: String, status: String, testClock: String): Type185 @http(path: "/v1/subscriptions")
+  getSubscriptions(automaticTax: Type181, collectionMethod: String, created: Type182, currentPeriodEnd: Type183, currentPeriodStart: Type184, customer: String, endingBefore: String, expand: [String], limit: Int, price: String, startingAfter: String, status: String, testClock: String): Type185 @http(path: "/v1/subscriptions", query: [{key: "automaticTax", value: "{{args.automaticTax}}"}, {key: "collectionMethod", value: "{{args.collectionMethod}}"}, {key: "created", value: "{{args.created}}"}, {key: "currentPeriodEnd", value: "{{args.currentPeriodEnd}}"}, {key: "currentPeriodStart", value: "{{args.currentPeriodStart}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "price", value: "{{args.price}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}, {key: "testClock", value: "{{args.testClock}}"}])
   """
   <p>Search for subscriptions you’ve previously created using Stripe’s <a href="/docs/search#search-query-language">Search Query Language</a>.
 Don’t use search in read-after-write flows where strict consistency is necessary. Under normal operating
 conditions, data is searchable in less than a minute. Occasionally, propagation of new or updated data can be up
 to an hour behind during outages. Search functionality is not available to merchants in India.</p>
   """
-  getSubscriptionsSearch(expand: [String], limit: Int, page: String, query: String!): Type186 @http(path: "/v1/subscriptions/search")
+  getSubscriptionsSearch(expand: [String], limit: Int, page: String, query: String!): Type186 @http(path: "/v1/subscriptions/search", query: [{key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "page", value: "{{args.page}}"}, {key: "query", value: "{{args.query}}"}])
   """
   <p>Retrieves the subscription with the given ID.</p>
   """
-  getSubscriptionsSubscriptionExposedId(expand: [String], subscriptionExposedId: String!): Subscription @http(path: "/v1/subscriptions/{{args.subscriptionExposedId}}")
+  getSubscriptionsSubscriptionExposedId(expand: [String], subscriptionExposedId: String!): Subscription @http(path: "/v1/subscriptions/{{args.subscriptionExposedId}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "subscriptionExposedId", value: "{{args.subscriptionExposedId}}"}])
   """
   <p>Retrieves the line items of a persisted tax calculation as a collection.</p>
   """
-  getTaxCalculationsCalculationLineItems(calculation: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type187 @http(path: "/v1/tax/calculations/{{args.calculation}}/line_items")
+  getTaxCalculationsCalculationLineItems(calculation: String!, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type187 @http(path: "/v1/tax/calculations/{{args.calculation}}/line_items", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>A list of <a href="https://stripe.com/docs/tax/tax-categories">all tax codes available</a> to add to Products in order to allow specific tax calculations.</p>
   """
-  getTaxCodes(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type190 @http(path: "/v1/tax_codes")
+  getTaxCodes(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type190 @http(path: "/v1/tax_codes", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an existing tax code. Supply the unique tax code ID and Stripe will return the corresponding tax code information.</p>
   """
-  getTaxCodesId(expand: [String], id: String!): TaxCode @http(path: "/v1/tax_codes/{{args.id}}")
+  getTaxCodesId(expand: [String], id: String!): TaxCode @http(path: "/v1/tax_codes/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of tax IDs.</p>
   """
-  getTaxIds(endingBefore: String, expand: [String], limit: Int, owner: Type191, startingAfter: String): Type192 @http(path: "/v1/tax_ids")
+  getTaxIds(endingBefore: String, expand: [String], limit: Int, owner: Type191, startingAfter: String): Type192 @http(path: "/v1/tax_ids", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "owner", value: "{{args.owner}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves an account or customer <code>tax_id</code> object.</p>
   """
-  getTaxIdsId(expand: [String], id: String!): TaxId @http(path: "/v1/tax_ids/{{args.id}}")
+  getTaxIdsId(expand: [String], id: String!): TaxId @http(path: "/v1/tax_ids/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of your tax rates. Tax rates are returned sorted by creation date, with the most recently created tax rates appearing first.</p>
   """
-  getTaxRates(active: Boolean, created: Type193, endingBefore: String, expand: [String], inclusive: Boolean, limit: Int, startingAfter: String): Type194 @http(path: "/v1/tax_rates")
+  getTaxRates(active: Boolean, created: Type193, endingBefore: String, expand: [String], inclusive: Boolean, limit: Int, startingAfter: String): Type194 @http(path: "/v1/tax_rates", query: [{key: "active", value: "{{args.active}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "inclusive", value: "{{args.inclusive}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a tax rate with the given ID</p>
   """
-  getTaxRatesTaxRate(expand: [String], taxRate: String!): TaxRate @http(path: "/v1/tax_rates/{{args.taxRate}}")
+  getTaxRatesTaxRate(expand: [String], taxRate: String!): TaxRate @http(path: "/v1/tax_rates/{{args.taxRate}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "taxRate", value: "{{args.taxRate}}"}])
   """
   <p>Returns a list of Tax <code>Registration</code> objects.</p>
   """
-  getTaxRegistrations(endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type188 @http(path: "/v1/tax/registrations")
+  getTaxRegistrations(endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type188 @http(path: "/v1/tax/registrations", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Returns a Tax <code>Registration</code> object.</p>
   """
-  getTaxRegistrationsId(expand: [String], id: String!): Tax.registration @http(path: "/v1/tax/registrations/{{args.id}}")
+  getTaxRegistrationsId(expand: [String], id: String!): Tax.registration @http(path: "/v1/tax/registrations/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves Tax <code>Settings</code> for a merchant.</p>
   """
-  getTaxSettings(expand: [String]): Tax.settings @http(path: "/v1/tax/settings")
+  getTaxSettings(expand: [String]): Tax.settings @http(path: "/v1/tax/settings", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves a Tax <code>Transaction</code> object.</p>
   """
-  getTaxTransactionsTransaction(expand: [String], transaction: String!): Tax.transaction @http(path: "/v1/tax/transactions/{{args.transaction}}")
+  getTaxTransactionsTransaction(expand: [String], transaction: String!): Tax.transaction @http(path: "/v1/tax/transactions/{{args.transaction}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves the line items of a committed standalone transaction as a collection.</p>
   """
-  getTaxTransactionsTransactionLineItems(endingBefore: String, expand: [String], limit: Int, startingAfter: String, transaction: String!): Type189 @http(path: "/v1/tax/transactions/{{args.transaction}}/line_items")
+  getTaxTransactionsTransactionLineItems(endingBefore: String, expand: [String], limit: Int, startingAfter: String, transaction: String!): Type189 @http(path: "/v1/tax/transactions/{{args.transaction}}/line_items", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Returns a list of <code>Configuration</code> objects.</p>
   """
-  getTerminalConfigurations(endingBefore: String, expand: [String], isAccountDefault: Boolean, limit: Int, startingAfter: String): Type195 @http(path: "/v1/terminal/configurations")
+  getTerminalConfigurations(endingBefore: String, expand: [String], isAccountDefault: Boolean, limit: Int, startingAfter: String): Type195 @http(path: "/v1/terminal/configurations", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "isAccountDefault", value: "{{args.isAccountDefault}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a <code>Configuration</code> object.</p>
   """
-  getTerminalConfigurationsConfiguration(configuration: String!, expand: [String]): Type196 @http(path: "/v1/terminal/configurations/{{args.configuration}}")
+  getTerminalConfigurationsConfiguration(configuration: String!, expand: [String]): Type196 @http(path: "/v1/terminal/configurations/{{args.configuration}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of <code>Location</code> objects.</p>
   """
-  getTerminalLocations(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type197 @http(path: "/v1/terminal/locations")
+  getTerminalLocations(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type197 @http(path: "/v1/terminal/locations", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a <code>Location</code> object.</p>
   """
-  getTerminalLocationsLocation(expand: [String], location: String!): Type198 @http(path: "/v1/terminal/locations/{{args.location}}")
+  getTerminalLocationsLocation(expand: [String], location: String!): Type198 @http(path: "/v1/terminal/locations/{{args.location}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of <code>Reader</code> objects.</p>
   """
-  getTerminalReaders(deviceType: String, endingBefore: String, expand: [String], limit: Int, location: String, serialNumber: String, startingAfter: String, status: String): Type199 @http(path: "/v1/terminal/readers")
+  getTerminalReaders(deviceType: String, endingBefore: String, expand: [String], limit: Int, location: String, serialNumber: String, startingAfter: String, status: String): Type199 @http(path: "/v1/terminal/readers", query: [{key: "deviceType", value: "{{args.deviceType}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "location", value: "{{args.location}}"}, {key: "serialNumber", value: "{{args.serialNumber}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves a <code>Reader</code> object.</p>
   """
-  getTerminalReadersReader(expand: [String], reader: String!): Type200 @http(path: "/v1/terminal/readers/{{args.reader}}")
+  getTerminalReadersReader(expand: [String], reader: String!): Type200 @http(path: "/v1/terminal/readers/{{args.reader}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of your test clocks.</p>
   """
-  getTestHelpersTestClocks(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type201 @http(path: "/v1/test_helpers/test_clocks")
+  getTestHelpersTestClocks(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type201 @http(path: "/v1/test_helpers/test_clocks", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves a test clock.</p>
   """
-  getTestHelpersTestClocksTestClock(expand: [String], testClock: String!): TestHelpers.testClock @http(path: "/v1/test_helpers/test_clocks/{{args.testClock}}")
+  getTestHelpersTestClocksTestClock(expand: [String], testClock: String!): TestHelpers.testClock @http(path: "/v1/test_helpers/test_clocks/{{args.testClock}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "testClock", value: "{{args.testClock}}"}])
   """
   <p>Retrieves the token with the given ID.</p>
   """
-  getTokensToken(expand: [String], token: String!): Token @http(path: "/v1/tokens/{{args.token}}")
+  getTokensToken(expand: [String], token: String!): Token @http(path: "/v1/tokens/{{args.token}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of top-ups.</p>
   """
-  getTopups(amount: Type202, created: Type203, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type204 @http(path: "/v1/topups")
+  getTopups(amount: Type202, created: Type203, endingBefore: String, expand: [String], limit: Int, startingAfter: String, status: String): Type204 @http(path: "/v1/topups", query: [{key: "amount", value: "{{args.amount}}"}, {key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves the details of a top-up that has previously been created. Supply the unique top-up ID that was returned from your previous request, and Stripe will return the corresponding top-up information.</p>
   """
-  getTopupsTopup(expand: [String], topup: String!): Topup @http(path: "/v1/topups/{{args.topup}}")
+  getTopupsTopup(expand: [String], topup: String!): Topup @http(path: "/v1/topups/{{args.topup}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of existing transfers sent to connected accounts. The transfers are returned in sorted order, with the most recently created transfers appearing first.</p>
   """
-  getTransfers(created: Type205, destination: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String, transferGroup: String): Type206 @http(path: "/v1/transfers")
+  getTransfers(created: Type205, destination: String, endingBefore: String, expand: [String], limit: Int, startingAfter: String, transferGroup: String): Type206 @http(path: "/v1/transfers", query: [{key: "created", value: "{{args.created}}"}, {key: "destination", value: "{{args.destination}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "transferGroup", value: "{{args.transferGroup}}"}])
   """
   <p>You can see a list of the reversals belonging to a specific transfer. Note that the 10 most recent reversals are always available by default on the transfer object. If you need more than those 10, you can use this API method and the <code>limit</code> and <code>starting_after</code> parameters to page through additional reversals.</p>
   """
-  getTransfersIdReversals(endingBefore: String, expand: [String], id: String!, limit: Int, startingAfter: String): Type207 @http(path: "/v1/transfers/{{args.id}}/reversals")
+  getTransfersIdReversals(endingBefore: String, expand: [String], id: String!, limit: Int, startingAfter: String): Type207 @http(path: "/v1/transfers/{{args.id}}/reversals", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of an existing transfer. Supply the unique transfer ID from either a transfer creation request or the transfer list, and Stripe will return the corresponding transfer information.</p>
   """
-  getTransfersTransfer(expand: [String], transfer: String!): Transfer @http(path: "/v1/transfers/{{args.transfer}}")
+  getTransfersTransfer(expand: [String], transfer: String!): Transfer @http(path: "/v1/transfers/{{args.transfer}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>By default, you can see the 10 most recent reversals stored directly on the transfer object, but you can also retrieve details about a specific reversal stored on the transfer.</p>
   """
-  getTransfersTransferReversalsId(expand: [String], id: String!, transfer: String!): TransferReversal @http(path: "/v1/transfers/{{args.transfer}}/reversals/{{args.id}}")
+  getTransfersTransferReversalsId(expand: [String], id: String!, transfer: String!): TransferReversal @http(path: "/v1/transfers/{{args.transfer}}/reversals/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of CreditReversals.</p>
   """
-  getTreasuryCreditReversals(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, receivedCredit: String, startingAfter: String, status: String): Type208 @http(path: "/v1/treasury/credit_reversals")
+  getTreasuryCreditReversals(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, receivedCredit: String, startingAfter: String, status: String): Type208 @http(path: "/v1/treasury/credit_reversals", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "receivedCredit", value: "{{args.receivedCredit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves the details of an existing CreditReversal by passing the unique CreditReversal ID from either the CreditReversal creation request or CreditReversal list</p>
   """
-  getTreasuryCreditReversalsCreditReversal(creditReversal: String!, expand: [String]): Treasury.creditReversal @http(path: "/v1/treasury/credit_reversals/{{args.creditReversal}}")
+  getTreasuryCreditReversalsCreditReversal(creditReversal: String!, expand: [String]): Treasury.creditReversal @http(path: "/v1/treasury/credit_reversals/{{args.creditReversal}}", query: [{key: "creditReversal", value: "{{args.creditReversal}}"}, {key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of DebitReversals.</p>
   """
-  getTreasuryDebitReversals(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, receivedDebit: String, resolution: String, startingAfter: String, status: String): Type209 @http(path: "/v1/treasury/debit_reversals")
+  getTreasuryDebitReversals(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, receivedDebit: String, resolution: String, startingAfter: String, status: String): Type209 @http(path: "/v1/treasury/debit_reversals", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "receivedDebit", value: "{{args.receivedDebit}}"}, {key: "resolution", value: "{{args.resolution}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves a DebitReversal object.</p>
   """
-  getTreasuryDebitReversalsDebitReversal(debitReversal: String!, expand: [String]): Treasury.debitReversal @http(path: "/v1/treasury/debit_reversals/{{args.debitReversal}}")
+  getTreasuryDebitReversalsDebitReversal(debitReversal: String!, expand: [String]): Treasury.debitReversal @http(path: "/v1/treasury/debit_reversals/{{args.debitReversal}}", query: [{key: "debitReversal", value: "{{args.debitReversal}}"}, {key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of FinancialAccounts.</p>
   """
-  getTreasuryFinancialAccounts(created: Type210, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type211 @http(path: "/v1/treasury/financial_accounts")
+  getTreasuryFinancialAccounts(created: Type210, endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type211 @http(path: "/v1/treasury/financial_accounts", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the details of a FinancialAccount.</p>
   """
-  getTreasuryFinancialAccountsFinancialAccount(expand: [String], financialAccount: String!): Treasury.financialAccount @http(path: "/v1/treasury/financial_accounts/{{args.financialAccount}}")
+  getTreasuryFinancialAccountsFinancialAccount(expand: [String], financialAccount: String!): Treasury.financialAccount @http(path: "/v1/treasury/financial_accounts/{{args.financialAccount}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}])
   """
   <p>Retrieves Features information associated with the FinancialAccount.</p>
   """
-  getTreasuryFinancialAccountsFinancialAccountFeatures(expand: [String], financialAccount: String!): Treasury.financialAccountFeatures @http(path: "/v1/treasury/financial_accounts/{{args.financialAccount}}/features")
+  getTreasuryFinancialAccountsFinancialAccountFeatures(expand: [String], financialAccount: String!): Treasury.financialAccountFeatures @http(path: "/v1/treasury/financial_accounts/{{args.financialAccount}}/features", query: [{key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}])
   """
   <p>Returns a list of InboundTransfers sent from the specified FinancialAccount.</p>
   """
-  getTreasuryInboundTransfers(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, startingAfter: String, status: String): Type212 @http(path: "/v1/treasury/inbound_transfers")
+  getTreasuryInboundTransfers(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, startingAfter: String, status: String): Type212 @http(path: "/v1/treasury/inbound_transfers", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves the details of an existing InboundTransfer.</p>
   """
-  getTreasuryInboundTransfersId(expand: [String], id: String!): Treasury.inboundTransfer @http(path: "/v1/treasury/inbound_transfers/{{args.id}}")
+  getTreasuryInboundTransfersId(expand: [String], id: String!): Treasury.inboundTransfer @http(path: "/v1/treasury/inbound_transfers/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of OutboundPayments sent from the specified FinancialAccount.</p>
   """
-  getTreasuryOutboundPayments(created: Type213, customer: String, endingBefore: String, expand: [String], financialAccount: String!, limit: Int, startingAfter: String, status: String): Type214 @http(path: "/v1/treasury/outbound_payments")
+  getTreasuryOutboundPayments(created: Type213, customer: String, endingBefore: String, expand: [String], financialAccount: String!, limit: Int, startingAfter: String, status: String): Type214 @http(path: "/v1/treasury/outbound_payments", query: [{key: "created", value: "{{args.created}}"}, {key: "customer", value: "{{args.customer}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves the details of an existing OutboundPayment by passing the unique OutboundPayment ID from either the OutboundPayment creation request or OutboundPayment list.</p>
   """
-  getTreasuryOutboundPaymentsId(expand: [String], id: String!): Treasury.outboundPayment @http(path: "/v1/treasury/outbound_payments/{{args.id}}")
+  getTreasuryOutboundPaymentsId(expand: [String], id: String!): Treasury.outboundPayment @http(path: "/v1/treasury/outbound_payments/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of OutboundTransfers sent from the specified FinancialAccount.</p>
   """
-  getTreasuryOutboundTransfers(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, startingAfter: String, status: String): Type215 @http(path: "/v1/treasury/outbound_transfers")
+  getTreasuryOutboundTransfers(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, startingAfter: String, status: String): Type215 @http(path: "/v1/treasury/outbound_transfers", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves the details of an existing OutboundTransfer by passing the unique OutboundTransfer ID from either the OutboundTransfer creation request or OutboundTransfer list.</p>
   """
-  getTreasuryOutboundTransfersOutboundTransfer(expand: [String], outboundTransfer: String!): Treasury.outboundTransfer @http(path: "/v1/treasury/outbound_transfers/{{args.outboundTransfer}}")
+  getTreasuryOutboundTransfersOutboundTransfer(expand: [String], outboundTransfer: String!): Treasury.outboundTransfer @http(path: "/v1/treasury/outbound_transfers/{{args.outboundTransfer}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "outboundTransfer", value: "{{args.outboundTransfer}}"}])
   """
   <p>Returns a list of ReceivedCredits.</p>
   """
-  getTreasuryReceivedCredits(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, linkedFlows: Type216, startingAfter: String, status: String): Type217 @http(path: "/v1/treasury/received_credits")
+  getTreasuryReceivedCredits(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, linkedFlows: Type216, startingAfter: String, status: String): Type217 @http(path: "/v1/treasury/received_credits", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "linkedFlows", value: "{{args.linkedFlows}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves the details of an existing ReceivedCredit by passing the unique ReceivedCredit ID from the ReceivedCredit list.</p>
   """
-  getTreasuryReceivedCreditsId(expand: [String], id: String!): Treasury.receivedCredit @http(path: "/v1/treasury/received_credits/{{args.id}}")
+  getTreasuryReceivedCreditsId(expand: [String], id: String!): Treasury.receivedCredit @http(path: "/v1/treasury/received_credits/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of ReceivedDebits.</p>
   """
-  getTreasuryReceivedDebits(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, startingAfter: String, status: String): Type218 @http(path: "/v1/treasury/received_debits")
+  getTreasuryReceivedDebits(endingBefore: String, expand: [String], financialAccount: String!, limit: Int, startingAfter: String, status: String): Type218 @http(path: "/v1/treasury/received_debits", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}])
   """
   <p>Retrieves the details of an existing ReceivedDebit by passing the unique ReceivedDebit ID from the ReceivedDebit list</p>
   """
-  getTreasuryReceivedDebitsId(expand: [String], id: String!): Treasury.receivedDebit @http(path: "/v1/treasury/received_debits/{{args.id}}")
+  getTreasuryReceivedDebitsId(expand: [String], id: String!): Treasury.receivedDebit @http(path: "/v1/treasury/received_debits/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves a list of TransactionEntry objects.</p>
   """
-  getTreasuryTransactionEntries(created: Type219, effectiveAt: Type220, endingBefore: String, expand: [String], financialAccount: String!, limit: Int, orderBy: String, startingAfter: String, transaction: String): Type221 @http(path: "/v1/treasury/transaction_entries")
+  getTreasuryTransactionEntries(created: Type219, effectiveAt: Type220, endingBefore: String, expand: [String], financialAccount: String!, limit: Int, orderBy: String, startingAfter: String, transaction: String): Type221 @http(path: "/v1/treasury/transaction_entries", query: [{key: "created", value: "{{args.created}}"}, {key: "effectiveAt", value: "{{args.effectiveAt}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "orderBy", value: "{{args.orderBy}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "transaction", value: "{{args.transaction}}"}])
   """
   <p>Retrieves a TransactionEntry object.</p>
   """
-  getTreasuryTransactionEntriesId(expand: [String], id: String!): Treasury.transactionEntry @http(path: "/v1/treasury/transaction_entries/{{args.id}}")
+  getTreasuryTransactionEntriesId(expand: [String], id: String!): Treasury.transactionEntry @http(path: "/v1/treasury/transaction_entries/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Retrieves a list of Transaction objects.</p>
   """
-  getTreasuryTransactions(created: Type222, endingBefore: String, expand: [String], financialAccount: String!, limit: Int, orderBy: String, startingAfter: String, status: String, statusTransitions: Type223): Type224 @http(path: "/v1/treasury/transactions")
+  getTreasuryTransactions(created: Type222, endingBefore: String, expand: [String], financialAccount: String!, limit: Int, orderBy: String, startingAfter: String, status: String, statusTransitions: Type223): Type224 @http(path: "/v1/treasury/transactions", query: [{key: "created", value: "{{args.created}}"}, {key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "financialAccount", value: "{{args.financialAccount}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "orderBy", value: "{{args.orderBy}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}, {key: "status", value: "{{args.status}}"}, {key: "statusTransitions", value: "{{args.statusTransitions}}"}])
   """
   <p>Retrieves the details of an existing Transaction.</p>
   """
-  getTreasuryTransactionsId(expand: [String], id: String!): Treasury.transaction @http(path: "/v1/treasury/transactions/{{args.id}}")
+  getTreasuryTransactionsId(expand: [String], id: String!): Treasury.transaction @http(path: "/v1/treasury/transactions/{{args.id}}", query: [{key: "expand", value: "{{args.expand}}"}])
   """
   <p>Returns a list of your webhook endpoints.</p>
   """
-  getWebhookEndpoints(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type225 @http(path: "/v1/webhook_endpoints")
+  getWebhookEndpoints(endingBefore: String, expand: [String], limit: Int, startingAfter: String): Type225 @http(path: "/v1/webhook_endpoints", query: [{key: "endingBefore", value: "{{args.endingBefore}}"}, {key: "expand", value: "{{args.expand}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "startingAfter", value: "{{args.startingAfter}}"}])
   """
   <p>Retrieves the webhook endpoint with the given ID.</p>
   """
-  getWebhookEndpointsWebhookEndpoint(expand: [String], webhookEndpoint: String!): WebhookEndpoint @http(path: "/v1/webhook_endpoints/{{args.webhookEndpoint}}")
+  getWebhookEndpointsWebhookEndpoint(expand: [String], webhookEndpoint: String!): WebhookEndpoint @http(path: "/v1/webhook_endpoints/{{args.webhookEndpoint}}", query: [{key: "expand", value: "{{args.expand}}"}, {key: "webhookEndpoint", value: "{{args.webhookEndpoint}}"}])
   """
   <p>Creates an AccountLink object that includes a single-use Stripe URL that the platform can redirect their user to in order to take them through the Connect Onboarding flow.</p>
   """
@@ -20109,7 +20109,7 @@ so they can only be updated through this endpoint. Other fields, such as <code>a
 item and the invoice line item, so updates on this endpoint will propagate to the invoice item as well.
 Updating an invoice’s line item is only possible before the invoice is finalized.</p>
   """
-  postInvoicesInvoiceLinesLineItemId(invoice: String!, lineItemId: String!): LineItem @http(method: "POST", path: "/v1/invoices/{{args.invoice}}/lines/{{args.lineItemId}}")
+  postInvoicesInvoiceLinesLineItemId(invoice: String!, lineItemId: String!): LineItem @http(method: "POST", path: "/v1/invoices/{{args.invoice}}/lines/{{args.lineItemId}}", query: [{key: "lineItemId", value: "{{args.lineItemId}}"}])
   """
   <p>Marking an invoice as uncollectible is useful for keeping track of bad debts that can be written off for accounting purposes.</p>
   """
@@ -20240,7 +20240,7 @@ The payment method doesn’t appear in Elements for this domain until it is acti
 
 <p>Related guides: <a href="/docs/payments/payment-methods/pmd-registration">Payment method domains</a>.</p>
   """
-  postPaymentMethodDomainsPaymentMethodDomainValidate(paymentMethodDomain: String!): PaymentMethodDomain @http(method: "POST", path: "/v1/payment_method_domains/{{args.paymentMethodDomain}}/validate")
+  postPaymentMethodDomainsPaymentMethodDomainValidate(paymentMethodDomain: String!): PaymentMethodDomain @http(method: "POST", path: "/v1/payment_method_domains/{{args.paymentMethodDomain}}/validate", query: [{key: "paymentMethodDomain", value: "{{args.paymentMethodDomain}}"}])
   """
   <p>Attaches a PaymentMethod object to a Customer.</p>
 
@@ -20256,11 +20256,11 @@ future payments.</p>
 set <a href="/docs/api/customers/update#update_customer-invoice_settings-default_payment_method"><code>invoice_settings.default_payment_method</code></a>,
 on the Customer to the PaymentMethod’s ID.</p>
   """
-  postPaymentMethodsPaymentMethodAttach(paymentMethod: String!): PaymentMethod @http(method: "POST", path: "/v1/payment_methods/{{args.paymentMethod}}/attach")
+  postPaymentMethodsPaymentMethodAttach(paymentMethod: String!): PaymentMethod @http(method: "POST", path: "/v1/payment_methods/{{args.paymentMethod}}/attach", query: [{key: "paymentMethod", value: "{{args.paymentMethod}}"}])
   """
   <p>Detaches a PaymentMethod object from a Customer. After a PaymentMethod is detached, it can no longer be used for a payment or re-attached to a Customer.</p>
   """
-  postPaymentMethodsPaymentMethodDetach(paymentMethod: String!): PaymentMethod @http(method: "POST", path: "/v1/payment_methods/{{args.paymentMethod}}/detach")
+  postPaymentMethodsPaymentMethodDetach(paymentMethod: String!): PaymentMethod @http(method: "POST", path: "/v1/payment_methods/{{args.paymentMethod}}/detach", query: [{key: "paymentMethod", value: "{{args.paymentMethod}}"}])
   """
   <p>You can cancel a previously created payout if its status is <code>pending</code>. Stripe refunds the funds to your available balance. You can’t cancel automatic Stripe payouts.</p>
   """
@@ -20337,7 +20337,7 @@ confirmation limit is reached.</p>
 
 <p>The default pricing model for metered billing is <a href="/docs/api/plans/object#plan_object-billing_scheme">per-unit pricing</a>. For finer granularity, you can configure metered billing to have a <a href="https://stripe.com/docs/billing/subscriptions/tiers">tiered pricing</a> model.</p>
   """
-  postSubscriptionItemsSubscriptionItemUsageRecords(subscriptionItem: String!): UsageRecord @http(method: "POST", path: "/v1/subscription_items/{{args.subscriptionItem}}/usage_records")
+  postSubscriptionItemsSubscriptionItemUsageRecords(subscriptionItem: String!): UsageRecord @http(method: "POST", path: "/v1/subscription_items/{{args.subscriptionItem}}/usage_records", query: [{key: "subscriptionItem", value: "{{args.subscriptionItem}}"}])
   """
   <p>Cancels a subscription schedule and its associated subscription immediately (if the subscription schedule has an active subscription). A subscription schedule can only be canceled if its status is <code>not_started</code> or <code>active</code>.</p>
   """
@@ -20433,15 +20433,15 @@ confirmation limit is reached.</p>
   """
   <p>Updates the <code>status</code> of the specified testmode personalization design object to <code>active</code>.</p>
   """
-  postTestHelpersIssuingPersonalizationDesignsPersonalizationDesignActivate(personalizationDesign: String!): Issuing.personalizationDesign @http(method: "POST", path: "/v1/test_helpers/issuing/personalization_designs/{{args.personalizationDesign}}/activate")
+  postTestHelpersIssuingPersonalizationDesignsPersonalizationDesignActivate(personalizationDesign: String!): Issuing.personalizationDesign @http(method: "POST", path: "/v1/test_helpers/issuing/personalization_designs/{{args.personalizationDesign}}/activate", query: [{key: "personalizationDesign", value: "{{args.personalizationDesign}}"}])
   """
   <p>Updates the <code>status</code> of the specified testmode personalization design object to <code>inactive</code>.</p>
   """
-  postTestHelpersIssuingPersonalizationDesignsPersonalizationDesignDeactivate(personalizationDesign: String!): Issuing.personalizationDesign @http(method: "POST", path: "/v1/test_helpers/issuing/personalization_designs/{{args.personalizationDesign}}/deactivate")
+  postTestHelpersIssuingPersonalizationDesignsPersonalizationDesignDeactivate(personalizationDesign: String!): Issuing.personalizationDesign @http(method: "POST", path: "/v1/test_helpers/issuing/personalization_designs/{{args.personalizationDesign}}/deactivate", query: [{key: "personalizationDesign", value: "{{args.personalizationDesign}}"}])
   """
   <p>Updates the <code>status</code> of the specified testmode personalization design object to <code>rejected</code>.</p>
   """
-  postTestHelpersIssuingPersonalizationDesignsPersonalizationDesignReject(personalizationDesign: String!): Issuing.personalizationDesign @http(method: "POST", path: "/v1/test_helpers/issuing/personalization_designs/{{args.personalizationDesign}}/reject")
+  postTestHelpersIssuingPersonalizationDesignsPersonalizationDesignReject(personalizationDesign: String!): Issuing.personalizationDesign @http(method: "POST", path: "/v1/test_helpers/issuing/personalization_designs/{{args.personalizationDesign}}/reject", query: [{key: "personalizationDesign", value: "{{args.personalizationDesign}}"}])
   """
   <p>Allows the user to capture an arbitrary amount, also known as a forced capture.</p>
   """
@@ -20465,7 +20465,7 @@ confirmation limit is reached.</p>
   """
   <p>Starts advancing a test clock to a specified time in the future. Advancement is done when status changes to <code>Ready</code>.</p>
   """
-  postTestHelpersTestClocksTestClockAdvance(testClock: String!): TestHelpers.testClock @http(method: "POST", path: "/v1/test_helpers/test_clocks/{{args.testClock}}/advance")
+  postTestHelpersTestClocksTestClockAdvance(testClock: String!): TestHelpers.testClock @http(method: "POST", path: "/v1/test_helpers/test_clocks/{{args.testClock}}/advance", query: [{key: "testClock", value: "{{args.testClock}}"}])
   """
   <p>Transitions a test mode created InboundTransfer to the <code>failed</code> status. The InboundTransfer must already be in the <code>processing</code> state.</p>
   """
@@ -20493,15 +20493,15 @@ confirmation limit is reached.</p>
   """
   <p>Transitions a test mode created OutboundTransfer to the <code>failed</code> status. The OutboundTransfer must already be in the <code>processing</code> state.</p>
   """
-  postTestHelpersTreasuryOutboundTransfersOutboundTransferFail(outboundTransfer: String!): Treasury.outboundTransfer @http(method: "POST", path: "/v1/test_helpers/treasury/outbound_transfers/{{args.outboundTransfer}}/fail")
+  postTestHelpersTreasuryOutboundTransfersOutboundTransferFail(outboundTransfer: String!): Treasury.outboundTransfer @http(method: "POST", path: "/v1/test_helpers/treasury/outbound_transfers/{{args.outboundTransfer}}/fail", query: [{key: "outboundTransfer", value: "{{args.outboundTransfer}}"}])
   """
   <p>Transitions a test mode created OutboundTransfer to the <code>posted</code> status. The OutboundTransfer must already be in the <code>processing</code> state.</p>
   """
-  postTestHelpersTreasuryOutboundTransfersOutboundTransferPost(outboundTransfer: String!): Treasury.outboundTransfer @http(method: "POST", path: "/v1/test_helpers/treasury/outbound_transfers/{{args.outboundTransfer}}/post")
+  postTestHelpersTreasuryOutboundTransfersOutboundTransferPost(outboundTransfer: String!): Treasury.outboundTransfer @http(method: "POST", path: "/v1/test_helpers/treasury/outbound_transfers/{{args.outboundTransfer}}/post", query: [{key: "outboundTransfer", value: "{{args.outboundTransfer}}"}])
   """
   <p>Transitions a test mode created OutboundTransfer to the <code>returned</code> status. The OutboundTransfer must already be in the <code>processing</code> state.</p>
   """
-  postTestHelpersTreasuryOutboundTransfersOutboundTransferReturn(outboundTransfer: String!): Treasury.outboundTransfer @http(method: "POST", path: "/v1/test_helpers/treasury/outbound_transfers/{{args.outboundTransfer}}/return")
+  postTestHelpersTreasuryOutboundTransfersOutboundTransferReturn(outboundTransfer: String!): Treasury.outboundTransfer @http(method: "POST", path: "/v1/test_helpers/treasury/outbound_transfers/{{args.outboundTransfer}}/return", query: [{key: "outboundTransfer", value: "{{args.outboundTransfer}}"}])
   """
   <p>Use this endpoint to simulate a test mode ReceivedCredit initiated by a third party. In live mode, you can’t directly create ReceivedCredits initiated by third parties.</p>
   """
@@ -20522,7 +20522,7 @@ You can use this token with any API method in place of a bank account dictionary
   """
   <p>Cancels an InboundTransfer.</p>
   """
-  postTreasuryInboundTransfersInboundTransferCancel(inboundTransfer: String!): Treasury.inboundTransfer @http(method: "POST", path: "/v1/treasury/inbound_transfers/{{args.inboundTransfer}}/cancel")
+  postTreasuryInboundTransfersInboundTransferCancel(inboundTransfer: String!): Treasury.inboundTransfer @http(method: "POST", path: "/v1/treasury/inbound_transfers/{{args.inboundTransfer}}/cancel", query: [{key: "inboundTransfer", value: "{{args.inboundTransfer}}"}])
   """
   <p>Cancel an OutboundPayment.</p>
   """
@@ -20530,7 +20530,7 @@ You can use this token with any API method in place of a bank account dictionary
   """
   <p>An OutboundTransfer can be canceled if the funds have not yet been paid out.</p>
   """
-  postTreasuryOutboundTransfersOutboundTransferCancel(outboundTransfer: String!): Treasury.outboundTransfer @http(method: "POST", path: "/v1/treasury/outbound_transfers/{{args.outboundTransfer}}/cancel")
+  postTreasuryOutboundTransfersOutboundTransferCancel(outboundTransfer: String!): Treasury.outboundTransfer @http(method: "POST", path: "/v1/treasury/outbound_transfers/{{args.outboundTransfer}}/cancel", query: [{key: "outboundTransfer", value: "{{args.outboundTransfer}}"}])
 }
 
   """
