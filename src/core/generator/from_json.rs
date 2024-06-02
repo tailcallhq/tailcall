@@ -4,13 +4,9 @@ use url::Url;
 use super::json::{
     ConfigPipeline, FieldBaseUrlGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
 };
-use crate::core::{
-    config::{
-        transformer::{Transform, TypeMerger},
-        Config,
-    },
-    valid::Validator,
-};
+use crate::core::config::transformer::{Transform, TypeMerger};
+use crate::core::config::Config;
+use crate::core::valid::Validator;
 
 pub struct ConfigGenerationRequest {
     url: Url,
@@ -77,7 +73,6 @@ pub fn from_json(
     ));
 
     let mut config = step_config_gen.get()?;
-
 
     let unused_types = config.unused_types();
     config = config.remove_types(unused_types);
