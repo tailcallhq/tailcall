@@ -13,13 +13,13 @@ use opentelemetry_semantic_conventions::trace::{
 };
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use sysinfo::{System, SystemExt};
 use tailcall_http_cache::{HttpCacheManager, HttpCacheManagerByteBased};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
 use crate::core::blueprint::Upstream;
-use crate::core::config::CacheType;
 use crate::core::http::Response;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
@@ -58,6 +58,28 @@ impl RequestCounter {
             HTTP_CLIENT_REQUEST_COUNT.add(1, attributes);
         }
     }
+}
+
+fn get_memory_by_percentage(percentage: String) -> u64 {
+    // Create a new system object
+    let mut sys = System::new();
+    // Refresh system information
+    sys.refresh_all();
+    // Get total memory in bytes
+    let total_memory: u64 = sys.get_total_memory() * 1024;
+
+    // Parse the percentage string to a float
+    let clamped_percentage: f64 = percentage
+        .parse()
+        .map(|p| if p > 100.0 { 100.0 } else { p })
+        .unwrap_or(0.0);
+
+    // Calculate the memory based on the percentage, without losing precision
+    let memory_by_percentage = (total_memory as f64 * clamped_percentage) as u64;
+
+    // Clamp the memory_by_percentage to u64::MAX
+
+    std::cmp::min(memory_by_percentage, u64::MAX)
 }
 
 fn get_response_status(response: &reqwest_middleware::Result<reqwest::Response>) -> KeyValue {
@@ -114,20 +136,26 @@ impl NativeHttp {
         let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
         if upstream.http_cache > 0 {
-            if upstream.http_cache_type == Some(CacheType::ByteBased) {
+            client = client.with(Cache(HttpCache {
+                mode: CacheMode::Default,
+                manager: HttpCacheManager::new(upstream.http_cache),
+                options: HttpCacheOptions::default(),
+            }))
+        } else if upstream.http_cache_percentage != Some(String::from("0")) {
+            let memory_by_percentage = upstream
+                .http_cache_percentage
+                .as_ref()
+                .map(|percentage_str| get_memory_by_percentage(percentage_str.clone()))
+                .unwrap_or(0);
+            if memory_by_percentage != 0 {
                 client = client.with(Cache(HttpCache {
                     mode: CacheMode::Default,
-                    manager: HttpCacheManagerByteBased::new(upstream.http_cache),
-                    options: HttpCacheOptions::default(),
-                }))
-            } else {
-                client = client.with(Cache(HttpCache {
-                    mode: CacheMode::Default,
-                    manager: HttpCacheManager::new(upstream.http_cache),
+                    manager: HttpCacheManagerByteBased::new(memory_by_percentage),
                     options: HttpCacheOptions::default(),
                 }))
             }
         }
+
         Self {
             client: client.build(),
             http2_only: upstream.http2_only,
@@ -292,7 +320,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_native_http_get_request_with_cache_byte_based() {
+    async fn test_native_http_get_request_with_cache_percentage_based() {
         let server = start_mock_server();
 
         server.mock(|when, then| {
@@ -312,8 +340,7 @@ mod tests {
         // 616 is the body length without "Hello" 616+5(size of hello in bytes) = 621 ,
         // 1242 = 621*2
         let upstream = Upstream {
-            http_cache: 1242,
-            http_cache_type: Some(CacheType::ByteBased),
+            http_cache_percentage: Some("0.0000000752861707".to_string()),
             ..Default::default()
         };
         let native_http = NativeHttp::init(&upstream, &Default::default());
