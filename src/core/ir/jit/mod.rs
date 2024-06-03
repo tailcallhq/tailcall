@@ -14,7 +14,7 @@ mod model {
     use async_graphql::Positioned;
     use serde_json_borrow::OwnedValue;
 
-    use crate::core::blueprint::{BlueprintIndex, FieldDef};
+    use crate::core::blueprint::{Blueprint, BlueprintIndex, FieldDef};
     use crate::core::ir::IR;
     use crate::core::merge_right::MergeRight;
     use crate::core::FromValue;
@@ -130,145 +130,147 @@ mod model {
     }
 
     #[allow(unused)]
-    impl QueryPlan {
-        pub fn from_document(
-            document: ExecutableDocument,
-            bpi: BlueprintIndex,
-        ) -> anyhow::Result<Self> {
-            let fields = convert_query_to_field(document, &bpi)?;
-            Ok(Self { fields })
-        }
+    pub struct QueryPlanBuilder {
+        index: BlueprintIndex,
     }
 
-    #[allow(unused)]
-    #[allow(clippy::too_many_arguments)]
-    fn resolve_selection_set<A>(
-        selection_set: Positioned<async_graphql_parser::types::SelectionSet>,
-        blueprint_index: &BlueprintIndex,
-        id: &mut FieldId,
-        arg_id: &mut ArgId,
-        current_type: &str,
-    ) -> anyhow::Result<Vec<Field<A>>> {
-        let mut fields = Vec::new();
+    impl QueryPlanBuilder {
+        #[allow(unused)]
+        pub fn new(blueprint: Blueprint) -> Self {
+            let blueprint_index = BlueprintIndex::init(&blueprint);
+            Self { index: blueprint_index }
+        }
 
-        for selection in selection_set.node.items {
-            if let Selection::Field(gql_field) = selection.node {
-                let field_name = gql_field.node.name.node.as_str();
-                let field_args = gql_field
-                    .node
-                    .arguments
-                    .into_iter()
-                    .map(|(k, v)| (k.node.as_str().to_string(), v.node.into_const()))
-                    .collect::<HashMap<String, Option<async_graphql::Value>>>();
+        #[allow(unused)]
+        pub fn build(&self, document: ExecutableDocument) -> anyhow::Result<QueryPlan> {
+            let fields = self.create_field_set(document)?;
+            Ok(QueryPlan { fields })
+        }
 
-                if let Some(field_def) = blueprint_index.get_field(current_type, field_name) {
-                    let mut args = vec![];
-                    for (arg_name, v) in field_args {
-                        if let Some(arg) = field_def.get_arg(&arg_name) {
-                            let type_of = arg.of_type.clone();
-                            let id = arg_id.gen();
-                            let arg = Arg {
-                                id,
-                                name: arg_name.clone(),
-                                type_of,
-                                value: Some(
-                                    v.ok_or(anyhow::anyhow!(
-                                        "failed converting Const to Borrowed Value"
-                                    ))?
-                                    .into_bvalue()
-                                    .into(),
-                                ),
-                                default_value: arg.default_value.clone(),
-                            };
-                            args.push(arg);
+        #[allow(clippy::too_many_arguments)]
+        fn resolve_selection_set<A>(
+            &self,
+            selection_set: Positioned<async_graphql_parser::types::SelectionSet>,
+            id: &mut FieldId,
+            arg_id: &mut ArgId,
+            current_type: &str,
+        ) -> anyhow::Result<Vec<Field<A>>> {
+            let mut fields = Vec::new();
+
+            for selection in selection_set.node.items {
+                if let Selection::Field(gql_field) = selection.node {
+                    let field_name = gql_field.node.name.node.as_str();
+                    let field_args = gql_field
+                        .node
+                        .arguments
+                        .into_iter()
+                        .map(|(k, v)| (k.node.as_str().to_string(), v.node.into_const()))
+                        .collect::<HashMap<String, Option<async_graphql::Value>>>();
+
+                    if let Some(field_def) = self.index.get_field(current_type, field_name) {
+                        let mut args = vec![];
+                        for (arg_name, v) in field_args {
+                            if let Some(arg) = field_def.get_arg(&arg_name) {
+                                let type_of = arg.of_type.clone();
+                                let id = arg_id.gen();
+                                let arg = Arg {
+                                    id,
+                                    name: arg_name.clone(),
+                                    type_of,
+                                    value: Some(
+                                        v.ok_or(anyhow::anyhow!(
+                                            "failed converting Const to Borrowed Value"
+                                        ))?
+                                        .into_bvalue()
+                                        .into(),
+                                    ),
+                                    default_value: arg.default_value.clone(),
+                                };
+                                args.push(arg);
+                            }
                         }
+
+                        let type_of = match field_def {
+                            FieldDef::Field((field_def, _)) => field_def.of_type.clone(),
+                            FieldDef::InputField(field_def) => field_def.of_type.clone(),
+                        };
+
+                        fields = fields.merge_right(self.resolve_selection_set(
+                            gql_field.node.selection_set.clone(),
+                            id,
+                            arg_id,
+                            type_of.name(),
+                        )?);
+
+                        let id = id.gen();
+                        let field = Field {
+                            id,
+                            name: field_name.to_string(),
+                            ir: match field_def {
+                                FieldDef::Field((field_def, _)) => field_def.resolver.clone(),
+                                _ => None,
+                            },
+                            type_of,
+                            args,
+                            refs: None,
+                        };
+                        fields.push(field);
                     }
-
-                    let type_of = match field_def {
-                        FieldDef::Field((field_def, _)) => field_def.of_type.clone(),
-                        FieldDef::InputField(field_def) => field_def.of_type.clone(),
-                    };
-
-                    fields = fields.merge_right(resolve_selection_set(
-                        gql_field.node.selection_set.clone(),
-                        blueprint_index,
-                        id,
-                        arg_id,
-                        type_of.name(),
-                    )?);
-
-                    let id = id.gen();
-                    let field = Field {
-                        id,
-                        name: field_name.to_string(),
-                        ir: match field_def {
-                            FieldDef::Field((field_def, _)) => field_def.resolver.clone(),
-                            _ => None,
-                        },
-                        type_of,
-                        args,
-                        refs: None,
-                    };
-                    fields.push(field);
                 }
             }
+
+            Ok(fields)
         }
 
-        Ok(fields)
-    }
+        fn create_field_set<A>(
+            &self,
+            document: ExecutableDocument,
+        ) -> anyhow::Result<Vec<Field<A>>> {
+            let query = self.index.get_query();
+            let mut id = FieldId::new(0);
+            let mut arg_id = ArgId::new(0);
 
-    #[allow(unused)]
-    fn convert_query_to_field<A>(
-        document: ExecutableDocument,
-        blueprint_index: &BlueprintIndex,
-    ) -> anyhow::Result<Vec<Field<A>>> {
-        let query = blueprint_index.get_query();
-        let mut id = FieldId::new(0);
-        let mut arg_id = ArgId::new(0);
+            let mut fields = Vec::new();
 
-        let mut fields = Vec::new();
-
-        for (_, fragment) in document.fragments {
-            fields = resolve_selection_set(
-                fragment.node.selection_set,
-                blueprint_index,
-                &mut id,
-                &mut arg_id,
-                query,
-            )?;
-        }
-
-        match document.operations {
-            DocumentOperations::Single(single) => {
-                fields = resolve_selection_set(
-                    single.node.selection_set,
-                    blueprint_index,
+            for (_, fragment) in document.fragments {
+                fields = self.resolve_selection_set(
+                    fragment.node.selection_set,
                     &mut id,
                     &mut arg_id,
                     query,
                 )?;
             }
-            DocumentOperations::Multiple(multiple) => {
-                for (_, single) in multiple {
-                    fields = resolve_selection_set(
+
+            match document.operations {
+                DocumentOperations::Single(single) => {
+                    fields = self.resolve_selection_set(
                         single.node.selection_set,
-                        blueprint_index,
                         &mut id,
                         &mut arg_id,
                         query,
                     )?;
                 }
+                DocumentOperations::Multiple(multiple) => {
+                    for (_, single) in multiple {
+                        fields = self.resolve_selection_set(
+                            single.node.selection_set,
+                            &mut id,
+                            &mut arg_id,
+                            query,
+                        )?;
+                    }
+                }
             }
-        }
 
-        Ok(fields)
+            Ok(fields)
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::blueprint::{Blueprint, BlueprintIndex};
+    use crate::core::blueprint::Blueprint;
     use crate::core::config::reader::ConfigReader;
 
     #[tokio::test]
@@ -286,8 +288,10 @@ mod tests {
             }
         "#;
         let document = async_graphql::parser::parse_query(query).unwrap();
-        let bp_index = BlueprintIndex::init(&blueprint);
-        let q_blueprint = model::QueryPlan::from_document(document, bp_index);
+
+        let q_blueprint = model::QueryPlanBuilder::new(blueprint)
+            .build(document)
+            .unwrap();
         insta::assert_snapshot!(format!("{:#?}", q_blueprint));
     }
 }

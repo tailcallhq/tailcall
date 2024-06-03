@@ -5,7 +5,6 @@ use crate::core::blueprint::{Definition, FieldDefinition, InputFieldDefinition};
 
 ///
 /// A read optimized index for the blueprint.
-///
 pub struct BlueprintIndex {
     map: HashMap<String, (Definition, HashMap<String, FieldDef>)>,
     schema: SchemaDefinition,
