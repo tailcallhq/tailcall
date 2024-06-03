@@ -426,7 +426,6 @@ mod tests {
 
         let mut ls: Vec<String> = fs::read_dir(spec_folder_path)
             .unwrap()
-            .into_iter()
             .map(|path| format!("{}", path.unwrap().path().display()))
             .collect();
 
