@@ -7,7 +7,6 @@ use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde_json_borrow::OwnedValue;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
@@ -386,7 +385,7 @@ pub struct Arg {
     #[serde(default, skip_serializing_if = "is_default")]
     pub modify: Option<Modify>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub default_value: Option<OwnedValue>,
+    pub default_value: Option<Value>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]

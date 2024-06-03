@@ -137,16 +137,7 @@
         "type"
       ],
       "properties": {
-        "default_value": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/OwnedValue"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
+        "default_value": true,
         "doc": {
           "type": [
             "string",
@@ -888,9 +879,6 @@
           "type": "string"
         }
       }
-    },
-    "OwnedValue": {
-      "type": "object"
     },
     "PhoneNumber": {
       "title": "PhoneNumber",

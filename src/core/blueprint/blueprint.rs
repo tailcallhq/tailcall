@@ -8,7 +8,6 @@ use async_graphql::ValidationMode;
 use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use serde_json::Value;
-use serde_json_borrow::OwnedValue;
 
 use super::telemetry::Telemetry;
 use super::GlobalTimeout;
@@ -152,7 +151,7 @@ pub struct SchemaDefinition {
 pub struct InputFieldDefinition {
     pub name: String,
     pub of_type: Type,
-    pub default_value: Option<OwnedValue>,
+    pub default_value: Option<serde_json::Value>,
     pub description: Option<String>,
 }
 

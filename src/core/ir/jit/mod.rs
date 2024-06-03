@@ -12,13 +12,11 @@ mod model {
 
     use async_graphql::parser::types::{DocumentOperations, ExecutableDocument, Selection};
     use async_graphql::Positioned;
-    use serde_json_borrow::OwnedValue;
 
     use super::field_index::{FieldIndex, QueryField};
     use crate::core::blueprint::Blueprint;
     use crate::core::ir::IR;
     use crate::core::merge_right::MergeRight;
-    use crate::core::FromValue;
 
     #[allow(unused)]
     trait IncrGen {
@@ -39,8 +37,8 @@ mod model {
         pub id: ArgId,
         pub name: String,
         pub type_of: crate::core::blueprint::Type,
-        pub value: Option<OwnedValue>,
-        pub default_value: Option<OwnedValue>,
+        pub value: Option<async_graphql_value::Value>,
+        pub default_value: Option<async_graphql_value::ConstValue>,
     }
 
     pub struct ArgId(usize);
@@ -165,12 +163,12 @@ mod model {
                         .node
                         .arguments
                         .into_iter()
-                        .map(|(k, v)| (k.node.as_str().to_string(), v.node.into_const()))
-                        .collect::<HashMap<String, Option<async_graphql::Value>>>();
+                        .map(|(k, v)| (k.node.as_str().to_string(), v.node))
+                        .collect::<HashMap<_, _>>();
 
                     if let Some(field_def) = self.index.get_field(current_type, field_name) {
                         let mut args = vec![];
-                        for (arg_name, v) in field_args {
+                        for (arg_name, value) in field_args {
                             if let Some(arg) = field_def.get_arg(&arg_name) {
                                 let type_of = arg.of_type.clone();
                                 let id = arg_id.gen();
@@ -178,14 +176,11 @@ mod model {
                                     id,
                                     name: arg_name.clone(),
                                     type_of,
-                                    value: Some(
-                                        v.ok_or(anyhow::anyhow!(
-                                            "failed converting Const to Borrowed Value"
-                                        ))?
-                                        .into_bvalue()
-                                        .into(),
-                                    ),
-                                    default_value: arg.default_value.clone(),
+                                    value: Some(value),
+                                    default_value: arg
+                                        .default_value
+                                        .as_ref()
+                                        .and_then(|v| v.to_owned().try_into().ok()),
                                 };
                                 args.push(arg);
                             }

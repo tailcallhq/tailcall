@@ -8,8 +8,8 @@ use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
 use crate::core::grpc::protobuf::ProtobufOperation;
+use crate::core::helpers::value::from_serde_owned;
 use crate::core::ir::EvaluationError;
-use crate::core::FromValue;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
@@ -40,7 +40,7 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>> {
+    pub fn to_json(self) -> Result<Response<ConstValue>> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
@@ -52,7 +52,7 @@ impl Response<Bytes> {
         // performance. Warning: Do not change this to direct conversion to `T`
         // without benchmarking the performance impact.
         let body: serde_json_borrow::Value = serde_json::from_slice(&self.body)?;
-        let body = T::from_value(body);
+        let body = from_serde_owned(body);
         Ok(Response { status: self.status, headers: self.headers, body })
     }
 
