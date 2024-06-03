@@ -44,14 +44,14 @@ impl Similarity<'_> {
 
         for (field_name_1, field_1) in type_1.fields.iter() {
             if let Some(field_2) = type_2.fields.get(field_name_1) {
-                let field_1_type_of = field_1.type_of.to_string();
-                let field_2_type_of = field_2.type_of.to_string();
+                let field_1_type_of = field_1.type_of.to_owned();
+                let field_2_type_of = field_2.type_of.to_owned();
 
                 if field_1_type_of == field_2_type_of {
                     distance.same_field_count += 2; // 1 from field_1 + 1 from
                                                     // field_2
-                } else if let Some(type_a) = config.types.get(field_1_type_of.as_str()) {
-                    if let Some(type_b) = config.types.get(field_2_type_of.as_str()) {
+                } else if let Some(type_1) = config.types.get(field_1_type_of.as_str()) {
+                    if let Some(type_2) = config.types.get(field_2_type_of.as_str()) {
                         if visited_type.contains(&field_1_type_of, &field_2_type_of) {
                             distance.same_field_count += 2;
                             continue;
@@ -59,7 +59,7 @@ impl Similarity<'_> {
                         visited_type.insert(field_1_type_of, field_2_type_of);
 
                         let type_similarity_metric =
-                            self.similarity_inner(type_a, type_b, visited_type);
+                            self.similarity_inner(type_1, type_2, visited_type);
 
                         distance.total_field_count -= 2; // don't count the non-comparable field, it'll get counted by recursive
                                                          // call.
