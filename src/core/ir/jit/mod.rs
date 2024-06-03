@@ -134,9 +134,9 @@ mod model {
             document: ExecutableDocument,
             bpi: BlueprintIndex,
             query: &str,
-        ) -> Self {
-            let fields = convert_query_to_field1(document, &bpi, query).unwrap();
-            Self { fields }
+        ) -> anyhow::Result<Self> {
+            let fields = convert_query_to_field(document, &bpi, query)?;
+            Ok(Self { fields })
         }
     }
 
@@ -147,7 +147,7 @@ mod model {
         id: &mut FieldId,
         arg_id: &mut ArgId,
         current_type: &str,
-    ) -> Vec<Field<A>> {
+    ) -> anyhow::Result<Vec<Field<A>>> {
         let mut fields = Vec::new();
 
         for selection in selection_set.node.items {
@@ -157,8 +157,8 @@ mod model {
                     .node
                     .arguments
                     .into_iter()
-                    .map(|(k, v)| (k.node.as_str().to_string(), v.node.into_const().unwrap()))
-                    .collect::<HashMap<String, async_graphql::Value>>();
+                    .map(|(k, v)| (k.node.as_str().to_string(), v.node.into_const()))
+                    .collect::<HashMap<String, Option<async_graphql::Value>>>();
 
                 if let Some((_, fields_map)) = blueprint_index.map.get(current_type) {
                     if let Some(field_def) = fields_map.get(field_name) {
@@ -173,7 +173,13 @@ mod model {
                                     id,
                                     name: arg_name.clone(),
                                     type_of,
-                                    value: Some(v.into_bvalue().into()),
+                                    value: Some(
+                                        v.ok_or(anyhow::anyhow!(
+                                            "failed converting Const to Borrowed Value"
+                                        ))?
+                                        .into_bvalue()
+                                        .into(),
+                                    ),
                                     default_value: arg.default_value.clone(),
                                 };
                                 args.push(arg);
@@ -191,7 +197,7 @@ mod model {
                             id,
                             arg_id,
                             type_of.name(),
-                        ));
+                        )?);
 
                         let id = id.gen();
                         let field = Field {
@@ -211,10 +217,10 @@ mod model {
             }
         }
 
-        fields
+        Ok(fields)
     }
 
-    fn convert_query_to_field1<A>(
+    fn convert_query_to_field<A>(
         document: ExecutableDocument,
         blueprint_index: &BlueprintIndex,
         query: &str,
@@ -232,18 +238,18 @@ mod model {
                     &mut id,
                     &mut arg_id,
                     query,
-                );
+                )?;
             }
             DocumentOperations::Multiple(multiple) => {
-                multiple.into_iter().for_each(|(_, single)| {
+                for (_, single) in multiple {
                     fields = resolve_selection_set(
                         single.node.selection_set,
                         blueprint_index,
                         &mut id,
                         &mut arg_id,
                         query,
-                    );
-                });
+                    )?;
+                }
             }
         }
 
