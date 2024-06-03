@@ -49,7 +49,7 @@ impl Generator {
         }
     }
 
-    pub async fn run(&self, gen_config: GeneratorConfig) -> Result<()> {
+    pub async fn run(&self, gen_config: GeneratorConfig) -> Result<ConfigModule> {
         let resolvers = gen_config.input.into_iter().map(|input| async {
             match input.source {
                 InputSource::Config { src } => {
@@ -91,20 +91,7 @@ impl Generator {
             output: v.to_owned(),
         });
 
-        let output_source = config::Source::detect(&gen_config.output.file)?;
-
-        let config = match output_source {
-            config::Source::Json => config.to_json(true)?,
-            config::Source::Yml => config.to_yaml()?,
-            config::Source::GraphQL => config.to_sdl(),
-        };
-
-        self.runtime
-            .file
-            .write(&gen_config.output.file, config.as_bytes())
-            .await?;
-
-        Ok(())
+        Ok(config)
     }
 
     pub async fn read_all<T: AsRef<str>>(
@@ -183,7 +170,11 @@ mod test {
             .to_string();
 
         let config = generator
-            .read_all(ImportSource::Proto, &[news, greetings_a, greetings_b], "Query")
+            .read_all(
+                ImportSource::Proto,
+                &[news, greetings_a, greetings_b],
+                "Query",
+            )
             .await
             .unwrap();
 

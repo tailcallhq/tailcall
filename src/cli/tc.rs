@@ -17,11 +17,8 @@ use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::{
-    cli::fmt::Fmt,
-    core::generator::config::{GeneratorConfig, InputSource},
-};
-use crate::{cli::server::Server, core::generator::config::Input};
+use crate::{cli::fmt::Fmt, core::generator::config::GeneratorConfig};
+use crate::{cli::server::Server, core::config};
 use crate::{
     cli::{self, CLIError},
     core::generator::source::ConfigSource,
@@ -92,20 +89,29 @@ pub async fn run() -> Result<()> {
             let source = ConfigSource::detect(&file_path)?;
             let config = runtime.file.read(&file_path).await?;
 
-            let config: GeneratorConfig = match source {
+            let gen_config: GeneratorConfig = match source {
                 ConfigSource::Json => serde_json::from_str(&config)?,
                 ConfigSource::Yml => serde_yaml::from_str(&config)?,
             };
 
-            let generator = Generator::new(runtime);
+            let generator = Generator::new(runtime.clone());
 
-            generator.run(config).await?;
-            // let cfg = generator
-            //     .read_all(input, file_paths.as_ref(), query.as_str())
-            //     .await?;
+            let output_path = gen_config.output.file.clone();
+            let config = generator.run(gen_config).await?;
 
-            // let config = output.unwrap_or_default().encode(&cfg)?;
-            // Fmt::display(config);
+            let output_source = config::Source::detect(&output_path)?;
+
+            let config = match output_source {
+                config::Source::Json => config.to_json(true)?,
+                config::Source::Yml => config.to_yaml()?,
+                config::Source::GraphQL => config.to_sdl(),
+            };
+
+            // TODO: check if file already exists
+            runtime.file.write(&output_path, config.as_bytes()).await?;
+
+            tracing::info!("Config successfully generated at {output_path}");
+
             Ok(())
         }
     }
