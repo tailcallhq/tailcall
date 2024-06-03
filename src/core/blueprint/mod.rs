@@ -1,6 +1,5 @@
 mod auth;
 mod blueprint;
-mod blueprint_index;
 mod compress;
 mod cors;
 mod definitions;
@@ -18,7 +17,6 @@ mod upstream;
 
 pub use auth::*;
 pub use blueprint::*;
-pub use blueprint_index::*;
 pub use cors::*;
 pub use definitions::*;
 pub use dynamic_value::*;

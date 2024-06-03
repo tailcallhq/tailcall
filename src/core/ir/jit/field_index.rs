@@ -1,34 +1,33 @@
 use std::collections::HashMap;
 
-use super::{Blueprint, SchemaDefinition};
-use crate::core::blueprint::{Definition, FieldDefinition, InputFieldDefinition};
+use crate::core::blueprint::{
+    Blueprint, Definition, FieldDefinition, InputFieldDefinition, SchemaDefinition,
+};
 
 ///
-/// A read optimized index for the blueprint.
-pub struct BlueprintIndex {
-    map: HashMap<String, (Definition, HashMap<String, FieldDef>)>,
+/// A read optimized index of all the fields in the Blueprint. Provide O(1)
+/// access to getting any field information.
+pub struct FieldIndex {
+    map: HashMap<String, (Definition, HashMap<String, QueryField>)>,
     schema: SchemaDefinition,
 }
 
 #[derive(Debug)]
-pub enum FieldDef {
+pub enum QueryField {
     Field((FieldDefinition, HashMap<String, InputFieldDefinition>)),
     InputField(InputFieldDefinition),
 }
 
-impl FieldDef {
+impl QueryField {
     pub fn get_arg(&self, arg_name: &str) -> Option<&InputFieldDefinition> {
         match self {
-            FieldDef::Field((_, args)) => {
-                // FIXME: use a hashmap to store the field args
-                args.get(arg_name)
-            }
-            FieldDef::InputField(_) => None,
+            QueryField::Field((_, args)) => args.get(arg_name),
+            QueryField::InputField(_) => None,
         }
     }
 }
 
-impl BlueprintIndex {
+impl FieldIndex {
     pub fn init(blueprint: &Blueprint) -> Self {
         let mut map = HashMap::new();
 
@@ -48,7 +47,7 @@ impl BlueprintIndex {
                         );
                         fields_map.insert(
                             field.name.clone(),
-                            FieldDef::Field((field.clone(), args_map)),
+                            QueryField::Field((field.clone(), args_map)),
                         );
                     }
 
@@ -69,7 +68,7 @@ impl BlueprintIndex {
                                 .map(|v| (v.name.clone(), v.clone()))
                                 .collect::<Vec<_>>(),
                         );
-                        fields_map.insert(field.name.clone(), FieldDef::Field((field, args_map)));
+                        fields_map.insert(field.name.clone(), QueryField::Field((field, args_map)));
                     }
 
                     map.insert(
@@ -82,7 +81,7 @@ impl BlueprintIndex {
                     let mut fields_map = HashMap::new();
 
                     for field in input_object_def.fields.clone() {
-                        fields_map.insert(field.name.clone(), FieldDef::InputField(field));
+                        fields_map.insert(field.name.clone(), QueryField::InputField(field));
                     }
 
                     map.insert(
@@ -120,29 +119,17 @@ impl BlueprintIndex {
         Self { map, schema: blueprint.schema.to_owned() }
     }
 
-    pub fn get_type(&self, type_name: &str) -> Option<&Definition> {
-        self.map.get(type_name).map(|(definition, _)| definition)
-    }
-
-    pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&FieldDef> {
+    pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&QueryField> {
         self.map
             .get(type_name)
             .and_then(|(_, fields_map)| fields_map.get(field_name))
-    }
-
-    pub fn get_query_type(&self) -> Option<&Definition> {
-        self.get_type(&self.schema.query)
     }
 
     pub fn get_query(&self) -> &String {
         &self.schema.query
     }
 
-    pub fn get_mutation_type(&self) -> Option<&Definition> {
-        self.schema.mutation.as_ref().and_then(|a| self.get_type(a))
-    }
-
-    pub fn get_mutation_type_name(&self) -> Option<&String> {
+    pub fn get_mutation(&self) -> Option<&String> {
         self.schema.mutation.as_ref()
     }
 }

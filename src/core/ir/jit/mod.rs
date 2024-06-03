@@ -5,7 +5,7 @@
 /// 4. ?? which is working a bit level
 /// 5. Based on Data incoming and outgoing certain optimizations can further be
 ///    made.
-
+mod field_index;
 mod model {
     use std::collections::HashMap;
     use std::fmt::{Debug, Formatter};
@@ -14,7 +14,8 @@ mod model {
     use async_graphql::Positioned;
     use serde_json_borrow::OwnedValue;
 
-    use crate::core::blueprint::{Blueprint, BlueprintIndex, FieldDef};
+    use super::field_index::{FieldIndex, QueryField};
+    use crate::core::blueprint::Blueprint;
     use crate::core::ir::IR;
     use crate::core::merge_right::MergeRight;
     use crate::core::FromValue;
@@ -131,13 +132,13 @@ mod model {
 
     #[allow(unused)]
     pub struct QueryPlanBuilder {
-        index: BlueprintIndex,
+        index: FieldIndex,
     }
 
     impl QueryPlanBuilder {
         #[allow(unused)]
         pub fn new(blueprint: Blueprint) -> Self {
-            let blueprint_index = BlueprintIndex::init(&blueprint);
+            let blueprint_index = FieldIndex::init(&blueprint);
             Self { index: blueprint_index }
         }
 
@@ -191,8 +192,8 @@ mod model {
                         }
 
                         let type_of = match field_def {
-                            FieldDef::Field((field_def, _)) => field_def.of_type.clone(),
-                            FieldDef::InputField(field_def) => field_def.of_type.clone(),
+                            QueryField::Field((field_def, _)) => field_def.of_type.clone(),
+                            QueryField::InputField(field_def) => field_def.of_type.clone(),
                         };
 
                         fields = fields.merge_right(self.resolve_selection_set(
@@ -207,7 +208,7 @@ mod model {
                             id,
                             name: field_name.to_string(),
                             ir: match field_def {
-                                FieldDef::Field((field_def, _)) => field_def.resolver.clone(),
+                                QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                                 _ => None,
                             },
                             type_of,
