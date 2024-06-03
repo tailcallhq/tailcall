@@ -29,7 +29,7 @@ fn schema_to_primitive_type(typ: &SchemaType) -> Option<String> {
     }
 }
 
-enum UnionOrType {
+enum ConfigType {
     Union(Union),
     Type(Type),
     Enum(Enum),
@@ -72,7 +72,9 @@ pub struct OpenApiToConfigConverter {
     pub inline_types: VecDeque<Schema>,
     pub inline_types_frozen: bool,
     pub inline_types_other: VecDeque<Schema>,
-    pub unions: BTreeMap<String, Vec<Schema>>,
+    pub types: BTreeMap<String, Type>,
+    pub unions: BTreeMap<String, Union>,
+    pub enums: BTreeMap<String, Enum>,
 }
 
 impl OpenApiToConfigConverter {
@@ -134,8 +136,68 @@ impl OpenApiToConfigConverter {
             || !schema.enum_values.is_empty()
     }
 
-    fn define_type(&mut self, schema: Schema) -> Option<UnionOrType> {
-        if !schema.properties.is_empty() {
+    fn get_all_of_properties(
+        &self,
+        properties: &mut Vec<(String, ObjectOrReference<Schema>)>,
+        required: &mut HashSet<String>,
+        schema: Schema,
+    ) {
+        required.extend(schema.required);
+        if !schema.all_of.is_empty() {
+            for obj in schema.all_of {
+                let schema = obj.resolve(&self.spec).unwrap();
+                self.get_all_of_properties(properties, required, schema);
+            }
+        }
+        properties.extend(schema.properties);
+    }
+
+    fn define_type(&mut self, schema: Schema) -> Option<ConfigType> {
+        if !schema.all_of.is_empty() {
+            let mut properties: Vec<_> = vec![];
+            let mut required = HashSet::new();
+            let doc = schema.description.clone();
+            self.get_all_of_properties(&mut properties, &mut required, schema);
+
+            let mut fields = BTreeMap::new();
+
+            for (name, property) in properties.into_iter() {
+                let (list, type_of) = self
+                    .get_schema_type(
+                        property.resolve(&self.spec).unwrap(),
+                        name_from_ref_path(&property),
+                    )
+                    .into_tuple();
+                fields.insert(
+                    name.to_case(Case::Camel),
+                    Field {
+                        type_of,
+                        list,
+                        required: required.contains(&name),
+                        ..Default::default()
+                    },
+                );
+            }
+
+            Some(ConfigType::Type(Type { fields, doc, ..Default::default() }))
+        } else if !schema.any_of.is_empty() || !schema.one_of.is_empty() {
+            let types = schema
+                .any_of
+                .iter()
+                .chain(schema.one_of.iter())
+                .map(|schema| {
+                    name_from_ref_path(schema)
+                        .or_else(|| {
+                            schema_to_primitive_type(
+                                schema.resolve(&self.spec).unwrap().schema_type.as_ref()?,
+                            )
+                        })
+                        .unwrap_or(self.insert_inline_type(schema.resolve(&self.spec).unwrap()))
+                })
+                .collect();
+
+            Some(ConfigType::Union(Union { types, doc: schema.description }))
+        } else if !schema.properties.is_empty() {
             let fields = schema
                 .properties
                 .into_iter()
@@ -158,114 +220,56 @@ impl OpenApiToConfigConverter {
                 })
                 .collect();
 
-            Some(UnionOrType::Type(Type {
+            Some(ConfigType::Type(Type {
                 fields,
                 doc: schema.description.clone(),
                 ..Default::default()
             }))
-        } else if !schema.all_of.is_empty() {
-            let properties: Vec<_> = schema
-                .all_of
-                .into_iter()
-                .flat_map(|obj_or_ref| {
-                    obj_or_ref
-                        .resolve(&self.spec)
-                        .unwrap()
-                        .properties
-                        .into_iter()
-                })
-                .collect();
-
-            let mut fields = BTreeMap::new();
-
-            for (name, property) in properties.into_iter() {
-                let (list, type_of) = self
-                    .get_schema_type(
-                        property.resolve(&self.spec).unwrap(),
-                        name_from_ref_path(&property),
-                    )
-                    .into_tuple();
-                fields.insert(
-                    name.to_case(Case::Camel),
-                    Field {
-                        type_of,
-                        list,
-                        required: schema.required.contains(&name),
-                        ..Default::default()
-                    },
-                );
-            }
-
-            Some(UnionOrType::Type(Type {
-                fields,
-                doc: schema.description,
-                ..Default::default()
-            }))
-        } else if !schema.any_of.is_empty() || !schema.one_of.is_empty() {
-            let types = schema
-                .any_of
-                .iter()
-                .chain(schema.one_of.iter())
-                .map(|schema| {
-                    name_from_ref_path(schema)
-                        .or_else(|| {
-                            schema_to_primitive_type(
-                                schema.resolve(&self.spec).unwrap().schema_type.as_ref()?,
-                            )
-                        })
-                        .unwrap_or(self.insert_inline_type(schema.resolve(&self.spec).unwrap()))
-                })
-                .collect();
-
-            Some(UnionOrType::Union(Union { types, doc: schema.description }))
         } else if !schema.enum_values.is_empty() {
             let variants = schema
                 .enum_values
                 .into_iter()
                 .map(|val| format!("{val:?}"))
                 .collect();
-            Some(UnionOrType::Enum(Enum {
-                variants,
-                doc: schema.description,
-            }))
+            Some(ConfigType::Enum(Enum { variants, doc: schema.description }))
         } else {
             None
         }
     }
 
-    fn define_inline_types(
-        &mut self,
-        types: &mut BTreeMap<String, Type>,
-        unions: &mut BTreeMap<String, Union>,
-        enums: &mut BTreeMap<String, Enum>,
-    ) {
-        let mut index = 0;
-        self.inline_types_frozen = true;
-        while let Some(schema) = self.inline_types.pop_front() {
+    fn define_types(&mut self, mut inline_types: VecDeque<Schema>) {
+        let mut index = 1;
+        while let Some(schema) = inline_types.pop_front() {
             let name = format!("Type{index}").to_case(Case::Pascal);
             match self.define_type(schema) {
-                Some(UnionOrType::Type(type_)) => {
-                    types.insert(name, type_);
+                Some(ConfigType::Type(type_)) => {
+                    self.types.insert(name, type_);
                 }
-                Some(UnionOrType::Union(union)) => {
-                    unions.insert(name, union);
+                Some(ConfigType::Union(union)) => {
+                    self.unions.insert(name, union);
                 }
-                Some(UnionOrType::Enum(enum_)) => {
-                    enums.insert(name, enum_);
+                Some(ConfigType::Enum(enum_)) => {
+                    self.enums.insert(name, enum_);
                 }
                 None => continue,
             }
             index += 1;
         }
-        self.inline_types_frozen = false;
     }
 
-    pub fn create_types_and_unions(&mut self) -> (BTreeMap<String, Type>, BTreeMap<String, Union>) {
+    fn define_inline_types(&mut self) {
+        let inline_types = std::mem::take(&mut self.inline_types);
+        // while !inline_types.is_empty() {
+        self.inline_types_frozen = true;
+        self.define_types(inline_types);
+        self.inline_types_frozen = false;
+        //     inline_types = std::mem::replace(&mut self.inline_types_other,
+        // VecDeque::new()); }
+    }
+
+    pub fn create_types(&mut self) {
         let components = self.spec.components.iter().next().cloned().unwrap();
-        let mut types = BTreeMap::new();
         let mut fields = BTreeMap::new();
-        let mut unions = BTreeMap::new();
-        let mut enums = BTreeMap::new();
 
         for (mut path, path_item) in self.spec.paths.clone().into_iter() {
             let (method, operation) = [
@@ -347,7 +351,7 @@ impl OpenApiToConfigConverter {
 
             let query_params = args
                 .iter()
-                .filter(|&(key, _)| (!url_params.contains(key)))
+                .filter(|&(key, _)| !url_params.contains(key))
                 .map(|(key, _)| KeyValue {
                     key: key.to_string(),
                     value: format!("{{{{args.{}}}}}", key.to_case(Case::Camel)),
@@ -366,32 +370,31 @@ impl OpenApiToConfigConverter {
             fields.insert(operation.operation_id.unwrap().to_case(Case::Camel), field);
         }
 
-        types.insert("Query".to_string(), Type { fields, ..Default::default() });
+        self.types
+            .insert("Query".to_string(), Type { fields, ..Default::default() });
 
         for (name, obj_or_ref) in components.schemas.into_iter() {
             let name = name.to_case(Case::Pascal);
             let schema = obj_or_ref.resolve(&self.spec).unwrap();
             match self.define_type(schema) {
-                Some(UnionOrType::Type(type_)) => {
-                    types.insert(name, type_);
+                Some(ConfigType::Type(type_)) => {
+                    self.types.insert(name, type_);
                 }
-                Some(UnionOrType::Union(union)) => {
-                    unions.insert(name, union);
+                Some(ConfigType::Union(union)) => {
+                    self.unions.insert(name, union);
                 }
-                Some(UnionOrType::Enum(enum_)) => {
-                    enums.insert(name, enum_);
+                Some(ConfigType::Enum(enum_)) => {
+                    self.enums.insert(name, enum_);
                 }
                 None => continue,
             }
         }
 
-        self.define_inline_types(&mut types, &mut unions, &mut enums);
-
-        (types, unions)
+        self.define_inline_types();
     }
 
-    pub fn convert(&mut self) -> Config {
-        let (types, unions) = self.create_types_and_unions();
+    pub fn convert(mut self) -> Config {
+        self.create_types();
         let config = Config {
             server: Default::default(),
             upstream: Upstream {
@@ -399,11 +402,12 @@ impl OpenApiToConfigConverter {
                 ..Default::default()
             },
             schema: RootSchema {
-                query: types.get("Query").map(|_| "Query".into()),
+                query: self.types.get("Query").map(|_| "Query".into()),
                 ..Default::default()
             },
-            types,
-            unions,
+            types: self.types,
+            unions: self.unions,
+            enums: self.enums,
             ..Default::default()
         };
         config

@@ -163,18 +163,18 @@ This allows you to generate some simple views without needing to fetch the OpenA
   listApIs: JSON @http(path: "/list.json")
 }
 
-type Type0 {
+type Type1 {
   data: [String]
 }
 
-type Type1 {
+type Type2 {
   data: [String]
 }
 
   """
   Summary totals for the last 7 days
   """
-type Type2 {
+type Type3 {
   """
   APIs added in the last week
   """
