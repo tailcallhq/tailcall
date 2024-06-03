@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(src: "test.js", type: Script) {
+  query: Query
+}
+
+type Query {
+  hello: User! @http(path: "/users/1")
+}
+
+type User {
+  id: Int!
+  name: String! @js(name: "name")
+}

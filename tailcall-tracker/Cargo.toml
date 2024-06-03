@@ -15,3 +15,4 @@ machineid-rs = "1.2.4"
 tokio = { workspace = true }
 tracing = { workspace = true }
 sysinfo = "0.30.12"
+tailcall-version = { path = "../tailcall-version" }

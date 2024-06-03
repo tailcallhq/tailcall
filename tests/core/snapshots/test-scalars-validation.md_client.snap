@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  emailInput(x: Email!): Boolean
+  emailOutput: Email!
+}
+
+scalar Url
+
+schema {
+  query: Query
+}
