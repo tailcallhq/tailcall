@@ -202,17 +202,19 @@ impl Upstream {
         }
     }
     pub fn get_timeout(&self) -> u64 {
-        match self.connect_timeout {
+        match self.timeout {
             Some(Pos { inner, .. }) => inner,
             None => 60,
         }
     }
+
     pub fn get_tcp_keep_alive(&self) -> u64 {
         match self.tcp_keep_alive {
             Some(Pos { inner, .. }) => inner,
             None => 60,
         }
     }
+
     pub fn get_user_agent(&self) -> String {
         match &self.user_agent {
             Some(Pos { inner, .. }) => inner.clone(),
