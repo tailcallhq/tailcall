@@ -230,6 +230,16 @@ mod model {
 
         let mut fields = Vec::new();
 
+        for (_, fragment) in document.fragments {
+            fields = resolve_selection_set(
+                fragment.node.selection_set,
+                blueprint_index,
+                &mut id,
+                &mut arg_id,
+                query,
+            )?;
+        }
+
         match document.operations {
             DocumentOperations::Single(single) => {
                 fields = resolve_selection_set(
