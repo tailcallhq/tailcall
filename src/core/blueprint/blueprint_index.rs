@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
+use super::{Blueprint, SchemaDefinition};
 use crate::core::blueprint::{Definition, FieldDefinition, InputFieldDefinition};
 
-#[derive(Debug)]
 pub struct BlueprintIndex {
-    pub map: HashMap<String, (Definition, HashMap<String, FieldDef>)>,
+    map: HashMap<String, (Definition, HashMap<String, FieldDef>)>,
+    schema: SchemaDefinition,
 }
 
 #[derive(Debug)]
@@ -13,11 +14,23 @@ pub enum FieldDef {
     InputField(InputFieldDefinition),
 }
 
+impl FieldDef {
+    pub fn get_arg(&self, arg_name: &str) -> Option<&InputFieldDefinition> {
+        match self {
+            FieldDef::Field(field) => {
+                // FIXME: use a hashmap to store the field args
+                field.args.iter().find(|arg| arg.name == arg_name)
+            }
+            FieldDef::InputField(_) => None,
+        }
+    }
+}
+
 impl BlueprintIndex {
-    pub fn init(definitions: Vec<Definition>) -> Self {
+    pub fn init(blueprint: &Blueprint) -> Self {
         let mut map = HashMap::new();
 
-        for definition in definitions {
+        for definition in blueprint.definitions.iter() {
             match definition {
                 Definition::Object(object_def) => {
                     let type_name = object_def.name.clone();
@@ -27,7 +40,10 @@ impl BlueprintIndex {
                         fields_map.insert(field.name.clone(), FieldDef::Field(field.clone()));
                     }
 
-                    map.insert(type_name, (Definition::Object(object_def), fields_map));
+                    map.insert(
+                        type_name,
+                        (Definition::Object(object_def.to_owned()), fields_map),
+                    );
                 }
                 Definition::Interface(interface_def) => {
                     let type_name = interface_def.name.clone();
@@ -39,7 +55,7 @@ impl BlueprintIndex {
 
                     map.insert(
                         type_name,
-                        (Definition::Interface(interface_def), fields_map),
+                        (Definition::Interface(interface_def.to_owned()), fields_map),
                     );
                 }
                 Definition::InputObject(input_object_def) => {
@@ -52,34 +68,37 @@ impl BlueprintIndex {
 
                     map.insert(
                         type_name,
-                        (Definition::InputObject(input_object_def), fields_map),
+                        (
+                            Definition::InputObject(input_object_def.to_owned()),
+                            fields_map,
+                        ),
                     );
                 }
                 Definition::Scalar(scalar_def) => {
                     let type_name = scalar_def.name.clone();
                     map.insert(
                         type_name.clone(),
-                        (Definition::Scalar(scalar_def), HashMap::new()),
+                        (Definition::Scalar(scalar_def.to_owned()), HashMap::new()),
                     );
                 }
                 Definition::Enum(enum_def) => {
                     let type_name = enum_def.name.clone();
                     map.insert(
                         type_name.clone(),
-                        (Definition::Enum(enum_def), HashMap::new()),
+                        (Definition::Enum(enum_def.to_owned()), HashMap::new()),
                     );
                 }
                 Definition::Union(union_def) => {
                     let type_name = union_def.name.clone();
                     map.insert(
                         type_name.clone(),
-                        (Definition::Union(union_def), HashMap::new()),
+                        (Definition::Union(union_def.to_owned()), HashMap::new()),
                     );
                 }
             }
         }
 
-        Self { map }
+        Self { map, schema: blueprint.schema.to_owned() }
     }
 
     pub fn get_type(&self, type_name: &str) -> Option<&Definition> {
@@ -90,5 +109,16 @@ impl BlueprintIndex {
         self.map
             .get(type_name)
             .and_then(|(_, fields_map)| fields_map.get(field_name))
+    }
+
+    pub fn get_query_type(&self) -> Option<&Definition> {
+        self.get_type(&self.schema.query)
+    }
+
+    pub fn get_mutation_type(&self) -> Option<&Definition> {
+        self.schema
+            .mutation
+            .as_ref()
+            .and_then(|a| self.get_type(&a))
     }
 }

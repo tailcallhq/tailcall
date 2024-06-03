@@ -13,6 +13,7 @@ mod model {
 
     use async_graphql::parser::types::{DocumentOperations, ExecutableDocument, Selection};
     use async_graphql::Positioned;
+    use prost_reflect::prost_types::field;
     use serde_json_borrow::OwnedValue;
 
     use crate::core::blueprint::{
@@ -160,59 +161,55 @@ mod model {
                     .map(|(k, v)| (k.node.as_str().to_string(), v.node.into_const()))
                     .collect::<HashMap<String, Option<async_graphql::Value>>>();
 
-                if let Some((_, fields_map)) = blueprint_index.map.get(current_type) {
-                    if let Some(field_def) = fields_map.get(field_name) {
-                        let mut args = vec![];
-                        for (arg_name, v) in field_args {
-                            if let Some(FieldDef::InputField(arg)) =
-                                fields_map.get(&arg_name)
-                            {
-                                let type_of = arg.of_type.clone();
-                                let id = arg_id.gen();
-                                let arg = Arg {
-                                    id,
-                                    name: arg_name.clone(),
-                                    type_of,
-                                    value: Some(
-                                        v.ok_or(anyhow::anyhow!(
-                                            "failed converting Const to Borrowed Value"
-                                        ))?
-                                        .into_bvalue()
-                                        .into(),
-                                    ),
-                                    default_value: arg.default_value.clone(),
-                                };
-                                args.push(arg);
-                            }
+                if let Some(field_def) = blueprint_index.get_field(current_type, field_name) {
+                    let mut args = vec![];
+                    for (arg_name, v) in field_args {
+                        if let Some(arg) = field_def.get_arg(&arg_name) {
+                            let type_of = arg.of_type.clone();
+                            let id = arg_id.gen();
+                            let arg = Arg {
+                                id,
+                                name: arg_name.clone(),
+                                type_of,
+                                value: Some(
+                                    v.ok_or(anyhow::anyhow!(
+                                        "failed converting Const to Borrowed Value"
+                                    ))?
+                                    .into_bvalue()
+                                    .into(),
+                                ),
+                                default_value: arg.default_value.clone(),
+                            };
+                            args.push(arg);
                         }
-
-                        let type_of = match field_def {
-                            FieldDef::Field(field_def) => field_def.of_type.clone(),
-                            FieldDef::InputField(field_def) => field_def.of_type.clone(),
-                        };
-
-                        fields = fields.merge_right(resolve_selection_set(
-                            gql_field.node.selection_set.clone(),
-                            blueprint_index,
-                            id,
-                            arg_id,
-                            type_of.name(),
-                        )?);
-
-                        let id = id.gen();
-                        let field = Field {
-                            id,
-                            name: field_name.to_string(),
-                            ir: match field_def {
-                                FieldDef::Field(field_def) => field_def.resolver.clone(),
-                                _ => None,
-                            },
-                            type_of,
-                            args,
-                            refs: None,
-                        };
-                        fields.push(field);
                     }
+
+                    let type_of = match field_def {
+                        FieldDef::Field(field_def) => field_def.of_type.clone(),
+                        FieldDef::InputField(field_def) => field_def.of_type.clone(),
+                    };
+
+                    fields = fields.merge_right(resolve_selection_set(
+                        gql_field.node.selection_set.clone(),
+                        blueprint_index,
+                        id,
+                        arg_id,
+                        type_of.name(),
+                    )?);
+
+                    let id = id.gen();
+                    let field = Field {
+                        id,
+                        name: field_name.to_string(),
+                        ir: match field_def {
+                            FieldDef::Field(field_def) => field_def.resolver.clone(),
+                            _ => None,
+                        },
+                        type_of,
+                        args,
+                        refs: None,
+                    };
+                    fields.push(field);
                 }
             }
         }
@@ -322,7 +319,7 @@ mod tests {
             }
         "#;
         let document = async_graphql::parser::parse_query(query).unwrap();
-        let bp_index = BlueprintIndex::init(blueprint.definitions.clone());
+        let bp_index = BlueprintIndex::init(&blueprint);
         let q_blueprint = model::QueryBlueprint::from_document(document, bp_index, "Query");
         insta::assert_snapshot!(format!("{:#?}", q_blueprint));
     }
