@@ -184,7 +184,7 @@ mod model {
                     }
 
                     let type_of = match field_def {
-                        FieldDef::Field(field_def) => field_def.of_type.clone(),
+                        FieldDef::Field((field_def, _)) => field_def.of_type.clone(),
                         FieldDef::InputField(field_def) => field_def.of_type.clone(),
                     };
 
@@ -201,7 +201,7 @@ mod model {
                         id,
                         name: field_name.to_string(),
                         ir: match field_def {
-                            FieldDef::Field(field_def) => field_def.resolver.clone(),
+                            FieldDef::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
                         },
                         type_of,
@@ -260,40 +260,6 @@ mod model {
         }
 
         Ok(fields)
-    }
-
-    fn find_definition<'a>(
-        name: &str,
-        definitions: &'a [Definition],
-    ) -> Option<&'a FieldDefinition> {
-        for def in definitions {
-            if let Definition::Object(object) = def {
-                for field in &object.fields {
-                    if field.name == name {
-                        return Some(field);
-                    }
-                }
-            }
-        }
-        None
-    }
-
-    fn find_definition_arg<'a>(
-        name: &str,
-        definitions: &'a [Definition],
-    ) -> Option<&'a InputFieldDefinition> {
-        for def in definitions {
-            if let Definition::Object(object) = def {
-                for field in &object.fields {
-                    for arg in &field.args {
-                        if arg.name == name {
-                            return Some(arg);
-                        }
-                    }
-                }
-            }
-        }
-        None
     }
 }
 

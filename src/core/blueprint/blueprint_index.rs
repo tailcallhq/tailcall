@@ -10,16 +10,16 @@ pub struct BlueprintIndex {
 
 #[derive(Debug)]
 pub enum FieldDef {
-    Field(FieldDefinition),
+    Field((FieldDefinition, HashMap<String, InputFieldDefinition>)),
     InputField(InputFieldDefinition),
 }
 
 impl FieldDef {
     pub fn get_arg(&self, arg_name: &str) -> Option<&InputFieldDefinition> {
         match self {
-            FieldDef::Field(field) => {
+            FieldDef::Field((_, args)) => {
                 // FIXME: use a hashmap to store the field args
-                field.args.iter().find(|arg| arg.name == arg_name)
+                args.get(arg_name)
             }
             FieldDef::InputField(_) => None,
         }
@@ -37,7 +37,17 @@ impl BlueprintIndex {
                     let mut fields_map = HashMap::new();
 
                     for field in &object_def.fields {
-                        fields_map.insert(field.name.clone(), FieldDef::Field(field.clone()));
+                        let args_map = HashMap::from_iter(
+                            field
+                                .args
+                                .iter()
+                                .map(|v| (v.name.clone(), v.clone()))
+                                .collect::<Vec<_>>(),
+                        );
+                        fields_map.insert(
+                            field.name.clone(),
+                            FieldDef::Field((field.clone(), args_map)),
+                        );
                     }
 
                     map.insert(
@@ -50,7 +60,14 @@ impl BlueprintIndex {
                     let mut fields_map = HashMap::new();
 
                     for field in interface_def.fields.clone() {
-                        fields_map.insert(field.name.clone(), FieldDef::Field(field));
+                        let args_map = HashMap::from_iter(
+                            field
+                                .args
+                                .iter()
+                                .map(|v| (v.name.clone(), v.clone()))
+                                .collect::<Vec<_>>(),
+                        );
+                        fields_map.insert(field.name.clone(), FieldDef::Field((field, args_map)));
                     }
 
                     map.insert(
