@@ -166,27 +166,27 @@ mod test {
         let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
         let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
         let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };
-        let float_field = Field { type_of: "Float".to_owned(), ..Default::default() };
-
-        let mut ty = Type::default();
-        ty.fields.insert("body".to_string(), str_field.clone());
-        ty.fields.insert("id".to_string(), int_field.clone());
-        ty.fields.insert("title".to_string(), bool_field.clone());
-        ty.fields.insert("userId".to_string(), float_field.clone());
 
         let mut ty1 = Type::default();
-        ty1.fields.insert(
+        ty1.fields.insert("body".to_string(), str_field.clone());
+        ty1.fields.insert("id".to_string(), int_field.clone());
+        ty1.fields.insert("is_verified".to_string(), bool_field.clone());
+        ty1.fields.insert("userId".to_string(), int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields.insert(
             "t1".to_string(),
             Field { type_of: "T1".to_string(), ..Default::default() },
         );
-        ty1.fields.insert("title".to_string(), bool_field.clone());
-        ty1.fields.insert("userId".to_string(), float_field.clone());
-        ty.fields.insert("body".to_string(), str_field.clone());
+        ty2.fields.insert("is_verified".to_string(), bool_field.clone());
+        ty2.fields.insert("userId".to_string(), int_field.clone());
+        ty2.fields.insert("body".to_string(), str_field.clone());
+
 
         let mut config = Config::default();
 
-        config.types.insert("T1".to_string(), ty);
-        config.types.insert("T2".to_string(), ty1);
+        config.types.insert("T1".to_string(), ty1);
+        config.types.insert("T2".to_string(), ty2);
 
         let mut q_type = Type::default();
         q_type.fields.insert(
