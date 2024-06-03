@@ -1,4 +1,5 @@
 mod pair_set;
+mod pair_map;
 mod similarity;
 mod type_merger;
 
