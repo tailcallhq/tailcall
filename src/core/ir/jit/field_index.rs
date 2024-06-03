@@ -129,6 +129,7 @@ impl FieldIndex {
         &self.schema.query
     }
 
+    #[allow(unused)]
     pub fn get_mutation(&self) -> Option<&String> {
         self.schema.mutation.as_ref()
     }
