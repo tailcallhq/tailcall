@@ -2,185 +2,24 @@
 source: src/core/generator/from_openapi.rs
 expression: "OpenApiToConfigConverter::new(\"Query\",\n                content.as_str()).unwrap().convert().to_sdl()"
 ---
-schema @server @upstream(baseURL: "https://api.apis.guru/v2") {
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-  """
-  Meta information about API
-  """
-type Api {
-  """
-  Timestamp when the API was first added to the directory
-  """
-  added: String!
-  """
-  Recommended version
-  """
-  preferred: String!
-  """
-  List of supported versions of the API
-  """
-  versions: JSON!
-}
-
-type ApiVersion {
-  """
-  Timestamp when the version was added
-  """
-  added: String!
-  """
-  Copy of `externalDocs` section from OpenAPI definition
-  """
-  externalDocs: JSON
-  """
-  Copy of `info` section from OpenAPI definition
-  """
-  info: JSON!
-  """
-  Link to the individual API entry for this API
-  """
-  link: String
-  """
-  The value of the `openapi` or `swagger` property of the source definition
-  """
-  openapiVer: String!
-  """
-  URL to OpenAPI definition in JSON format
-  """
-  swaggerUrl: String!
-  """
-  URL to OpenAPI definition in YAML format
-  """
-  swaggerYamlUrl: String!
-  """
-  Timestamp when the version was updated
-  """
-  updated: String!
-}
-
-  """
-  List of basic metrics
-  """
-type Metrics {
-  """
-  Data used for charting etc
-  """
-  datasets: [JSON]
-  """
-  Percentage of all APIs where auto fixes have been applied
-  """
-  fixedPct: Int
-  """
-  Total number of fixes applied across all APIs
-  """
-  fixes: Int
-  """
-  Number of newly invalid APIs
-  """
-  invalid: Int
-  """
-  Open GitHub issues on our main repo
-  """
-  issues: Int
-  """
-  Number of unique APIs
-  """
-  numApIs: Int!
-  """
-  Number of methods of API retrieval
-  """
-  numDrivers: Int
-  """
-  Total number of endpoints inside all definitions
-  """
-  numEndpoints: Int!
-  """
-  Number of API providers in directory
-  """
-  numProviders: Int
-  """
-  Number of API definitions including different versions of the same API
-  """
-  numSpecs: Int!
-  """
-  GitHub stars for our main repo
-  """
-  stars: Int
-  """
-  Summary totals for the last 7 days
-  """
-  thisWeek: Type2
-  """
-  Number of unofficial APIs
-  """
-  unofficial: Int
-  """
-  Number of unreachable (4XX,5XX status) APIs
-  """
-  unreachable: Int
+type Post {
+  completed: String!
+  id: Int!
+  title: String!
+  userId: Int!
 }
 
 type Query {
   """
-  Returns the API entry for one specific version of an API where there is no serviceName.
+  Returns a post by id
   """
-  getApi(api: String!, provider: String!): JSON @http(path: "/specs/{{args.provider}}/{{args.api}}.json")
+  getPost(id: Int!): Post @http(path: "/posts/{{args.id}}")
   """
-  Some basic metrics for the entire directory.
-Just stunning numbers to put on a front page and are intended purely for WoW effect :)
-
+  Returns all posts
   """
-  getMetrics: JSON @http(path: "/metrics.json")
-  """
-  List all APIs in the directory for a particular providerName
-Returns links to the individual API entry for each API.
-
-  """
-  getProvider(provider: String!): JSON @http(path: "/{{args.provider}}.json")
-  """
-  List all the providers in the directory
-
-  """
-  getProviders: Type0 @http(path: "/providers.json")
-  """
-  Returns the API entry for one specific version of an API where there is a serviceName.
-  """
-  getServiceApi(api: String!, provider: String!, service: String!): JSON @http(path: "/specs/{{args.provider}}/{{args.service}}/{{args.api}}.json")
-  """
-  List all serviceNames in the directory for a particular providerName
-
-  """
-  getServices(provider: String!): Type1 @http(path: "/{{args.provider}}/services.json")
-  """
-  List all APIs in the directory.
-Returns links to the OpenAPI definitions for each API in the directory.
-If API exist in multiple versions `preferred` one is explicitly marked.
-Some basic info from the OpenAPI definition is cached inside each object.
-This allows you to generate some simple views without needing to fetch the OpenAPI definition for each API.
-
-  """
-  listApIs: JSON @http(path: "/list.json")
-}
-
-type Type0 {
-  data: [String]
-}
-
-type Type1 {
-  data: [String]
-}
-
-  """
-  Summary totals for the last 7 days
-  """
-type Type2 {
-  """
-  APIs added in the last week
-  """
-  added: Int
-  """
-  APIs updated in the last week
-  """
-  updated: Int
+  getPosts: [Post] @http(path: "/posts")
 }

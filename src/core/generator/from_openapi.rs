@@ -424,8 +424,15 @@ mod tests {
             .join("generator")
             .join("openapi");
 
-        for spec_path in fs::read_dir(spec_folder_path).unwrap() {
-            let spec_path = spec_path.unwrap().path();
+        let mut ls: Vec<String> = fs::read_dir(spec_folder_path)
+            .unwrap()
+            .into_iter()
+            .map(|path| format!("{}", path.unwrap().path().display()))
+            .collect();
+
+        ls.sort();
+
+        for spec_path in ls {
             let content = fs::read_to_string(&spec_path).unwrap();
             insta::assert_snapshot!(OpenApiToConfigConverter::new("Query", content.as_str())
                 .unwrap()
