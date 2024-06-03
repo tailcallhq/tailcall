@@ -174,7 +174,7 @@ mod model {
                                     name: arg_name.clone(),
                                     type_of,
                                     value: Some(v.into_bvalue().into()),
-                                    default_value: None, // TODO:
+                                    default_value: arg.default_value.clone(),
                                 };
                                 args.push(arg);
                             }

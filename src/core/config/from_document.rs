@@ -378,7 +378,10 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
         .flatten();
     let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
         let value = &pos.node;
-        serde_json::to_value(value).ok()
+        serde_json::to_string(value)
+            .map(|v| serde_json_borrow::OwnedValue::from_str(&v).ok())
+            .ok()
+            .flatten()
     } else {
         None
     };
