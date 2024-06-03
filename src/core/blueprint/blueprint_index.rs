@@ -115,10 +115,15 @@ impl BlueprintIndex {
         self.get_type(&self.schema.query)
     }
 
+    pub fn get_query(&self) -> &String {
+        &self.schema.query
+    }
+
     pub fn get_mutation_type(&self) -> Option<&Definition> {
-        self.schema
-            .mutation
-            .as_ref()
-            .and_then(|a| self.get_type(&a))
+        self.schema.mutation.as_ref().and_then(|a| self.get_type(a))
+    }
+
+    pub fn get_mutation_type_name(&self) -> Option<&String> {
+        self.schema.mutation.as_ref()
     }
 }

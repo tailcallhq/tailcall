@@ -134,9 +134,8 @@ mod model {
         pub fn from_document(
             document: ExecutableDocument,
             bpi: BlueprintIndex,
-            query: &str,
         ) -> anyhow::Result<Self> {
-            let fields = convert_query_to_field(document, &bpi, query)?;
+            let fields = convert_query_to_field(document, &bpi)?;
             Ok(Self { fields })
         }
     }
@@ -220,8 +219,8 @@ mod model {
     fn convert_query_to_field<A>(
         document: ExecutableDocument,
         blueprint_index: &BlueprintIndex,
-        query: &str,
     ) -> anyhow::Result<Vec<Field<A>>> {
+        let query = blueprint_index.get_query();
         let mut id = FieldId::new(0);
         let mut arg_id = ArgId::new(0);
 
@@ -320,7 +319,7 @@ mod tests {
         "#;
         let document = async_graphql::parser::parse_query(query).unwrap();
         let bp_index = BlueprintIndex::init(&blueprint);
-        let q_blueprint = model::QueryBlueprint::from_document(document, bp_index, "Query");
+        let q_blueprint = model::QueryBlueprint::from_document(document, bp_index);
         insta::assert_snapshot!(format!("{:#?}", q_blueprint));
     }
 }
