@@ -1,3 +1,4 @@
+#![allow(unused)]
 ///
 /// We need three executors for each query
 /// 1. Global general purpose executor (WE have this currently)
@@ -12,8 +13,7 @@ mod model {
 
     use async_graphql::parser::types::{DocumentOperations, ExecutableDocument, Selection};
     use async_graphql::Positioned;
-    
-    use serde_json_borrow::{OwnedValue};
+    use serde_json_borrow::OwnedValue;
 
     use crate::core::blueprint::{Blueprint, Definition, FieldDefinition, InputFieldDefinition};
     use crate::core::ir::IR;

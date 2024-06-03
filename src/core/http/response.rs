@@ -1,4 +1,3 @@
-
 use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
@@ -10,7 +9,7 @@ use tonic_types::Status as GrpcStatus;
 
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::ir::EvaluationError;
-use crate::core::{FromValue};
+use crate::core::FromValue;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {

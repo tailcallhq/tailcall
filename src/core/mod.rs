@@ -83,9 +83,7 @@ impl FromValue for async_graphql_value::ConstValue {
                 serde_json_borrow::Value::Str(Cow::Owned(s))
             }
             async_graphql_value::ConstValue::List(a) => serde_json_borrow::Value::Array(
-                a.into_iter()
-                    .map(|v| v.into_bvalue())
-                    .collect::<Vec<_>>(),
+                a.into_iter().map(|v| v.into_bvalue()).collect::<Vec<_>>(),
             ),
             async_graphql_value::ConstValue::Object(o) => serde_json_borrow::Value::Object(
                 o.into_iter()
