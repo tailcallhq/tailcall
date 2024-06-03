@@ -169,7 +169,7 @@ impl OpenApiToConfigConverter {
                     )
                     .into_tuple();
                 fields.insert(
-                    name.to_case(Case::Camel),
+                    name.clone(),
                     Field {
                         type_of,
                         list,
@@ -208,7 +208,7 @@ impl OpenApiToConfigConverter {
                         .into_tuple();
                     let doc = property_schema.description.clone();
                     (
-                        name.to_case(Case::Camel),
+                        name.clone(),
                         Field {
                             type_of,
                             required: schema.required.contains(&name),
@@ -238,7 +238,7 @@ impl OpenApiToConfigConverter {
     }
 
     fn define_types(&mut self, mut inline_types: VecDeque<Schema>) {
-        let mut index = 1;
+        let mut index = 0;
         while let Some(schema) = inline_types.pop_front() {
             let name = format!("Type{index}").to_case(Case::Pascal);
             match self.define_type(schema) {
@@ -317,7 +317,7 @@ impl OpenApiToConfigConverter {
                         .get_schema_type(param.schema.clone().unwrap(), param.param_type.clone())
                         .into_tuple();
                     (
-                        param.name.to_case(Case::Camel),
+                        param.name,
                         Arg {
                             type_of: name,
                             list: is_list,
@@ -344,7 +344,7 @@ impl OpenApiToConfigConverter {
                     .replacen(path.as_str(), 0, |cap: &regex::Captures| {
                         let arg_name = &cap[0][1..cap[0].len() - 1];
                         url_params.insert(arg_name.to_string());
-                        format!("{{{{args.{}}}}}", arg_name.to_case(Case::Camel))
+                        format!("{{{{args.{}}}}}", arg_name)
                     })
                     .to_string();
             }
@@ -354,7 +354,7 @@ impl OpenApiToConfigConverter {
                 .filter(|&(key, _)| !url_params.contains(key))
                 .map(|(key, _)| KeyValue {
                     key: key.to_string(),
-                    value: format!("{{{{args.{}}}}}", key.to_case(Case::Camel)),
+                    value: format!("{{{{args.{}}}}}", key),
                 })
                 .collect();
 
