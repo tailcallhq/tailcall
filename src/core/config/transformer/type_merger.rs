@@ -30,12 +30,6 @@ impl Default for TypeMerger {
     }
 }
 
-fn is_type_comparable(type_: &str) -> bool {
-    matches!(
-        type_.to_lowercase().as_str(),
-        "int" | "id" | "boolean" | "float" | "string" | "any" | "empty"
-    )
-}
 
 fn has_type_visited(type_1: &str, type_2: &str, visited_types: &HashSet<(String, String)>) -> bool {
     visited_types.contains(&(type_1.to_owned(), type_2.to_owned()))
@@ -44,8 +38,7 @@ fn has_type_visited(type_1: &str, type_2: &str, visited_types: &HashSet<(String,
 
 /// calculate_distance returns pair of u32 ints -> (count of similar fields,
 /// total count of fields)
-///
-/// TODO: cache the subproblems to avoid recalculating the subproblems.
+/// TODO: optimise this recusive function.
 fn calculate_distance(
     config: &Config,
     type_1: &Type,
@@ -60,30 +53,26 @@ fn calculate_distance(
             let field_1_type_of = field_1.type_of.to_string();
             let field_2_type_of = field_2.type_of.to_string();
 
-            let is_field_1_comparable = is_type_comparable(field_1_type_of.as_str());
-            let is_field_2_comparable = is_type_comparable(field_2_type_of.as_str());
-
-            if is_field_1_comparable && is_field_2_comparable && field_1_type_of == field_2_type_of
-            {
+            if field_1_type_of == field_2_type_of {
                 same_field_cnt += 2.0; // 1 from field_1 + 1 from field_2
-            } else if !is_field_1_comparable && !is_field_2_comparable {
-                if has_type_visited(&field_2_type_of, &field_1_type_of, visited_type) {
-                    same_field_cnt += 2.0;
-                    continue;
+            } else {
+                if let Some(type_a) = config.types.get(field_1_type_of.as_str()) {
+                    if let Some(type_b) = config.types.get(field_2_type_of.as_str()) {
+                        if has_type_visited(&field_2_type_of, &field_1_type_of, visited_type) {
+                            same_field_cnt += 2.0;
+                            continue;
+                        }
+                        visited_type.insert((field_1_type_of, field_2_type_of));
+
+                        let type_similarity_metric =
+                            calculate_distance(config, type_a, type_b, visited_type);
+
+                        total_field_count -= 2; // don't count the non-comparable field, it'll get counted by recursive call.
+
+                        same_field_cnt += type_similarity_metric.0;
+                        total_field_count += type_similarity_metric.1;
+                    }
                 }
-
-                let type_a = config.types.get(field_1_type_of.as_str()).unwrap();
-                let type_b = config.types.get(field_2_type_of.as_str()).unwrap();
-
-                visited_type.insert((field_1_type_of, field_2_type_of));
-
-                let type_similarity_metric =
-                    calculate_distance(config, type_a, type_b, visited_type);
-
-                total_field_count -= 2; // don't count the non-comparable field, it'll get counted by recursive call.
-
-                same_field_cnt += type_similarity_metric.0;
-                total_field_count += type_similarity_metric.1;
             }
         }
     }
@@ -220,7 +209,6 @@ impl Transform for TypeMerger {
 #[cfg(test)]
 mod test {
     use super::TypeMerger;
-    use crate::core::config::transformer::type_merger::is_type_comparable;
     use crate::core::config::transformer::Transform;
     use crate::core::config::{Config, Field, Type};
     use crate::core::valid::Validator;
@@ -336,35 +324,5 @@ mod test {
         assert_eq!(config.types.len(), 2);
         insta::assert_snapshot!(config.to_sdl());
         Ok(())
-    }
-
-    #[test]
-    fn test_is_type_comparable() {
-        assert!(is_type_comparable("int"));
-        assert!(is_type_comparable("Int"));
-        assert!(is_type_comparable("INT"));
-
-        assert!(is_type_comparable("id"));
-        assert!(is_type_comparable("ID"));
-        assert!(is_type_comparable("Id"));
-
-        assert!(is_type_comparable("boolean"));
-        assert!(is_type_comparable("Boolean"));
-
-        assert!(is_type_comparable("float"));
-        assert!(is_type_comparable("Float"));
-
-        assert!(is_type_comparable("string"));
-        assert!(is_type_comparable("String"));
-
-        assert!(is_type_comparable("empty"));
-        assert!(is_type_comparable("Empty"));
-        assert!(is_type_comparable("Any"));
-        assert!(is_type_comparable("any"));
-
-        assert!(!is_type_comparable("T1"));
-        assert!(!is_type_comparable("t1"));
-        assert!(!is_type_comparable("M1"));
-        assert!(!is_type_comparable("m1"));
     }
 }
