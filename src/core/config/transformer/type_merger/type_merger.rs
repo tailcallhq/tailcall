@@ -37,7 +37,7 @@ impl TypeMerger {
         let mut similar_type_group_list: Vec<HashSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
-        let stat_gen = Similarity::new(&config);
+        let stat_gen = Similarity::new(&config, self.thresh);
 
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
@@ -57,8 +57,8 @@ impl TypeMerger {
                 {
                     continue;
                 }
-                let similarity = stat_gen.similarity(type_info_1, type_info_2);
-                if similarity >= self.thresh {
+                let is_similar = stat_gen.similarity(type_info_1, type_info_2);
+                if is_similar {
                     visited_types.insert(type_name_2.clone());
                     type_1_sim.insert(type_name_2.clone());
                 }
