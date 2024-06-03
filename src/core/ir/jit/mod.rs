@@ -46,10 +46,20 @@ mod model {
     }
 
     pub struct Parent(FieldId);
-    pub struct Children(Vec<FieldId>);
+    pub struct Children(pub(crate) Vec<Field<Children>>);
 
     pub struct QueryBlueprint {
         pub fields: Vec<Field<Parent>>,
+    }
+
+    impl QueryBlueprint {
+        pub fn to_children(&self) -> Vec<Field<Children>> {
+            todo!()
+        }
+
+        pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
+            self.fields.iter().find(|field| field.id == id)
+        }
     }
 }
 
@@ -165,7 +175,7 @@ mod synth {
     pub use serde_json_borrow::*;
 
     use super::cache::Cache;
-    use super::model::QueryBlueprint;
+    use super::model::{Children, Field, FieldId, QueryBlueprint};
 
     struct Synth {
         blueprint: QueryBlueprint,
@@ -177,11 +187,34 @@ mod synth {
             Synth { blueprint, cache: Cache::empty() }
         }
 
+        fn build_children(
+            &self,
+            field: Field<Children>,
+            query_blueprint: QueryBlueprint,
+        ) -> ObjectAsVec {
+            let mut object = ObjectAsVec::default();
+            match field.refs {
+                None => (),
+                Some(children) => {
+                    for field in children.0 {
+                        let field = query_blueprint.find_field(fieldId.clone()).unwrap();
+                        let key = field.name.clone();
+                        let id = field.id.clone();
+                        match self.cache.get(id) {
+                            Some(value) => {
+                                object.insert(key.as_str(), value.get_value().to_owned());
+                            }
+                            None => (),
+                        }
+                    }
+                }
+            }
+            object
+        }
+
         pub fn synthesize<'a>(&'a self) -> Value<'a> {
             let mut object = ObjectAsVec::default();
-
-            let root_fields = self.blueprint.fields.iter().filter(|a| a.refs.is_none());
-
+            let root_fields = self.blueprint.to_children();
             for root_field in root_fields {
                 let key = &root_field.name;
                 let id = root_field.id.to_owned();
@@ -192,6 +225,20 @@ mod synth {
                     None => (),
                 }
             }
+
+            // let root_fields = self.blueprint.fields.iter().filter(|a| a.refs.is_none());
+            //
+            // for root_field in root_fields {
+            //     let field = root_field.
+            //     let key = &root_field.name;
+            //     let id = root_field.id.to_owned();
+            //     match self.cache.get(id) {
+            //         Some(value) => {
+            //             object.insert(key, value.get_value().to_owned());
+            //         }
+            //         None => (),
+            //     }
+            // }
 
             Value::Object(object)
         }
