@@ -1,4 +1,3 @@
-#![allow(unused)]
 ///
 /// We need three executors for each query
 /// 1. Global general purpose executor (WE have this currently)
@@ -13,20 +12,19 @@ mod model {
 
     use async_graphql::parser::types::{DocumentOperations, ExecutableDocument, Selection};
     use async_graphql::Positioned;
-    use prost_reflect::prost_types::field;
     use serde_json_borrow::OwnedValue;
 
-    use crate::core::blueprint::{
-        Blueprint, BlueprintIndex, Definition, FieldDef, FieldDefinition, InputFieldDefinition,
-    };
+    use crate::core::blueprint::{BlueprintIndex, FieldDef};
     use crate::core::ir::IR;
     use crate::core::merge_right::MergeRight;
     use crate::core::FromValue;
 
+    #[allow(unused)]
     trait IncrGen {
         fn gen(&mut self) -> Self;
     }
 
+    #[allow(unused)]
     #[derive(Debug)]
     pub enum Type {
         Named(String),
@@ -34,6 +32,7 @@ mod model {
         Required(Box<Type>),
     }
 
+    #[allow(unused)]
     #[derive(Debug)]
     pub struct Arg {
         pub id: ArgId,
@@ -59,14 +58,11 @@ mod model {
         }
     }
 
+    #[allow(unused)]
     impl ArgId {
         fn new(id: usize) -> Self {
             ArgId(id)
         }
-    }
-
-    trait Id {
-        fn as_usize(&self) -> usize;
     }
 
     #[derive(Clone, PartialEq, Eq)]
@@ -78,6 +74,7 @@ mod model {
         }
     }
 
+    #[allow(unused)]
     impl FieldId {
         fn new(id: usize) -> Self {
             FieldId(id)
@@ -121,8 +118,10 @@ mod model {
     }
 
     #[derive(Debug)]
+    #[allow(unused)]
     pub struct Parent(FieldId);
 
+    #[allow(unused)]
     pub struct Children(Vec<FieldId>);
 
     #[derive(Debug)]
@@ -130,6 +129,7 @@ mod model {
         pub fields: Vec<Field<Parent>>,
     }
 
+    #[allow(unused)]
     impl QueryPlan {
         pub fn from_document(
             document: ExecutableDocument,
@@ -140,6 +140,7 @@ mod model {
         }
     }
 
+    #[allow(unused)]
     #[allow(clippy::too_many_arguments)]
     fn resolve_selection_set<A>(
         selection_set: Positioned<async_graphql_parser::types::SelectionSet>,
@@ -216,6 +217,7 @@ mod model {
         Ok(fields)
     }
 
+    #[allow(unused)]
     fn convert_query_to_field<A>(
         document: ExecutableDocument,
         blueprint_index: &BlueprintIndex,
@@ -298,17 +300,23 @@ mod cache {
     use super::model::FieldId;
     use super::value::OwnedValue;
 
+    #[allow(unused)]
     pub struct Cache {
         map: Vec<(FieldId, OwnedValue)>,
     }
 
+    #[allow(unused)]
     impl Cache {
+        #[allow(unused)]
         pub fn empty() -> Self {
             Cache { map: Vec::new() }
         }
+
+        #[allow(unused)]
         pub fn join(caches: Vec<Cache>) -> Self {
             todo!()
         }
+        #[allow(unused)]
         pub fn get(&self, key: FieldId) -> Option<&OwnedValue> {
             todo!()
         }
@@ -323,11 +331,12 @@ mod executor {
     use super::value::OwnedValue;
     use crate::core::ir::IR;
 
+    #[allow(unused)]
     pub struct ExecutionContext {
         plan: QueryPlan,
         cache: Cache,
     }
-
+    #[allow(unused)]
     impl ExecutionContext {
         pub async fn execute_ir(
             &self,
@@ -336,7 +345,6 @@ mod executor {
         ) -> anyhow::Result<OwnedValue> {
             todo!()
         }
-
         fn find_children(&self, id: FieldId) -> Vec<Field<Parent>> {
             todo!()
         }
@@ -406,7 +414,7 @@ mod synth {
         blueprint: QueryPlan,
         cache: Cache,
     }
-
+    #[allow(unused)]
     impl Synth {
         pub fn new(blueprint: QueryPlan) -> Self {
             Synth { blueprint, cache: Cache::empty() }
