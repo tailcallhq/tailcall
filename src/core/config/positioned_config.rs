@@ -1,3 +1,4 @@
+/// This file will be changed in favor of the macro left here untill all types are positioned
 use super::{
     AddField, Arg, Cache, Call, Enum, Expr, Field, GraphQL, Grpc, Http, Inline, Link, LinkType,
     Modify, Omit, Protected, Step, Tag, Telemetry, TelemetryExporter, Type, Union, JS,
