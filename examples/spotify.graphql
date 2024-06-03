@@ -1953,7 +1953,6 @@ type Query {
         {key: "market", value: "{{args.market}}"}
         {key: "offset", value: "{{args.offset}}"}
         {key: "q", value: "{{args.q}}"}
-        {key: "type", value: "{{args.type}}"}
       ]
     )
 }
