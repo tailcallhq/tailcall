@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use async_graphql_value::ConstValue;
 use regex::Regex;
 
@@ -321,9 +323,10 @@ pub fn fix_dangling_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(config, field, ty, name), mut b_field| {
+        move |(config, field, _ty, name), mut b_field| {
             if !field.has_resolver()
-                && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
+                && validate_field_has_resolver(name, field, &config.types, &mut HashSet::new())
+                    .is_succeed()
             {
                 b_field = b_field.resolver(Some(IR::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
