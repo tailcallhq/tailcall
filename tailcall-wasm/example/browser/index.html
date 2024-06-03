@@ -25,7 +25,7 @@
       let schemaUrl = urlParams.get("config");
 
       let builder = new TailcallBuilder();
-      builder = await builder.with_config("jsonplaceholder.graphql", schemaUrl);
+      builder = await builder.with_config(schemaUrl);
       executor = await builder.build();
       let btn = document.getElementById("btn");
       btn.addEventListener("click", runQuery);
