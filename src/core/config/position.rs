@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use serde::{Deserialize, Serialize};
 
 use crate::core::merge_right::MergeRight;
@@ -18,14 +20,6 @@ pub struct Pos<T> {
 impl<T> Pos<T> {
     pub fn new(line: usize, column: usize, inner: T) -> Self {
         Self { line, column, inner }
-    }
-
-    pub fn inner(&self) -> &T {
-        &self.inner
-    }
-
-    pub fn inner_mut(&mut self) -> &mut T {
-        &mut self.inner
     }
 
     pub fn set_position(&mut self, line: usize, column: usize) {
@@ -49,3 +43,16 @@ impl<T: std::fmt::Debug + MergeRight> MergeRight for Pos<T> {
     }
 }
 
+impl<T> Deref for Pos<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T> DerefMut for Pos<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}

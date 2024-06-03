@@ -51,7 +51,6 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         }
     };
 
-    println!("{:?}", config);
     let blueprint = match Blueprint::try_from(&config) {
         Ok(blueprint) => blueprint,
         Err(e) => {

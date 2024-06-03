@@ -56,7 +56,7 @@ fn compile_call(
     operation_type: &GraphQLOperationType,
     object_name: &str,
 ) -> Valid<FieldDefinition, String> {
-    Valid::from_iter(call.inner().steps.inner().iter(), |step| {
+    Valid::from_iter(call.steps.iter(), |step| {
         get_field_and_field_name(step, config_module).and_then(|(field, field_name, type_of)| {
             let args = step.args.iter();
 
@@ -161,7 +161,7 @@ fn get_field_and_field_name<'a>(
         )
         .and_then(|query_type| {
             Valid::from_option(
-                query_type.inner().fields.get(&field_name),
+                query_type.fields.get(&field_name),
                 format!("{} field not found", field_name),
             )
             .fuse(Valid::succeed(field_name))

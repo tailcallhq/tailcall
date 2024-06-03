@@ -73,7 +73,7 @@ impl Transform for AmbiguousType {
                 let mut resolution_map = HashMap::new();
                 resolution_map = insert_resolution(resolution_map, current_name, resolution);
                 if let Some(ty) = config.types.get(current_name) {
-                    for field in ty.inner().fields.values() {
+                    for field in ty.fields.values() {
                         for args in field.args.values() {
                             // if arg is of output type then it should be changed to that of
                             // newly created input type.
@@ -120,7 +120,7 @@ impl Transform for AmbiguousType {
 
             for k in keys {
                 if let Some(ty) = config.types.get_mut(&k) {
-                    for field in ty.inner_mut().fields.values_mut() {
+                    for field in ty.fields.values_mut() {
                         if let Some(resolution) = resolution_map.get(&field.type_of) {
                             if output_types.contains(&k) {
                                 field.type_of.clone_from(&resolution.output);
@@ -169,8 +169,8 @@ mod tests {
         let mut field2 = field1.clone();
         field2.type_of = "Type2".to_string();
 
-        query.inner_mut().fields.insert("field1".to_string(), field1);
-        query.inner_mut().fields.insert("field2".to_string(), field2);
+        query.fields.insert("field1".to_string(), field1);
+        query.fields.insert("field2".to_string(), field2);
 
         config.types.insert("Query".to_string(), query);
         config = config.query("Query");
@@ -187,21 +187,21 @@ mod tests {
         let mut type2: Pos<Type> = Default::default();
         let mut type3: Pos<Type> = Default::default();
 
-        type1.inner_mut().fields.insert(
+        type1.fields.insert(
             "name".to_string(),
             crate::core::config::Field::default().type_of("String".to_string()),
         );
 
-        type2.inner_mut().fields.insert(
+        type2.fields.insert(
             "ty1".to_string(),
             crate::core::config::Field::default().type_of("Type1".to_string()),
         );
 
-        type3.inner_mut().fields.insert(
+        type3.fields.insert(
             "ty1".to_string(),
             crate::core::config::Field::default().type_of("Type1".to_string()),
         );
-        type3.inner_mut().fields.insert(
+        type3.fields.insert(
             "ty2".to_string(),
             crate::core::config::Field::default().type_of("Type2".to_string()),
         );

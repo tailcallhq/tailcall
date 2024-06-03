@@ -29,7 +29,7 @@ pub fn update_js_field<'a>() -> TryFold<
                 return Valid::succeed(b_field);
             };
 
-            compile_js(CompileJs { script: &module.extensions.script, name: &js.inner().name })
+            compile_js(CompileJs { script: &module.extensions.script, name: &js.name })
                 .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )

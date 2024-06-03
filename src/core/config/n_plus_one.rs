@@ -14,7 +14,6 @@ fn find_fan_out(context: FindFanOutContext) -> Vec<Vec<(String, String)>> {
     let is_list = context.is_list;
     match config.find_type(type_name) {
         Some(type_) => type_
-            .inner()
             .fields
             .iter()
             .flat_map(|(field_name, field)| {

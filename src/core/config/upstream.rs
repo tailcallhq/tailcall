@@ -240,9 +240,9 @@ impl Upstream {
     }
 
     pub fn get_max_size(&self) -> usize {
-        self.batch.as_ref().map_or(DEFAULT_MAX_SIZE, |b| {
-            b.inner().max_size.unwrap_or(DEFAULT_MAX_SIZE)
-        })
+        self.batch
+            .as_ref()
+            .map_or(DEFAULT_MAX_SIZE, |b| b.max_size.unwrap_or(DEFAULT_MAX_SIZE))
     }
 
     pub fn get_http_2_only(&self) -> bool {

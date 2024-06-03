@@ -12,24 +12,21 @@ pub fn compile_graphql(
     operation_type: &config::GraphQLOperationType,
     graphql: &Pos<config::GraphQL>,
 ) -> Valid<IR, String> {
-    let args = graphql.inner().args.as_ref();
+    let args = graphql.args.as_ref();
     Valid::from_option(
         graphql
-            .inner()
             .base_url
             .as_ref()
-            .or(config.upstream.inner().base_url.as_ref()),
+            .or(config.upstream.base_url.as_ref()),
         "No base URL defined".to_string(),
     )
-    .zip(helpers::headers::to_mustache_headers(
-        &graphql.inner().headers,
-    ))
+    .zip(helpers::headers::to_mustache_headers(&graphql.headers))
     .and_then(|(base_url, headers)| {
         Valid::from(
             RequestTemplate::new(
                 base_url.inner.to_owned(),
                 operation_type,
-                &graphql.inner().name,
+                &graphql.name,
                 args,
                 headers,
             )
@@ -37,8 +34,8 @@ pub fn compile_graphql(
         )
     })
     .map(|req_template| {
-        let field_name = graphql.inner().name.clone();
-        let batch = graphql.inner().batch;
+        let field_name = graphql.name.clone();
+        let batch = graphql.batch;
         IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
     })
 }

@@ -86,7 +86,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: config::ConfigModule) -> Result<Self, Self::Error> {
-        let config_server = config_module.server.inner().clone();
+        let config_server = config_module.server.inner.clone();
 
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
@@ -124,7 +124,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                 config_server
                     .headers
                     .as_ref()
-                    .and_then(|headers| headers.inner().get_cors()),
+                    .and_then(|headers| headers.get_cors()),
             ))
             .fuse(Auth::make(&config_module))
             .map(
@@ -165,10 +165,9 @@ fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<
                 source: script.clone(),
                 timeout: config_module
                     .server
-                    .inner
                     .script
                     .clone()
-                    .map_or_else(|| None, |script| script.inner().timeout)
+                    .map_or_else(|| None, |script| script.timeout)
                     .map(Duration::from_millis),
             }))
         },

@@ -12,20 +12,15 @@ impl TryFrom<Vec<Pos<Link>>> for Links {
         Valid::from_iter(links.iter().enumerate(), |(pos, link)| {
             Valid::succeed(link.to_owned())
                 .and_then(|link| {
-                    if link.inner().src.is_empty() {
+                    if link.src.is_empty() {
                         Valid::fail("Link src cannot be empty".to_string())
                     } else {
                         Valid::succeed(link)
                     }
                 })
                 .and_then(|link| {
-                    if let Some(id) = &link.inner().id {
-                        if links
-                            .iter()
-                            .filter(|l| l.inner().id.as_ref() == Some(id))
-                            .count()
-                            > 1
-                        {
+                    if let Some(id) = &link.id {
+                        if links.iter().filter(|l| l.id.as_ref() == Some(id)).count() > 1 {
                             return Valid::fail(format!("Duplicated id: {}", id));
                         }
                     }
@@ -36,7 +31,7 @@ impl TryFrom<Vec<Pos<Link>>> for Links {
         .and_then(|links| {
             let script_links = links
                 .iter()
-                .filter(|l| l.inner().type_of == LinkType::Script)
+                .filter(|l| l.type_of == LinkType::Script)
                 .collect::<Vec<&Pos<Link>>>();
 
             if script_links.len() > 1 {
@@ -48,7 +43,7 @@ impl TryFrom<Vec<Pos<Link>>> for Links {
         .and_then(|links| {
             let key_links = links
                 .iter()
-                .filter(|l| l.inner().type_of == LinkType::Key)
+                .filter(|l| l.type_of == LinkType::Key)
                 .collect::<Vec<&Pos<Link>>>();
 
             if key_links.len() > 1 {

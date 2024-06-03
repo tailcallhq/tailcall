@@ -23,9 +23,9 @@ pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
 pub fn to_union_type_definition((name, u): (&String, &Pos<Union>)) -> Definition {
     Definition::Union(UnionTypeDefinition {
         name: name.to_owned(),
-        description: u.inner().doc.clone(),
+        description: u.doc.clone(),
         directives: Vec::new(),
-        types: u.inner().types.clone(),
+        types: u.types.clone(),
     })
 }
 
@@ -93,7 +93,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
     let invalid_path_handler = context.invalid_path_handler;
     let path_resolver_error_handler = context.path_resolver_error_handler;
 
-    if let Some(next_field) = type_info.inner().fields.get(field_name) {
+    if let Some(next_field) = type_info.fields.get(field_name) {
         if next_field.has_resolver() {
             let next_dir_http = next_field
                 .http
@@ -158,7 +158,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
             });
         }
     } else if let Some((head, tail)) = remaining_path.split_first() {
-        if let Some(field) = type_info.inner().fields.get(head) {
+        if let Some(field) = type_info.fields.get(head) {
             return process_path(ProcessPathContext {
                 path: tail,
                 field,
@@ -201,7 +201,6 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
             });
         }
         let target_type_info = type_info
-            .inner()
             .fields
             .get(field_name)
             .map(|_| type_info)
@@ -230,9 +229,8 @@ fn to_enum_type_definition((name, eu): (&String, &Pos<Enum>)) -> Definition {
     Definition::Enum(EnumTypeDefinition {
         name: name.to_owned(),
         directives: Vec::new(),
-        description: eu.inner().doc.to_owned(),
+        description: eu.doc.to_owned(),
         enum_values: eu
-            .inner()
             .variants
             .iter()
             .map(|variant| EnumValueDefinition {
@@ -252,9 +250,9 @@ fn to_object_type_definition(
     to_fields(name, type_of, config_module).map(|fields| {
         Definition::Object(ObjectTypeDefinition {
             name: name.to_string(),
-            description: type_of.inner().doc.clone(),
+            description: type_of.doc.clone(),
             fields,
-            implements: type_of.inner().implements.clone(),
+            implements: type_of.implements.clone(),
         })
     })
 }
@@ -354,8 +352,8 @@ pub fn update_cache_resolvers<'a>() -> TryFold<
 > {
     TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(_config, field, typ, _name), mut b_field| {
-            if let Some(cache) = field.cache.as_ref().or(typ.inner().cache.as_ref()) {
-                b_field.map_expr(|expression| Cache::wrap(cache.inner().max_age, expression))
+            if let Some(cache) = field.cache.as_ref().or(typ.cache.as_ref()) {
+                b_field.map_expr(|expression| Cache::wrap(cache.max_age, expression))
             }
 
             Valid::succeed(b_field)
@@ -391,7 +389,6 @@ fn to_fields(
     // Process fields that are not marked as `omit`
     let fields = Valid::from_iter(
         type_of
-            .inner()
             .fields
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
@@ -413,7 +410,6 @@ fn to_fields(
                           type_of: &Pos<config::Type>|
      -> Valid<blueprint::FieldDefinition, String> {
         let source_field = type_of
-            .inner()
             .fields
             .iter()
             .find(|&(field_name, _)| *field_name == add_field.path[0]);
@@ -483,7 +479,7 @@ fn to_fields(
         }
     };
 
-    let added_fields = Valid::from_iter(type_of.inner().added_fields.iter(), |added_field| {
+    let added_fields = Valid::from_iter(type_of.added_fields.iter(), |added_field| {
         to_added_field(added_field, type_of)
     });
     fields.zip(added_fields).map(|(mut fields, added_fields)| {
@@ -534,7 +530,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
 
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
             let dbl_usage = input_types.contains(name) && output_types.contains(name);
-            if type_.inner().scalar() {
+            if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)
@@ -562,7 +558,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
         .fuse(Valid::from_iter(
             config_module.enums.iter(),
             |(name, type_)| {
-                if type_.inner().variants.is_empty() {
+                if type_.variants.is_empty() {
                     Valid::fail("No variants found for enum".to_string())
                 } else {
                     Valid::succeed(to_enum_type_definition((name, type_)))

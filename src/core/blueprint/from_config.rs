@@ -87,14 +87,14 @@ where
     let type_enum_ = config.find_enum(type_of);
     let schema = if let Some(type_) = type_ {
         let mut schema_fields = HashMap::new();
-        for (name, field) in type_.inner().fields.iter() {
+        for (name, field) in type_.fields.iter() {
             if field.script.is_none() && field.http.is_none() {
                 schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
             }
         }
         JsonSchema::Obj(schema_fields)
     } else if let Some(type_enum_) = type_enum_ {
-        JsonSchema::Enum(type_enum_.inner().variants.to_owned())
+        JsonSchema::Enum(type_enum_.variants.to_owned())
     } else {
         match type_of {
             "String" => JsonSchema::Str,

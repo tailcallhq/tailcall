@@ -18,13 +18,11 @@ use crate::core::{config, helpers};
 
 fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, String> {
     Valid::from_option(
-        grpc.base_url
-            .as_ref()
-            .or(config.upstream.inner().base_url.as_ref()),
+        grpc.base_url.as_ref().or(config.upstream.base_url.as_ref()),
         "No base URL defined".to_string(),
     )
     .and_then(|base_url| {
-        let mut base_url = base_url.inner().trim_end_matches('/').to_owned();
+        let mut base_url = base_url.trim_end_matches('/').to_owned();
         base_url.push('/');
         base_url.push_str(format!("{}.{}", method.package, method.service).as_str());
         base_url.push('/');
@@ -163,10 +161,10 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
     let config_module = inputs.config_module;
     let operation_type = inputs.operation_type;
     let field = inputs.field;
-    let grpc = inputs.grpc.inner();
+    let grpc = inputs.grpc;
     let validate_with_schema = inputs.validate_with_schema;
 
-    Valid::from(GrpcMethod::try_from(grpc.method.inner().as_str()))
+    Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
             let file_descriptor_set = config_module.extensions.get_file_descriptor_set();
 
@@ -177,7 +175,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             to_operation(&method, file_descriptor_set)
                 .fuse(to_url(grpc, &method, config_module))
                 .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
-                .fuse(helpers::body::to_body(grpc.body.inner().as_deref()))
+                .fuse(helpers::body::to_body(grpc.body.as_deref()))
                 .into()
         })
         .and_then(|(operation, url, headers, body)| {

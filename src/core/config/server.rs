@@ -182,13 +182,13 @@ impl Server {
     pub fn enable_cache_control(&self) -> bool {
         self.headers
             .as_ref()
-            .map(|h| h.inner().enable_cache_control())
+            .map(|h| h.enable_cache_control())
             .unwrap_or(false)
     }
     pub fn enable_set_cookies(&self) -> bool {
         self.headers
             .as_ref()
-            .map(|h| h.inner().set_cookies())
+            .map(|h| h.set_cookies())
             .unwrap_or(false)
     }
     pub fn enable_introspection(&self) -> bool {
@@ -234,7 +234,7 @@ impl Server {
     pub fn get_response_headers(&self) -> Vec<(String, String)> {
         self.headers
             .as_ref()
-            .map(|h| h.inner().custom.clone())
+            .map(|h| h.custom.clone())
             .map_or(Vec::new(), |headers| {
                 headers
                     .iter()
@@ -246,7 +246,7 @@ impl Server {
     pub fn get_experimental_headers(&self) -> BTreeSet<String> {
         self.headers
             .as_ref()
-            .map(|h| h.inner().experimental.clone().unwrap_or_default())
+            .map(|h| h.experimental.clone().unwrap_or_default())
             .unwrap_or_default()
     }
 

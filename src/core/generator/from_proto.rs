@@ -202,12 +202,10 @@ impl Context {
                     PathBuilder::new(&msg_path).extend(PathField::Field, field_index as i32);
                 cfg_field.doc = self.comments_builder.get_comments(&field_path);
 
-                ty.inner_mut()
-                    .fields
-                    .insert(field_name.to_string(), cfg_field);
+                ty.fields.insert(field_name.to_string(), cfg_field);
             }
 
-            ty.inner_mut().tag = Some(Tag { id: msg_type.id() });
+            ty.tag = Some(Tag { id: msg_type.id() });
 
             self = self.insert_type(msg_type.to_string(), ty);
         }
@@ -251,7 +249,7 @@ impl Context {
                         default_value: None,
                     };
 
-                    *body.inner_mut() = Some(format!("{{{{.args.{key}}}}}"));
+                    *body = Some(format!("{{{{.args.{key}}}}}"));
                     cfg_field.args.insert(key, val);
                 }
 
@@ -286,9 +284,7 @@ impl Context {
                         Pos::new(0, 0, Type::default())
                     });
 
-                ty.inner_mut()
-                    .fields
-                    .insert(field_name.to_string(), cfg_field);
+                ty.fields.insert(field_name.to_string(), cfg_field);
             }
         }
         Ok(self)

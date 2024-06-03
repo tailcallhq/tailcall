@@ -312,15 +312,12 @@ impl Field {
     pub fn has_batched_resolver(&self) -> bool {
         self.http
             .as_ref()
-            .is_some_and(|http| !http.inner().group_by.is_empty())
-            || self
-                .graphql
-                .as_ref()
-                .is_some_and(|graphql| graphql.inner().batch)
+            .is_some_and(|http| !http.group_by.is_empty())
+            || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
             || self
                 .grpc
                 .as_ref()
-                .is_some_and(|grpc| !grpc.inner().group_by.is_empty())
+                .is_some_and(|grpc| !grpc.group_by.is_empty())
     }
     pub fn into_list(mut self) -> Self {
         self.list = true;
@@ -352,7 +349,7 @@ impl Field {
             || self
                 .modify
                 .as_ref()
-                .and_then(|m| m.inner().omit)
+                .and_then(|m| m.omit)
                 .unwrap_or_default()
     }
 }
@@ -610,7 +607,7 @@ pub struct AddField {
 
 impl Config {
     pub fn port(&self) -> u16 {
-        self.server.inner().get_port()
+        self.server.get_port()
     }
 
     pub fn find_type(&self, name: &str) -> Option<&Pos<Type>> {
@@ -700,7 +697,7 @@ impl Config {
     fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
         if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
-            for (_, field) in type_.inner().fields.iter() {
+            for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
                     types.insert(field.type_of.clone());
                     types = self.find_connections(&field.type_of, types);
@@ -715,9 +712,7 @@ impl Config {
     pub fn is_scalar(&self, type_name: &str) -> bool {
         self.types
             .get(type_name)
-            .map_or(scalar::is_predefined_scalar(type_name), |ty| {
-                ty.inner().scalar()
-            })
+            .map_or(scalar::is_predefined_scalar(type_name), |ty| ty.scalar())
     }
 
     ///
@@ -753,7 +748,7 @@ impl Config {
         let mut types = HashSet::new();
 
         for ty in self.types.values() {
-            for interface in ty.inner().implements.iter() {
+            for interface in ty.implements.iter() {
                 types.insert(interface.clone());
             }
         }
@@ -765,7 +760,7 @@ impl Config {
     fn arguments(&self) -> Vec<(&String, &Arg)> {
         self.types
             .iter()
-            .flat_map(|(_, type_of)| type_of.inner().fields.iter())
+            .flat_map(|(_, type_of)| type_of.fields.iter())
             .flat_map(|(_, field)| field.args.iter())
             .collect::<Vec<_>>()
     }
@@ -797,7 +792,7 @@ impl Config {
         while let Some(type_name) = stack.pop() {
             if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
-                for field in typ.inner().fields.values() {
+                for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
                     stack.push(field.type_of.clone());
                 }

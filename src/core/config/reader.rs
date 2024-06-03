@@ -46,10 +46,10 @@ impl ConfigReader {
             .clone()
             .iter()
             .filter_map(|link| {
-                if link.inner().src.is_empty() {
+                if link.inner.src.is_empty() {
                     return None;
                 }
-                Some(link.inner().to_owned())
+                Some(link.inner.to_owned())
             })
             .collect();
 
@@ -219,7 +219,6 @@ impl ConfigReader {
         let reader_ctx = ConfigReaderContext {
             runtime: &self.runtime,
             vars: &server
-                .inner()
                 .vars
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
@@ -230,7 +229,6 @@ impl ConfigReader {
         config_module
             .config
             .telemetry
-            .inner_mut()
             .render_mustache(&reader_ctx)?;
 
         Ok(config_module)

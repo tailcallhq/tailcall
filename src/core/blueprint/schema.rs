@@ -30,7 +30,7 @@ fn validate_type_has_resolvers(
     ty: &Pos<Type>,
     types: &BTreeMap<String, Pos<Type>>,
 ) -> Valid<(), String> {
-    Valid::from_iter(ty.inner().fields.iter(), |(name, field)| {
+    Valid::from_iter(ty.fields.iter(), |(name, field)| {
         validate_field_has_resolver(name, field, types, ty)
     })
     .trace(name)
@@ -51,7 +51,7 @@ pub fn validate_field_has_resolver(
             if !field.has_resolver() {
                 let type_name = &field.type_of;
                 if let Some(ty) = types.get(type_name) {
-                    if ty.inner().scalar() {
+                    if ty.scalar() {
                         return true;
                     }
                     let res = validate_type_has_resolvers(type_name, ty, types);
@@ -110,7 +110,7 @@ pub fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
                 config.schema.query.as_ref(),
                 "Query root is missing".to_owned(),
             ))
-            .zip(to_directive(config.server.inner().to_directive()))
+            .zip(to_directive(config.server.to_directive()))
             .map(|(query_type_name, directive)| SchemaDefinition {
                 query: query_type_name.to_owned(),
                 mutation: config.schema.mutation.clone(),
