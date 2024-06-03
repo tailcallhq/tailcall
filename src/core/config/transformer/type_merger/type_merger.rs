@@ -37,7 +37,7 @@ impl TypeMerger {
         let mut similar_type_group_list: Vec<HashSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
-        let stat_gen = Similarity::new(&config, self.thresh);
+        let mut stat_gen = Similarity::new(&config, self.thresh);
 
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
@@ -57,7 +57,8 @@ impl TypeMerger {
                 {
                     continue;
                 }
-                let is_similar = stat_gen.similarity(type_info_1, type_info_2);
+                let is_similar =
+                    stat_gen.similarity(type_name_1, type_info_1, type_name_2, type_info_2);
                 if is_similar {
                     visited_types.insert(type_name_2.clone());
                     type_1_sim.insert(type_name_2.clone());
@@ -170,7 +171,8 @@ mod test {
         let mut ty1 = Type::default();
         ty1.fields.insert("body".to_string(), str_field.clone());
         ty1.fields.insert("id".to_string(), int_field.clone());
-        ty1.fields.insert("is_verified".to_string(), bool_field.clone());
+        ty1.fields
+            .insert("is_verified".to_string(), bool_field.clone());
         ty1.fields.insert("userId".to_string(), int_field.clone());
 
         let mut ty2 = Type::default();
@@ -178,10 +180,10 @@ mod test {
             "t1".to_string(),
             Field { type_of: "T1".to_string(), ..Default::default() },
         );
-        ty2.fields.insert("is_verified".to_string(), bool_field.clone());
+        ty2.fields
+            .insert("is_verified".to_string(), bool_field.clone());
         ty2.fields.insert("userId".to_string(), int_field.clone());
         ty2.fields.insert("body".to_string(), str_field.clone());
-
 
         let mut config = Config::default();
 
