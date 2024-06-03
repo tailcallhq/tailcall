@@ -41,15 +41,15 @@ rustls = { version = "0.23.5", optional = true, features = [
 ], default-features = false }
 rustls-pki-types = "1.5.0"
 inquire = { version = "0.7.5", optional = true }
-opentelemetry-otlp = { version = "0.15.0", features = [
+opentelemetry-otlp = { version = "0.16.0", features = [
     "trace",
     "logs",
     "metrics",
     # required to make grpc requests
     "tls-roots",
 ], optional = true }
-opentelemetry-system-metrics = { version = "0.1.8", optional = true }
-tailcall-http-cache = {path = "tailcall-http-cache", optional = true }
+opentelemetry-system-metrics = { version = "0.1.9", optional = true }
+tailcall-http-cache = { path = "tailcall-http-cache", optional = true }
 tailcall-version = { path = "./tailcall-version", optional = true }
 
 
@@ -114,25 +114,25 @@ tracing-subscriber = { version = "0.3.18", features = [
     "fmt",
     "env-filter",
 ] }
-tracing-opentelemetry = "0.23.0"
+tracing-opentelemetry = "0.24.0"
 getrandom = { version = "0.2.14", features = ["js"] }
 prometheus = "0.13.4"
 tonic = { version = "0.11.0", default-features = false }
-opentelemetry-semantic-conventions = "0.14.0"
-opentelemetry = { version = "0.22.0", features = ["trace", "logs", "metrics"] }
-opentelemetry_sdk = { version = "0.22.1", features = [
+opentelemetry-semantic-conventions = "0.15.0"
+opentelemetry = { version = "0.23.0", features = ["trace", "logs", "metrics"] }
+opentelemetry_sdk = { version = "0.23.0", features = [
     "trace",
     "logs",
     "metrics",
 ] }
-opentelemetry-http = "0.11.1"
-opentelemetry-stdout = { version = "0.3.0", features = [
+opentelemetry-http = "0.12.0"
+opentelemetry-stdout = { version = "0.4.0", features = [
     "trace",
     "logs",
     "metrics",
 ] }
-opentelemetry-appender-tracing = { version = "0.3.0" }
-opentelemetry-prometheus = "0.15.0"
+opentelemetry-appender-tracing = { version = "0.4.0" }
+opentelemetry-prometheus = "0.16.0"
 phonenumber = "0.3.4"
 chrono = "0.4.38"
 async-graphql-extension-apollo-tracing = { version = "3.2.15" }

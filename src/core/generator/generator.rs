@@ -2,7 +2,7 @@ use anyhow::Result;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 
-use crate::core::config::{Config, ConfigModule, Link, LinkType, Resolution};
+use crate::core::config::{Config, ConfigModule, Link, LinkType};
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::Source;
 use crate::core::merge_right::MergeRight;
@@ -57,12 +57,8 @@ impl Generator {
         }
 
         config.links = links;
-        Ok(
-            ConfigModule::from(config).resolve_ambiguous_types(|v| Resolution {
-                input: format!("{}Input", v),
-                output: v.to_owned(),
-            }),
-        )
+
+        Ok(ConfigModule::from(config))
     }
 }
 

@@ -6,7 +6,7 @@ schema @server @upstream {
   query: Query
 }
 
-input nested__types__Result__Nested__VeryNested @tag(id: "nested.types.Result.Nested.VeryNested") {
+input nested__types__Result__Nested__VeryNestedInput @tag(id: "nested.types.Result.Nested.VeryNested") {
   description: String
 }
 
@@ -17,7 +17,7 @@ enum nested__types__Result__NestedEnum {
 }
 
 type Query {
-  nested__types__Example__Get(veryNested: nested__types__Result__Nested__VeryNested!): nested__types__Result! @grpc(body: "{{.args.veryNested}}", method: "nested.types.Example.Get")
+  nested__types__Example__Get(veryNested: nested__types__Result__Nested__VeryNestedInput!): nested__types__Result! @grpc(body: "{{.args.veryNested}}", method: "nested.types.Example.Get")
 }
 
 type nested__types__Result @tag(id: "nested.types.Result") {
@@ -29,4 +29,8 @@ type nested__types__Result @tag(id: "nested.types.Result") {
 type nested__types__Result__Nested @tag(id: "nested.types.Result.Nested") {
   info: nested__types__Result__Nested__VeryNested
   movie: String
+}
+
+type nested__types__Result__Nested__VeryNested @tag(id: "nested.types.Result.Nested.VeryNested") {
+  description: String
 }

@@ -1,0 +1,37 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Entry {
+  arr: String
+  bool: String
+  nested: Nested
+    @expr(
+      body: {
+        num: "\"{{.value.num}}\""
+        arr: "{{.value.arr}}"
+        str: "{{.value.str}}"
+        obj: "{{.value.obj}}"
+        bool: "{{.value.bool}}"
+      }
+    )
+  num: String
+  obj: String
+  str: String
+}
+
+type Nested {
+  arr: String
+  bool: String
+  num: String
+  obj: String
+  str: String
+}
+
+type Query {
+  entry: Entry @expr(body: {num: "0", arr: "[1, 2, 3]", str: "test", obj: "{e: 1}", bool: "true"})
+}
