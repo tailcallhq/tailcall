@@ -30,72 +30,103 @@ impl Default for TypeMerger {
     }
 }
 
-
-fn has_type_visited(type_1: &str, type_2: &str, visited_types: &HashSet<(String, String)>) -> bool {
-    visited_types.contains(&(type_1.to_owned(), type_2.to_owned()))
-        || visited_types.contains(&(type_2.to_owned(), type_1.to_owned()))
+#[derive(Default)]
+struct VisitedTypes {
+    visited: HashSet<(String, String)>,
 }
 
-/// calculate_distance returns pair of u32 ints -> (count of similar fields,
-/// total count of fields)
-/// TODO: optimise this recusive function.
-fn calculate_distance(
-    config: &Config,
-    type_1: &Type,
-    type_2: &Type,
-    visited_type: &mut HashSet<(String, String)>,
-) -> (f32, i32) {
-    let mut same_field_cnt = 0.0;
-    let mut total_field_count = 0;
+impl VisitedTypes {
+    fn insert(&mut self, types: (String, String)) {
+        self.visited.insert(types);
+    }
 
-    for (field_name_1, field_1) in type_1.fields.iter() {
-        if let Some(field_2) = type_2.fields.get(field_name_1) {
-            let field_1_type_of = field_1.type_of.to_string();
-            let field_2_type_of = field_2.type_of.to_string();
+    fn contains_combination(&self, types: (&str, &str)) -> bool {
+        self.visited
+            .contains(&(types.0.to_owned(), types.1.to_owned()))
+            || self
+                .visited
+                .contains(&(types.1.to_owned(), types.0.to_owned()))
+    }
+}
 
-            if field_1_type_of == field_2_type_of {
-                same_field_cnt += 2.0; // 1 from field_1 + 1 from field_2
-            } else {
-                if let Some(type_a) = config.types.get(field_1_type_of.as_str()) {
+#[derive(Default)]
+
+struct TypeFieldStat {
+    same_field_count: u32,
+    total_field_count: u32,
+}
+
+impl TypeFieldStat {
+    fn similarity(&self) -> f32 {
+        if self.total_field_count == 0 {
+            return 0.0;
+        }
+        self.same_field_count as f32 / self.total_field_count as f32
+    }
+}
+
+struct StatGenerator<'a> {
+    config: &'a Config,
+}
+
+impl StatGenerator<'_> {
+    fn new(config: &Config) -> StatGenerator {
+        StatGenerator { config }
+    }
+
+    fn calculate_distance(&self, type_1: &Type, type_2: &Type) -> TypeFieldStat {
+        self.calculate_distance_inner(type_1, type_2, &mut VisitedTypes::default())
+    }
+
+    /// calculate_distance returns pair of u32 ints -> (count of similar fields,
+    /// total count of fields)
+    /// TODO: optimize this recursive function.
+    fn calculate_distance_inner(
+        &self,
+        type_1: &Type,
+        type_2: &Type,
+        visited_type: &mut VisitedTypes,
+    ) -> TypeFieldStat {
+        let config = &self.config;
+        let mut distance = TypeFieldStat::default();
+
+        for (field_name_1, field_1) in type_1.fields.iter() {
+            if let Some(field_2) = type_2.fields.get(field_name_1) {
+                let field_1_type_of = field_1.type_of.to_string();
+                let field_2_type_of = field_2.type_of.to_string();
+
+                if field_1_type_of == field_2_type_of {
+                    distance.same_field_count += 2; // 1 from field_1 + 1 from
+                                                    // field_2
+                } else if let Some(type_a) = config.types.get(field_1_type_of.as_str()) {
                     if let Some(type_b) = config.types.get(field_2_type_of.as_str()) {
-                        if has_type_visited(&field_2_type_of, &field_1_type_of, visited_type) {
-                            same_field_cnt += 2.0;
+                        if visited_type.contains_combination((
+                            field_1_type_of.as_str(),
+                            field_2_type_of.as_str(),
+                        )) {
+                            distance.same_field_count += 2;
                             continue;
                         }
-                        visited_type.insert((field_1_type_of, field_2_type_of));
+                        visited_type
+                            .insert((field_1_type_of.to_owned(), field_2_type_of.to_owned()));
 
                         let type_similarity_metric =
-                            calculate_distance(config, type_a, type_b, visited_type);
+                            self.calculate_distance_inner(type_a, type_b, visited_type);
 
-                        total_field_count -= 2; // don't count the non-comparable field, it'll get counted by recursive call.
+                        distance.total_field_count -= 2; // don't count the non-comparable field, it'll get counted by recursive
+                                                         // call.
 
-                        same_field_cnt += type_similarity_metric.0;
-                        total_field_count += type_similarity_metric.1;
+                        distance.same_field_count += type_similarity_metric.same_field_count;
+                        distance.total_field_count += type_similarity_metric.total_field_count;
                     }
                 }
             }
         }
+
+        distance.total_field_count += (type_1.fields.len() + type_2.fields.len()) as u32;
+
+        distance
     }
-
-    total_field_count += (type_1.fields.len() + type_2.fields.len()) as i32;
-
-    (same_field_cnt, total_field_count)
-}
-
-/// Computes the similarity between two types, returning a value in the range
-/// [0.0, 1.0]. A value of 1.0 indicates that the types are exactly similar,
-/// while a value of 0.0 means the types are not similar at all.
-fn type_distance(
-    config: &Config,
-    type_1: &Type,
-    type_2: &Type,
-    visited_type: &mut HashSet<(String, String)>,
-) -> f32 {
-    let type_similarity_metric = calculate_distance(config, type_1, type_2, visited_type);
-    if type_similarity_metric.1 == 0 {
-        return 0.0;
-    }
-    type_similarity_metric.0 / type_similarity_metric.1 as f32
 }
 
 impl TypeMerger {
@@ -104,6 +135,7 @@ impl TypeMerger {
         let mut similar_type_group_list: Vec<HashSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
+        let stat_gen = StatGenerator::new(&config);
 
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
@@ -123,9 +155,10 @@ impl TypeMerger {
                 {
                     continue;
                 }
-                let distance =
-                    type_distance(&config, type_info_1, type_info_2, &mut HashSet::new());
-                if distance >= self.thresh {
+                let similarity = stat_gen
+                    .calculate_distance(type_info_1, type_info_2)
+                    .similarity();
+                if similarity >= self.thresh {
                     visited_types.insert(type_name_2.clone());
                     type_1_sim.insert(type_name_2.clone());
                 }
