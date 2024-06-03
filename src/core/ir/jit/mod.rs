@@ -164,7 +164,7 @@ mod model {
                     if let Some(field_def) = fields_map.get(field_name) {
                         let mut args = vec![];
                         for (arg_name, v) in field_args {
-                            if let Some(FieldDef::InputFieldDefinition(arg)) =
+                            if let Some(FieldDef::InputField(arg)) =
                                 fields_map.get(&arg_name)
                             {
                                 let type_of = arg.of_type.clone();
@@ -188,7 +188,7 @@ mod model {
 
                         let type_of = match field_def {
                             FieldDef::Field(field_def) => field_def.of_type.clone(),
-                            FieldDef::InputFieldDefinition(field_def) => field_def.of_type.clone(),
+                            FieldDef::InputField(field_def) => field_def.of_type.clone(),
                         };
 
                         fields = fields.merge_right(resolve_selection_set(

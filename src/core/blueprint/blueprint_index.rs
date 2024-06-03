@@ -10,7 +10,7 @@ pub struct BlueprintIndex {
 #[derive(Debug)]
 pub enum FieldDef {
     Field(FieldDefinition),
-    InputFieldDefinition(InputFieldDefinition),
+    InputField(InputFieldDefinition),
 }
 
 impl BlueprintIndex {
@@ -47,8 +47,7 @@ impl BlueprintIndex {
                     let mut fields_map = HashMap::new();
 
                     for field in input_object_def.fields.clone() {
-                        fields_map
-                            .insert(field.name.clone(), FieldDef::InputFieldDefinition(field));
+                        fields_map.insert(field.name.clone(), FieldDef::InputField(field));
                     }
 
                     map.insert(
@@ -87,9 +86,9 @@ impl BlueprintIndex {
         self.map.get(type_name).map(|(definition, _)| definition)
     }
 
-    pub fn get_field(&self, query: &str, field_name: &str) -> Option<&FieldDef> {
+    pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&FieldDef> {
         self.map
-            .get(query)
+            .get(type_name)
             .and_then(|(_, fields_map)| fields_map.get(field_name))
     }
 }
