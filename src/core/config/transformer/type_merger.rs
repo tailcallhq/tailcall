@@ -95,7 +95,7 @@ fn type_distance(
     if type_similarity_metric.1 == 0 {
         return 0.0;
     }
-    type_similarity_metric.0 as f32 / type_similarity_metric.1 as f32
+    type_similarity_metric.0 / type_similarity_metric.1 as f32
 }
 
 impl TypeMerger {
