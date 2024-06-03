@@ -1,5 +1,6 @@
 mod auth;
 mod blueprint;
+mod blueprint_index;
 mod compress;
 mod cors;
 mod definitions;
@@ -14,7 +15,6 @@ mod server;
 pub mod telemetry;
 mod timeout;
 mod upstream;
-mod blueprint_index;
 
 pub use auth::*;
 pub use blueprint::*;
