@@ -126,11 +126,11 @@ mod model {
     pub struct Children(Vec<FieldId>);
 
     #[derive(Debug)]
-    pub struct QueryBlueprint {
+    pub struct QueryPlan {
         pub fields: Vec<Field<Parent>>,
     }
 
-    impl QueryBlueprint {
+    impl QueryPlan {
         pub fn from_document(
             document: ExecutableDocument,
             bpi: BlueprintIndex,
@@ -319,7 +319,7 @@ mod tests {
         "#;
         let document = async_graphql::parser::parse_query(query).unwrap();
         let bp_index = BlueprintIndex::init(&blueprint);
-        let q_blueprint = model::QueryBlueprint::from_document(document, bp_index);
+        let q_blueprint = model::QueryPlan::from_document(document, bp_index);
         insta::assert_snapshot!(format!("{:#?}", q_blueprint));
     }
 }
@@ -353,12 +353,12 @@ mod executor {
     use futures_util::future;
 
     use super::cache::Cache;
-    use super::model::{Field, FieldId, Parent, QueryBlueprint};
+    use super::model::{Field, FieldId, Parent, QueryPlan};
     use super::value::OwnedValue;
     use crate::core::ir::IR;
 
     pub struct ExecutionContext {
-        blueprint: QueryBlueprint,
+        plan: QueryPlan,
         cache: Cache,
     }
 
@@ -380,7 +380,7 @@ mod executor {
         }
 
         fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
-            self.blueprint.fields.iter().find(|field| field.id == id)
+            self.plan.fields.iter().find(|field| field.id == id)
         }
 
         async fn execute_field(
@@ -409,7 +409,7 @@ mod executor {
         }
 
         fn root(&self) -> Vec<&Field<Parent>> {
-            self.blueprint
+            self.plan
                 .fields
                 .iter()
                 .filter(|field| field.refs.is_none())
@@ -434,15 +434,15 @@ mod synth {
     pub use serde_json_borrow::*;
 
     use super::cache::Cache;
-    use super::model::QueryBlueprint;
+    use super::model::QueryPlan;
 
     struct Synth {
-        blueprint: QueryBlueprint,
+        blueprint: QueryPlan,
         cache: Cache,
     }
 
     impl Synth {
-        pub fn new(blueprint: QueryBlueprint) -> Self {
+        pub fn new(blueprint: QueryPlan) -> Self {
             Synth { blueprint, cache: Cache::empty() }
         }
 
