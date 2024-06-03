@@ -158,8 +158,8 @@ datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
-#serde_json_borrow = {git = "https://github.com/tailcallhq/serde_json_borrow", branch = "temp"}
-serde_json_borrow = {path = "../serde_json_borrow"}
+serde_json_borrow = {git = "https://github.com/tailcallhq/serde_json_borrow", branch = "temp"}
+#serde_json_borrow = {path = "../serde_json_borrow"}
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
