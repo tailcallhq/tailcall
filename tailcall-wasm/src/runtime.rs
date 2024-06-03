@@ -38,5 +38,7 @@ pub fn init_rt() -> TargetRuntime {
         file,
         cache,
         extensions: Arc::new(vec![]),
+        http_worker: None,
+        worker: None,
     }
 }

@@ -25,7 +25,7 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
     ) -> anyhow::Result<Vec<FileRead>> {
         let files = files.iter().map(|x| {
             self.read_file(x.to_string())
-                .map_err(|e| e.context(x.to_string()))
+                .map_err(|e| anyhow::anyhow!("{}", e))
         });
         let content = join_all(files)
             .await
