@@ -5,6 +5,7 @@ use prost_reflect::FieldDescriptor;
 
 use crate::core::blueprint::{FieldDefinition, TypeLike};
 use crate::core::config::group_by::GroupBy;
+use crate::core::config::position::Pos;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
@@ -17,11 +18,13 @@ use crate::core::{config, helpers};
 
 fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, String> {
     Valid::from_option(
-        grpc.base_url.as_ref().or(config.upstream.base_url.as_ref()),
+        grpc.base_url
+            .as_ref()
+            .or(config.upstream.inner().base_url.as_ref()),
         "No base URL defined".to_string(),
     )
     .and_then(|base_url| {
-        let mut base_url = base_url.trim_end_matches('/').to_owned();
+        let mut base_url = base_url.inner().trim_end_matches('/').to_owned();
         base_url.push('/');
         base_url.push_str(format!("{}.{}", method.package, method.service).as_str());
         base_url.push('/');
@@ -119,7 +122,7 @@ pub struct CompileGrpc<'a> {
     pub config_module: &'a ConfigModule,
     pub operation_type: &'a GraphQLOperationType,
     pub field: &'a Field,
-    pub grpc: &'a Grpc,
+    pub grpc: &'a Pos<Grpc>,
     pub validate_with_schema: bool,
 }
 pub struct GrpcMethod {
@@ -160,10 +163,10 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
     let config_module = inputs.config_module;
     let operation_type = inputs.operation_type;
     let field = inputs.field;
-    let grpc = inputs.grpc;
+    let grpc = inputs.grpc.inner();
     let validate_with_schema = inputs.validate_with_schema;
 
-    Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
+    Valid::from(GrpcMethod::try_from(grpc.method.inner().as_str()))
         .and_then(|method| {
             let file_descriptor_set = config_module.extensions.get_file_descriptor_set();
 
@@ -174,7 +177,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             to_operation(&method, file_descriptor_set)
                 .fuse(to_url(grpc, &method, config_module))
                 .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
-                .fuse(helpers::body::to_body(grpc.body.as_deref()))
+                .fuse(helpers::body::to_body(grpc.body.inner().as_deref()))
                 .into()
         })
         .and_then(|(operation, url, headers, body)| {
@@ -212,9 +215,13 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
 
 pub fn update_grpc<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &'a str), FieldDefinition, String>::new(
         |(config_module, field, type_of, _name), b_field| {
             let Some(grpc) = &field.grpc else {
                 return Valid::succeed(b_field);

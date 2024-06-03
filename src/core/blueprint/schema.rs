@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use async_graphql::parser::types::ConstDirective;
 
 use crate::core::blueprint::*;
+use crate::core::config::position::Pos;
 use crate::core::config::{Config, Field, Type};
 use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -26,10 +27,10 @@ fn validate_query(config: &Config) -> Valid<(), String> {
 /// making into the account the nesting
 fn validate_type_has_resolvers(
     name: &str,
-    ty: &Type,
-    types: &BTreeMap<String, Type>,
+    ty: &Pos<Type>,
+    types: &BTreeMap<String, Pos<Type>>,
 ) -> Valid<(), String> {
-    Valid::from_iter(ty.fields.iter(), |(name, field)| {
+    Valid::from_iter(ty.inner().fields.iter(), |(name, field)| {
         validate_field_has_resolver(name, field, types, ty)
     })
     .trace(name)
@@ -39,8 +40,8 @@ fn validate_type_has_resolvers(
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
-    types: &BTreeMap<String, Type>,
-    parent_ty: &Type,
+    types: &BTreeMap<String, Pos<Type>>,
+    parent_ty: &Pos<Type>,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
         .when(|| {
@@ -50,7 +51,7 @@ pub fn validate_field_has_resolver(
             if !field.has_resolver() {
                 let type_name = &field.type_of;
                 if let Some(ty) = types.get(type_name) {
-                    if ty.scalar() {
+                    if ty.inner().scalar() {
                         return true;
                     }
                     let res = validate_type_has_resolvers(type_name, ty, types);
@@ -109,7 +110,7 @@ pub fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
                 config.schema.query.as_ref(),
                 "Query root is missing".to_owned(),
             ))
-            .zip(to_directive(config.server.to_directive()))
+            .zip(to_directive(config.server.inner().to_directive()))
             .map(|(query_type_name, directive)| SchemaDefinition {
                 query: query_type_name.to_owned(),
                 mutation: config.schema.mutation.clone(),

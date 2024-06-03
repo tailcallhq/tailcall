@@ -46,10 +46,10 @@ impl ConfigReader {
             .clone()
             .iter()
             .filter_map(|link| {
-                if link.src.is_empty() {
+                if link.inner().src.is_empty() {
                     return None;
                 }
-                Some(link.to_owned())
+                Some(link.inner().to_owned())
             })
             .collect();
 
@@ -187,7 +187,7 @@ impl ConfigReader {
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
-
+            
             // Create initial config module
             let new_config_module = self
                 .resolve(
@@ -198,8 +198,9 @@ impl ConfigReader {
 
             // Merge it with the original config set
             config_module = config_module.merge_right(new_config_module);
-        }
 
+        }
+        dbg!("{:?}", config_module.config.clone());
         Ok(config_module)
     }
 
@@ -219,6 +220,7 @@ impl ConfigReader {
         let reader_ctx = ConfigReaderContext {
             runtime: &self.runtime,
             vars: &server
+                .inner()
                 .vars
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
@@ -229,6 +231,7 @@ impl ConfigReader {
         config_module
             .config
             .telemetry
+            .inner_mut()
             .render_mustache(&reader_ctx)?;
 
         Ok(config_module)
@@ -254,6 +257,7 @@ mod reader_tests {
 
     use pretty_assertions::assert_eq;
 
+    use crate::core::config::position::Pos;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Type};
 
@@ -267,7 +271,7 @@ mod reader_tests {
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
-        cfg = cfg.types([("Test", Type::default())].to_vec());
+        cfg = cfg.types([("Test", Pos::new(0, 0,Type::default()))].to_vec());
 
         let server = start_mock_server();
         let header_server = server.mock(|when, then| {
@@ -280,6 +284,7 @@ mod reader_tests {
             .read("examples/jsonplaceholder.json")
             .await
             .unwrap();
+
 
         let foo_json_server = server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/foo.json");

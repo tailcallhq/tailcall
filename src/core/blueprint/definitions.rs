@@ -3,6 +3,7 @@ use regex::Regex;
 
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
+use crate::core::config::position::Pos;
 use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
 use crate::core::ir::{Cache, Context, IR};
@@ -19,12 +20,12 @@ pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     }))
 }
 
-pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
+pub fn to_union_type_definition((name, u): (&String, &Pos<Union>)) -> Definition {
     Definition::Union(UnionTypeDefinition {
         name: name.to_owned(),
-        description: u.doc.clone(),
+        description: u.inner().doc.clone(),
         directives: Vec::new(),
-        types: u.types.clone(),
+        types: u.inner().types.clone(),
     })
 }
 
@@ -62,7 +63,7 @@ struct ProcessFieldWithinTypeContext<'a> {
     field: &'a config::Field,
     field_name: &'a str,
     remaining_path: &'a [String],
-    type_info: &'a config::Type,
+    type_info: &'a Pos<config::Type>,
     is_required: bool,
     config_module: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
@@ -74,7 +75,7 @@ struct ProcessFieldWithinTypeContext<'a> {
 struct ProcessPathContext<'a> {
     path: &'a [String],
     field: &'a config::Field,
-    type_info: &'a config::Type,
+    type_info: &'a Pos<config::Type>,
     is_required: bool,
     config_module: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
@@ -92,7 +93,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
     let invalid_path_handler = context.invalid_path_handler;
     let path_resolver_error_handler = context.path_resolver_error_handler;
 
-    if let Some(next_field) = type_info.fields.get(field_name) {
+    if let Some(next_field) = type_info.inner().fields.get(field_name) {
         if next_field.has_resolver() {
             let next_dir_http = next_field
                 .http
@@ -157,7 +158,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
             });
         }
     } else if let Some((head, tail)) = remaining_path.split_first() {
-        if let Some(field) = type_info.fields.get(head) {
+        if let Some(field) = type_info.inner().fields.get(head) {
             return process_path(ProcessPathContext {
                 path: tail,
                 field,
@@ -200,6 +201,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
             });
         }
         let target_type_info = type_info
+            .inner()
             .fields
             .get(field_name)
             .map(|_| type_info)
@@ -224,12 +226,13 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
     Valid::succeed(to_type(field, Some(is_required)))
 }
 
-fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
+fn to_enum_type_definition((name, eu): (&String, &Pos<Enum>)) -> Definition {
     Definition::Enum(EnumTypeDefinition {
         name: name.to_owned(),
         directives: Vec::new(),
-        description: eu.doc.to_owned(),
+        description: eu.inner().doc.to_owned(),
         enum_values: eu
+            .inner()
             .variants
             .iter()
             .map(|variant| EnumValueDefinition {
@@ -243,23 +246,26 @@ fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
 
 fn to_object_type_definition(
     name: &str,
-    type_of: &config::Type,
+    type_of: &Pos<config::Type>,
     config_module: &ConfigModule,
 ) -> Valid<Definition, String> {
     to_fields(name, type_of, config_module).map(|fields| {
         Definition::Object(ObjectTypeDefinition {
             name: name.to_string(),
-            description: type_of.doc.clone(),
+            description: type_of.inner().doc.clone(),
             fields,
-            implements: type_of.implements.clone(),
+            implements: type_of.inner().implements.clone(),
         })
     })
 }
 
-fn update_args<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+fn update_args<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(_, field, _typ, name), _| {
             // TODO! assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
@@ -317,10 +323,13 @@ fn update_resolver_from_path(
 /// resolvers that cannot be resolved from the root of the schema. This function
 /// finds such dangling resolvers and creates a resolvable path from the root
 /// schema.
-pub fn fix_dangling_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+pub fn fix_dangling_resolvers<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(config, field, ty, name), mut b_field| {
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
@@ -337,13 +346,16 @@ pub fn fix_dangling_resolvers<'a>(
 
 /// Wraps the IO Expression with Expression::Cached
 /// if `Field::cache` is present for that field
-pub fn update_cache_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+pub fn update_cache_resolvers<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(_config, field, typ, _name), mut b_field| {
-            if let Some(config::Cache { max_age }) = field.cache.as_ref().or(typ.cache.as_ref()) {
-                b_field.map_expr(|expression| Cache::wrap(*max_age, expression))
+            if let Some(cache) = field.cache.as_ref().or(typ.inner().cache.as_ref()) {
+                b_field.map_expr(|expression| Cache::wrap(cache.inner().max_age, expression))
             }
 
             Valid::succeed(b_field)
@@ -362,7 +374,7 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
 
 fn to_fields(
     object_name: &str,
-    type_of: &config::Type,
+    type_of: &Pos<config::Type>,
     config_module: &ConfigModule,
 ) -> Valid<Vec<FieldDefinition>, String> {
     let operation_type = if config_module
@@ -379,6 +391,7 @@ fn to_fields(
     // Process fields that are not marked as `omit`
     let fields = Valid::from_iter(
         type_of
+            .inner()
             .fields
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
@@ -397,9 +410,10 @@ fn to_fields(
     );
 
     let to_added_field = |add_field: &config::AddField,
-                          type_of: &config::Type|
+                          type_of: &Pos<config::Type>|
      -> Valid<blueprint::FieldDefinition, String> {
         let source_field = type_of
+            .inner()
             .fields
             .iter()
             .find(|&(field_name, _)| *field_name == add_field.path[0]);
@@ -413,7 +427,7 @@ fn to_fields(
                 &add_field.name,
             )
             .and_then(|field_definition| {
-                let added_field_path = match source_field.http {
+                let added_field_path = match source_field.http.as_ref() {
                     Some(_) => add_field.path[1..]
                         .iter()
                         .map(|s| s.to_owned())
@@ -469,7 +483,7 @@ fn to_fields(
         }
     };
 
-    let added_fields = Valid::from_iter(type_of.added_fields.iter(), |added_field| {
+    let added_fields = Valid::from_iter(type_of.inner().added_fields.iter(), |added_field| {
         to_added_field(added_field, type_of)
     });
     fields.zip(added_fields).map(|(mut fields, added_fields)| {
@@ -484,7 +498,7 @@ pub fn to_field_definition(
     operation_type: &GraphQLOperationType,
     object_name: &str,
     config_module: &ConfigModule,
-    type_of: &config::Type,
+    type_of: &Pos<config::Type>,
     name: &String,
 ) -> Valid<FieldDefinition, String> {
     let directives = field.resolvable_directives();
@@ -520,7 +534,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
 
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
             let dbl_usage = input_types.contains(name) && output_types.contains(name);
-            if type_.scalar() {
+            if type_.inner().scalar() {
                 to_scalar_type_definition(name).trace(name)
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)
@@ -548,7 +562,7 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
         .fuse(Valid::from_iter(
             config_module.enums.iter(),
             |(name, type_)| {
-                if type_.variants.is_empty() {
+                if type_.inner().variants.is_empty() {
                     Valid::fail("No variants found for enum".to_string())
                 } else {
                     Valid::succeed(to_enum_type_definition((name, type_)))

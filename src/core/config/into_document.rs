@@ -12,8 +12,8 @@ fn pos<A>(a: A) -> Positioned<A> {
 fn config_document(config: &ConfigModule) -> ServiceDocument {
     let mut definitions = Vec::new();
     let mut directives = vec![
-        pos(config.server.to_directive()),
-        pos(config.upstream.to_directive()),
+        pos(config.server.inner().to_directive()),
+        pos(config.upstream.inner().to_directive()),
     ];
 
     directives.extend(config.links.iter().map(|link| {
@@ -21,7 +21,9 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
 
         let type_directive = (
             pos(Name::new("type")),
-            pos(ConstValue::Enum(Name::new(link.type_of.to_string()))),
+            pos(ConstValue::Enum(Name::new(
+                link.inner().type_of.to_string(),
+            ))),
         );
 
         directive.arguments = directive
@@ -57,11 +59,13 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
         let kind = if config.interface_types.contains(type_name) {
             TypeKind::Interface(InterfaceType {
                 implements: type_def
+                    .inner()
                     .implements
                     .iter()
                     .map(|name| pos(Name::new(name.clone())))
                     .collect(),
                 fields: type_def
+                    .inner()
                     .fields
                     .clone()
                     .iter()
@@ -89,6 +93,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
         } else if config.input_types.contains(type_name) {
             TypeKind::InputObject(InputObjectType {
                 fields: type_def
+                    .inner()
                     .fields
                     .clone()
                     .iter()
@@ -118,16 +123,18 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     })
                     .collect::<Vec<Positioned<InputValueDefinition>>>(),
             })
-        } else if type_def.fields.is_empty() {
+        } else if type_def.inner().fields.is_empty() {
             TypeKind::Scalar
         } else {
             TypeKind::Object(ObjectType {
                 implements: type_def
+                    .inner()
                     .implements
                     .iter()
                     .map(|name| pos(Name::new(name.clone())))
                     .collect(),
                 fields: type_def
+                    .inner()
                     .fields
                     .clone()
                     .iter()
@@ -190,25 +197,34 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
         };
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
-            description: type_def.doc.clone().map(pos),
+            description: type_def.inner().doc.clone().map(pos),
             name: pos(Name::new(type_name.clone())),
             directives: type_def
+                .inner()
                 .added_fields
                 .iter()
                 .map(|added_field: &super::AddField| pos(added_field.to_directive()))
                 .chain(
                     type_def
+                        .inner()
                         .cache
                         .as_ref()
                         .map(|cache| pos(cache.to_directive())),
                 )
                 .chain(
                     type_def
+                        .inner()
                         .protected
                         .as_ref()
                         .map(|protected| pos(protected.to_directive())),
                 )
-                .chain(type_def.tag.as_ref().map(|tag| pos(tag.to_directive())))
+                .chain(
+                    type_def
+                        .inner()
+                        .tag
+                        .as_ref()
+                        .map(|tag| pos(tag.to_directive())),
+                )
                 .collect::<Vec<_>>(),
             kind,
         })));
@@ -221,6 +237,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             directives: Vec::new(),
             kind: TypeKind::Union(UnionType {
                 members: union
+                    .inner()
                     .types
                     .iter()
                     .map(|name| pos(Name::new(name.clone())))
@@ -232,11 +249,12 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
     for (name, values) in config.enums.iter() {
         definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
             extend: false,
-            description: values.doc.clone().map(pos),
+            description: values.inner().doc.clone().map(pos),
             name: pos(Name::new(name)),
             directives: Vec::new(),
             kind: TypeKind::Enum(EnumType {
                 values: values
+                    .inner()
                     .variants
                     .iter()
                     .map(|variant| {
@@ -259,13 +277,19 @@ fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDir
         field.http.as_ref().map(|d| pos(d.to_directive())),
         field.script.as_ref().map(|d| pos(d.to_directive())),
         field.const_field.as_ref().map(|d| pos(d.to_directive())),
-        field.modify.as_ref().map(|d| pos(d.to_directive())),
-        field.omit.as_ref().map(|d| pos(d.to_directive())),
-        field.graphql.as_ref().map(|d| pos(d.to_directive())),
-        field.grpc.as_ref().map(|d| pos(d.to_directive())),
-        field.cache.as_ref().map(|d| pos(d.to_directive())),
-        field.call.as_ref().map(|d| pos(d.to_directive())),
-        field.protected.as_ref().map(|d| pos(d.to_directive())),
+        field.modify.as_ref().map(|d| pos(d.inner().to_directive())),
+        field.omit.as_ref().map(|d| pos(d.inner().to_directive())),
+        field
+            .graphql
+            .as_ref()
+            .map(|d| pos(d.inner().to_directive())),
+        field.grpc.as_ref().map(|d| pos(d.inner().to_directive())),
+        field.cache.as_ref().map(|d| pos(d.inner().to_directive())),
+        field.call.as_ref().map(|d| pos(d.inner().to_directive())),
+        field
+            .protected
+            .as_ref()
+            .map(|d| pos(d.inner().to_directive())),
     ];
 
     directives.into_iter().flatten().collect()

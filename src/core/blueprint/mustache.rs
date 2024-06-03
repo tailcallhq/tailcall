@@ -1,17 +1,18 @@
 use super::{to_type, FieldDefinition, Type};
+use crate::core::config::position::Pos;
 use crate::core::config::{self, Config};
 use crate::core::ir::{IO, IR};
 use crate::core::scalar;
 use crate::core::valid::{Valid, Validator};
 
 struct MustachePartsValidator<'a> {
-    type_of: &'a config::Type,
+    type_of: &'a Pos<config::Type>,
     config: &'a Config,
     field: &'a FieldDefinition,
 }
 
 impl<'a> MustachePartsValidator<'a> {
-    fn new(type_of: &'a config::Type, config: &'a Config, field: &'a FieldDefinition) -> Self {
+    fn new(type_of: &'a Pos<config::Type>, config: &'a Config, field: &'a FieldDefinition) -> Self {
         Self { type_of, config, field }
     }
 
@@ -19,7 +20,7 @@ impl<'a> MustachePartsValidator<'a> {
         let mut len = parts.len();
         let mut type_of = self.type_of;
         for item in parts {
-            let field = type_of.fields.get(item).ok_or_else(|| {
+            let field = type_of.inner().fields.get(item).ok_or_else(|| {
                 format!(
                     "no value '{}' found",
                     parts[0..parts.len() - len + 1].join(".").as_str()
@@ -84,7 +85,13 @@ impl<'a> MustachePartsValidator<'a> {
                 }
             }
             "vars" => {
-                if !config.server.vars.iter().any(|vars| vars.key == tail) {
+                if !config
+                    .server
+                    .inner()
+                    .vars
+                    .iter()
+                    .any(|vars| vars.key == tail)
+                {
                     return Valid::fail(format!("var '{tail}' is not set in the server config"));
                 }
             }
@@ -102,7 +109,11 @@ impl<'a> MustachePartsValidator<'a> {
 }
 
 impl FieldDefinition {
-    pub fn validate_field(&self, type_of: &config::Type, config: &Config) -> Valid<(), String> {
+    pub fn validate_field(
+        &self,
+        type_of: &Pos<config::Type>,
+        config: &Config,
+    ) -> Valid<(), String> {
         // XXX we could use `Mustache`'s `render` method with a mock
         // struct implementing the `PathString` trait encapsulating `validation_map`
         // but `render` simply falls back to the default value for a given
@@ -110,7 +121,6 @@ impl FieldDefinition {
         // context from that method alone
         // So we must duplicate some of that logic here :(
         let parts_validator = MustachePartsValidator::new(type_of, config, self);
-
         match &self.resolver {
             Some(IR::IO(IO::Http { req_template, .. })) => {
                 Valid::from_iter(req_template.root_url.expression_segments(), |parts| {

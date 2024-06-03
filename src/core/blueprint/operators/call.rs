@@ -2,6 +2,7 @@ use serde_json::Value;
 
 use crate::core::blueprint::*;
 use crate::core::config;
+use crate::core::config::position::Pos;
 use crate::core::config::{Field, GraphQLOperationType};
 use crate::core::ir::IR;
 use crate::core::try_fold::TryFold;
@@ -10,9 +11,13 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 pub fn update_call<'a>(
     operation_type: &'a GraphQLOperationType,
     object_name: &'a str,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(config, field, _, name), b_field| {
             let Some(ref calls) = field.call else {
                 return Valid::succeed(b_field);
@@ -47,11 +52,11 @@ pub fn update_call<'a>(
 
 fn compile_call(
     config_module: &ConfigModule,
-    call: &config::Call,
+    call: &Pos<config::Call>,
     operation_type: &GraphQLOperationType,
     object_name: &str,
 ) -> Valid<FieldDefinition, String> {
-    Valid::from_iter(call.steps.iter(), |step| {
+    Valid::from_iter(call.inner().steps.inner().iter(), |step| {
         get_field_and_field_name(step, config_module).and_then(|(field, field_name, type_of)| {
             let args = step.args.iter();
 
@@ -144,7 +149,7 @@ fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
 fn get_field_and_field_name<'a>(
     call: &'a config::Step,
     config_module: &'a ConfigModule,
-) -> Valid<(&'a Field, String, &'a config::Type), String> {
+) -> Valid<(&'a Field, String, &'a Pos<config::Type>), String> {
     Valid::from_option(
         get_type_and_field(call),
         "call must have query or mutation".to_string(),
@@ -156,7 +161,7 @@ fn get_field_and_field_name<'a>(
         )
         .and_then(|query_type| {
             Valid::from_option(
-                query_type.fields.get(&field_name),
+                query_type.inner().fields.get(&field_name),
                 format!("{} field not found", field_name),
             )
             .fuse(Valid::succeed(field_name))

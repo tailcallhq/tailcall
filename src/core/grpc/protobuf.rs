@@ -252,6 +252,7 @@ pub mod tests {
 
     use super::*;
     use crate::core::blueprint::GrpcMethod;
+    use crate::core::config::position::Pos;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, Grpc, Link, LinkType, Type};
 
@@ -264,17 +265,20 @@ pub mod tests {
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_default();
 
-        let mut config = Config::default().links(vec![Link {
+        let mut config = Config::default().links(vec![Pos::new(
+            0, 
+            0, 
+            Link {
             id: Some(id.clone()),
             src: path.to_string(),
             type_of: LinkType::Protobuf,
-        }]);
+        })]);
 
         let method = GrpcMethod { package: id, service: "a".to_owned(), name: "b".to_owned() };
-        let grpc = Grpc { method: method.to_string(), ..Default::default() };
+        let grpc = Pos::new(0, 0, Grpc { method: Pos::new(0, 0, method.to_string()), ..Default::default() });
         config.types.insert(
             "foo".to_string(),
-            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+            Pos::new(0, 0, Type::default().fields(vec![("bar", Field::default().grpc(grpc))])),
         );
         Ok(reader
             .resolve(config, None)

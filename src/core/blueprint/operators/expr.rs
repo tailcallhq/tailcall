@@ -2,6 +2,7 @@ use async_graphql_value::ConstValue;
 
 use crate::core::blueprint::*;
 use crate::core::config;
+use crate::core::config::position::Pos;
 use crate::core::config::Field;
 use crate::core::ir::IR;
 use crate::core::ir::IR::Dynamic;
@@ -59,10 +60,13 @@ pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
     })
 }
 
-pub fn update_const_field<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+pub fn update_const_field<'a>() -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         |(config_module, field, _, _), b_field| {
             let Some(const_field) = &field.const_field else {
                 return Valid::succeed(b_field);

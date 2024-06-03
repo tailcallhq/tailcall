@@ -1,5 +1,6 @@
 use std::slice::Iter;
 
+use crate::core::config::position;
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::{Name, Pos, Positioned};
 use serde::{Deserialize, Serialize};
@@ -46,7 +47,9 @@ pub trait DirectiveCodec<A> {
         }
         Valid::succeed(None)
     }
+    fn with_position(self, pos: Pos) -> position::Pos<A>;
 }
+
 fn lower_case_first_letter(s: String) -> String {
     if s.len() <= 2 {
         s.to_lowercase()
@@ -57,7 +60,7 @@ fn lower_case_first_letter(s: String) -> String {
     }
 }
 
-impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
+impl<'a, A: Deserialize<'a> + Serialize + 'a + std::fmt::Debug> DirectiveCodec<A> for A {
     fn directive_name() -> String {
         lower_case_first_letter(
             std::any::type_name::<A>()
@@ -70,7 +73,7 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
 
     fn from_directive(directive: &ConstDirective) -> Valid<A, String> {
         Valid::from_iter(directive.arguments.iter(), |(k, v)| {
-            Valid::from(serde_json::to_value(&v.node).map_err(|e| {
+            Valid::from(serde_json::to_value(v.node.clone()).map_err(|e| {
                 ValidationError::new(e.to_string())
                     .trace(format!("@{}", directive.name.node).as_str())
             }))
@@ -105,6 +108,10 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
         }
 
         ConstDirective { name: pos(Name::new(name)), arguments }
+    }
+
+    fn with_position(self, pos: Pos) -> position::Pos<A> {
+        position::Pos::new(pos.line, pos.column, self)
     }
 }
 

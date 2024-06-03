@@ -1,13 +1,17 @@
 use std::collections::BTreeMap;
+use std::slice::Iter;
 
 use async_graphql::parser::types::{
     BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition,
     InterfaceType, ObjectType, SchemaDefinition, ServiceDocument, Type, TypeDefinition, TypeKind,
     TypeSystemDefinition, UnionType,
 };
+use async_graphql::parser::Pos as ParserPos;
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 
+use super::position::Pos;
+use super::positioned_config::PositionedConfig;
 use super::telemetry::Telemetry;
 use super::{Tag, JS};
 use crate::core::config::{
@@ -39,6 +43,7 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
     let unions = to_union_types(&type_definitions);
     let enums = to_enum_types(&type_definitions);
     let schema = schema_definition(&doc).map(to_root_schema);
+
     schema_definition(&doc).and_then(|sd| {
         server(sd)
             .fuse(upstream(sd))
@@ -73,29 +78,37 @@ fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> 
         .map_or_else(|| Valid::succeed(DEFAULT_SCHEMA_DEFINITION), Valid::succeed)
 }
 
-fn process_schema_directives<T: DirectiveCodec<T> + Default>(
-    schema_definition: &SchemaDefinition,
+fn process_schema_directives<T: DirectiveCodec<T> + Default + Clone + PositionedConfig>(
+    mut directives: Iter<'_, Positioned<ConstDirective>>,
     directive_name: &str,
-) -> Valid<T, String> {
-    let mut res = Valid::succeed(T::default());
-    for directive in schema_definition.directives.iter() {
-        if directive.node.name.node.as_ref() == directive_name {
-            res = T::from_directive(&directive.node);
-        }
+) -> Valid<Pos<T>, String> {
+    if let Some(directive) =
+        directives.find(|directive| directive.node.name.node.as_ref() == directive_name)
+    {
+        T::from_directive(&directive.node).and_then(|mut config| {
+            directive.node.arguments.iter().for_each(|(key, _)| {
+                config.set_field_position(key.node.as_str(), (key.pos.line, key.pos.column))
+            });
+            Valid::succeed(config.with_position(directive.pos))
+        })
+    } else {
+        Valid::succeed(Default::default())
     }
-    res
 }
 
 fn process_schema_multiple_directives<T: DirectiveCodec<T> + Default>(
     schema_definition: &SchemaDefinition,
     directive_name: &str,
-) -> Valid<Vec<T>, String> {
-    let directives: Vec<Valid<T, String>> = schema_definition
+) -> Valid<Vec<Pos<T>>, String> {
+    let directives: Vec<Valid<Pos<T>, String>> = schema_definition
         .directives
         .iter()
         .filter_map(|directive| {
             if directive.node.name.node.as_ref() == directive_name {
-                Some(T::from_directive(&directive.node))
+                Some(
+                    T::from_directive(&directive.node)
+                        .and_then(|config| Valid::succeed(config.with_position(directive.pos))),
+                )
             } else {
                 None
             }
@@ -105,44 +118,61 @@ fn process_schema_multiple_directives<T: DirectiveCodec<T> + Default>(
     Valid::from_iter(directives, |item| item)
 }
 
-fn server(schema_definition: &SchemaDefinition) -> Valid<Server, String> {
-    process_schema_directives(schema_definition, config::Server::directive_name().as_str())
+fn process_schema_optional_directives<T: DirectiveCodec<T> + Clone + PositionedConfig>(
+    mut directives: Iter<'_, Positioned<ConstDirective>>,
+    directive_name: &str,
+) -> Valid<Option<Pos<T>>, String> {
+    if let Some(directive) =
+        directives.find(|directive| directive.node.name.node.as_ref() == directive_name)
+    {
+        T::from_directive(&directive.node)
+            .and_then(|config| Valid::succeed(config.with_position(directive.pos)))
+            .map(Some)
+    } else {
+        Valid::succeed(Default::default())
+    }
 }
 
-fn upstream(schema_definition: &SchemaDefinition) -> Valid<Upstream, String> {
+fn server(schema_definition: &SchemaDefinition) -> Valid<Pos<Server>, String> {
     process_schema_directives(
-        schema_definition,
+        schema_definition.directives.iter(),
+        config::Server::directive_name().as_str(),
+    )
+}
+
+fn upstream(schema_definition: &SchemaDefinition) -> Valid<Pos<Upstream>, String> {
+    process_schema_directives(
+        schema_definition.directives.iter(),
         config::Upstream::directive_name().as_str(),
     )
 }
 
-fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Link>, String> {
+fn links(schema_definition: &SchemaDefinition) -> Valid<Vec<Pos<Link>>, String> {
     process_schema_multiple_directives(schema_definition, config::Link::directive_name().as_str())
 }
 
-fn telemetry(schema_definition: &SchemaDefinition) -> Valid<Telemetry, String> {
+fn telemetry(schema_definition: &SchemaDefinition) -> Valid<Pos<Telemetry>, String> {
     process_schema_directives(
-        schema_definition,
+        schema_definition.directives.iter(),
         config::telemetry::Telemetry::directive_name().as_str(),
     )
 }
 
 fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
-    let query = schema_definition.query.as_ref().map(pos_name_to_string);
+    let query = schema_definition.query.as_ref();
     let mutation = schema_definition.mutation.as_ref().map(pos_name_to_string);
     let subscription = schema_definition
         .subscription
         .as_ref()
         .map(pos_name_to_string);
-
-    RootSchema { query, mutation, subscription }
+    RootSchema { query: query.map(pos_name_to_string), mutation, subscription }
 }
 fn pos_name_to_string(pos: &Positioned<Name>) -> String {
     pos.node.to_string()
 }
 fn to_types(
     type_definitions: &Vec<&Positioned<TypeDefinition>>,
-) -> Valid<BTreeMap<String, config::Type>, String> {
+) -> Valid<BTreeMap<String, Pos<config::Type>>, String> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
         match type_definition.node.kind.clone() {
@@ -150,12 +180,14 @@ fn to_types(
                 &object_type,
                 &type_definition.node.description,
                 &type_definition.node.directives,
+                &type_definition.pos,
             )
             .some(),
             TypeKind::Interface(interface_type) => to_object_type(
                 &interface_type,
                 &type_definition.node.description,
                 &type_definition.node.directives,
+                &type_definition.pos,
             )
             .some(),
             TypeKind::Enum(_) => Valid::none(),
@@ -163,6 +195,7 @@ fn to_types(
                 input_object_type,
                 &type_definition.node.description,
                 &type_definition.node.directives,
+                &type_definition.pos,
             )
             .some(),
             TypeKind::Union(_) => Valid::none(),
@@ -177,12 +210,12 @@ fn to_types(
         )
     })
 }
-fn to_scalar_type() -> config::Type {
-    config::Type { ..Default::default() }
+fn to_scalar_type() -> Pos<config::Type> {
+    Default::default()
 }
 fn to_union_types(
     type_definitions: &[&Positioned<TypeDefinition>],
-) -> Valid<BTreeMap<String, Union>, String> {
+) -> Valid<BTreeMap<String, Pos<Union>>, String> {
     Valid::succeed(
         type_definitions
             .iter()
@@ -196,6 +229,7 @@ fn to_union_types(
                             .description
                             .to_owned()
                             .map(|pos| pos.node),
+                        &type_definition.pos,
                     ),
                     _ => return None,
                 };
@@ -207,7 +241,7 @@ fn to_union_types(
 
 fn to_enum_types(
     type_definitions: &[&Positioned<TypeDefinition>],
-) -> Valid<BTreeMap<String, Enum>, String> {
+) -> Valid<BTreeMap<String, Pos<Enum>>, String> {
     Valid::succeed(
         type_definitions
             .iter()
@@ -221,6 +255,7 @@ fn to_enum_types(
                             .description
                             .to_owned()
                             .map(|pos| pos.node),
+                        &type_definition.pos,
                     ),
                     _ => return None,
                 };
@@ -235,34 +270,50 @@ fn to_object_type<T>(
     object: &T,
     description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
-) -> Valid<config::Type, String>
+    type_position: &ParserPos,
+) -> Valid<Pos<config::Type>, String>
 where
     T: ObjectLike,
 {
     let fields = object.fields();
     let implements = object.implements();
 
-    Cache::from_directives(directives.iter())
+    process_schema_optional_directives(directives.iter(), Cache::directive_name().as_str())
         .fuse(to_fields(fields))
-        .fuse(Protected::from_directives(directives.iter()))
+        .fuse(process_schema_optional_directives(
+            directives.iter(),
+            Protected::directive_name().as_str(),
+        ))
         .fuse(Tag::from_directives(directives.iter()))
         .map(|(cache, fields, protected, tag)| {
             let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
             let added_fields = to_add_fields_from_directives(directives);
-            config::Type { fields, added_fields, doc, implements, cache, protected, tag }
+            Pos::new(
+                type_position.line,
+                type_position.column,
+                config::Type { fields, added_fields, doc, implements, cache, protected, tag },
+            )
         })
 }
 fn to_input_object(
     input_object_type: InputObjectType,
     description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
-) -> Valid<config::Type, String> {
+    position: &ParserPos,
+) -> Valid<Pos<config::Type>, String> {
     to_input_object_fields(&input_object_type.fields)
-        .fuse(Protected::from_directives(directives.iter()))
+        .fuse(process_schema_optional_directives(
+            directives.iter(),
+            Protected::directive_name().as_str(),
+        ))
         .map(|(fields, protected)| {
             let doc = description.to_owned().map(|pos| pos.node);
-            config::Type { fields, protected, doc, ..Default::default() }
+            Pos::new(
+                position.line,
+                position.column,
+                config::Type { fields, protected, doc, ..Default::default() },
+            )
         })
 }
 
@@ -313,15 +364,40 @@ where
     let list = matches!(&base, BaseType::List(_));
     let list_type_required = matches!(&base, BaseType::List(type_of) if !type_of.nullable);
     let doc = description.to_owned().map(|pos| pos.node);
-    config::Http::from_directives(directives.iter())
-        .fuse(GraphQL::from_directives(directives.iter()))
-        .fuse(Cache::from_directives(directives.iter()))
-        .fuse(Grpc::from_directives(directives.iter()))
-        .fuse(Omit::from_directives(directives.iter()))
-        .fuse(Modify::from_directives(directives.iter()))
-        .fuse(JS::from_directives(directives.iter()))
-        .fuse(Call::from_directives(directives.iter()))
-        .fuse(Protected::from_directives(directives.iter()))
+
+    process_schema_optional_directives(directives.iter(), config::Http::directive_name().as_str())
+        .fuse(process_schema_optional_directives(
+            directives.iter(),
+            GraphQL::directive_name().as_str(),
+        ))
+        .fuse(process_schema_optional_directives(
+            directives.iter(),
+            Cache::directive_name().as_str(),
+        ))
+        .fuse(process_schema_optional_directives(
+            directives.iter(),
+            Grpc::directive_name().as_str(),
+        ))
+        .fuse(process_schema_optional_directives(
+            directives.iter(),
+            Omit::directive_name().as_str(),
+        ))
+        .fuse(process_schema_optional_directives(
+            directives.iter(),
+            Modify::directive_name().as_str(),
+        ))
+        .fuse(process_schema_optional_directives(
+            directives.iter(),
+            JS::directive_name().as_str(),
+        ))
+        .fuse(process_schema_optional_directives(
+            directives.iter(),
+            Call::directive_name().as_str(),
+        ))
+        .fuse(process_schema_optional_directives(
+            directives.iter(),
+            Protected::directive_name().as_str(),
+        ))
         .map(
             |(http, graphql, cache, grpc, omit, modify, script, call, protected)| {
                 let const_field = to_const_field(directives);
@@ -385,22 +461,27 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     config::Arg { type_of, list, required, doc, modify, default_value }
 }
 
-fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
+fn to_union(union_type: UnionType, doc: &Option<String>, position: &ParserPos) -> Pos<Union> {
     let types = union_type
         .members
         .iter()
         .map(|member| member.node.to_string())
         .collect();
-    Union { types, doc: doc.clone() }
+
+    Pos::new(
+        position.line,
+        position.column,
+        Union { types, doc: doc.clone() },
+    )
 }
 
-fn to_enum(enum_type: EnumType, doc: Option<String>) -> Enum {
+fn to_enum(enum_type: EnumType, doc: Option<String>, position: &ParserPos) -> Pos<Enum> {
     let variants = enum_type
         .values
         .iter()
         .map(|member| member.node.value.node.as_str().to_owned())
         .collect();
-    Enum { variants, doc }
+    Pos::new(position.line, position.column, Enum { variants, doc })
 }
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
     directives.iter().find_map(|directive| {

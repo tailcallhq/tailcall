@@ -14,6 +14,7 @@ fn find_fan_out(context: FindFanOutContext) -> Vec<Vec<(String, String)>> {
     let is_list = context.is_list;
     match config.find_type(type_name) {
         Some(type_) => type_
+            .inner()
             .fields
             .iter()
             .flat_map(|(field_name, field)| {
@@ -58,33 +59,47 @@ mod tests {
 
     use crate::core::config::{Config, Field, Http, Type};
 
+    use crate::core::config::position::Pos;
+
     #[test]
     fn test_nplusone_resolvers() {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .into_list()
+                            .http(Pos::new(0, 0, Http::default())),
+                    )]),
+                ),
             ),
             (
                 "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default()
-                        .type_of("F2".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f2",
+                        Field::default()
+                            .type_of("F2".to_string())
+                            .into_list()
+                            .http(Pos::new(0, 0, Http::default())),
+                    )]),
+                ),
             ),
             (
                 "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default()
+                        .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                ),
             ),
         ]);
 
@@ -101,28 +116,44 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .into_list()
+                            .http(Pos::new(0, 0, Http::default())),
+                    )]),
+                ),
             ),
             (
                 "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default()
-                        .type_of("F2".to_string())
-                        .into_list()
-                        .http(Http { group_by: vec!["id".into()], ..Default::default() }),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f2",
+                        Field::default()
+                            .type_of("F2".to_string())
+                            .into_list()
+                            .http(Pos::new(
+                                0,
+                                0,
+                                Http { group_by: vec!["id".into()], ..Default::default() },
+                            )),
+                    )]),
+                ),
             ),
             (
                 "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default()
+                        .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                ),
             ),
         ]);
 
@@ -136,36 +167,52 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .into_list()
+                            .http(Pos::new(0, 0, Http::default())),
+                    )]),
+                ),
             ),
             (
                 "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default().type_of("F2".to_string()).into_list(),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f2",
+                        Field::default().type_of("F2".to_string()).into_list(),
+                    )]),
+                ),
             ),
             (
                 "F2",
-                Type::default().fields(vec![(
-                    "f3",
-                    Field::default().type_of("F3".to_string()).into_list(),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f3",
+                        Field::default().type_of("F3".to_string()).into_list(),
+                    )]),
+                ),
             ),
             (
                 "F3",
-                Type::default().fields(vec![(
-                    "f4",
-                    Field::default()
-                        .type_of("String".to_string())
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f4",
+                        Field::default()
+                            .type_of("String".to_string())
+                            .http(Pos::new(0, 0, Http::default())),
+                    )]),
+                ),
             ),
         ]);
 
@@ -184,35 +231,53 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f1",
+                        Field::default().type_of("F1".to_string()).http(Pos::new(
+                            0,
+                            0,
+                            Http::default(),
+                        )),
+                    )]),
+                ),
             ),
             (
                 "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default().type_of("F2".to_string()).into_list(),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f2",
+                        Field::default().type_of("F2".to_string()).into_list(),
+                    )]),
+                ),
             ),
             (
                 "F2",
-                Type::default().fields(vec![(
-                    "f3",
-                    Field::default().type_of("F3".to_string()).into_list(),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f3",
+                        Field::default().type_of("F3".to_string()).into_list(),
+                    )]),
+                ),
             ),
             (
                 "F3",
-                Type::default().fields(vec![(
-                    "f4",
-                    Field::default()
-                        .type_of("String".to_string())
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f4",
+                        Field::default()
+                            .type_of("String".to_string())
+                            .http(Pos::new(0, 0, Http::default())),
+                    )]),
+                ),
             ),
         ]);
 
@@ -231,25 +296,37 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .into_list()
+                            .http(Pos::new(0, 0, Http::default())),
+                    )]),
+                ),
             ),
             (
                 "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default().type_of("F2".to_string()).into_list(),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f2",
+                        Field::default().type_of("F2".to_string()).into_list(),
+                    )]),
+                ),
             ),
             (
                 "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default()
+                        .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                ),
             ),
         ]);
 
@@ -263,25 +340,37 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .into_list()
+                            .http(Pos::new(0, 0, Http::default())),
+                    )]),
+                ),
             ),
             (
                 "F1",
-                Type::default().fields(vec![
-                    ("f1", Field::default().type_of("F1".to_string())),
-                    ("f2", Field::default().type_of("F2".to_string()).into_list()),
-                ]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![
+                        ("f1", Field::default().type_of("F1".to_string())),
+                        ("f2", Field::default().type_of("F2".to_string()).into_list()),
+                    ]),
+                ),
             ),
             (
                 "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default()
+                        .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                ),
             ),
         ]);
 
@@ -295,30 +384,42 @@ mod tests {
         let config = Config::default().query("Query").types(vec![
             (
                 "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "f1",
+                        Field::default()
+                            .type_of("F1".to_string())
+                            .into_list()
+                            .http(Pos::new(0, 0, Http::default())),
+                    )]),
+                ),
             ),
             (
                 "F1",
-                Type::default().fields(vec![
-                    ("f1", Field::default().type_of("F1".to_string()).into_list()),
-                    (
-                        "f2",
-                        Field::default()
-                            .type_of("String".to_string())
-                            .http(Http::default()),
-                    ),
-                ]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![
+                        ("f1", Field::default().type_of("F1".to_string()).into_list()),
+                        (
+                            "f2",
+                            Field::default()
+                                .type_of("String".to_string())
+                                .http(Pos::new(0, 0, Http::default())),
+                        ),
+                    ]),
+                ),
             ),
             (
                 "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default()
+                        .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+                ),
             ),
         ]);
 
@@ -340,25 +441,38 @@ mod tests {
 
     #[test]
     fn test_nplusone_nested_non_list() {
-        let f_field = Field::default()
-            .type_of("F".to_string())
-            .http(Http::default());
+        let f_field =
+            Field::default()
+                .type_of("F".to_string())
+                .http(Pos::new(0, 0, Http::default()));
 
         let config = Config::default().query("Query").types(vec![
-            ("Query", Type::default().fields(vec![("f", f_field)])),
+            (
+                "Query",
+                Pos::new(0, 0, Type::default().fields(vec![("f", f_field)])),
+            ),
             (
                 "F",
-                Type::default().fields(vec![(
-                    "g",
-                    Field::default()
-                        .type_of("G".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default().fields(vec![(
+                        "g",
+                        Field::default()
+                            .type_of("G".to_string())
+                            .into_list()
+                            .http(Pos::new(0, 0, Http::default())),
+                    )]),
+                ),
             ),
             (
                 "G",
-                Type::default().fields(vec![("e", Field::default().type_of("String".to_string()))]),
+                Pos::new(
+                    0,
+                    0,
+                    Type::default()
+                        .fields(vec![("e", Field::default().type_of("String".to_string()))]),
+                ),
             ),
         ]);
 

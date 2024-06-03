@@ -3,6 +3,7 @@ use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 
 use crate::core::config::{Config, ConfigModule, Link, LinkType};
+use crate::core::config::position::Pos;
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::Source;
 use crate::core::merge_right::MergeRight;
@@ -49,7 +50,15 @@ impl Generator {
         for metadata in proto_metadata {
             match input_source {
                 Source::Proto => {
-                    links.push(Link { id: None, src: metadata.path, type_of: LinkType::Protobuf });
+                    links.push(Pos::new(
+                        0, 
+                        0, 
+                        Link { 
+                            id: None, 
+                            src: metadata.path,
+                            type_of: LinkType::Protobuf 
+                        } 
+                    ));
                     let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set)?;
                     config = config.merge_right(from_proto(&[descriptor_set], query)?);
                 }
@@ -113,6 +122,6 @@ mod test {
             .unwrap();
 
         assert_eq!(config.links.len(), 3);
-        assert_eq!(config.types.get("Query").unwrap().fields.len(), 8);
+        assert_eq!(config.types.get("Query").unwrap().inner().fields.len(), 8);
     }
 }

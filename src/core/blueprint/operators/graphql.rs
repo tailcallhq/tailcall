@@ -1,4 +1,5 @@
 use crate::core::blueprint::FieldDefinition;
+use crate::core::config::position::Pos;
 use crate::core::config::{self, ConfigModule, Field, GraphQLOperationType};
 use crate::core::graphql::RequestTemplate;
 use crate::core::helpers;
@@ -9,23 +10,26 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 pub fn compile_graphql(
     config: &config::Config,
     operation_type: &config::GraphQLOperationType,
-    graphql: &config::GraphQL,
+    graphql: &Pos<config::GraphQL>,
 ) -> Valid<IR, String> {
-    let args = graphql.args.as_ref();
+    let args = graphql.inner().args.as_ref();
     Valid::from_option(
         graphql
+            .inner()
             .base_url
             .as_ref()
-            .or(config.upstream.base_url.as_ref()),
+            .or(config.upstream.inner().base_url.as_ref()),
         "No base URL defined".to_string(),
     )
-    .zip(helpers::headers::to_mustache_headers(&graphql.headers))
+    .zip(helpers::headers::to_mustache_headers(
+        &graphql.inner().headers,
+    ))
     .and_then(|(base_url, headers)| {
         Valid::from(
             RequestTemplate::new(
-                base_url.to_owned(),
+                base_url.inner.to_owned(),
                 operation_type,
-                &graphql.name,
+                &graphql.inner().name,
                 args,
                 headers,
             )
@@ -33,17 +37,21 @@ pub fn compile_graphql(
         )
     })
     .map(|req_template| {
-        let field_name = graphql.name.clone();
-        let batch = graphql.batch;
+        let field_name = graphql.inner().name.clone();
+        let batch = graphql.inner().batch;
         IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
     })
 }
 
 pub fn update_graphql<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<
+    'a,
+    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &'a str), FieldDefinition, String>::new(
         |(config, field, type_of, _), b_field| {
             let Some(graphql) = &field.graphql else {
                 return Valid::succeed(b_field);

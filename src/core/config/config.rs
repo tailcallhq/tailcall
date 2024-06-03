@@ -1,3 +1,4 @@
+use crate::core::directive::DirectiveCodec;
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
@@ -8,11 +9,11 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::position::Pos;
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
 use crate::core::config::source::Source;
-use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
 use crate::core::json::JsonSchema;
 use crate::core::macros::MergeRight;
@@ -39,13 +40,13 @@ pub struct Config {
     /// requests. Features such as request batching, SSL, HTTP2 etc. can be
     /// configured here.
     #[serde(default)]
-    pub server: Server,
+    pub server: Pos<Server>,
 
     ///
     /// Dictates how tailcall should handle upstream requests/responses.
     /// Tuning upstream can improve performance and reliability for connections.
     #[serde(default)]
-    pub upstream: Upstream,
+    pub upstream: Pos<Upstream>,
 
     ///
     /// Specifies the entry points for query and mutation in the generated
@@ -56,25 +57,25 @@ pub struct Config {
     /// A map of all the types in the schema.
     #[serde(default)]
     #[setters(skip)]
-    pub types: BTreeMap<String, Type>,
+    pub types: BTreeMap<String, Pos<Type>>,
 
     ///
     /// A map of all the union types in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub unions: BTreeMap<String, Union>,
+    pub unions: BTreeMap<String, Pos<Union>>,
 
     ///
     /// A map of all the enum types in the schema
     #[serde(default, skip_serializing_if = "is_default")]
-    pub enums: BTreeMap<String, Enum>,
+    pub enums: BTreeMap<String, Pos<Enum>>,
 
     ///
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub links: Vec<Link>,
+    pub links: Vec<Pos<Link>>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// Enable [opentelemetry](https://opentelemetry.io) support
-    pub telemetry: Telemetry,
+    pub telemetry: Pos<Telemetry>,
 }
 
 ///
@@ -102,11 +103,11 @@ pub struct Type {
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Setting to indicate if the type can be cached.
-    pub cache: Option<Cache>,
+    pub cache: Option<Pos<Cache>>,
     ///
     /// Marks field as protected by auth providers
     #[serde(default)]
-    pub protected: Option<Protected>,
+    pub protected: Option<Pos<Protected>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Contains source information for the type.
@@ -222,32 +223,32 @@ pub struct Field {
     ///
     /// Allows modifying existing fields.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub modify: Option<Modify>,
+    pub modify: Option<Pos<Modify>>,
 
     ///
     /// Omits a field from public consumption.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub omit: Option<Omit>,
+    pub omit: Option<Pos<Omit>>,
 
     ///
     /// Inserts an HTTP resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub http: Option<Http>,
+    pub http: Option<Pos<Http>>,
 
     ///
     /// Inserts a call resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub call: Option<Call>,
+    pub call: Option<Pos<Call>>,
 
     ///
     /// Inserts a GRPC resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub grpc: Option<Grpc>,
+    pub grpc: Option<Pos<Grpc>>,
 
     ///
     /// Inserts a Javascript resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub script: Option<JS>,
+    pub script: Option<Pos<JS>>,
 
     ///
     /// Inserts a constant resolver for the field.
@@ -257,15 +258,15 @@ pub struct Field {
     ///
     /// Inserts a GraphQL resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub graphql: Option<GraphQL>,
+    pub graphql: Option<Pos<GraphQL>>,
 
     ///
     /// Sets the cache configuration for a field
-    pub cache: Option<Cache>,
+    pub cache: Option<Pos<Cache>>,
     ///
     /// Marks field as protected by auth provider
     #[serde(default)]
-    pub protected: Option<Protected>,
+    pub protected: Option<Pos<Protected>>,
 }
 
 // It's a terminal implementation of MergeRight
@@ -311,12 +312,15 @@ impl Field {
     pub fn has_batched_resolver(&self) -> bool {
         self.http
             .as_ref()
-            .is_some_and(|http| !http.group_by.is_empty())
-            || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
+            .is_some_and(|http| !http.inner().group_by.is_empty())
+            || self
+                .graphql
+                .as_ref()
+                .is_some_and(|graphql| graphql.inner().batch)
             || self
                 .grpc
                 .as_ref()
-                .is_some_and(|grpc| !grpc.group_by.is_empty())
+                .is_some_and(|grpc| !grpc.inner().group_by.is_empty())
     }
     pub fn into_list(mut self) -> Self {
         self.list = true;
@@ -348,7 +352,7 @@ impl Field {
             || self
                 .modify
                 .as_ref()
-                .and_then(|m| m.omit)
+                .and_then(|m| m.inner().omit)
                 .unwrap_or_default()
     }
 }
@@ -414,7 +418,7 @@ pub struct Http {
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
+    pub base_url: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The body of the API call. It's used for methods like POST or PUT that
@@ -475,7 +479,7 @@ pub struct Call {
     /// Steps are composed together to form a call.
     /// If you have multiple steps, the output of the previous step is passed as
     /// input to the next step.
-    pub steps: Vec<Step>,
+    pub steps: Pos<Vec<Step>>,
 }
 
 ///
@@ -512,12 +516,12 @@ pub struct Grpc {
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
+    pub base_url: Option<Pos<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// This refers to the arguments of your gRPC call. You can pass it as a
     /// static object or use Mustache template for dynamic parameters. These
     /// parameters will be added in the body in `protobuf` format.
-    pub body: Option<String>,
+    pub body: Pos<Option<String>>,
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
@@ -529,7 +533,7 @@ pub struct Grpc {
     pub headers: Vec<KeyValue>,
     /// This refers to the gRPC method you're going to call. For instance
     /// `GetAllNews`.
-    pub method: String,
+    pub method: Pos<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
@@ -544,7 +548,7 @@ pub struct GraphQL {
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
+    pub base_url: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// If the upstream GraphQL server supports request batching, you can
@@ -606,18 +610,18 @@ pub struct AddField {
 
 impl Config {
     pub fn port(&self) -> u16 {
-        self.server.port.unwrap_or(8000)
+        self.server.inner().get_port()
     }
 
-    pub fn find_type(&self, name: &str) -> Option<&Type> {
+    pub fn find_type(&self, name: &str) -> Option<&Pos<Type>> {
         self.types.get(name)
     }
 
-    pub fn find_union(&self, name: &str) -> Option<&Union> {
+    pub fn find_union(&self, name: &str) -> Option<&Pos<Union>> {
         self.unions.get(name)
     }
 
-    pub fn find_enum(&self, name: &str) -> Option<&Enum> {
+    pub fn find_enum(&self, name: &str) -> Option<&Pos<Enum>> {
         self.enums.get(name)
     }
 
@@ -647,7 +651,7 @@ impl Config {
         self
     }
 
-    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
+    pub fn types(mut self, types: Vec<(&str, Pos<Type>)>) -> Self {
         let mut graphql_types = BTreeMap::new();
         for (name, type_) in types {
             graphql_types.insert(name.to_string(), type_);
@@ -696,7 +700,7 @@ impl Config {
     fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
         if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
-            for (_, field) in type_.fields.iter() {
+            for (_, field) in type_.inner().fields.iter() {
                 if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
                     types.insert(field.type_of.clone());
                     types = self.find_connections(&field.type_of, types);
@@ -711,7 +715,9 @@ impl Config {
     pub fn is_scalar(&self, type_name: &str) -> bool {
         self.types
             .get(type_name)
-            .map_or(scalar::is_predefined_scalar(type_name), |ty| ty.scalar())
+            .map_or(scalar::is_predefined_scalar(type_name), |ty| {
+                ty.inner().scalar()
+            })
     }
 
     ///
@@ -747,7 +753,7 @@ impl Config {
         let mut types = HashSet::new();
 
         for ty in self.types.values() {
-            for interface in ty.implements.iter() {
+            for interface in ty.inner().implements.iter() {
                 types.insert(interface.clone());
             }
         }
@@ -759,7 +765,7 @@ impl Config {
     fn arguments(&self) -> Vec<(&String, &Arg)> {
         self.types
             .iter()
-            .flat_map(|(_, type_of)| type_of.fields.iter())
+            .flat_map(|(_, type_of)| type_of.inner().fields.iter())
             .flat_map(|(_, field)| field.args.iter())
             .collect::<Vec<_>>()
     }
@@ -791,7 +797,7 @@ impl Config {
         while let Some(type_name) = stack.pop() {
             if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
-                for field in typ.fields.values() {
+                for field in typ.inner().fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
                     stack.push(field.type_of.clone());
                 }
@@ -822,12 +828,20 @@ mod tests {
         let f1 = Field { ..Default::default() };
 
         let f2 = Field {
-            http: Some(Http { group_by: vec!["id".to_string()], ..Default::default() }),
+            http: Some(Pos::new(
+                0,
+                0,
+                Http { group_by: vec!["id".to_string()], ..Default::default() },
+            )),
             ..Default::default()
         };
 
         let f3 = Field {
-            http: Some(Http { group_by: vec![], ..Default::default() }),
+            http: Some(Pos::new(
+                0,
+                0,
+                Http { group_by: vec![], ..Default::default() },
+            )),
             ..Default::default()
         };
 
@@ -845,9 +859,10 @@ mod tests {
     #[test]
     fn test_from_sdl_empty() {
         let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
+
         let expected = Config::default().types(vec![(
             "Foo",
-            Type::default().fields(vec![("a", Field::int())]),
+            Pos::new(1, 1, Type::default().fields(vec![("a", Field::int())])),
         )]);
         assert_eq!(actual, expected);
     }

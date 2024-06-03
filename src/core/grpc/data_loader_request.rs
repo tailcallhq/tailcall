@@ -62,6 +62,7 @@ mod tests {
 
     use super::DataLoaderRequest;
     use crate::core::blueprint::GrpcMethod;
+    use crate::core::config::position::Pos;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, Grpc, Link, LinkType, Type};
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -69,20 +70,23 @@ mod tests {
 
     pub async fn get_protobuf_op() -> ProtobufOperation {
         let test_file = protobuf::GREETINGS;
-        let mut config = Config::default().links(vec![Link {
+        let mut config = Config::default().links(vec![Pos::new(
+            0,
+            0,
+            Link {
             id: None,
             src: test_file.to_string(),
             type_of: LinkType::Protobuf,
-        }]);
+        })]);
         let method = GrpcMethod {
             package: "greetings".to_string(),
             service: "Greeter".to_string(),
             name: "SayHello".to_string(),
         };
-        let grpc = Grpc { method: method.to_string(), ..Default::default() };
+        let grpc = Pos::new(0, 0, Grpc { method: Pos::new(0, 0, method.to_string()), ..Default::default() });
         config.types.insert(
             "foo".to_string(),
-            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+            Pos::new(0, 0, Type::default().fields(vec![("bar", Field::default().grpc(grpc))])),
         );
 
         let runtime = crate::core::runtime::test::init(None);

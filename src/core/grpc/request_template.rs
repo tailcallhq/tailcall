@@ -128,6 +128,7 @@ mod tests {
 
     use super::RequestTemplate;
     use crate::core::blueprint::GrpcMethod;
+    use crate::core::config::position::Pos;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -141,20 +142,24 @@ mod tests {
 
         let runtime = crate::core::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
-        let mut config = Config::default().links(vec![Link {
+        let mut config = Config::default().links(vec![
+        Pos::new(
+            0, 
+            0, 
+            Link {
             id: Some(id.clone()),
             src: test_file.to_string(),
-            type_of: LinkType::Protobuf,
-        }]);
+            type_of: LinkType::Protobuf
+        })]);
         let method = GrpcMethod {
             package: id.to_string(),
             service: "a".to_string(),
             name: "b".to_string(),
         };
-        let grpc = Grpc { method: method.to_string(), ..Default::default() };
+        let grpc = Pos::new(0, 0, Grpc { method: Pos::new(0, 0, method.to_string()), ..Default::default() });
         config.types.insert(
             "foo".to_string(),
-            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+            Pos::new(0, 0, Type::default().fields(vec![("bar", Field::default().grpc(grpc))])),
         );
 
         let protobuf_set = ProtobufSet::from_proto_file(
