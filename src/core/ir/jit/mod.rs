@@ -315,7 +315,16 @@ mod model {
                     &mut arg_id,
                 );
             }
-            DocumentOperations::Multiple(_) => {}
+            DocumentOperations::Multiple(multiple) => {
+                for (_, single) in multiple {
+                    fields = resolve_selection_set(
+                        single.node.selection_set,
+                        schema_definitions,
+                        &mut id,
+                        &mut arg_id,
+                    );
+                }
+            }
         }
 
         Ok(fields)
@@ -382,8 +391,7 @@ mod tests {
         let q_blueprint = model::QueryBlueprint::from_document(document.clone(), &blueprint.definitions);
         let q_blueprint1 = model::QueryBlueprint::from_document1(document, bp_index, "Query");
         // insta::assert_snapshot!();
-        println!("{:#?}", q_blueprint1);
-        println!("{:#?}", q_blueprint);
+        insta::assert_snapshot!(format!("{:#?}", q_blueprint));
     }
 }
 
