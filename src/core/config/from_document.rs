@@ -142,18 +142,20 @@ fn pos_name_to_string(pos: &Positioned<Name>) -> String {
 }
 fn to_types(
     type_definitions: &Vec<&Positioned<TypeDefinition>>,
-) -> Valid<BTreeMap<String, config::Type>, String> {
+) -> Valid<Vec<config::Type>, String> {
     Valid::from_iter(type_definitions, |type_definition| {
         let type_name = pos_name_to_string(&type_definition.node.name);
         match type_definition.node.kind.clone() {
             TypeKind::Object(object_type) => to_object_type(
                 &object_type,
+                type_name,
                 &type_definition.node.description,
                 &type_definition.node.directives,
             )
             .some(),
             TypeKind::Interface(interface_type) => to_object_type(
                 &interface_type,
+                type_name,
                 &type_definition.node.description,
                 &type_definition.node.directives,
             )
@@ -168,14 +170,9 @@ fn to_types(
             TypeKind::Union(_) => Valid::none(),
             TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
         }
-        .map(|option| (type_name, option))
+        .map(|option| option)
     })
-    .map(|vec| {
-        BTreeMap::from_iter(
-            vec.into_iter()
-                .filter_map(|(name, option)| option.map(|tpe| (name, tpe))),
-        )
-    })
+    .map(|vec| Vec::from_iter(vec.into_iter().flatten()))
 }
 fn to_scalar_type() -> config::Type {
     config::Type { ..Default::default() }
@@ -233,6 +230,7 @@ fn to_enum_types(
 #[allow(clippy::too_many_arguments)]
 fn to_object_type<T>(
     object: &T,
+    name: String,
     description: &Option<Positioned<String>>,
     directives: &[Positioned<ConstDirective>],
 ) -> Valid<config::Type, String>
@@ -250,7 +248,16 @@ where
             let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
             let added_fields = to_add_fields_from_directives(directives);
-            config::Type { fields, added_fields, doc, implements, cache, protected, tag }
+            config::Type {
+                name,
+                fields,
+                added_fields,
+                doc,
+                implements,
+                cache,
+                protected,
+                tag,
+            }
         })
 }
 fn to_input_object(

@@ -47,9 +47,9 @@
     },
     "types": {
       "description": "A map of all the types in the schema.",
-      "default": {},
-      "type": "object",
-      "additionalProperties": {
+      "default": [],
+      "type": "array",
+      "items": {
         "$ref": "#/definitions/Type"
       }
     },
@@ -1221,7 +1221,8 @@
       "description": "Represents a GraphQL type. A type can be an object, interface, enum or scalar.",
       "type": "object",
       "required": [
-        "fields"
+        "fields",
+        "name"
       ],
       "properties": {
         "added_fields": {
@@ -1263,6 +1264,10 @@
             "type": "string"
           },
           "uniqueItems": true
+        },
+        "name": {
+          "description": "Name of the type",
+          "type": "string"
         },
         "protected": {
           "description": "Marks field as protected by auth providers",

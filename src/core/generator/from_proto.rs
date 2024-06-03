@@ -51,8 +51,8 @@ impl Context {
     }
 
     /// Resolves the actual name and inserts the type.
-    fn insert_type(mut self, name: String, ty: Type) -> Self {
-        self.config.types.insert(name.to_string(), ty);
+    fn insert_type(mut self, ty: Type) -> Self {
+        self.config.types.push(ty);
         self
     }
 
@@ -154,6 +154,7 @@ impl Context {
 
             let mut ty = Type {
                 doc: self.comments_builder.get_comments(&msg_path),
+                name: msg_type.to_string(),
                 ..Default::default()
             };
 
@@ -202,7 +203,7 @@ impl Context {
 
             ty.tag = Some(Tag { id: msg_type.id() });
 
-            self = self.insert_type(msg_type.to_string(), ty);
+            self = self.insert_type(ty);
         }
         Ok(self)
     }
@@ -266,16 +267,15 @@ impl Context {
                     PathBuilder::new(&path).extend(PathField::Method, method_index as i32);
                 cfg_field.doc = self.comments_builder.get_comments(&method_path);
 
-                let ty = self
-                    .config
-                    .types
-                    .entry(self.query.clone())
-                    .or_insert_with(|| {
-                        self.config.schema.query = Some(self.query.clone());
-                        Type::default()
-                    });
-
-                ty.fields.insert(field_name.to_string(), cfg_field);
+                let ty = self.config.types.iter_mut().find(|v| v.name == self.query);
+                if let Some(ty) = ty {
+                    ty.fields.insert(field_name.to_string(), cfg_field);
+                } else {
+                    self.config.schema.query = Some(self.query.clone());
+                    let mut ty = Type::init(&self.query);
+                    ty.fields.insert(field_name.to_string(), cfg_field);
+                    self.config.types.push(ty);
+                }
             }
         }
         Ok(self)

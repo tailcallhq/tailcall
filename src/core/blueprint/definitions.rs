@@ -518,7 +518,8 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
         let output_types = &config_module.output_types;
         let input_types = &config_module.input_types;
 
-        Valid::from_iter(config_module.types.iter(), |(name, type_)| {
+        Valid::from_iter(config_module.types.iter(), |type_| {
+            let name = &type_.name;
             let dbl_usage = input_types.contains(name) && output_types.contains(name);
             if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)

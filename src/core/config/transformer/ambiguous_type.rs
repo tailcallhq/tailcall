@@ -72,7 +72,7 @@ impl Transform for AmbiguousType {
             } else {
                 let mut resolution_map = HashMap::new();
                 resolution_map = insert_resolution(resolution_map, current_name, resolution);
-                if let Some(ty) = config.types.get(current_name) {
+                if let Some(ty) = config.types.iter().find(|v| v.name.eq(current_name)) {
                     for field in ty.fields.values() {
                         for args in field.args.values() {
                             // if arg is of output type then it should be changed to that of
@@ -100,26 +100,36 @@ impl Transform for AmbiguousType {
                 let input_name = &resolution.input;
                 let output_name = &resolution.output;
 
-                let og_ty = config.types.get(current_name).cloned();
+                let og_ty = config
+                    .types
+                    .iter()
+                    .find(|v| v.name.eq(current_name))
+                    .cloned();
 
                 // remove old types
-                config.types.remove(current_name);
+                config.types.retain(|v| v.name.eq(current_name));
                 input_types.remove(current_name);
                 output_types.remove(current_name);
 
                 // add new types
-                if let Some(og_ty) = og_ty {
-                    config.types.insert(input_name.clone(), og_ty.clone());
+                if let Some(mut og_ty) = og_ty {
+                    og_ty.name.clone_from(input_name);
+                    config.types.push(og_ty.clone());
                     input_types.insert(input_name.clone());
 
-                    config.types.insert(output_name.clone(), og_ty);
+                    og_ty.name.clone_from(output_name);
+                    config.types.push(og_ty);
                     output_types.insert(output_name.clone());
                 }
             }
-            let keys = config.types.keys().cloned().collect::<Vec<_>>();
+            let keys = config
+                .types
+                .iter()
+                .map(|v| v.name.clone())
+                .collect::<Vec<_>>();
 
             for k in keys {
-                if let Some(ty) = config.types.get_mut(&k) {
+                if let Some(ty) = config.types.iter_mut().find(|v| k == v.name) {
                     for field in ty.fields.values_mut() {
                         if let Some(resolution) = resolution_map.get(&field.type_of) {
                             if output_types.contains(&k) {
@@ -153,7 +163,7 @@ mod tests {
     use crate::core::valid::Validator;
 
     fn build_qry(mut config: Config) -> Config {
-        let mut query = Type::default();
+        let mut query = Type::init("Query");
         let mut field1 =
             crate::core::config::Field { type_of: "Type1".to_string(), ..Default::default() };
 
@@ -171,7 +181,7 @@ mod tests {
         query.fields.insert("field1".to_string(), field1);
         query.fields.insert("field2".to_string(), field2);
 
-        config.types.insert("Query".to_string(), query);
+        config.types.push(query);
         config = config.query("Query");
 
         config
@@ -182,9 +192,9 @@ mod tests {
         // Create a ConfigModule instance with ambiguous types
         let mut config = Config::default();
 
-        let mut type1 = Type::default();
-        let mut type2 = Type::default();
-        let mut type3 = Type::default();
+        let mut type1 = Type::init("Type1");
+        let mut type2 = Type::init("Type2");
+        let mut type3 = Type::init("Type3");
 
         type1.fields.insert(
             "name".to_string(),
@@ -205,9 +215,9 @@ mod tests {
             crate::core::config::Field::default().type_of("Type2".to_string()),
         );
 
-        config.types.insert("Type1".to_string(), type1);
-        config.types.insert("Type2".to_string(), type2);
-        config.types.insert("Type3".to_string(), type3);
+        config.types.push(type1);
+        config.types.push(type2);
+        config.types.push(type3);
 
         config = build_qry(config);
 
@@ -219,8 +229,8 @@ mod tests {
         let actual = config_module
             .config
             .types
-            .keys()
-            .map(|s| s.as_str())
+            .iter()
+            .map(|s| s.name.as_str())
             .collect::<HashSet<_>>();
 
         let expected = maplit::hashset![
@@ -246,8 +256,8 @@ mod tests {
         let actual = config_module
             .config
             .types
-            .keys()
-            .map(|s| s.as_str())
+            .iter()
+            .map(|s| s.name.as_str())
             .collect::<HashSet<_>>();
 
         let expected = hashset![

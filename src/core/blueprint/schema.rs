@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use async_graphql::parser::types::ConstDirective;
 
@@ -24,11 +24,7 @@ fn validate_query(config: &Config) -> Valid<(), String> {
 
 /// Validates that all the root type fields has resolver
 /// making into the account the nesting
-fn validate_type_has_resolvers(
-    name: &str,
-    ty: &Type,
-    types: &BTreeMap<String, Type>,
-) -> Valid<(), String> {
+fn validate_type_has_resolvers(name: &str, ty: &Type, types: &Vec<Type>) -> Valid<(), String> {
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
         validate_field_has_resolver(name, field, types, ty)
     })
@@ -39,17 +35,21 @@ fn validate_type_has_resolvers(
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
-    types: &BTreeMap<String, Type>,
+    types: &Vec<Type>,
     parent_ty: &Type,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
         .when(|| {
-            if types.get(&field.type_of).eq(&Some(parent_ty)) {
+            if types
+                .iter()
+                .find(|v| v.name == field.type_of)
+                .eq(&Some(parent_ty))
+            {
                 return true;
             }
             if !field.has_resolver() {
                 let type_name = &field.type_of;
-                if let Some(ty) = types.get(type_name) {
+                if let Some(ty) = types.iter().find(|v| type_name == &v.name) {
                     if ty.scalar() {
                         return true;
                     }
