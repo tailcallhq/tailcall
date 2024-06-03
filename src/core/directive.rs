@@ -60,7 +60,7 @@ fn lower_case_first_letter(s: String) -> String {
     }
 }
 
-impl<'a, A: Deserialize<'a> + Serialize + 'a + std::fmt::Debug> DirectiveCodec<A> for A {
+impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
     fn directive_name() -> String {
         lower_case_first_letter(
             std::any::type_name::<A>()
@@ -73,7 +73,7 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a + std::fmt::Debug> DirectiveCodec<A
 
     fn from_directive(directive: &ConstDirective) -> Valid<A, String> {
         Valid::from_iter(directive.arguments.iter(), |(k, v)| {
-            Valid::from(serde_json::to_value(v.node.clone()).map_err(|e| {
+            Valid::from(serde_json::to_value(&v.node).map_err(|e| {
                 ValidationError::new(e.to_string())
                     .trace(format!("@{}", directive.name.node).as_str())
             }))
