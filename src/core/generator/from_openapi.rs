@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashSet, VecDeque};
 use convert_case::{Case, Casing};
 use oas3::spec::{ObjectOrReference, SchemaType};
 use oas3::{Schema, Spec};
+use serde_yaml::Value;
 
 use crate::core::config::{
     Arg, Config, Enum, Field, Http, KeyValue, RootSchema, Type, Union, Upstream,
@@ -89,15 +90,22 @@ impl OpenApiToConfigConverter {
 
     fn get_schema_type(&mut self, schema: Schema, name: Option<String>) -> TypeName {
         if let Some(element) = schema.items {
-            if let Some(name) = name_from_ref_path(element.as_ref()).or_else(|| {
-                let schema = element.resolve(&self.spec).ok()?;
-                schema_to_primitive_type(schema.schema_type.as_ref()?)
-            }) {
+            let inner_schema = element.resolve(&self.spec).unwrap();
+            if inner_schema.schema_type == Some(SchemaType::String)
+                && !inner_schema.enum_values.is_empty()
+            {
+                let name = self.insert_inline_type(inner_schema);
+                TypeName::ListOf(Box::new(TypeName::Name(name)))
+            } else if let Some(name) = name_from_ref_path(element.as_ref())
+                .or_else(|| schema_to_primitive_type(inner_schema.schema_type.as_ref()?))
+            {
                 TypeName::ListOf(Box::new(TypeName::Name(name)))
             } else {
-                let schema = element.resolve(&self.spec).unwrap();
-                TypeName::ListOf(Box::new(self.get_schema_type(schema, None)))
+                TypeName::ListOf(Box::new(self.get_schema_type(inner_schema, None)))
             }
+        } else if schema.schema_type == Some(SchemaType::String) && !schema.enum_values.is_empty() {
+            let name = self.insert_inline_type(schema);
+            TypeName::Name(name)
         } else if let Some(
             typ @ (SchemaType::Integer
             | SchemaType::String
@@ -153,7 +161,35 @@ impl OpenApiToConfigConverter {
     }
 
     fn define_type(&mut self, schema: Schema) -> Option<ConfigType> {
-        if !schema.all_of.is_empty() {
+        if !schema.properties.is_empty() {
+            let fields = schema
+                .properties
+                .into_iter()
+                .map(|(name, property)| {
+                    let property_schema = property.resolve(&self.spec).unwrap();
+                    let (list, type_of) = self
+                        .get_schema_type(property_schema.clone(), name_from_ref_path(&property))
+                        .into_tuple();
+                    let doc = property_schema.description.clone();
+                    (
+                        name.clone(),
+                        Field {
+                            type_of,
+                            required: schema.required.contains(&name),
+                            list,
+                            doc,
+                            ..Default::default()
+                        },
+                    )
+                })
+                .collect();
+
+            Some(ConfigType::Type(Type {
+                fields,
+                doc: schema.description.clone(),
+                ..Default::default()
+            }))
+        } else if !schema.all_of.is_empty() {
             let mut properties: Vec<_> = vec![];
             let mut required = HashSet::new();
             let doc = schema.description.clone();
@@ -197,39 +233,14 @@ impl OpenApiToConfigConverter {
                 .collect();
 
             Some(ConfigType::Union(Union { types, doc: schema.description }))
-        } else if !schema.properties.is_empty() {
-            let fields = schema
-                .properties
-                .into_iter()
-                .map(|(name, property)| {
-                    let property_schema = property.resolve(&self.spec).unwrap();
-                    let (list, type_of) = self
-                        .get_schema_type(property_schema.clone(), name_from_ref_path(&property))
-                        .into_tuple();
-                    let doc = property_schema.description.clone();
-                    (
-                        name.clone(),
-                        Field {
-                            type_of,
-                            required: schema.required.contains(&name),
-                            list,
-                            doc,
-                            ..Default::default()
-                        },
-                    )
-                })
-                .collect();
-
-            Some(ConfigType::Type(Type {
-                fields,
-                doc: schema.description.clone(),
-                ..Default::default()
-            }))
         } else if !schema.enum_values.is_empty() {
             let variants = schema
                 .enum_values
                 .into_iter()
-                .map(|val| format!("{val:?}"))
+                .map(|val| match val {
+                    Value::String(string) => string,
+                    _ => unreachable!(),
+                })
                 .collect();
             Some(ConfigType::Enum(Enum { variants, doc: schema.description }))
         } else {

@@ -6,22 +6,404 @@ schema @server @upstream(baseURL: "https://api.spotify.com/v1") {
   query: Query
 }
 
-union Type43 = EpisodeObject | TrackObject
+union Type105 = EpisodeObject | TrackObject
 
-union Type46 = EpisodeObject | TrackObject
+union Type106 = EpisodeObject | TrackObject
 
-union Type67 = EpisodeObject | TrackObject
+union Type66 = EpisodeObject | TrackObject
 
-union Type75 = EpisodeObject | TrackObject
+union Type69 = EpisodeObject | TrackObject
 
-union Type76 = EpisodeObject | TrackObject
+union Type95 = EpisodeObject | TrackObject
+
+"""
+The object type.
+
+"""
+enum Type104 {
+  user
+}
+
+"""
+The ID type: currently only `artist` is supported.
+
+"""
+enum Type11 {
+  artist
+}
+
+"""
+The object type.
+
+"""
+enum Type113 {
+  show
+}
+
+"""
+The object type.
+
+"""
+enum Type115 {
+  show
+}
+
+"""
+The type of the album.
+
+"""
+enum Type117 {
+  album
+  compilation
+  single
+}
+
+"""
+The precision with which `release_date` value is known.
+
+"""
+enum Type119 {
+  day
+  month
+  year
+}
+
+"""
+The object type.
+
+"""
+enum Type121 {
+  album
+}
+
+"""
+The object type.
+
+"""
+enum Type123 {
+  artist
+}
+
+"""
+The object type.
+
+"""
+enum Type125 {
+  audiobook
+}
+
+"""
+The precision with which `release_date` value is known.
+
+"""
+enum Type127 {
+  day
+  month
+  year
+}
+
+"""
+The ID type: either `artist` or `user`.
+
+"""
+enum Type13 {
+  artist
+  user
+}
+
+"""
+The object type.
+
+"""
+enum Type130 {
+  episode
+}
+
+"""
+The precision with which `release_date` value is known.
+
+"""
+enum Type132 {
+  day
+  month
+  year
+}
+
+"""
+The object type.
+
+"""
+enum Type135 {
+  episode
+}
+
+"""
+The object type.
+
+"""
+enum Type140 {
+  show
+}
+
+"""
+The object type: "track".
+
+"""
+enum Type149 {
+  track
+}
+
+enum Type16 {
+  album
+  artist
+  audiobook
+  episode
+  playlist
+  show
+  track
+}
+
+"""
+If `include_external=audio` is specified it signals that the client can play externally hosted audio content, and marks
+the content as playable in the response. By default externally hosted audio content is marked as unplayable in the response.
+
+"""
+enum Type17 {
+  audio
+}
+
+"""
+The type of the album.
+
+"""
+enum Type21 {
+  album
+  compilation
+  single
+}
+
+"""
+The precision with which `release_date` value is known.
+
+"""
+enum Type23 {
+  day
+  month
+  year
+}
+
+"""
+The object type.
+
+"""
+enum Type25 {
+  album
+}
+
+"""
+The type of the album.
+
+"""
+enum Type26 {
+  album
+  compilation
+  single
+}
+
+"""
+The precision with which `release_date` value is known.
+
+"""
+enum Type28 {
+  day
+  month
+  year
+}
+
+"""
+The object type.
+
+"""
+enum Type30 {
+  album
+}
+
+"""
+The reason for the restriction. Albums may be restricted if the content is not available in a given market, to the user's subscription type, or when the user's account is set to not play explicit content.
+Additional reasons may be added in the future.
+
+"""
+enum Type33 {
+  explicit
+  market
+  product
+}
+
+"""
+The type of the album.
+
+"""
+enum Type34 {
+  album
+  compilation
+  single
+}
+
+"""
+The precision with which `release_date` value is known.
+
+"""
+enum Type36 {
+  day
+  month
+  year
+}
+
+"""
+The object type.
+
+"""
+enum Type38 {
+  album
+}
+
+"""
+This field describes the relationship between the artist and the album.
+
+"""
+enum Type39 {
+  album
+  appears_on
+  compilation
+  single
+}
+
+"""
+The object type.
+
+"""
+enum Type42 {
+  artist
+}
+
+"""
+The object type.
+
+"""
+enum Type45 {
+  audio_features
+}
+
+"""
+The object type.
+
+"""
+enum Type47 {
+  audiobook
+}
+
+"""
+The object type.
+
+"""
+enum Type49 {
+  audiobook
+}
+
+"""
+The precision with which `release_date` value is known.
+
+"""
+enum Type52 {
+  day
+  month
+  year
+}
+
+"""
+The object type.
+
+"""
+enum Type55 {
+  episode
+}
+
+"""
+The precision with which `release_date` value is known.
+
+"""
+enum Type57 {
+  day
+  month
+  year
+}
+
+"""
+The object type.
+
+"""
+enum Type60 {
+  episode
+}
+
+"""
+The precision with which `release_date` value is known.
+
+"""
+enum Type74 {
+  day
+  month
+  year
+}
+
+"""
+The object type.
+
+"""
+enum Type77 {
+  episode
+}
+
+"""
+The precision with which `release_date` value is known.
+
+"""
+enum Type79 {
+  day
+  month
+  year
+}
+
+"""
+The object type.
+
+"""
+enum Type82 {
+  episode
+}
+
+"""
+The object type.
+
+"""
+enum Type93 {
+  user
+}
+
+"""
+The object type.
+
+"""
+enum Type98 {
+  user
+}
 
 type AlbumBase {
   """
   The type of the album.
 
   """
-  album_type: String!
+  album_type: Type21!
   """
   The markets in which the album is available: [ISO 3166-1 alpha-2 country codes](http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2). _**NOTE**: an album is considered available in a market when at least 1 of its tracks is available in that market._
 
@@ -31,7 +413,7 @@ type AlbumBase {
   Known external URLs for this album.
 
   """
-  external_urls: Type17!
+  external_urls: Type22!
   """
   A link to the Web API endpoint providing full details of the album.
 
@@ -61,12 +443,12 @@ type AlbumBase {
   The precision with which `release_date` value is known.
 
   """
-  release_date_precision: String!
+  release_date_precision: Type23!
   """
   Included in the response when a content restriction is applied.
 
   """
-  restrictions: Type18
+  restrictions: Type24
   """
   The number of tracks in the album.
   """
@@ -75,7 +457,7 @@ type AlbumBase {
   The object type.
 
   """
-  type: String!
+  type: Type25!
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the album.
 
@@ -84,12 +466,12 @@ type AlbumBase {
 }
 
 type AlbumObject {
-  album_type: String!
+  album_type: Type26!
   artists: [SimplifiedArtistObject]!
   available_markets: [String]!
   copyrights: [CopyrightObject]!
-  external_ids: Type21!
-  external_urls: Type19!
+  external_ids: Type31!
+  external_urls: Type27!
   genres: [String]!
   href: String!
   id: String!
@@ -98,11 +480,11 @@ type AlbumObject {
   name: String!
   popularity: Int!
   release_date: String!
-  release_date_precision: String!
-  restrictions: Type20
+  release_date_precision: Type28!
+  restrictions: Type29
   total_tracks: Int!
-  tracks: Type22!
-  type: String!
+  tracks: Type32!
+  type: Type30!
   uri: String!
 }
 
@@ -112,24 +494,24 @@ type AlbumRestrictionObject {
 Additional reasons may be added in the future.
 
   """
-  reason: String
+  reason: Type33
 }
 
 type ArtistDiscographyAlbumObject {
-  album_group: String!
-  album_type: String!
+  album_group: Type39!
+  album_type: Type34!
   artists: [SimplifiedArtistObject]!
   available_markets: [String]!
-  external_urls: Type23!
+  external_urls: Type35!
   href: String!
   id: String!
   images: [ImageObject]!
   name: String!
   release_date: String!
-  release_date_precision: String!
-  restrictions: Type24
+  release_date_precision: Type36!
+  restrictions: Type37
   total_tracks: Int!
-  type: String!
+  type: Type38!
   uri: String!
 }
 
@@ -138,12 +520,12 @@ type ArtistObject {
   Known external URLs for this artist.
 
   """
-  external_urls: Type25
+  external_urls: Type40
   """
   Information about the followers of the artist.
 
   """
-  followers: Type26
+  followers: Type41
   """
   A list of the genres the artist is associated with. If not yet classified, the array is empty.
 
@@ -178,7 +560,7 @@ type ArtistObject {
   The object type.
 
   """
-  type: String
+  type: Type42
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the artist.
 
@@ -195,7 +577,7 @@ type AudioAnalysisObject {
   The time intervals of beats throughout the track. A beat is the basic time unit of a piece of music; for example, each tick of a metronome. Beats are typically multiples of tatums.
   """
   beats: [TimeIntervalObject]
-  meta: Type27
+  meta: Type43
   """
   Sections are defined by large variations in rhythm or timbre, e.g. chorus, verse, bridge, guitar solo, etc. Each section contains its own descriptions of tempo, key, mode, time_signature, and loudness.
   """
@@ -208,7 +590,7 @@ type AudioAnalysisObject {
   A tatum represents the lowest regular pulse train that a listener intuitively infers from the timing of perceived musical events (segments).
   """
   tatums: [TimeIntervalObject]
-  track: Type28
+  track: Type44
 }
 
 type AudioFeaturesObject {
@@ -290,7 +672,7 @@ type AudioFeaturesObject {
   The object type.
 
   """
-  type: String
+  type: Type45
   """
   The Spotify URI for the track.
 
@@ -338,7 +720,7 @@ type AudiobookBase {
   External URLs for this audiobook.
 
   """
-  external_urls: Type29!
+  external_urls: Type46!
   """
   A link to the Web API endpoint providing full details of the audiobook.
 
@@ -393,7 +775,7 @@ type AudiobookBase {
   The object type.
 
   """
-  type: String!
+  type: Type47!
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the audiobook.
 
@@ -404,12 +786,12 @@ type AudiobookBase {
 type AudiobookObject {
   authors: [AuthorObject]!
   available_markets: [String]!
-  chapters: Type31!
+  chapters: Type50!
   copyrights: [CopyrightObject]!
   description: String!
   edition: String
   explicit: Boolean!
-  external_urls: Type30!
+  external_urls: Type48!
   href: String!
   html_description: String!
   id: String!
@@ -420,7 +802,7 @@ type AudiobookObject {
   narrators: [NarratorObject]!
   publisher: String!
   total_chapters: Int!
-  type: String!
+  type: Type49!
   uri: String!
 }
 
@@ -490,7 +872,7 @@ type ChapterBase {
   External URLs for this chapter.
 
   """
-  external_urls: Type32!
+  external_urls: Type51!
   """
   A link to the Web API endpoint providing full details of the chapter.
 
@@ -535,22 +917,22 @@ type ChapterBase {
   The precision with which `release_date` value is known.
 
   """
-  release_date_precision: String!
+  release_date_precision: Type52!
   """
   Included in the response when a content restriction is applied.
 
   """
-  restrictions: Type33
+  restrictions: Type53
   """
   The user's most recent position in the chapter. Set if the supplied access token is a user token and has the scope 'user-read-playback-position'.
 
   """
-  resume_point: Type34
+  resume_point: Type54
   """
   The object type.
 
   """
-  type: String!
+  type: Type55!
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the chapter.
 
@@ -560,13 +942,13 @@ type ChapterBase {
 
 type ChapterObject {
   audio_preview_url: String!
-  audiobook: Type38!
+  audiobook: Type61!
   available_markets: [String]
   chapter_number: Int!
   description: String!
   duration_ms: Int!
   explicit: Boolean!
-  external_urls: Type35!
+  external_urls: Type56!
   href: String!
   html_description: String!
   id: String!
@@ -575,10 +957,10 @@ type ChapterObject {
   languages: [String]!
   name: String!
   release_date: String!
-  release_date_precision: String!
-  restrictions: Type36
-  resume_point: Type37
-  type: String!
+  release_date_precision: Type57!
+  restrictions: Type58
+  resume_point: Type59
+  type: Type60!
   uri: String!
 }
 
@@ -601,7 +983,7 @@ type ContextObject {
   """
   External URLs for this context.
   """
-  external_urls: Type39
+  external_urls: Type62
   """
   A link to the Web API endpoint providing full details of the track.
   """
@@ -636,11 +1018,11 @@ type CurrentlyPlayingContextObject {
   Allows to update the user interface based on which playback actions are available within the current context.
 
   """
-  actions: Type40
+  actions: Type63
   """
   A Context Object. Can be `null`.
   """
-  context: Type41
+  context: Type64
   """
   The object type of the currently playing item. Can be one of `track`, `episode`, `ad` or `unknown`.
 
@@ -650,7 +1032,7 @@ type CurrentlyPlayingContextObject {
   The device that is currently active.
 
   """
-  device: Type42
+  device: Type65
   """
   If something is currently playing, return `true`.
   """
@@ -658,7 +1040,7 @@ type CurrentlyPlayingContextObject {
   """
   The currently playing track or episode. Can be `null`.
   """
-  item: Type43
+  item: Type66
   """
   Progress into the currently playing track or episode. Can be `null`.
   """
@@ -682,11 +1064,11 @@ type CurrentlyPlayingObject {
   Allows to update the user interface based on which playback actions are available within the current context.
 
   """
-  actions: Type44
+  actions: Type67
   """
   A Context Object. Can be `null`.
   """
-  context: Type45
+  context: Type68
   """
   The object type of the currently playing item. Can be one of `track`, `episode`, `ad` or `unknown`.
 
@@ -699,7 +1081,7 @@ type CurrentlyPlayingObject {
   """
   The currently playing track or episode. Can be `null`.
   """
-  item: Type46
+  item: Type69
   """
   Progress into the currently playing track or episode. Can be `null`.
   """
@@ -725,7 +1107,7 @@ type CursorPagingObject {
   """
   The cursors used to find the next set of items.
   """
-  cursors: Type47
+  cursors: Type70
   """
   A link to the Web API endpoint returning the full result of the request.
   """
@@ -745,7 +1127,7 @@ type CursorPagingObject {
 }
 
 type CursorPagingPlayHistoryObject {
-  cursors: Type48
+  cursors: Type71
   href: String
   items: [PlayHistoryObject]
   limit: Int
@@ -754,7 +1136,7 @@ type CursorPagingPlayHistoryObject {
 }
 
 type CursorPagingSimplifiedArtistObject {
-  cursors: Type49
+  cursors: Type72
   href: String
   items: [ArtistObject]
   limit: Int
@@ -865,7 +1247,7 @@ type EpisodeBase {
   External URLs for this episode.
 
   """
-  external_urls: Type50!
+  external_urls: Type73!
   """
   A link to the Web API endpoint providing full details of the episode.
 
@@ -920,22 +1302,22 @@ type EpisodeBase {
   The precision with which `release_date` value is known.
 
   """
-  release_date_precision: String!
+  release_date_precision: Type74!
   """
   Included in the response when a content restriction is applied.
 
   """
-  restrictions: Type51
+  restrictions: Type75
   """
   The user's most recent position in the episode. Set if the supplied access token is a user token and has the scope 'user-read-playback-position'.
 
   """
-  resume_point: Type52
+  resume_point: Type76
   """
   The object type.
 
   """
-  type: String!
+  type: Type77!
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the episode.
 
@@ -948,7 +1330,7 @@ type EpisodeObject {
   description: String!
   duration_ms: Int!
   explicit: Boolean!
-  external_urls: Type53!
+  external_urls: Type78!
   href: String!
   html_description: String!
   id: String!
@@ -959,11 +1341,11 @@ type EpisodeObject {
   languages: [String]!
   name: String!
   release_date: String!
-  release_date_precision: String!
-  restrictions: Type54
-  resume_point: Type55
-  show: Type56!
-  type: String!
+  release_date_precision: Type79!
+  restrictions: Type80
+  resume_point: Type81
+  show: Type83!
+  type: Type82!
   uri: String!
 }
 
@@ -1069,7 +1451,7 @@ type LinkedTrackObject {
   Known external URLs for this track.
 
   """
-  external_urls: Type57
+  external_urls: Type84
   """
   A link to the Web API endpoint providing full details of the track.
 
@@ -1306,7 +1688,7 @@ type PlayHistoryObject {
   """
   The context the track was played from.
   """
-  context: Type58
+  context: Type85
   """
   The date and time the track was played.
   """
@@ -1314,7 +1696,7 @@ type PlayHistoryObject {
   """
   The track the user listened to.
   """
-  track: Type59
+  track: Type86
 }
 
 type PlaylistObject {
@@ -1332,11 +1714,11 @@ type PlaylistObject {
   Known external URLs for this playlist.
 
   """
-  external_urls: Type60
+  external_urls: Type87
   """
   Information about the followers of the playlist.
   """
-  followers: Type61
+  followers: Type88
   """
   A link to the Web API endpoint providing full details of the playlist.
 
@@ -1361,7 +1743,7 @@ type PlaylistObject {
   The user who owns the playlist
 
   """
-  owner: Type62
+  owner: Type89
   """
   The playlist's public/private status: `true` the playlist is public, `false` the playlist is private, `null` the playlist status is not relevant. For more about public/private status, see [Working with Playlists](/documentation/web-api/concepts/playlists)
 
@@ -1376,7 +1758,7 @@ type PlaylistObject {
   The tracks of the playlist.
 
   """
-  tracks: Type63
+  tracks: Type90
   """
   The object type: "playlist"
 
@@ -1391,11 +1773,11 @@ type PlaylistObject {
 
 type PlaylistOwnerObject {
   display_name: String
-  external_urls: Type64
-  followers: Type65
+  external_urls: Type91
+  followers: Type92
   href: String
   id: String
-  type: String
+  type: Type93
   uri: String
 }
 
@@ -1409,7 +1791,7 @@ type PlaylistTrackObject {
   The Spotify user who added the track or episode. _**Note**: some very old playlists may return `null` in this field._
 
   """
-  added_by: Type66
+  added_by: Type94
   """
   Whether this track or episode is a [local file](/documentation/web-api/concepts/playlists/#local-files) or not.
 
@@ -1418,7 +1800,7 @@ type PlaylistTrackObject {
   """
   Information about the track or episode.
   """
-  track: Type67
+  track: Type95
 }
 
 type PlaylistTracksRefObject {
@@ -1439,12 +1821,12 @@ type PlaylistUserObject {
   Known public external URLs for this user.
 
   """
-  external_urls: Type68
+  external_urls: Type96
   """
   Information about the followers of this user.
 
   """
-  followers: Type69
+  followers: Type97
   """
   A link to the Web API endpoint for this user.
 
@@ -1459,7 +1841,7 @@ type PlaylistUserObject {
   The object type.
 
   """
-  type: String
+  type: Type98
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for this user.
 
@@ -1487,15 +1869,15 @@ type PrivateUserObject {
   The user's explicit content settings. _This field is only available when the current user has granted access to the [user-read-private](/documentation/web-api/concepts/scopes/#list-of-scopes) scope._
 
   """
-  explicit_content: Type70
+  explicit_content: Type99
   """
   Known external URLs for this user.
   """
-  external_urls: Type71
+  external_urls: Type100
   """
   Information about the followers of the user.
   """
-  followers: Type72
+  followers: Type101
   """
   A link to the Web API endpoint for this user.
 
@@ -1537,12 +1919,12 @@ type PublicUserObject {
   Known public external URLs for this user.
 
   """
-  external_urls: Type73
+  external_urls: Type102
   """
   Information about the followers of this user.
 
   """
-  followers: Type74
+  followers: Type103
   """
   A link to the Web API endpoint for this user.
 
@@ -1562,7 +1944,7 @@ type PublicUserObject {
   The object type.
 
   """
-  type: String
+  type: Type104
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for this user.
 
@@ -1575,7 +1957,7 @@ type Query {
   Check to see if the current user is following one or more artists or other Spotify users.
 
   """
-  checkCurrentUserFollows(ids: String!, type: String!): [Boolean] @http(path: "/me/following/contains", query: [{key: "ids", value: "{{args.ids}}"}, {key: "type", value: "{{args.type}}"}])
+  checkCurrentUserFollows(ids: String!, type: Type13!): [Boolean] @http(path: "/me/following/contains", query: [{key: "ids", value: "{{args.ids}}"}, {key: "type", value: "{{args.type}}"}])
   """
   Check to see if one or more Spotify users are following a specified playlist.
 
@@ -1643,7 +2025,7 @@ unique Spotify ID.
   Get information about a user’s available Spotify Connect devices. Some device models are not supported and will not be listed in the API response.
 
   """
-  getAUsersAvailableDevices: Type12 @http(path: "/me/player/devices")
+  getAUsersAvailableDevices: Type14 @http(path: "/me/player/devices")
   """
   Get Spotify catalog information for a single album.
 
@@ -1727,7 +2109,7 @@ current user's username).
   Get the current user's followed artists.
 
   """
-  getFollowed(after: String, limit: Int, type: String!): Type11 @http(path: "/me/following", query: [{key: "after", value: "{{args.after}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "type", value: "{{args.type}}"}])
+  getFollowed(after: String, limit: Int, type: Type11!): Type12 @http(path: "/me/following", query: [{key: "after", value: "{{args.after}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "type", value: "{{args.type}}"}])
   """
   Get information about the user’s current playback state, including track or episode, progress, and active device.
 
@@ -1762,7 +2144,7 @@ current user's username).
   Get Spotify catalog information for several shows based on their Spotify IDs.
 
   """
-  getMultipleShows(ids: String!, market: String): Type15 @http(path: "/shows", query: [{key: "ids", value: "{{args.ids}}"}, {key: "market", value: "{{args.market}}"}])
+  getMultipleShows(ids: String!, market: String): Type19 @http(path: "/shows", query: [{key: "ids", value: "{{args.ids}}"}, {key: "market", value: "{{args.market}}"}])
   """
   Get a list of new album releases featured in Spotify (shown, for example, on a Spotify player’s “Browse” tab).
 
@@ -1798,7 +2180,7 @@ _**Note**: Currently doesn't support podcast episodes._
   Retrieve a list of available genres seed parameter values for [recommendations](/documentation/web-api/reference/get-recommendations).
 
   """
-  getRecommendationGenres: Type13 @http(path: "/recommendations/available-genre-seeds")
+  getRecommendationGenres: Type15 @http(path: "/recommendations/available-genre-seeds")
   """
   Recommendations are generated based on the available information for a given seed entity and matched against similar artists and tracks. If there is sufficient information about the provided seeds, a list of tracks will be returned together with pool size details.
 
@@ -1820,7 +2202,7 @@ For artists and tracks that are very new or obscure there might not be enough da
   Get Spotify catalog information for multiple tracks based on their Spotify IDs.
 
   """
-  getSeveralTracks(ids: String!, market: String): Type16 @http(path: "/tracks", query: [{key: "ids", value: "{{args.ids}}"}, {key: "market", value: "{{args.market}}"}])
+  getSeveralTracks(ids: String!, market: String): Type20 @http(path: "/tracks", query: [{key: "ids", value: "{{args.ids}}"}, {key: "market", value: "{{args.market}}"}])
   """
   Get the object currently being played on the user's Spotify account.
 
@@ -1878,18 +2260,18 @@ This API endpoint is in __beta__ and could change without warning. Please share 
 that match a keyword string. Audiobooks are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
 
   """
-  search(include_external: String, limit: Int, market: String, offset: Int, q: String!, type: [String]!): Type14 @http(path: "/search", query: [{key: "include_external", value: "{{args.include_external}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}, {key: "q", value: "{{args.q}}"}, {key: "type", value: "{{args.type}}"}])
+  search(include_external: Type17, limit: Int, market: String, offset: Int, q: String!, type: [Type16]!): Type18 @http(path: "/search", query: [{key: "include_external", value: "{{args.include_external}}"}, {key: "limit", value: "{{args.limit}}"}, {key: "market", value: "{{args.market}}"}, {key: "offset", value: "{{args.offset}}"}, {key: "q", value: "{{args.q}}"}, {key: "type", value: "{{args.type}}"}])
 }
 
 type QueueObject {
   """
   The currently playing track or episode. Can be `null`.
   """
-  currently_playing: Type75
+  currently_playing: Type105
   """
   The tracks or episodes in the queue. Can be empty.
   """
-  queue: [Type76]
+  queue: [Type106]
 }
 
 type RecommendationSeedObject {
@@ -1962,7 +2344,7 @@ If the time is imprecise (for example, the date/time of an album release), an ad
   """
   Information about the album.
   """
-  album: Type77
+  album: Type107
 }
 
 type SavedAudiobookObject {
@@ -1976,7 +2358,7 @@ If the time is imprecise (for example, the date/time of an album release), an ad
   """
   Information about the audiobook.
   """
-  audiobook: Type78
+  audiobook: Type108
 }
 
 type SavedEpisodeObject {
@@ -1989,7 +2371,7 @@ Timestamps are returned in ISO 8601 format as Coordinated Universal Time (UTC) w
   """
   Information about the episode.
   """
-  episode: Type79
+  episode: Type109
 }
 
 type SavedShowObject {
@@ -2003,7 +2385,7 @@ If the time is imprecise (for example, the date/time of an album release), an ad
   """
   Information about the show.
   """
-  show: Type80
+  show: Type110
 }
 
 type SavedTrackObject {
@@ -2017,7 +2399,7 @@ If the time is imprecise (for example, the date/time of an album release), an ad
   """
   Information about the track.
   """
-  track: Type81
+  track: Type111
 }
 
 type SectionObject {
@@ -2147,7 +2529,7 @@ type ShowBase {
   External URLs for this show.
 
   """
-  external_urls: Type82!
+  external_urls: Type112!
   """
   A link to the Web API endpoint providing full details of the show.
 
@@ -2202,7 +2584,7 @@ type ShowBase {
   The object type.
 
   """
-  type: String!
+  type: Type113!
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the show.
 
@@ -2214,9 +2596,9 @@ type ShowObject {
   available_markets: [String]!
   copyrights: [CopyrightObject]!
   description: String!
-  episodes: Type84!
+  episodes: Type116!
   explicit: Boolean!
-  external_urls: Type83!
+  external_urls: Type114!
   href: String!
   html_description: String!
   id: String!
@@ -2227,24 +2609,24 @@ type ShowObject {
   name: String!
   publisher: String!
   total_episodes: Int!
-  type: String!
+  type: Type115!
   uri: String!
 }
 
 type SimplifiedAlbumObject {
-  album_type: String!
+  album_type: Type117!
   artists: [SimplifiedArtistObject]!
   available_markets: [String]!
-  external_urls: Type85!
+  external_urls: Type118!
   href: String!
   id: String!
   images: [ImageObject]!
   name: String!
   release_date: String!
-  release_date_precision: String!
-  restrictions: Type86
+  release_date_precision: Type119!
+  restrictions: Type120
   total_tracks: Int!
-  type: String!
+  type: Type121!
   uri: String!
 }
 
@@ -2253,7 +2635,7 @@ type SimplifiedArtistObject {
   Known external URLs for this artist.
 
   """
-  external_urls: Type87
+  external_urls: Type122
   """
   A link to the Web API endpoint providing full details of the artist.
 
@@ -2273,7 +2655,7 @@ type SimplifiedArtistObject {
   The object type.
 
   """
-  type: String
+  type: Type123
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the artist.
 
@@ -2288,7 +2670,7 @@ type SimplifiedAudiobookObject {
   description: String!
   edition: String
   explicit: Boolean!
-  external_urls: Type88!
+  external_urls: Type124!
   href: String!
   html_description: String!
   id: String!
@@ -2299,7 +2681,7 @@ type SimplifiedAudiobookObject {
   narrators: [NarratorObject]!
   publisher: String!
   total_chapters: Int!
-  type: String!
+  type: Type125!
   uri: String!
 }
 
@@ -2310,7 +2692,7 @@ type SimplifiedChapterObject {
   description: String!
   duration_ms: Int!
   explicit: Boolean!
-  external_urls: Type89!
+  external_urls: Type126!
   href: String!
   html_description: String!
   id: String!
@@ -2319,10 +2701,10 @@ type SimplifiedChapterObject {
   languages: [String]!
   name: String!
   release_date: String!
-  release_date_precision: String!
-  restrictions: Type90
-  resume_point: Type91
-  type: String!
+  release_date_precision: Type127!
+  restrictions: Type128
+  resume_point: Type129
+  type: Type130!
   uri: String!
 }
 
@@ -2331,7 +2713,7 @@ type SimplifiedEpisodeObject {
   description: String!
   duration_ms: Int!
   explicit: Boolean!
-  external_urls: Type92!
+  external_urls: Type131!
   href: String!
   html_description: String!
   id: String!
@@ -2342,10 +2724,10 @@ type SimplifiedEpisodeObject {
   languages: [String]!
   name: String!
   release_date: String!
-  release_date_precision: String!
-  restrictions: Type93
-  resume_point: Type94
-  type: String!
+  release_date_precision: Type132!
+  restrictions: Type133
+  resume_point: Type134
+  type: Type135!
   uri: String!
 }
 
@@ -2364,7 +2746,7 @@ type SimplifiedPlaylistObject {
   Known external URLs for this playlist.
 
   """
-  external_urls: Type95
+  external_urls: Type136
   """
   A link to the Web API endpoint providing full details of the playlist.
 
@@ -2389,7 +2771,7 @@ type SimplifiedPlaylistObject {
   The user who owns the playlist
 
   """
-  owner: Type96
+  owner: Type137
   """
   The playlist's public/private status: `true` the playlist is public, `false` the playlist is private, `null` the playlist status is not relevant. For more about public/private status, see [Working with Playlists](/documentation/web-api/concepts/playlists)
 
@@ -2404,7 +2786,7 @@ type SimplifiedPlaylistObject {
   A collection containing a link ( `href` ) to the Web API endpoint where full details of the playlist's tracks can be retrieved, along with the `total` number of tracks in the playlist. Note, a track object may be `null`. This can happen if a track is no longer available.
 
   """
-  tracks: Type97
+  tracks: Type138
   """
   The object type: "playlist"
 
@@ -2422,7 +2804,7 @@ type SimplifiedShowObject {
   copyrights: [CopyrightObject]!
   description: String!
   explicit: Boolean!
-  external_urls: Type98!
+  external_urls: Type139!
   href: String!
   html_description: String!
   id: String!
@@ -2433,7 +2815,7 @@ type SimplifiedShowObject {
   name: String!
   publisher: String!
   total_episodes: Int!
-  type: String!
+  type: Type140!
   uri: String!
 }
 
@@ -2463,7 +2845,7 @@ type SimplifiedTrackObject {
   External URLs for this track.
 
   """
-  external_urls: Type99
+  external_urls: Type141
   """
   A link to the Web API endpoint providing full details of the track.
   """
@@ -2486,7 +2868,7 @@ type SimplifiedTrackObject {
   """
   Part of the response when [Track Relinking](/documentation/web-api/concepts/track-relinking/) is applied and is only part of the response if the track linking, in fact, exists. The requested track has been replaced with a different track. The track in the `linked_from` object contains information about the originally requested track.
   """
-  linked_from: Type100
+  linked_from: Type142
   """
   The name of the track.
   """
@@ -2500,7 +2882,7 @@ type SimplifiedTrackObject {
   Included in the response when a content restriction is applied.
 
   """
-  restrictions: Type101
+  restrictions: Type143
   """
   The number of the track. If an album has several discs, the track number is the number on the specified disc.
 
@@ -2538,7 +2920,7 @@ type TrackObject {
   The album on which the track appears. The album object includes a link in `href` to full information about the album.
 
   """
-  album: Type102
+  album: Type144
   """
   The artists who performed the track. Each artist object includes a link in `href` to more detailed information about the artist.
 
@@ -2568,12 +2950,12 @@ type TrackObject {
   Known external IDs for the track.
 
   """
-  external_ids: Type103
+  external_ids: Type145
   """
   Known external URLs for this track.
 
   """
-  external_urls: Type104
+  external_urls: Type146
   """
   A link to the Web API endpoint providing full details of the track.
 
@@ -2597,7 +2979,7 @@ type TrackObject {
   """
   Part of the response when [Track Relinking](/documentation/web-api/concepts/track-relinking) is applied, and the requested track has been replaced with different track. The track in the `linked_from` object contains information about the originally requested track.
   """
-  linked_from: Type105
+  linked_from: Type147
   """
   The name of the track.
 
@@ -2617,7 +2999,7 @@ type TrackObject {
   Included in the response when a content restriction is applied.
 
   """
-  restrictions: Type106
+  restrictions: Type148
   """
   The number of the track. If an album has several discs, the track number is the number on the specified disc.
 
@@ -2627,7 +3009,7 @@ type TrackObject {
   The object type: "track".
 
   """
-  type: String
+  type: Type149
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the track.
 
@@ -2662,9 +3044,336 @@ type Type10 {
 }
 
   """
-  Part of the response when [Track Relinking](/documentation/web-api/concepts/track-relinking/) is applied and is only part of the response if the track linking, in fact, exists. The requested track has been replaced with a different track. The track in the `linked_from` object contains information about the originally requested track.
+  Known external URLs for this user.
   """
 type Type100 {
+  spotify: String
+}
+
+  """
+  Information about the followers of the user.
+  """
+type Type101 {
+  href: String
+  total: Int
+}
+
+  """
+  Known public external URLs for this user.
+
+  """
+type Type102 {
+  spotify: String
+}
+
+  """
+  Information about the followers of this user.
+
+  """
+type Type103 {
+  href: String
+  total: Int
+}
+
+  """
+  Information about the album.
+  """
+type Type107 {
+  album_type: Type0!
+  artists: [SimplifiedArtistObject]!
+  available_markets: [String]!
+  copyrights: [CopyrightObject]!
+  external_ids: Type0!
+  external_urls: Type0!
+  genres: [String]!
+  href: String!
+  id: String!
+  images: [ImageObject]!
+  label: String!
+  name: String!
+  popularity: Int!
+  release_date: String!
+  release_date_precision: Type0!
+  restrictions: Type0
+  total_tracks: Int!
+  tracks: Type0!
+  type: Type0!
+  uri: String!
+}
+
+  """
+  Information about the audiobook.
+  """
+type Type108 {
+  authors: [AuthorObject]!
+  available_markets: [String]!
+  chapters: Type0!
+  copyrights: [CopyrightObject]!
+  description: String!
+  edition: String
+  explicit: Boolean!
+  external_urls: Type0!
+  href: String!
+  html_description: String!
+  id: String!
+  images: [ImageObject]!
+  languages: [String]!
+  media_type: String!
+  name: String!
+  narrators: [NarratorObject]!
+  publisher: String!
+  total_chapters: Int!
+  type: Type0!
+  uri: String!
+}
+
+  """
+  Information about the episode.
+  """
+type Type109 {
+  audio_preview_url: String!
+  description: String!
+  duration_ms: Int!
+  explicit: Boolean!
+  external_urls: Type0!
+  href: String!
+  html_description: String!
+  id: String!
+  images: [ImageObject]!
+  is_externally_hosted: Boolean!
+  is_playable: Boolean!
+  language: String
+  languages: [String]!
+  name: String!
+  release_date: String!
+  release_date_precision: Type0!
+  restrictions: Type0
+  resume_point: Type0
+  show: Type0!
+  type: Type0!
+  uri: String!
+}
+
+  """
+  Information about the show.
+  """
+type Type110 {
+  available_markets: [String]!
+  copyrights: [CopyrightObject]!
+  description: String!
+  explicit: Boolean!
+  external_urls: Type0!
+  href: String!
+  html_description: String!
+  id: String!
+  images: [ImageObject]!
+  is_externally_hosted: Boolean!
+  languages: [String]!
+  media_type: String!
+  name: String!
+  publisher: String!
+  total_episodes: Int!
+  type: Type0!
+  uri: String!
+}
+
+  """
+  Information about the track.
+  """
+type Type111 {
+  album: Type0
+  artists: [ArtistObject]
+  available_markets: [String]
+  disc_number: Int
+  duration_ms: Int
+  explicit: Boolean
+  external_ids: Type0
+  external_urls: Type0
+  href: String
+  id: String
+  is_local: Boolean
+  is_playable: Boolean
+  linked_from: Type0
+  name: String
+  popularity: Int
+  preview_url: String
+  restrictions: Type0
+  track_number: Int
+  type: Type0
+  uri: String
+}
+
+  """
+  External URLs for this show.
+
+  """
+type Type112 {
+  spotify: String
+}
+
+  """
+  External URLs for this show.
+
+  """
+type Type114 {
+  spotify: String
+}
+
+  """
+  The episodes of the show.
+
+  """
+type Type116 {
+  href: String!
+  items: [SimplifiedEpisodeObject]!
+  limit: Int!
+  next: String!
+  offset: Int!
+  previous: String!
+  total: Int!
+}
+
+  """
+  Known external URLs for this album.
+
+  """
+type Type118 {
+  spotify: String
+}
+
+type Type12 {
+  artists: CursorPagingSimplifiedArtistObject!
+}
+
+  """
+  Included in the response when a content restriction is applied.
+
+  """
+type Type120 {
+  reason: Type0
+}
+
+  """
+  Known external URLs for this artist.
+
+  """
+type Type122 {
+  spotify: String
+}
+
+  """
+  External URLs for this audiobook.
+
+  """
+type Type124 {
+  spotify: String
+}
+
+  """
+  External URLs for this chapter.
+
+  """
+type Type126 {
+  spotify: String
+}
+
+  """
+  Included in the response when a content restriction is applied.
+
+  """
+type Type128 {
+  reason: String
+}
+
+  """
+  The user's most recent position in the chapter. Set if the supplied access token is a user token and has the scope 'user-read-playback-position'.
+
+  """
+type Type129 {
+  fully_played: Boolean
+  resume_position_ms: Int
+}
+
+  """
+  External URLs for this episode.
+
+  """
+type Type131 {
+  spotify: String
+}
+
+  """
+  Included in the response when a content restriction is applied.
+
+  """
+type Type133 {
+  reason: String
+}
+
+  """
+  The user's most recent position in the episode. Set if the supplied access token is a user token and has the scope 'user-read-playback-position'.
+
+  """
+type Type134 {
+  fully_played: Boolean
+  resume_position_ms: Int
+}
+
+  """
+  Known external URLs for this playlist.
+
+  """
+type Type136 {
+  spotify: String
+}
+
+  """
+  The user who owns the playlist
+
+  """
+type Type137 {
+  display_name: String
+  external_urls: Type0
+  followers: Type0
+  href: String
+  id: String
+  type: Type0
+  uri: String
+}
+
+  """
+  A collection containing a link ( `href` ) to the Web API endpoint where full details of the playlist's tracks can be retrieved, along with the `total` number of tracks in the playlist. Note, a track object may be `null`. This can happen if a track is no longer available.
+
+  """
+type Type138 {
+  href: String
+  total: Int
+}
+
+  """
+  External URLs for this show.
+
+  """
+type Type139 {
+  spotify: String
+}
+
+type Type14 {
+  devices: [DeviceObject]!
+}
+
+  """
+  External URLs for this track.
+
+  """
+type Type141 {
+  spotify: String
+}
+
+  """
+  Part of the response when [Track Relinking](/documentation/web-api/concepts/track-relinking/) is applied and is only part of the response if the track linking, in fact, exists. The requested track has been replaced with a different track. The track in the `linked_from` object contains information about the originally requested track.
+  """
+type Type142 {
   external_urls: Type0
   href: String
   id: String
@@ -2676,7 +3385,7 @@ type Type100 {
   Included in the response when a content restriction is applied.
 
   """
-type Type101 {
+type Type143 {
   reason: String
 }
 
@@ -2684,8 +3393,8 @@ type Type101 {
   The album on which the track appears. The album object includes a link in `href` to full information about the album.
 
   """
-type Type102 {
-  album_type: String!
+type Type144 {
+  album_type: Type0!
   artists: [SimplifiedArtistObject]!
   available_markets: [String]!
   external_urls: Type0!
@@ -2694,10 +3403,10 @@ type Type102 {
   images: [ImageObject]!
   name: String!
   release_date: String!
-  release_date_precision: String!
+  release_date_precision: Type0!
   restrictions: Type0
   total_tracks: Int!
-  type: String!
+  type: Type0!
   uri: String!
 }
 
@@ -2705,7 +3414,7 @@ type Type102 {
   Known external IDs for the track.
 
   """
-type Type103 {
+type Type145 {
   ean: String
   isrc: String
   upc: String
@@ -2715,14 +3424,14 @@ type Type103 {
   Known external URLs for this track.
 
   """
-type Type104 {
+type Type146 {
   spotify: String
 }
 
   """
   Part of the response when [Track Relinking](/documentation/web-api/concepts/track-relinking) is applied, and the requested track has been replaced with different track. The track in the `linked_from` object contains information about the originally requested track.
   """
-type Type105 {
+type Type147 {
   external_urls: Type0
   href: String
   id: String
@@ -2734,23 +3443,15 @@ type Type105 {
   Included in the response when a content restriction is applied.
 
   """
-type Type106 {
+type Type148 {
   reason: String
 }
 
-type Type11 {
-  artists: CursorPagingSimplifiedArtistObject!
-}
-
-type Type12 {
-  devices: [DeviceObject]!
-}
-
-type Type13 {
+type Type15 {
   genres: [String]!
 }
 
-type Type14 {
+type Type18 {
   albums: PagingSimplifiedAlbumObject
   artists: PagingArtistObject
   audiobooks: PagingSimplifiedAudiobookObject
@@ -2760,11 +3461,15 @@ type Type14 {
   tracks: PagingTrackObject
 }
 
-type Type15 {
+type Type19 {
   shows: [SimplifiedShowObject]!
 }
 
-type Type16 {
+type Type2 {
+  artists: [ArtistObject]!
+}
+
+type Type20 {
   tracks: [TrackObject]!
 }
 
@@ -2772,7 +3477,7 @@ type Type16 {
   Known external URLs for this album.
 
   """
-type Type17 {
+type Type22 {
   spotify: String
 }
 
@@ -2780,35 +3485,35 @@ type Type17 {
   Included in the response when a content restriction is applied.
 
   """
-type Type18 {
-  reason: String
+type Type24 {
+  reason: Type0
 }
 
   """
   Known external URLs for this album.
 
   """
-type Type19 {
+type Type27 {
   spotify: String
-}
-
-type Type2 {
-  artists: [ArtistObject]!
 }
 
   """
   Included in the response when a content restriction is applied.
 
   """
-type Type20 {
-  reason: String
+type Type29 {
+  reason: Type0
+}
+
+type Type3 {
+  tracks: [TrackObject]!
 }
 
   """
   Known external IDs for the album.
 
   """
-type Type21 {
+type Type31 {
   ean: String
   isrc: String
   upc: String
@@ -2818,7 +3523,7 @@ type Type21 {
   The tracks of the album.
 
   """
-type Type22 {
+type Type32 {
   href: String!
   items: [SimplifiedTrackObject]!
   limit: Int!
@@ -2832,7 +3537,7 @@ type Type22 {
   Known external URLs for this album.
 
   """
-type Type23 {
+type Type35 {
   spotify: String
 }
 
@@ -2840,15 +3545,19 @@ type Type23 {
   Included in the response when a content restriction is applied.
 
   """
-type Type24 {
-  reason: String
+type Type37 {
+  reason: Type0
+}
+
+type Type4 {
+  audio_features: [AudioFeaturesObject]!
 }
 
   """
   Known external URLs for this artist.
 
   """
-type Type25 {
+type Type40 {
   spotify: String
 }
 
@@ -2856,12 +3565,12 @@ type Type25 {
   Information about the followers of the artist.
 
   """
-type Type26 {
+type Type41 {
   href: String
   total: Int
 }
 
-type Type27 {
+type Type43 {
   """
   The amount of time taken to analyze this track.
   """
@@ -2892,7 +3601,7 @@ type Type27 {
   timestamp: Int
 }
 
-type Type28 {
+type Type44 {
   """
   The number of channels used for analysis. If 1, all channels are summed together to mono before analysis.
   """
@@ -3007,27 +3716,27 @@ type Type28 {
   External URLs for this audiobook.
 
   """
-type Type29 {
+type Type46 {
   spotify: String
-}
-
-type Type3 {
-  tracks: [TrackObject]!
 }
 
   """
   External URLs for this audiobook.
 
   """
-type Type30 {
+type Type48 {
   spotify: String
+}
+
+type Type5 {
+  audiobooks: [AudiobookObject]!
 }
 
   """
   The chapters of the audiobook.
 
   """
-type Type31 {
+type Type50 {
   href: String!
   items: [SimplifiedChapterObject]!
   limit: Int!
@@ -3041,7 +3750,7 @@ type Type31 {
   External URLs for this chapter.
 
   """
-type Type32 {
+type Type51 {
   spotify: String
 }
 
@@ -3049,7 +3758,7 @@ type Type32 {
   Included in the response when a content restriction is applied.
 
   """
-type Type33 {
+type Type53 {
   reason: String
 }
 
@@ -3057,7 +3766,7 @@ type Type33 {
   The user's most recent position in the chapter. Set if the supplied access token is a user token and has the scope 'user-read-playback-position'.
 
   """
-type Type34 {
+type Type54 {
   fully_played: Boolean
   resume_position_ms: Int
 }
@@ -3066,7 +3775,7 @@ type Type34 {
   External URLs for this chapter.
 
   """
-type Type35 {
+type Type56 {
   spotify: String
 }
 
@@ -3074,7 +3783,7 @@ type Type35 {
   Included in the response when a content restriction is applied.
 
   """
-type Type36 {
+type Type58 {
   reason: String
 }
 
@@ -3082,16 +3791,20 @@ type Type36 {
   The user's most recent position in the chapter. Set if the supplied access token is a user token and has the scope 'user-read-playback-position'.
 
   """
-type Type37 {
+type Type59 {
   fully_played: Boolean
   resume_position_ms: Int
+}
+
+type Type6 {
+  categories: Type0!
 }
 
   """
   The audiobook for which the chapter belongs.
 
   """
-type Type38 {
+type Type61 {
   authors: [AuthorObject]!
   available_markets: [String]!
   copyrights: [CopyrightObject]!
@@ -3109,26 +3822,22 @@ type Type38 {
   narrators: [NarratorObject]!
   publisher: String!
   total_chapters: Int!
-  type: String!
+  type: Type0!
   uri: String!
 }
 
   """
   External URLs for this context.
   """
-type Type39 {
+type Type62 {
   spotify: String
-}
-
-type Type4 {
-  audio_features: [AudioFeaturesObject]!
 }
 
   """
   Allows to update the user interface based on which playback actions are available within the current context.
 
   """
-type Type40 {
+type Type63 {
   interrupting_playback: Boolean
   pausing: Boolean
   resuming: Boolean
@@ -3144,7 +3853,7 @@ type Type40 {
   """
   A Context Object. Can be `null`.
   """
-type Type41 {
+type Type64 {
   external_urls: Type0
   href: String
   type: String
@@ -3155,7 +3864,7 @@ type Type41 {
   The device that is currently active.
 
   """
-type Type42 {
+type Type65 {
   id: String
   is_active: Boolean
   is_private_session: Boolean
@@ -3170,7 +3879,7 @@ type Type42 {
   Allows to update the user interface based on which playback actions are available within the current context.
 
   """
-type Type44 {
+type Type67 {
   interrupting_playback: Boolean
   pausing: Boolean
   resuming: Boolean
@@ -3186,17 +3895,21 @@ type Type44 {
   """
   A Context Object. Can be `null`.
   """
-type Type45 {
+type Type68 {
   external_urls: Type0
   href: String
   type: String
   uri: String
 }
 
+type Type7 {
+  albums: PagingSimplifiedAlbumObject!
+}
+
   """
   The cursors used to find the next set of items.
   """
-type Type47 {
+type Type70 {
   after: String
   before: String
 }
@@ -3204,7 +3917,7 @@ type Type47 {
   """
   The cursors used to find the next set of items.
   """
-type Type48 {
+type Type71 {
   after: String
   before: String
 }
@@ -3212,20 +3925,16 @@ type Type48 {
   """
   The cursors used to find the next set of items.
   """
-type Type49 {
+type Type72 {
   after: String
   before: String
-}
-
-type Type5 {
-  audiobooks: [AudiobookObject]!
 }
 
   """
   External URLs for this episode.
 
   """
-type Type50 {
+type Type73 {
   spotify: String
 }
 
@@ -3233,7 +3942,7 @@ type Type50 {
   Included in the response when a content restriction is applied.
 
   """
-type Type51 {
+type Type75 {
   reason: String
 }
 
@@ -3241,7 +3950,7 @@ type Type51 {
   The user's most recent position in the episode. Set if the supplied access token is a user token and has the scope 'user-read-playback-position'.
 
   """
-type Type52 {
+type Type76 {
   fully_played: Boolean
   resume_position_ms: Int
 }
@@ -3250,15 +3959,19 @@ type Type52 {
   External URLs for this episode.
 
   """
-type Type53 {
+type Type78 {
   spotify: String
+}
+
+type Type8 {
+  chapters: [ChapterObject]!
 }
 
   """
   Included in the response when a content restriction is applied.
 
   """
-type Type54 {
+type Type80 {
   reason: String
 }
 
@@ -3266,7 +3979,7 @@ type Type54 {
   The user's most recent position in the episode. Set if the supplied access token is a user token and has the scope 'user-read-playback-position'.
 
   """
-type Type55 {
+type Type81 {
   fully_played: Boolean
   resume_position_ms: Int
 }
@@ -3275,7 +3988,7 @@ type Type55 {
   The show on which the episode belongs.
 
   """
-type Type56 {
+type Type83 {
   available_markets: [String]!
   copyrights: [CopyrightObject]!
   description: String!
@@ -3291,7 +4004,7 @@ type Type56 {
   name: String!
   publisher: String!
   total_episodes: Int!
-  type: String!
+  type: Type0!
   uri: String!
 }
 
@@ -3299,14 +4012,14 @@ type Type56 {
   Known external URLs for this track.
 
   """
-type Type57 {
+type Type84 {
   spotify: String
 }
 
   """
   The context the track was played from.
   """
-type Type58 {
+type Type85 {
   external_urls: Type0
   href: String
   type: String
@@ -3316,7 +4029,7 @@ type Type58 {
   """
   The track the user listened to.
   """
-type Type59 {
+type Type86 {
   album: Type0
   artists: [ArtistObject]
   available_markets: [String]
@@ -3335,26 +4048,22 @@ type Type59 {
   preview_url: String
   restrictions: Type0
   track_number: Int
-  type: String
+  type: Type0
   uri: String
-}
-
-type Type6 {
-  categories: Type0!
 }
 
   """
   Known external URLs for this playlist.
 
   """
-type Type60 {
+type Type87 {
   spotify: String
 }
 
   """
   Information about the followers of the playlist.
   """
-type Type61 {
+type Type88 {
   href: String
   total: Int
 }
@@ -3363,21 +4072,25 @@ type Type61 {
   The user who owns the playlist
 
   """
-type Type62 {
+type Type89 {
   display_name: String
   external_urls: Type0
   followers: Type0
   href: String
   id: String
-  type: String
+  type: Type0
   uri: String
+}
+
+type Type9 {
+  episodes: [EpisodeObject]!
 }
 
   """
   The tracks of the playlist.
 
   """
-type Type63 {
+type Type90 {
   href: String!
   items: [PlaylistTrackObject]!
   limit: Int!
@@ -3391,7 +4104,7 @@ type Type63 {
   Known public external URLs for this user.
 
   """
-type Type64 {
+type Type91 {
   spotify: String
 }
 
@@ -3399,7 +4112,7 @@ type Type64 {
   Information about the followers of this user.
 
   """
-type Type65 {
+type Type92 {
   href: String
   total: Int
 }
@@ -3408,349 +4121,25 @@ type Type65 {
   The Spotify user who added the track or episode. _**Note**: some very old playlists may return `null` in this field._
 
   """
-type Type66 {
+type Type94 {
   external_urls: Type0
   followers: Type0
   href: String
   id: String
-  type: String
+  type: Type0
   uri: String
 }
 
   """
   Known public external URLs for this user.
-
-  """
-type Type68 {
-  spotify: String
-}
-
-  """
-  Information about the followers of this user.
-
-  """
-type Type69 {
-  href: String
-  total: Int
-}
-
-type Type7 {
-  albums: PagingSimplifiedAlbumObject!
-}
-
-  """
-  The user's explicit content settings. _This field is only available when the current user has granted access to the [user-read-private](/documentation/web-api/concepts/scopes/#list-of-scopes) scope._
-
-  """
-type Type70 {
-  filter_enabled: Boolean
-  filter_locked: Boolean
-}
-
-  """
-  Known external URLs for this user.
-  """
-type Type71 {
-  spotify: String
-}
-
-  """
-  Information about the followers of the user.
-  """
-type Type72 {
-  href: String
-  total: Int
-}
-
-  """
-  Known public external URLs for this user.
-
-  """
-type Type73 {
-  spotify: String
-}
-
-  """
-  Information about the followers of this user.
-
-  """
-type Type74 {
-  href: String
-  total: Int
-}
-
-  """
-  Information about the album.
-  """
-type Type77 {
-  album_type: String!
-  artists: [SimplifiedArtistObject]!
-  available_markets: [String]!
-  copyrights: [CopyrightObject]!
-  external_ids: Type0!
-  external_urls: Type0!
-  genres: [String]!
-  href: String!
-  id: String!
-  images: [ImageObject]!
-  label: String!
-  name: String!
-  popularity: Int!
-  release_date: String!
-  release_date_precision: String!
-  restrictions: Type0
-  total_tracks: Int!
-  tracks: Type0!
-  type: String!
-  uri: String!
-}
-
-  """
-  Information about the audiobook.
-  """
-type Type78 {
-  authors: [AuthorObject]!
-  available_markets: [String]!
-  chapters: Type0!
-  copyrights: [CopyrightObject]!
-  description: String!
-  edition: String
-  explicit: Boolean!
-  external_urls: Type0!
-  href: String!
-  html_description: String!
-  id: String!
-  images: [ImageObject]!
-  languages: [String]!
-  media_type: String!
-  name: String!
-  narrators: [NarratorObject]!
-  publisher: String!
-  total_chapters: Int!
-  type: String!
-  uri: String!
-}
-
-  """
-  Information about the episode.
-  """
-type Type79 {
-  audio_preview_url: String!
-  description: String!
-  duration_ms: Int!
-  explicit: Boolean!
-  external_urls: Type0!
-  href: String!
-  html_description: String!
-  id: String!
-  images: [ImageObject]!
-  is_externally_hosted: Boolean!
-  is_playable: Boolean!
-  language: String
-  languages: [String]!
-  name: String!
-  release_date: String!
-  release_date_precision: String!
-  restrictions: Type0
-  resume_point: Type0
-  show: Type0!
-  type: String!
-  uri: String!
-}
-
-type Type8 {
-  chapters: [ChapterObject]!
-}
-
-  """
-  Information about the show.
-  """
-type Type80 {
-  available_markets: [String]!
-  copyrights: [CopyrightObject]!
-  description: String!
-  explicit: Boolean!
-  external_urls: Type0!
-  href: String!
-  html_description: String!
-  id: String!
-  images: [ImageObject]!
-  is_externally_hosted: Boolean!
-  languages: [String]!
-  media_type: String!
-  name: String!
-  publisher: String!
-  total_episodes: Int!
-  type: String!
-  uri: String!
-}
-
-  """
-  Information about the track.
-  """
-type Type81 {
-  album: Type0
-  artists: [ArtistObject]
-  available_markets: [String]
-  disc_number: Int
-  duration_ms: Int
-  explicit: Boolean
-  external_ids: Type0
-  external_urls: Type0
-  href: String
-  id: String
-  is_local: Boolean
-  is_playable: Boolean
-  linked_from: Type0
-  name: String
-  popularity: Int
-  preview_url: String
-  restrictions: Type0
-  track_number: Int
-  type: String
-  uri: String
-}
-
-  """
-  External URLs for this show.
-
-  """
-type Type82 {
-  spotify: String
-}
-
-  """
-  External URLs for this show.
-
-  """
-type Type83 {
-  spotify: String
-}
-
-  """
-  The episodes of the show.
-
-  """
-type Type84 {
-  href: String!
-  items: [SimplifiedEpisodeObject]!
-  limit: Int!
-  next: String!
-  offset: Int!
-  previous: String!
-  total: Int!
-}
-
-  """
-  Known external URLs for this album.
-
-  """
-type Type85 {
-  spotify: String
-}
-
-  """
-  Included in the response when a content restriction is applied.
-
-  """
-type Type86 {
-  reason: String
-}
-
-  """
-  Known external URLs for this artist.
-
-  """
-type Type87 {
-  spotify: String
-}
-
-  """
-  External URLs for this audiobook.
-
-  """
-type Type88 {
-  spotify: String
-}
-
-  """
-  External URLs for this chapter.
-
-  """
-type Type89 {
-  spotify: String
-}
-
-type Type9 {
-  episodes: [EpisodeObject]!
-}
-
-  """
-  Included in the response when a content restriction is applied.
-
-  """
-type Type90 {
-  reason: String
-}
-
-  """
-  The user's most recent position in the chapter. Set if the supplied access token is a user token and has the scope 'user-read-playback-position'.
-
-  """
-type Type91 {
-  fully_played: Boolean
-  resume_position_ms: Int
-}
-
-  """
-  External URLs for this episode.
-
-  """
-type Type92 {
-  spotify: String
-}
-
-  """
-  Included in the response when a content restriction is applied.
-
-  """
-type Type93 {
-  reason: String
-}
-
-  """
-  The user's most recent position in the episode. Set if the supplied access token is a user token and has the scope 'user-read-playback-position'.
-
-  """
-type Type94 {
-  fully_played: Boolean
-  resume_position_ms: Int
-}
-
-  """
-  Known external URLs for this playlist.
-
-  """
-type Type95 {
-  spotify: String
-}
-
-  """
-  The user who owns the playlist
 
   """
 type Type96 {
-  display_name: String
-  external_urls: Type0
-  followers: Type0
-  href: String
-  id: String
-  type: String
-  uri: String
+  spotify: String
 }
 
   """
-  A collection containing a link ( `href` ) to the Web API endpoint where full details of the playlist's tracks can be retrieved, along with the `total` number of tracks in the playlist. Note, a track object may be `null`. This can happen if a track is no longer available.
+  Information about the followers of this user.
 
   """
 type Type97 {
@@ -3759,17 +4148,10 @@ type Type97 {
 }
 
   """
-  External URLs for this show.
-
-  """
-type Type98 {
-  spotify: String
-}
-
-  """
-  External URLs for this track.
+  The user's explicit content settings. _This field is only available when the current user has granted access to the [user-read-private](/documentation/web-api/concepts/scopes/#list-of-scopes) scope._
 
   """
 type Type99 {
-  spotify: String
+  filter_enabled: Boolean
+  filter_locked: Boolean
 }
