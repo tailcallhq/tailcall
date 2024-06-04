@@ -32,7 +32,7 @@ mod model {
     }
 
     #[allow(unused)]
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct Arg {
         pub id: ArgId,
         pub name: String,
@@ -41,6 +41,7 @@ mod model {
         pub default_value: Option<async_graphql_value::ConstValue>,
     }
 
+    #[derive(Clone)]
     pub struct ArgId(usize);
 
     impl Debug for ArgId {
@@ -75,7 +76,7 @@ mod model {
 
     #[allow(unused)]
     impl FieldId {
-        fn new(id: usize) -> Self {
+        pub fn new(id: usize) -> Self {
             FieldId(id)
         }
     }
@@ -88,7 +89,8 @@ mod model {
         }
     }
 
-    pub struct Field<A> {
+    #[derive(Clone)]
+    pub struct Field<A: Clone> {
         pub id: FieldId,
         pub name: String,
         pub ir: Option<IR>,
@@ -118,7 +120,7 @@ mod model {
 
     #[derive(Clone)]
     #[allow(unused)]
-    pub struct Parent(FieldId);
+    pub struct Parent(pub(crate) FieldId);
 
     impl Debug for Parent {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -126,6 +128,7 @@ mod model {
         }
     }
 
+    #[derive(Debug, Clone)]
     #[allow(unused)]
     pub struct Children(pub(crate) Vec<FieldId>);
 
@@ -140,6 +143,7 @@ mod model {
     }
 
     impl QueryPlan {
+        #[allow(unused)]
         pub fn to_children(&self) -> Vec<Field<Children>> {
             self.fields
                 .iter()
@@ -152,7 +156,7 @@ mod model {
                     refs: Some(Children(
                         self.fields
                             .iter()
-                            .filter(|f| f.refs.is_some() && f.refs.as_ref().unwrap().0.contains(&field.id))
+                            .filter(|f| f.refs.is_some() && f.refs.as_ref().unwrap().0 == field.id)
                             .map(|f| f.id.clone())
                             .collect(),
                     )),
@@ -301,35 +305,6 @@ mod model {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::core::blueprint::Blueprint;
-    use crate::core::config::reader::ConfigReader;
-
-    #[tokio::test]
-    async fn test_from_document() {
-        let rt = crate::core::runtime::test::init(None);
-        let reader = ConfigReader::init(rt);
-        let config = reader
-            .read("examples/jsonplaceholder.graphql")
-            .await
-            .unwrap();
-        let blueprint = Blueprint::try_from(&config).unwrap();
-        let query = r#"
-            query {
-                posts { user { id } }
-            }
-        "#;
-        let document = async_graphql::parser::parse_query(query).unwrap();
-
-        let q_blueprint = model::QueryPlanBuilder::new(blueprint)
-            .build(document)
-            .unwrap();
-        insta::assert_snapshot!(format!("{:#?}", q_blueprint));
-    }
-}
-
 mod value {
     pub use serde_json_borrow::*;
 }
@@ -340,7 +315,7 @@ mod cache {
 
     #[allow(unused)]
     pub struct Cache {
-        map: Vec<(FieldId, OwnedValue)>,
+        pub(crate) map: Vec<(FieldId, OwnedValue)>,
     }
 
     #[allow(unused)]
@@ -352,11 +327,15 @@ mod cache {
 
         #[allow(unused)]
         pub fn join(caches: Vec<Cache>) -> Self {
-            todo!()
+            let mut map = Vec::new();
+            for cache in caches {
+                map.extend(cache.map);
+            }
+            Cache { map }
         }
         #[allow(unused)]
-        pub fn get(&self, key: FieldId) -> Option<&OwnedValue> {
-            todo!()
+        pub fn get(&self, key: &FieldId) -> Option<&OwnedValue> {
+            self.map.iter().find(|(k, _)| k == key).map(|(_, v)| v)
         }
     }
 }
@@ -374,6 +353,7 @@ mod executor {
         plan: QueryPlan,
         cache: Cache,
     }
+
     #[allow(unused)]
     impl ExecutionContext {
         pub async fn execute_ir(
@@ -448,14 +428,16 @@ mod synth {
     use super::cache::Cache;
     use super::model::{Children, Field, QueryPlan};
 
-    struct Synth {
-        blueprint: QueryPlan,
-        cache: Cache,
+    #[allow(unused)]
+    pub struct Synth {
+        operation: Vec<Field<Children>>,
+        pub(crate) cache: Cache,
     }
+
     #[allow(unused)]
     impl Synth {
-        pub fn new(blueprint: QueryPlan) -> Self {
-            Synth { blueprint, cache: Cache::empty() }
+        pub fn new(operation: Vec<Field<Children>>) -> Self {
+            Synth { operation, cache: Cache::empty() }
         }
 
         fn build_children(
@@ -463,39 +445,37 @@ mod synth {
             field: Field<Children>,
             query_blueprint: QueryPlan,
         ) -> ObjectAsVec {
-            let mut object = ObjectAsVec::default();
+            let mut object = vec![];
             match field.refs {
                 None => (),
                 Some(children) => {
-                    for field in children.0 {
-                        let field = query_blueprint.find_field(field.id.clone()).unwrap();
+                    for field_id in children.0 {
+                        let field = query_blueprint.find_field(field_id).unwrap();
                         let key = field.name.clone();
-                        let id = field.id.clone();
-                        match self.cache.get(id) {
-                            Some(value) => {
-                                object.insert(key.as_str(), value.get_value().to_owned());
-                            }
-                            None => (),
+                        let id = &field.id;
+                        if let Some(value) = self.cache.get(id) {
+                            object.push((key, value.get_value().to_owned()));
                         }
                     }
                 }
             }
-            object
+            object.into()
         }
 
         pub fn synthesize(&self) -> Value<'_> {
-            let mut object = ObjectAsVec::default();
+            todo!()
+            /*let mut object = ObjectAsVec::default();
             let root_fields = self.blueprint.to_children();
-            println!("{:?}", root_fields);
             for root_field in root_fields {
                 let key = &root_field.name;
                 let id = root_field.id.to_owned();
                 if let Some(value) = self.cache.get(id) {
                     object.insert(key, value.get_value().to_owned());
                 }
-            }
+            }*/
 
-            // let root_fields = self.blueprint.fields.iter().filter(|a| a.refs.is_none());
+            // let root_fields = self.blueprint.fields.iter().filter(|a|
+            // a.refs.is_none());
             //
             // for root_field in root_fields {
             //     let field = root_field.
@@ -509,7 +489,69 @@ mod synth {
             //     }
             // }
 
-            Value::Object(object)
+            // Value::Object(object)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json_borrow::OwnedValue;
+
+    use super::*;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::reader::ConfigReader;
+    use crate::core::ir::jit::model::FieldId;
+
+    #[tokio::test]
+    async fn test_from_document() {
+        let rt = crate::core::runtime::test::init(None);
+        let reader = ConfigReader::init(rt);
+        let config = reader
+            .read("examples/jsonplaceholder.graphql")
+            .await
+            .unwrap();
+        let blueprint = Blueprint::try_from(&config).unwrap();
+        let query = r#"
+            query {
+                posts { user { id name } }
+            }
+        "#;
+        let document = async_graphql::parser::parse_query(query).unwrap();
+
+        let q_blueprint = model::QueryPlanBuilder::new(blueprint)
+            .build(document)
+            .unwrap();
+        insta::assert_snapshot!(format!("{:#?}", q_blueprint));
+    }
+
+    #[tokio::test]
+    async fn test_synth() {
+        let rt = crate::core::runtime::test::init(None);
+        let reader = ConfigReader::init(rt);
+        let config = reader
+            .read("examples/jsonplaceholder.graphql")
+            .await
+            .unwrap();
+        let blueprint = Blueprint::try_from(&config).unwrap();
+        let query = r#"
+            query {
+                posts { user { name } }
+            }
+        "#;
+        let document = async_graphql::parser::parse_query(query).unwrap();
+        let q_blueprint = model::QueryPlanBuilder::new(blueprint)
+            .build(document)
+            .unwrap();
+        let mut synth = synth::Synth::new(q_blueprint.to_children());
+        synth.cache.map.push((
+            FieldId::new(0),
+            OwnedValue::parse_from(r#"[{"user":{"id":1,"name":"Leanne Graham"}}]"#.to_string())
+                .unwrap(),
+        ));
+
+        let value = synth.synthesize();
+        let pretty = serde_json::to_string_pretty(&value).unwrap();
+        insta::assert_snapshot!(pretty);
     }
 }
