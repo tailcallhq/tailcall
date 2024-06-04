@@ -36,7 +36,7 @@ impl ExecutionPlanBuilder {
         &self,
         selection: SelectionSet,
         type_of: &str,
-        parent: Option<Parent>,
+        refs: Option<Parent>,
     ) -> anyhow::Result<Vec<Field<Parent>>> {
         let mut fields = Vec::new();
 
@@ -56,17 +56,12 @@ impl ExecutionPlanBuilder {
                         if let Some(arg) = field_def.get_arg(&arg_name) {
                             let type_of = arg.of_type.clone();
                             let id = ArgId::new(self.arg_id.next());
-                            let arg = Arg {
-                                id,
-                                name: arg_name.clone(),
-                                type_of,
-                                value: Some(value),
-                                default_value: arg
-                                    .default_value
-                                    .as_ref()
-                                    .and_then(|v| v.to_owned().try_into().ok()),
-                            };
-                            args.push(arg);
+                            let name = arg_name.clone();
+                            let default_value = arg
+                                .default_value
+                                .as_ref()
+                                .and_then(|v| v.to_owned().try_into().ok());
+                            args.push(Arg { id, name, type_of, value: Some(value), default_value });
                         }
                     }
 
@@ -75,25 +70,18 @@ impl ExecutionPlanBuilder {
                         QueryField::InputField(field_def) => field_def.of_type.clone(),
                     };
 
-                    let cur_id = FieldId::new(self.field_id.next());
+                    let id = FieldId::new(self.field_id.next());
                     let child_fields = self.iter(
                         gql_field.node.selection_set.node.clone(),
                         type_of.name(),
-                        Some(Parent::new(cur_id.clone())),
+                        Some(Parent::new(id.clone())),
                     )?;
-                    let field = Field {
-                        id: cur_id,
-                        name: field_name.to_string(),
-                        ir: match field_def {
-                            QueryField::Field((field_def, _)) => field_def.resolver.clone(),
-                            _ => None,
-                        },
-                        type_of,
-                        args,
-                        refs: parent.clone(),
+                    let name = field_name.to_owned();
+                    let ir = match field_def {
+                        QueryField::Field((field_def, _)) => field_def.resolver.clone(),
+                        _ => None,
                     };
-
-                    fields.push(field);
+                    fields.push(Field { id, name, ir, type_of, args, refs: refs.clone() });
                     fields = fields.merge_right(child_fields);
                 }
             }
