@@ -77,7 +77,7 @@ pub fn from_json(
     let unused_types = config.unused_types();
     config = config.remove_types(unused_types);
 
-    config = TypeMerger::new(0.8).transform(config).to_result()?;
+    config = TypeMerger::default().transform(config).to_result()?;
 
     Ok(config)
 }

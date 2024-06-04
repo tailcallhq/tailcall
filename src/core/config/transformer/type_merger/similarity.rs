@@ -1,4 +1,5 @@
-use crate::core::config::transformer::{PairMap, PairSet};
+use super::pair_map::PairMap;
+use super::pair_set::PairSet;
 use crate::core::config::{Config, Type};
 
 /// Given Two types,it tells similarity between two types based on a specified
