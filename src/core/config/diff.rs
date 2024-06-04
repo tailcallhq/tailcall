@@ -20,13 +20,13 @@ impl SimilarityStat {
 /// threshold.
 pub struct Similarity<'a> {
     config: &'a Config,
-    thresh: f32,
+    threshold: f32,
     type_similarity_cache: PairMap<String, bool>,
 }
 
 impl<'a> Similarity<'a> {
     pub fn new(config: &'a Config, thresh: f32) -> Similarity {
-        Similarity { config, thresh, type_similarity_cache: PairMap::default() }
+        Similarity { config, threshold: thresh, type_similarity_cache: PairMap::default() }
     }
 
     pub fn similarity(
@@ -91,7 +91,7 @@ impl<'a> Similarity<'a> {
             (type_1.fields.len() + type_2.fields.len()) as u32 - similarity_stats.same_field_count;
         similarity_stats.total_field_count = union_field_len;
 
-        let is_similar = similarity_stats.as_f32() >= self.thresh;
+        let is_similar = similarity_stats.as_f32() >= self.threshold;
 
         self.type_similarity_cache
             .add(type_1_name.to_owned(), type_2_name.to_owned(), is_similar);
