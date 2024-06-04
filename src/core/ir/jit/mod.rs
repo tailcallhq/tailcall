@@ -99,6 +99,42 @@ mod model {
         pub refs: Option<A>,
     }
 
+    const EMPTY_VEC: &Vec<Field<Children>> = &Vec::new();
+    impl Field<Children> {
+        pub fn children(&self) -> &Vec<Field<Children>> {
+            match &self.refs {
+                Some(Children(children)) => children,
+                _ => EMPTY_VEC,
+            }
+        }
+    }
+
+    impl Field<Parent> {
+        pub fn parent(&self) -> Option<&FieldId> {
+            todo!()
+        }
+
+        pub fn into_children(self, e: &ExecutionPlan) -> Field<Children> {
+            let mut children = Vec::new();
+            for field in e.fields.iter() {
+                if let Some(id) = field.parent() {
+                    if *id == self.id {
+                        children.push(field.to_owned().into_children(e));
+                    }
+                }
+            }
+
+            Field {
+                id: self.id,
+                name: self.name,
+                ir: self.ir,
+                type_of: self.type_of,
+                args: self.args,
+                refs: Some(Children(children)),
+            }
+        }
+    }
+
     impl<A: Debug + Clone> Debug for Field<A> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             let mut debug_struct = f.debug_struct("Field");
@@ -130,9 +166,9 @@ mod model {
 
     #[derive(Clone)]
     #[allow(unused)]
-    pub struct Children(pub(crate) Vec<FieldId>);
+    pub struct Children(Vec<Field<Children>>);
 
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     pub struct ExecutionPlan {
         pub fields: Vec<Field<Parent>>,
     }
@@ -144,24 +180,11 @@ mod model {
 
     impl ExecutionPlan {
         #[allow(unused)]
-        pub fn to_children(&self) -> Vec<Field<Children>> {
-            self.fields
-                .iter()
-                .map(|field| Field {
-                    id: field.id.clone(),
-                    name: field.name.clone(),
-                    ir: field.ir.clone(),
-                    type_of: field.type_of.clone(),
-                    args: field.args.clone(),
-                    refs: Some(Children(
-                        self.fields
-                            .iter()
-                            .filter(|f| f.refs.is_some() && f.refs.as_ref().unwrap().0 == field.id)
-                            .map(|f| f.id.clone())
-                            .collect(),
-                    )),
-                })
-                .collect()
+        pub fn into_children(self) -> Vec<Field<Children>> {
+            let this = &self.clone();
+            let fields = self.fields.into_iter();
+
+            fields.map(|f| f.into_children(this)).collect::<Vec<_>>()
         }
 
         pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
@@ -445,17 +468,11 @@ mod synth {
             query_blueprint: ExecutionPlan,
         ) -> ObjectAsVec {
             let mut object = vec![];
-            match field.refs {
-                None => (),
-                Some(children) => {
-                    for field_id in children.0 {
-                        let field = query_blueprint.find_field(field_id).unwrap();
-                        let key = field.name.clone();
-                        let id = &field.id;
-                        if let Some(value) = self.cache.get(id) {
-                            object.push((key, value.get_value().to_owned()));
-                        }
-                    }
+            for field in field.children() {
+                let key = field.name.clone();
+                let id = &field.id;
+                if let Some(value) = self.cache.get(id) {
+                    object.push((key, value.get_value().to_owned()));
                 }
             }
             object.into()
@@ -463,32 +480,6 @@ mod synth {
 
         pub fn synthesize(&self) -> Value<'_> {
             todo!()
-            /*let mut object = ObjectAsVec::default();
-            let root_fields = self.blueprint.to_children();
-            for root_field in root_fields {
-                let key = &root_field.name;
-                let id = root_field.id.to_owned();
-                if let Some(value) = self.cache.get(id) {
-                    object.insert(key, value.get_value().to_owned());
-                }
-            }*/
-
-            // let root_fields = self.blueprint.fields.iter().filter(|a|
-            // a.refs.is_none());
-            //
-            // for root_field in root_fields {
-            //     let field = root_field.
-            //     let key = &root_field.name;
-            //     let id = root_field.id.to_owned();
-            //     match self.cache.get(id) {
-            //         Some(value) => {
-            //             object.insert(key, value.get_value().to_owned());
-            //         }
-            //         None => (),
-            //     }
-            // }
-
-            // Value::Object(object)
         }
     }
 }
@@ -542,16 +533,11 @@ mod tests {
         let q_blueprint = model::ExecutionPlanBuilder::new(blueprint)
             .build(document)
             .unwrap();
-        let mut synth = synth::Synth::new(q_blueprint.to_children());
+        let mut synth = synth::Synth::new(q_blueprint.into_children());
         synth.cache.map.push((
             FieldId::new(0),
             OwnedValue::parse_from(r#"[{"user":{"id":1,"name":"Leanne Graham"}}]"#.to_string())
                 .unwrap(),
         ));
-
-        // let value = synth.synthesize();
-        // let _pretty = serde_json::to_string_pretty(&value).unwrap();
-        // insta::assert_snapshot!(pretty); // WIP, wait for implementation of
-        // synth
     }
 }
