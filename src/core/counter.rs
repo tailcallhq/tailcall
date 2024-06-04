@@ -1,10 +1,12 @@
-use std::cell::RefCell;
+use std::cell::Cell;
 
 #[allow(unused)]
 #[derive(Default)]
-pub struct Counter(RefCell<usize>);
+pub struct Counter(Cell<usize>);
 impl Counter {
     pub fn next(&self) -> usize {
-        self.0.replace_with(|a| *a + 1)
+        let curr = self.0.get();
+        self.0.set(curr + 1);
+        curr
     }
 }
