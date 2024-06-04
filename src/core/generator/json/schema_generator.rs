@@ -1,8 +1,8 @@
 use url::Url;
 
 use super::url_utils::extract_base_url;
+use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
-use crate::core::generator::json::ConfigTransformer;
 use crate::core::valid::Valid;
 
 pub struct SchemaGenerator {
@@ -34,8 +34,8 @@ impl SchemaGenerator {
     }
 }
 
-impl ConfigTransformer for SchemaGenerator {
-    fn apply(&mut self, mut config: Config) -> Valid<Config, String> {
+impl Transform for SchemaGenerator {
+    fn transform(&mut self, mut config: Config) -> Valid<Config, String> {
         self.generate_schema(&mut config);
         self.generate_upstream(config)
     }
@@ -47,13 +47,13 @@ mod test {
     use url::Url;
 
     use super::SchemaGenerator;
-    use crate::core::generator::json::ConfigTransformer;
+    use crate::core::config::transformer::Transform;
     use crate::core::valid::Validator;
 
     #[test]
     fn test_schema_generator_with_query() -> anyhow::Result<()> {
         let mut schema_gen = SchemaGenerator::new(Some("Query".to_string()), None);
-        let config = schema_gen.apply(Default::default()).to_result()?;
+        let config = schema_gen.transform(Default::default()).to_result()?;
         insta::assert_snapshot!(config.to_sdl());
         Ok(())
     }
@@ -61,7 +61,7 @@ mod test {
     #[test]
     fn test_schema_generator_without_query() -> anyhow::Result<()> {
         let mut schema_gen = SchemaGenerator::new(None, None);
-        let config = schema_gen.apply(Default::default()).to_result()?;
+        let config = schema_gen.transform(Default::default()).to_result()?;
         assert!(config.to_sdl().is_empty());
         Ok(())
     }
@@ -70,7 +70,7 @@ mod test {
     fn test_apply_with_host_and_port() -> anyhow::Result<()> {
         let url = Url::parse("http://example.com:8080").unwrap();
         let mut generator = SchemaGenerator::new(None, Some(url));
-        let updated_config = generator.apply(Default::default()).to_result()?;
+        let updated_config = generator.transform(Default::default()).to_result()?;
         assert_eq!(
             updated_config.upstream.base_url,
             Some("http://example.com:8080".to_string())
@@ -82,7 +82,7 @@ mod test {
     fn test_apply_with_host_without_port() -> anyhow::Result<()> {
         let url = Url::parse("http://example.com").unwrap();
         let mut generator = SchemaGenerator::new(None, Some(url));
-        let updated_config = generator.apply(Default::default()).to_result()?;
+        let updated_config = generator.transform(Default::default()).to_result()?;
 
         assert_eq!(
             updated_config.upstream.base_url,
@@ -95,7 +95,7 @@ mod test {
     fn test_apply_with_https_scheme() -> anyhow::Result<()> {
         let url = Url::parse("https://example.com").unwrap();
         let mut generator = SchemaGenerator::new(None, Some(url));
-        let updated_config = generator.apply(Default::default()).to_result()?;
+        let updated_config = generator.transform(Default::default()).to_result()?;
 
         assert_eq!(
             updated_config.upstream.base_url,

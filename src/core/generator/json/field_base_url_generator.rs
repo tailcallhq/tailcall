@@ -1,7 +1,7 @@
 use url::Url;
 
 use super::url_utils::extract_base_url;
-use super::ConfigTransformer;
+use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
 
@@ -16,8 +16,8 @@ impl<'a> FieldBaseUrlGenerator<'a> {
     }
 }
 
-impl ConfigTransformer for FieldBaseUrlGenerator<'_> {
-    fn apply(&mut self, mut config: Config) -> Valid<Config, String> {
+impl Transform for FieldBaseUrlGenerator<'_> {
+    fn transform(&mut self, mut config: Config) -> Valid<Config, String> {
         let base_url = match extract_base_url(self.url) {
             Some(base_url) => base_url,
             None => {
@@ -49,9 +49,7 @@ mod test {
     use url::Url;
 
     use super::FieldBaseUrlGenerator;
-    use crate::core::config::{Config, Field, Http, Type};
-    use crate::core::generator::json::ConfigTransformer;
-    use crate::core::valid::Validator;
+    use crate::core::{config::{transformer::Transform, Config, Field, Http, Type}, valid::Validator};
 
     #[test]
     fn should_add_base_url_for_http_fields() -> anyhow::Result<()> {
@@ -87,7 +85,7 @@ mod test {
         );
         config.types.insert("Query".to_string(), query_type);
 
-        config = field_base_url_gen.apply(config).to_result()?;
+        config = field_base_url_gen.transform(config).to_result()?;
 
         insta::assert_snapshot!(config.to_sdl());
         Ok(())
@@ -131,7 +129,7 @@ mod test {
         );
         config.types.insert("Query".to_string(), query_type);
 
-        config = field_base_url_gen.apply(config).to_result()?;
+        config = field_base_url_gen.transform(config).to_result()?;
 
         insta::assert_snapshot!(config.to_sdl());
         Ok(())
@@ -143,7 +141,7 @@ mod test {
         let query = "Query";
         let mut field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
         assert!(field_base_url_gen
-            .apply(Default::default())
+            .transform(Default::default())
             .to_result()?
             .to_sdl()
             .is_empty());

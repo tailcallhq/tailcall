@@ -1,28 +1,35 @@
 use serde_json::{Map, Value};
 
-use super::ConfigTransformer;
+use crate::core::config::transformer::Transform;
 use crate::core::config::{Config, Field, Type};
+use crate::core::generator::from_json::NameGenerator;
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 use crate::core::valid::Valid;
 
-pub struct TypesGenerator<'a, T: OperationGenerator> {
+pub struct TypesGenerator<'a, 'b, T1: OperationGenerator, T2: NameGenerator> {
     json_value: &'a Value,
-    type_counter: &'a mut u64,
-    operation_generator: T,
+    operation_generator: T1,
+    type_name_generator: &'b mut T2,
 }
 
-impl<'a, T> TypesGenerator<'a, T>
+impl<'a, 'b, T1, T2> TypesGenerator<'a, 'b, T1, T2>
 where
-    T: OperationGenerator,
+    T1: OperationGenerator,
+    T2: NameGenerator,
 {
-    pub fn new(json_value: &'a Value, type_counter: &'a mut u64, operation_generator: T) -> Self {
-        Self { json_value, type_counter, operation_generator }
+    pub fn new(
+        json_value: &'a Value,
+        operation_generator: T1,
+        type_name_generator: &'b mut T2,
+    ) -> Self {
+        Self { json_value, operation_generator, type_name_generator }
     }
 }
 
-impl<'a, T> TypesGenerator<'a, T>
+impl<'a, T1, T2> TypesGenerator<'a, '_, T1, T2>
 where
-    T: OperationGenerator,
+    T1: OperationGenerator,
+    T2: NameGenerator,
 {
     // checks if json value is compatible with graphql or not.
     fn should_generate_type(&self, value: &'a Value) -> bool {
@@ -38,7 +45,7 @@ where
         }
     }
 
-    fn generate_scalar(&mut self, config: &mut Config) -> String {
+    fn generate_scalar(&self, config: &mut Config) -> String {
         let any_scalar = "Any";
         if config.types.contains_key(any_scalar) {
             return any_scalar.to_string();
@@ -123,10 +130,9 @@ where
                 if !object_types.is_empty() {
                     // merge the generated types of list into single concrete type.
                     let merged_type = self.merge_types(object_types);
-                    let type_name = format!("T{}", self.type_counter);
-                    *self.type_counter += 1;
-                    config.types.insert(type_name.clone(), merged_type);
-                    return type_name;
+                    let generate_type_name = self.type_name_generator.generate_name();
+                    config.types.insert(generate_type_name.clone(), merged_type);
+                    return generate_type_name;
                 }
 
                 // generate a scalar if array is empty.
@@ -137,23 +143,22 @@ where
                     return self.generate_scalar(config);
                 }
                 let ty = self.create_type_from_object(json_obj, config);
-                let type_name = format!("T{}", self.type_counter);
-                *self.type_counter += 1;
-                config.types.insert(type_name.clone(), ty);
-                type_name
+                let generate_type_name = self.type_name_generator.generate_name();
+                config.types.insert(generate_type_name.clone(), ty);
+                generate_type_name
             }
             other => to_gql_type(other),
         }
     }
 }
 
-impl<T> ConfigTransformer for TypesGenerator<'_, T>
+impl<T1, T2> Transform for TypesGenerator<'_, '_, T1, T2>
 where
-    T: OperationGenerator,
+    T1: OperationGenerator,
+    T2: NameGenerator,
 {
-    fn apply(&mut self, mut config: Config) -> Valid<Config, String> {
+    fn transform(&mut self, mut config: Config) -> Valid<Config, String> {
         let root_type_name = self.generate_types(self.json_value, &mut config);
-
         self.operation_generator
             .generate(root_type_name.as_str(), config)
     }
