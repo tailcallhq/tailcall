@@ -97,14 +97,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();
-                                        let mut ctx = EvaluationContext::new(req_ctx, &ctx);
+                                        let ctx = &mut EvaluationContext::new(req_ctx, &ctx);
 
-                                        let value = expr
-                                            .eval(ctx.clone())
-                                            .await
-                                            .map_err(|err| err.extend())?;
+                                        let value =
+                                            expr.eval(ctx).await.map_err(|err| err.extend())?;
 
-                                        Ok(Some(to_field_value(&mut ctx, value)?))
+                                        Ok(Some(to_field_value(ctx, value)?))
                                     }
                                     .instrument(span)
                                     .inspect_err(|err| tracing::error!(?err)),

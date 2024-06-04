@@ -7,10 +7,8 @@ pub trait Eval<Output = async_graphql::Value>
 where
     Self: Send + Sync,
 {
-    fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+    fn eval<'a, 'b, Ctx: ResolverContextLike + Sync + Send>(
         &'a self,
-        ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<Output, EvaluationError>> + 'a + Send>>
-    where
-        Output: 'a;
+        ctx: &'b mut EvaluationContext<'a, Ctx>,
+    ) -> Pin<Box<dyn Future<Output = Result<Output, EvaluationError>> + 'b + Send>>;
 }

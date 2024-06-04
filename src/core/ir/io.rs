@@ -48,10 +48,10 @@ pub enum IO {
 pub struct DataLoaderId(pub usize);
 
 impl Eval for IO {
-    fn eval<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
+    fn eval<'a, 'b, Ctx: ResolverContextLike + Sync + Send>(
         &'a self,
-        ctx: super::EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+        ctx: &'b mut EvaluationContext<'a, Ctx>
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'b + Send>> {
         if ctx.request_ctx.upstream.dedupe {
             Box::pin(async move {
                 let key = self.cache_key(&ctx);
@@ -73,14 +73,14 @@ impl Eval for IO {
 }
 
 impl IO {
-    fn eval_inner<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
+    fn eval_inner<'a, 'b, Ctx: ResolverContextLike + Sync + Send>(
         &'a self,
-        ctx: super::EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+        ctx: &'b mut EvaluationContext<'a, Ctx>,
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'b + Send>> {
         Box::pin(async move {
             match self {
                 IO::Http { req_template, dl_id, .. } => {
-                    let req = req_template.to_request(&ctx)?;
+                    let req = req_template.to_request(ctx)?;
                     let is_get = req.method() == reqwest::Method::GET;
 
                     let res = if is_get && ctx.request_ctx.is_batching_enabled() {
@@ -105,7 +105,7 @@ impl IO {
                     Ok(res.body)
                 }
                 IO::GraphQL { req_template, field_name, dl_id, .. } => {
-                    let req = req_template.to_request(&ctx)?;
+                    let req = req_template.to_request(ctx)?;
 
                     let res = if ctx.request_ctx.upstream.batch.is_some()
                         && matches!(req_template.operation_type, GraphQLOperationType::Query)
@@ -121,7 +121,7 @@ impl IO {
                     parse_graphql_response(&ctx, res, field_name)
                 }
                 IO::Grpc { req_template, dl_id, .. } => {
-                    let rendered = req_template.render(&ctx)?;
+                    let rendered = req_template.render(ctx)?;
 
                     let res = if ctx.request_ctx.upstream.batch.is_some() &&
                     // TODO: share check for operation_type for resolvers
@@ -159,7 +159,7 @@ impl IO {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<'a, Ctx>> for IO {
+impl<'a, Ctx: ResolverContextLike + Sync + Send> CacheKey<EvaluationContext<'a, Ctx>> for IO {
     fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> Option<u64> {
         match self {
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
@@ -170,7 +170,7 @@ impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<
     }
 }
 
-fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
+fn set_headers<'ctx, Ctx: ResolverContextLike>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
@@ -179,7 +179,7 @@ fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     set_experimental_headers(ctx, res);
 }
 
-fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
+fn set_cache_control<'ctx, Ctx: ResolverContextLike>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
@@ -190,14 +190,14 @@ fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
     }
 }
 
-fn set_experimental_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
+fn set_experimental_headers<'ctx, Ctx: ResolverContextLike>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
     ctx.request_ctx.add_x_headers(&res.headers);
 }
 
-fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
+fn set_cookie_headers<'ctx, Ctx: ResolverContextLike>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
@@ -206,7 +206,7 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     }
 }
 
-async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
+async fn execute_raw_request<'ctx, Ctx: ResolverContextLike>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
 ) -> Result<Response<async_graphql::Value>, EvaluationError> {
@@ -222,7 +222,7 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     Ok(response)
 }
 
-async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
+async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     req: Request,
     operation: &ProtobufOperation,
@@ -234,7 +234,7 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
 
 async fn execute_grpc_request_with_dl<
     'ctx,
-    Ctx: ResolverContextLike<'ctx>,
+    Ctx: ResolverContextLike,
     Dl: Loader<
         grpc::DataLoaderRequest,
         Value = Response<async_graphql::Value>,
@@ -264,7 +264,7 @@ async fn execute_grpc_request_with_dl<
 
 async fn execute_request_with_dl<
     'ctx,
-    Ctx: ResolverContextLike<'ctx>,
+    Ctx: ResolverContextLike,
     Dl: Loader<DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<anyhow::Error>>,
 >(
     ctx: &EvaluationContext<'ctx, Ctx>,
@@ -288,7 +288,7 @@ async fn execute_request_with_dl<
         .unwrap_or_default())
 }
 
-fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
+fn parse_graphql_response<'ctx, Ctx: ResolverContextLike>(
     ctx: &EvaluationContext<'ctx, Ctx>,
     res: Response<async_graphql::Value>,
     field_name: &str,
