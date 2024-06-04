@@ -46,7 +46,7 @@ mod model {
     }
 
     pub struct Parent(FieldId);
-    pub struct Children(pub(crate) Vec<Field<Children>>);
+    pub struct Children(pub(crate) Vec<FieldId>);
 
     pub struct QueryBlueprint {
         pub fields: Vec<Field<Parent>>,
@@ -54,7 +54,23 @@ mod model {
 
     impl QueryBlueprint {
         pub fn to_children(&self) -> Vec<Field<Children>> {
-            todo!()
+            self.fields
+                .iter()
+                .map(|field| Field {
+                    id: field.id.clone(),
+                    name: field.name.clone(),
+                    ir: field.ir.clone(),
+                    type_of: field.type_of.clone(),
+                    args: field.args.clone(),
+                    refs: Some(Children(
+                        self.fields
+                            .iter()
+                            .filter(|f| f.refs.is_some() && f.refs.as_ref().unwrap().0.contains(&field.id))
+                            .map(|f| f.id.clone())
+                            .collect(),
+                    )),
+                })
+                .collect()
         }
 
         pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
@@ -197,7 +213,7 @@ mod synth {
                 None => (),
                 Some(children) => {
                     for field in children.0 {
-                        let field = query_blueprint.find_field(fieldId.clone()).unwrap();
+                        let field = query_blueprint.find_field(field.id.clone()).unwrap();
                         let key = field.name.clone();
                         let id = field.id.clone();
                         match self.cache.get(id) {
@@ -215,6 +231,7 @@ mod synth {
         pub fn synthesize<'a>(&'a self) -> Value<'a> {
             let mut object = ObjectAsVec::default();
             let root_fields = self.blueprint.to_children();
+            println!("{:?}", root_fields);
             for root_field in root_fields {
                 let key = &root_field.name;
                 let id = root_field.id.to_owned();
