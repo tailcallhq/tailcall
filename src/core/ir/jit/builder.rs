@@ -8,7 +8,7 @@ use super::model::*;
 use crate::core::blueprint::Blueprint;
 use crate::core::counter::Counter;
 use crate::core::merge_right::MergeRight;
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::Validator;
 
 pub struct ExecutionPlanBuilder {
     index: FieldIndex,
