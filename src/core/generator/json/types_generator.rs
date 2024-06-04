@@ -131,7 +131,9 @@ where
                     // merge the generated types of list into single concrete type.
                     let merged_type = self.merge_types(object_types);
                     let generate_type_name = self.type_name_generator.generate_name();
-                    config.types.insert(generate_type_name.to_owned(), merged_type);
+                    config
+                        .types
+                        .insert(generate_type_name.to_owned(), merged_type);
                     return generate_type_name;
                 }
 

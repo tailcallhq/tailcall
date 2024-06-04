@@ -2,11 +2,11 @@ use super::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
 
-
-/// `TypeGarbageCollector` is responsible for removing unused types from a configuration.
+/// `TypeGarbageCollector` is responsible for removing unused types from a
+/// configuration.
 ///
-/// It scans the configuration and identifies types that are not referenced elsewhere,
-/// effectively cleaning up unused clutter from the configuration.
+/// It scans the configuration and identifies types that are not referenced
+/// elsewhere, effectively cleaning up unused clutter from the configuration.
 pub struct TypeGarbageCollector;
 
 impl Transform for TypeGarbageCollector {

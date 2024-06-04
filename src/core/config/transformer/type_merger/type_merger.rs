@@ -150,7 +150,7 @@ mod test {
     #[test]
     fn test_validate_thresh() {
         let ty_merger = TypeMerger::default();
-        assert_eq!(ty_merger.thresh, 1.0);        
+        assert_eq!(ty_merger.thresh, 1.0);
 
         let ty_merger = TypeMerger::new(0.0);
         assert_eq!(ty_merger.thresh, 0.0);

@@ -5,7 +5,9 @@ use super::json::{
     FieldBaseUrlGenerator, FieldNameGenerator, QueryGenerator, SchemaGenerator, TypeNameGenerator,
     TypesGenerator,
 };
-use crate::core::config::transformer::{TypeGarbageCollector, Transform, TransformerOps, TypeMerger};
+use crate::core::config::transformer::{
+    Transform, TransformerOps, TypeGarbageCollector, TypeMerger,
+};
 use crate::core::config::Config;
 use crate::core::generator::json::NameGenerator;
 use crate::core::valid::Validator;
