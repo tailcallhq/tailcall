@@ -26,10 +26,11 @@ impl OperationGenerator for QueryGenerator<'_> {
             ..Default::default()
         };
 
-        field.http = Some(HttpDirectiveGenerator::generate_http_directive(
-            &mut field, self.url,
-        ));
+        // generate required http directive.
+        let http_directive_gen = HttpDirectiveGenerator::new(self.url);
+        field.http = Some(http_directive_gen.generate_http_directive(&mut field));
 
+        // if type is already present, then append the new field to it else create one.
         if let Some(type_) = config.types.get_mut(self.query) {
             type_.fields.insert(self.field_name.to_owned(), field);
         } else {

@@ -48,13 +48,20 @@ impl<'a> UrlUtility<'a> {
     }
 }
 
-pub struct HttpDirectiveGenerator;
+pub struct HttpDirectiveGenerator<'a> {
+    url: &'a Url,
+    http: Http,
+}
 
-impl HttpDirectiveGenerator {
-    fn add_path_variables(field: &mut Field, http: &mut Http, url: &Url) {
+impl<'a> HttpDirectiveGenerator<'a> {
+    pub fn new(url: &'a Url) -> Self {
+        Self { url, http: Http::default() }
+    }
+
+    fn add_path_variables(&mut self, field: &mut Field) {
         let re = Regex::new(r"/(\d+)").unwrap();
         let mut arg_index = 1;
-        let path_url = url.path();
+        let path_url = self.url.path();
 
         let mustache_compatible_url = re.replace_all(path_url, |_: &regex::Captures| {
             let arg_key = format!("p{}", arg_index);
@@ -73,11 +80,11 @@ impl HttpDirectiveGenerator {
         });
 
         // add path in http directive.
-        http.path = mustache_compatible_url.to_string();
+        self.http.path = mustache_compatible_url.to_string();
     }
 
-    fn add_query_variables(field: &mut Field, http: &mut Http, url: &Url) {
-        let url_utility = UrlUtility::new(url);
+    fn add_query_variables(&mut self, field: &mut Field) {
+        let url_utility = UrlUtility::new(self.url);
 
         for query in url_utility.get_query_params() {
             let arg = Arg {
@@ -89,18 +96,18 @@ impl HttpDirectiveGenerator {
             };
 
             let value: String = format!("{{{{.args.{}}}}}", query.key);
-            http.query.push(KeyValue { key: query.key.clone(), value });
+            self.http
+                .query
+                .push(KeyValue { key: query.key.clone(), value });
             field.args.insert(query.key, arg);
         }
     }
 
-    pub fn generate_http_directive(field: &mut Field, url: &Url) -> Http {
-        let mut http: Http = Http::default();
+    pub fn generate_http_directive(mut self, field: &mut Field) -> Http {
+        self.add_path_variables(field);
+        self.add_query_variables(field);
 
-        HttpDirectiveGenerator::add_path_variables(field, &mut http, url);
-        HttpDirectiveGenerator::add_query_variables(field, &mut http, url);
-
-        http
+        self.http
     }
 }
 
