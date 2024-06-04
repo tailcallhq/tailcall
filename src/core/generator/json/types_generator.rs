@@ -6,11 +6,11 @@ use crate::core::config::{Config, Field, Type};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 use crate::core::valid::Valid;
 
-struct Validator;
+struct JSONValidator;
 
-impl Validator {
+impl JSONValidator {
     /// checks if given json value is graphql compatible or not.
-    fn validate_json(value: &Value) -> bool {
+    fn is_graphql_compatible(value: &Value) -> bool {
         match value {
             Value::Array(json_array) => !json_array.is_empty(),
             Value::Object(json_object) => {
@@ -90,7 +90,7 @@ where
     ) -> Type {
         let mut ty = Type::default();
         for (json_property, json_val) in json_object {
-            let field = if !Validator::validate_json(json_val) {
+            let field = if !JSONValidator::is_graphql_compatible(json_val) {
                 // if object, array is empty or object has in-compatible fields then
                 // generate scalar for it.
                 Field {
@@ -127,7 +127,7 @@ where
                 let mut object_types = Vec::<_>::with_capacity(vec_capacity);
                 for json_item in json_arr {
                     if let Value::Object(json_obj) = json_item {
-                        if !Validator::validate_json(json_item) {
+                        if !JSONValidator::is_graphql_compatible(json_item) {
                             return self.generate_scalar(config);
                         }
                         object_types.push(self.create_type_from_object(json_obj, config));
@@ -150,7 +150,7 @@ where
                 self.generate_scalar(config)
             }
             Value::Object(json_obj) => {
-                if !Validator::validate_json(json_value) {
+                if !JSONValidator::is_graphql_compatible(json_value) {
                     return self.generate_scalar(config);
                 }
                 let ty = self.create_type_from_object(json_obj, config);
