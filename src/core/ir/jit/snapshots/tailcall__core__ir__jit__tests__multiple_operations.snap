@@ -1,6 +1,6 @@
 ---
 source: src/core/ir/jit/mod.rs
-expression: "format!(\"{:#?}\", q_blueprint)"
+expression: plan
 ---
 QueryPlan {
     fields: [

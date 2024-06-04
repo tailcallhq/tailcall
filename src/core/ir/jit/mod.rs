@@ -277,25 +277,22 @@ mod model {
 
 #[cfg(test)]
 mod tests {
+    use model::QueryPlan;
+
     use super::*;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::reader::ConfigReader;
 
-    async fn test_query(config_path: impl AsRef<str>, query: impl AsRef<str>) {
+    async fn create_query_plan(config_path: impl AsRef<str>, query: impl AsRef<str>) -> QueryPlan {
         let rt = crate::core::runtime::test::init(None);
         let reader = ConfigReader::init(rt);
-        let config = reader
-            .read(config_path.as_ref())
-            .await
-            .unwrap();
+        let config = reader.read(config_path.as_ref()).await.unwrap();
         let blueprint = Blueprint::try_from(&config).unwrap();
-
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        let q_blueprint = model::QueryPlanBuilder::new(blueprint)
+        model::QueryPlanBuilder::new(blueprint)
             .build(document)
-            .unwrap();
-        insta::assert_snapshot!(format!("{:#?}", q_blueprint));
+            .unwrap()
     }
 
     #[tokio::test]
@@ -306,7 +303,8 @@ mod tests {
                 posts { user { id } }
             }
         "#;
-        test_query(config_path, query).await;
+        let plan = create_query_plan(config_path, query).await;
+        insta::assert_debug_snapshot!(plan);
     }
 
     #[tokio::test]
@@ -331,9 +329,9 @@ mod tests {
               }
             }
         "#;
-        test_query(config_path, query).await;
+        let plan = create_query_plan(config_path, query).await;
+        insta::assert_debug_snapshot!(plan);
     }
-
 
     #[tokio::test]
     async fn test_fragments() {
@@ -351,7 +349,8 @@ mod tests {
               }
             }
         "#;
-        test_query(config_path, query).await;
+        let plan = create_query_plan(config_path, query).await;
+        insta::assert_debug_snapshot!(plan);
     }
 
     #[tokio::test]
@@ -369,7 +368,8 @@ mod tests {
               }
             }
         "#;
-        test_query(config_path, query).await;
+        let plan = create_query_plan(config_path, query).await;
+        insta::assert_debug_snapshot!(plan);
     }
 
     #[tokio::test]
@@ -383,7 +383,8 @@ mod tests {
               }
             }
         "#;
-        test_query(config_path, query).await;
+        let plan = create_query_plan(config_path, query).await;
+        insta::assert_debug_snapshot!(plan);
     }
 
     #[tokio::test]
@@ -401,7 +402,8 @@ mod tests {
               }
             }
         "#;
-        test_query(config_path, query).await;
+        let plan = create_query_plan(config_path, query).await;
+        insta::assert_debug_snapshot!(plan);
     }
 
     #[tokio::test]
@@ -418,7 +420,8 @@ mod tests {
               }
             }
         "#;
-        test_query(config_path, query).await;
+        let plan = create_query_plan(config_path, query).await;
+        insta::assert_debug_snapshot!(plan);
     }
 }
 
