@@ -277,30 +277,145 @@ mod model {
 
 #[cfg(test)]
 mod tests {
+    use model::ExecutionPlan;
+
     use super::*;
     use crate::core::blueprint::Blueprint;
-    use crate::core::config::reader::ConfigReader;
+    use crate::core::config::Config;
+    use crate::core::valid::Validator;
 
-    #[tokio::test]
-    async fn test_from_document() {
-        let rt = crate::core::runtime::test::init(None);
-        let reader = ConfigReader::init(rt);
-        let config = reader
-            .read("examples/jsonplaceholder.graphql")
-            .await
-            .unwrap();
-        let blueprint = Blueprint::try_from(&config).unwrap();
+    const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
+
+    fn create_query_plan(query: impl AsRef<str>) -> ExecutionPlan {
+        let config = Config::from_sdl(CONFIG).to_result().unwrap();
+        let blueprint = Blueprint::try_from(&config.into()).unwrap();
+        let document = async_graphql::parser::parse_query(query).unwrap();
+
+        model::ExecutionPlanBuilder::new(blueprint)
+            .build(document)
+            .unwrap()
+    }
+
+    #[test]
+    fn test_simple_query() {
         let query = r#"
             query {
                 posts { user { id } }
             }
         "#;
-        let document = async_graphql::parser::parse_query(query).unwrap();
+        let plan = create_query_plan(query);
+        insta::assert_debug_snapshot!(plan);
+    }
 
-        let q_blueprint = model::ExecutionPlanBuilder::new(blueprint)
-            .build(document)
-            .unwrap();
-        insta::assert_snapshot!(format!("{:#?}", q_blueprint));
+    #[test]
+    fn test_simple_mutation() {
+        let query = r#"
+            mutation {
+              createUser(user: {
+                id: 101,
+                name: "Tailcall",
+                email: "tailcall@tailcall.run",
+                phone: "2345234234",
+                username: "tailcall",
+                website: "tailcall.run"
+              }) {
+                id
+                name
+                email
+                phone
+                website
+                username
+              }
+            }
+        "#;
+        let plan = create_query_plan(query);
+        insta::assert_debug_snapshot!(plan);
+    }
+
+    #[test]
+    fn test_fragments() {
+        let query = r#"
+            fragment UserPII on User {
+              name
+              email
+              phone
+            }
+
+            query {
+              user(id:1) {
+                ...UserPII
+              }
+            }
+        "#;
+        let plan = create_query_plan(query);
+        insta::assert_debug_snapshot!(plan);
+    }
+
+    #[test]
+    fn test_multiple_operations() {
+        let query = r#"
+            query {
+              user(id:1) {
+                id
+                username
+              }
+              posts {
+                id
+                title
+              }
+            }
+        "#;
+        let plan = create_query_plan(query);
+        insta::assert_debug_snapshot!(plan);
+    }
+
+    #[test]
+    fn test_variables() {
+        let query = r#"
+            query user($id: Int!) {
+              user(id: $id) {
+                id
+                name
+              }
+            }
+        "#;
+        let plan = create_query_plan(query);
+        insta::assert_debug_snapshot!(plan);
+    }
+
+    #[test]
+    fn test_unions() {
+        let query = r#"
+            query {
+              getUserIdOrEmail(id:1) {
+                ...on UserId {
+                  id
+                }
+                ...on UserEmail {
+                  email
+                }
+              }
+            }
+        "#;
+        let plan = create_query_plan(query);
+        insta::assert_debug_snapshot!(plan);
+    }
+
+    #[test]
+    fn test_default_value() {
+        let query = r#"
+            mutation {
+              createPost(post:{
+                userId:123,
+                title:"tailcall",
+                body:"tailcall test"
+              }) {
+                id
+              }
+            }
+        "#;
+        let plan = create_query_plan(query);
+        insta::assert_debug_snapshot!(plan);
     }
 }
 
