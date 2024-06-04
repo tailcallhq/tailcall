@@ -67,7 +67,7 @@ impl<'a> QueryGenerator<'a> {
         let mut arg_index = 1;
         let path_url = url.path();
 
-        let replaced_str = re.replace_all(path_url, |_: &regex::Captures| {
+        let mustache_compatible_url = re.replace_all(path_url, |_: &regex::Captures| {
             let arg_key = format!("p{}", arg_index);
             let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
 
@@ -84,7 +84,7 @@ impl<'a> QueryGenerator<'a> {
         });
 
         // add path in http directive.
-        http.path = replaced_str.to_string();
+        http.path = mustache_compatible_url.to_string();
     }
 
     fn add_query_variables(&self, field: &mut Field, http: &mut Http, url: &Url) {
