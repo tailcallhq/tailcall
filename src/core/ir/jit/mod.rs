@@ -130,16 +130,16 @@ mod model {
     pub struct Children(Vec<FieldId>);
 
     #[derive(Debug)]
-    pub struct QueryPlan {
+    pub struct ExecutionPlan {
         pub fields: Vec<Field<Parent>>,
     }
 
     #[allow(unused)]
-    pub struct QueryPlanBuilder {
+    pub struct ExecutionPlanBuilder {
         index: FieldIndex,
     }
 
-    impl QueryPlanBuilder {
+    impl ExecutionPlanBuilder {
         #[allow(unused)]
         pub fn new(blueprint: Blueprint) -> Self {
             let blueprint_index = FieldIndex::init(&blueprint);
@@ -147,9 +147,9 @@ mod model {
         }
 
         #[allow(unused)]
-        pub fn build(&self, document: ExecutableDocument) -> anyhow::Result<QueryPlan> {
+        pub fn build(&self, document: ExecutableDocument) -> anyhow::Result<ExecutionPlan> {
             let fields = self.create_field_set(document)?;
-            Ok(QueryPlan { fields })
+            Ok(ExecutionPlan { fields })
         }
 
         #[allow(clippy::too_many_arguments)]
@@ -297,7 +297,7 @@ mod tests {
         "#;
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        let q_blueprint = model::QueryPlanBuilder::new(blueprint)
+        let q_blueprint = model::ExecutionPlanBuilder::new(blueprint)
             .build(document)
             .unwrap();
         insta::assert_snapshot!(format!("{:#?}", q_blueprint));
@@ -339,13 +339,13 @@ mod executor {
     use futures_util::future;
 
     use super::cache::Cache;
-    use super::model::{Field, FieldId, Parent, QueryPlan};
+    use super::model::{ExecutionPlan, Field, FieldId, Parent};
     use super::value::OwnedValue;
     use crate::core::ir::IR;
 
     #[allow(unused)]
     pub struct ExecutionContext {
-        plan: QueryPlan,
+        plan: ExecutionPlan,
         cache: Cache,
     }
     #[allow(unused)]
@@ -420,15 +420,15 @@ mod synth {
     pub use serde_json_borrow::*;
 
     use super::cache::Cache;
-    use super::model::QueryPlan;
+    use super::model::ExecutionPlan;
 
     struct Synth {
-        blueprint: QueryPlan,
+        blueprint: ExecutionPlan,
         cache: Cache,
     }
     #[allow(unused)]
     impl Synth {
-        pub fn new(blueprint: QueryPlan) -> Self {
+        pub fn new(blueprint: ExecutionPlan) -> Self {
             Synth { blueprint, cache: Cache::empty() }
         }
 
