@@ -281,13 +281,14 @@ mod tests {
 
     use super::*;
     use crate::core::blueprint::Blueprint;
-    use crate::core::config::reader::ConfigReader;
+    use crate::core::config::Config;
+    use crate::core::valid::Validator;
 
-    async fn create_query_plan(config_path: impl AsRef<str>, query: impl AsRef<str>) -> QueryPlan {
-        let rt = crate::core::runtime::test::init(None);
-        let reader = ConfigReader::init(rt);
-        let config = reader.read(config_path.as_ref()).await.unwrap();
-        let blueprint = Blueprint::try_from(&config).unwrap();
+    const CONFIG: &'static str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
+
+    fn create_query_plan(query: impl AsRef<str>) -> QueryPlan {
+        let config = Config::from_sdl(CONFIG).to_result().unwrap();
+        let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
         model::QueryPlanBuilder::new(blueprint)
@@ -295,21 +296,19 @@ mod tests {
             .unwrap()
     }
 
-    #[tokio::test]
-    async fn test_simple_query() {
-        let config_path = "examples/jsonplaceholder-mutation.graphql";
+    #[test]
+    fn test_simple_query() {
         let query = r#"
             query {
                 posts { user { id } }
             }
         "#;
-        let plan = create_query_plan(config_path, query).await;
+        let plan = create_query_plan(query);
         insta::assert_debug_snapshot!(plan);
     }
 
-    #[tokio::test]
-    async fn test_simple_mutation() {
-        let config_path = "examples/jsonplaceholder-mutation.graphql";
+    #[test]
+    fn test_simple_mutation() {
         let query = r#"
             mutation {
               createUser(user: {
@@ -329,13 +328,12 @@ mod tests {
               }
             }
         "#;
-        let plan = create_query_plan(config_path, query).await;
+        let plan = create_query_plan(query);
         insta::assert_debug_snapshot!(plan);
     }
 
-    #[tokio::test]
-    async fn test_fragments() {
-        let config_path = "examples/jsonplaceholder-mutation.graphql";
+    #[test]
+    fn test_fragments() {
         let query = r#"
             fragment UserPII on User {
               name
@@ -349,13 +347,12 @@ mod tests {
               }
             }
         "#;
-        let plan = create_query_plan(config_path, query).await;
+        let plan = create_query_plan(query);
         insta::assert_debug_snapshot!(plan);
     }
 
-    #[tokio::test]
-    async fn test_multiple_operations() {
-        let config_path = "examples/jsonplaceholder-mutation.graphql";
+    #[test]
+    fn test_multiple_operations() {
         let query = r#"
             query {
               user(id:1) {
@@ -368,13 +365,12 @@ mod tests {
               }
             }
         "#;
-        let plan = create_query_plan(config_path, query).await;
+        let plan = create_query_plan(query);
         insta::assert_debug_snapshot!(plan);
     }
 
-    #[tokio::test]
-    async fn test_variables() {
-        let config_path = "examples/jsonplaceholder-mutation.graphql";
+    #[test]
+    fn test_variables() {
         let query = r#"
             query user($id: Int!) {
               user(id: $id) {
@@ -383,13 +379,12 @@ mod tests {
               }
             }
         "#;
-        let plan = create_query_plan(config_path, query).await;
+        let plan = create_query_plan(query);
         insta::assert_debug_snapshot!(plan);
     }
 
-    #[tokio::test]
-    async fn test_unions() {
-        let config_path = "examples/jsonplaceholder-mutation.graphql";
+    #[test]
+    fn test_unions() {
         let query = r#"
             query {
               getUserIdOrEmail(id:1) {
@@ -402,13 +397,12 @@ mod tests {
               }
             }
         "#;
-        let plan = create_query_plan(config_path, query).await;
+        let plan = create_query_plan(query);
         insta::assert_debug_snapshot!(plan);
     }
 
-    #[tokio::test]
-    async fn test_default_value() {
-        let config_path = "examples/jsonplaceholder-mutation.graphql";
+    #[test]
+    fn test_default_value() {
         let query = r#"
             mutation {
               createPost(post:{
@@ -420,7 +414,7 @@ mod tests {
               }
             }
         "#;
-        let plan = create_query_plan(config_path, query).await;
+        let plan = create_query_plan(query);
         insta::assert_debug_snapshot!(plan);
     }
 }
