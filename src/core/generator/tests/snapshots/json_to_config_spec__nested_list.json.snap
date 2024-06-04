@@ -7,7 +7,7 @@ schema @server @upstream {
 }
 
 type Query {
-  f1(children: Boolean!): T3 @http(baseURL: "https://example.com", path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
+  f1(children: Boolean): T3 @http(baseURL: "https://example.com", path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
 }
 
 type T1 {
