@@ -97,7 +97,7 @@ mod model {
         pub refs: Option<A>,
     }
 
-    impl<A> Debug for Field<A> {
+    impl<A: Debug + Clone> Debug for Field<A> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             let mut debug_struct = f.debug_struct("Field");
             debug_struct.field("id", &self.id);
@@ -110,15 +110,21 @@ mod model {
                 debug_struct.field("args", &self.args);
             }
             if self.refs.is_some() {
-                debug_struct.field("refs", &"Some(..)");
+                debug_struct.field("refs", &self.refs);
             }
             debug_struct.finish()
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Clone)]
     #[allow(unused)]
     pub struct Parent(FieldId);
+
+    impl Debug for Parent {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "Parent({:?})", self.0)
+        }
+    }
 
     #[allow(unused)]
     pub struct Children(pub(crate) Vec<FieldId>);
@@ -173,13 +179,14 @@ mod model {
         }
 
         #[allow(clippy::too_many_arguments)]
-        fn resolve_selection_set<A>(
+        fn resolve_selection_set(
             &self,
             selection_set: Positioned<async_graphql_parser::types::SelectionSet>,
             id: &mut FieldId,
             arg_id: &mut ArgId,
             current_type: &str,
-        ) -> anyhow::Result<Vec<Field<A>>> {
+            parent: Option<Parent>,
+        ) -> anyhow::Result<Vec<Field<Parent>>> {
             let mut fields = Vec::new();
 
             for selection in selection_set.node.items {
@@ -217,16 +224,16 @@ mod model {
                             QueryField::InputField(field_def) => field_def.of_type.clone(),
                         };
 
-                        fields = fields.merge_right(self.resolve_selection_set(
+                        let cur_id = id.gen();
+                        let child_fields = self.resolve_selection_set(
                             gql_field.node.selection_set.clone(),
                             id,
                             arg_id,
                             type_of.name(),
-                        )?);
-
-                        let id = id.gen();
+                            Some(Parent(cur_id.clone())),
+                        )?;
                         let field = Field {
-                            id,
+                            id: cur_id,
                             name: field_name.to_string(),
                             ir: match field_def {
                                 QueryField::Field((field_def, _)) => field_def.resolver.clone(),
@@ -234,9 +241,11 @@ mod model {
                             },
                             type_of,
                             args,
-                            refs: None,
+                            refs: parent.clone(),
                         };
+
                         fields.push(field);
+                        fields = fields.merge_right(child_fields);
                     }
                 }
             }
@@ -244,10 +253,10 @@ mod model {
             Ok(fields)
         }
 
-        fn create_field_set<A>(
+        fn create_field_set(
             &self,
             document: ExecutableDocument,
-        ) -> anyhow::Result<Vec<Field<A>>> {
+        ) -> anyhow::Result<Vec<Field<Parent>>> {
             let query = self.index.get_query();
             let mut id = FieldId::new(0);
             let mut arg_id = ArgId::new(0);
@@ -260,6 +269,7 @@ mod model {
                     &mut id,
                     &mut arg_id,
                     query,
+                    None,
                 )?;
             }
 
@@ -270,6 +280,7 @@ mod model {
                         &mut id,
                         &mut arg_id,
                         query,
+                        None,
                     )?;
                 }
                 DocumentOperations::Multiple(multiple) => {
@@ -279,6 +290,7 @@ mod model {
                             &mut id,
                             &mut arg_id,
                             query,
+                            None,
                         )?;
                     }
                 }
