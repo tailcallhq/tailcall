@@ -100,7 +100,7 @@ pub struct Upstream {
     /// or not. By default it is set to `false` for all HTTP requests made by
     /// the server, but is automatically set to true for GRPC.
     #[is_positioned_option]
-    pub http2_only: Option<Pos<bool>>,
+    pub http_2_only: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The time in seconds between each keep-alive message sent to maintain the
@@ -248,7 +248,7 @@ impl Upstream {
     }
 
     pub fn get_http_2_only(&self) -> bool {
-        match self.http2_only {
+        match self.http_2_only {
             Some(Pos { inner, .. }) => inner,
             None => false,
         }
