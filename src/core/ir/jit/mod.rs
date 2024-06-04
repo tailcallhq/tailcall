@@ -333,29 +333,29 @@ mod value {
     pub use serde_json_borrow::*;
 }
 
-mod cache {
+mod store {
     use super::model::FieldId;
     use super::value::OwnedValue;
 
     #[allow(unused)]
-    pub struct Cache {
+    pub struct Store {
         pub(crate) map: Vec<(FieldId, OwnedValue)>,
     }
 
     #[allow(unused)]
-    impl Cache {
+    impl Store {
         #[allow(unused)]
         pub fn empty() -> Self {
-            Cache { map: Vec::new() }
+            Store { map: Vec::new() }
         }
 
         #[allow(unused)]
-        pub fn join(caches: Vec<Cache>) -> Self {
+        pub fn join(caches: Vec<Store>) -> Self {
             let mut map = Vec::new();
             for cache in caches {
                 map.extend(cache.map);
             }
-            Cache { map }
+            Store { map }
         }
         #[allow(unused)]
         pub fn get(&self, key: &FieldId) -> Option<&OwnedValue> {
@@ -367,15 +367,15 @@ mod cache {
 mod executor {
     use futures_util::future;
 
-    use super::cache::Cache;
     use super::model::{ExecutionPlan, Field, FieldId, Parent};
+    use super::store::Store;
     use super::value::OwnedValue;
     use crate::core::ir::IR;
 
     #[allow(unused)]
     pub struct ExecutionContext {
         plan: ExecutionPlan,
-        cache: Cache,
+        cache: Store,
     }
 
     #[allow(unused)]
@@ -607,19 +607,19 @@ mod executor {
 mod synth {
     pub use serde_json_borrow::*;
 
-    use super::cache::Cache;
     use super::model::{Children, ExecutionPlan, Field};
+    use super::store::Store;
 
     #[allow(unused)]
     pub struct Synth {
         operation: Vec<Field<Children>>,
-        pub(crate) cache: Cache,
+        pub(crate) cache: Store,
     }
 
     #[allow(unused)]
     impl Synth {
         pub fn new(operation: Vec<Field<Children>>) -> Self {
-            Synth { operation, cache: Cache::empty() }
+            Synth { operation, cache: Store::empty() }
         }
         fn build_children(
             &self,
