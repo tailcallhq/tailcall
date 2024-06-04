@@ -125,9 +125,13 @@ impl OperationGenerator for QueryGenerator<'_> {
 
         field.http = Some(self.create_http_directive(&mut field, self.url));
 
-        let mut ty = Type::default();
-        ty.fields.insert(self.field_name.to_owned(), field);
-        config.types.insert(self.query.to_owned(), ty);
+        if let Some(type_) = config.types.get_mut(self.query) {
+            type_.fields.insert(self.field_name.to_owned(), field);
+        } else {
+            let mut ty = Type::default();
+            ty.fields.insert(self.field_name.to_owned(), field);
+            config.types.insert(self.query.to_owned(), ty);
+        }
         Valid::succeed(config)
     }
 }
