@@ -17,7 +17,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
     ];
 
     directives.extend(config.links.iter().map(|link| {
-        let mut directive = link.to_directive();
+        let mut directive = link.inner.to_directive();
 
         let type_directive = (
             pos(Name::new("type")),
@@ -200,13 +200,13 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     type_def
                         .cache
                         .as_ref()
-                        .map(|cache| pos(cache.to_directive())),
+                        .map(|cache| pos(cache.inner.to_directive())),
                 )
                 .chain(
                     type_def
                         .protected
                         .as_ref()
-                        .map(|protected| pos(protected.to_directive())),
+                        .map(|protected| pos(protected.inner.to_directive())),
                 )
                 .chain(type_def.tag.as_ref().map(|tag| pos(tag.to_directive())))
                 .collect::<Vec<_>>(),
