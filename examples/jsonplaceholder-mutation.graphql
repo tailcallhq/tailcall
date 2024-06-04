@@ -1,0 +1,62 @@
+schema
+  @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  query: Query,
+  mutation: Mutation,
+}
+
+type Query {
+  posts: [Post] @http(path: "/posts")
+  users: [User] @http(path: "/users")
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  getUserIdOrEmail(id: Int!): UserIdOrEmail @http(path: "/users/{{.args.id}}")
+}
+
+type UserId {
+  id: Int!
+}
+
+type UserEmail {
+  email: String!
+}
+
+union UserIdOrEmail = UserId | UserEmail
+
+
+type Mutation {
+  createUser(user: InputUser!): User @http(method: POST, path: "/users", body: "{{args.user}}")
+  createPost(post: InputPost!): Post @http(method: POST, path: "/posts", body: "{{args.post}}")
+}
+
+input InputPost {
+  id: Int = 101
+  userId: Int!
+  title: String!
+  body: String!
+}
+
+input InputUser {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+}

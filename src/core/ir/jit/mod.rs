@@ -281,26 +281,144 @@ mod tests {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::reader::ConfigReader;
 
-    #[tokio::test]
-    async fn test_from_document() {
+    async fn test_query(config_path: impl AsRef<str>, query: impl AsRef<str>) {
         let rt = crate::core::runtime::test::init(None);
         let reader = ConfigReader::init(rt);
         let config = reader
-            .read("examples/jsonplaceholder.graphql")
+            .read(config_path.as_ref())
             .await
             .unwrap();
         let blueprint = Blueprint::try_from(&config).unwrap();
-        let query = r#"
-            query {
-                posts { user { id } }
-            }
-        "#;
+
         let document = async_graphql::parser::parse_query(query).unwrap();
 
         let q_blueprint = model::QueryPlanBuilder::new(blueprint)
             .build(document)
             .unwrap();
         insta::assert_snapshot!(format!("{:#?}", q_blueprint));
+    }
+
+    #[tokio::test]
+    async fn test_simple_query() {
+        let config_path = "examples/jsonplaceholder-mutation.graphql";
+        let query = r#"
+            query {
+                posts { user { id } }
+            }
+        "#;
+        test_query(config_path, query).await;
+    }
+
+    #[tokio::test]
+    async fn test_simple_mutation() {
+        let config_path = "examples/jsonplaceholder-mutation.graphql";
+        let query = r#"
+            mutation {
+              createUser(user: {
+                id: 101,
+                name: "Tailcall",
+                email: "tailcall@tailcall.run",
+                phone: "2345234234",
+                username: "tailcall",
+                website: "tailcall.run"
+              }) {
+                id
+                name
+                email
+                phone
+                website
+                username
+              }
+            }
+        "#;
+        test_query(config_path, query).await;
+    }
+
+
+    #[tokio::test]
+    async fn test_fragments() {
+        let config_path = "examples/jsonplaceholder-mutation.graphql";
+        let query = r#"
+            fragment UserPII on User {
+              name
+              email
+              phone
+            }
+
+            query {
+              user(id:1) {
+                ...UserPII
+              }
+            }
+        "#;
+        test_query(config_path, query).await;
+    }
+
+    #[tokio::test]
+    async fn test_multiple_operations() {
+        let config_path = "examples/jsonplaceholder-mutation.graphql";
+        let query = r#"
+            query {
+              user(id:1) {
+                id
+                username
+              }
+              posts {
+                id
+                title
+              }
+            }
+        "#;
+        test_query(config_path, query).await;
+    }
+
+    #[tokio::test]
+    async fn test_variables() {
+        let config_path = "examples/jsonplaceholder-mutation.graphql";
+        let query = r#"
+            query user($id: Int!) {
+              user(id: $id) {
+                id
+                name
+              }
+            }
+        "#;
+        test_query(config_path, query).await;
+    }
+
+    #[tokio::test]
+    async fn test_unions() {
+        let config_path = "examples/jsonplaceholder-mutation.graphql";
+        let query = r#"
+            query {
+              getUserIdOrEmail(id:1) {
+                ...on UserId {
+                  id
+                }
+                ...on UserEmail {
+                  email
+                }
+              }
+            }
+        "#;
+        test_query(config_path, query).await;
+    }
+
+    #[tokio::test]
+    async fn test_unions() {
+        let config_path = "examples/jsonplaceholder-mutation.graphql";
+        let query = r#"
+            mutation {
+              createPost(post:{
+                userId:123,
+                title:"tailcall",
+                body:"tailcall test"
+              }) {
+                id
+              }
+            }
+        "#;
+        test_query(config_path, query).await;
     }
 }
 
