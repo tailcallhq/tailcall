@@ -12,7 +12,7 @@ use moka::policy::EvictionPolicy;
 pub struct HttpCacheManager {
     pub cache: Arc<Cache<String, Store>>,
 }
-pub struct HttpCacheManagerByteBased {
+pub struct HttpMemoryCapCache {
     pub cache: Arc<Cache<String, Store>>,
 }
 
@@ -21,7 +21,7 @@ impl Default for HttpCacheManager {
         Self::new(42)
     }
 }
-impl Default for HttpCacheManagerByteBased {
+impl Default for HttpMemoryCapCache {
     fn default() -> Self {
         Self::new(42)
     }
@@ -80,7 +80,7 @@ impl HttpCacheManager {
     }
 }
 
-impl HttpCacheManagerByteBased {
+impl HttpMemoryCapCache {
     pub fn new(cache_size: u64) -> Self {
         let cache = Cache::builder()
             .eviction_policy(EvictionPolicy::lru())
@@ -129,7 +129,7 @@ impl CacheManager for HttpCacheManager {
 }
 
 #[async_trait::async_trait]
-impl CacheManager for HttpCacheManagerByteBased {
+impl CacheManager for HttpMemoryCapCache {
     async fn get(&self, cache_key: &str) -> Result<Option<(HttpResponse, CachePolicy)>> {
         let store: Store = match self.cache.get(cache_key).await {
             Some(d) => d,

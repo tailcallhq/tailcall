@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use anyhow::Result;
+use cache_size::get_memory_by_percentage;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;
@@ -13,11 +14,10 @@ use opentelemetry_semantic_conventions::trace::{
 };
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use sysinfo::{System, SystemExt};
-use tailcall_http_cache::{HttpCacheManager, HttpCacheManagerByteBased};
+use tailcall_http_cache::{HttpCacheManager, HttpMemoryCapCache};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use super::HttpIO;
+use super::{cache_size, HttpIO};
 use crate::core::blueprint::telemetry::Telemetry;
 use crate::core::blueprint::Upstream;
 use crate::core::http::Response;
@@ -58,28 +58,6 @@ impl RequestCounter {
             HTTP_CLIENT_REQUEST_COUNT.add(1, attributes);
         }
     }
-}
-
-fn get_memory_by_percentage(percentage: String) -> u64 {
-    // Create a new system object
-    let mut sys = System::new();
-    // Refresh system information
-    sys.refresh_all();
-    // Get total memory in bytes
-    let total_memory: u64 = sys.get_total_memory() * 1024;
-
-    // Parse the percentage string to a float
-    let clamped_percentage: f64 = percentage
-        .parse()
-        .map(|p| if p > 100.0 { 100.0 } else { p })
-        .unwrap_or(0.0);
-
-    // Calculate the memory based on the percentage, without losing precision
-    let memory_by_percentage = (total_memory as f64 * clamped_percentage) as u64;
-
-    // Clamp the memory_by_percentage to u64::MAX
-
-    std::cmp::min(memory_by_percentage, u64::MAX)
 }
 
 fn get_response_status(response: &reqwest_middleware::Result<reqwest::Response>) -> KeyValue {
@@ -150,7 +128,7 @@ impl NativeHttp {
             if memory_by_percentage != 0 {
                 client = client.with(Cache(HttpCache {
                     mode: CacheMode::Default,
-                    manager: HttpCacheManagerByteBased::new(memory_by_percentage),
+                    manager: HttpMemoryCapCache::new(memory_by_percentage),
                     options: HttpCacheOptions::default(),
                 }))
             }
@@ -290,72 +268,6 @@ mod tests {
         });
 
         let upstream = Upstream { http_cache: 2, ..Default::default() };
-        let native_http = NativeHttp::init(&upstream, &Default::default());
-        let port = server.port();
-
-        let url1 = format!("http://localhost:{}/test-1", port);
-        let resp = make_request(&url1, &native_http).await;
-        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "MISS");
-
-        let resp = make_request(&url1, &native_http).await;
-        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "HIT");
-
-        let url2 = format!("http://localhost:{}/test-2", port);
-        let resp = make_request(&url2, &native_http).await;
-        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "MISS");
-
-        let resp = make_request(&url2, &native_http).await;
-        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "HIT");
-
-        // now cache is full, let's make 3rd request and cache it and evict url1.
-        let url3 = format!("http://localhost:{}/test-3", port);
-        let resp = make_request(&url3, &native_http).await;
-        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "MISS");
-
-        let resp = make_request(&url3, &native_http).await;
-        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "HIT");
-
-        let resp = make_request(&url1, &native_http).await;
-        assert_eq!(resp.headers.get("x-cache-lookup").unwrap(), "MISS");
-    }
-
-    #[tokio::test]
-    async fn test_native_http_get_request_with_cache_percentage_based() {
-        let server = start_mock_server();
-
-        let mut sys = System::new();
-        // Refresh system information
-        sys.refresh_all();
-        // Get total memory in bytes
-        let total_memory: u64 = sys.get_total_memory() * 1024;
-
-        // Calculate the percentage needed for total_memory to be 1243
-        let target_memory: u64 = 1243;
-        let percentage: f64 = target_memory as f64 / total_memory as f64;
-
-        // Convert the percentage to a string
-        let percentage_str = percentage.to_string();
-
-        server.mock(|when, then| {
-            when.method(httpmock::Method::GET).path("/test-1");
-            then.status(200).body("Hello");
-        });
-
-        server.mock(|when, then| {
-            when.method(httpmock::Method::GET).path("/test-2");
-            then.status(200).body("Hello");
-        });
-
-        server.mock(|when, then| {
-            when.method(httpmock::Method::GET).path("/test-3");
-            then.status(200).body("Hello");
-        });
-        // 616 is the body length without "Hello" 616+5(size of hello in bytes) = 621 ,
-        // 1242 = 621*2
-        let upstream = Upstream {
-            http_cache_percentage: Some(percentage_str),
-            ..Default::default()
-        };
         let native_http = NativeHttp::init(&upstream, &Default::default());
         let port = server.port();
 

@@ -1,3 +1,3 @@
 mod cache;
 
-pub use cache::{HttpCacheManager, HttpCacheManagerByteBased};
+pub use cache::{HttpCacheManager, HttpMemoryCapCache};
