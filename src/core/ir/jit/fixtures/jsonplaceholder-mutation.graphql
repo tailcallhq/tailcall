@@ -1,8 +1,8 @@
 schema
   @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
   @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
-  query: Query,
-  mutation: Mutation,
+  query: Query
+  mutation: Mutation
 }
 
 type Query {
@@ -21,7 +21,6 @@ type UserEmail {
 }
 
 union UserIdOrEmail = UserId | UserEmail
-
 
 type Mutation {
   createUser(user: InputUser!): User @http(method: POST, path: "/users", body: "{{args.user}}")

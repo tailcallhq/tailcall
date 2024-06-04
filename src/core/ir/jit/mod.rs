@@ -284,7 +284,7 @@ mod tests {
     use crate::core::config::Config;
     use crate::core::valid::Validator;
 
-    const CONFIG: &'static str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
+    const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
     fn create_query_plan(query: impl AsRef<str>) -> QueryPlan {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
