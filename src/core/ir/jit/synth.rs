@@ -41,7 +41,8 @@ mod tests {
 
     use crate::core::blueprint::Blueprint;
     use crate::core::config::reader::ConfigReader;
-    use crate::core::ir::jit::model::{ExecutionPlanBuilder, FieldId};
+    use crate::core::ir::jit::builder::ExecutionPlanBuilder;
+    use crate::core::ir::jit::model::FieldId;
     use crate::core::ir::jit::synth::Synth;
 
     #[tokio::test]
