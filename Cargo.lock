@@ -3372,9 +3372,9 @@ dependencies = [
 
 [[package]]
 name = "opentelemetry-system-metrics"
-version = "0.1.9"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d4b02ba3fc9a6e17b9c6f892f3963224e126a5424360f3fc0fc24c90b109ba5"
+checksum = "5cc4b0cee8381e796b720f1e2c8c61b1b7a295ee835daab26dfff3c7137a7bbb"
 dependencies = [
  "eyre",
  "indexmap 1.9.3",
