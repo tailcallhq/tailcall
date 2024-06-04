@@ -15,7 +15,6 @@ use crate::core::merge_right::MergeRight;
 struct Counter(RefCell<usize>);
 impl Counter {
     fn next(&self) -> usize {
-        
         self.0.replace_with(|a| *a + 1)
     }
 }
@@ -92,7 +91,7 @@ impl Field<Children> {
 
 impl Field<Parent> {
     pub fn parent(&self) -> Option<&FieldId> {
-        todo!()
+        self.refs.as_ref().map(|Parent(id)| id)
     }
 
     pub fn into_children(self, e: &ExecutionPlan) -> Field<Children> {
