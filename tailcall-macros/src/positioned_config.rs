@@ -36,17 +36,10 @@ pub fn expand_positoned_config(item: TokenStream) -> TokenStream {
                 })
                 .collect();
 
-            let imports = quote! {
-                #[allow(unused_imports)]
-                use convert_case::{Case, Casing};
-            };
-
             let generated_code = quote! {
-                #imports
-
                 impl PositionedConfig for #struct_identifier {
                     fn set_field_position(&mut self, field: &str, position: (usize, usize)) {
-                        match field.to_case(Case::Snake).as_str() {
+                        match field {
                             #(#fields_matches,)*
                             _ => {}
                         }

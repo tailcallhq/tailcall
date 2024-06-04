@@ -20,6 +20,7 @@ use crate::core::config::{
 };
 use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, Validator};
+use convert_case::{Case, Casing};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,
@@ -87,7 +88,8 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default + Clone + Positioned
     {
         T::from_directive(&directive.node).and_then(|mut config| {
             directive.node.arguments.iter().for_each(|(key, _)| {
-                config.set_field_position(key.node.as_str(), (key.pos.line, key.pos.column))
+                let key_snake_case = key.node.to_case(Case::Snake);
+                config.set_field_position(key_snake_case.as_str(), (key.pos.line, key.pos.column))
             });
             Valid::succeed(config.with_position(directive.pos))
         })
