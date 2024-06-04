@@ -26,7 +26,11 @@ pub struct Similarity<'a> {
 
 impl<'a> Similarity<'a> {
     pub fn new(config: &'a Config, thresh: f32) -> Similarity {
-        Similarity { config, threshold: thresh, type_similarity_cache: PairMap::default() }
+        Similarity {
+            config,
+            threshold: thresh,
+            type_similarity_cache: PairMap::default(),
+        }
     }
 
     pub fn similarity(

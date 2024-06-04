@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
+use super::similarity::Similarity;
 use crate::core::config::transformer::Transform;
-use crate::core::config::{Config, Similarity, Type};
+use crate::core::config::{Config, Type};
 use crate::core::valid::Valid;
 
 pub struct TypeMerger {
