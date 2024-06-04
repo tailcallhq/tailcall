@@ -2,6 +2,6 @@
 source: src/core/ir/jit/mod.rs
 expression: plan
 ---
-QueryPlan {
+ExecutionPlan {
     fields: [],
 }
