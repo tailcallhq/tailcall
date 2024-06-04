@@ -63,10 +63,10 @@ mod tests {
             .build(document)
             .unwrap();
         let mut synth = Synth::new(q_blueprint.into_children());
-        synth.cache.map.push((
+        synth.cache.insert(
             FieldId::new(0),
             OwnedValue::parse_from(r#"[{"user":{"id":1,"name":"Leanne Graham"}}]"#.to_string())
                 .unwrap(),
-        ));
+        );
     }
 }

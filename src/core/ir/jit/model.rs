@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
@@ -7,17 +6,9 @@ use async_graphql_parser::types::SelectionSet;
 
 use super::field_index::{FieldIndex, QueryField};
 use crate::core::blueprint::Blueprint;
+use crate::core::counter::Counter;
 use crate::core::ir::IR;
 use crate::core::merge_right::MergeRight;
-
-#[allow(unused)]
-#[derive(Default)]
-struct Counter(RefCell<usize>);
-impl Counter {
-    fn next(&self) -> usize {
-        self.0.replace_with(|a| *a + 1)
-    }
-}
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -296,7 +287,7 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn create_query_plan(query: impl AsRef<str>) -> ExecutionPlan {
+    fn plan(query: impl AsRef<str>) -> ExecutionPlan {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
@@ -308,7 +299,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_from_document() {
-        let plan = create_query_plan(
+        let plan = plan(
             r#"
             query {
                 posts { user { id name } }
@@ -320,7 +311,7 @@ mod tests {
 
     #[test]
     fn test_simple_query() {
-        let plan = create_query_plan(
+        let plan = plan(
             r#"
             query {
                 posts { user { id } }
@@ -332,7 +323,7 @@ mod tests {
 
     #[test]
     fn test_simple_mutation() {
-        let plan = create_query_plan(
+        let plan = plan(
             r#"
             mutation {
               createUser(user: {
@@ -358,7 +349,7 @@ mod tests {
 
     #[test]
     fn test_fragments() {
-        let plan = create_query_plan(
+        let plan = plan(
             r#"
             fragment UserPII on User {
               name
@@ -378,7 +369,7 @@ mod tests {
 
     #[test]
     fn test_multiple_operations() {
-        let plan = create_query_plan(
+        let plan = plan(
             r#"
             query {
               user(id:1) {
@@ -397,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_variables() {
-        let plan = create_query_plan(
+        let plan = plan(
             r#"
             query user($id: Int!) {
               user(id: $id) {
@@ -412,7 +403,7 @@ mod tests {
 
     #[test]
     fn test_unions() {
-        let plan = create_query_plan(
+        let plan = plan(
             r#"
             query {
               getUserIdOrEmail(id:1) {
@@ -431,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_default_value() {
-        let plan = create_query_plan(
+        let plan = plan(
             r#"
             mutation {
               createPost(post:{
