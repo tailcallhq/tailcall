@@ -128,6 +128,7 @@ mod model {
         }
     }
 
+    #[derive(Clone)]
     #[allow(unused)]
     pub struct Children(pub(crate) Vec<FieldId>);
 
@@ -425,7 +426,7 @@ mod synth {
     pub use serde_json_borrow::*;
 
     use super::cache::Cache;
-    use super::model::{Children, Field, ExecutionPlan};
+    use super::model::{Children, ExecutionPlan, Field};
 
     #[allow(unused)]
     pub struct Synth {

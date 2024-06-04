@@ -2,7 +2,7 @@
 source: src/core/ir/jit/mod.rs
 expression: "format!(\"{:#?}\", q_blueprint)"
 ---
-QueryPlan {
+ExecutionPlan {
     fields: [
         Field {
             id: 0,
