@@ -6,6 +6,49 @@ use crate::core::config::{Config, Field, Type};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 use crate::core::valid::Valid;
 
+struct Validator;
+
+impl Validator {
+    /// checks if given json value is graphql compatible or not.
+    fn validate_json(value: &Value) -> bool {
+        match value {
+            Value::Array(json_array) => !json_array.is_empty(),
+            Value::Object(json_object) => {
+                !json_object.is_empty()
+                    && !json_object
+                        .keys()
+                        .any(|json_property| !is_valid_field_name(json_property))
+            }
+            _ => true,
+        }
+    }
+}
+
+struct TypeMerger;
+
+impl TypeMerger {
+    /// given a list of types, merges all fields into single type.
+    fn merge_fields(type_list: Vec<Type>) -> Type {
+        let mut ty = Type::default();
+
+        for current_type in type_list {
+            for (key, new_field) in current_type.fields {
+                if let Some(existing_field) = ty.fields.get(&key) {
+                    if existing_field.type_of.is_empty()
+                        || existing_field.type_of == "Empty"
+                        || (existing_field.type_of == "Any" && new_field.type_of != "Empty")
+                    {
+                        ty.fields.insert(key, new_field);
+                    }
+                } else {
+                    ty.fields.insert(key, new_field);
+                }
+            }
+        }
+        ty
+    }
+}
+
 pub struct TypesGenerator<'a, 'b, T1: OperationGenerator, T2: NameGenerator> {
     json_value: &'a Value,
     operation_generator: T1,
@@ -31,20 +74,6 @@ where
     T1: OperationGenerator,
     T2: NameGenerator,
 {
-    // checks if json value is compatible with graphql or not.
-    fn should_generate_type(&self, value: &'a Value) -> bool {
-        match value {
-            Value::Array(json_array) => !json_array.is_empty(),
-            Value::Object(json_object) => {
-                !json_object.is_empty()
-                    && !json_object
-                        .keys()
-                        .any(|json_property| !is_valid_field_name(json_property))
-            }
-            _ => true, // generate for all primitive types.
-        }
-    }
-
     fn generate_scalar(&self, config: &mut Config) -> String {
         let any_scalar = "Any";
         if config.types.contains_key(any_scalar) {
@@ -61,7 +90,7 @@ where
     ) -> Type {
         let mut ty = Type::default();
         for (json_property, json_val) in json_object {
-            let field = if !self.should_generate_type(json_val) {
+            let field = if !Validator::validate_json(json_val) {
                 // if object, array is empty or object has in-compatible fields then
                 // generate scalar for it.
                 Field {
@@ -85,26 +114,6 @@ where
         ty
     }
 
-    /// given a list of types, merges all fields into single type.
-    fn merge_types(&self, type_list: Vec<Type>) -> Type {
-        let mut ty = Type::default();
-        for current_type in type_list {
-            for (key, value) in current_type.fields {
-                if let Some(existing_value) = ty.fields.get(&key) {
-                    if existing_value.type_of.is_empty()
-                        || existing_value.type_of == "Empty"
-                        || existing_value.type_of == "Any"
-                    {
-                        ty.fields.insert(key, value);
-                    }
-                } else {
-                    ty.fields.insert(key, value);
-                }
-            }
-        }
-        ty
-    }
-
     fn generate_types(&mut self, json_value: &'a Value, config: &mut Config) -> String {
         match json_value {
             Value::Array(json_arr) => {
@@ -118,7 +127,7 @@ where
                 let mut object_types = Vec::<_>::with_capacity(vec_capacity);
                 for json_item in json_arr {
                     if let Value::Object(json_obj) = json_item {
-                        if !self.should_generate_type(json_item) {
+                        if !Validator::validate_json(json_item) {
                             return self.generate_scalar(config);
                         }
                         object_types.push(self.create_type_from_object(json_obj, config));
@@ -129,7 +138,7 @@ where
 
                 if !object_types.is_empty() {
                     // merge the generated types of list into single concrete type.
-                    let merged_type = self.merge_types(object_types);
+                    let merged_type = TypeMerger::merge_fields(object_types);
                     let generate_type_name = self.type_name_generator.generate_name();
                     config
                         .types
@@ -141,7 +150,7 @@ where
                 self.generate_scalar(config)
             }
             Value::Object(json_obj) => {
-                if !self.should_generate_type(json_value) {
+                if !Validator::validate_json(json_value) {
                     return self.generate_scalar(config);
                 }
                 let ty = self.create_type_from_object(json_obj, config);
