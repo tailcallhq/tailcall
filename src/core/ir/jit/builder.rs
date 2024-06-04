@@ -8,6 +8,7 @@ use super::model::*;
 use crate::core::blueprint::Blueprint;
 use crate::core::counter::Counter;
 use crate::core::merge_right::MergeRight;
+use crate::core::valid::{Valid, Validator};
 
 pub struct ExecutionPlanBuilder {
     index: FieldIndex,
@@ -28,20 +29,13 @@ impl ExecutionPlanBuilder {
         }
     }
 
-    #[allow(unused)]
-    pub fn build(&self) -> anyhow::Result<ExecutionPlan> {
-        let fields = self.init()?;
-        Ok(ExecutionPlan { fields })
-    }
-
     fn iter(
         &self,
         selection: &SelectionSet,
         type_of: &str,
         refs: Option<Parent>,
-    ) -> anyhow::Result<Vec<Field<Parent>>> {
-        let mut fields = Vec::new();
-
+    ) -> Vec<Field<Parent>> {
+        let mut fields = vec![];
         for selection in &selection.items {
             if let Selection::Field(gql_field) = &selection.node {
                 let field_name = gql_field.node.name.node.as_str();
@@ -77,7 +71,7 @@ impl ExecutionPlanBuilder {
                         &gql_field.node.selection_set.node,
                         type_of.name(),
                         Some(Parent::new(id.clone())),
-                    )?;
+                    );
                     let name = field_name.to_owned();
                     let ir = match field_def {
                         QueryField::Field((field_def, _)) => field_def.resolver.clone(),
@@ -89,30 +83,30 @@ impl ExecutionPlanBuilder {
             }
         }
 
-        Ok(fields)
+        fields
     }
 
-    fn init(&self) -> anyhow::Result<Vec<Field<Parent>>> {
+    pub fn build(&self) -> ExecutionPlan {
         let query = &self.index.get_query().to_owned();
 
         let mut fields = Vec::new();
 
         for fragment in self.document.fragments.values() {
-            fields = self.iter(&fragment.node.selection_set.node, query, None)?;
+            fields = self.iter(&fragment.node.selection_set.node, query, None);
         }
 
         match &self.document.operations {
             DocumentOperations::Single(single) => {
-                fields = self.iter(&single.node.selection_set.node, query, None)?;
+                fields = self.iter(&single.node.selection_set.node, query, None);
             }
             DocumentOperations::Multiple(multiple) => {
                 for single in multiple.values() {
-                    fields = self.iter(&single.node.selection_set.node, query, None)?;
+                    fields = self.iter(&single.node.selection_set.node, query, None);
                 }
             }
         }
 
-        Ok(fields)
+        ExecutionPlan { fields }
     }
 }
 
@@ -131,10 +125,7 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        // FIXME: return a Valid
-        ExecutionPlanBuilder::new(blueprint, document)
-            .build()
-            .unwrap()
+        ExecutionPlanBuilder::new(blueprint, document).build()
     }
 
     #[tokio::test]

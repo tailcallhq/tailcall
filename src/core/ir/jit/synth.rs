@@ -60,9 +60,7 @@ mod tests {
                 }
             "#;
         let document = async_graphql::parser::parse_query(query).unwrap();
-        let q_blueprint = ExecutionPlanBuilder::new(blueprint, document)
-            .build()
-            .unwrap();
+        let q_blueprint = ExecutionPlanBuilder::new(blueprint, document).build();
         let mut synth = Synth::new(q_blueprint.into_children());
         synth.cache.insert(
             FieldId::new(0),
