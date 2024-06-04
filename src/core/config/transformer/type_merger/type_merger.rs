@@ -57,7 +57,7 @@ impl TypeMerger {
                     continue;
                 }
                 let is_similar =
-                    stat_gen.similarity(type_name_1, type_info_1, type_name_2, type_info_2);
+                    stat_gen.similarity((type_name_1, type_info_1), (type_name_2, type_info_2));
                 if is_similar {
                     visited_types.insert(type_name_2.clone());
                     type_1_sim.insert(type_name_2.clone());

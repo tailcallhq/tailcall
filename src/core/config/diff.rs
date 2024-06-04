@@ -31,26 +31,20 @@ impl<'a> Similarity<'a> {
 
     pub fn similarity(
         &mut self,
-        type_1_name: &str,
-        type_1: &Type,
-        type_2_name: &str,
-        type_2: &Type,
+        (type_1_name, type_1): (&str, &Type),
+        (type_2_name, type_2): (&str, &Type),
     ) -> bool {
         self.similarity_inner(
-            type_1_name,
-            type_1,
-            type_2_name,
-            type_2,
+            (type_1_name, type_1),
+            (type_2_name, type_2),
             &mut PairSet::default(),
         )
     }
 
     fn similarity_inner(
         &mut self,
-        type_1_name: &str,
-        type_1: &Type,
-        type_2_name: &str,
-        type_2: &Type,
+        (type_1_name, type_1): (&str, &Type),
+        (type_2_name, type_2): (&str, &Type),
         visited_type: &mut PairSet<String>,
     ) -> bool {
         if let Some(type_similarity_result) = self
@@ -81,10 +75,8 @@ impl<'a> Similarity<'a> {
                         visited_type.insert(field_1_type_of.to_owned(), field_2_type_of.to_owned());
 
                         let is_nested_type_similar = self.similarity_inner(
-                            &field_1_type_of,
-                            type_1,
-                            &field_2_type_of,
-                            type_2,
+                            (&field_1_type_of, type_1),
+                            (&field_2_type_of, type_2),
                             visited_type,
                         );
 
@@ -170,7 +162,7 @@ mod test {
         cfg.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg, 0.5);
-        let is_similar = gen.similarity("Foo1", &foo1, "Foo2", &foo2);
+        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2));
 
         assert!(!is_similar)
     }
@@ -236,7 +228,7 @@ mod test {
         cfg.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg, 0.5);
-        let is_similar = gen.similarity("Foo1", &foo1, "Foo2", &foo2);
+        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2));
 
         assert!(is_similar)
     }
@@ -274,7 +266,7 @@ mod test {
         cfg.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg, 0.8);
-        let is_similar = gen.similarity("Foo1", &foo1, "Foo2", &foo2);
+        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2));
 
         assert!(is_similar)
     }
@@ -325,7 +317,7 @@ mod test {
         cfg.types.insert("Far2".to_owned(), far2);
 
         let mut gen = Similarity::new(&cfg, 0.8);
-        let is_similar = gen.similarity("Foo1", &foo1, "Foo2", &foo2);
+        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2));
 
         assert!(is_similar)
     }
