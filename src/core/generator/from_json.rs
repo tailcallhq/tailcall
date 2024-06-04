@@ -2,10 +2,13 @@ use serde_json::Value;
 use url::Url;
 
 use super::json::{
-    ConfigPipeline, FieldBaseUrlGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
+    FieldBaseUrlGenerator, FieldNameGenerator, QueryGenerator, SchemaGenerator, TypeNameGenerator,
+    TypesGenerator,
 };
-use crate::core::config::transformer::{Transform, TypeMerger};
+use crate::core::config::transformer::{RemoveUnUsedTypes, Transform, TransformerOps, TypeMerger};
 use crate::core::config::Config;
+use crate::core::generator::json::NameGenerator;
+use crate::core::merge_right::MergeRight;
 use crate::core::valid::Validator;
 
 pub struct ConfigGenerationRequest {
@@ -19,65 +22,30 @@ impl ConfigGenerationRequest {
     }
 }
 
-fn has_same_domain(config_gen_req: &[ConfigGenerationRequest]) -> bool {
-    let mut has_same_domain = true;
-    let mut url_domain = "";
-    for cfg_gen_req in config_gen_req.iter() {
-        let domain = cfg_gen_req.url.host_str().unwrap_or_default();
-        if domain.is_empty() || !url_domain.is_empty() && url_domain != domain {
-            has_same_domain = false;
-            break;
-        }
-        url_domain = domain;
-    }
-    has_same_domain
-}
-
 pub fn from_json(
     config_gen_req: &[ConfigGenerationRequest],
     query: &str,
 ) -> anyhow::Result<Config> {
-    let mut type_counter = 1;
+    let mut config = Config::default();
+    let mut field_name_gen = FieldNameGenerator(1);
+    let mut type_name_gen = TypeNameGenerator(1);
 
-    let url_for_schema = match has_same_domain(config_gen_req) {
-        true => Some(config_gen_req[0].url.clone()),
-        false => None,
-    };
+    for request in config_gen_req.iter() {
+        let field_name = field_name_gen.generate_name();
+        let query_generator =
+            QueryGenerator::new(request.resp.is_array(), &request.url, query, &field_name);
 
-    let mut step_config_gen = ConfigPipeline::default();
+        let transformed_config =
+            TypesGenerator::new(&request.resp, query_generator, &mut type_name_gen)
+                .pipe(SchemaGenerator::new(query.to_owned()))
+                .pipe(FieldBaseUrlGenerator::new(&request.url, query))
+                .pipe(RemoveUnUsedTypes::default())
+                .pipe(TypeMerger::new(0.8))
+                .transform(config.clone())
+                .to_result()?;
 
-    for (i, request) in config_gen_req.iter().enumerate() {
-        let operation_field_name = format!("f{}", i + 1);
-        let query_operation_gen = QueryGenerator::new(
-            request.resp.is_array(),
-            &request.url,
-            query,
-            &operation_field_name,
-        );
-        step_config_gen = step_config_gen.then(TypesGenerator::new(
-            &request.resp,
-            &mut type_counter,
-            query_operation_gen,
-        ));
-
-        if url_for_schema.is_none() {
-            // if all API's are of not same domain, then add base url in each field of query
-            // opeartion.
-            step_config_gen = step_config_gen.then(FieldBaseUrlGenerator::new(&request.url, query))
-        }
+        config = config.merge_right(transformed_config);
     }
-
-    step_config_gen = step_config_gen.then(SchemaGenerator::new(
-        Some(query.to_string()),
-        url_for_schema,
-    ));
-
-    let mut config = step_config_gen.get()?;
-
-    let unused_types = config.unused_types();
-    config = config.remove_types(unused_types);
-
-    config = TypeMerger::default().transform(config).to_result()?;
 
     Ok(config)
 }
