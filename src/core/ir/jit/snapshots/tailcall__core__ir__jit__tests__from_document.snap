@@ -27,5 +27,13 @@ QueryPlan {
                 Parent(1),
             ),
         },
+        Field {
+            id: 3,
+            name: "name",
+            type_of: String!,
+            refs: Some(
+                Parent(1),
+            ),
+        },
     ],
 }
