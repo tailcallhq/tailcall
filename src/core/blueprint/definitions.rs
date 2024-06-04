@@ -1,5 +1,6 @@
 use async_graphql_value::ConstValue;
 use regex::Regex;
+use union_resolver::update_union_resolver;
 
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
@@ -507,6 +508,7 @@ pub fn to_field_definition(
         .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
+        .and(update_union_resolver())
         .try_fold(
             &(config_module, field, type_of, name),
             FieldDefinition::default(),

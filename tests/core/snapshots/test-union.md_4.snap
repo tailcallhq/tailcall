@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "Failed to select concrete type for resolved data for union: FooBar",
+        "message": "IOException: Failed to find corresponding type for value",
         "locations": [
           {
             "line": 2,

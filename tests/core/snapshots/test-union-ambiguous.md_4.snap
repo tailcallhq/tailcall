@@ -8,10 +8,17 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": {
-      "unknown": {
-        "bar": null
+    "data": null,
+    "errors": [
+      {
+        "message": "IOException: Failed to find corresponding type for value",
+        "locations": [
+          {
+            "line": 2,
+            "column": 3
+          }
+        ]
       }
-    }
+    ]
   }
 }

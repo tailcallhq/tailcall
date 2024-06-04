@@ -10,7 +10,9 @@ expression: response
   "body": {
     "data": {
       "nested": {
-        "foo": {},
+        "foo": {
+          "foo": "nested-foo"
+        },
         "bar": {
           "bar": "nested-bar"
         }

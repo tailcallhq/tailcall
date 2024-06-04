@@ -1,11 +1,11 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Mutex};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use async_graphql::{SelectionField, ServerError, Value};
 use reqwest::header::HeaderMap;
 
-use super::{GraphQLOperationContext, ResolverContextLike};
+use super::{discriminator::TypeName, GraphQLOperationContext, ResolverContextLike};
 use crate::core::http::RequestContext;
 
 // TODO: rename to ResolverContext
@@ -23,6 +23,8 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
 
     // Overridden Arguments for Async GraphQL Context
     graphql_ctx_args: Option<Arc<Value>>,
+
+    pub type_name: Arc<Mutex<Option<TypeName>>>,
 }
 
 impl<'a, A: ResolverContextLike<'a>> EvaluationContext<'a, A> {
@@ -46,6 +48,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
             graphql_ctx,
             graphql_ctx_value: None,
             graphql_ctx_args: None,
+            type_name: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -102,6 +105,10 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
 
     pub fn add_error(&self, error: ServerError) {
         self.graphql_ctx.add_error(error)
+    }
+
+    pub fn set_type_name(&mut self, type_name: TypeName) {
+        *self.type_name.lock().unwrap() = Some(type_name);
     }
 }
 

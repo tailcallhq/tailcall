@@ -1,4 +1,5 @@
 mod cache;
+mod discriminator;
 mod error;
 mod eval;
 mod evaluation_context;
@@ -13,6 +14,7 @@ use std::pin::Pin;
 
 use async_graphql_value::ConstValue;
 pub use cache::*;
+pub use discriminator::{Discriminator, TypeName};
 pub use error::*;
 pub use eval::*;
 pub use evaluation_context::EvaluationContext;
@@ -32,6 +34,7 @@ pub enum IR {
     Cache(Cache),
     Path(Box<IR>, Vec<String>),
     Protect(Box<IR>),
+    Discriminate(Discriminator, Box<IR>),
 }
 
 impl Display for IR {
@@ -43,6 +46,7 @@ impl Display for IR {
             IR::Cache(_) => write!(f, "Cache"),
             IR::Path(_, _) => write!(f, "Input"),
             IR::Protect(expr) => write!(f, "Protected({expr})"),
+            IR::Discriminate(_, expr) => write!(f, "Discriminate({expr})"),
         }
     }
 }
@@ -69,7 +73,7 @@ impl Eval for IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
-        ctx: EvaluationContext<'a, Ctx>,
+        mut ctx: EvaluationContext<'a, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
@@ -110,6 +114,15 @@ impl Eval for IR {
                 }
                 IR::IO(operation) => operation.eval(ctx).await,
                 IR::Cache(cached) => cached.eval(ctx).await,
+                IR::Discriminate(discriminator, expr) => expr.eval(ctx.clone()).await.and_then(|value| {
+                    let type_name = discriminator.resolve_type(&value)?;
+
+                    dbg!(&type_name);
+
+                    ctx.set_type_name(type_name);
+
+                    Ok(value)
+                }),
             }
         })
     }

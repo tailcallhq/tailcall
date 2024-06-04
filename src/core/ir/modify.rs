@@ -38,6 +38,9 @@ impl IR {
                     }
                     IR::Path(expr, path) => IR::Path(expr.modify_box(modifier), path),
                     IR::Protect(expr) => IR::Protect(expr.modify_box(modifier)),
+                    IR::Discriminate(discriminator, expr) => {
+                        IR::Discriminate(discriminator, expr.modify_box(modifier))
+                    }
                 }
             }
         }

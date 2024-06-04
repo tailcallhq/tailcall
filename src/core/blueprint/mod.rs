@@ -14,6 +14,7 @@ mod server;
 pub mod telemetry;
 mod timeout;
 mod upstream;
+mod union_resolver;
 
 pub use auth::*;
 pub use blueprint::*;
