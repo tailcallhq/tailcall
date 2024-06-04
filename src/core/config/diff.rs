@@ -1,5 +1,5 @@
-use super::{pair_map::PairMap, pair_set::PairSet};
 use crate::core::config::{Config, Type};
+use crate::core::config::transformer::{PairMap, PairSet};
 
 #[derive(Default)]
 struct SimilarityStat {
@@ -16,6 +16,8 @@ impl SimilarityStat {
     }
 }
 
+
+/// Given Two types,it tells similarity between two types based on a specified threshold.
 pub struct Similarity<'a> {
     config: &'a Config,
     thresh: f32,

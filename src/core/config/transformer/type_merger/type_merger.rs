@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use super::similarity::Similarity;
+use crate::core::config::Similarity;
 use crate::core::config::transformer::Transform;
 use crate::core::config::{Config, Type};
 use crate::core::valid::Valid;

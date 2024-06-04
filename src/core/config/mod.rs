@@ -26,3 +26,5 @@ mod source;
 mod telemetry;
 pub mod transformer;
 mod upstream;
+mod diff;
+pub use diff::Similarity;

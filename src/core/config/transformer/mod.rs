@@ -2,7 +2,7 @@ mod ambiguous_type;
 mod type_merger;
 
 pub use ambiguous_type::{AmbiguousType, Resolution};
-pub use type_merger::TypeMerger;
+pub use type_merger::{TypeMerger, PairMap, PairSet};
 
 use super::Config;
 use crate::core::valid::{Valid, Validator};
