@@ -131,7 +131,7 @@ where
                     // merge the generated types of list into single concrete type.
                     let merged_type = self.merge_types(object_types);
                     let generate_type_name = self.type_name_generator.generate_name();
-                    config.types.insert(generate_type_name.clone(), merged_type);
+                    config.types.insert(generate_type_name.to_owned(), merged_type);
                     return generate_type_name;
                 }
 
@@ -144,7 +144,7 @@ where
                 }
                 let ty = self.create_type_from_object(json_obj, config);
                 let generate_type_name = self.type_name_generator.generate_name();
-                config.types.insert(generate_type_name.clone(), ty);
+                config.types.insert(generate_type_name.to_owned(), ty);
                 generate_type_name
             }
             other => to_gql_type(other),

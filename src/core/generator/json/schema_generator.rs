@@ -13,6 +13,7 @@ impl SchemaGenerator {
 
     pub fn generate_schema(&self, config: &mut Config) {
         config.schema.query = Some(self.query_type.to_owned());
+        // TODO: add support for mutation and subscription.
     }
 }
 
