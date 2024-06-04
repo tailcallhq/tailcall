@@ -12,6 +12,7 @@ mod model {
 
     use async_graphql::parser::types::{DocumentOperations, ExecutableDocument, Selection};
     use async_graphql::Positioned;
+    use async_graphql_parser::types::OperationType;
 
     use super::field_index::{FieldIndex, QueryField};
     use crate::core::blueprint::Blueprint;
@@ -231,39 +232,47 @@ mod model {
             &self,
             document: ExecutableDocument,
         ) -> anyhow::Result<Vec<Field<Parent>>> {
-            let query = self.index.get_query();
             let mut id = FieldId::new(0);
             let mut arg_id = ArgId::new(0);
 
             let mut fields = Vec::new();
 
+            let operation_name_from_type = |operation_type| match operation_type {
+                OperationType::Query => self.index.get_query(),
+                OperationType::Mutation => self.index.get_mutation().unwrap(),
+                OperationType::Subscription => unreachable!(),
+            };
+
             for (_, fragment) in document.fragments {
+                let current_type = fragment.node.type_condition.node.on.node.as_str();
                 fields = self.resolve_selection_set(
                     fragment.node.selection_set,
                     &mut id,
                     &mut arg_id,
-                    query,
+                    current_type,
                     None,
                 )?;
             }
 
             match document.operations {
                 DocumentOperations::Single(single) => {
+                    let current_type = operation_name_from_type(single.node.ty);
                     fields = self.resolve_selection_set(
                         single.node.selection_set,
                         &mut id,
                         &mut arg_id,
-                        query,
+                        current_type,
                         None,
                     )?;
                 }
                 DocumentOperations::Multiple(multiple) => {
                     for (_, single) in multiple {
+                        let current_type = operation_name_from_type(single.node.ty);
                         fields = self.resolve_selection_set(
                             single.node.selection_set,
                             &mut id,
                             &mut arg_id,
-                            query,
+                            current_type,
                             None,
                         )?;
                     }

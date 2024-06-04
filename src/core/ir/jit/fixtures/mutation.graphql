@@ -1,0 +1,32 @@
+schema
+  @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  user: User @http(path: "/users/1")
+}
+
+type Mutation {
+  createUser(user: InputUser!): User @http(method: POST, path: "/users", body: "{{args.user}}")
+}
+
+input InputUser {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
+
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+}
