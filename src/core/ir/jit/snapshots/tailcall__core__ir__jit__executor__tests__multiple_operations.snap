@@ -1,5 +1,5 @@
 ---
-source: src/core/ir/jit/mod.rs
+source: src/core/ir/jit/executor.rs
 expression: plan
 ---
 ExecutionPlan {
@@ -15,10 +15,8 @@ ExecutionPlan {
                     name: "id",
                     type_of: Int!,
                     value: Some(
-                        Variable(
-                            Name(
-                                "id",
-                            ),
+                        Number(
+                            Number(1),
                         ),
                     ),
                     default_value: None,
@@ -35,10 +33,32 @@ ExecutionPlan {
         },
         Field {
             id: 2,
-            name: "name",
+            name: "username",
             type_of: String!,
             refs: Some(
                 Parent(0),
+            ),
+        },
+        Field {
+            id: 3,
+            name: "posts",
+            ir: "Some(..)",
+            type_of: [Post],
+        },
+        Field {
+            id: 4,
+            name: "id",
+            type_of: Int!,
+            refs: Some(
+                Parent(3),
+            ),
+        },
+        Field {
+            id: 5,
+            name: "title",
+            type_of: String!,
+            refs: Some(
+                Parent(3),
             ),
         },
     ],
