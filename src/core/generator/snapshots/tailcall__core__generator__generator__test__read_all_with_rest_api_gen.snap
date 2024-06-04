@@ -2,7 +2,7 @@
 source: src/core/generator/generator.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -37,6 +37,6 @@ type M4 {
 }
 
 type Query {
-  f1: [M4] @http(path: "/users")
-  f2(p1: Int!): M4 @http(path: "/users/{{.args.p1}}")
+  f1: [M4] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users")
+  f2(p1: Int!): M4 @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/{{.args.p1}}")
 }

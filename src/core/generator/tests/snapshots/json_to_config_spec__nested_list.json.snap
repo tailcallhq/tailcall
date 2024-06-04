@@ -2,12 +2,12 @@
 source: src/core/generator/tests/json_to_config_spec.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "https://example.com") {
+schema @server @upstream {
   query: Query
 }
 
 type Query {
-  f1(children: Boolean!): T3 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
+  f1(children: Boolean!): T3 @http(baseURL: "https://example.com", path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
 }
 
 type T1 {
