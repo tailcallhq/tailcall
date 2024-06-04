@@ -1,8 +1,8 @@
 use serde_json::{Map, Value};
 
+use super::NameGenerator;
 use crate::core::config::transformer::Transform;
 use crate::core::config::{Config, Field, Type};
-use crate::core::generator::from_json::NameGenerator;
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 use crate::core::valid::Valid;
 
