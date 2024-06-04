@@ -1,8 +1,9 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use async_graphql::parser::types::{DocumentOperations, ExecutableDocument, Selection};
-use async_graphql::Positioned;
+use async_graphql_parser::types::SelectionSet;
 
 use super::field_index::{FieldIndex, QueryField};
 use crate::core::blueprint::Blueprint;
@@ -10,8 +11,13 @@ use crate::core::ir::IR;
 use crate::core::merge_right::MergeRight;
 
 #[allow(unused)]
-trait IncrGen {
-    fn gen(&mut self) -> Self;
+#[derive(Default)]
+struct Counter(RefCell<usize>);
+impl Counter {
+    fn next(&self) -> usize {
+        
+        self.0.replace_with(|a| *a + 1)
+    }
 }
 
 #[allow(unused)]
@@ -41,14 +47,6 @@ impl Debug for ArgId {
     }
 }
 
-impl IncrGen for ArgId {
-    fn gen(&mut self) -> Self {
-        let id = self.0;
-        self.0 += 1;
-        Self(id)
-    }
-}
-
 #[allow(unused)]
 impl ArgId {
     fn new(id: usize) -> Self {
@@ -69,14 +67,6 @@ impl Debug for FieldId {
 impl FieldId {
     pub fn new(id: usize) -> Self {
         FieldId(id)
-    }
-}
-
-impl IncrGen for FieldId {
-    fn gen(&mut self) -> Self {
-        let id = self.0;
-        self.0 += 1;
-        Self(id)
     }
 }
 
@@ -167,6 +157,8 @@ pub struct ExecutionPlan {
 #[allow(unused)]
 pub struct ExecutionPlanBuilder {
     index: FieldIndex,
+    arg_id: Counter,
+    field_id: Counter,
 }
 
 impl ExecutionPlan {
@@ -188,7 +180,11 @@ impl ExecutionPlanBuilder {
     #[allow(unused)]
     pub fn new(blueprint: Blueprint) -> Self {
         let blueprint_index = FieldIndex::init(&blueprint);
-        Self { index: blueprint_index }
+        Self {
+            index: blueprint_index,
+            arg_id: Counter::default(),
+            field_id: Counter::default(),
+        }
     }
 
     #[allow(unused)]
@@ -197,18 +193,15 @@ impl ExecutionPlanBuilder {
         Ok(ExecutionPlan { fields })
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn resolve_selection_set(
+    fn iter(
         &self,
-        selection_set: Positioned<async_graphql_parser::types::SelectionSet>,
-        id: &mut FieldId,
-        arg_id: &mut ArgId,
-        current_type: &str,
+        selection: SelectionSet,
+        type_of: &str,
         parent: Option<Parent>,
     ) -> anyhow::Result<Vec<Field<Parent>>> {
         let mut fields = Vec::new();
 
-        for selection in selection_set.node.items {
+        for selection in selection.items {
             if let Selection::Field(gql_field) = selection.node {
                 let field_name = gql_field.node.name.node.as_str();
                 let field_args = gql_field
@@ -218,12 +211,12 @@ impl ExecutionPlanBuilder {
                     .map(|(k, v)| (k.node.as_str().to_string(), v.node))
                     .collect::<HashMap<_, _>>();
 
-                if let Some(field_def) = self.index.get_field(current_type, field_name) {
+                if let Some(field_def) = self.index.get_field(type_of, field_name) {
                     let mut args = vec![];
                     for (arg_name, value) in field_args {
                         if let Some(arg) = field_def.get_arg(&arg_name) {
                             let type_of = arg.of_type.clone();
-                            let id = arg_id.gen();
+                            let id = ArgId(self.arg_id.next());
                             let arg = Arg {
                                 id,
                                 name: arg_name.clone(),
@@ -243,11 +236,9 @@ impl ExecutionPlanBuilder {
                         QueryField::InputField(field_def) => field_def.of_type.clone(),
                     };
 
-                    let cur_id = id.gen();
-                    let child_fields = self.resolve_selection_set(
-                        gql_field.node.selection_set.clone(),
-                        id,
-                        arg_id,
+                    let cur_id = FieldId(self.field_id.next());
+                    let child_fields = self.iter(
+                        gql_field.node.selection_set.node.clone(),
                         type_of.name(),
                         Some(Parent(cur_id.clone())),
                     )?;
@@ -273,41 +264,21 @@ impl ExecutionPlanBuilder {
     }
 
     fn create_field_set(&self, document: ExecutableDocument) -> anyhow::Result<Vec<Field<Parent>>> {
-        let query = self.index.get_query();
-        let mut id = FieldId::new(0);
-        let mut arg_id = ArgId::new(0);
+        let query = &self.index.get_query().to_owned();
 
         let mut fields = Vec::new();
 
         for (_, fragment) in document.fragments {
-            fields = self.resolve_selection_set(
-                fragment.node.selection_set,
-                &mut id,
-                &mut arg_id,
-                query,
-                None,
-            )?;
+            fields = self.iter(fragment.node.selection_set.node, query, None)?;
         }
 
         match document.operations {
             DocumentOperations::Single(single) => {
-                fields = self.resolve_selection_set(
-                    single.node.selection_set,
-                    &mut id,
-                    &mut arg_id,
-                    query,
-                    None,
-                )?;
+                fields = self.iter(single.node.selection_set.node, query, None)?;
             }
             DocumentOperations::Multiple(multiple) => {
                 for (_, single) in multiple {
-                    fields = self.resolve_selection_set(
-                        single.node.selection_set,
-                        &mut id,
-                        &mut arg_id,
-                        query,
-                        None,
-                    )?;
+                    fields = self.iter(single.node.selection_set.node, query, None)?;
                 }
             }
         }
