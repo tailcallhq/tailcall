@@ -90,7 +90,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
             let arg = Arg {
                 list: query.is_list,
                 type_of: query.data_type,
-                required: false, 
+                required: false,
                 ..Default::default()
             };
 
