@@ -102,7 +102,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         let value =
                                             expr.eval(ctx).await.map_err(|err| err.extend())?;
 
-                                        Ok(Some(to_field_value(ctx, value)?))
+                                        if let ConstValue::Null = value {
+                                            Ok(FieldValue::NONE)
+                                        } else {
+                                            Ok(Some(to_field_value(ctx, value)?))
+                                        }
                                     }
                                     .instrument(span)
                                     .inspect_err(|err| tracing::error!(?err)),
