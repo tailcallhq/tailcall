@@ -405,7 +405,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_unions() {
+    async fn test_default_value() {
         let config_path = "examples/jsonplaceholder-mutation.graphql";
         let query = r#"
             mutation {
