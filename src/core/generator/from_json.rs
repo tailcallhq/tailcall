@@ -8,7 +8,6 @@ use super::json::{
 use crate::core::config::transformer::{RemoveUnUsedTypes, Transform, TransformerOps, TypeMerger};
 use crate::core::config::Config;
 use crate::core::generator::json::NameGenerator;
-use crate::core::merge_right::MergeRight;
 use crate::core::valid::Validator;
 
 pub struct ConfigGenerationRequest {
@@ -35,16 +34,13 @@ pub fn from_json(
         let query_generator =
             QueryGenerator::new(request.resp.is_array(), &request.url, query, &field_name);
 
-        let transformed_config =
-            TypesGenerator::new(&request.resp, query_generator, &mut type_name_gen)
-                .pipe(SchemaGenerator::new(query.to_owned()))
-                .pipe(FieldBaseUrlGenerator::new(&request.url, query))
-                .pipe(RemoveUnUsedTypes::default())
-                .pipe(TypeMerger::new(0.8))
-                .transform(config.clone())
-                .to_result()?;
-
-        config = config.merge_right(transformed_config);
+        config = TypesGenerator::new(&request.resp, query_generator, &mut type_name_gen)
+            .pipe(SchemaGenerator::new(query.to_owned()))
+            .pipe(FieldBaseUrlGenerator::new(&request.url, query))
+            .pipe(RemoveUnUsedTypes::default())
+            .pipe(TypeMerger::new(0.8)) //TODO: take threshold value from user
+            .transform(config)
+            .to_result()?;
     }
 
     Ok(config)
