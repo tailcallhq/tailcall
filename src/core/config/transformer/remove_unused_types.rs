@@ -1,6 +1,6 @@
-use crate::core::{config::Config, valid::Valid};
-
 use super::Transform;
+use crate::core::config::Config;
+use crate::core::valid::Valid;
 
 #[derive(Default)]
 pub struct RemoveUnUsedTypes {}
