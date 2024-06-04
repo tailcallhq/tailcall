@@ -1,4 +1,4 @@
-use std::{borrow::Cow, sync::Mutex};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -24,7 +24,7 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike> {
     // Overridden Arguments for Async GraphQL Context
     graphql_ctx_args: Option<Arc<Value>>,
 
-    pub type_name: Arc<Mutex<Option<TypeName>>>,
+    pub type_name: Option<TypeName>,
 }
 
 impl<'a, A: ResolverContextLike> EvaluationContext<'a, A> {
@@ -48,7 +48,7 @@ impl<'a, Ctx: ResolverContextLike> EvaluationContext<'a, Ctx> {
             graphql_ctx,
             graphql_ctx_value: None,
             graphql_ctx_args: None,
-            type_name: Arc::new(Mutex::new(None)),
+            type_name: None,
         }
     }
 
@@ -108,7 +108,7 @@ impl<'a, Ctx: ResolverContextLike> EvaluationContext<'a, Ctx> {
     }
 
     pub fn set_type_name(&mut self, type_name: TypeName) {
-        *self.type_name.lock().unwrap() = Some(type_name);
+        self.type_name = Some(type_name);
     }
 }
 

@@ -42,7 +42,7 @@ fn to_field_value<'a>(
     ctx: &mut EvaluationContext<'a, ResolverContext<'a>>,
     value: async_graphql::Value,
 ) -> Result<FieldValue<'static>> {
-    let type_name = ctx.type_name.lock().unwrap().take();
+    let type_name = ctx.type_name.take();
 
     dbg!(&type_name);
 
