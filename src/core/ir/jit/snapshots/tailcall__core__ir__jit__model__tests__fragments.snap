@@ -1,14 +1,14 @@
 ---
-source: src/core/ir/jit/mod.rs
+source: src/core/ir/jit/model.rs
 expression: plan
 ---
 ExecutionPlan {
     fields: [
         Field {
             id: 0,
-            name: "getUserIdOrEmail",
+            name: "user",
             ir: "Some(..)",
-            type_of: UserIdOrEmail,
+            type_of: User,
             args: [
                 Arg {
                     id: 0,
