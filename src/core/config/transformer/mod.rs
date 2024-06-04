@@ -8,7 +8,7 @@ use crate::core::valid::{Valid, Validator};
 /// transformations on the configuration before it's further processed for
 /// blueprint creation.
 pub trait Transform {
-    fn transform(&self, value: Config) -> Valid<Config, String>;
+    fn transform(&mut self, value: Config) -> Valid<Config, String>;
 }
 
 /// A suite of common operators that are available for all transformers.
@@ -29,7 +29,7 @@ where
 pub struct Pipe<A, B>(A, B);
 
 impl<A: Transform, B: Transform> Transform for Pipe<A, B> {
-    fn transform(&self, value: Config) -> Valid<Config, String> {
+    fn transform(&mut self, value: Config) -> Valid<Config, String> {
         self.0.transform(value).and_then(|v| self.1.transform(v))
     }
 }
@@ -38,7 +38,7 @@ impl<A: Transform, B: Transform> Transform for Pipe<A, B> {
 pub struct Empty;
 
 impl Transform for Empty {
-    fn transform(&self, value: Config) -> Valid<Config, String> {
+    fn transform(&mut self, value: Config) -> Valid<Config, String> {
         Valid::succeed(value)
     }
 }
