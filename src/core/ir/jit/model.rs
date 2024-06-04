@@ -147,7 +147,7 @@ impl<A: Debug + Clone> Debug for Field<A> {
 
 #[derive(Clone)]
 #[allow(unused)]
-pub struct Parent(pub(crate) FieldId);
+pub struct Parent(FieldId);
 
 impl Debug for Parent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
