@@ -49,7 +49,9 @@ mod test {
     use url::Url;
 
     use super::FieldBaseUrlGenerator;
-    use crate::core::{config::{transformer::Transform, Config, Field, Http, Type}, valid::Validator};
+    use crate::core::config::transformer::Transform;
+    use crate::core::config::{Config, Field, Http, Type};
+    use crate::core::valid::Validator;
 
     #[test]
     fn should_add_base_url_for_http_fields() -> anyhow::Result<()> {

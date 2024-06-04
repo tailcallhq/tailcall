@@ -94,7 +94,8 @@ impl<'a> QueryGenerator<'a> {
             let arg = Arg {
                 list: query.is_list,
                 type_of: query.data_type,
-                required: true, // TODO: currently non-null args are not supported, fix this later on.
+                required: true, /* TODO: currently non-null args are not supported, fix this
+                                 * later on. */
                 ..Default::default()
             };
 
