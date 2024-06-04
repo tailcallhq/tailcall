@@ -1,5 +1,5 @@
-use crate::core::config::{Config, Type};
 use crate::core::config::transformer::{PairMap, PairSet};
+use crate::core::config::{Config, Type};
 
 #[derive(Default)]
 struct SimilarityStat {
@@ -16,8 +16,8 @@ impl SimilarityStat {
     }
 }
 
-
-/// Given Two types,it tells similarity between two types based on a specified threshold.
+/// Given Two types,it tells similarity between two types based on a specified
+/// threshold.
 pub struct Similarity<'a> {
     config: &'a Config,
     thresh: f32,
@@ -69,7 +69,8 @@ impl<'a> Similarity<'a> {
                 let field_2_type_of = field_2.type_of.to_owned();
 
                 if field_1_type_of == field_2_type_of {
-                    similarity_stats.same_field_count += 1; // 1 from field_1 + 1 from
+                    similarity_stats.same_field_count += 1; // 1 from field_1 +
+                                                            // 1 from
                                                             // field_2
                 } else if let Some(type_1) = config.types.get(field_1_type_of.as_str()) {
                     if let Some(type_2) = config.types.get(field_2_type_of.as_str()) {
@@ -109,9 +110,8 @@ impl<'a> Similarity<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::core::config::{Config, Field, Type};
-
     use super::Similarity;
+    use crate::core::config::{Config, Field, Type};
 
     #[test]
     fn should_return_false_when_thresh_is_not_met() {

@@ -19,6 +19,6 @@ impl<A: PartialEq + Hash + Eq + Clone, V> PairMap<A, V> {
         } else if self.map.contains_key(&(a2.to_owned(), a1.to_owned())) {
             return self.map.get(&(a2.to_owned(), a1.to_owned()));
         }
-        return None;
+        None
     }
 }
