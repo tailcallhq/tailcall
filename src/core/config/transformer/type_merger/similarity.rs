@@ -1,21 +1,6 @@
 use crate::core::config::transformer::{PairMap, PairSet};
 use crate::core::config::{Config, Type};
 
-#[derive(Default)]
-struct SimilarityStat {
-    same_field_count: u32,
-    total_field_count: u32,
-}
-
-impl SimilarityStat {
-    pub fn as_f32(&self) -> f32 {
-        if self.total_field_count == 0 {
-            return 0.0;
-        }
-        self.same_field_count as f32 / self.total_field_count as f32
-    }
-}
-
 /// Given Two types,it tells similarity between two types based on a specified
 /// threshold.
 pub struct Similarity<'a> {
@@ -55,52 +40,54 @@ impl<'a> Similarity<'a> {
             .type_similarity_cache
             .get(&type_1_name.to_string(), &type_2_name.to_string())
         {
-            return *type_similarity_result;
-        }
+            *type_similarity_result
+        } else {
+            let config = self.config;
+            let mut same_field_count = 0;
 
-        let config = self.config;
-        let mut similarity_stats = SimilarityStat::default();
+            for (field_name_1, field_1) in type_1.fields.iter() {
+                if let Some(field_2) = type_2.fields.get(field_name_1) {
+                    let field_1_type_of = field_1.type_of.to_owned();
+                    let field_2_type_of = field_2.type_of.to_owned();
 
-        for (field_name_1, field_1) in type_1.fields.iter() {
-            if let Some(field_2) = type_2.fields.get(field_name_1) {
-                let field_1_type_of = field_1.type_of.to_owned();
-                let field_2_type_of = field_2.type_of.to_owned();
+                    if field_1_type_of == field_2_type_of {
+                        same_field_count += 1; // 1 from field_1 +
+                                               // 1 from
+                                               // field_2
+                    } else if let Some(type_1) = config.types.get(field_1_type_of.as_str()) {
+                        if let Some(type_2) = config.types.get(field_2_type_of.as_str()) {
+                            if visited_type.contains(&field_1_type_of, &field_2_type_of) {
+                                // it's cyclic type, return true as they're the same.
+                                return true;
+                            }
+                            visited_type
+                                .insert(field_1_type_of.to_owned(), field_2_type_of.to_owned());
 
-                if field_1_type_of == field_2_type_of {
-                    similarity_stats.same_field_count += 1; // 1 from field_1 +
-                                                            // 1 from
-                                                            // field_2
-                } else if let Some(type_1) = config.types.get(field_1_type_of.as_str()) {
-                    if let Some(type_2) = config.types.get(field_2_type_of.as_str()) {
-                        if visited_type.contains(&field_1_type_of, &field_2_type_of) {
-                            // it's cyclic type, return true as they're the same.
-                            return true;
+                            let is_nested_type_similar = self.similarity_inner(
+                                (&field_1_type_of, type_1),
+                                (&field_2_type_of, type_2),
+                                visited_type,
+                            );
+
+                            same_field_count += if is_nested_type_similar { 1 } else { 0 };
                         }
-                        visited_type.insert(field_1_type_of.to_owned(), field_2_type_of.to_owned());
-
-                        let is_nested_type_similar = self.similarity_inner(
-                            (&field_1_type_of, type_1),
-                            (&field_2_type_of, type_2),
-                            visited_type,
-                        );
-
-                        similarity_stats.same_field_count +=
-                            if is_nested_type_similar { 1 } else { 0 };
                     }
                 }
             }
+
+            let total_field_count =
+                (type_1.fields.len() + type_2.fields.len()) as u32 - same_field_count;
+
+            let is_similar = (same_field_count as f32 / total_field_count as f32) >= self.threshold;
+
+            self.type_similarity_cache.add(
+                type_1_name.to_owned(),
+                type_2_name.to_owned(),
+                is_similar,
+            );
+
+            is_similar
         }
-
-        let union_field_len =
-            (type_1.fields.len() + type_2.fields.len()) as u32 - similarity_stats.same_field_count;
-        similarity_stats.total_field_count = union_field_len;
-
-        let is_similar = similarity_stats.as_f32() >= self.threshold;
-
-        self.type_similarity_cache
-            .add(type_1_name.to_owned(), type_2_name.to_owned(), is_similar);
-
-        is_similar
     }
 }
 
