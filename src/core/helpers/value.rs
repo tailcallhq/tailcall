@@ -1,5 +1,6 @@
 use std::hash::{Hash, Hasher};
 
+use async_graphql::Name;
 use async_graphql_value::ConstValue;
 
 #[derive(Clone, Eq)]
@@ -34,5 +35,21 @@ pub fn hash<H: Hasher>(const_value: &ConstValue, state: &mut H) {
                 hash(value, state);
             })
         }
+    }
+}
+
+pub fn from_serde_owned(value: serde_json_borrow::Value) -> ConstValue {
+    use serde_json_borrow::Value;
+    match value {
+        Value::Null => ConstValue::Null,
+        Value::Bool(b) => ConstValue::Boolean(b),
+        Value::Number(n) => ConstValue::Number(n.into()),
+        Value::Str(s) => ConstValue::String(s.into()),
+        Value::Array(a) => ConstValue::List(a.into_iter().map(from_serde_owned).collect()),
+        Value::Object(o) => ConstValue::Object(
+            o.iter()
+                .map(|(k, v)| (Name::new(k), from_serde_owned(v.to_owned())))
+                .collect(),
+        ),
     }
 }
