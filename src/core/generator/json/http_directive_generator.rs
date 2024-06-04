@@ -106,8 +106,9 @@ impl HttpDirectiveGenerator {
 
 #[cfg(test)]
 mod test {
-    use crate::core::generator::json::http_directive_generator::UrlUtility;
     use url::Url;
+
+    use crate::core::generator::json::http_directive_generator::UrlUtility;
 
     #[test]
     fn test_new_url_query_parser() {

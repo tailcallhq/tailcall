@@ -1,8 +1,8 @@
 mod field_base_url_generator;
+mod http_directive_generator;
 mod query_generator;
 mod schema_generator;
 mod types_generator;
-mod http_directive_generator;
 mod url_utils;
 
 pub use field_base_url_generator::FieldBaseUrlGenerator;
