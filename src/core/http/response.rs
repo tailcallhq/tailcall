@@ -8,6 +8,7 @@ use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
 use crate::core::grpc::protobuf::ProtobufOperation;
+use crate::core::helpers::value::from_serde_owned;
 use crate::core::ir::EvaluationError;
 
 #[derive(Clone, Debug, Default, Setters)]
@@ -22,29 +23,6 @@ pub struct Response<Body> {
 // It has a limited lifetime tied to the input JSON, making it more
 // efficient. Benchmarking is required to determine the performance If any
 // change is made.
-
-pub trait FromValue {
-    fn from_value(value: serde_json_borrow::Value) -> Self;
-}
-
-impl FromValue for ConstValue {
-    fn from_value(value: serde_json_borrow::Value) -> Self {
-        match value {
-            serde_json_borrow::Value::Null => ConstValue::Null,
-            serde_json_borrow::Value::Bool(b) => ConstValue::Boolean(b),
-            serde_json_borrow::Value::Number(n) => ConstValue::Number(n.into()),
-            serde_json_borrow::Value::Str(s) => ConstValue::String(s.into()),
-            serde_json_borrow::Value::Array(a) => {
-                ConstValue::List(a.into_iter().map(|v| Self::from_value(v)).collect())
-            }
-            serde_json_borrow::Value::Object(o) => ConstValue::Object(
-                o.iter()
-                    .map(|(k, v)| (Name::new(k), Self::from_value(v.to_owned())))
-                    .collect(),
-            ),
-        }
-    }
-}
 
 impl Response<Bytes> {
     pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {
@@ -62,7 +40,7 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>> {
+    pub fn to_json(self) -> Result<Response<ConstValue>> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
@@ -74,7 +52,7 @@ impl Response<Bytes> {
         // performance. Warning: Do not change this to direct conversion to `T`
         // without benchmarking the performance impact.
         let body: serde_json_borrow::Value = serde_json::from_slice(&self.body)?;
-        let body = T::from_value(body);
+        let body = from_serde_owned(body);
         Ok(Response { status: self.status, headers: self.headers, body })
     }
 

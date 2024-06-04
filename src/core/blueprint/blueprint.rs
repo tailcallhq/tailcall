@@ -1,4 +1,5 @@
 use std::collections::{BTreeSet, HashMap};
+use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
@@ -27,10 +28,31 @@ pub struct Blueprint {
     pub telemetry: Telemetry,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Type {
     NamedType { name: String, non_null: bool },
     ListType { of_type: Box<Type>, non_null: bool },
+}
+
+impl Debug for Type {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::NamedType { name, non_null } => {
+                if *non_null {
+                    write!(f, "{}!", name)
+                } else {
+                    write!(f, "{}", name)
+                }
+            }
+            Type::ListType { of_type, non_null } => {
+                if *non_null {
+                    write!(f, "[{:?}]!", of_type)
+                } else {
+                    write!(f, "[{:?}]", of_type)
+                }
+            }
+        }
+    }
 }
 
 impl Default for Type {
