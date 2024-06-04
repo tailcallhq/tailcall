@@ -13,13 +13,15 @@ pub struct ExecutionPlanBuilder {
     index: FieldIndex,
     arg_id: Counter,
     field_id: Counter,
+    document: ExecutableDocument,
 }
 
 impl ExecutionPlanBuilder {
     #[allow(unused)]
-    pub fn new(blueprint: Blueprint) -> Self {
+    pub fn new(blueprint: Blueprint, document: ExecutableDocument) -> Self {
         let blueprint_index = FieldIndex::init(&blueprint);
         Self {
+            document,
             index: blueprint_index,
             arg_id: Counter::default(),
             field_id: Counter::default(),
@@ -27,27 +29,27 @@ impl ExecutionPlanBuilder {
     }
 
     #[allow(unused)]
-    pub fn build(&self, document: ExecutableDocument) -> anyhow::Result<ExecutionPlan> {
-        let fields = self.create_field_set(document)?;
+    pub fn build(&self) -> anyhow::Result<ExecutionPlan> {
+        let fields = self.init()?;
         Ok(ExecutionPlan { fields })
     }
 
     fn iter(
         &self,
-        selection: SelectionSet,
+        selection: &SelectionSet,
         type_of: &str,
         refs: Option<Parent>,
     ) -> anyhow::Result<Vec<Field<Parent>>> {
         let mut fields = Vec::new();
 
-        for selection in selection.items {
-            if let Selection::Field(gql_field) = selection.node {
+        for selection in &selection.items {
+            if let Selection::Field(gql_field) = &selection.node {
                 let field_name = gql_field.node.name.node.as_str();
                 let field_args = gql_field
                     .node
                     .arguments
-                    .into_iter()
-                    .map(|(k, v)| (k.node.as_str().to_string(), v.node))
+                    .iter()
+                    .map(|(k, v)| (k.node.as_str().to_string(), v.node.to_owned()))
                     .collect::<HashMap<_, _>>();
 
                 if let Some(field_def) = self.index.get_field(type_of, field_name) {
@@ -72,7 +74,7 @@ impl ExecutionPlanBuilder {
 
                     let id = FieldId::new(self.field_id.next());
                     let child_fields = self.iter(
-                        gql_field.node.selection_set.node.clone(),
+                        &gql_field.node.selection_set.node,
                         type_of.name(),
                         Some(Parent::new(id.clone())),
                     )?;
@@ -90,22 +92,22 @@ impl ExecutionPlanBuilder {
         Ok(fields)
     }
 
-    fn create_field_set(&self, document: ExecutableDocument) -> anyhow::Result<Vec<Field<Parent>>> {
+    fn init(&self) -> anyhow::Result<Vec<Field<Parent>>> {
         let query = &self.index.get_query().to_owned();
 
         let mut fields = Vec::new();
 
-        for (_, fragment) in document.fragments {
-            fields = self.iter(fragment.node.selection_set.node, query, None)?;
+        for fragment in self.document.fragments.values() {
+            fields = self.iter(&fragment.node.selection_set.node, query, None)?;
         }
 
-        match document.operations {
+        match &self.document.operations {
             DocumentOperations::Single(single) => {
-                fields = self.iter(single.node.selection_set.node, query, None)?;
+                fields = self.iter(&single.node.selection_set.node, query, None)?;
             }
             DocumentOperations::Multiple(multiple) => {
-                for (_, single) in multiple {
-                    fields = self.iter(single.node.selection_set.node, query, None)?;
+                for single in multiple.values() {
+                    fields = self.iter(&single.node.selection_set.node, query, None)?;
                 }
             }
         }
@@ -129,8 +131,9 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        ExecutionPlanBuilder::new(blueprint)
-            .build(document)
+        // FIXME: return a Valid
+        ExecutionPlanBuilder::new(blueprint, document)
+            .build()
             .unwrap()
     }
 
