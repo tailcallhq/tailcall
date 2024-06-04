@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 ///
-/// A special map that can hold two values of same type as key and value.
+/// A special map that can hold two values of same type as key and any type of
+/// value.
 #[derive(Default)]
 pub struct PairMap<A, V> {
     map: HashMap<(A, A), V>,
