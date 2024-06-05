@@ -19,7 +19,7 @@ pub struct NameGenerator {
 
 impl NameGenerator {
     pub fn new(prefix: &str) -> Self {
-        Self { counter: Counter::default(), prefix: prefix.to_string() }
+        Self { counter: Counter::new(1), prefix: prefix.to_string() }
     }
 
     pub fn generate_name(&self) -> String {
