@@ -5074,6 +5074,7 @@ checksum = "7b2093cf4c8eb1e67749a6762251bc9cd836b6fc171623bd0a9d324d37af2417"
 name = "tailcall"
 version = "0.1.0"
 dependencies = [
+ "Inflector",
  "anyhow",
  "async-graphql",
  "async-graphql-extension-apollo-tracing",
