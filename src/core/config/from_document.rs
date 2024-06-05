@@ -7,6 +7,7 @@ use async_graphql::parser::types::{
 };
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
+use async_graphql_value::ConstValue;
 
 use super::telemetry::Telemetry;
 use super::{Tag, JS};
@@ -15,7 +16,7 @@ use crate::core::config::{
     Server, Union, Upstream,
 };
 use crate::core::directive::DirectiveCodec;
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,
@@ -308,6 +309,12 @@ where
     let nullable = &type_of.nullable;
     let description = field.description();
     let directives = field.directives();
+    let default_value = field
+        .default_value()
+        .map(ConstValue::into_json)
+        .transpose()
+        .map_err(|err| ValidationError::new(err.to_string()))
+        .into();
 
     let type_of = to_type_of(type_of);
     let list = matches!(&base, BaseType::List(_));
@@ -322,8 +329,9 @@ where
         .fuse(JS::from_directives(directives.iter()))
         .fuse(Call::from_directives(directives.iter()))
         .fuse(Protected::from_directives(directives.iter()))
+        .fuse(default_value)
         .map(
-            |(http, graphql, cache, grpc, omit, modify, script, call, protected)| {
+            |(http, graphql, cache, grpc, omit, modify, script, call, protected, default_value)| {
                 let const_field = to_const_field(directives);
                 config::Field {
                     type_of,
@@ -342,6 +350,7 @@ where
                     cache,
                     call,
                     protected,
+                    default_value
                 }
             },
         )
@@ -449,6 +458,7 @@ trait Fieldlike {
     fn type_of(&self) -> &Type;
     fn description(&self) -> &Option<Positioned<String>>;
     fn directives(&self) -> &[Positioned<ConstDirective>];
+    fn default_value(&self) -> Option<ConstValue>;
 }
 impl Fieldlike for FieldDefinition {
     fn type_of(&self) -> &Type {
@@ -460,6 +470,9 @@ impl Fieldlike for FieldDefinition {
     fn directives(&self) -> &[Positioned<ConstDirective>] {
         &self.directives
     }
+    fn default_value(&self) -> Option<ConstValue> {
+        None
+    }
 }
 impl Fieldlike for InputValueDefinition {
     fn type_of(&self) -> &Type {
@@ -470,6 +483,9 @@ impl Fieldlike for InputValueDefinition {
     }
     fn directives(&self) -> &[Positioned<ConstDirective>] {
         &self.directives
+    }
+    fn default_value(&self) -> Option<ConstValue> {
+        self.default_value.as_ref().map(|val| val.node.clone())
     }
 }
 

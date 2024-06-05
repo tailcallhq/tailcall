@@ -141,6 +141,7 @@ pub struct FieldDefinition {
     pub resolver: Option<IR>,
     pub directives: Vec<Directive>,
     pub description: Option<String>,
+    pub default_value: Option<serde_json::Value>
 }
 
 impl FieldDefinition {
