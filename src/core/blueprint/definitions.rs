@@ -277,7 +277,7 @@ fn update_args<'a>(
                 of_type: to_type(*field, None),
                 directives: Vec::new(),
                 resolver: None,
-                default_value: field.default_value.clone()
+                default_value: field.default_value.clone(),
             })
         },
     )

@@ -350,7 +350,7 @@ where
                     cache,
                     call,
                     protected,
-                    default_value
+                    default_value,
                 }
             },
         )
