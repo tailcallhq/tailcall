@@ -59,13 +59,13 @@ impl TypeNameGenerator {
         candidate_mappings: HashMap<String, HashMap<String, u32>>,
     ) -> HashMap<String, String> {
         candidate_mappings
-            .iter()
+            .into_iter()
             .flat_map(|(outer_key, inner_map)| {
                 // Find the entry with the highest count
                 let max_entry = inner_map.iter().max_by_key(|(_, &count)| count);
                 // Check if max_entry exists and convert that key into singular type and return it
                 if let Some((inner_key, _)) = max_entry {
-                    Some((outer_key.clone(), to_singular(inner_key).to_pascal_case()))
+                    Some((outer_key, to_singular(inner_key).to_pascal_case()))
                 } else {
                     None
                 }
