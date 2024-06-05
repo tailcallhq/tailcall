@@ -17,7 +17,7 @@ impl<'a> FieldBaseUrlGenerator<'a> {
 }
 
 impl Transform for FieldBaseUrlGenerator<'_> {
-    fn transform(&mut self, mut config: Config) -> Valid<Config, String> {
+    fn transform(&self, mut config: Config) -> Valid<Config, String> {
         let base_url = match extract_base_url(self.url) {
             Some(base_url) => base_url,
             None => {
@@ -57,7 +57,7 @@ mod test {
     fn should_add_base_url_for_http_fields() -> anyhow::Result<()> {
         let url = Url::parse("https://example.com").unwrap();
         let query = "Query";
-        let mut field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
+        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
 
         let mut config = Config::default();
         let mut query_type = Type::default();
@@ -97,7 +97,7 @@ mod test {
     fn should_add_base_url_if_not_present() -> anyhow::Result<()> {
         let url = Url::parse("http://localhost:8080").unwrap();
         let query = "Query";
-        let mut field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
+        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
 
         let mut config = Config::default();
         let mut query_type = Type::default();
@@ -141,7 +141,7 @@ mod test {
     fn should_not_add_base_url_when_query_not_present() -> anyhow::Result<()> {
         let url = Url::parse("https://example.com").unwrap();
         let query = "Query";
-        let mut field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
+        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
         assert!(field_base_url_gen
             .transform(Default::default())
             .to_result()?

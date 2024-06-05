@@ -134,7 +134,7 @@ fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
 }
 
 impl Transform for TypeMerger {
-    fn transform(&mut self, config: Config) -> Valid<Config, String> {
+    fn transform(&self, config: Config) -> Valid<Config, String> {
         let config = self.merger(1, config);
         Valid::succeed(config)
     }

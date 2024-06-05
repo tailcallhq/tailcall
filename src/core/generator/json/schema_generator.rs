@@ -18,7 +18,7 @@ impl SchemaGenerator {
 }
 
 impl Transform for SchemaGenerator {
-    fn transform(&mut self, mut config: Config) -> Valid<Config, String> {
+    fn transform(&self, mut config: Config) -> Valid<Config, String> {
         self.generate_schema(&mut config);
         Valid::succeed(config)
     }
@@ -34,7 +34,7 @@ mod test {
 
     #[test]
     fn test_schema_generator_with_query() -> anyhow::Result<()> {
-        let mut schema_gen = SchemaGenerator::new("Query".to_owned());
+        let schema_gen = SchemaGenerator::new("Query".to_owned());
         let config = schema_gen.transform(Default::default()).to_result()?;
         insta::assert_snapshot!(config.to_sdl());
         Ok(())

@@ -49,30 +49,28 @@ impl TypeMerger {
     }
 }
 
-pub struct TypesGenerator<'a, 'b, T1: OperationGenerator, T2: NameGenerator> {
+pub struct TypesGenerator<'a, T1: OperationGenerator> {
     json_value: &'a Value,
     operation_generator: T1,
-    type_name_generator: &'b mut T2,
+    type_name_generator: &'a NameGenerator,
 }
 
-impl<'a, 'b, T1, T2> TypesGenerator<'a, 'b, T1, T2>
+impl<'a, T1> TypesGenerator<'a, T1>
 where
     T1: OperationGenerator,
-    T2: NameGenerator,
 {
     pub fn new(
         json_value: &'a Value,
         operation_generator: T1,
-        type_name_generator: &'b mut T2,
+        type_name_generator: &'a NameGenerator,
     ) -> Self {
         Self { json_value, operation_generator, type_name_generator }
     }
 }
 
-impl<'a, T1, T2> TypesGenerator<'a, '_, T1, T2>
+impl<'a, T1> TypesGenerator<'a, T1>
 where
     T1: OperationGenerator,
-    T2: NameGenerator,
 {
     fn generate_scalar(&self, config: &mut Config) -> String {
         let any_scalar = "Any";
@@ -84,7 +82,7 @@ where
     }
 
     fn create_type_from_object(
-        &mut self,
+        &self,
         json_object: &'a Map<String, Value>,
         config: &mut Config,
     ) -> Type {
@@ -114,7 +112,7 @@ where
         ty
     }
 
-    fn generate_types(&mut self, json_value: &'a Value, config: &mut Config) -> String {
+    fn generate_types(&self, json_value: &'a Value, config: &mut Config) -> String {
         match json_value {
             Value::Array(json_arr) => {
                 let vec_capacity = json_arr.first().map_or(0, |json_item| {
@@ -163,12 +161,11 @@ where
     }
 }
 
-impl<T1, T2> Transform for TypesGenerator<'_, '_, T1, T2>
+impl<T1> Transform for TypesGenerator<'_, T1>
 where
     T1: OperationGenerator,
-    T2: NameGenerator,
 {
-    fn transform(&mut self, mut config: Config) -> Valid<Config, String> {
+    fn transform(&self, mut config: Config) -> Valid<Config, String> {
         let root_type_name = self.generate_types(self.json_value, &mut config);
         self.operation_generator
             .generate(root_type_name.as_str(), config)
