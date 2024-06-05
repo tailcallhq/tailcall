@@ -100,10 +100,10 @@ impl TypeNameGenerator {
 
 impl Transform for TypeNameGenerator {
     fn transform(&self, config: Config) -> Valid<Config, String> {
-        // step 1: generate the required mapping.
+        // step 1: generate the required candidate mappings. i.e { Type : [{candidate_name : count}] }
         let candidate_mappings = self.generate_candidate_names(&config);
 
-        // step 2: find out the most suitable name for type
+        // step 2: converge on the candidate name. i.e { Type : Candidate_Name }
         let finalized_candidates = self.finalized_candidates(candidate_mappings);
 
         // step 3: replace its every occurance.
