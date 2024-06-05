@@ -75,10 +75,10 @@ impl TypeNameGenerator {
 
     fn generate_type_name(
         &self,
-        formalized_mapping: HashMap<String, String>,
+        finalized_candidates: HashMap<String, String>,
         mut config: Config,
     ) -> Config {
-        for (old_name, new_name) in formalized_mapping {
+        for (old_name, new_name) in finalized_candidates {
             if let Some(type_) = config.types.remove(old_name.as_str()) {
                 // Add newly generated type.
                 config.types.insert(new_name.clone(), type_);
