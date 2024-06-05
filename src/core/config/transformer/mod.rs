@@ -1,9 +1,9 @@
 mod ambiguous_type;
-mod type_garbage_collector;
+mod remove_unused;
 mod type_merger;
 
 pub use ambiguous_type::{AmbiguousType, Resolution};
-pub use type_garbage_collector::TypeGarbageCollector;
+pub use remove_unused::RemoveUnused;
 pub use type_merger::TypeMerger;
 
 use super::Config;
