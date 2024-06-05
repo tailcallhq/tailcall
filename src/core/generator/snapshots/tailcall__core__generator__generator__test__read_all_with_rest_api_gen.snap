@@ -6,28 +6,28 @@ schema @server @upstream {
   query: Query
 }
 
-type M1 {
-  lat: String
-  lng: String
-}
-
-type M2 {
+type Address {
   city: String
-  geo: M1
+  geo: Geo
   street: String
   suite: String
   zipcode: String
 }
 
-type M3 {
+type Company {
   bs: String
   catchPhrase: String
   name: String
 }
 
+type Geo {
+  lat: String
+  lng: String
+}
+
 type M4 {
-  address: M2
-  company: M3
+  address: Address
+  company: Company
   email: String
   id: Int
   name: String
