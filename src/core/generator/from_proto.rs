@@ -306,9 +306,9 @@ fn convert_primitive_type(proto_ty: &str) -> String {
     match proto_ty {
         "double" | "float" => "Float",
         "int32" | "sint32" | "fixed32" | "sfixed32" => "Int",
-        "int64" | "sint64" | "fixed64" | "sfixed64" => "Int64Str",
+        "int64" | "sint64" | "fixed64" | "sfixed64" => "Int64",
         "uint32" => "UInt32",
-        "uint64" => "Uint64Str",
+        "uint64" => "UInt64",
         "bool" => "Boolean",
         "string" => "String",
         "bytes" => "Bytes",

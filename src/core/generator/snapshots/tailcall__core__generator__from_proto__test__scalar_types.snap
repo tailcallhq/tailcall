@@ -11,17 +11,17 @@ input scalars__ItemInput @tag(id: "scalars.Item") {
   bytesType: Bytes
   doubleNum: Float
   fixedint32: Int
-  fixedint64: Int64Str
+  fixedint64: Int64
   floatNum: Float
   integer32: Int
-  integer64: Int64Str
+  integer64: Int64
   sfixedint32: Int
-  sfixedint64: Int64Str
+  sfixedint64: Int64
   sinteger32: Int
-  sinteger64: Int64Str
+  sinteger64: Int64
   str: String
   uinteger32: UInt32
-  uinteger64: Uint64StrInput
+  uinteger64: UInt64
 }
 
 type Query {
@@ -33,17 +33,17 @@ type scalars__Item @tag(id: "scalars.Item") {
   bytesType: Bytes
   doubleNum: Float
   fixedint32: Int
-  fixedint64: Int64Str
+  fixedint64: Int64
   floatNum: Float
   integer32: Int
-  integer64: Int64Str
+  integer64: Int64
   sfixedint32: Int
-  sfixedint64: Int64Str
+  sfixedint64: Int64
   sinteger32: Int
-  sinteger64: Int64Str
+  sinteger64: Int64
   str: String
   uinteger32: UInt32
-  uinteger64: Uint64Str
+  uinteger64: UInt64
 }
 
 type scalars__Result @tag(id: "scalars.Result") {

@@ -750,17 +750,35 @@
         "HTTP2"
       ]
     },
+    "Int128": {
+      "title": "Int128",
+      "description": "Represents signed integer type 128 bit size as string",
+      "type": "integer",
+      "format": "int128"
+    },
+    "Int16": {
+      "title": "Int16",
+      "description": "Represents signed integer type 16bit size",
+      "type": "integer",
+      "format": "int16"
+    },
+    "Int32": {
+      "title": "Int32",
+      "description": "Represents signed integer type 32bit size",
+      "type": "integer",
+      "format": "int32"
+    },
     "Int64": {
       "title": "Int64",
-      "description": "Represents unsigned integer type 64 bit size",
+      "description": "Represents signed integer type 64bit size as string",
       "type": "integer",
       "format": "int64"
     },
-    "Int64Str": {
-      "title": "Int64Str",
-      "description": "Represents unsigned integer type 64 bit size as string",
+    "Int8": {
+      "title": "Int8",
+      "description": "Represents signed integer type 8bit size",
       "type": "integer",
-      "format": "int64"
+      "format": "int8"
     },
     "JS": {
       "type": "object",
@@ -1305,25 +1323,39 @@
         }
       }
     },
+    "UInt128": {
+      "title": "UInt128",
+      "description": "Represents unsigned integer type 128bit size as string",
+      "type": "integer",
+      "format": "uint128",
+      "minimum": 0.0
+    },
+    "UInt16": {
+      "title": "UInt16",
+      "description": "Represents unsigned integer type 16bit size",
+      "type": "integer",
+      "format": "uint16",
+      "minimum": 0.0
+    },
     "UInt32": {
       "title": "UInt32",
-      "description": "Represents unsigned integer type 64 bit size",
+      "description": "Represents unsigned integer type 32bit size",
       "type": "integer",
       "format": "uint32",
       "minimum": 0.0
     },
     "UInt64": {
       "title": "UInt64",
-      "description": "Represents unsigned integer type 64 bit size",
+      "description": "Represents unsigned integer type 64bit size as string",
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
     },
-    "UInt64Str": {
-      "title": "UInt64Str",
-      "description": "Represents unsigned integer type 64 bit size as string",
+    "UInt8": {
+      "title": "UInt8",
+      "description": "Represents unsigned integer type 8bit size",
       "type": "integer",
-      "format": "uint64",
+      "format": "uint8",
       "minimum": 0.0
     },
     "Union": {

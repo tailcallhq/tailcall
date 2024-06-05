@@ -8,20 +8,9 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": null,
-    "errors": [
-      {
-        "message": "internal: invalid value for scalar \"Int64Str\", expected \"FieldValue::Value\"",
-        "locations": [
-          {
-            "line": 1,
-            "column": 3
-          }
-        ],
-        "path": [
-          "a"
-        ]
-      }
-    ]
+    "data": {
+      "a": 32767,
+      "b": 63535
+    }
   }
 }

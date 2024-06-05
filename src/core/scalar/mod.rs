@@ -2,26 +2,36 @@ pub use bytes::*;
 pub use date::*;
 pub use email::*;
 pub use empty::*;
+pub use int128::*;
+pub use int16::*;
+pub use int32::*;
 pub use int64::*;
-pub use int64str::*;
+pub use int8::*;
 pub use json::*;
 pub use phone::*;
+pub use uint128::*;
+pub use uint16::*;
 pub use uint32::*;
 pub use uint64::*;
-pub use uint64str::*;
+pub use uint8::*;
 pub use url::*;
 
 mod bytes;
 mod date;
 mod email;
 mod empty;
+mod int128;
+mod int16;
+mod int32;
 mod int64;
-mod int64str;
+mod int8;
 mod json;
 mod phone;
+mod uint128;
+mod uint16;
 mod uint32;
 mod uint64;
-mod uint64str;
+mod uint8;
 mod url;
 
 use std::collections::{HashMap, HashSet};
@@ -40,11 +50,16 @@ lazy_static! {
             Arc::new(Url::default()),
             Arc::new(JSON::default()),
             Arc::new(Empty::default()),
+            Arc::new(Int8::default()),
+            Arc::new(Int16::default()),
+            Arc::new(Int32::default()),
             Arc::new(Int64::default()),
-            Arc::new(Int64Str::default()),
+            Arc::new(Int128::default()),
+            Arc::new(UInt8::default()),
+            Arc::new(UInt16::default()),
             Arc::new(UInt32::default()),
             Arc::new(UInt64::default()),
-            Arc::new(UInt64Str::default()),
+            Arc::new(UInt128::default()),
             Arc::new(Bytes::default()),
         ];
         let mut hm = HashMap::new();
