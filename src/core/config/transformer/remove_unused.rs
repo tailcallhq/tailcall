@@ -2,7 +2,7 @@ use super::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
 
-/// `TypeGarbageCollector` is responsible for removing unused types from a
+/// `RemoveUnused` is responsible for removing unused types from a
 /// configuration.
 ///
 /// It scans the configuration and identifies types that are not referenced

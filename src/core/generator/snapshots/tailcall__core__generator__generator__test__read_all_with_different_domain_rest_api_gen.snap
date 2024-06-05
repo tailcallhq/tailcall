@@ -7,12 +7,12 @@ schema @server @upstream {
 }
 
 type Query {
-  f1(p1: Int!): [T1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}/comments")
-  f2(p1: Int!): T2 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}")
-  f3(q: String): T19 @http(baseURL: "https://dummyjson.com", path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
+  f0(p1: Int!): [T0] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}/comments")
+  f1(p1: Int!): T1 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}")
+  f2(q: String): T18 @http(baseURL: "https://dummyjson.com", path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
 }
 
-type T1 {
+type T0 {
   body: String
   email: String
   id: Int
@@ -20,21 +20,28 @@ type T1 {
   postId: Int
 }
 
-type T18 {
+type T1 {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
+type T17 {
   availabilityStatus: String
   brand: String
   category: String
   description: String
-  dimensions: T3
+  dimensions: T2
   discountPercentage: Int
   id: Int
   images: [String]
-  meta: T5
+  meta: T4
   minimumOrderQuantity: Int
   price: Int
   rating: Int
   returnPolicy: String
-  reviews: [T4]
+  reviews: [T3]
   shippingInformation: String
   sku: String
   stock: Int
@@ -45,27 +52,20 @@ type T18 {
   weight: Int
 }
 
-type T19 {
+type T18 {
   limit: Int
-  products: [T18]
+  products: [T17]
   skip: Int
   total: Int
 }
 
 type T2 {
-  body: String
-  id: Int
-  title: String
-  userId: Int
-}
-
-type T3 {
   depth: Int
   height: Int
   width: Int
 }
 
-type T4 {
+type T3 {
   comment: String
   date: String
   rating: Int
@@ -73,7 +73,7 @@ type T4 {
   reviewerName: String
 }
 
-type T5 {
+type T4 {
   barcode: String
   createdAt: String
   qrCode: String

@@ -37,6 +37,6 @@ type M4 {
 }
 
 type Query {
-  f1: [M4] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users")
-  f2(p1: Int!): M4 @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/{{.args.p1}}")
+  f0: [M4] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users")
+  f1(p1: Int!): M4 @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/{{.args.p1}}")
 }

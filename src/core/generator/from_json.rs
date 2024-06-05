@@ -4,9 +4,7 @@ use url::Url;
 use super::json::{
     FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
 };
-use crate::core::config::transformer::{
-    Transform, TransformerOps, RemoveUnused, TypeMerger,
-};
+use crate::core::config::transformer::{RemoveUnused, Transform, TransformerOps, TypeMerger};
 use crate::core::config::Config;
 use crate::core::valid::Validator;
 
