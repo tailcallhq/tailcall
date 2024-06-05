@@ -127,7 +127,7 @@ mod test {
 
     #[test]
     fn test_type_name_generator_transform() -> anyhow::Result<()> {
-        let sdl = Config::from_sdl(
+        let config = Config::from_sdl(
             r#"schema @server @upstream {
             query: Query
           }
@@ -169,7 +169,7 @@ mod test {
         )
         .to_result()?;
 
-        let transformed_config = TypeNameGenerator.transform(sdl).to_result()?;
+        let transformed_config = TypeNameGenerator.transform(config).to_result()?;
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
