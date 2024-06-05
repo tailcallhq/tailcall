@@ -2,6 +2,8 @@ use anyhow::{anyhow, bail, Result};
 use async_graphql::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::core::config::Type;
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum TypeName {
     Single(String),
@@ -9,36 +11,38 @@ pub enum TypeName {
 }
 
 #[derive(Clone, Debug)]
-pub struct Discriminator(Vec<(String, Vec<String>)>);
+pub struct Discriminator(Vec<(String, BTreeSet<String>)>);
 
 impl Discriminator {
-    pub fn new(types: BTreeMap<String, BTreeSet<String>>) -> Result<Self> {
-        let mut types_iter = types.iter();
-        let mut common_fields: BTreeSet<_> = types_iter
+    pub fn new(types: BTreeMap<&str, &Type>) -> Result<Self> {
+        let mut fields_iter = types
+            .values()
+            .map(|type_| type_.fields.keys().collect::<BTreeSet<_>>());
+        let mut common_fields: BTreeSet<_> = fields_iter
             .next()
             .ok_or(anyhow!("Types list is empty"))?
-            .1
             .clone();
 
-        for (_, fields) in types_iter {
+        for fields in fields_iter {
             common_fields = common_fields.intersection(&fields).cloned().collect();
         }
+
 
         let mut discriminator = Vec::new();
 
         for (type_name, type_) in types.iter() {
-            let unique_fields: Vec<_> = type_
-                .iter()
+            // TODO: do we need to check also addedFields here?
+            let unique_fields: BTreeSet<_> = type_
+                .fields
+                .keys()
                 .filter(|field| !common_fields.contains(*field))
                 .cloned()
                 .collect();
 
-            discriminator.push((type_name.clone(), unique_fields));
+            discriminator.push((type_name.to_string(), unique_fields));
         }
 
         // TODO: check for ambiguity and types without additional fields
-        dbg!(common_fields);
-        dbg!(&discriminator);
 
         Ok(Self(discriminator))
     }
@@ -77,21 +81,23 @@ impl Discriminator {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, BTreeSet};
+    use std::collections::BTreeMap;
 
     use async_graphql::Value;
     use serde_json::json;
 
-    use crate::core::ir::discriminator::TypeName;
+    use crate::core::{
+        config::{Field, Type},
+        ir::discriminator::TypeName,
+    };
 
     use super::Discriminator;
 
     #[test]
     fn test_foo_bar_single_field() {
-        let types = BTreeMap::from_iter([
-            ("Foo".to_string(), BTreeSet::from_iter(["foo".to_string()])),
-            ("Bar".to_string(), BTreeSet::from_iter(["bar".to_string()])),
-        ]);
+        let foo = Type::default().fields(vec![("foo", Field::default())]);
+        let bar = Type::default().fields(vec![("bar", Field::default())]);
+        let types = BTreeMap::from_iter([("Foo", &foo), ("Bar", &bar)]);
 
         let discriminator = Discriminator::new(types).unwrap();
 
@@ -112,16 +118,17 @@ mod tests {
 
     #[test]
     fn test_foo_bar_with_shared_fields() {
-        let types = BTreeMap::from_iter([
-            (
-                "Foo".to_string(),
-                BTreeSet::from_iter(["a".to_string(), "b".to_string(), "foo".to_string()]),
-            ),
-            (
-                "Bar".to_string(),
-                BTreeSet::from_iter(["a".to_string(), "b".to_string(), "bar".to_string()]),
-            ),
+        let foo = Type::default().fields(vec![
+            ("a", Field::default()),
+            ("b", Field::default()),
+            ("foo", Field::default()),
         ]);
+        let bar = Type::default().fields(vec![
+            ("a", Field::default()),
+            ("b", Field::default()),
+            ("bar", Field::default()),
+        ]);
+        let types = BTreeMap::from_iter([("Foo", &foo), ("Bar", &bar)]);
 
         let discriminator = Discriminator::new(types).unwrap();
 

@@ -117,8 +117,6 @@ impl Eval for IR {
                 IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
                     let type_name = discriminator.resolve_type(&value)?;
 
-                    dbg!(&type_name);
-
                     ctx.set_type_name(type_name);
 
                     Ok(value)

@@ -1,32 +1,29 @@
-use crate::core::{config::{ConfigModule, Field}, ir::Context};
 use crate::core::ir::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{blueprint::FieldDefinition, ir::Discriminator};
 use crate::core::{config, valid::ValidationError};
+use crate::core::{
+    config::{ConfigModule, Field},
+    ir::Context,
+};
 
 fn compile_union_resolver(
     config: &ConfigModule,
     union_: &config::Union,
 ) -> Valid<Discriminator, String> {
-    Valid::from_iter(&union_.types, |type_| {
+    Valid::from_iter(&union_.types, |type_name| {
         Valid::from_option(
-            config.find_type(&type_),
+            config
+                .find_type(&type_name)
+                .map(|type_| (type_name.as_str(), type_)),
             "Can't find a type that is member of union type".to_string(),
         )
     })
     .and_then(|types| {
-        // TODO: do we need to check also addedFields here?
-        let fields_by_type = union_
-            .types
-            .iter()
-            .zip(types)
-            .map(|(type_name, type_)| (type_name.clone(), type_.fields.keys().cloned().collect()))
-            .collect();
+        let types = types.into_iter().collect();
 
-        Valid::from(
-            Discriminator::new(fields_by_type).map_err(|e| ValidationError::new(e.to_string())),
-        )
+        Valid::from(Discriminator::new(types).map_err(|e| ValidationError::new(e.to_string())))
     })
 }
 

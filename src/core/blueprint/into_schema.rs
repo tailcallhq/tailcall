@@ -44,8 +44,6 @@ fn to_field_value<'a>(
 ) -> Result<FieldValue<'static>> {
     let type_name = ctx.type_name.take();
 
-    dbg!(&type_name);
-
     Ok(match (value, type_name) {
         (ConstValue::List(values), Some(TypeName::Vec(names))) => FieldValue::list(
             values
