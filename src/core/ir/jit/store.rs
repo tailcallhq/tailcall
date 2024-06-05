@@ -1,33 +1,32 @@
-use serde_json_borrow::OwnedValue;
-
-use super::model::FieldId;
+use std::collections::HashMap;
 
 #[allow(unused)]
-pub struct Store {
-    map: Vec<(FieldId, OwnedValue)>,
+#[derive(Default)]
+pub struct Store<K, V> {
+    map: HashMap<K, Data<K, V>>,
+}
+
+struct Data<K, V> {
+    body: V,
+    deferred: Vec<Defer<K>>,
+}
+
+struct Defer<K> {
+    name: String,
+    keys: Vec<K>,
 }
 
 #[allow(unused)]
-impl Store {
-    #[allow(unused)]
-    pub fn empty() -> Self {
-        Store { map: Vec::new() }
+impl<K, V> Store<K, V> {
+    pub fn new() -> Self {
+        Store { map: HashMap::new() }
     }
 
-    #[allow(unused)]
-    pub fn join(caches: Vec<Store>) -> Self {
-        let mut map = Vec::new();
-        for cache in caches {
-            map.extend(cache.map);
-        }
-        Store { map }
-    }
-    #[allow(unused)]
-    pub fn get(&self, key: &FieldId) -> Option<&OwnedValue> {
-        self.map.iter().find(|(k, _)| k == key).map(|(_, v)| v)
+    pub fn get(&self, key: &K) -> Option<&V> {
+        todo!()
     }
 
-    pub fn insert(&mut self, key: FieldId, value: OwnedValue) {
-        self.map.push((key, value));
+    pub fn insert(&mut self, key: K, value: V) {
+        todo!()
     }
 }

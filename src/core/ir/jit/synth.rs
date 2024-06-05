@@ -1,33 +1,20 @@
 pub use serde_json_borrow::*;
 
-use super::model::{Children, ExecutionPlan, Field};
+use crate::core::ir::IoId;
+
+use super::model::{Children, Field, FieldId};
 use super::store::Store;
 
 #[allow(unused)]
 pub struct Synth {
     operation: Vec<Field<Children>>,
-    pub(crate) cache: Store,
+    cache: Store<(FieldId, Option<IoId>), OwnedValue>,
 }
 
 #[allow(unused)]
 impl Synth {
     pub fn new(operation: Vec<Field<Children>>) -> Self {
-        Synth { operation, cache: Store::empty() }
-    }
-    fn build_children(
-        &self,
-        field: Field<Children>,
-        query_blueprint: ExecutionPlan,
-    ) -> ObjectAsVec {
-        let mut object = vec![];
-        for field in field.children() {
-            let key = field.name.clone();
-            let id = &field.id;
-            if let Some(value) = self.cache.get(id) {
-                object.push((key, value.get_value().to_owned()));
-            }
-        }
-        object.into()
+        Synth { operation, cache: Store::new() }
     }
 
     pub fn synthesize(&self) -> Value<'_> {
@@ -37,6 +24,7 @@ impl Synth {
 
 #[cfg(test)]
 mod tests {
+    use async_graphql::dynamic::Field;
     use serde_json_borrow::OwnedValue;
 
     use crate::core::blueprint::Blueprint;
@@ -63,7 +51,7 @@ mod tests {
         let q_blueprint = ExecutionPlanBuilder::new(blueprint, document).build();
         let mut synth = Synth::new(q_blueprint.into_children());
         synth.cache.insert(
-            FieldId::new(0),
+            (FieldId::new(0), None),
             OwnedValue::parse_from(r#"[{"user":{"id":1,"name":"Leanne Graham"}}]"#.to_string())
                 .unwrap(),
         );
