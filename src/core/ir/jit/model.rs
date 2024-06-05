@@ -102,7 +102,7 @@ impl Field<Children> {
 
 impl Field<Parent> {
     pub fn parent(&self) -> Option<&FieldId> {
-        todo!()
+        self.refs.as_ref().map(|v| &v.0)
     }
 
     pub fn into_children(self, e: &ExecutionPlan) -> Field<Children> {
@@ -155,9 +155,9 @@ impl Debug for Parent {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[allow(unused)]
-pub struct Children(Vec<Field<Children>>);
+pub struct Children(pub(crate) Vec<Field<Children>>);
 
 #[derive(Clone, Debug)]
 pub struct ExecutionPlan {
