@@ -2,7 +2,7 @@ use serde_json::Value;
 use url::Url;
 
 use super::json::{
-    FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
+    FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypeNameGenerator, TypesGenerator
 };
 use crate::core::config::transformer::{RemoveUnused, Transform, TransformerOps, TypeMerger};
 use crate::core::config::Config;
@@ -37,6 +37,7 @@ pub fn from_json(
             .pipe(FieldBaseUrlGenerator::new(&request.url, query))
             .pipe(RemoveUnused)
             .pipe(TypeMerger::new(0.8)) //TODO: take threshold value from user
+            .pipe(TypeNameGenerator)
             .transform(config)
             .to_result()?;
     }
