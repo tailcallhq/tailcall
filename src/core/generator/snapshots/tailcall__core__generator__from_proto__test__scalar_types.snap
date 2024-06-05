@@ -6,7 +6,29 @@ schema @server @upstream {
   query: Query
 }
 
-input scalars__Item @tag(id: "scalars.Item") {
+input scalars__ItemInput @tag(id: "scalars.Item") {
+  boolean: Boolean
+  bytesType: Bytes
+  doubleNum: Float
+  fixedint32: Int
+  fixedint64: Int64Str
+  floatNum: Float
+  integer32: Int
+  integer64: Int64Str
+  sfixedint32: Int
+  sfixedint64: Int64Str
+  sinteger32: Int
+  sinteger64: Int64Str
+  str: String
+  uinteger32: UInt32
+  uinteger64: Uint64StrInput
+}
+
+type Query {
+  scalars__Example__Get(item: scalars__ItemInput!): scalars__Result! @grpc(body: "{{.args.item}}", method: "scalars.Example.Get")
+}
+
+type scalars__Item @tag(id: "scalars.Item") {
   boolean: Boolean
   bytesType: Bytes
   doubleNum: Float
@@ -24,10 +46,6 @@ input scalars__Item @tag(id: "scalars.Item") {
   uinteger64: Uint64Str
 }
 
-type Query {
-  scalars__Example__Get(item: scalars__Item!): scalars__Result! @grpc(body: "{{.args.item}}", method: "scalars.Example.Get")
-}
-
 type scalars__Result @tag(id: "scalars.Result") {
-  result: [scalars__Item]!
+  result: [scalars__Item]
 }
