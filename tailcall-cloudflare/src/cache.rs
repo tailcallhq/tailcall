@@ -4,6 +4,7 @@ use std::rc::Rc;
 use anyhow::Result;
 use async_graphql_value::ConstValue;
 use serde_json::Value;
+use tailcall::core::ir::IoId;
 use tailcall::core::Cache;
 use worker::kv::KvStore;
 
@@ -28,14 +29,14 @@ impl CloudflareChronoCache {
 // TODO: Needs fix
 #[async_trait::async_trait]
 impl Cache for CloudflareChronoCache {
-    type Key = u64;
+    type Key = IoId;
     type Value = ConstValue;
-    async fn set<'a>(&'a self, key: u64, value: ConstValue, ttl: NonZeroU64) -> Result<()> {
+    async fn set<'a>(&'a self, key: IoId, value: ConstValue, ttl: NonZeroU64) -> Result<()> {
         let kv_store = self.get_kv()?;
         let ttl = ttl.get();
         async_std::task::spawn_local(async move {
             kv_store
-                .put(&key.to_string(), value.to_string())
+                .put(&key.as_u64().to_string(), value.to_string())
                 .map_err(to_anyhow)?
                 .expiration_ttl(ttl)
                 .execute()
@@ -45,9 +46,9 @@ impl Cache for CloudflareChronoCache {
         .await
     }
 
-    async fn get<'a>(&'a self, key: &'a u64) -> Result<Option<Self::Value>> {
+    async fn get<'a>(&'a self, key: &'a IoId) -> Result<Option<Self::Value>> {
         let kv_store = self.get_kv()?;
-        let key = key.to_string();
+        let key = key.as_u64().to_string();
         async_std::task::spawn_local(async move {
             let val = kv_store
                 .get(&key)
