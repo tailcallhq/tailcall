@@ -7,17 +7,20 @@ use crate::core::blueprint::{
 ///
 /// A read optimized index of all the fields in the Blueprint. Provide O(1)
 /// access to getting any field information.
+#[allow(unused)]
 pub struct FieldIndex {
     map: HashMap<String, (Definition, HashMap<String, QueryField>)>,
     schema: SchemaDefinition,
 }
 
+#[allow(unused)]
 #[derive(Debug)]
 pub enum QueryField {
     Field((FieldDefinition, HashMap<String, InputFieldDefinition>)),
     InputField(InputFieldDefinition),
 }
 
+#[allow(unused)]
 impl QueryField {
     pub fn get_arg(&self, arg_name: &str) -> Option<&InputFieldDefinition> {
         match self {
