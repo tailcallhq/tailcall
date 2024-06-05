@@ -1,0 +1,42 @@
+---
+source: src/core/generator/generator.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type M1 {
+  lat: String
+  lng: String
+}
+
+type M2 {
+  city: String
+  geo: M1
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type M3 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type M4 {
+  address: M2
+  company: M3
+  email: String
+  id: Int
+  name: String
+  phone: String
+  username: String
+  website: String
+}
+
+type Query {
+  f1: [M4] @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users")
+  f2(p1: Int!): M4 @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/users/{{.args.p1}}")
+}
