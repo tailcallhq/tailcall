@@ -113,3 +113,65 @@ impl Transform for TypeNameGenerator {
         Valid::succeed(config)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use anyhow::Ok;
+
+    use crate::core::{
+        config::{transformer::Transform, Config},
+        valid::Validator,
+    };
+
+    use super::TypeNameGenerator;
+
+    #[test]
+    fn test_type_name_generator_transform() -> anyhow::Result<()> {
+        let sdl = Config::from_sdl(
+            r#"schema @server @upstream {
+            query: Query
+          }
+          
+          type Query {
+            f1: [T31] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+          }
+          
+          type T1 {
+            lat: String
+            lng: String
+          }
+          
+          type T2 {
+            city: String
+            geo: T1
+            street: String
+            suite: String
+            zipcode: String
+          }
+          
+          type T3 {
+            bs: String
+            catchPhrase: String
+            name: String
+          }
+          
+          type T31 {
+            address: T2
+            company: T3
+            email: String
+            id: Int
+            name: String
+            phone: String
+            username: String
+            website: String
+          }
+          "#,
+        )
+        .to_result()?;
+
+        let transformed_config = TypeNameGenerator.transform(sdl).to_result()?;
+        insta::assert_snapshot!(transformed_config.to_sdl());
+
+        Ok(())
+    }
+}
