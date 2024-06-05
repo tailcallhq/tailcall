@@ -1,0 +1,27 @@
+---
+source: src/core/ir/jit/executor.rs
+expression: plan
+---
+ExecutionPlan {
+    fields: [
+        Field {
+            id: 0,
+            name: "user",
+            ir: "Some(..)",
+            type_of: User,
+            args: [
+                Arg {
+                    id: 0,
+                    name: "id",
+                    type_of: Int!,
+                    value: Some(
+                        Number(
+                            Number(1),
+                        ),
+                    ),
+                    default_value: None,
+                },
+            ],
+        },
+    ],
+}
