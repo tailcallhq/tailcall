@@ -45,6 +45,7 @@ use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
 use http::Response;
+use ir::IoId;
 pub use tailcall_macros as macros;
 
 pub trait EnvIO: Send + Sync + 'static {
@@ -80,7 +81,7 @@ pub trait Cache: Send + Sync {
     fn hit_rate(&self) -> Option<f64>;
 }
 
-pub type EntityCache = dyn Cache<Key = u64, Value = ConstValue>;
+pub type EntityCache = dyn Cache<Key = IoId, Value = ConstValue>;
 
 #[async_trait::async_trait]
 pub trait WorkerIO<In, Out>: Send + Sync + 'static {

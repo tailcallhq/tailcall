@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
+use super::ir::IoId;
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::worker::{Command, Event};
 use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
@@ -23,7 +24,7 @@ pub struct TargetRuntime {
     pub file: Arc<dyn FileIO>,
     /// Cache for storing and retrieving entity data, improving performance and
     /// reducing external calls.
-    pub cache: Arc<dyn Cache<Key = u64, Value = ConstValue>>,
+    pub cache: Arc<dyn Cache<Key = IoId, Value = ConstValue>>,
     /// A list of extensions that can be used to extend the runtime's
     /// functionality or integrate additional features.
     pub extensions: Arc<Vec<SchemaExtension>>,
