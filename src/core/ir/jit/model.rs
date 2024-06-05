@@ -51,7 +51,7 @@ impl IncrGen for ArgId {
 
 #[allow(unused)]
 impl ArgId {
-    fn new(id: usize) -> Self {
+    pub fn new(id: usize) -> Self {
         ArgId(id)
     }
 }
@@ -102,7 +102,7 @@ impl Field<Children> {
 
 impl Field<Parent> {
     pub fn parent(&self) -> Option<&FieldId> {
-        self.refs.as_ref().map(|v| &v.0)
+        self.refs.as_ref().map(|Parent(id)| id)
     }
 
     pub fn into_children(self, e: &ExecutionPlan) -> Field<Children> {
@@ -146,9 +146,12 @@ impl<A: Debug + Clone> Debug for Field<A> {
 }
 
 #[derive(Clone)]
-#[allow(unused)]
 pub struct Parent(pub(crate) FieldId);
-
+impl Parent {
+    pub fn new(id: FieldId) -> Self {
+        Parent(id)
+    }
+}
 impl Debug for Parent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Parent({:?})", self.0)

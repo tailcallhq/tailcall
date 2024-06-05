@@ -26,4 +26,8 @@ impl Store {
     pub fn get(&self, key: &FieldId) -> Option<&OwnedValue> {
         self.map.iter().find(|(k, _)| k == key).map(|(_, v)| v)
     }
+
+    pub fn insert(&mut self, key: FieldId, value: OwnedValue) {
+        self.map.push((key, value));
+    }
 }
