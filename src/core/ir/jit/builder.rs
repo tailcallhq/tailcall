@@ -8,13 +8,12 @@ use super::model::*;
 use crate::core::blueprint::Blueprint;
 use crate::core::counter::Counter;
 use crate::core::merge_right::MergeRight;
-use crate::core::valid::Validator;
 
 pub struct ExecutionPlanBuilder {
-    index: FieldIndex,
-    arg_id: Counter,
-    field_id: Counter,
-    document: ExecutableDocument,
+    pub index: FieldIndex,
+    pub arg_id: Counter,
+    pub field_id: Counter,
+    pub document: ExecutableDocument,
 }
 
 impl ExecutionPlanBuilder {
@@ -86,6 +85,7 @@ impl ExecutionPlanBuilder {
         fields
     }
 
+    #[allow(unused)]
     pub fn build(&self) -> ExecutionPlan {
         let query = &self.index.get_query().to_owned();
 

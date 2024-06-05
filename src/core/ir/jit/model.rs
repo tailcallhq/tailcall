@@ -53,6 +53,7 @@ pub struct Field<A: Clone> {
 
 const EMPTY_VEC: &Vec<Field<Children>> = &Vec::new();
 impl Field<Children> {
+    #[allow(unused)]
     pub fn children(&self) -> &Vec<Field<Children>> {
         match &self.refs {
             Some(Children(children)) => children,
