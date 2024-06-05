@@ -54,7 +54,7 @@ impl TypeNameGenerator {
         type_field_mapping
     }
 
-    fn finalized_candidates(
+    fn finalize_candidates(
         &self,
         candidate_mappings: HashMap<String, HashMap<String, u32>>,
     ) -> HashMap<String, String> {
@@ -104,7 +104,7 @@ impl Transform for TypeNameGenerator {
         let candidate_mappings = self.generate_candidate_names(&config);
 
         // step 2: converge on the candidate name. i.e { Type : Candidate_Name }
-        let finalized_candidates = self.finalized_candidates(candidate_mappings);
+        let finalized_candidates = self.finalize_candidates(candidate_mappings);
 
         // step 3: replace its every occurance.
         let config = self.generate_type_name(finalized_candidates, config);
