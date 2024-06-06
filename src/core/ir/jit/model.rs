@@ -4,7 +4,6 @@ use crate::core::ir::IR;
 
 #[allow(unused)]
 #[derive(Debug, Clone)]
-#[allow(unused)]
 pub struct Arg {
     pub id: ArgId,
     pub name: String,
