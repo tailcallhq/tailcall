@@ -166,79 +166,69 @@ pub struct Upstream {
 
 impl Upstream {
     pub fn get_pool_idle_timeout(&self) -> u64 {
-        match self.pool_idle_timeout {
-            Some(Pos { inner, .. }) => inner,
-            None => 60,
-        }
+        self.pool_idle_timeout
+            .as_ref()
+            .map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_pool_max_idle_per_host(&self) -> usize {
-        match self.pool_max_idle_per_host {
-            Some(Pos { inner, .. }) => inner,
-            None => 60,
-        }
+        self.pool_max_idle_per_host
+            .as_ref()
+            .map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_keep_alive_interval(&self) -> u64 {
-        match self.keep_alive_interval {
-            Some(Pos { inner, .. }) => inner,
-            None => 60,
-        }
+        self.keep_alive_interval
+            .as_ref()
+            .map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_keep_alive_timeout(&self) -> u64 {
-        match self.keep_alive_timeout {
-            Some(Pos { inner, .. }) => inner,
-            None => 60,
-        }
+        self.keep_alive_timeout
+            .as_ref()
+            .map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_keep_alive_while_idle(&self) -> bool {
-        match self.keep_alive_while_idle {
-            Some(Pos { inner, .. }) => inner,
-            None => false,
-        }
+        self.keep_alive_while_idle
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_connect_timeout(&self) -> u64 {
-        match self.connect_timeout {
-            Some(Pos { inner, .. }) => inner,
-            None => 60,
-        }
+        self.connect_timeout
+            .as_ref()
+            .map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_timeout(&self) -> u64 {
-        match self.timeout {
-            Some(Pos { inner, .. }) => inner,
-            None => 60,
-        }
+        self.timeout.as_ref().map_or(60, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_tcp_keep_alive(&self) -> u64 {
-        match self.tcp_keep_alive {
-            Some(Pos { inner, .. }) => inner,
-            None => 60,
-        }
+        self.tcp_keep_alive
+            .as_ref()
+            .map_or(5, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_user_agent(&self) -> String {
-        match &self.user_agent {
-            Some(Pos { inner, .. }) => inner.clone(),
-            None => "Tailcall/1.0".to_string(),
-        }
+        self.user_agent
+            .clone()
+            .map_or("Tailcall/1.0".to_string(), |Pos { inner, .. }| inner)
     }
+
     pub fn get_http_cache_size(&self) -> u64 {
-        match self.http_cache {
-            Some(Pos { inner, .. }) => inner,
-            None => 0,
-        }
+        self.http_cache
+            .as_ref()
+            .map_or(0, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_allowed_headers(&self) -> BTreeSet<String> {
-        match &self.allowed_headers {
-            Some(Pos { inner, .. }) => inner.clone(),
-            None => Default::default(),
-        }
+        self.allowed_headers.clone().unwrap_or_default().inner
     }
 
     pub fn get_delay(&self) -> usize {
-        match &self.batch {
-            Some(Pos { inner, .. }) => inner.delay,
-            None => Default::default(),
-        }
+        self.batch.clone().unwrap_or_default().delay
     }
 
     pub fn get_max_size(&self) -> usize {
@@ -248,17 +238,15 @@ impl Upstream {
     }
 
     pub fn get_http_2_only(&self) -> bool {
-        match self.http_2_only {
-            Some(Pos { inner, .. }) => inner,
-            None => false,
-        }
+        self.http_2_only
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_dedupe(&self) -> bool {
-        match self.dedupe {
-            Some(Pos { inner, .. }) => inner,
-            None => false,
-        }
+        self.dedupe
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
 }
 

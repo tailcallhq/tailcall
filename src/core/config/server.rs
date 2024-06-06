@@ -145,38 +145,31 @@ pub enum HttpVersion {
 
 impl Server {
     pub fn enable_apollo_tracing(&self) -> bool {
-        match self.apollo_tracing {
-            Some(Pos { inner, .. }) => inner,
-            None => false,
-        }
+        self.apollo_tracing
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_global_response_timeout(&self) -> i64 {
-        match self.global_response_timeout {
-            Some(Pos { inner, .. }) => inner,
-            None => 0,
-        }
+        self.global_response_timeout
+            .as_ref()
+            .map_or(0, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_workers(&self) -> usize {
-        match self.workers {
-            Some(Pos { inner, .. }) => inner,
-            None => num_cpus::get(),
-        }
+        self.workers
+            .as_ref()
+            .map_or(num_cpus::get(), |Pos { inner, .. }| *inner)
     }
 
     pub fn get_port(&self) -> u16 {
-        match self.port {
-            Some(Pos { inner, .. }) => inner,
-            None => 8000,
-        }
+        self.port.as_ref().map_or(8000, |Pos { inner, .. }| *inner)
     }
 
     pub fn enable_http_validation(&self) -> bool {
-        match self.response_validation {
-            Some(Pos { inner, .. }) => inner,
-            None => false,
-        }
+        self.response_validation
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
 
     pub fn enable_cache_control(&self) -> bool {
@@ -185,42 +178,41 @@ impl Server {
             .map(|h| h.enable_cache_control())
             .unwrap_or(false)
     }
+
     pub fn enable_set_cookies(&self) -> bool {
         self.headers
             .as_ref()
             .map(|h| h.set_cookies())
             .unwrap_or(false)
     }
+
     pub fn enable_introspection(&self) -> bool {
-        match self.introspection {
-            Some(Pos { inner, .. }) => inner,
-            None => true,
-        }
+        self.introspection
+            .as_ref()
+            .map_or(true, |Pos { inner, .. }| *inner)
     }
     pub fn enable_query_validation(&self) -> bool {
-        match self.query_validation {
-            Some(Pos { inner, .. }) => inner,
-            None => false,
-        }
+        self.query_validation
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
+
     pub fn enable_batch_requests(&self) -> bool {
-        match self.batch_requests {
-            Some(Pos { inner, .. }) => inner,
-            None => false,
-        }
+        self.batch_requests
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
+
     pub fn enable_showcase(&self) -> bool {
-        match self.showcase {
-            Some(Pos { inner, .. }) => inner,
-            None => false,
-        }
+        self.showcase
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_hostname(&self) -> String {
-        match &self.hostname {
-            Some(Pos { inner, .. }) => inner.clone(),
-            None => "127.0.0.1".to_string(),
-        }
+        self.hostname
+            .clone()
+            .map_or("127.0.0.1".to_string(), |Pos { inner, .. }| inner)
     }
 
     pub fn get_vars(&self) -> BTreeMap<String, String> {
@@ -251,17 +243,14 @@ impl Server {
     }
 
     pub fn get_version(self) -> HttpVersion {
-        match self.version {
-            Some(Pos { inner, .. }) => inner,
-            None => HttpVersion::HTTP1,
-        }
+        self.version
+            .map_or(HttpVersion::HTTP1, |Pos { inner, .. }| inner)
     }
 
     pub fn get_pipeline_flush(&self) -> bool {
-        match self.pipeline_flush {
-            Some(Pos { inner, .. }) => inner,
-            None => false,
-        }
+        self.pipeline_flush
+            .as_ref()
+            .map_or(true, |Pos { inner, .. }| *inner)
     }
 }
 
