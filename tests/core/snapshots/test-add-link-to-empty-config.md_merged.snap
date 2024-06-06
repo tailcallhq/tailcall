@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server @upstream @link(src: "link-expr.graphql", type: Config) @link(src: "link-enum.graphql", type: Config) {
   query: Query

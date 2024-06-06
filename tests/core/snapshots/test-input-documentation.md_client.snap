@@ -1,6 +1,5 @@
 ---
 source: tests/core/spec.rs
-assertion_line: 278
 expression: formatted
 ---
 scalar Date

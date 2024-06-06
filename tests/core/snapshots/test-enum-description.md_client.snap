@@ -1,7 +1,6 @@
 ---
 source: tests/core/spec.rs
-assertion_line: 273
-expression: client
+expression: formatted
 ---
 scalar Date
 

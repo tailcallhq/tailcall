@@ -150,7 +150,7 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
         let mut store = Store::new();
-        let edoc = ExecutionPlanBuilder::new(blueprint, document).build();
+        let edoc = ExecutionPlanBuilder::new(blueprint, document).build().unwrap();
 
         data.into_iter().for_each(|(k, v)| {
             store.insert(k, v);
