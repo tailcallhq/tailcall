@@ -123,6 +123,10 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 if let Some(description) = &field.description {
                     input_field = input_field.description(description);
                 }
+                if let Some(default_value) = field.default_value.clone() {
+                    input_field =
+                        input_field.default_value(ConstValue::from_json(default_value).unwrap())
+                }
                 input_object = input_object.field(input_field);
             }
             if let Some(description) = &def.description {
