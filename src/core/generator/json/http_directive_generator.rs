@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use regex::Regex;
 use url::Url;
 
+use crate::core::config::position::Pos;
 use crate::core::config::{Arg, Field, Http, KeyValue};
 use crate::core::helpers::gql_type::detect_gql_data_type;
 
@@ -102,11 +103,11 @@ impl<'a> HttpDirectiveGenerator<'a> {
         }
     }
 
-    pub fn generate_http_directive(mut self, field: &mut Field) -> Http {
+    pub fn generate_http_directive(mut self, field: &mut Field) -> Pos<Http> {
         self.add_path_variables(field);
         self.add_query_variables(field);
 
-        self.http
+        Pos::new(0, 0, self.http)
     }
 }
 

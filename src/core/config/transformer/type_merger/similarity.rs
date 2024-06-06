@@ -95,11 +95,11 @@ impl<'a> Similarity<'a> {
 #[cfg(test)]
 mod test {
     use super::Similarity;
-    use crate::core::config::{Config, Field, Type};
+    use crate::core::config::{position::Pos, Config, Field, Type};
 
     #[test]
     fn should_return_false_when_thresh_is_not_met() {
-        let mut foo1 = Type::default();
+        let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
             Field { type_of: "Int".to_owned(), ..Default::default() },
@@ -113,7 +113,7 @@ mod test {
             Field { type_of: "Bar1".to_owned(), ..Default::default() },
         );
 
-        let mut foo2 = Type::default();
+        let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
             Field { type_of: "Int".to_owned(), ..Default::default() },
@@ -127,7 +127,7 @@ mod test {
             Field { type_of: "Bar2".to_owned(), ..Default::default() },
         );
 
-        let mut bar1 = Type::default();
+        let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
             Field { type_of: "Int".to_owned(), ..Default::default() },
@@ -137,7 +137,7 @@ mod test {
             Field { type_of: "Float".to_owned(), ..Default::default() },
         );
 
-        let mut bar2 = Type::default();
+        let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
             Field { type_of: "Int".to_owned(), ..Default::default() },
@@ -161,7 +161,7 @@ mod test {
 
     #[test]
     fn should_return_true_when_thresh_is_met() {
-        let mut foo1 = Type::default();
+        let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
             Field { type_of: "Int".to_owned(), ..Default::default() },
@@ -175,7 +175,7 @@ mod test {
             Field { type_of: "Bar1".to_owned(), ..Default::default() },
         );
 
-        let mut foo2 = Type::default();
+        let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
             Field { type_of: "Int".to_owned(), ..Default::default() },
@@ -189,7 +189,7 @@ mod test {
             Field { type_of: "Bar2".to_owned(), ..Default::default() },
         );
 
-        let mut bar1 = Type::default();
+        let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
             Field { type_of: "Int".to_owned(), ..Default::default() },
@@ -199,7 +199,7 @@ mod test {
             Field { type_of: "Float".to_owned(), ..Default::default() },
         );
 
-        let mut bar2 = Type::default();
+        let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
             Field { type_of: "Int".to_owned(), ..Default::default() },
@@ -227,25 +227,25 @@ mod test {
 
     #[test]
     fn test_cyclic_type() {
-        let mut foo1 = Type::default();
+        let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
             Field { type_of: "Bar1".to_owned(), ..Default::default() },
         );
 
-        let mut foo2 = Type::default();
+        let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
             Field { type_of: "Bar2".to_owned(), ..Default::default() },
         );
 
-        let mut bar1 = Type::default();
+        let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
             Field { type_of: "Foo1".to_owned(), ..Default::default() },
         );
 
-        let mut bar2 = Type::default();
+        let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
             Field { type_of: "Foo2".to_owned(), ..Default::default() },
@@ -265,36 +265,36 @@ mod test {
 
     #[test]
     fn test_nested_types() {
-        let mut foo1 = Type::default();
+        let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
             Field { type_of: "Bar1".to_owned(), ..Default::default() },
         );
 
-        let mut foo2 = Type::default();
+        let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
             Field { type_of: "Bar2".to_owned(), ..Default::default() },
         );
 
-        let mut bar1 = Type::default();
+        let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
             Field { type_of: "Far1".to_owned(), ..Default::default() },
         );
 
-        let mut bar2 = Type::default();
+        let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
             Field { type_of: "Far2".to_owned(), ..Default::default() },
         );
 
-        let mut far1 = Type::default();
+        let mut far1: Pos<Type> = Default::default();
         far1.fields.insert(
             "a".to_owned(),
             Field { type_of: "Int".to_owned(), ..Default::default() },
         );
-        let mut far2 = Type::default();
+        let mut far2: Pos<Type> = Default::default();
         far2.fields.insert(
             "a".to_owned(),
             Field { type_of: "Int".to_owned(), ..Default::default() },

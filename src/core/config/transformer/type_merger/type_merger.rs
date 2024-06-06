@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use super::similarity::Similarity;
+use crate::core::config::position::Pos;
 use crate::core::config::transformer::Transform;
 use crate::core::config::{Config, Type};
 use crate::core::valid::Valid;
@@ -77,7 +78,7 @@ impl TypeMerger {
 
         // step 2: merge similar types into single merged type.
         for same_types in similar_type_group_list {
-            let mut merged_into = Type::default();
+            let mut merged_into = Pos::new(0, 0, Type::default());
             let merged_type_name = format!("M{}", merge_counter);
             let mut did_we_merge = false;
             for type_name in same_types {
@@ -121,7 +122,7 @@ impl TypeMerger {
     }
 }
 
-fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
+fn merge_type(type_: &Type, mut merge_into: Pos<Type>) -> Pos<Type> {
     merge_into.fields.extend(type_.fields.clone());
     merge_into
         .added_fields
@@ -143,6 +144,7 @@ impl Transform for TypeMerger {
 #[cfg(test)]
 mod test {
     use super::TypeMerger;
+    use crate::core::config::position::Pos;
     use crate::core::config::transformer::Transform;
     use crate::core::config::{Config, Field, Type};
     use crate::core::valid::Validator;
@@ -171,14 +173,14 @@ mod test {
         let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
         let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };
 
-        let mut ty1 = Type::default();
+        let mut ty1: Pos<Type> = Default::default();
         ty1.fields.insert("body".to_string(), str_field.clone());
         ty1.fields.insert("id".to_string(), int_field.clone());
         ty1.fields
             .insert("is_verified".to_string(), bool_field.clone());
         ty1.fields.insert("userId".to_string(), int_field.clone());
 
-        let mut ty2 = Type::default();
+        let mut ty2: Pos<Type> = Default::default();
         ty2.fields.insert(
             "t1".to_string(),
             Field { type_of: "T1".to_string(), ..Default::default() },
@@ -193,7 +195,7 @@ mod test {
         config.types.insert("T1".to_string(), ty1);
         config.types.insert("T2".to_string(), ty2);
 
-        let mut q_type = Type::default();
+        let mut q_type: Pos<Type> = Default::default();
         q_type.fields.insert(
             "q1".to_string(),
             Field { type_of: "T1".to_string(), ..Default::default() },
@@ -221,7 +223,7 @@ mod test {
         let float_field = Field { type_of: "Float".to_owned(), ..Default::default() };
         let id_field = Field { type_of: "ID".to_owned(), ..Default::default() };
 
-        let mut ty = Type::default();
+        let mut ty: Pos<Type> = Default::default();
         ty.fields.insert("f1".to_string(), str_field.clone());
         ty.fields.insert("f2".to_string(), int_field.clone());
         ty.fields.insert("f3".to_string(), bool_field.clone());
@@ -234,7 +236,7 @@ mod test {
         config.types.insert("T3".to_string(), ty.clone());
         config.types.insert("T4".to_string(), ty.clone());
 
-        let mut q_type = Type::default();
+        let mut q_type: Pos<Type> = Default::default();
         q_type.fields.insert(
             "q1".to_string(),
             Field { type_of: "T1".to_string(), ..Default::default() },

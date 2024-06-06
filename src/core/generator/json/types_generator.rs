@@ -1,6 +1,7 @@
 use serde_json::{Map, Value};
 
 use super::NameGenerator;
+use crate::core::config::position::Pos;
 use crate::core::config::transformer::Transform;
 use crate::core::config::{Config, Field, Type};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
@@ -28,11 +29,11 @@ struct TypeMerger;
 
 impl TypeMerger {
     /// given a list of types, merges all fields into single type.
-    fn merge_fields(type_list: Vec<Type>) -> Type {
-        let mut ty = Type::default();
+    fn merge_fields(type_list: Vec<Pos<Type>>) -> Pos<Type> {
+        let mut ty: Pos<Type> = Default::default();
 
         for current_type in type_list {
-            for (key, new_field) in current_type.fields {
+            for (key, new_field) in current_type.inner.fields {
                 if let Some(existing_field) = ty.fields.get(&key) {
                     if existing_field.type_of.is_empty()
                         || existing_field.type_of == "Empty"
@@ -77,7 +78,9 @@ where
         if config.types.contains_key(any_scalar) {
             return any_scalar.to_string();
         }
-        config.types.insert(any_scalar.to_string(), Type::default());
+        config
+            .types
+            .insert(any_scalar.to_string(), Pos::new(0, 0, Type::default()));
         any_scalar.to_string()
     }
 
@@ -85,8 +88,8 @@ where
         &self,
         json_object: &'a Map<String, Value>,
         config: &mut Config,
-    ) -> Type {
-        let mut ty = Type::default();
+    ) -> Pos<Type> {
+        let mut ty: Pos<Type> = Default::default();
         for (json_property, json_val) in json_object {
             let field = if !JSONValidator::is_graphql_compatible(json_val) {
                 // if object, array is empty or object has in-compatible fields then
@@ -122,7 +125,7 @@ where
                         0
                     }
                 });
-                let mut object_types = Vec::<_>::with_capacity(vec_capacity);
+                let mut object_types = Vec::<Pos<Type>>::with_capacity(vec_capacity);
                 for json_item in json_arr {
                     if let Value::Object(json_obj) = json_item {
                         if !JSONValidator::is_graphql_compatible(json_item) {

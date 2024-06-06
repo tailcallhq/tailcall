@@ -2,6 +2,7 @@ use url::Url;
 
 use super::http_directive_generator::HttpDirectiveGenerator;
 use super::types_generator::OperationGenerator;
+use crate::core::config::position::Pos;
 use crate::core::config::{Config, Field, Type};
 use crate::core::valid::Valid;
 
@@ -34,7 +35,7 @@ impl OperationGenerator for QueryGenerator<'_> {
         if let Some(type_) = config.types.get_mut(self.query) {
             type_.fields.insert(self.field_name.to_owned(), field);
         } else {
-            let mut ty = Type::default();
+            let mut ty = Pos::new(0, 0, Type::default());
             ty.fields.insert(self.field_name.to_owned(), field);
             config.types.insert(self.query.to_owned(), ty);
         }
