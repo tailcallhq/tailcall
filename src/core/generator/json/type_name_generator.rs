@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use inflector::{string::singularize::to_singular, Inflector};
+use inflector::Inflector;
 
 use crate::core::{
     config::{transformer::Transform, Config},
@@ -58,19 +58,22 @@ impl TypeNameGenerator {
         &self,
         candidate_mappings: HashMap<String, HashMap<String, u32>>,
     ) -> HashMap<String, String> {
-        candidate_mappings
-            .into_iter()
-            .flat_map(|(outer_key, inner_map)| {
-                // Find the entry with the highest count
-                let max_entry = inner_map.iter().max_by_key(|(_, &count)| count);
-                // Check if max_entry exists and convert that key into singular type and return it
-                if let Some((inner_key, _)) = max_entry {
-                    Some((outer_key, to_singular(inner_key).to_pascal_case()))
-                } else {
-                    None
-                }
-            })
-            .collect::<HashMap<String, String>>()
+        let mut finalized_candidates = HashMap::new();
+        let mut converged_candidate_set = HashSet::new();
+
+        for (type_name, candidate_list) in candidate_mappings {
+            // Find the most frequent candidate that hasn't been converged yet
+            if let Some((candidate_name, _)) = candidate_list.into_iter()
+                .max_by_key(|&(_, count)| count)
+                .filter(|(candidate_name, _)| !converged_candidate_set.contains(candidate_name)) 
+            {
+                let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
+                finalized_candidates.insert(type_name, singularized_candidate_name);
+                converged_candidate_set.insert(candidate_name);
+            }
+        }
+
+        finalized_candidates
     }
 
     fn generate_type_name(
