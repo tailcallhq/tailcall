@@ -1,6 +1,6 @@
 schema
-  @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+@server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
+@upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
   query: Query
   mutation: Mutation
 }
@@ -50,6 +50,14 @@ type User {
   email: String!
   phone: String
   website: String
+  address: Address
+}
+
+type Address {
+  street: String
+  suite: String
+  city: String
+  zipcode: String
 }
 
 type Post {

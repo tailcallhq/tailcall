@@ -21,17 +21,22 @@ impl Synth {
         self.iter(&self.operation, value)
     }
 
-    pub fn iter<'a>(
-        &'a self,
-        node: &'a Field<Children>,
-        parent: Option<&'a Data<IoId, OwnedValue>>,
+    pub fn iter<'a>( // TODO: Add validator to match that value.is_arr == node.type_of.is_arr
+                     &'a self,
+                     node: &'a Field<Children>,
+                     parent: Option<&'a Data<IoId, OwnedValue>>,
     ) -> Value<'a> {
         match parent {
-            Some(value) => {
-                match value.data.as_ref().map(|v| v.get_value()) {
-                    Some(val) => self.foo(node, Some(val)),
+            Some(parent) => {
+                match parent.data.as_ref().map(|v| v.get_value()) {
+                    Some(val) => {
+                        let val = self.foo(node, Some(val), parent);
+                        // let val = Value::Object(vec![(node.name.to_owned(), val)].into());
+                        val
+                    }
                     _ => {
-                        if let Some(key) = value.deferred.get(&(FieldId::new(node.id.0 + 1))) {
+                        // println!("hx1: {}", node.name);
+                        if let Some(key) = parent.deferred.get(&(FieldId::new(node.id.0 + 1))) {
                             // TODO: remove node.id.0 + 1 it is just used for the example
                             let value = self.store.get(key);
                             // println!("{:?}", value.map(|v| v.data.as_ref()).flatten());
@@ -42,16 +47,21 @@ impl Synth {
                     }
                 }
             }
-            None => Value::Null,
+            None => {
+                // println!("iter null: {}", node.name);
+                Value::Null
+            }
         }
     }
     fn foo<'a>(
         &'a self,
         node: &'a Field<Children>,
         parent: Option<&'a Value<'a>>,
+        value: &Data<IoId, OwnedValue>,
     ) -> Value<'a> {
         match parent {
             Some(Value::Object(obj)) => {
+                // println!("obj: {:?}", obj);
                 let mut ans = vec![];
                 let children = node.children();
                 if children.is_empty() {
@@ -65,7 +75,18 @@ impl Synth {
                     for child in children {
                         let val = obj.iter().find(|(k, _)| child.name.eq(*k)).map(|(_, v)| v);
                         if let Some(val) = val {
-                            ans.push((child.name.to_owned(), self.foo(child, Some(val))));
+                            ans.push((child.name.to_owned(), self.foo(child, Some(val), value)));
+                            // println!("{:?}", ans);
+                        } else {
+                            // TODO: This type might have a resolver so need data
+                            // println!("{:?}", child.id);
+                            // println!("{:#?}", value.deferred);
+                            let current = value.deferred.get(&FieldId::new((child.id.0 - 1))).map(|io_id| {
+                                self.store.get(io_id)
+                            }).flatten();
+                            // println!("{}", current.is_some());
+                            let value = self.iter(child, current);
+                            ans.push((child.name.to_owned(), value));
                         }
                     }
                 }
@@ -79,12 +100,16 @@ impl Synth {
             Some(Value::Array(arr)) => {
                 let mut ans = vec![];
                 for val in arr {
-                    ans.push(self.foo(node, Some(val)));
+                    ans.push(self.foo(node, Some(val), value));
                 }
+                // Value::Array(ans)
                 Value::Object(vec![(node.name.to_owned(), Value::Array(ans))].into())
             }
             Some(val) => val.clone(),
-            None => Value::Null,
+            None => {
+                // println!("null: {}", node.name);
+                Value::Null
+            }
         }
     }
 }
@@ -139,7 +164,7 @@ mod tests {
             Data {
                 data: Some(
                     OwnedValue::from_str(
-                        r#"[{"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": "2"}]"#,
+                        r#"[{"id": 1, "title": "My title", "title":"Hello", "body": "This is my first post.", "userId": 1}]"#,
                     )
                         .unwrap(),
                 ),
@@ -154,31 +179,31 @@ mod tests {
             Data {
                 data: Some(
                     OwnedValue::from_str(
-                        r#"{"name": "John Doe", "userId": "1"}"#,
+                        r#"{"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1}"#,
                     ).unwrap()
                 ),
                 deferred,
             },
         );
 
-        let deferred = HashMap::new();
-        store.insert(
-            IoId::new(1),
-            Data {
-                data: Some(
-                    OwnedValue::from_str(
-                        r#"[{"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": "2"}]"#,
-                    ).unwrap()
-                ),
-                deferred,
-            },
-        );
+        /*        let deferred = HashMap::new();
+                store.insert(
+                    IoId::new(1),
+                    Data {
+                        data: Some(
+                            OwnedValue::from_str(
+                                r#"[{"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": "2"}]"#,
+                            ).unwrap()
+                        ),
+                        deferred,
+                    },
+                );*/
 
-        // println!("{:#?}", store);
+        println!("{:#?}", store);
 
         // Synthesize the final value
         let children = edoc.into_children();
-        println!("{:#?}",children);
+        // println!("{:#?}",children);
         let synth = Synth::new(children.first().unwrap().to_owned(), store);
 
         synth.synthesize().to_string()
@@ -215,7 +240,7 @@ mod tests {
         let actual = synth(
             r#"
                 query {
-                    post(id: 1) { id title }
+                    user(id: 1) { userId name }
                 }
             "#,
         );
