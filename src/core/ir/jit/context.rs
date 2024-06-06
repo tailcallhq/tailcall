@@ -5,7 +5,7 @@ use serde_json_borrow::OwnedValue;
 
 use super::model::{ExecutionPlan, Field, FieldId, Parent};
 use super::store::Store;
-use crate::core::ir::{IoId, IR};
+use crate::core::ir::{EvaluationError, IoId, IR};
 
 #[allow(unused)]
 pub struct ExecutionContext {
@@ -19,8 +19,8 @@ impl ExecutionContext {
         &self,
         ir: &IR,
         parent: Option<&OwnedValue>,
-    ) -> anyhow::Result<OwnedValue> {
-        todo!()
+    ) -> Result<OwnedValue, EvaluationError> {
+        super::execute::execute_ir(ir, parent).await
     }
     fn find_children(&self, id: FieldId) -> Vec<Field<Parent>> {
         todo!()
