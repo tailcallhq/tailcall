@@ -2,7 +2,8 @@ use serde_json::Value;
 use url::Url;
 
 use super::json::{
-    FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypeNameGenerator, TypesGenerator
+    FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypeNameGenerator,
+    TypesGenerator,
 };
 use crate::core::config::transformer::{RemoveUnused, Transform, TransformerOps, TypeMerger};
 use crate::core::config::Config;
