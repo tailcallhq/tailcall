@@ -2,14 +2,14 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream {
+schema @server @upstream(baseURL: "http://abc.com") {
   query: Query
 }
 
 input Input {
-  value: Int
+  id: Int
 }
 
 type Query {
-  abc(input: Input!): Int @expr(body: "{{.args.input}}")
+  abc(input: Input!): Int @http(path: "/{{.args.input.id}}")
 }

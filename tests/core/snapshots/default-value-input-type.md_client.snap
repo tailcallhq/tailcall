@@ -9,7 +9,7 @@ scalar Email
 scalar Empty
 
 input Input {
-  value: Int = 1
+  id: Int = 1
 }
 
 scalar JSON
