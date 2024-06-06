@@ -27,6 +27,7 @@ pub fn from_json(
     let mut config = Config::default();
     let field_name_gen = NameGenerator::new("f");
     let type_name_gen = NameGenerator::new("T");
+    let root_name_gen = NameGenerator::new("RootType");
 
     for request in config_gen_req.iter() {
         let field_name = field_name_gen.generate_name();
@@ -38,7 +39,10 @@ pub fn from_json(
             .pipe(FieldBaseUrlGenerator::new(&request.url, query))
             .pipe(RemoveUnused)
             .pipe(TypeMerger::new(0.8)) //TODO: take threshold value from user
-            .pipe(TypeNameGenerator)
+            .pipe(TypeNameGenerator::new(
+                &root_name_gen.generate_name(),
+                &type_name_gen,
+            ))
             .transform(config)
             .to_result()?;
     }
