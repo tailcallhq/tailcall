@@ -1,6 +1,6 @@
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use async_graphql::Value;
-use std::collections::{BTreeMap, BTreeSet};
+use indexmap::{IndexMap, IndexSet};
 
 use crate::core::config::Type;
 
@@ -12,19 +12,19 @@ pub enum TypeName {
 
 #[derive(Clone, Debug)]
 pub struct Discriminator {
-    types: BTreeSet<String>,
-    fields_info: BTreeMap<String, FieldInfo>,
+    types: Vec<String>,
+    fields_info: IndexMap<String, FieldInfo>,
 }
 
 #[derive(Default, Debug, Clone)]
 struct FieldInfo {
-    present_in: BTreeSet<String>,
-    required_in: BTreeSet<String>,
+    present_in: IndexSet<String>,
+    required_in: IndexSet<String>,
 }
 
 impl Discriminator {
-    pub fn new(types: BTreeMap<&str, &Type>) -> Result<Self> {
-        let mut fields_info: BTreeMap<String, FieldInfo> = BTreeMap::new();
+    pub fn new(types: Vec<(&str, &Type)>) -> Result<Self> {
+        let mut fields_info: IndexMap<String, FieldInfo> = IndexMap::new();
 
         // TODO: do we need to check also added_fields?
         for (type_name, type_) in types.iter() {
@@ -43,7 +43,7 @@ impl Discriminator {
 
         Ok(Self {
             fields_info,
-            types: types.keys().map(|name| name.to_string()).collect(),
+            types: types.iter().map(|(name, _)| name.to_string()).collect(),
         })
     }
 
@@ -67,7 +67,7 @@ impl Discriminator {
             bail!("Value expected to be object");
         };
 
-        let mut possible_types: BTreeSet<_> =
+        let mut possible_types: IndexSet<_> =
             self.types.iter().map(|name| name.to_string()).collect();
 
         for (field, info) in &self.fields_info {
@@ -87,21 +87,23 @@ impl Discriminator {
                 0 => bail!("Failed to find corresponding type for value"),
                 1 => {
                     return Ok(possible_types
-                        .pop_first()
+                        .into_iter()
+                        .next()
                         .expect("Safe unwrap due to previous check for length"))
                 }
                 _ => {}
             };
         }
 
-        bail!("Multiple types to resolve");
+        possible_types
+            .into_iter()
+            .next()
+            .ok_or(anyhow!("Empty list of possible types"))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-
     use async_graphql::Value;
     use serde_json::json;
 
@@ -116,7 +118,7 @@ mod tests {
     fn test_single_distinct_field_optional() {
         let foo = Type::default().fields(vec![("foo", Field::default())]);
         let bar = Type::default().fields(vec![("bar", Field::default())]);
-        let types = BTreeMap::from_iter([("Foo", &foo), ("Bar", &bar)]);
+        let types = vec![("Foo", &foo), ("Bar", &bar)];
 
         let discriminator = Discriminator::new(types).unwrap();
 
@@ -130,6 +132,75 @@ mod tests {
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
+                .unwrap(),
+            TypeName::Single("Bar".to_string())
+        );
+
+        // ambiguous cases
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({})).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+    }
+
+    #[test]
+    fn test_single_distinct_field_required() {
+        let foo =
+            Type::default().fields(vec![("foo", Field { required: true, ..Field::default() })]);
+        let bar =
+            Type::default().fields(vec![("bar", Field { required: true, ..Field::default() })]);
+        let types = vec![("Foo", &foo), ("Bar", &bar)];
+
+        let discriminator = Discriminator::new(types).unwrap();
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "foo": "test" })).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
+                .unwrap(),
+            TypeName::Single("Bar".to_string())
+        );
+
+        // ambiguous cases
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({})).unwrap())
+                .unwrap(),
+            TypeName::Single("Bar".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
             TypeName::Single("Bar".to_string())
         );
@@ -147,7 +218,7 @@ mod tests {
             ("b", Field::default()),
             ("bar", Field::default()),
         ]);
-        let types = BTreeMap::from_iter([("Foo", &foo), ("Bar", &bar)]);
+        let types = vec![("Foo", &foo), ("Bar", &bar)];
 
         let discriminator = Discriminator::new(types).unwrap();
 
@@ -166,6 +237,50 @@ mod tests {
                 .unwrap(),
             TypeName::Single("Bar".to_string())
         );
+
+        // ambiguous cases
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({})).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        // ambiguous cases
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({})).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
     }
 
     #[test]
@@ -176,7 +291,7 @@ mod tests {
             ("foo", Field::default()),
         ]);
         let bar = Type::default().fields(vec![("bar", Field::default())]);
-        let types = BTreeMap::from_iter([("Foo", &foo), ("Bar", &bar)]);
+        let types = vec![("Foo", &foo), ("Bar", &bar)];
 
         let discriminator = Discriminator::new(types).unwrap();
 
@@ -192,6 +307,37 @@ mod tests {
                 .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
                 .unwrap(),
             TypeName::Single("Bar".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(
+                    &Value::from_json(json!({ "unknown": { "foo": "bar" }, "a": 1 })).unwrap()
+                )
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        // ambiguous cases
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({})).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
+                .unwrap(),
+            TypeName::Single("Foo".to_string())
         );
     }
 
@@ -213,7 +359,7 @@ mod tests {
             ("c", Field::default()),
             ("aaa", Field::default()),
         ]);
-        let types = BTreeMap::from_iter([("A", &a), ("B", &b), ("C", &c)]);
+        let types = vec![("A", &a), ("B", &b), ("C", &c)];
 
         let discriminator = Discriminator::new(types).unwrap();
 
@@ -236,6 +382,30 @@ mod tests {
                 .resolve_type(&Value::from_json(json!({ "c": 1, "aaa": 1 })).unwrap())
                 .unwrap(),
             TypeName::Single("C".to_string())
+        );
+
+        // ambiguous cases
+        assert_eq!(
+            discriminator
+                .resolve_type(
+                    &Value::from_json(json!({ "shared": 1, "a": 1, "b": 1, "c": 1 })).unwrap()
+                )
+                .unwrap(),
+            TypeName::Single("A".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({})).unwrap())
+                .unwrap(),
+            TypeName::Single("A".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
+                .unwrap(),
+            TypeName::Single("A".to_string())
         );
     }
 
@@ -278,7 +448,7 @@ mod tests {
             ("command", Field { required: true, ..Field::default() }),
             ("optPayload", Field { required: true, ..Field::default() }),
         ]);
-        let types = BTreeMap::from_iter([
+        let types = vec![
             ("Var_Var", &var_var),
             ("Var0_Var", &var0_var),
             ("Var1_Var", &var1_var),
@@ -288,7 +458,7 @@ mod tests {
             ("Var1_Var0", &var1_var0),
             ("Var0_Var1", &var0_var1),
             ("Var1_Var1", &var1_var1),
-        ]);
+        ];
 
         let discriminator = Discriminator::new(types).unwrap();
 
@@ -376,8 +546,23 @@ mod tests {
                 .resolve_type(
                     &Value::from_json(json!({ "usual": 1, "command": 1, "payload": 1 })).unwrap()
                 )
+                .unwrap_err()
+                .to_string(),
+            "Failed to find corresponding type for value"
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Var1_Var".to_string())
+            TypeName::Single("Var_Var".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
+                .unwrap(),
+            TypeName::Single("Var_Var".to_string())
         );
     }
 
@@ -401,12 +586,12 @@ mod tests {
             ("uniqueD2", Field { required: true, ..Field::default() }),
         ]);
 
-        let types = BTreeMap::from_iter([
+        let types = vec![
             ("TypeA", &type_a),
             ("TypeB", &type_b),
             ("TypeC", &type_c),
             ("TypeD", &type_d),
-        ]);
+        ];
 
         let discriminator = Discriminator::new(types).unwrap();
 
@@ -448,6 +633,7 @@ mod tests {
             TypeName::Single("TypeD".to_string())
         );
 
+        // ambiguous cases
         assert_eq!(
             discriminator
                 .resolve_type(
@@ -456,6 +642,20 @@ mod tests {
                     )
                     .unwrap()
                 )
+                .unwrap(),
+            TypeName::Single("TypeA".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({})).unwrap())
+                .unwrap(),
+            TypeName::Single("TypeA".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
             TypeName::Single("TypeA".to_string())
         );
@@ -481,12 +681,12 @@ mod tests {
             ("field4", Field { required: true, ..Field::default() }),
         ]);
 
-        let types = BTreeMap::from_iter([
+        let types = vec![
             ("TypeA", &type_a),
             ("TypeB", &type_b),
             ("TypeC", &type_c),
             ("TypeD", &type_d),
-        ]);
+        ];
 
         let discriminator = Discriminator::new(types).unwrap();
 
@@ -529,13 +729,32 @@ mod tests {
             TypeName::Single("TypeD".to_string())
         );
 
-        assert!(discriminator
-            .resolve_type(
-                &Value::from_json(
-                    json!({ "field1": "value", "field2": "value", "field3": "value" })
+        // ambiguous cases
+        assert_eq!(
+            discriminator
+                .resolve_type(
+                    &Value::from_json(
+                        json!({ "field1": "value", "field2": "value", "field3": "value" })
+                    )
+                    .unwrap()
                 )
-                .unwrap()
-            )
-            .is_err());
+                .unwrap_err()
+                .to_string(),
+            "Failed to find corresponding type for value"
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({})).unwrap())
+                .unwrap(),
+            TypeName::Single("TypeA".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
+                .unwrap(),
+            TypeName::Single("TypeA".to_string())
+        );
     }
 }

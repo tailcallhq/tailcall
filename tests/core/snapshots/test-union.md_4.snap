@@ -11,12 +11,16 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "IOException: Failed to find corresponding type for value",
+        "message": "internal: non-null types require a return value",
         "locations": [
           {
-            "line": 2,
-            "column": 3
+            "line": 4,
+            "column": 7
           }
+        ],
+        "path": [
+          "unknown",
+          "foo"
         ]
       }
     ]
