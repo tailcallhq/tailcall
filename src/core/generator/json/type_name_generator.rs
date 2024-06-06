@@ -139,9 +139,9 @@ impl Transform for TypeNameGenerator<'_> {
         // step 3: replace its every occurance.
         let config = self.generate_type_name(finalized_candidates, config);
 
-        // step 4: replace the generate type name with user provided name if it's
+        // step 4: replace the generated type name with user provided name if it's
         // possible. i.e if we are able to generate the correct name for root type then
-        // user provided suggested not used.
+        // user provided name isn't used.
         let config = self.generate_root_type_name(config);
 
         // step 5: return the config.
