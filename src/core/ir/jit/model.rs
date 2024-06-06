@@ -26,8 +26,8 @@ impl ArgId {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
-pub struct FieldId(usize);
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct FieldId(pub(crate) usize); // TODO: drop pub(crate)
 
 impl Debug for FieldId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -120,7 +120,7 @@ impl Debug for Parent {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Children(Vec<Field<Children>>);
 
 #[derive(Clone, Debug)]

@@ -1,22 +1,17 @@
 use std::collections::HashMap;
 use std::hash::Hash;
+use crate::core::ir::jit::model::FieldId;
 
 #[allow(unused)]
 #[derive(Default, Debug)]
-pub struct Store<K, V> {
-    map: HashMap<K, Data<K, V>>,
+pub struct Store<Key, Value> {
+    map: HashMap<Key, Data<Key, Value>>,
 }
 
 #[derive(Debug)]
 pub struct Data<K, V> {
-    pub value: Option<V>,
-    pub deferred: Vec<Defer<K>>,
-}
-
-#[derive(Debug)]
-pub struct Defer<K> {
-    pub name: String,
-    pub keys: Vec<K>,
+    pub data: Option<V>,
+    pub deferred: HashMap<FieldId, K>,
 }
 
 #[allow(unused)]
