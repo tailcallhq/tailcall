@@ -1,11 +1,10 @@
 use std::collections::HashSet;
 
-use crate::core::{
-    config::{transformer::Transform, Config},
-    valid::Valid,
-};
+use crate::core::config::transformer::Transform;
+use crate::core::config::Config;
+use crate::core::valid::Valid;
 
-struct UpstreamBaseUrlGenerator;
+pub struct UpstreamBaseUrlGenerator;
 
 impl UpstreamBaseUrlGenerator {
     fn generate_base_url(&self, mut config: Config) -> Config {

@@ -3,6 +3,7 @@ use url::Url;
 
 use super::json::{
     FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
+    UpstreamBaseUrlGenerator,
 };
 use crate::core::config::transformer::{RemoveUnused, Transform, TransformerOps, TypeMerger};
 use crate::core::config::Config;
@@ -40,6 +41,8 @@ pub fn from_json(
             .transform(config)
             .to_result()?;
     }
+
+    let config = UpstreamBaseUrlGenerator.transform(config).to_result()?;
 
     Ok(config)
 }
