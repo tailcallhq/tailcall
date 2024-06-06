@@ -18,7 +18,8 @@ impl<'a> TypeNameGenerator<'a> {
     }
 
     fn generate_candidate_names(&self, config: &Config) -> BTreeMap<String, BTreeMap<String, u32>> {
-        let mut type_to_candidate_field_mapping: BTreeMap<String, BTreeMap<String, u32>> = Default::default();
+        let mut type_to_candidate_field_mapping: BTreeMap<String, BTreeMap<String, u32>> =
+            Default::default();
 
         let query_name = config.schema.query.clone().unwrap_or_default().to_string();
         let mutation_name = config
@@ -37,7 +38,8 @@ impl<'a> TypeNameGenerator<'a> {
 
         for (type_name, type_info) in config.types.iter() {
             if ingore_type_list.contains(type_name) {
-                // ignore operation type fields as it's fields are auto-generated and doesn't help in us in type name generation.
+                // ignore operation type fields as it's fields are auto-generated and doesn't
+                // help in us in type name generation.
                 continue;
             }
 
