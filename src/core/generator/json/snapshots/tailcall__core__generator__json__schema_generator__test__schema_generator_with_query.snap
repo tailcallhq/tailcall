@@ -1,0 +1,7 @@
+---
+source: src/core/generator/json/schema_generator.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}

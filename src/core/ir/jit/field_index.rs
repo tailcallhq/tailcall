@@ -122,6 +122,7 @@ impl FieldIndex {
         Self { map, schema: blueprint.schema.to_owned() }
     }
 
+    #[allow(unused)]
     pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&QueryField> {
         self.map
             .get(type_name)

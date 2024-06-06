@@ -20,7 +20,6 @@ use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
-
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
@@ -82,10 +81,10 @@ pub async fn run() -> Result<()> {
             }
         }
         Command::Init { folder_path } => init(&folder_path).await,
-        Command::Gen { file_paths, input, output, query } => {
+        Command::Gen { paths, input, output, query } => {
             let generator = Generator::init(runtime);
             let cfg = generator
-                .read_all(input, file_paths.as_ref(), query.as_str())
+                .read_all(input, paths.as_ref(), query.as_str())
                 .await?;
 
             let config = output.unwrap_or_default().encode(&cfg)?;

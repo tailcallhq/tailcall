@@ -1,0 +1,11 @@
+---
+source: src/core/generator/tests/json_to_config_spec.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  f1(verified_user: Boolean): Int @http(baseURL: "https://example.com", path: "/users", query: [{key: "verified_user", value: "{{.args.verified_user}}"}])
+}

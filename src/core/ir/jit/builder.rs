@@ -11,10 +11,10 @@ use crate::core::merge_right::MergeRight;
 
 #[allow(unused)]
 pub struct ExecutionPlanBuilder {
-    index: FieldIndex,
-    arg_id: Counter,
-    field_id: Counter,
-    document: ExecutableDocument,
+    pub index: FieldIndex,
+    pub arg_id: Counter,
+    pub field_id: Counter,
+    pub document: ExecutableDocument,
 }
 
 #[allow(unused)]
@@ -86,6 +86,7 @@ impl ExecutionPlanBuilder {
         fields
     }
 
+    #[allow(unused)]
     pub fn build(&self) -> ExecutionPlan {
         let operation_name_by_type = |operation_type| match operation_type {
             OperationType::Query => self.index.get_query(),

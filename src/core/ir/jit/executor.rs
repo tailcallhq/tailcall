@@ -3,12 +3,12 @@ use serde_json_borrow::OwnedValue;
 
 use super::model::{ExecutionPlan, Field, FieldId, Parent};
 use super::store::Store;
-use crate::core::ir::IR;
+use crate::core::ir::{IoId, IR};
 
 #[allow(unused)]
 pub struct ExecutionContext {
     plan: ExecutionPlan,
-    cache: Store,
+    cache: Store<(FieldId, Option<IoId>), OwnedValue>,
 }
 
 #[allow(unused)]

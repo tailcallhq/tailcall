@@ -1,73 +1,118 @@
 pub use serde_json_borrow::*;
 
-use super::model::{Children, ExecutionPlan, Field};
-use super::store::Store;
+use super::model::{Children, Field};
+use super::store::{Data, Store};
+use crate::core::ir::IoId;
 
 #[allow(unused)]
 pub struct Synth {
-    operation: Vec<Field<Children>>,
-    pub(crate) cache: Store,
+    operation: Field<Children>,
+    store: Store<IoId, OwnedValue>,
 }
 
 #[allow(unused)]
 impl Synth {
-    pub fn new(operation: Vec<Field<Children>>) -> Self {
-        Synth { operation, cache: Store::empty() }
-    }
-    fn build_children(
-        &self,
-        field: Field<Children>,
-        query_blueprint: ExecutionPlan,
-    ) -> ObjectAsVec {
-        let mut object = vec![];
-        for field in field.children() {
-            let key = field.name.clone();
-            let id = &field.id;
-            if let Some(value) = self.cache.get(id) {
-                object.push((key, value.get_value().to_owned()));
-            }
-        }
-        object.into()
+    pub fn new(operation: Field<Children>, store: Store<IoId, OwnedValue>) -> Self {
+        Synth { operation, store }
     }
 
     pub fn synthesize(&self) -> Value<'_> {
-        todo!()
+        let value = self.store.get(&IoId::new(0));
+        self.iter(&self.operation, value)
+    }
+
+    pub fn iter<'a>(
+        &'a self,
+        field: &'a Field<Children>,
+        parent: Option<&'a Data<IoId, OwnedValue>>,
+    ) -> Value<'a> {
+        match parent {
+            Some(data) => data
+                .value
+                .as_ref()
+                .map(|a| a.to_owned().into_value())
+                .unwrap_or(Value::Null),
+            None => Value::Null,
+        }
+        // match parent {
+        //     None => Value::Null,
+        //     Some(value) => value,
+        // }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use insta::assert_snapshot;
     use serde_json_borrow::OwnedValue;
 
     use crate::core::blueprint::Blueprint;
-    use crate::core::config::reader::ConfigReader;
+    use crate::core::config::Config;
     use crate::core::ir::jit::builder::ExecutionPlanBuilder;
-    use crate::core::ir::jit::model::FieldId;
+    use crate::core::ir::jit::store::{Data, Defer, Store};
     use crate::core::ir::jit::synth::Synth;
+    use crate::core::ir::IoId;
+    use crate::core::valid::Validator;
+
+    const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
+
+    fn synth(query: &str) -> String {
+        let config = Config::from_sdl(CONFIG).to_result().unwrap();
+        let blueprint = Blueprint::try_from(&config.into()).unwrap();
+        let document = async_graphql::parser::parse_query(query).unwrap();
+        let mut store = Store::new();
+        let edoc = ExecutionPlanBuilder::new(blueprint, document).build();
+
+        enum IO {
+            Post,
+        }
+
+        // Insert Root
+        store.insert(
+            IoId::new(0),
+            Data {
+                value: None,
+                deferred: vec![Defer {
+                    name: "data".to_string(),
+                    keys: vec![IoId::new(IO::Post as u64)],
+                }],
+            },
+        );
+
+        // Insert /posts
+        store.insert(
+            IoId::new(IO::Post as u64),
+            Data {
+                value: Some(
+                    OwnedValue::from_str(
+                        r#"[{"title":"Hello", "body": "This is my first post."}]"#,
+                    )
+                    .unwrap(),
+                ),
+                deferred: vec![Defer { name: "title".to_string(), keys: vec![] }],
+            },
+        );
+
+        println!("{:?}", store);
+
+        // Insert /user/:id
+
+        // Synthesize the final value
+        let synth = Synth::new(edoc.into_children().first().unwrap().to_owned(), store);
+
+        synth.synthesize().to_string()
+    }
 
     #[tokio::test]
     async fn test_synth() {
-        let rt = crate::core::runtime::test::init(None);
-        let reader = ConfigReader::init(rt);
-        let config = reader
-            .read("examples/jsonplaceholder.graphql")
-            .await
-            .unwrap();
-        let blueprint = Blueprint::try_from(&config).unwrap();
-        let query = r#"
+        let actual = synth(
+            r#"
                 query {
-                    posts { user { name } }
+                    posts { title }
                 }
-            "#;
-        let document = async_graphql::parser::parse_query(query).unwrap();
-        let q_blueprint = ExecutionPlanBuilder::new(blueprint, document).build();
-        let mut synth = Synth::new(q_blueprint.into_children());
-        synth.cache.insert(
-            FieldId::new(0),
-            OwnedValue::parse_from(r#"[{"user":{"id":1,"name":"Leanne Graham"}}]"#.to_string())
-                .unwrap(),
+            "#,
         );
 
-        // FIXME: Need to implement the test assertion.
+        assert_snapshot!(actual);
     }
 }

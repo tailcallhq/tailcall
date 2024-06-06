@@ -4,6 +4,7 @@ use crate::core::ir::IR;
 
 #[allow(unused)]
 #[derive(Debug, Clone)]
+#[allow(unused)]
 pub struct Arg {
     pub id: ArgId,
     pub name: String,
@@ -54,6 +55,7 @@ pub struct Field<A: Clone> {
 
 const EMPTY_VEC: &Vec<Field<Children>> = &Vec::new();
 impl Field<Children> {
+    #[allow(unused)]
     pub fn children(&self) -> &Vec<Field<Children>> {
         match &self.refs {
             Some(Children(children)) => children,
@@ -77,13 +79,19 @@ impl Field<Parent> {
             }
         }
 
+        let refs = if children.is_empty() {
+            None
+        } else {
+            Some(Children(children))
+        };
+
         Field {
             id: self.id,
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
             args: self.args,
-            refs: Some(Children(children)),
+            refs,
         }
     }
 }
