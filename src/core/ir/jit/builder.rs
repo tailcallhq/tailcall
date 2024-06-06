@@ -100,7 +100,7 @@ impl ExecutionPlanBuilder {
 
         for fragment in self.document.fragments.values() {
             let on_type = fragment.node.type_condition.node.on.node.as_str();
-            fields = self.iter(&fragment.node.selection_set.node, on_type, None);
+            fields.extend(self.iter(&fragment.node.selection_set.node, on_type, None));
         }
 
         match &self.document.operations {
@@ -109,7 +109,7 @@ impl ExecutionPlanBuilder {
                     "Root Operation type not defined for {}",
                     single.node.ty
                 ))?;
-                fields = self.iter(&single.node.selection_set.node, name, None);
+                fields.extend(self.iter(&single.node.selection_set.node, name, None));
             }
             DocumentOperations::Multiple(multiple) => {
                 for single in multiple.values() {
@@ -117,7 +117,7 @@ impl ExecutionPlanBuilder {
                         "Root Operation type not defined for {}",
                         single.node.ty
                     ))?;
-                    fields = self.iter(&single.node.selection_set.node, name, None);
+                    fields.extend(self.iter(&single.node.selection_set.node, name, None));
                 }
             }
         }

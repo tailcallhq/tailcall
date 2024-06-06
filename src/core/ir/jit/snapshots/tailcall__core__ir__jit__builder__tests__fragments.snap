@@ -5,6 +5,21 @@ expression: plan
 ExecutionPlan {
     fields: [
         Field {
+            id: 0,
+            name: "name",
+            type_of: String!,
+        },
+        Field {
+            id: 1,
+            name: "email",
+            type_of: String!,
+        },
+        Field {
+            id: 2,
+            name: "phone",
+            type_of: String,
+        },
+        Field {
             id: 3,
             name: "user",
             ir: "Some(..)",
