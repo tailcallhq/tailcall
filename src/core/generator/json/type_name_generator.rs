@@ -107,15 +107,23 @@ impl<'a> TypeNameGenerator<'a> {
     }
 
     fn generate_root_type_name(&self, mut config: Config) -> Config {
+        let auto_generated_root_name = self.name_generator.get_name();
+
+        if !config.types.contains_key(&auto_generated_root_name) {
+            // if we've already inferred correct name for root type then discard the
+            // suggested name.
+            return config;
+        }
+
         for type_ in config.types.values_mut() {
             for field_ in type_.fields.values_mut() {
-                if field_.type_of == self.name_generator.get_name() {
+                if field_.type_of == auto_generated_root_name {
                     self.root_name.clone_into(&mut field_.type_of)
                 }
             }
         }
 
-        if let Some(type_) = config.types.remove(&self.name_generator.get_name()) {
+        if let Some(type_) = config.types.remove(&auto_generated_root_name) {
             config.types.insert(self.root_name.to_owned(), type_);
         }
 
