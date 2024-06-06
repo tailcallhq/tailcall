@@ -769,7 +769,7 @@ impl Config {
     /// Removes all types that are passed in the set
     pub fn remove_types(mut self, types: HashSet<String>) -> Self {
         for unused_type in types {
-            self.types.retain(|ty| ty.name == unused_type);
+            self.types = self.types.into_iter().filter(|ty| ty.name == unused_type).collect();
         }
 
         self

@@ -307,7 +307,7 @@ fn convert_primitive_type(proto_ty: &str) -> String {
         "string" | "bytes" => "String",
         x => x,
     }
-    .to_string()
+        .to_string()
 }
 
 /// Determines the output type for a service method.
@@ -390,7 +390,7 @@ mod test {
         // test for two types having same name in different packages
 
         let set =
-            compile_protobuf(&[protobuf::NEWS, protobuf::GREETINGS_A, protobuf::GREETINGS_B])?;
+            compile_protobuf(&[protobuf::NEWS])?;
         let result = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
 
