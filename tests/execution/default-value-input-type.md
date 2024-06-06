@@ -1,6 +1,7 @@
 ---
 skipped: true
 ---
+
 # default value for input Type
 
 ```graphql @config
