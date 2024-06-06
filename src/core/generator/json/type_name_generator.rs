@@ -21,20 +21,7 @@ impl<'a> TypeNameGenerator<'a> {
         let mut type_to_candidate_field_mapping: BTreeMap<String, BTreeMap<String, u32>> =
             Default::default();
 
-        let query_name = config.schema.query.clone().unwrap_or_default().to_string();
-        let mutation_name = config
-            .schema
-            .mutation
-            .clone()
-            .unwrap_or_default()
-            .to_string();
-        let subscription_name = config
-            .schema
-            .subscription
-            .clone()
-            .unwrap_or_default()
-            .to_string();
-        let ingore_type_list = [query_name, mutation_name, subscription_name];
+        let ingore_type_list = config.get_operation_type_names();
 
         for (type_name, type_info) in config.types.iter() {
             if ingore_type_list.contains(type_name) {
