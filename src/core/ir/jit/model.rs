@@ -3,7 +3,6 @@ use std::fmt::{Debug, Formatter};
 use crate::core::ir::IR;
 
 #[derive(Debug, Clone)]
-#[allow(unused)]
 pub struct Arg {
     pub id: ArgId,
     pub name: String,
@@ -27,7 +26,7 @@ impl ArgId {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct FieldId(usize);
 
 impl Debug for FieldId {
@@ -128,7 +127,7 @@ impl Debug for Parent {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Children(Vec<Field<Children>>);
 
 #[derive(Clone, Debug)]

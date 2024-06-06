@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: client
+expression: formatted
 ---
 type B implements IA & IB {
   a: String

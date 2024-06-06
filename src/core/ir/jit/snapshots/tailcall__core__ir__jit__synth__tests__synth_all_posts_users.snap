@@ -1,0 +1,22 @@
+---
+source: src/core/ir/jit/synth.rs
+expression: actual
+---
+{
+  "posts": [
+    {
+      "id": 1,
+      "title": "My title",
+      "user": {
+        "name": "Jane Doe"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Also My Title",
+      "user": {
+        "name": "Jane Doe"
+      }
+    }
+  ]
+}
