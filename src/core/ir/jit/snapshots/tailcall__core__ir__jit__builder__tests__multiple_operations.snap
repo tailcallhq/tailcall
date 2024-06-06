@@ -1,17 +1,17 @@
 ---
-source: src/core/ir/jit/model.rs
+source: src/core/ir/jit/builder.rs
 expression: plan
 ---
 ExecutionPlan {
     fields: [
         Field {
-            id: 0,
+            id: 1,
             name: "user",
             ir: "Some(..)",
             type_of: User,
             args: [
                 Arg {
-                    id: 0,
+                    id: 1,
                     name: "id",
                     type_of: Int!,
                     value: Some(
@@ -24,41 +24,41 @@ ExecutionPlan {
             ],
         },
         Field {
-            id: 1,
+            id: 2,
             name: "id",
             type_of: Int!,
             refs: Some(
-                Parent(0),
-            ),
-        },
-        Field {
-            id: 2,
-            name: "username",
-            type_of: String!,
-            refs: Some(
-                Parent(0),
+                Parent(1),
             ),
         },
         Field {
             id: 3,
+            name: "username",
+            type_of: String!,
+            refs: Some(
+                Parent(1),
+            ),
+        },
+        Field {
+            id: 4,
             name: "posts",
             ir: "Some(..)",
             type_of: [Post],
         },
         Field {
-            id: 4,
+            id: 5,
             name: "id",
             type_of: Int!,
             refs: Some(
-                Parent(3),
+                Parent(4),
             ),
         },
         Field {
-            id: 5,
+            id: 6,
             name: "title",
             type_of: String!,
             refs: Some(
-                Parent(3),
+                Parent(4),
             ),
         },
     ],
