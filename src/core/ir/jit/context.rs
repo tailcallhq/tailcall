@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use futures_util::future;
 use serde_json_borrow::OwnedValue;
 
@@ -8,7 +10,7 @@ use crate::core::ir::{IoId, IR};
 #[allow(unused)]
 pub struct ExecutionContext {
     plan: ExecutionPlan,
-    cache: Store<(FieldId, Option<IoId>), OwnedValue>,
+    store: Arc<Mutex<Store<IoId, OwnedValue>>>,
 }
 
 #[allow(unused)]
@@ -61,7 +63,7 @@ impl ExecutionContext {
             .collect::<Vec<_>>()
     }
 
-    pub async fn execute(&self) -> anyhow::Result<()> {
+    pub async fn execute(self) -> anyhow::Result<Store<IoId, OwnedValue>> {
         future::join_all(
             self.root()
                 .iter()
@@ -70,6 +72,6 @@ impl ExecutionContext {
         .await
         .into_iter()
         .collect::<anyhow::Result<Vec<_>>>()?;
-        Ok(())
+        Ok(self.store)
     }
 }
