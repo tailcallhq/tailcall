@@ -86,14 +86,16 @@ impl ExecutionPlanBuilder {
         fields
     }
 
-    #[allow(unused)]
-    pub fn build(&self) -> ExecutionPlan {
-        let operation_name_by_type = |operation_type| match operation_type {
-            OperationType::Query => self.index.get_query(),
-            OperationType::Mutation => self.index.get_mutation().unwrap(),
-            OperationType::Subscription => unreachable!(),
-        };
+    fn get_type(&self, ty: OperationType) -> Option<&str> {
+        match ty {
+            OperationType::Query => Some(self.index.get_query()),
+            OperationType::Mutation => self.index.get_mutation(),
+            OperationType::Subscription => None,
+        }
+    }
 
+    #[allow(unused)]
+    pub fn build(&self) -> Result<ExecutionPlan, String> {
         let mut fields = Vec::new();
 
         for fragment in self.document.fragments.values() {
@@ -103,18 +105,24 @@ impl ExecutionPlanBuilder {
 
         match &self.document.operations {
             DocumentOperations::Single(single) => {
-                let name = operation_name_by_type(single.node.ty);
+                let name = self.get_type(single.node.ty).ok_or(format!(
+                    "Root Operation type not defined for {}",
+                    single.node.ty
+                ))?;
                 fields = self.iter(&single.node.selection_set.node, name, None);
             }
             DocumentOperations::Multiple(multiple) => {
                 for single in multiple.values() {
-                    let name = operation_name_by_type(single.node.ty);
+                    let name = self.get_type(single.node.ty).ok_or(format!(
+                        "Root Operation type not defined for {}",
+                        single.node.ty
+                    ))?;
                     fields = self.iter(&single.node.selection_set.node, name, None);
                 }
             }
         }
 
-        ExecutionPlan { fields }
+        Ok(ExecutionPlan { fields })
     }
 }
 
@@ -133,7 +141,9 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        ExecutionPlanBuilder::new(blueprint, document).build()
+        ExecutionPlanBuilder::new(blueprint, document)
+            .build()
+            .unwrap()
     }
 
     #[tokio::test]

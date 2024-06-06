@@ -134,7 +134,7 @@ impl FieldIndex {
     }
 
     #[allow(unused)]
-    pub fn get_mutation(&self) -> Option<&String> {
-        self.schema.mutation.as_ref()
+    pub fn get_mutation(&self) -> Option<&str> {
+        self.schema.mutation.as_deref()
     }
 }
