@@ -172,6 +172,7 @@ tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
 tailcall-fixtures = { path = "./tailcall-fixtures" }
+test-log = { version = "0.2.16", default-features = false, features = ["color", "trace"] }
 
 [features]
 

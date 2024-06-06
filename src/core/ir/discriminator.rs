@@ -67,7 +67,7 @@ impl FieldInfo {
 }
 
 impl Discriminator {
-    pub fn new(union_types: Vec<(&str, &Type)>) -> Result<Self> {
+    pub fn new(union_name: &str, union_types: Vec<(&str, &Type)>) -> Result<Self> {
         let mut types = Vec::with_capacity(union_types.len());
         let mut fields_info: IndexMap<String, FieldInfo> = IndexMap::new();
 
@@ -87,13 +87,13 @@ impl Discriminator {
             }
         }
 
-        tracing::debug!("Field info for type {}: {:?}", "__name", fields_info);
-
         // TODO: strip fields that are present in every field and multiple fields that are required in same set of types
 
         let discriminator = Self { fields_info, types };
 
-        dbg!(&discriminator);
+        tracing::debug!(
+            "Generated discriminator for union type '{union_name}':\n{discriminator:?}",
+        );
 
         Ok(discriminator)
     }
@@ -192,6 +192,7 @@ impl Repr {
 
 #[cfg(test)]
 mod tests {
+    use test_log::test;
     use async_graphql::Value;
     use serde_json::json;
 
@@ -208,7 +209,7 @@ mod tests {
         let bar = Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new(types).unwrap();
+        let discriminator = Discriminator::new("Test", types).unwrap();
 
         assert_eq!(
             discriminator
@@ -255,7 +256,7 @@ mod tests {
             Type::default().fields(vec![("bar", Field { required: true, ..Field::default() })]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new(types).unwrap();
+        let discriminator = Discriminator::new("Test", types).unwrap();
 
         assert_eq!(
             discriminator
@@ -308,7 +309,7 @@ mod tests {
         ]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new(types).unwrap();
+        let discriminator = Discriminator::new("Test", types).unwrap();
 
         assert_eq!(
             discriminator
@@ -381,7 +382,7 @@ mod tests {
         let bar = Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new(types).unwrap();
+        let discriminator = Discriminator::new("Test", types).unwrap();
 
         assert_eq!(
             discriminator
@@ -449,7 +450,7 @@ mod tests {
         ]);
         let types = vec![("A", &a), ("B", &b), ("C", &c)];
 
-        let discriminator = Discriminator::new(types).unwrap();
+        let discriminator = Discriminator::new("Test", types).unwrap();
 
         assert_eq!(
             discriminator
@@ -548,7 +549,7 @@ mod tests {
             ("Var1_Var1", &var1_var1),
         ];
 
-        let discriminator = Discriminator::new(types).unwrap();
+        let discriminator = Discriminator::new("Test", types).unwrap();
 
         assert_eq!(
             discriminator
@@ -681,7 +682,7 @@ mod tests {
             ("TypeD", &type_d),
         ];
 
-        let discriminator = Discriminator::new(types).unwrap();
+        let discriminator = Discriminator::new("Test", types).unwrap();
 
         assert_eq!(
             discriminator
@@ -776,7 +777,7 @@ mod tests {
             ("TypeD", &type_d),
         ];
 
-        let discriminator = Discriminator::new(types).unwrap();
+        let discriminator = Discriminator::new("Test", types).unwrap();
 
         assert_eq!(
             discriminator

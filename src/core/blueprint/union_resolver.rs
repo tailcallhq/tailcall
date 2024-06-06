@@ -10,6 +10,7 @@ use crate::core::{
 
 fn compile_union_resolver(
     config: &ConfigModule,
+    union_name: &str,
     union_: &config::Union,
 ) -> Valid<Discriminator, String> {
     Valid::from_iter(&union_.types, |type_name| {
@@ -23,7 +24,9 @@ fn compile_union_resolver(
     .and_then(|types| {
         let types = types.into_iter().collect();
 
-        Valid::from(Discriminator::new(types).map_err(|e| ValidationError::new(e.to_string())))
+        Valid::from(
+            Discriminator::new(union_name, types).map_err(|e| ValidationError::new(e.to_string())),
+        )
     })
 }
 
@@ -36,7 +39,7 @@ pub fn update_union_resolver<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_union_resolver(config, union_).map(|discriminator| {
+            compile_union_resolver(config, &field.type_of, union_).map(|discriminator| {
                 b_field.resolver = Some(
                     b_field
                         .resolver
