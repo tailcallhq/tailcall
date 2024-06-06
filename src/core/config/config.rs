@@ -892,4 +892,48 @@ mod tests {
 
         assert_eq!(actual, expected);
     }
+
+    #[test]
+    fn test_get_operation_type_names_all_present() {
+        let schema = RootSchema {
+            query: Some("Query".to_owned()),
+            mutation: Some("Mutation".to_owned()),
+            subscription: Some("Subscription".to_owned()),
+        };
+
+        let config = Config { schema, ..Default::default() };
+
+        let expected = vec!["Query", "Mutation", "Subscription"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<String>>();
+        assert_eq!(config.get_operation_type_names(), expected);
+    }
+
+    #[test]
+    fn test_get_operation_type_names_some_missing() {
+        let schema = RootSchema {
+            query: Some("Query".to_owned()),
+            mutation: None,
+            subscription: Some("Subscription".to_owned()),
+        };
+
+        let config = Config { schema, ..Default::default() };
+
+        let expected = vec!["Query", "Subscription"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<String>>();
+        assert_eq!(config.get_operation_type_names(), expected);
+    }
+
+    #[test]
+    fn test_get_operation_type_names_all_missing() {
+        let schema = RootSchema { query: None, mutation: None, subscription: None };
+
+        let config = Config { schema, ..Default::default() };
+
+        let expected: Vec<String> = vec![];
+        assert_eq!(config.get_operation_type_names(), expected);
+    }
 }
