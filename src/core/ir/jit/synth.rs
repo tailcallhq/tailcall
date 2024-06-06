@@ -124,6 +124,19 @@ mod tests {
         ]
     "#;
 
+    const USERS: &str = r#"
+    [
+        {"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1},
+        {"name": "Not Jane Doe", "address": { "street": "Not Kulas Light" }, "userId": 2}
+    ]
+    "#;
+
+    const USER: &str = r#"
+        {"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1}
+    "#;
+
+    const POST: &str = r#"{"id": 1, "title": "My title", "title":"Hello", "body": "This is my first post.", "userId": 1}"#;
+
     const TODO: &str = r#"
                 {"id": 1, "title": "My title", "completed": false}
         "#;
@@ -162,20 +175,9 @@ mod tests {
             (
                 IoId::new(1),
                 Data {
-                    data: Some(
-                        OwnedValue::from_str(
-                            r#"[{"id": 1, "title": "My title", "title":"Hello", "body": "This is my first post.", "userId": 1}]"#,
-                        )
-                            .unwrap(),
-                    ),
-                    deferred: HashMap::from_iter(vec![
-                        (
-                            FieldId::new(1),
-                            IoId::new(1)
-                        )
-                    ].into_iter()
-                    ),
-                }
+                    data: Some(OwnedValue::from_str(POSTS).unwrap()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                },
             ),
         ];
 
@@ -206,21 +208,9 @@ mod tests {
             (
                 IoId::new(1),
                 Data {
-                    data: Some(
-                        OwnedValue::from_str(
-                            r#"[{"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1}]"#,
-                        )
-                            .unwrap(),
-                    ),
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(1),
-                                IoId::new(1)
-                            )
-                        ].into_iter()
-                    ),
-                }
+                    data: Some(OwnedValue::from_str(USERS).unwrap()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                },
             ),
         ];
         let actual = synth(
@@ -250,13 +240,9 @@ mod tests {
             (
                 IoId::new(1),
                 Data {
-                    data: Some(
-                        OwnedValue::from_str(
-                            r#"{"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1}"#,
-                        ).unwrap()
-                    ),
+                    data: Some(OwnedValue::from_str(USER).unwrap()),
                     deferred: Default::default(),
-                }
+                },
             ),
         ];
         let actual = synth(
@@ -286,34 +272,17 @@ mod tests {
             (
                 IoId::new(1),
                 Data {
-                    data: Some(
-                        OwnedValue::from_str(
-                            r#"{"id": 1, "title": "My title", "title":"Hello", "body": "This is my first post.", "userId": 1}"#,
-                        )
-                            .unwrap(),
-                    ),
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(4),
-                                IoId::new(2)
-                            )
-                        ]
-                            .into_iter()
-                    ),
-                }
+                    data: Some(OwnedValue::from_str(POST).unwrap()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(4), IoId::new(2))].into_iter()),
+                },
             ),
             // Insert /user/:id
             (
                 IoId::new(2),
                 Data {
-                    data: Some(
-                        OwnedValue::from_str(
-                            r#"{"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1}"#,
-                        ).unwrap()
-                    ),
+                    data: Some(OwnedValue::from_str(USER).unwrap()),
                     deferred: Default::default(),
-                }
+                },
             ),
         ];
 
@@ -344,31 +313,17 @@ mod tests {
             (
                 IoId::new(1),
                 Data {
-                    data: Some(
-                        OwnedValue::from_str(POSTS).unwrap(),
-                    ),
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(4),
-                                IoId::new(2)
-                            )
-                        ]
-                            .into_iter()
-                    ),
-                }
+                    data: Some(OwnedValue::from_str(POSTS).unwrap()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(4), IoId::new(2))].into_iter()),
+                },
             ),
             // Insert /user/:id
             (
                 IoId::new(2),
                 Data {
-                    data: Some(
-                        OwnedValue::from_str(
-                            r#"{"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1}"#,
-                        ).unwrap()
-                    ),
+                    data: Some(OwnedValue::from_str(USER).unwrap()),
                     deferred: Default::default(),
-                }
+                },
             ),
         ];
 
@@ -407,20 +362,9 @@ mod tests {
             (
                 IoId::new(2),
                 Data {
-                    data: Some(
-                        OwnedValue::from_str(
-                            r#"{"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1}"#,
-                        ).unwrap()
-                    ),
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(5),
-                                IoId::new(3)
-                            )
-                        ].into_iter()
-                    ),
-                }
+                    data: Some(OwnedValue::from_str(USER).unwrap()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(5), IoId::new(3))].into_iter()),
+                },
             ),
             (
                 IoId::new(3),

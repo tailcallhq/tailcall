@@ -8,6 +8,11 @@ expression: actual
       "title": "My title",
       "body": "This is my first post.",
       "userId": 1
+    },
+    {
+      "title": "Also My Title",
+      "body": "This is my second post.",
+      "userId": 1
     }
   ]
 }

@@ -9,6 +9,12 @@ expression: actual
       "address": {
         "street": "Kulas Light"
       }
+    },
+    {
+      "name": "Not Jane Doe",
+      "address": {
+        "street": "Not Kulas Light"
+      }
     }
   ]
 }
