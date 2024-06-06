@@ -8,6 +8,7 @@ mod auth;
 pub mod blueprint;
 pub mod cache;
 pub mod config;
+mod counter;
 pub mod data_loader;
 pub mod directive;
 pub mod document;

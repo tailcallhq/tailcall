@@ -1,0 +1,14 @@
+{
+  "url": "https://example.com",
+  "body": {
+    "colors": [],
+    "campaignTemplates": {
+      "10": {
+        "name": "test"
+      },
+      "15": {
+        "name": "test"
+      }
+    }
+  }
+}
