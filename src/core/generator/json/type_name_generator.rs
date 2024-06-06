@@ -18,10 +18,8 @@ impl<'a> TypeNameGenerator<'a> {
     }
 
     fn generate_candidate_names(&self, config: &Config) -> BTreeMap<String, BTreeMap<String, u32>> {
-        // HashMap to store mappings between types and their fields
-        let mut type_field_mapping: BTreeMap<String, BTreeMap<String, u32>> = Default::default();
+        let mut type_to_candidate_field_mapping: BTreeMap<String, BTreeMap<String, u32>> = Default::default();
 
-        // Iterate through each type in the configuration
         let query_name = config.schema.query.clone().unwrap_or_default().to_string();
         let mutation_name = config
             .schema
@@ -39,26 +37,24 @@ impl<'a> TypeNameGenerator<'a> {
 
         for (type_name, type_info) in config.types.iter() {
             if ingore_type_list.contains(type_name) {
+                // ignore operation type fields as it's fields are auto-generated and doesn't help in us in type name generation.
                 continue;
             }
 
-            // Iterate through each field in the type
             for (field_name, field_info) in type_info.fields.iter() {
                 if config.is_scalar(&field_info.type_of) {
                     continue;
                 }
 
-                // Access or create the inner HashMap for the field type
-                let inner_map = type_field_mapping
+                let inner_map = type_to_candidate_field_mapping
                     .entry(field_info.type_of.clone())
                     .or_default();
 
-                // Increment the count of the field in the inner map
                 *inner_map.entry(field_name.clone()).or_insert(0) += 1;
             }
         }
 
-        type_field_mapping
+        type_to_candidate_field_mapping
     }
 
     fn finalize_candidates(
@@ -109,7 +105,6 @@ impl<'a> TypeNameGenerator<'a> {
     }
 
     fn generate_root_type_name(&self, mut config: Config) -> Config {
-        // First, iterate and replace all the field types
         for type_ in config.types.values_mut() {
             for field_ in type_.fields.values_mut() {
                 if field_.type_of == self.name_generator.get_name() {
@@ -118,7 +113,6 @@ impl<'a> TypeNameGenerator<'a> {
             }
         }
 
-        // Now, handle the renaming of the type itself
         if let Some(type_) = config.types.remove(&self.name_generator.get_name()) {
             config.types.insert(self.root_name.to_owned(), type_);
         }
