@@ -5,8 +5,8 @@ use prost_reflect::DescriptorPool;
 use reqwest::Method;
 use url::Url;
 
-use crate::core::config::{Config, ConfigModule, Link, LinkType};
 use crate::core::config::position::Pos;
+use crate::core::config::{Config, ConfigModule, Link, LinkType};
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::{from_json, ConfigGenerationRequest, Source};
 use crate::core::merge_right::MergeRight;
@@ -67,7 +67,11 @@ impl Generator {
 
                 let mut config = Config::default();
                 for metadata in proto_metadata {
-                    links.push(Pos::new(0, 0, Link { id: None, src: metadata.path, type_of: LinkType::Protobuf }));
+                    links.push(Pos::new(
+                        0,
+                        0,
+                        Link { id: None, src: metadata.path, type_of: LinkType::Protobuf },
+                    ));
                     let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set)?;
                     config = config.merge_right(from_proto(&[descriptor_set], query)?);
                 }

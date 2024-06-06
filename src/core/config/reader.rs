@@ -187,7 +187,7 @@ impl ConfigReader {
         for file in files.iter() {
             let source = Source::detect(&file.path)?;
             let schema = &file.content;
-            
+
             // Create initial config module
             let new_config_module = self
                 .resolve(
@@ -198,7 +198,6 @@ impl ConfigReader {
 
             // Merge it with the original config set
             config_module = config_module.merge_right(new_config_module);
-
         }
 
         Ok(config_module)
@@ -269,7 +268,7 @@ mod reader_tests {
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
-        cfg = cfg.types([("Test", Pos::new(0, 0,Type::default()))].to_vec());
+        cfg = cfg.types([("Test", Pos::new(0, 0, Type::default()))].to_vec());
 
         let server = start_mock_server();
         let header_server = server.mock(|when, then| {
@@ -282,7 +281,6 @@ mod reader_tests {
             .read("examples/jsonplaceholder.json")
             .await
             .unwrap();
-
 
         let foo_json_server = server.mock(|when, then| {
             when.method(httpmock::Method::GET).path("/foo.json");

@@ -266,19 +266,31 @@ pub mod tests {
             .unwrap_or_default();
 
         let mut config = Config::default().links(vec![Pos::new(
-            0, 
-            0, 
+            0,
+            0,
             Link {
-            id: Some(id.clone()),
-            src: path.to_string(),
-            type_of: LinkType::Protobuf,
-        })]);
+                id: Some(id.clone()),
+                src: path.to_string(),
+                type_of: LinkType::Protobuf,
+            },
+        )]);
 
         let method = GrpcMethod { package: id, service: "a".to_owned(), name: "b".to_owned() };
-        let grpc = Pos::new(0, 0, Grpc { method: Pos::new(0, 0, method.to_string()), ..Default::default() });
+        let grpc = Pos::new(
+            0,
+            0,
+            Grpc {
+                method: Pos::new(0, 0, method.to_string()),
+                ..Default::default()
+            },
+        );
         config.types.insert(
             "foo".to_string(),
-            Pos::new(0, 0, Type::default().fields(vec![("bar", Field::default().grpc(grpc))])),
+            Pos::new(
+                0,
+                0,
+                Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+            ),
         );
         Ok(reader
             .resolve(config, None)
