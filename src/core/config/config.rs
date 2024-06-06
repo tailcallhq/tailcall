@@ -778,6 +778,17 @@ impl Config {
         all_types.difference(&used_types).cloned().collect()
     }
 
+    pub fn get_operation_type_names(&self) -> Vec<String> {
+        [
+            self.schema.query.as_ref(),
+            self.schema.mutation.as_ref(),
+            self.schema.subscription.as_ref(),
+        ]
+        .iter()
+        .filter_map(|&name| name.cloned())
+        .collect()
+    }
+
     /// Gets all the type names used in the schema.
     pub fn get_all_used_type_names(&self) -> HashSet<String> {
         let mut set = HashSet::new();
