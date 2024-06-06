@@ -2,10 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use inflector::Inflector;
 
-use crate::core::{
-    config::{transformer::Transform, Config},
-    valid::Valid,
-};
+use crate::core::config::transformer::Transform;
+use crate::core::config::Config;
+use crate::core::valid::Valid;
 
 pub struct TypeNameGenerator;
 
@@ -44,7 +43,7 @@ impl TypeNameGenerator {
                 // Access or create the inner HashMap for the field type
                 let inner_map = type_field_mapping
                     .entry(field_info.type_of.clone())
-                    .or_insert_with(HashMap::new);
+                    .or_default();
 
                 // Increment the count of the field in the inner map
                 *inner_map.entry(field_name.clone()).or_insert(0) += 1;
@@ -63,9 +62,10 @@ impl TypeNameGenerator {
 
         for (type_name, candidate_list) in candidate_mappings {
             // Find the most frequent candidate that hasn't been converged yet
-            if let Some((candidate_name, _)) = candidate_list.into_iter()
+            if let Some((candidate_name, _)) = candidate_list
+                .into_iter()
                 .max_by_key(|&(_, count)| count)
-                .filter(|(candidate_name, _)| !converged_candidate_set.contains(candidate_name)) 
+                .filter(|(candidate_name, _)| !converged_candidate_set.contains(candidate_name))
             {
                 let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
                 finalized_candidates.insert(type_name, singularized_candidate_name);
@@ -91,7 +91,7 @@ impl TypeNameGenerator {
                     for (_, actual_field) in actual_type.fields.iter_mut() {
                         if actual_field.type_of == old_name {
                             // Update the field's type with the new name
-                            actual_field.type_of = new_name.clone();
+                            actual_field.type_of.clone_from(&new_name);
                         }
                     }
                 }
@@ -103,7 +103,8 @@ impl TypeNameGenerator {
 
 impl Transform for TypeNameGenerator {
     fn transform(&self, config: Config) -> Valid<Config, String> {
-        // step 1: generate the required candidate mappings. i.e { Type : [{candidate_name : count}] }
+        // step 1: generate the required candidate mappings. i.e { Type :
+        // [{candidate_name : count}] }
         let candidate_mappings = self.generate_candidate_names(&config);
 
         // step 2: converge on the candidate name. i.e { Type : Candidate_Name }
@@ -121,12 +122,10 @@ impl Transform for TypeNameGenerator {
 mod test {
     use anyhow::Ok;
 
-    use crate::core::{
-        config::{transformer::Transform, Config},
-        valid::Validator,
-    };
-
     use super::TypeNameGenerator;
+    use crate::core::config::transformer::Transform;
+    use crate::core::config::Config;
+    use crate::core::valid::Validator;
 
     #[test]
     fn test_type_name_generator_transform() -> anyhow::Result<()> {
@@ -167,6 +166,46 @@ mod test {
             phone: String
             username: String
             website: String
+          }
+          "#,
+        )
+        .to_result()?;
+
+        let transformed_config = TypeNameGenerator.transform(config).to_result()?;
+        insta::assert_snapshot!(transformed_config.to_sdl());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_type_name_generator_with_cyclic_types() -> anyhow::Result<()> {
+        let config = Config::from_sdl(
+            r#"schema @server @upstream {
+            query: Query
+          }
+          
+          type Query {
+            f1: [T31] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+            f2: [T32] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts")
+          }
+          
+          type T31 {
+            id: ID!
+            name: String!
+            posts: [T32]!
+          }
+
+          type T32 {
+            id: ID!
+            title: String!
+            content: String!
+            author: T31!
+            cycle: T33
+          }
+
+          type T33 {
+            id: ID!
+            cycle: T33
           }
           "#,
         )
