@@ -1,6 +1,5 @@
 use std::slice::Iter;
 
-use crate::core::config::position;
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::{Name, Pos, Positioned};
 use serde::{Deserialize, Serialize};
@@ -47,7 +46,6 @@ pub trait DirectiveCodec<A> {
         }
         Valid::succeed(None)
     }
-    fn with_position(self, pos: Pos) -> position::Pos<A>;
 }
 
 fn lower_case_first_letter(s: String) -> String {
@@ -108,10 +106,6 @@ impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
         }
 
         ConstDirective { name: pos(Name::new(name)), arguments }
-    }
-
-    fn with_position(self, pos: Pos) -> position::Pos<A> {
-        position::Pos::new(pos.line, pos.column, self)
     }
 }
 

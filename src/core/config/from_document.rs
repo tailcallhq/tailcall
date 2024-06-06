@@ -91,7 +91,7 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default + Clone + Positioned
                 let key_snake_case = key.node.to_case(Case::Snake);
                 config.set_field_position(key_snake_case.as_str(), (key.pos.line, key.pos.column))
             });
-            Valid::succeed(config.with_position(directive.pos))
+            Valid::succeed(Pos::new(directive.pos.line, directive.pos.column, config))
         })
     } else {
         Valid::succeed(Default::default())
@@ -107,10 +107,9 @@ fn process_schema_multiple_directives<T: DirectiveCodec<T> + Default>(
         .iter()
         .filter_map(|directive| {
             if directive.node.name.node.as_ref() == directive_name {
-                Some(
-                    T::from_directive(&directive.node)
-                        .and_then(|config| Valid::succeed(config.with_position(directive.pos))),
-                )
+                Some(T::from_directive(&directive.node).and_then(|config| {
+                    Valid::succeed(Pos::new(directive.pos.line, directive.pos.column, config))
+                }))
             } else {
                 None
             }
@@ -128,7 +127,9 @@ fn process_schema_optional_directives<T: DirectiveCodec<T> + Clone + PositionedC
         directives.find(|directive| directive.node.name.node.as_ref() == directive_name)
     {
         T::from_directive(&directive.node)
-            .and_then(|config| Valid::succeed(config.with_position(directive.pos)))
+            .and_then(|config| {
+                Valid::succeed(Pos::new(directive.pos.line, directive.pos.column, config))
+            })
             .map(Some)
     } else {
         Valid::succeed(Default::default())
