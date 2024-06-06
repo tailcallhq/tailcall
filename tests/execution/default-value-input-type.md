@@ -1,7 +1,6 @@
 ---
 skipped: true
 ---
-
 # default value for input Type
 
 ```graphql @config
@@ -10,7 +9,7 @@ schema @upstream(baseURL: "http://abc.com") {
 }
 
 type Query {
-  abc(input: Input!): Int @http(path: "/{{.args.input.id}}")
+  abc(input: Input!): Int @http(path: "/foo/{{.args.input.id}}")
 }
 
 input Input {
@@ -21,19 +20,17 @@ input Input {
 ```yml @mock
 - request:
     method: GET
-    url: http://abc.com/1
+    url: http://abc.com/foo/1
   response:
     status: 200
-    body:
-      id: 1
+    body: 1
 
 - request:
     method: GET
-    url: http://abc.com/2
+    url: http://abc.com/foo/2
   response:
     status: 200
-    body:
-      id: 2
+    body: 2
 ```
 
 ```yml @test
@@ -43,6 +40,12 @@ input Input {
     query: >
       query {
         abc(input: {})
+      }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: >
+      query {
         abc(input: {id:2})
       }
 ```

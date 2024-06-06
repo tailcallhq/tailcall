@@ -11,5 +11,5 @@ input Input {
 }
 
 type Query {
-  abc(input: Input!): Int @http(path: "/{{.args.input.id}}")
+  abc(input: Input!): Int @http(path: "/foo/{{.args.input.id}}")
 }
