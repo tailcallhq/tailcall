@@ -1,6 +1,12 @@
-use anyhow::{anyhow, bail, Result};
+use std::{
+    fmt::Write,
+    ops::{Deref, DerefMut},
+};
+
+use anyhow::{bail, Result};
 use async_graphql::Value;
-use indexmap::{IndexMap, IndexSet};
+use indenter::indented;
+use indexmap::IndexMap;
 
 use crate::core::config::Type;
 
@@ -10,41 +16,86 @@ pub enum TypeName {
     Vec(Vec<String>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Discriminator {
     types: Vec<String>,
     fields_info: IndexMap<String, FieldInfo>,
 }
 
+impl std::fmt::Debug for Discriminator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Discriminator {\n")?;
+        f.write_str("types: ")?;
+        f.write_fmt(format_args!("{:?}\n", &self.types))?;
+        f.write_str("fields_info:\n")?;
+
+        {
+            let f = &mut indented(f);
+            for (field_name, field_info) in &self.fields_info {
+                f.write_fmt(format_args!("{field_name}:\n"))?;
+                field_info.display_types(&mut indented(f), &self.types)?;
+            }
+        }
+
+        f.write_str("}\n")?;
+
+        Ok(())
+    }
+}
+
 #[derive(Default, Debug, Clone)]
 struct FieldInfo {
-    present_in: IndexSet<String>,
-    required_in: IndexSet<String>,
+    presented_in: Repr,
+    required_in: Repr,
+}
+
+impl FieldInfo {
+    fn display_types(&self, f: &mut dyn Write, types: &Vec<String>) -> std::fmt::Result {
+        f.write_str("presented_in: ")?;
+        f.write_fmt(format_args!(
+            "{:?}\n",
+            self.presented_in.covered_types(types)
+        ))?;
+        f.write_str("required_in: ")?;
+        f.write_fmt(format_args!(
+            "{:?}\n",
+            self.required_in.covered_types(types)
+        ))?;
+
+        Ok(())
+    }
 }
 
 impl Discriminator {
-    pub fn new(types: Vec<(&str, &Type)>) -> Result<Self> {
+    pub fn new(union_types: Vec<(&str, &Type)>) -> Result<Self> {
+        let mut types = Vec::with_capacity(union_types.len());
         let mut fields_info: IndexMap<String, FieldInfo> = IndexMap::new();
 
         // TODO: do we need to check also added_fields?
-        for (type_name, type_) in types.iter() {
+        for (i, (type_name, type_)) in union_types.iter().enumerate() {
+            types.push(type_name.to_string());
             for (field_name, field) in type_.fields.iter() {
                 let info = fields_info.entry(field_name.to_string()).or_default();
 
-                info.present_in.insert(type_name.to_string());
+                let repr = Repr::from_type_index(i);
+
+                *info.presented_in |= *repr;
 
                 if field.required {
-                    info.required_in.insert(type_name.to_string());
+                    *info.required_in |= *repr;
                 }
             }
         }
 
-        dbg!(&fields_info);
+        tracing::debug!("Field info for type {}: {:?}", "__name", fields_info);
 
-        Ok(Self {
-            fields_info,
-            types: types.iter().map(|(name, _)| name.to_string()).collect(),
-        })
+        // TODO: strip fields that are present in every field and multiple fields that are required in same set of types
+
+        let discriminator = Self { fields_info, types };
+
+        dbg!(&discriminator);
+
+        Ok(discriminator)
     }
 
     pub fn resolve_type(&self, value: &Value) -> Result<TypeName> {
@@ -62,43 +113,80 @@ impl Discriminator {
         }
     }
 
-    fn resolve_type_for_single(&self, value: &Value) -> Result<String> {
+    fn resolve_type_for_single(&self, value: &Value) -> Result<&str> {
         let Value::Object(obj) = value else {
             bail!("Value expected to be object");
         };
 
-        let mut possible_types: IndexSet<_> =
-            self.types.iter().map(|name| name.to_string()).collect();
+        let mut possible_types = Repr::all_covered(self.types.len());
 
         for (field, info) in &self.fields_info {
             if obj.contains_key(field.as_str()) {
-                possible_types = possible_types
-                    .intersection(&info.present_in)
-                    .cloned()
-                    .collect();
+                *possible_types &= *info.presented_in;
             } else {
-                possible_types = possible_types
-                    .difference(&info.required_in)
-                    .cloned()
-                    .collect();
+                *possible_types &= !*info.required_in;
             }
 
-            match possible_types.len() {
+            match *possible_types {
                 0 => bail!("Failed to find corresponding type for value"),
-                1 => {
-                    return Ok(possible_types
-                        .into_iter()
-                        .next()
-                        .expect("Safe unwrap due to previous check for length"))
+                x if x.is_power_of_two() => {
+                    return Ok(possible_types.first_covered_type(&self.types))
                 }
                 _ => {}
-            };
+            }
         }
 
-        possible_types
-            .into_iter()
-            .next()
-            .ok_or(anyhow!("Empty list of possible types"))
+        Ok(possible_types.first_covered_type(&self.types))
+    }
+}
+
+#[derive(Copy, Clone, Default)]
+struct Repr(usize);
+
+impl std::fmt::Debug for Repr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:0b}", self.0))
+    }
+}
+
+impl Deref for Repr {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Repr {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Repr {
+    fn all_covered(len: usize) -> Self {
+        Self((1 << len) - 1)
+    }
+
+    fn from_type_index(index: usize) -> Self {
+        Self(1 << index)
+    }
+
+    fn first_covered_type<'types>(&self, types: &'types [String]) -> &'types str {
+        &types[self.0.trailing_zeros() as usize]
+    }
+
+    fn covered_types<'types>(&self, types: &'types [String]) -> Vec<&'types str> {
+        let mut x = *self;
+        let mut result = Vec::new();
+
+        while x.0 != 0 {
+            result.push(x.first_covered_type(types));
+
+            *x = *x & (*x - 1);
+        }
+
+        result
     }
 }
 
