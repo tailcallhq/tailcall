@@ -21,7 +21,7 @@ impl Synth {
         self.iter(&self.operation, value)
     }
 
-    fn validate(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
+    fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
         type_of.is_list() == value.is_array()
     }
 
@@ -33,7 +33,7 @@ impl Synth {
         match parent {
             Some(parent) => match parent.data.as_ref().map(|v| v.get_value()) {
                 Some(val) => {
-                    if !Self::validate(&node.type_of, val) {
+                    if !Self::is_array(&node.type_of, val) {
                         return Value::Null;
                     };
                     self.iter_inner(node, Some(val), parent)
