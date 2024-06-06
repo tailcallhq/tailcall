@@ -65,7 +65,7 @@ impl Synth {
                     // if it's a leaf node, then push the value
                     let val = obj.iter().find(|(k, _)| node.name.eq(*k)).map(|(_, v)| v);
                     if let Some(val) = val {
-                        ans.push((node.name.to_owned(), val.clone()));
+                        ans.push((node.name.to_owned(), val.to_owned()));
                     }
                 } else {
                     // if it has children, then pick value from obj and pass it to children.
@@ -95,7 +95,7 @@ impl Synth {
                 }
                 Value::Object(vec![(node.name.to_owned(), Value::Array(ans))].into())
             }
-            Some(val) => val.clone(),
+            Some(val) => val.to_owned(),
             None => Value::Null,
         }
     }
@@ -168,7 +168,7 @@ mod tests {
                 IoId::new(0),
                 Data {
                     data: None,
-                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
                 },
             ),
             // Insert /posts
@@ -176,7 +176,7 @@ mod tests {
                 IoId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(POSTS).unwrap()),
-                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
                 },
             ),
         ];
@@ -201,7 +201,7 @@ mod tests {
                 IoId::new(0),
                 Data {
                     data: None,
-                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
                 },
             ),
             // Insert /users
@@ -209,7 +209,7 @@ mod tests {
                 IoId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(USERS).unwrap()),
-                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
                 },
             ),
         ];
@@ -233,7 +233,7 @@ mod tests {
                 IoId::new(0),
                 Data {
                     data: None,
-                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
                 },
             ),
             // Insert /user/:id
@@ -265,7 +265,7 @@ mod tests {
                 IoId::new(0),
                 Data {
                     data: None,
-                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
                 },
             ),
             // Insert /posts/:id
@@ -273,7 +273,7 @@ mod tests {
                 IoId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(POST).unwrap()),
-                    deferred: HashMap::from_iter(vec![(FieldId::new(4), IoId::new(2))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(3), IoId::new(2))].into_iter()),
                 },
             ),
             // Insert /user/:id
@@ -306,7 +306,7 @@ mod tests {
                 IoId::new(0),
                 Data {
                     data: None,
-                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
                 },
             ),
             // Insert /posts
@@ -314,7 +314,7 @@ mod tests {
                 IoId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(POSTS).unwrap()),
-                    deferred: HashMap::from_iter(vec![(FieldId::new(4), IoId::new(2))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(3), IoId::new(2))].into_iter()),
                 },
             ),
             // Insert /user/:id
@@ -347,7 +347,7 @@ mod tests {
                 IoId::new(0),
                 Data {
                     data: None,
-                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
                 },
             ),
             // Insert /posts
@@ -355,7 +355,7 @@ mod tests {
                 IoId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(POSTS).unwrap()),
-                    deferred: HashMap::from_iter(vec![(FieldId::new(3), IoId::new(2))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(2), IoId::new(2))].into_iter()),
                 },
             ),
             // Insert /user/:id
@@ -363,7 +363,7 @@ mod tests {
                 IoId::new(2),
                 Data {
                     data: Some(OwnedValue::from_str(USER).unwrap()),
-                    deferred: HashMap::from_iter(vec![(FieldId::new(5), IoId::new(3))].into_iter()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(4), IoId::new(3))].into_iter()),
                 },
             ),
             (
