@@ -1,6 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
 mod data_loader_bench;
+mod from_json_bench;
 mod handle_request_bench;
 mod http_execute_bench;
 mod impl_path_string_for_evaluation_context;
@@ -17,6 +18,7 @@ fn all_benchmarks(c: &mut Criterion) {
     request_template_bench::benchmark_to_request(c);
     handle_request_bench::benchmark_handle_request(c);
     http_execute_bench::benchmark_http_execute_method(c);
+    from_json_bench::benchmark_from_json_method(c);
 }
 
 criterion_group! {

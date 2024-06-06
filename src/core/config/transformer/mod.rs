@@ -1,5 +1,10 @@
 mod ambiguous_type;
+mod remove_unused;
+mod type_merger;
+
 pub use ambiguous_type::{AmbiguousType, Resolution};
+pub use remove_unused::RemoveUnused;
+pub use type_merger::TypeMerger;
 
 use super::Config;
 use crate::core::valid::{Valid, Validator};

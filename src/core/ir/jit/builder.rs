@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use async_graphql::parser::types::{DocumentOperations, ExecutableDocument, Selection};
-use async_graphql_parser::types::SelectionSet;
+use async_graphql_parser::types::{OperationType, SelectionSet};
 
 use super::field_index::{FieldIndex, QueryField};
 use super::model::*;
@@ -9,6 +9,7 @@ use crate::core::blueprint::Blueprint;
 use crate::core::counter::Counter;
 use crate::core::merge_right::MergeRight;
 
+#[allow(unused)]
 pub struct ExecutionPlanBuilder {
     pub index: FieldIndex,
     pub arg_id: Counter,
@@ -16,8 +17,8 @@ pub struct ExecutionPlanBuilder {
     pub document: ExecutableDocument,
 }
 
+#[allow(unused)]
 impl ExecutionPlanBuilder {
-    #[allow(unused)]
     pub fn new(blueprint: Blueprint, document: ExecutableDocument) -> Self {
         let blueprint_index = FieldIndex::init(&blueprint);
         Self {
@@ -85,28 +86,43 @@ impl ExecutionPlanBuilder {
         fields
     }
 
-    #[allow(unused)]
-    pub fn build(&self) -> ExecutionPlan {
-        let query = &self.index.get_query().to_owned();
+    fn get_type(&self, ty: OperationType) -> Option<&str> {
+        match ty {
+            OperationType::Query => Some(self.index.get_query()),
+            OperationType::Mutation => self.index.get_mutation(),
+            OperationType::Subscription => None,
+        }
+    }
 
+    #[allow(unused)]
+    pub fn build(&self) -> Result<ExecutionPlan, String> {
         let mut fields = Vec::new();
 
         for fragment in self.document.fragments.values() {
-            fields = self.iter(&fragment.node.selection_set.node, query, None);
+            let on_type = fragment.node.type_condition.node.on.node.as_str();
+            fields = self.iter(&fragment.node.selection_set.node, on_type, None);
         }
 
         match &self.document.operations {
             DocumentOperations::Single(single) => {
-                fields = self.iter(&single.node.selection_set.node, query, None);
+                let name = self.get_type(single.node.ty).ok_or(format!(
+                    "Root Operation type not defined for {}",
+                    single.node.ty
+                ))?;
+                fields = self.iter(&single.node.selection_set.node, name, None);
             }
             DocumentOperations::Multiple(multiple) => {
                 for single in multiple.values() {
-                    fields = self.iter(&single.node.selection_set.node, query, None);
+                    let name = self.get_type(single.node.ty).ok_or(format!(
+                        "Root Operation type not defined for {}",
+                        single.node.ty
+                    ))?;
+                    fields = self.iter(&single.node.selection_set.node, name, None);
                 }
             }
         }
 
-        ExecutionPlan { fields }
+        Ok(ExecutionPlan { fields })
     }
 }
 
@@ -125,7 +141,9 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        ExecutionPlanBuilder::new(blueprint, document).build()
+        ExecutionPlanBuilder::new(blueprint, document)
+            .build()
+            .unwrap()
     }
 
     #[tokio::test]

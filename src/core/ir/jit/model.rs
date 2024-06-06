@@ -2,6 +2,7 @@ use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::IR;
 
+#[allow(unused)]
 #[derive(Debug, Clone)]
 #[allow(unused)]
 pub struct Arg {
@@ -116,6 +117,7 @@ impl<A: Debug + Clone> Debug for Field<A> {
 
 #[derive(Clone)]
 pub struct Parent(FieldId);
+#[allow(unused)]
 impl Parent {
     pub fn new(id: FieldId) -> Self {
         Parent(id)
