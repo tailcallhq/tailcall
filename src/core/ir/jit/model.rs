@@ -3,6 +3,7 @@ use std::fmt::{Debug, Formatter};
 use crate::core::ir::IR;
 
 #[derive(Debug, Clone)]
+#[allow(unused)]
 pub struct Arg {
     pub id: ArgId,
     pub name: String,
@@ -77,13 +78,19 @@ impl Field<Parent> {
             }
         }
 
+        let refs = if children.is_empty() {
+            None
+        } else {
+            Some(Children(children))
+        };
+
         Field {
             id: self.id,
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
             args: self.args,
-            refs: Some(Children(children)),
+            refs,
         }
     }
 }

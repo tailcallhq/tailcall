@@ -16,7 +16,7 @@ impl Synth {
         Synth { operation, store }
     }
 
-    pub fn synthesize<'a>(&'a self) -> Value<'a> {
+    pub fn synthesize(&self) -> Value<'_> {
         let value = self.store.get(&IoId::new(0));
         self.iter(&self.operation, value)
     }
@@ -56,7 +56,7 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn synth<'a>(query: &'a str) -> String {
+    fn synth(query: &str) -> String {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
