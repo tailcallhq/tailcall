@@ -8,13 +8,14 @@ pub struct UpstreamBaseUrlGenerator;
 
 impl UpstreamBaseUrlGenerator {
     fn generate_base_url(&self, mut config: Config) -> Config {
-        let mut base_url_set = HashSet::new();
-
         let operation_types = [
             &config.schema.query,
             &config.schema.mutation,
             &config.schema.subscription,
         ];
+
+        let mut base_url_set = HashSet::new();
+        let mut types_to_clean = vec![];
 
         for operation_type in operation_types.iter().filter_map(|op| op.as_deref()) {
             if let Some(type_) = config.types.get(operation_type) {
@@ -22,22 +23,25 @@ impl UpstreamBaseUrlGenerator {
                     if let Some(http_directive) = &field.http {
                         if let Some(base_url) = &http_directive.base_url {
                             base_url_set.insert(base_url.to_owned());
+                            types_to_clean.push(operation_type);
+
+                            if base_url_set.len() > 1 {
+                                return config;
+                            }
                         }
                     }
                 }
             }
         }
 
-        if base_url_set.len() == 1 {
-            if let Some(base_url) = base_url_set.iter().next() {
-                config.upstream.base_url = Some(base_url.to_owned());
+        if let Some(base_url) = base_url_set.iter().next() {
+            config.upstream.base_url = Some(base_url.to_owned());
 
-                for operation_type in operation_types.iter().filter_map(|op| op.as_deref()) {
-                    if let Some(type_) = config.types.get_mut(operation_type) {
-                        for field in type_.fields.values_mut() {
-                            if let Some(http_directive) = &mut field.http {
-                                http_directive.base_url = None;
-                            }
+            for operation_type in types_to_clean {
+                if let Some(type_) = config.types.get_mut(operation_type) {
+                    for field in type_.fields.values_mut() {
+                        if let Some(http_directive) = &mut field.http {
+                            http_directive.base_url = None;
                         }
                     }
                 }
