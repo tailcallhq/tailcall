@@ -5,34 +5,34 @@ expression: plan
 ExecutionPlan {
     fields: [
         Field {
-            id: 1,
+            id: 0,
             name: "posts",
             ir: "Some(..)",
             type_of: [Post],
         },
         Field {
-            id: 2,
+            id: 1,
             name: "user",
             ir: "Some(..)",
             type_of: User,
+            refs: Some(
+                Parent(0),
+            ),
+        },
+        Field {
+            id: 2,
+            name: "id",
+            type_of: Int!,
             refs: Some(
                 Parent(1),
             ),
         },
         Field {
             id: 3,
-            name: "id",
-            type_of: Int!,
-            refs: Some(
-                Parent(2),
-            ),
-        },
-        Field {
-            id: 4,
             name: "name",
             type_of: String!,
             refs: Some(
-                Parent(2),
+                Parent(1),
             ),
         },
     ],

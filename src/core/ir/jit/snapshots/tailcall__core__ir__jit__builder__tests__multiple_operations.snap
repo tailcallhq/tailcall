@@ -5,13 +5,13 @@ expression: plan
 ExecutionPlan {
     fields: [
         Field {
-            id: 1,
+            id: 0,
             name: "user",
             ir: "Some(..)",
             type_of: User,
             args: [
                 Arg {
-                    id: 1,
+                    id: 0,
                     name: "id",
                     type_of: Int!,
                     value: Some(
@@ -24,41 +24,41 @@ ExecutionPlan {
             ],
         },
         Field {
-            id: 2,
+            id: 1,
             name: "id",
             type_of: Int!,
             refs: Some(
-                Parent(1),
+                Parent(0),
+            ),
+        },
+        Field {
+            id: 2,
+            name: "username",
+            type_of: String!,
+            refs: Some(
+                Parent(0),
             ),
         },
         Field {
             id: 3,
-            name: "username",
-            type_of: String!,
-            refs: Some(
-                Parent(1),
-            ),
-        },
-        Field {
-            id: 4,
             name: "posts",
             ir: "Some(..)",
             type_of: [Post],
         },
         Field {
-            id: 5,
+            id: 4,
             name: "id",
             type_of: Int!,
             refs: Some(
-                Parent(4),
+                Parent(3),
             ),
         },
         Field {
-            id: 6,
+            id: 5,
             name: "title",
             type_of: String!,
             refs: Some(
-                Parent(4),
+                Parent(3),
             ),
         },
     ],

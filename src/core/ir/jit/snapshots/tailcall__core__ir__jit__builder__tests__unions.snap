@@ -5,13 +5,13 @@ expression: plan
 ExecutionPlan {
     fields: [
         Field {
-            id: 1,
+            id: 0,
             name: "getUserIdOrEmail",
             ir: "Some(..)",
             type_of: UserIdOrEmail,
             args: [
                 Arg {
-                    id: 1,
+                    id: 0,
                     name: "id",
                     type_of: Int!,
                     value: Some(
