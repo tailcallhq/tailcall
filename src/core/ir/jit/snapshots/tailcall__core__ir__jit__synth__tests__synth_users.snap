@@ -1,0 +1,14 @@
+---
+source: src/core/ir/jit/synth.rs
+expression: actual
+---
+{
+  "users": [
+    {
+      "name": "Jane Doe",
+      "address": {
+        "street": "Kulas Light"
+      }
+    }
+  ]
+}

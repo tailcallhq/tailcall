@@ -1,7 +1,6 @@
 use std::cell::Cell;
 
 #[allow(unused)]
-#[derive(Default)]
 pub struct Counter(Cell<usize>);
 impl Counter {
     #[allow(unused)]
@@ -10,4 +9,11 @@ impl Counter {
         self.0.set(curr + 1);
         curr
     }
+}
+
+impl Default for Counter {
+    fn default() -> Self {
+        Counter(Cell::new(1))
+    }
+
 }

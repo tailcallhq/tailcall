@@ -1,0 +1,44 @@
+---
+source: src/core/ir/jit/synth.rs
+expression: actual
+---
+{
+  "posts": [
+    {
+      "title": "My title",
+      "user": {
+        "name": "Jane Doe",
+        "todo": {
+          "todo": [
+            {
+              "title": "My title",
+              "completed": false
+            },
+            {
+              "title": "Also My Title",
+              "completed": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "Also My Title",
+      "user": {
+        "name": "Jane Doe",
+        "todo": {
+          "todo": [
+            {
+              "title": "My title",
+              "completed": false
+            },
+            {
+              "title": "Also My Title",
+              "completed": true
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
