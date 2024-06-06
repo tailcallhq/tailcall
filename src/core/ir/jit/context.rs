@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use futures_util::future;
 use serde_json_borrow::OwnedValue;
@@ -10,7 +10,7 @@ use crate::core::ir::{EvaluationError, IoId, IR};
 #[allow(unused)]
 pub struct ExecutionContext {
     plan: ExecutionPlan,
-    store: Arc<Mutex<Store<IoId, OwnedValue>>>,
+    store: Mutex<Store<IoId, OwnedValue>>,
 }
 
 #[allow(unused)]
@@ -34,7 +34,11 @@ impl ExecutionContext {
         self.plan.fields.iter().find(|field| field.id == id)
     }
 
-    async fn execute_field(&self, id: FieldId, parent: Option<&OwnedValue>) -> anyhow::Result<()> {
+    async fn execute_field(
+        &self,
+        id: FieldId,
+        parent: Option<&OwnedValue>,
+    ) -> Result<(), EvaluationError> {
         if let Some(field) = self.find_field(id.clone()) {
             if let Some(ir) = &field.ir {
                 let value = self.execute_ir(ir, parent).await?;
@@ -47,7 +51,7 @@ impl ExecutionContext {
                 )
                 .await
                 .into_iter()
-                .collect::<anyhow::Result<Vec<_>>>()?;
+                .collect::<Result<Vec<_>, EvaluationError>>()?;
 
                 self.insert_field_value(id, value);
             }
@@ -63,7 +67,7 @@ impl ExecutionContext {
             .collect::<Vec<_>>()
     }
 
-    pub async fn execute(self) -> anyhow::Result<Store<IoId, OwnedValue>> {
+    pub async fn execute(self) -> Result<Store<IoId, OwnedValue>, EvaluationError> {
         future::join_all(
             self.root()
                 .iter()
@@ -71,7 +75,10 @@ impl ExecutionContext {
         )
         .await
         .into_iter()
-        .collect::<anyhow::Result<Vec<_>>>()?;
-        Ok(self.store)
+        .collect::<Result<Vec<_>, EvaluationError>>()?;
+
+        let store = self.store.into_inner().unwrap();
+
+        Ok(store)
     }
 }
