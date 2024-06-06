@@ -2,7 +2,6 @@ use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::IR;
 
-#[allow(unused)]
 #[derive(Debug, Clone)]
 #[allow(unused)]
 pub struct Arg {
