@@ -149,21 +149,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_synth() {
-        let mut store = vec![];
-
-        let mut deferred = HashMap::new();
-        deferred.insert(FieldId::new(1), IoId::new(1));
-        // Insert Root
-        store.push((
-            IoId::new(0),
-            Data {
-                data: None,
-                deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
-            },
-        ));
-
-        // Insert /posts
-        store.push(
+        let store = vec![
+            // Insert Root
+            (
+                IoId::new(0),
+                Data {
+                    data: None,
+                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                },
+            ),
+            // Insert /posts
             (
                 IoId::new(1),
                 Data {
@@ -173,10 +168,16 @@ mod tests {
                         )
                             .unwrap(),
                     ),
-                    deferred,
+                    deferred: HashMap::from_iter(vec![
+                        (
+                            FieldId::new(1),
+                            IoId::new(1)
+                        )
+                    ].into_iter()
+                    ),
                 }
-            )
-        );
+            ),
+        ];
 
         let actual = synth(
             r#"
@@ -192,22 +193,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_synth_users() {
-        let mut store = vec![];
-
-        let mut deferred = HashMap::new();
-        deferred.insert(FieldId::new(1), IoId::new(1));
-
-        // Insert Root
-        store.push((
-            IoId::new(0),
-            Data {
-                data: None,
-                deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
-            },
-        ));
-
-        // Insert /users
-        store.push(
+        let store = vec![
+            // Insert Root
+            (
+                IoId::new(0),
+                Data {
+                    data: None,
+                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                },
+            ),
+            // Insert /users
             (
                 IoId::new(1),
                 Data {
@@ -217,11 +212,17 @@ mod tests {
                         )
                             .unwrap(),
                     ),
-                    deferred,
+                    deferred: HashMap::from_iter(
+                        vec![
+                            (
+                                FieldId::new(1),
+                                IoId::new(1)
+                            )
+                        ].into_iter()
+                    ),
                 }
-            )
-        );
-
+            ),
+        ];
         let actual = synth(
             r#"
                 query {
@@ -236,23 +237,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_synth_post_id() {
-        let mut store = vec![];
-
-        let mut deferred = HashMap::new();
-        deferred.insert(FieldId::new(1), IoId::new(1));
-
-        // Insert Root
-        store.push((
-            IoId::new(0),
-            Data {
-                data: None,
-                deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
-            },
-        ));
-
-        let deferred = HashMap::new();
-        // Insert /user/:id
-        store.push(
+        let store = vec![
+            // Insert Root
+            (
+                IoId::new(0),
+                Data {
+                    data: None,
+                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                },
+            ),
+            // Insert /user/:id
             (
                 IoId::new(1),
                 Data {
@@ -261,10 +255,10 @@ mod tests {
                             r#"{"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1}"#,
                         ).unwrap()
                     ),
-                    deferred,
+                    deferred: Default::default(),
                 }
-            )
-        );
+            ),
+        ];
         let actual = synth(
             r#"
                 query {
@@ -320,7 +314,7 @@ mod tests {
                     ),
                     deferred: Default::default(),
                 }
-            )
+            ),
         ];
 
         let actual = synth(
@@ -375,7 +369,7 @@ mod tests {
                     ),
                     deferred: Default::default(),
                 }
-            )
+            ),
         ];
 
         let actual = synth(
@@ -434,7 +428,7 @@ mod tests {
                     data: Some(OwnedValue::from_str(TODO).unwrap()),
                     deferred: Default::default(),
                 },
-            )
+            ),
         ];
 
         let actual = synth(
