@@ -1,6 +1,6 @@
 schema
-@server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
-@upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
   query: Query
   mutation: Mutation
 }
@@ -53,14 +53,14 @@ type User {
   phone: String
   website: String
   address: Address
-  todo: Todo
+  todo: Todo @http(path: "/todos/{{.value.id}}")
 }
 
 type Todo {
-  id: Int!
-  userId: Int!
-  title: String!
-  completed: Boolean!
+  id: Int
+  userId: Int
+  title: String
+  completed: Boolean
 }
 
 type Address {

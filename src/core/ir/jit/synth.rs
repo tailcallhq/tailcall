@@ -1,9 +1,8 @@
 pub use serde_json_borrow::*;
 
-use crate::core::ir::IoId;
-
 use super::model::{Children, Field};
 use super::store::{Data, Store};
+use crate::core::ir::IoId;
 
 #[allow(unused)]
 pub struct Synth {
@@ -22,33 +21,37 @@ impl Synth {
         self.iter(&self.operation, value)
     }
 
-    pub fn iter<'a>( // TODO: Add validator to match that value.is_arr == node.type_of.is_arr
-                     &'a self,
-                     node: &'a Field<Children>,
-                     parent: Option<&'a Data<IoId, OwnedValue>>,
+    fn validate(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
+        type_of.is_list() == value.is_array()
+    }
+
+    pub fn iter<'a>(
+        &'a self,
+        node: &'a Field<Children>,
+        parent: Option<&'a Data<IoId, OwnedValue>>,
     ) -> Value<'a> {
         match parent {
-            Some(parent) => {
-                match parent.data.as_ref().map(|v| v.get_value()) {
-                    Some(val) => {
-                        let val = self.foo(node, Some(val), parent);
-                        // let val = Value::Object(vec![(node.name.to_owned(), val)].into());
-                        val
-                    }
-                    _ => {
-                        if let Some(key) = parent.deferred.get(&node.id) {
-                            let value = self.store.get(key);
-                            self.iter(&node, value)
-                        } else {
-                            Value::Null
-                        }
+            Some(parent) => match parent.data.as_ref().map(|v| v.get_value()) {
+                Some(val) => {
+                    if !Self::validate(&node.type_of, val) {
+                        return Value::Null;
+                    };
+                    self.iter_inner(node, Some(val), parent)
+                }
+                _ => {
+                    if let Some(key) = parent.deferred.get(&node.id) {
+                        let value = self.store.get(key);
+                        self.iter(node, value)
+                    } else {
+                        Value::Null
                     }
                 }
-            }
+            },
             None => Value::Null,
         }
     }
-    fn foo<'a>(
+
+    fn iter_inner<'a>(
         &'a self,
         node: &'a Field<Children>,
         parent: Option<&'a Value<'a>>,
@@ -69,11 +72,15 @@ impl Synth {
                     for child in children {
                         let val = obj.iter().find(|(k, _)| child.name.eq(*k)).map(|(_, v)| v);
                         if let Some(val) = val {
-                            ans.push((child.name.to_owned(), self.foo(child, Some(val), value)));
+                            ans.push((
+                                child.name.to_owned(),
+                                self.iter_inner(child, Some(val), value),
+                            ));
                         } else {
-                            let current = value.deferred.get(&child.id).map(|io_id| {
-                                self.store.get(io_id)
-                            }).flatten();
+                            let current = value
+                                .deferred
+                                .get(&child.id)
+                                .and_then(|io_id| self.store.get(io_id));
                             let value = self.iter(child, current);
                             ans.push((child.name.to_owned(), value));
                         }
@@ -84,7 +91,7 @@ impl Synth {
             Some(Value::Array(arr)) => {
                 let mut ans = vec![];
                 for val in arr {
-                    ans.push(self.foo(node, Some(val), value));
+                    ans.push(self.iter_inner(node, Some(val), value));
                 }
                 Value::Object(vec![(node.name.to_owned(), Value::Array(ans))].into())
             }
@@ -103,11 +110,11 @@ mod tests {
 
     use crate::core::blueprint::Blueprint;
     use crate::core::config::Config;
-    use crate::core::ir::IoId;
     use crate::core::ir::jit::builder::ExecutionPlanBuilder;
     use crate::core::ir::jit::model::FieldId;
     use crate::core::ir::jit::store::{Data, Store};
     use crate::core::ir::jit::synth::Synth;
+    use crate::core::ir::IoId;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -117,14 +124,9 @@ mod tests {
         ]
     "#;
 
-    const TODOS: &str = r#"
-        [
-            {"id": 1, "title": "My title", "completed": false},
-            {"id": 2, "title": "Also My Title", "completed": true}
-        ]
+    const TODO: &str = r#"
+                {"id": 1, "title": "My title", "completed": false}
         "#;
-
-
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
@@ -134,7 +136,6 @@ mod tests {
         let document = async_graphql::parser::parse_query(query).unwrap();
         let mut store = Store::new();
         let edoc = ExecutionPlanBuilder::new(blueprint, document).build();
-
 
         data.into_iter().for_each(|(k, v)| {
             store.insert(k, v);
@@ -153,23 +154,13 @@ mod tests {
         let mut deferred = HashMap::new();
         deferred.insert(FieldId::new(1), IoId::new(1));
         // Insert Root
-        store.push(
-            (
-                IoId::new(0),
-                Data {
-                    data: None,
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(1),
-                                IoId::new(1)
-                            )
-                        ]
-                            .into_iter()
-                    ),
-                }
-            )
-        );
+        store.push((
+            IoId::new(0),
+            Data {
+                data: None,
+                deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+            },
+        ));
 
         // Insert /posts
         store.push(
@@ -207,23 +198,13 @@ mod tests {
         deferred.insert(FieldId::new(1), IoId::new(1));
 
         // Insert Root
-        store.push(
-            (
-                IoId::new(0),
-                Data {
-                    data: None,
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(1),
-                                IoId::new(1)
-                            )
-                        ]
-                            .into_iter()
-                    ),
-                }
-            )
-        );
+        store.push((
+            IoId::new(0),
+            Data {
+                data: None,
+                deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+            },
+        ));
 
         // Insert /users
         store.push(
@@ -261,23 +242,13 @@ mod tests {
         deferred.insert(FieldId::new(1), IoId::new(1));
 
         // Insert Root
-        store.push(
-            (
-                IoId::new(0),
-                Data {
-                    data: None,
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(1),
-                                IoId::new(1)
-                            )
-                        ]
-                            .into_iter()
-                    ),
-                }
-            )
-        );
+        store.push((
+            IoId::new(0),
+            Data {
+                data: None,
+                deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+            },
+        ));
 
         let deferred = HashMap::new();
         // Insert /user/:id
@@ -308,29 +279,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_synth_post_id_to_user() {
-        let mut store = vec![];
-
-        // Insert Root
-        store.push(
+        let store = vec![
+            // Insert Root
             (
                 IoId::new(0),
                 Data {
                     data: None,
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(1),
-                                IoId::new(1)
-                            )
-                        ]
-                            .into_iter()
-                    ),
-                }
-            )
-        );
-
-        // Insert /users
-        store.push(
+                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                },
+            ),
+            // Insert /posts/:id
             (
                 IoId::new(1),
                 Data {
@@ -350,11 +308,8 @@ mod tests {
                             .into_iter()
                     ),
                 }
-            )
-        );
-
-        // Insert /user/:id
-        store.push(
+            ),
+            // Insert /user/:id
             (
                 IoId::new(2),
                 Data {
@@ -366,8 +321,7 @@ mod tests {
                     deferred: Default::default(),
                 }
             )
-        );
-
+        ];
 
         let actual = synth(
             r#"
@@ -383,40 +337,21 @@ mod tests {
 
     #[tokio::test]
     async fn test_synth_all_posts_users() {
-        let mut store = vec![];
-
-        // Insert Root
-        store.push(
+        let store = vec![
+            // Insert Root
             (
                 IoId::new(0),
                 Data {
                     data: None,
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(1),
-                                IoId::new(1)
-                            )
-                        ]
-                            .into_iter()
-                    ),
-                }
-            )
-        );
-
-        // Insert /users
-        store.push(
+                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                },
+            ),
+            // Insert /posts
             (
                 IoId::new(1),
                 Data {
                     data: Some(
-                        OwnedValue::from_str(
-                            r#"[
-                            {"id": 1, "title": "My title", "title":"Hello", "body": "This is my first post.", "userId": 1},
-                            {"id": 2, "title": "Also My Title", "title":"Alo", "body": "This is my second post.", "userId": 1}
-                            ]"#,
-                        )
-                            .unwrap(),
+                        OwnedValue::from_str(POSTS).unwrap(),
                     ),
                     deferred: HashMap::from_iter(
                         vec![
@@ -428,11 +363,8 @@ mod tests {
                             .into_iter()
                     ),
                 }
-            )
-        );
-
-        // Insert /user/:id
-        store.push(
+            ),
+            // Insert /user/:id
             (
                 IoId::new(2),
                 Data {
@@ -444,7 +376,7 @@ mod tests {
                     deferred: Default::default(),
                 }
             )
-        );
+        ];
 
         let actual = synth(
             r#"
@@ -460,51 +392,24 @@ mod tests {
 
     #[tokio::test]
     async fn test_synth_all_posts_users_todos() {
-        let mut store = vec![];
-
-        // Insert Root
-        store.push(
+        let store = vec![
+            // Insert Root
             (
                 IoId::new(0),
                 Data {
                     data: None,
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(1),
-                                IoId::new(1)
-                            )
-                        ]
-                            .into_iter()
-                    ),
-                }
-            )
-        );
-
-        // Insert /users
-        store.push(
+                    deferred: HashMap::from_iter(vec![(FieldId::new(1), IoId::new(1))].into_iter()),
+                },
+            ),
+            // Insert /posts
             (
                 IoId::new(1),
                 Data {
-                    data: Some(
-                        OwnedValue::from_str(POSTS)
-                            .unwrap(),
-                    ),
-                    deferred: HashMap::from_iter(
-                        vec![
-                            (
-                                FieldId::new(3),
-                                IoId::new(2)
-                            )
-                        ]
-                            .into_iter()
-                    ),
-                }
-            )
-        );
-
-        // Insert /user/:id
-        store.push(
+                    data: Some(OwnedValue::from_str(POSTS).unwrap()),
+                    deferred: HashMap::from_iter(vec![(FieldId::new(3), IoId::new(2))].into_iter()),
+                },
+            ),
+            // Insert /user/:id
             (
                 IoId::new(2),
                 Data {
@@ -522,20 +427,15 @@ mod tests {
                         ].into_iter()
                     ),
                 }
-            )
-        );
-
-        store.push(
+            ),
             (
                 IoId::new(3),
                 Data {
-                    data: Some(
-                        OwnedValue::from_str(TODOS).unwrap(),
-                    ),
+                    data: Some(OwnedValue::from_str(TODO).unwrap()),
                     deferred: Default::default(),
-                }
+                },
             )
-        );
+        ];
 
         let actual = synth(
             r#"

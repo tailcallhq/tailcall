@@ -15,5 +15,4 @@ impl Default for Counter {
     fn default() -> Self {
         Counter(Cell::new(1))
     }
-
 }
