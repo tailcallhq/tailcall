@@ -7,7 +7,7 @@ schema @server @upstream {
 }
 
 type Container {
-  container: T1
+  container: T2
   name: String
 }
 
@@ -16,14 +16,14 @@ type Query {
 }
 
 type RootType1 {
-  container: T3
+  container: Container
 }
 
 type T1 {
   age: Int
 }
 
-type T3 {
-  container: Container
+type T2 {
+  container: T1
   name: String
 }
