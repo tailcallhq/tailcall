@@ -45,9 +45,9 @@ type Product {
 }
 
 type Query {
-  f1(p1: Int!): [T1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}/comments")
-  f2(p1: Int!): T2 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}")
-  f3(q: String): T19 @http(baseURL: "https://dummyjson.com", path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
+  f1(p1: Int!): [RootType1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}/comments")
+  f2(p1: Int!): RootType2 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}")
+  f3(q: String): RootType3 @http(baseURL: "https://dummyjson.com", path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
 }
 
 type Review {
@@ -58,7 +58,7 @@ type Review {
   reviewerName: String
 }
 
-type T1 {
+type RootType1 {
   body: String
   email: String
   id: Int
@@ -66,16 +66,16 @@ type T1 {
   postId: Int
 }
 
-type T19 {
-  limit: Int
-  products: [Product]
-  skip: Int
-  total: Int
-}
-
-type T2 {
+type RootType2 {
   body: String
   id: Int
   title: String
   userId: Int
+}
+
+type RootType3 {
+  limit: Int
+  products: [Product]
+  skip: Int
+  total: Int
 }

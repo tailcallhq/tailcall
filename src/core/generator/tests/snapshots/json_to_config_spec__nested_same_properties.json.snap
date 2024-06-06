@@ -7,23 +7,23 @@ schema @server @upstream {
 }
 
 type Container {
-  age: Int
+  container: T1
+  name: String
 }
 
 type Query {
-  f1: T4 @http(baseURL: "https://example.com", path: "/")
+  f1: RootType1 @http(baseURL: "https://example.com", path: "/")
 }
 
-type T2 {
-  container: Container
-  name: String
+type RootType1 {
+  container: T3
+}
+
+type T1 {
+  age: Int
 }
 
 type T3 {
-  container: T2
+  container: Container
   name: String
-}
-
-type T4 {
-  container: T3
 }

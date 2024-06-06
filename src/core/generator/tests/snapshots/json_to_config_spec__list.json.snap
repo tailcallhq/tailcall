@@ -7,10 +7,10 @@ schema @server @upstream {
 }
 
 type Query {
-  f1: [T1] @http(baseURL: "https://example.com", path: "/users")
+  f1: [RootType1] @http(baseURL: "https://example.com", path: "/users")
 }
 
-type T1 {
+type RootType1 {
   adult: Boolean
   age: Int
   name: String
