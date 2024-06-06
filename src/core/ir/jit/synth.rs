@@ -59,41 +59,44 @@ impl Synth {
     ) -> Value<'a> {
         match parent {
             Some(Value::Object(obj)) => {
-                let mut ans = vec![];
+                let mut ans = ObjectAsVec::default();
                 let children = node.children();
                 if children.is_empty() {
                     // if it's a leaf node, then push the value
                     let val = obj.iter().find(|(k, _)| node.name.eq(*k)).map(|(_, v)| v);
                     if let Some(val) = val {
-                        ans.push((node.name.to_owned(), val.to_owned()));
+                        ans.insert(node.name.as_str(), val.to_owned());
                     }
                 } else {
                     // if it has children, then pick value from obj and pass it to children.
                     for child in children {
                         let val = obj.iter().find(|(k, _)| child.name.eq(*k)).map(|(_, v)| v);
                         if let Some(val) = val {
-                            ans.push((
-                                child.name.to_owned(),
+                            ans.insert(
+                                child.name.as_str(),
                                 self.iter_inner(child, Some(val), value),
-                            ));
+                            );
                         } else {
                             let current = value
                                 .extras
                                 .get(&child.id)
                                 .and_then(|io_id| self.store.get(io_id));
                             let value = self.iter(child, current);
-                            ans.push((child.name.to_owned(), value));
+                            ans.insert(child.name.as_str(), value);
                         }
                     }
                 }
-                Value::Object(ans.into())
+                Value::Object(ans)
             }
             Some(Value::Array(arr)) => {
                 let mut ans = vec![];
                 for val in arr {
                     ans.push(self.iter_inner(node, Some(val), value));
                 }
-                Value::Object(vec![(node.name.to_owned(), Value::Array(ans))].into())
+
+                let mut object = ObjectAsVec::default();
+                object.insert(node.name.as_str(), Value::Array(ans));
+                Value::Object(object)
             }
             Some(val) => val.to_owned(),
             None => Value::Null,
