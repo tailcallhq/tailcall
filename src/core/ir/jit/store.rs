@@ -13,6 +13,7 @@ pub struct Data<K, V> {
     pub deferred: Vec<Defer<K>>,
 }
 
+#[allow(unused)]
 #[derive(Debug)]
 pub struct Defer<K> {
     pub name: String,
