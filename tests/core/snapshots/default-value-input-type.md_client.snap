@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+input Input {
+  value: Int = 1
+}
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  abc(input: Input!): Int
+}
+
+scalar Url
+
+schema {
+  query: Query
+}
