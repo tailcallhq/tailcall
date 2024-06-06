@@ -53,7 +53,7 @@ type User {
   phone: String
   website: String
   address: Address
-  todo: Todo @http(path: "/todos/{{.value.id}}")
+  todo: [Todo] @http(path: "/todos?userId={{.value.id}}")
 }
 
 type Todo {

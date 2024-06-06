@@ -9,8 +9,12 @@ expression: actual
       "user": {
         "name": "Jane Doe",
         "todo": {
-          "title": "My title",
-          "completed": false
+          "todo": [
+            {
+              "title": "My title",
+              "completed": false
+            }
+          ]
         }
       }
     },
@@ -19,8 +23,12 @@ expression: actual
       "user": {
         "name": "Jane Doe",
         "todo": {
-          "title": "My title",
-          "completed": false
+          "todo": [
+            {
+              "title": "My title",
+              "completed": false
+            }
+          ]
         }
       }
     }

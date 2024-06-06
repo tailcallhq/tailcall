@@ -28,7 +28,7 @@ impl ArgId {
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub struct FieldId(pub(crate) usize); // TODO: drop pub(crate)
+pub struct FieldId(usize);
 
 impl Debug for FieldId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

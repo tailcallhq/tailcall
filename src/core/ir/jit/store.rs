@@ -12,7 +12,7 @@ pub struct Store<Key, Value> {
 #[derive(Debug)]
 pub struct Data<K, V> {
     pub data: Option<V>,
-    pub deferred: HashMap<FieldId, K>,
+    pub extras: HashMap<FieldId, K>,
 }
 
 #[allow(unused)]
@@ -28,7 +28,7 @@ impl<K: PartialEq + Eq + Hash, V> Store<K, V> {
     pub fn insert(&mut self, key: K, value: Data<K, V>) {
         match self.map.get_mut(&key) {
             Some(data) => {
-                data.deferred.extend(value.deferred);
+                data.extras.extend(value.extras);
             }
             None => {
                 self.map.insert(key, value);
