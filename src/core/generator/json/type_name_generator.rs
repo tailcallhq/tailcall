@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 use inflector::Inflector;
 
@@ -17,9 +17,9 @@ impl<'a> TypeNameGenerator<'a> {
         Self { root_name, name_generator }
     }
 
-    fn generate_candidate_names(&self, config: &Config) -> HashMap<String, HashMap<String, u32>> {
+    fn generate_candidate_names(&self, config: &Config) -> BTreeMap<String, BTreeMap<String, u32>> {
         // HashMap to store mappings between types and their fields
-        let mut type_field_mapping: HashMap<String, HashMap<String, u32>> = Default::default();
+        let mut type_field_mapping: BTreeMap<String, BTreeMap<String, u32>> = Default::default();
 
         // Iterate through each type in the configuration
         let query_name = config.schema.query.clone().unwrap_or_default().to_string();
@@ -63,9 +63,9 @@ impl<'a> TypeNameGenerator<'a> {
 
     fn finalize_candidates(
         &self,
-        candidate_mappings: HashMap<String, HashMap<String, u32>>,
-    ) -> HashMap<String, String> {
-        let mut finalized_candidates = HashMap::new();
+        candidate_mappings: BTreeMap<String, BTreeMap<String, u32>>,
+    ) -> BTreeMap<String, String> {
+        let mut finalized_candidates = BTreeMap::new();
         let mut converged_candidate_set = HashSet::new();
 
         for (type_name, candidate_list) in candidate_mappings {
@@ -86,7 +86,7 @@ impl<'a> TypeNameGenerator<'a> {
 
     fn generate_type_name(
         &self,
-        finalized_candidates: HashMap<String, String>,
+        finalized_candidates: BTreeMap<String, String>,
         mut config: Config,
     ) -> Config {
         for (old_name, new_name) in finalized_candidates {
