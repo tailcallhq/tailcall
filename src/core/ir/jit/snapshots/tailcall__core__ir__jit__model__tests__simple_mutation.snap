@@ -1,7 +1,0 @@
----
-source: src/core/ir/jit/model.rs
-expression: plan
----
-ExecutionPlan {
-    fields: [],
-}

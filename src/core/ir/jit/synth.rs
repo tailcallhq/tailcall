@@ -98,7 +98,10 @@ mod tests {
         // Insert /user/:id
 
         // Synthesize the final value
-        let synth = Synth::new(edoc.into_children().first().unwrap().to_owned(), store);
+        let synth = Synth::new(
+            edoc.unwrap().into_children().first().unwrap().to_owned(),
+            store,
+        );
 
         synth.synthesize().to_string()
     }
