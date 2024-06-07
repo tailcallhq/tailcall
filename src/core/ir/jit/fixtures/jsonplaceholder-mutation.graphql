@@ -75,5 +75,5 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+  user: User @http(path: "/users/{{.value.userId}}")
 }

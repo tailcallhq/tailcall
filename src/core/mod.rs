@@ -45,7 +45,7 @@ use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
 use http::Response;
-use ir::IoId;
+pub use ir::*;
 pub use tailcall_macros as macros;
 
 pub trait EnvIO: Send + Sync + 'static {

@@ -19,6 +19,7 @@ pub use eval::*;
 pub use evaluation_context::EvaluationContext;
 pub use graphql_operation_context::GraphQLOperationContext;
 pub use io::*;
+pub use jit::*;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};
 
 use crate::core::blueprint::DynamicValue;

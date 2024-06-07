@@ -5,7 +5,7 @@ use serde_json_borrow::OwnedValue;
 
 use super::model::{ExecutionPlan, Field, FieldId, Parent};
 use super::store::Store;
-use crate::core::ir::{EvaluationError, IoId, IR};
+use crate::core::ir::{EvaluationContext, EvaluationError, IoId, ResolverContextLike};
 
 #[allow(unused)]
 pub struct ExecutionContext {
@@ -15,12 +15,11 @@ pub struct ExecutionContext {
 
 #[allow(unused)]
 impl ExecutionContext {
-    pub async fn execute_ir(
-        &self,
-        ir: &IR,
-        parent: Option<&OwnedValue>,
-    ) -> Result<OwnedValue, EvaluationError> {
-        super::execute::execute_ir(ir, parent).await
+    pub async fn execute_ir<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+        &'a self,
+        ctx: EvaluationContext<'a, Ctx>,
+    ) -> Result<(), EvaluationError> {
+        super::execute::execute_ir(&self.plan, &self.store, ctx).await
     }
     fn find_children(&self, id: FieldId) -> Vec<Field<Parent>> {
         todo!()
@@ -39,23 +38,23 @@ impl ExecutionContext {
         id: FieldId,
         parent: Option<&OwnedValue>,
     ) -> Result<(), EvaluationError> {
-        if let Some(field) = self.find_field(id.clone()) {
-            if let Some(ir) = &field.ir {
-                let value = self.execute_ir(ir, parent).await?;
-
-                let children = self.find_children(id.clone());
-                future::join_all(
-                    children
-                        .into_iter()
-                        .map(|child| self.execute_field(child.id, Some(&value))),
-                )
-                .await
-                .into_iter()
-                .collect::<Result<Vec<_>, EvaluationError>>()?;
-
-                self.insert_field_value(id, value);
-            }
-        }
+        // if let Some(field) = self.find_field(id.clone()) {
+        //     if let Some(ir) = &field.ir {
+        //         let value = self.execute_ir(ir, parent).await?;
+        //
+        //         let children = self.find_children(id.clone());
+        //         future::join_all(
+        //             children
+        //                 .into_iter()
+        //                 .map(|child| self.execute_field(child.id, Some(&value))),
+        //         )
+        //         .await
+        //         .into_iter()
+        //         .collect::<Result<Vec<_>, EvaluationError>>()?;
+        //
+        //         self.insert_field_value(id, value);
+        //     }
+        // }
         Ok(())
     }
 

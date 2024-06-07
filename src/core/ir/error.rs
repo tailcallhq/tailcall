@@ -28,6 +28,9 @@ pub enum EvaluationError {
 
     #[error("Authentication Failure: {0}")]
     AuthError(auth::error::Error),
+
+    #[error("CacheKeyError: {0}")]
+    CacheKeyError(String),
 }
 
 impl ErrorExtensions for EvaluationError {

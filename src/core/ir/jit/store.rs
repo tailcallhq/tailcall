@@ -21,8 +21,16 @@ impl<K: PartialEq + Eq + Hash, V> Store<K, V> {
         Store { map: HashMap::new() }
     }
 
+    pub fn map(&self) -> &HashMap<K, Data<K, V>> {
+        &self.map
+    }
+
     pub fn get(&self, key: &K) -> Option<&Data<K, V>> {
         self.map.get(key)
+    }
+
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut Data<K, V>> {
+        self.map.get_mut(key)
     }
 
     pub fn insert(&mut self, key: K, value: Data<K, V>) {
