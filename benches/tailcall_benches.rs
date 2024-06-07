@@ -20,7 +20,6 @@ fn all_benchmarks(c: &mut Criterion) {
     handle_request_bench::benchmark_handle_request(c);
     http_execute_bench::benchmark_http_execute_method(c);
     from_json_bench::benchmark_from_json_method(c);
-    foo::test_nested(c);
 }
 
 criterion_group! {
