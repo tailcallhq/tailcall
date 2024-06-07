@@ -44,7 +44,7 @@ impl AppContext {
                     field.map_expr(|expr| {
                         expr.modify(|expr| match expr {
                             IR::IO(io) => match io {
-                                IO::Http { req_template, group_by, .. } => {
+                                IO::Http { req_template, group_by, http_filter, .. } => {
                                     let data_loader = HttpDataLoader::new(
                                         runtime.clone(),
                                         group_by.clone(),
@@ -55,7 +55,8 @@ impl AppContext {
                                     let result = Some(IR::IO(IO::Http {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
-                                        dl_id: Some(DataLoaderId(http_data_loaders.len())),
+                                        dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
+                                        http_filter: http_filter.clone(),
                                     }));
 
                                     http_data_loaders.push(data_loader);
@@ -74,7 +75,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         field_name: field_name.clone(),
                                         batch: *batch,
-                                        dl_id: Some(DataLoaderId(gql_data_loaders.len())),
+                                        dl_id: Some(DataLoaderId::new(gql_data_loaders.len())),
                                     }));
 
                                     gql_data_loaders.push(graphql_data_loader);
@@ -95,7 +96,7 @@ impl AppContext {
                                     let result = Some(IR::IO(IO::Grpc {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
-                                        dl_id: Some(DataLoaderId(grpc_data_loaders.len())),
+                                        dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
                                     }));
 
                                     grpc_data_loaders.push(data_loader);
