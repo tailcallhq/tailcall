@@ -3,9 +3,10 @@ use url::Url;
 
 use super::json::{
     FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
-    ConsolidateURL,
 };
-use crate::core::config::transformer::{RemoveUnused, Transform, TransformerOps, TypeMerger};
+use crate::core::config::transformer::{
+    ConsolidateURL, RemoveUnused, Transform, TransformerOps, TypeMerger,
+};
 use crate::core::config::Config;
 use crate::core::valid::Validator;
 

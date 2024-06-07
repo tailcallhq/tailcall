@@ -59,9 +59,9 @@ impl Transform for ConsolidateURL {
 mod test {
     use anyhow::Ok;
 
+    use super::*;
     use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
-    use crate::core::generator::json::consolidate_url::ConsolidateURL;
     use crate::core::valid::Validator;
 
     #[test]
