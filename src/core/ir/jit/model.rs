@@ -2,6 +2,7 @@ use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::IR;
 
+#[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct Arg {
     pub id: ArgId,
@@ -63,16 +64,16 @@ impl Field<Children> {
 }
 
 impl Field<Parent> {
-    pub fn parent(&self) -> Option<&FieldId> {
+    fn parent(&self) -> Option<&FieldId> {
         self.refs.as_ref().map(|Parent(id)| id)
     }
 
-    pub fn into_children(self, e: &ExecutionPlan) -> Field<Children> {
+    fn into_children(self, fields: &[Field<Parent>]) -> Field<Children> {
         let mut children = Vec::new();
-        for field in e.fields.iter() {
+        for field in fields.iter() {
             if let Some(id) = field.parent() {
                 if *id == self.id {
-                    children.push(field.to_owned().into_children(e));
+                    children.push(field.to_owned().into_children(fields));
                 }
             }
         }
@@ -132,20 +133,33 @@ pub struct Children(Vec<Field<Children>>);
 
 #[derive(Clone, Debug)]
 pub struct ExecutionPlan {
-    pub fields: Vec<Field<Parent>>,
+    parent: Vec<Field<Parent>>,
+    children: Vec<Field<Children>>,
 }
 
 impl ExecutionPlan {
-    #[allow(unused)]
-    pub fn into_children(self) -> Vec<Field<Children>> {
-        let this = &self.clone();
-        let fields = self.fields.into_iter();
+    pub fn new(fields: Vec<Field<Parent>>) -> Self {
+        let field_children = fields
+            .clone()
+            .into_iter()
+            .map(|f| f.into_children(&fields))
+            .collect::<Vec<_>>();
 
-        fields.map(|f| f.into_children(this)).collect::<Vec<_>>()
+        Self { parent: fields, children: field_children }
+    }
+
+    #[allow(unused)]
+    pub fn as_children(&self) -> &[Field<Children>] {
+        &self.children
+    }
+
+    #[allow(unused)]
+    pub fn as_parent(&self) -> &[Field<Parent>] {
+        &self.parent
     }
 
     #[allow(unused)]
     pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
-        self.fields.iter().find(|field| field.id == id)
+        self.parent.iter().find(|field| field.id == id)
     }
 }

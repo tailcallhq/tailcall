@@ -42,4 +42,53 @@ ExecutionPlan {
             ),
         },
     ],
+    field_children: [
+        Field {
+            id: 0,
+            name: "user",
+            ir: "Some(..)",
+            type_of: User,
+            args: [
+                Arg {
+                    id: 0,
+                    name: "id",
+                    type_of: Int!,
+                    value: Some(
+                        Variable(
+                            Name(
+                                "id",
+                            ),
+                        ),
+                    ),
+                    default_value: None,
+                },
+            ],
+            refs: Some(
+                Children(
+                    [
+                        Field {
+                            id: 1,
+                            name: "id",
+                            type_of: Int!,
+                        },
+                        Field {
+                            id: 2,
+                            name: "name",
+                            type_of: String!,
+                        },
+                    ],
+                ),
+            ),
+        },
+        Field {
+            id: 1,
+            name: "id",
+            type_of: Int!,
+        },
+        Field {
+            id: 2,
+            name: "name",
+            type_of: String!,
+        },
+    ],
 }
