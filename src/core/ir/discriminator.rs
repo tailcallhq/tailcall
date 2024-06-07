@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     fmt::Write,
     ops::{Deref, DerefMut},
 };
@@ -87,7 +88,27 @@ impl Discriminator {
             }
         }
 
-        // TODO: strip fields that are present in every field and multiple fields that are required in same set of types
+        // strip some fields that are not valuable for discriminator
+        let fields_info = {
+            let mut seen_required_in: HashSet<usize> = HashSet::new();
+
+            fields_info
+                .into_iter()
+                .filter(|(_, field_info)| {
+                    let drop =
+                        // if field is presented in all types then it doesn't help in figuring out the type of value
+                        field_info
+                        .presented_in
+                        .is_cover_all_types(union_types.len())
+                        // if multiple fields are required in the same set of types than we can leave only one of such fields
+                        || (*field_info.required_in != 0 && seen_required_in.contains(&field_info.required_in));
+
+                    seen_required_in.insert(*field_info.required_in);
+
+                    !drop
+                })
+                .collect()
+        };
 
         let discriminator = Self { fields_info, types };
 
@@ -188,13 +209,17 @@ impl Repr {
 
         result
     }
+
+    fn is_cover_all_types(&self, len: usize) -> bool {
+        self.trailing_ones() == len as u32
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use test_log::test;
     use async_graphql::Value;
     use serde_json::json;
+    use test_log::test;
 
     use crate::core::{
         config::{Field, Type},
@@ -292,6 +317,71 @@ mod tests {
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
             TypeName::Single("Bar".to_string())
+        );
+    }
+
+    #[test]
+    fn test_multiple_distinct_field_required() {
+        let a = Type::default().fields(vec![
+            ("a", Field { required: true, ..Field::default() }),
+            ("ab", Field { required: true, ..Field::default() }),
+            ("abab", Field { required: true, ..Field::default() }),
+        ]);
+        let b = Type::default().fields(vec![
+            ("b", Field { required: true, ..Field::default() }),
+            ("ab", Field { required: true, ..Field::default() }),
+            ("abab", Field { required: true, ..Field::default() }),
+            ("ac", Field { required: true, ..Field::default() }),
+        ]);
+        let c = Type::default().fields(vec![
+            ("c", Field { required: true, ..Field::default() }),
+            ("ac", Field { required: true, ..Field::default() }),
+        ]);
+        let types = vec![("A", &a), ("B", &b), ("C", &c)];
+
+        let discriminator = Discriminator::new("Test", types).unwrap();
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "a": 1, "ab": 1, "abab": 1 })).unwrap())
+                .unwrap(),
+            TypeName::Single("A".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "b": 1, "ab": 1, "abab": 1 })).unwrap())
+                .unwrap(),
+            TypeName::Single("B".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "c": 1, "ac": 1 })).unwrap())
+                .unwrap(),
+            TypeName::Single("C".to_string())
+        );
+
+        // ambiguous cases
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "a": 1, "b": 1, "c": 1 })).unwrap())
+                .unwrap(),
+            TypeName::Single("A".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({})).unwrap())
+                .unwrap(),
+            TypeName::Single("C".to_string())
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
+                .unwrap(),
+            TypeName::Single("C".to_string())
         );
     }
 
