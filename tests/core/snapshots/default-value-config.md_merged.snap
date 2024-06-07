@@ -11,5 +11,6 @@ input Input {
 }
 
 type Query {
+  bar(input: Input = {id: 3}): Int @http(path: "/foo/{{.args.input.id}}")
   foo(input: Input!): Int @http(path: "/foo/{{.args.input.id}}")
 }

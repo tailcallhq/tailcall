@@ -17,6 +17,7 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
+  bar(input: Input = {id: 3}): Int
   foo(input: Input!): Int
 }
 

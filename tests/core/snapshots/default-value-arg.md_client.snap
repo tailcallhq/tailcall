@@ -9,7 +9,7 @@ scalar Email
 scalar Empty
 
 input Input {
-  id: Int = 1
+  id: Int!
 }
 
 scalar JSON
@@ -17,7 +17,7 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
-  foo(input: Input!): Int
+  bar(input: Input = {id: 1}): Int
 }
 
 scalar Url

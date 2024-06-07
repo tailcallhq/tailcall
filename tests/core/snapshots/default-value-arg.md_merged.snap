@@ -7,9 +7,9 @@ schema @server @upstream(baseURL: "http://abc.com") {
 }
 
 input Input {
-  id: Int = 1
+  id: Int!
 }
 
 type Query {
-  foo(input: Input!): Int @http(path: "/foo/{{.args.input.id}}")
+  bar(input: Input = {id: 1}): Int @http(path: "/bar/{{.args.input.id}}")
 }

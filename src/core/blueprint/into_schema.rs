@@ -34,6 +34,23 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     }
 }
 
+fn insert_serde_value_to_input_value(
+    input_value: dynamic::InputValue,
+    value: Option<serde_json::Value>,
+) -> dynamic::InputValue {
+    if let Some(default_value) = value {
+        match ConstValue::from_json(default_value) {
+            Ok(default_value) => input_value.default_value(default_value),
+            Err(err) => {
+                tracing::warn!("conversion from serde_json::Value to ConstValue failed for default_value with error {err:?}");
+                input_value
+            }
+        }
+    } else {
+        input_value
+    }
+}
+
 fn to_type(def: &Definition) -> dynamic::Type {
     match def {
         Definition::Object(def) => {
@@ -88,10 +105,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
                     dyn_schema_field = dyn_schema_field.description(description);
                 }
                 for arg in field.args.iter() {
-                    dyn_schema_field = dyn_schema_field.argument(dynamic::InputValue::new(
-                        arg.name.clone(),
-                        to_type_ref(&arg.of_type),
-                    ));
+                    let input_value =
+                        dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type));
+                    let input_value =
+                        insert_serde_value_to_input_value(input_value, arg.default_value.clone());
+                    dyn_schema_field = dyn_schema_field.argument(input_value);
                 }
                 object = object.field(dyn_schema_field);
             }
@@ -123,10 +141,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 if let Some(description) = &field.description {
                     input_field = input_field.description(description);
                 }
-                if let Some(default_value) = field.default_value.clone() {
-                    input_field =
-                        input_field.default_value(ConstValue::from_json(default_value).unwrap())
-                }
+                let input_field =
+                    insert_serde_value_to_input_value(input_field, field.default_value.clone());
                 input_object = input_object.field(input_field);
             }
             if let Some(description) = &def.description {
