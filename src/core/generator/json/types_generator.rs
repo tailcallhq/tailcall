@@ -53,6 +53,7 @@ pub struct TypesGenerator<'a, T1: OperationGenerator> {
     json_value: &'a Value,
     operation_generator: T1,
     type_name_generator: &'a NameGenerator,
+    root_type_name: &'a str,
 }
 
 impl<'a, T1> TypesGenerator<'a, T1>
@@ -63,8 +64,14 @@ where
         json_value: &'a Value,
         operation_generator: T1,
         type_name_generator: &'a NameGenerator,
+        root_type_name: &'a str,
     ) -> Self {
-        Self { json_value, operation_generator, type_name_generator }
+        Self {
+            json_value,
+            operation_generator,
+            type_name_generator,
+            root_type_name,
+        }
     }
 }
 
@@ -166,7 +173,16 @@ where
     T1: OperationGenerator,
 {
     fn transform(&self, mut config: Config) -> Valid<Config, String> {
-        let root_type_name = self.generate_types(self.json_value, &mut config);
+        let mut root_type_name = self.generate_types(self.json_value, &mut config);
+
+        // replace the auto-generated type name with user suggested type name.
+        if !config.is_scalar(&root_type_name) {
+            if let Some(value) = config.types.remove(&root_type_name) {
+                self.root_type_name.clone_into(&mut root_type_name);
+                config.types.insert(self.root_type_name.to_owned(), value);
+            }
+        }
+
         self.operation_generator
             .generate(root_type_name.as_str(), config)
     }
