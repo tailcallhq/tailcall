@@ -28,10 +28,10 @@ impl TypeNameGenerator {
                 }
 
                 let inner_map = type_to_candidate_field_mapping
-                    .entry(field_info.type_of.clone())
+                    .entry(field_info.type_of.to_owned())
                     .or_default();
 
-                *inner_map.entry(field_name.clone()).or_insert(0) += 1;
+                *inner_map.entry(field_name.to_owned()).or_insert(0) += 1;
             }
         }
 
@@ -46,7 +46,7 @@ impl TypeNameGenerator {
         let mut converged_candidate_set = HashSet::new();
 
         for (type_name, candidate_list) in candidate_mappings {
-            // Find the most frequent candidate that hasn't been converged yet
+            // Find the most frequent candidate that hasn't been converged yet.
             if let Some((candidate_name, _)) = candidate_list
                 .into_iter()
                 .max_by_key(|&(_, count)| count)
@@ -66,17 +66,17 @@ impl TypeNameGenerator {
         finalized_candidates: BTreeMap<String, String>,
         mut config: Config,
     ) -> Config {
-        for (old_name, new_name) in finalized_candidates {
-            if let Some(type_) = config.types.remove(old_name.as_str()) {
+        for (old_type_name, new_type_name) in finalized_candidates {
+            if let Some(type_) = config.types.remove(old_type_name.as_str()) {
                 // Add newly generated type.
-                config.types.insert(new_name.clone(), type_);
+                config.types.insert(new_type_name.to_owned(), type_);
 
                 // Replace all the instances of old name in config.
-                for (_, actual_type) in config.types.iter_mut() {
-                    for (_, actual_field) in actual_type.fields.iter_mut() {
-                        if actual_field.type_of == old_name {
+                for actual_type in config.types.values_mut() {
+                    for actual_field in actual_type.fields.values_mut() {
+                        if actual_field.type_of == old_type_name {
                             // Update the field's type with the new name
-                            actual_field.type_of.clone_from(&new_name);
+                            actual_field.type_of.clone_from(&new_type_name);
                         }
                     }
                 }
