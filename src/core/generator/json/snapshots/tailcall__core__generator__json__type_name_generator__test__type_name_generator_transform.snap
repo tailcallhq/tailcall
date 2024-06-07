@@ -26,10 +26,10 @@ type Geo {
 }
 
 type Query {
-  f1: [RootType] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+  f1: [T31] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
 }
 
-type RootType {
+type T31 {
   address: Address
   company: Company
   email: String
