@@ -4,9 +4,9 @@ use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
 
-pub struct UpstreamBaseUrlGenerator;
+pub struct ConsolidateURL;
 
-impl UpstreamBaseUrlGenerator {
+impl ConsolidateURL {
     fn generate_base_url(&self, mut config: Config) -> Config {
         let operation_types = config.get_operation_type_names();
 
@@ -48,7 +48,7 @@ impl UpstreamBaseUrlGenerator {
     }
 }
 
-impl Transform for UpstreamBaseUrlGenerator {
+impl Transform for ConsolidateURL {
     fn transform(&self, config: Config) -> Valid<Config, String> {
         let config = self.generate_base_url(config);
         Valid::succeed(config)
@@ -61,7 +61,7 @@ mod test {
 
     use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
-    use crate::core::generator::json::upstream_base_url_generator::UpstreamBaseUrlGenerator;
+    use crate::core::generator::json::consolidate_url::ConsolidateURL;
     use crate::core::valid::Validator;
 
     #[test]
@@ -83,7 +83,7 @@ mod test {
         )
         .to_result()?;
 
-        let transformed_config = UpstreamBaseUrlGenerator.transform(config).to_result()?;
+        let transformed_config = ConsolidateURL.transform(config).to_result()?;
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
@@ -107,7 +107,7 @@ mod test {
         )
         .to_result()?;
 
-        let transformed_config = UpstreamBaseUrlGenerator.transform(config).to_result()?;
+        let transformed_config = ConsolidateURL.transform(config).to_result()?;
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
