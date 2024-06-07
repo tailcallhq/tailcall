@@ -2,11 +2,13 @@ mod ambiguous_type;
 mod consolidate_url;
 mod remove_unused;
 mod type_merger;
+mod max_value_map;
 
 pub use ambiguous_type::{AmbiguousType, Resolution};
 pub use consolidate_url::ConsolidateURL;
 pub use remove_unused::RemoveUnused;
 pub use type_merger::TypeMerger;
+pub use max_value_map::MaxValueMap;
 
 use super::Config;
 use crate::core::valid::{Valid, Validator};
