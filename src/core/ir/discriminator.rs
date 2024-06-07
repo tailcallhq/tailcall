@@ -9,7 +9,10 @@ use async_graphql::Value;
 use indenter::indented;
 use indexmap::IndexMap;
 
-use crate::core::config::Type;
+use crate::core::{
+    config::Type,
+    valid::{Cause, Valid, Validator},
+};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum TypeName {
@@ -68,7 +71,14 @@ impl FieldInfo {
 }
 
 impl Discriminator {
-    pub fn new(union_name: &str, union_types: Vec<(&str, &Type)>) -> Result<Self> {
+    pub fn new(union_name: &str, union_types: &[(&str, &Type)]) -> Valid<Self, String> {
+        if union_types.len() > usize::BITS as usize {
+            return Valid::fail(format!(
+                "Union {union_name} defines more than {} types that is not supported",
+                usize::BITS
+            ));
+        }
+
         let mut types = Vec::with_capacity(union_types.len());
         let mut fields_info: IndexMap<String, FieldInfo> = IndexMap::new();
 
@@ -88,6 +98,59 @@ impl Discriminator {
             }
         }
 
+        // validation for the same set of fields in types
+        {
+            let mut duplicates = IndexMap::new();
+
+            for (_, type_) in union_types.iter() {
+                let mut repr = Repr::all_covered(union_types.len());
+                for field_name in type_.fields.keys() {
+                    if let Some(info) = fields_info.get(field_name.as_str()) {
+                        *repr &= *info.presented_in;
+                    }
+                }
+
+                if repr.is_covering_multiple_types() {
+                    let types = repr.covered_types(&types);
+
+                    // if for every field in this type some other type also have same field set
+                    // check if other types have same number of fields
+                    let same_types: Vec<_> = types
+                        .into_iter()
+                        .filter(|type_name| {
+                            let other_type = union_types.iter().find(|(name, _)| name == type_name);
+
+                            if let Some((_, other_type)) = other_type {
+                                other_type.fields.len() == type_.fields.len()
+                            } else {
+                                false
+                            }
+                        })
+                        .collect();
+
+                    // one types is already the current type itself
+                    if same_types.len() > 1 {
+                        duplicates.insert(same_types[0], same_types);
+                    }
+                }
+            }
+
+            if !duplicates.is_empty() {
+                return Valid::from_vec_cause(
+                    duplicates
+                        .into_iter()
+                        .map(|(_, same_types)| {
+                            Cause::new(format!(
+                                "Union have equal types: {} ",
+                                same_types.join(" == ")
+                            ))
+                        })
+                        .collect(),
+                )
+                .trace(union_name);
+            }
+        }
+
         // strip some fields that are not valuable for discriminator
         let fields_info = {
             let mut seen_required_in: HashSet<usize> = HashSet::new();
@@ -99,7 +162,7 @@ impl Discriminator {
                         // if field is presented in all types then it doesn't help in figuring out the type of value
                         field_info
                         .presented_in
-                        .is_cover_all_types(union_types.len())
+                        .is_covering_all_types(union_types.len())
                         // if multiple fields are required in the same set of types than we can leave only one of such fields
                         || (*field_info.required_in != 0 && seen_required_in.contains(&field_info.required_in));
 
@@ -116,7 +179,7 @@ impl Discriminator {
             "Generated discriminator for union type '{union_name}':\n{discriminator:?}",
         );
 
-        Ok(discriminator)
+        Valid::succeed(discriminator)
     }
 
     pub fn resolve_type(&self, value: &Value) -> Result<TypeName> {
@@ -210,8 +273,12 @@ impl Repr {
         result
     }
 
-    fn is_cover_all_types(&self, len: usize) -> bool {
+    fn is_covering_all_types(&self, len: usize) -> bool {
         self.trailing_ones() == len as u32
+    }
+
+    fn is_covering_multiple_types(&self) -> bool {
+        !self.is_power_of_two()
     }
 }
 
@@ -234,7 +301,7 @@ mod tests {
         let bar = Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new("Test", types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).unwrap();
 
         assert_eq!(
             discriminator
@@ -281,7 +348,7 @@ mod tests {
             Type::default().fields(vec![("bar", Field { required: true, ..Field::default() })]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new("Test", types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).unwrap();
 
         assert_eq!(
             discriminator
@@ -339,7 +406,7 @@ mod tests {
         ]);
         let types = vec![("A", &a), ("B", &b), ("C", &c)];
 
-        let discriminator = Discriminator::new("Test", types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).unwrap();
 
         assert_eq!(
             discriminator
@@ -399,7 +466,7 @@ mod tests {
         ]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new("Test", types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).unwrap();
 
         assert_eq!(
             discriminator
@@ -472,7 +539,7 @@ mod tests {
         let bar = Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new("Test", types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).unwrap();
 
         assert_eq!(
             discriminator
@@ -540,7 +607,7 @@ mod tests {
         ]);
         let types = vec![("A", &a), ("B", &b), ("C", &c)];
 
-        let discriminator = Discriminator::new("Test", types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).unwrap();
 
         assert_eq!(
             discriminator
@@ -639,7 +706,7 @@ mod tests {
             ("Var1_Var1", &var1_var1),
         ];
 
-        let discriminator = Discriminator::new("Test", types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).unwrap();
 
         assert_eq!(
             discriminator
@@ -772,7 +839,7 @@ mod tests {
             ("TypeD", &type_d),
         ];
 
-        let discriminator = Discriminator::new("Test", types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).unwrap();
 
         assert_eq!(
             discriminator
@@ -867,7 +934,7 @@ mod tests {
             ("TypeD", &type_d),
         ];
 
-        let discriminator = Discriminator::new("Test", types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).unwrap();
 
         assert_eq!(
             discriminator
@@ -934,6 +1001,61 @@ mod tests {
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
             TypeName::Single("TypeA".to_string())
+        );
+    }
+
+    #[test]
+    fn validation_number_of_types() {
+        let types: Vec<_> = (0..136).map(|i| (i.to_string(), Type::default())).collect();
+        let union_types: Vec<_> = types
+            .iter()
+            .map(|(name, type_)| (name.as_str(), type_))
+            .collect();
+
+        assert_eq!(
+            Discriminator::new("BigUnion", &union_types)
+                .unwrap_err()
+                .to_string(),
+            "Validation Error
+• Union BigUnion defines more than 64 types that is not supported
+"
+        );
+    }
+
+    #[test]
+    fn test_validation_equal_types() {
+        let a = Type::default().fields(vec![("a", Field::default()), ("b", Field::default())]);
+        let b = Type::default().fields(vec![
+            ("a", Field { required: true, ..Field::default() }),
+            ("b", Field::default()),
+        ]);
+        let c = Type::default().fields(vec![("a", Field::default()), ("b", Field::default())]);
+        let d = Type::default().fields(vec![
+            ("a", Field::default()),
+            ("b", Field::default()),
+            ("c", Field { required: true, ..Field::default() }),
+        ]);
+        let e = Type::default().fields(vec![("c", Field::default()), ("d", Field::default())]);
+        let f = Type::default().fields(vec![
+            ("c", Field::default()),
+            ("d", Field { required: true, ..Field::default() }),
+        ]);
+
+        let types = vec![
+            ("A", &a),
+            ("B", &b),
+            ("C", &c),
+            ("D", &d),
+            ("E", &e),
+            ("F", &f),
+        ];
+
+        assert_eq!(
+            Discriminator::new("Test", &types).unwrap_err().to_string(),
+            "Validation Error
+• Union have equal types: A == B == C  [Test]
+• Union have equal types: E == F  [Test]
+"
         );
     }
 }

@@ -1,8 +1,8 @@
+use crate::core::config;
 use crate::core::ir::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{blueprint::FieldDefinition, ir::Discriminator};
-use crate::core::{config, valid::ValidationError};
 use crate::core::{
     config::{ConfigModule, Field},
     ir::Context,
@@ -22,11 +22,9 @@ fn compile_union_resolver(
         )
     })
     .and_then(|types| {
-        let types = types.into_iter().collect();
+        let types: Vec<_> = types.into_iter().collect();
 
-        Valid::from(
-            Discriminator::new(union_name, types).map_err(|e| ValidationError::new(e.to_string())),
-        )
+        Discriminator::new(union_name, &types)
     })
 }
 
