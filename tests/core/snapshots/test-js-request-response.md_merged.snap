@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream @link(src: "test.js", type: Script) {
+schema @server @upstream(onRequest: "onRequest") @link(src: "test.js", type: Script) {
   query: Query
 }
 

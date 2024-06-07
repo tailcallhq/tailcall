@@ -80,7 +80,7 @@ pub fn benchmark_data_loader(c: &mut Criterion) {
                     file: Arc::new(File {}),
                     cache: Arc::new(Cache {}),
                     extensions: Arc::new(vec![]),
-                    http_worker: None,
+                    cmd_worker: None,
                     worker: None,
                 };
                 let loader = HttpDataLoader::new(rt, None, false);
