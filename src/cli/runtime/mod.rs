@@ -49,21 +49,18 @@ fn init_resolver_worker_io(
 
 // Provides access to http in native rust environment
 fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
-    let http_io = http::NativeHttp::init(&blueprint.upstream, &blueprint.telemetry);
-    {
-        (Arc::new(http_io)) as _
-    }
+    Arc::new(http::NativeHttp::init(
+        &blueprint.upstream,
+        &blueprint.telemetry,
+    ))
 }
 
 // Provides access to http in native rust environment
 fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
-    let http_io = http::NativeHttp::init(
+    Arc::new(http::NativeHttp::init(
         &blueprint.upstream.clone().http2_only(true),
         &blueprint.telemetry,
-    );
-    {
-        (Arc::new(http_io)) as _
-    }
+    ))
 }
 
 fn init_in_memory_cache<K: Hash + Eq, V: Clone>() -> InMemoryCache<K, V> {
