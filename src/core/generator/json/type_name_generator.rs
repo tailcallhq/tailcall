@@ -120,7 +120,7 @@ mod test {
           }
           
           type Query {
-            f1: [T31] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+            f1: [RootType1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
           }
           
           type T1 {
@@ -142,7 +142,7 @@ mod test {
             name: String
           }
           
-          type T31 {
+          type RootType1 {
             address: T2
             company: T3
             email: String
@@ -170,10 +170,10 @@ mod test {
           }
           
           type Query {
-            f1: [T31] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+            f1: [RootType1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
           }
           
-          type T31 {
+          type RootType1 {
             id: ID!
             name: String!
             posts: [T32]!
@@ -183,7 +183,7 @@ mod test {
             id: ID!
             title: String!
             content: String!
-            author: T31!
+            author: RootType1!
             cycle: T33
           }
 
