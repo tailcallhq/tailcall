@@ -23,7 +23,6 @@ use crate::{
     cli::{self, CLIError},
     core::generator::source::ConfigSource,
 };
-
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";

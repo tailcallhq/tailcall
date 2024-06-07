@@ -1,0 +1,20 @@
+---
+source: src/core/config/transformer/type_merger/type_merger.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type M1 {
+  body: String
+  id: Int
+  is_verified: Boolean
+  t1: M1
+  userId: Int
+}
+
+type Query {
+  q1: M1
+  q2: M1
+}

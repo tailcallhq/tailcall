@@ -6,12 +6,20 @@ use thiserror::Error;
 pub enum ImportSource {
     #[default]
     Proto,
+    Url,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum ConfigSource {
+    Json,
+    Yml,
 }
 
 impl ImportSource {
     fn ext(&self) -> &str {
         match self {
             ImportSource::Proto => "proto",
+            ImportSource::Url => "url",
         }
     }
 
@@ -28,12 +36,6 @@ impl ImportSource {
             .copied()
             .ok_or(UnsupportedFileFormat(name.to_string()))
     }
-}
-
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum ConfigSource {
-    Json,
-    Yml,
 }
 
 impl ConfigSource {
@@ -69,6 +71,7 @@ impl std::str::FromStr for ImportSource {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "proto" => Ok(ImportSource::Proto),
+            "url" => Ok(ImportSource::Url),
             _ => Err(UnsupportedFileFormat(s.to_string())),
         }
     }
@@ -83,6 +86,11 @@ mod tests {
     #[test]
     fn test_from_str() {
         assert_eq!(ImportSource::from_str("proto"), Ok(ImportSource::Proto));
+        assert_eq!(ImportSource::from_str("PROTO"), Ok(ImportSource::Proto));
+
+        assert_eq!(ImportSource::from_str("url"), Ok(ImportSource::Url));
+        assert_eq!(ImportSource::from_str("URL"), Ok(ImportSource::Url));
+
         assert!(ImportSource::from_str("foo").is_err());
     }
 }
