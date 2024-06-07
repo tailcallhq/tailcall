@@ -43,10 +43,10 @@ impl ConsolidateURL {
         if let Some((most_common_base_url, most_common_base_url_frequency)) =
             url_frequency_map.get_max_pair()
         {
-            let should_perform_updation = most_common_base_url_frequency.to_owned() as f32
+            let should_perform_consolidation = most_common_base_url_frequency.to_owned() as f32
                 >= (url_frequency_map.len() as f32 * self.threshold);
 
-            if !should_perform_updation {
+            if !should_perform_consolidation {
                 tracing::warn!(
                     "Threshold matching base url not found, transformation cannot be performed."
                 );
