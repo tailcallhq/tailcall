@@ -68,7 +68,7 @@ input google__protobuf__DurationInput @tag(id: "google.protobuf.Duration") {
   to +315,576,000,000 inclusive. Note: these bounds are computed from:
   60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
   """
-  seconds: Int
+  seconds: Int64
 }
 
   """
@@ -174,7 +174,7 @@ input google__protobuf__TimestampInput @tag(id: "google.protobuf.Timestamp") {
   1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
   9999-12-31T23:59:59Z inclusive.
   """
-  seconds: Int
+  seconds: Int64
 }
 
   """
@@ -325,7 +325,7 @@ type google__protobuf__Duration @tag(id: "google.protobuf.Duration") {
   to +315,576,000,000 inclusive. Note: these bounds are computed from:
   60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years
   """
-  seconds: Int
+  seconds: Int64
 }
 
   """
@@ -420,7 +420,7 @@ type google__protobuf__Timestamp @tag(id: "google.protobuf.Timestamp") {
   1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
   9999-12-31T23:59:59Z inclusive.
   """
-  seconds: Int
+  seconds: Int64
 }
 
   """

@@ -1,0 +1,20 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(hostname: "localhost", port: 8000) @upstream {
+  query: Query
+}
+
+type Query {
+  int128(x: Int128): Int128 @expr(body: "{{.args.x}}")
+  int16(x: Int16): Int16 @expr(body: "{{.args.x}}")
+  int32(x: Int32): Int32 @expr(body: "{{.args.x}}")
+  int64(x: Int64): Int64 @expr(body: "{{.args.x}}")
+  int8(x: Int8): Int8 @expr(body: "{{.args.x}}")
+  uint128(x: UInt128): UInt128 @expr(body: "{{.args.x}}")
+  uint16(x: UInt16): UInt16 @expr(body: "{{.args.x}}")
+  uint32(x: UInt32): UInt32 @expr(body: "{{.args.x}}")
+  uint64(x: UInt64): UInt64 @expr(body: "{{.args.x}}")
+  uint8(x: UInt8): UInt8 @expr(body: "{{.args.x}}")
+}

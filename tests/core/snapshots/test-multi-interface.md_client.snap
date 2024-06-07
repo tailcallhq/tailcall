@@ -7,6 +7,8 @@ type B implements IA & IB {
   b: String
 }
 
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -21,6 +23,16 @@ interface IB {
   b: String
 }
 
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
 scalar JSON
 
 scalar PhoneNumber
@@ -28,6 +40,16 @@ scalar PhoneNumber
 type Query {
   bar: B
 }
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
 
 scalar Url
 
