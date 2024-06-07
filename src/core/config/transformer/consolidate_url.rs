@@ -22,7 +22,9 @@ impl ConsolidateURL {
                             types_to_clean.insert(operation_type.to_owned());
 
                             if base_url_set.len() > 1 {
-                                tracing::warn!("Multiple base URLs found, transformation cannot be performed.");
+                                tracing::warn!(
+                                    "Multiple base URLs found, transformation cannot be performed."
+                                );
                                 return config;
                             }
                         }
