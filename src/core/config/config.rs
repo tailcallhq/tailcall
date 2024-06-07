@@ -795,6 +795,10 @@ impl Config {
         }
         while let Some(type_name) = stack.pop() {
             if let Some(typ) = self.types.get(&type_name) {
+                if set.contains(&type_name) {
+                    continue;
+                }
+
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
@@ -854,6 +858,32 @@ mod tests {
             "Foo",
             Type::default().fields(vec![("a", Field::int())]),
         )]);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_unused_types_with_cyclic_types() {
+        let config = Config::from_sdl(
+            "
+            type Bar {a: Int}
+            type Foo {a: [Foo]}
+
+            type Query {
+                foos: [Foo]
+            }
+
+            schema {
+                query: Query
+            }
+            ",
+        )
+        .to_result()
+        .unwrap();
+
+        let actual = config.unused_types();
+        let mut expected = HashSet::new();
+        expected.insert("Bar".to_string());
+
         assert_eq!(actual, expected);
     }
 }

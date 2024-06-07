@@ -6,7 +6,7 @@ use async_graphql::from_value;
 use async_graphql_value::ConstValue;
 use reqwest::Request;
 
-use super::{CacheKey, Eval, EvaluationContext, ResolverContextLike};
+use super::{CacheKey, Eval, EvaluationContext, IoId, ResolverContextLike};
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::GraphQLOperationType;
 use crate::core::data_loader::{DataLoader, Loader};
@@ -162,7 +162,7 @@ impl IO {
 }
 
 impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<'a, Ctx>> for IO {
-    fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> Option<u64> {
+    fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> Option<IoId> {
         match self {
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
             IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
