@@ -161,7 +161,7 @@ mod tests {
             store.insert(k, v);
         });
 
-        let children = edoc.into_children();
+        let children = edoc.children();
         let synth = Synth::new(children.first().unwrap().to_owned(), store);
 
         serde_json::to_string_pretty(&synth.synthesize()).unwrap()

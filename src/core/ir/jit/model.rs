@@ -2,6 +2,7 @@ use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::IR;
 
+#[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct Arg {
     pub id: ArgId,
@@ -67,12 +68,12 @@ impl Field<Parent> {
         self.refs.as_ref().map(|Parent(id)| id)
     }
 
-    pub fn into_children(self, e: &ExecutionPlan) -> Field<Children> {
+    pub fn into_children(self, fields: &[Field<Parent>]) -> Field<Children> {
         let mut children = Vec::new();
-        for field in e.fields.iter() {
+        for field in fields.iter() {
             if let Some(id) = field.parent() {
                 if *id == self.id {
-                    children.push(field.to_owned().into_children(e));
+                    children.push(field.to_owned().into_children(fields));
                 }
             }
         }
@@ -132,16 +133,29 @@ pub struct Children(Vec<Field<Children>>);
 
 #[derive(Clone, Debug)]
 pub struct ExecutionPlan {
-    pub fields: Vec<Field<Parent>>,
+    fields: Vec<Field<Parent>>,
+    field_children: Vec<Field<Children>>,
 }
 
 impl ExecutionPlan {
-    #[allow(unused)]
-    pub fn into_children(self) -> Vec<Field<Children>> {
-        let this = &self.clone();
-        let fields = self.fields.into_iter();
+    pub fn new(fields: Vec<Field<Parent>>) -> Self {
+        let fields_clone = fields.clone();
+        let fields_clone = fields_clone.into_iter();
+        let field_children = fields_clone
+            .map(|f| f.into_children(&fields))
+            .collect::<Vec<_>>();
 
-        fields.map(|f| f.into_children(this)).collect::<Vec<_>>()
+        Self { fields, field_children }
+    }
+
+    #[allow(unused)]
+    pub fn children(&self) -> &[Field<Children>] {
+        &self.field_children
+    }
+
+    #[allow(unused)]
+    pub fn parents(&self) -> &[Field<Parent>] {
+        &self.fields
     }
 
     #[allow(unused)]

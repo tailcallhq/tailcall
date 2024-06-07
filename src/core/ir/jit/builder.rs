@@ -122,7 +122,7 @@ impl ExecutionPlanBuilder {
             }
         }
 
-        Ok(ExecutionPlan { fields })
+        Ok(ExecutionPlan::new(fields))
     }
 }
 

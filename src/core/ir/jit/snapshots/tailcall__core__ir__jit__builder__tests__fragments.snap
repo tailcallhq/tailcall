@@ -39,4 +39,40 @@ ExecutionPlan {
             ],
         },
     ],
+    field_children: [
+        Field {
+            id: 0,
+            name: "name",
+            type_of: String!,
+        },
+        Field {
+            id: 1,
+            name: "email",
+            type_of: String!,
+        },
+        Field {
+            id: 2,
+            name: "phone",
+            type_of: String,
+        },
+        Field {
+            id: 3,
+            name: "user",
+            ir: "Some(..)",
+            type_of: User,
+            args: [
+                Arg {
+                    id: 0,
+                    name: "id",
+                    type_of: Int!,
+                    value: Some(
+                        Number(
+                            Number(1),
+                        ),
+                    ),
+                    default_value: None,
+                },
+            ],
+        },
+    ],
 }

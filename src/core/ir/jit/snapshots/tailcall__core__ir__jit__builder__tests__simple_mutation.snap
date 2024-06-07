@@ -103,4 +103,122 @@ ExecutionPlan {
             ),
         },
     ],
+    field_children: [
+        Field {
+            id: 0,
+            name: "createUser",
+            ir: "Some(..)",
+            type_of: User,
+            args: [
+                Arg {
+                    id: 0,
+                    name: "user",
+                    type_of: InputUser!,
+                    value: Some(
+                        Object(
+                            {
+                                Name(
+                                    "id",
+                                ): Number(
+                                    Number(101),
+                                ),
+                                Name(
+                                    "name",
+                                ): String(
+                                    "Tailcall",
+                                ),
+                                Name(
+                                    "email",
+                                ): String(
+                                    "tailcall@tailcall.run",
+                                ),
+                                Name(
+                                    "phone",
+                                ): String(
+                                    "2345234234",
+                                ),
+                                Name(
+                                    "username",
+                                ): String(
+                                    "tailcall",
+                                ),
+                                Name(
+                                    "website",
+                                ): String(
+                                    "tailcall.run",
+                                ),
+                            },
+                        ),
+                    ),
+                    default_value: None,
+                },
+            ],
+            refs: Some(
+                Children(
+                    [
+                        Field {
+                            id: 1,
+                            name: "id",
+                            type_of: Int!,
+                        },
+                        Field {
+                            id: 2,
+                            name: "name",
+                            type_of: String!,
+                        },
+                        Field {
+                            id: 3,
+                            name: "email",
+                            type_of: String!,
+                        },
+                        Field {
+                            id: 4,
+                            name: "phone",
+                            type_of: String,
+                        },
+                        Field {
+                            id: 5,
+                            name: "website",
+                            type_of: String,
+                        },
+                        Field {
+                            id: 6,
+                            name: "username",
+                            type_of: String!,
+                        },
+                    ],
+                ),
+            ),
+        },
+        Field {
+            id: 1,
+            name: "id",
+            type_of: Int!,
+        },
+        Field {
+            id: 2,
+            name: "name",
+            type_of: String!,
+        },
+        Field {
+            id: 3,
+            name: "email",
+            type_of: String!,
+        },
+        Field {
+            id: 4,
+            name: "phone",
+            type_of: String,
+        },
+        Field {
+            id: 5,
+            name: "website",
+            type_of: String,
+        },
+        Field {
+            id: 6,
+            name: "username",
+            type_of: String!,
+        },
+    ],
 }
