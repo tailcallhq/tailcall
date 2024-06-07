@@ -412,6 +412,11 @@ pub struct Enum {
 /// REST API. In this scenario, the GraphQL server will make a GET request to
 /// the API endpoint specified when the `users` field is queried.
 pub struct Http {
+    #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
+    /// onRequest field in @http directive gives the ability to specify the
+    /// request interception handler.
+    pub on_request: Option<String>,
+
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.

@@ -28,6 +28,7 @@ pub struct Upstream {
     pub batch: Option<Batch>,
     pub http2_only: bool,
     pub dedupe: bool,
+    pub on_request: Option<String>,
 }
 
 impl Upstream {
@@ -82,6 +83,7 @@ impl TryFrom<&ConfigModule> for Upstream {
                 batch,
                 http2_only: (config_upstream).get_http_2_only(),
                 dedupe: (config_upstream).get_dedupe(),
+                on_request: (config_upstream).get_on_request(),
             })
             .to_result()
     }

@@ -1,0 +1,12 @@
+---
+source: tests/core/spec.rs
+expression: merged
+---
+schema @server @upstream(onRequest: "foo", baseURL: "http://localhost:3000") @link(src: "test1.js", type: Script) {
+  query: Query
+}
+
+type Query {
+  bar: String @http(onRequest: "bar", baseURL: "http://localhost:3000", path: "/bar")
+  foo: String @http(baseURL: "http://localhost:3000", path: "/foo")
+}
