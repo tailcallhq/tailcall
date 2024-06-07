@@ -1,10 +1,9 @@
 use std::collections::HashSet;
 
+use super::MaxValueMap;
 use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
-
-use super::MaxValueMap;
 
 pub struct ConsolidateURL {
     threshold: f32,

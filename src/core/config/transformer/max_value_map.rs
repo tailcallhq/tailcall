@@ -7,6 +7,16 @@ pub struct MaxValueMap<K, V> {
     max_valued_key: Option<K>,
 }
 
+impl<K, V> Default for MaxValueMap<K, V>
+where
+    K: Eq + Hash + Clone,
+    V: PartialOrd + Clone + std::ops::AddAssign,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<K, V> MaxValueMap<K, V>
 where
     K: Eq + Hash + Clone,
@@ -43,6 +53,10 @@ where
             return self.map.get_key_value(key);
         }
         None
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
     }
 
     pub fn len(&self) -> usize {
