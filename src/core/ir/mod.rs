@@ -71,10 +71,10 @@ impl IR {
 
 impl Eval for IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
-    fn eval<'a, 'b, Ctx: ResolverContextLike + Sync + Send>(
-        &'a self,
-        ctx: &'b mut EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'b + Send>> {
+    fn eval<'slf, 'ctx, Ctx: ResolverContextLike + Sync + Send>(
+        &'slf self,
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'ctx + Send>> {
         Box::pin(async move {
             match self {
                 IR::Context(op) => match op {

@@ -60,10 +60,10 @@ impl DataLoaderId {
 }
 
 impl Eval for IO {
-    fn eval<'a, 'b, Ctx: ResolverContextLike + Sync + Send>(
-        &'a self,
-        ctx: &'b mut EvaluationContext<'a, Ctx>
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'b + Send>> {
+    fn eval<'slf, 'ctx, Ctx: ResolverContextLike + Sync + Send>(
+        &'slf self,
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'ctx + Send>> {
         if ctx.request_ctx.upstream.dedupe {
             Box::pin(async move {
                 let key = self.cache_key(&ctx);
@@ -85,10 +85,10 @@ impl Eval for IO {
 }
 
 impl IO {
-    fn eval_inner<'a, 'b, Ctx: ResolverContextLike + Sync + Send>(
-        &'a self,
-        ctx: &'b mut EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'b + Send>> {
+    fn eval_inner<'slf, 'ctx, Ctx: ResolverContextLike + Sync + Send>(
+        &'slf self,
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'ctx + Send>> {
         Box::pin(async move {
             match self {
                 IO::Http { req_template, dl_id, http_filter, .. } => {

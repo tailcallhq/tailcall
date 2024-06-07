@@ -42,10 +42,10 @@ impl Cache {
 }
 
 impl Eval for Cache {
-    fn eval<'a, 'b, Ctx: ResolverContextLike + Sync + Send>(
-        &'a self,
-        ctx: &'b mut EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'b + Send>> {
+    fn eval<'slf, 'ctx, Ctx: ResolverContextLike + Sync + Send>(
+        &'slf self,
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'ctx + Send>> {
         Box::pin(async move {
             if let IR::IO(io) = self.expr.deref() {
                 let key = io.cache_key(&ctx);

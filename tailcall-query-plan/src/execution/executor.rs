@@ -134,20 +134,20 @@ struct GraphqlContext<'a> {
     value: Option<&'a Value>,
 }
 
-impl<'a> ResolverContextLike<'a> for GraphqlContext<'a> {
-    fn value(&'a self) -> Option<&'a Value> {
+impl<'a> ResolverContextLike for GraphqlContext<'a> {
+    fn value(&self) -> Option<&Value> {
         self.value
     }
 
-    fn args(&'a self) -> Option<&'a IndexMap<async_graphql::Name, Value>> {
+    fn args(&self) -> Option<&IndexMap<async_graphql::Name, Value>> {
         self.arguments
     }
 
-    fn field(&'a self) -> Option<async_graphql::SelectionField> {
+    fn field(&self) -> Option<async_graphql::SelectionField> {
         None
     }
 
-    fn add_error(&'a self, _error: async_graphql::ServerError) {
+    fn add_error(&self, _error: async_graphql::ServerError) {
         // TODO: add implementation
     }
 }
