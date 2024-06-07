@@ -31,7 +31,7 @@ impl ExecutionContext {
     }
 
     fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
-        self.plan.parents().iter().find(|field| field.id == id)
+        self.plan.as_parent().iter().find(|field| field.id == id)
     }
 
     async fn execute_field(
@@ -61,7 +61,7 @@ impl ExecutionContext {
 
     fn root(&self) -> Vec<&Field<Parent>> {
         self.plan
-            .parents()
+            .as_parent()
             .iter()
             .filter(|field| field.refs.is_none())
             .collect::<Vec<_>>()

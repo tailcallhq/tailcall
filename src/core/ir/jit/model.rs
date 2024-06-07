@@ -64,11 +64,11 @@ impl Field<Children> {
 }
 
 impl Field<Parent> {
-    pub fn parent(&self) -> Option<&FieldId> {
+    fn parent(&self) -> Option<&FieldId> {
         self.refs.as_ref().map(|Parent(id)| id)
     }
 
-    pub fn into_children(self, fields: &[Field<Parent>]) -> Field<Children> {
+    fn into_children(self, fields: &[Field<Parent>]) -> Field<Children> {
         let mut children = Vec::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
@@ -133,33 +133,33 @@ pub struct Children(Vec<Field<Children>>);
 
 #[derive(Clone, Debug)]
 pub struct ExecutionPlan {
-    fields: Vec<Field<Parent>>,
-    field_children: Vec<Field<Children>>,
+    parent: Vec<Field<Parent>>,
+    children: Vec<Field<Children>>,
 }
 
 impl ExecutionPlan {
     pub fn new(fields: Vec<Field<Parent>>) -> Self {
-        let fields_clone = fields.clone();
-        let fields_clone = fields_clone.into_iter();
-        let field_children = fields_clone
+        let field_children = fields
+            .clone()
+            .into_iter()
             .map(|f| f.into_children(&fields))
             .collect::<Vec<_>>();
 
-        Self { fields, field_children }
+        Self { parent: fields, children: field_children }
     }
 
     #[allow(unused)]
-    pub fn children(&self) -> &[Field<Children>] {
-        &self.field_children
+    pub fn as_children(&self) -> &[Field<Children>] {
+        &self.children
     }
 
     #[allow(unused)]
-    pub fn parents(&self) -> &[Field<Parent>] {
-        &self.fields
+    pub fn as_parent(&self) -> &[Field<Parent>] {
+        &self.parent
     }
 
     #[allow(unused)]
     pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
-        self.fields.iter().find(|field| field.id == id)
+        self.parent.iter().find(|field| field.id == id)
     }
 }

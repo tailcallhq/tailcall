@@ -153,7 +153,7 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
         let mut store = Store::new();
-        let edoc = ExecutionPlanBuilder::new(blueprint, document)
+        let plan = ExecutionPlanBuilder::new(blueprint, document)
             .build()
             .unwrap();
 
@@ -161,7 +161,7 @@ mod tests {
             store.insert(k, v);
         });
 
-        let children = edoc.children();
+        let children = plan.as_children();
         let synth = Synth::new(children.first().unwrap().to_owned(), store);
 
         serde_json::to_string_pretty(&synth.synthesize()).unwrap()
