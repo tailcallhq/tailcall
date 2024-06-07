@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
+use super::ir::IoId;
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::worker::{Command, Event};
 use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
@@ -23,12 +24,12 @@ pub struct TargetRuntime {
     pub file: Arc<dyn FileIO>,
     /// Cache for storing and retrieving entity data, improving performance and
     /// reducing external calls.
-    pub cache: Arc<dyn Cache<Key = u64, Value = ConstValue>>,
+    pub cache: Arc<dyn Cache<Key = IoId, Value = ConstValue>>,
     /// A list of extensions that can be used to extend the runtime's
     /// functionality or integrate additional features.
     pub extensions: Arc<Vec<SchemaExtension>>,
     /// Worker middleware for handling HTTP requests.
-    pub http_worker: Option<Arc<dyn WorkerIO<Event, Command>>>,
+    pub cmd_worker: Option<Arc<dyn WorkerIO<Event, Command>>>,
     /// Worker middleware for resolving data.
     pub worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>>,
 }
@@ -47,6 +48,7 @@ pub mod test {
     use std::time::Duration;
 
     use anyhow::{anyhow, Result};
+    use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
     use reqwest::Client;
@@ -54,11 +56,12 @@ pub mod test {
     use tailcall_http_cache::HttpCacheManager;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    use crate::cli::javascript;
+    use crate::cli::javascript::init_worker_io;
     use crate::core::blueprint::Upstream;
     use crate::core::cache::InMemoryCache;
     use crate::core::http::Response;
     use crate::core::runtime::TargetRuntime;
+    use crate::core::worker::{Command, Event};
     use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
@@ -171,20 +174,8 @@ pub mod test {
     }
 
     pub fn init(script: Option<blueprint::Script>) -> TargetRuntime {
-        let http = if let Some(script) = script.clone() {
-            javascript::init_http(TestHttp::init(&Default::default()), script)
-        } else {
-            TestHttp::init(&Default::default())
-        };
-
-        let http2 = if let Some(script) = script {
-            javascript::init_http(
-                TestHttp::init(&Upstream::default().http2_only(true)),
-                script,
-            )
-        } else {
-            TestHttp::init(&Upstream::default().http2_only(true))
-        };
+        let http = TestHttp::init(&Default::default());
+        let http2 = TestHttp::init(&Upstream::default().http2_only(true));
 
         let file = TestFileIO::init();
         let env = TestEnvIO::init();
@@ -196,8 +187,14 @@ pub mod test {
             file: Arc::new(file),
             cache: Arc::new(InMemoryCache::new()),
             extensions: Arc::new(vec![]),
-            http_worker: None,
-            worker: None,
+            cmd_worker: match &script {
+                Some(script) => Some(init_worker_io::<Event, Command>(script.to_owned())),
+                None => None,
+            },
+            worker: match &script {
+                Some(script) => Some(init_worker_io::<Value, Value>(script.to_owned())),
+                None => None,
+            },
         }
     }
 }

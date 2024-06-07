@@ -1,8 +1,10 @@
 ---
 source: tests/core/spec.rs
-expression: client
+expression: formatted
 ---
 scalar AnyScalar
+
+scalar Bytes
 
 scalar Date
 
@@ -10,17 +12,38 @@ scalar Email
 
 scalar Empty
 
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
 scalar JSON
 
 scalar PhoneNumber
 
 type Query {
   any(value: AnyScalar!): AnyScalar
+  bytes(value: Bytes): Bytes
   date(value: Date!): Date!
   email(value: Email!): Email!
   phone(value: PhoneNumber!): PhoneNumber!
   url(value: Url!): Url!
 }
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
 
 scalar Url
 

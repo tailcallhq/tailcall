@@ -5,12 +5,14 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
+use async_graphql::Value;
 use derive_setters::Setters;
-use tailcall::cli::javascript;
+use tailcall::cli::javascript::init_worker_io;
 use tailcall::core::blueprint::Script;
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::config::Source;
 use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::worker::{Command, Event};
 
 use super::env::Env;
 use super::file::TestFileIO;
@@ -65,17 +67,9 @@ pub fn create_runtime(
     env: Option<HashMap<String, String>>,
     script: Option<Script>,
 ) -> TargetRuntime {
-    let http = if let Some(script) = script.clone() {
-        javascript::init_http(http_client.clone(), script)
-    } else {
-        http_client.clone()
-    };
+    let http = http_client.clone();
 
-    let http2 = if let Some(script) = script.clone() {
-        javascript::init_http(http_client.clone(), script)
-    } else {
-        http_client.clone()
-    };
+    let http2 = http_client.clone();
 
     let file = TestFileIO::init();
     let env = Env::init(env);
@@ -87,7 +81,13 @@ pub fn create_runtime(
         file: Arc::new(file),
         cache: Arc::new(InMemoryCache::new()),
         extensions: Arc::new(vec![]),
-        http_worker: None,
-        worker: None,
+        cmd_worker: match &script {
+            Some(script) => Some(init_worker_io::<Event, Command>(script.to_owned())),
+            None => None,
+        },
+        worker: match &script {
+            Some(script) => Some(init_worker_io::<Value, Value>(script.to_owned())),
+            None => None,
+        },
     }
 }

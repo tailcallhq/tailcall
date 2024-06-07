@@ -6,6 +6,7 @@ use thiserror::Error;
 pub enum Source {
     #[default]
     Proto,
+    Url,
 }
 
 #[derive(Debug, Error, PartialEq)]
@@ -18,6 +19,7 @@ impl std::str::FromStr for Source {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "proto" => Ok(Source::Proto),
+            "url" => Ok(Source::Url),
             _ => Err(UnsupportedFileFormat(s.to_string())),
         }
     }
@@ -32,6 +34,11 @@ mod tests {
     #[test]
     fn test_from_str() {
         assert_eq!(Source::from_str("proto"), Ok(Source::Proto));
+        assert_eq!(Source::from_str("PROTO"), Ok(Source::Proto));
+
+        assert_eq!(Source::from_str("url"), Ok(Source::Url));
+        assert_eq!(Source::from_str("URL"), Ok(Source::Url));
+
         assert!(Source::from_str("foo").is_err());
     }
 }

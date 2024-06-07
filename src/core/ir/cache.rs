@@ -7,8 +7,19 @@ use async_graphql_value::ConstValue;
 
 use super::{Eval, EvaluationContext, EvaluationError, ResolverContextLike, IR};
 
+#[derive(PartialEq, Eq, Clone, Hash, Debug)]
+pub struct IoId(u64);
+impl IoId {
+    pub fn new(id: u64) -> Self {
+        Self(id)
+    }
+
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+}
 pub trait CacheKey<Ctx> {
-    fn cache_key(&self, ctx: &Ctx) -> Option<u64>;
+    fn cache_key(&self, ctx: &Ctx) -> Option<IoId>;
 }
 
 #[derive(Clone, Debug)]

@@ -1,0 +1,22 @@
+---
+source: src/core/config/transformer/type_merger/type_merger.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type M1 {
+  f1: String
+  f2: Int
+  f3: Boolean
+  f4: Float
+  f5: ID
+}
+
+type Query {
+  q1: M1
+  q2: M1
+  q3: M1
+  q4: M1
+}
