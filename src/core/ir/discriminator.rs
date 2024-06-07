@@ -1,18 +1,14 @@
-use std::{
-    collections::HashSet,
-    fmt::Write,
-    ops::{Deref, DerefMut},
-};
+use std::collections::HashSet;
+use std::fmt::Write;
+use std::ops::{Deref, DerefMut};
 
 use anyhow::{bail, Result};
 use async_graphql::Value;
 use indenter::indented;
 use indexmap::IndexMap;
 
-use crate::core::{
-    config::Type,
-    valid::{Cause, Valid, Validator},
-};
+use crate::core::config::Type;
+use crate::core::valid::{Cause, Valid, Validator};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum TypeName {
@@ -54,7 +50,7 @@ struct FieldInfo {
 }
 
 impl FieldInfo {
-    fn display_types(&self, f: &mut dyn Write, types: &Vec<String>) -> std::fmt::Result {
+    fn display_types(&self, f: &mut dyn Write, types: &[String]) -> std::fmt::Result {
         f.write_str("presented_in: ")?;
         f.write_fmt(format_args!(
             "{:?}\n",
@@ -288,12 +284,9 @@ mod tests {
     use serde_json::json;
     use test_log::test;
 
-    use crate::core::{
-        config::{Field, Type},
-        ir::discriminator::TypeName,
-    };
-
     use super::Discriminator;
+    use crate::core::config::{Field, Type};
+    use crate::core::ir::discriminator::TypeName;
 
     #[test]
     fn test_single_distinct_field_optional() {

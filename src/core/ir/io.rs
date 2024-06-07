@@ -62,11 +62,11 @@ impl DataLoaderId {
 impl Eval for IO {
     fn eval<'slf, 'ctx, Ctx: ResolverContextLike + Sync + Send>(
         &'slf self,
-        ctx: &'ctx mut EvaluationContext<'slf, Ctx>
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'ctx + Send>> {
         if ctx.request_ctx.upstream.dedupe {
             Box::pin(async move {
-                let key = self.cache_key(&ctx);
+                let key = self.cache_key(ctx);
                 if let Some(key) = key {
                     ctx.request_ctx
                         .cache
@@ -114,13 +114,13 @@ impl IO {
                     {
                         let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                             dl_id.and_then(|index| ctx.request_ctx.gql_data_loaders.get(index.0));
-                        execute_request_with_dl(&ctx, req, data_loader).await?
+                        execute_request_with_dl(ctx, req, data_loader).await?
                     } else {
-                        execute_raw_request(&ctx, req).await?
+                        execute_raw_request(ctx, req).await?
                     };
 
-                    set_headers(&ctx, &res);
-                    parse_graphql_response(&ctx, res, field_name)
+                    set_headers(ctx, &res);
+                    parse_graphql_response(ctx, res, field_name)
                 }
                 IO::Grpc { req_template, dl_id, .. } => {
                     let rendered = req_template.render(ctx)?;
@@ -132,13 +132,13 @@ impl IO {
                         let data_loader: Option<
                             &DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>,
                         > = dl_id.and_then(|index| ctx.request_ctx.grpc_data_loaders.get(index.0));
-                        execute_grpc_request_with_dl(&ctx, rendered, data_loader).await?
+                        execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
                     } else {
                         let req = rendered.to_request()?;
-                        execute_raw_grpc_request(&ctx, req, &req_template.operation).await?
+                        execute_raw_grpc_request(ctx, req, &req_template.operation).await?
                     };
 
-                    set_headers(&ctx, &res);
+                    set_headers(ctx, &res);
 
                     Ok(res.body)
                 }
@@ -172,8 +172,8 @@ impl<'a, Ctx: ResolverContextLike + Sync + Send> CacheKey<EvaluationContext<'a, 
     }
 }
 
-fn set_headers<'ctx, Ctx: ResolverContextLike>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+fn set_headers<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
     set_cache_control(ctx, res);
@@ -181,8 +181,8 @@ fn set_headers<'ctx, Ctx: ResolverContextLike>(
     set_experimental_headers(ctx, res);
 }
 
-fn set_cache_control<'ctx, Ctx: ResolverContextLike>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+fn set_cache_control<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
     if ctx.request_ctx.server.get_enable_cache_control() && res.status.is_success() {
@@ -192,15 +192,15 @@ fn set_cache_control<'ctx, Ctx: ResolverContextLike>(
     }
 }
 
-fn set_experimental_headers<'ctx, Ctx: ResolverContextLike>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+fn set_experimental_headers<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
     ctx.request_ctx.add_x_headers(&res.headers);
 }
 
-fn set_cookie_headers<'ctx, Ctx: ResolverContextLike>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+fn set_cookie_headers<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
     if res.status.is_success() {
@@ -290,8 +290,8 @@ async fn execute_request_with_dl<
         .unwrap_or_default())
 }
 
-fn parse_graphql_response<'ctx, Ctx: ResolverContextLike>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+fn parse_graphql_response<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     res: Response<async_graphql::Value>,
     field_name: &str,
 ) -> Result<async_graphql::Value, EvaluationError> {

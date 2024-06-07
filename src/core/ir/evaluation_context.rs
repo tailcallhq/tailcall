@@ -5,7 +5,8 @@ use std::sync::Arc;
 use async_graphql::{SelectionField, ServerError, Value};
 use reqwest::header::HeaderMap;
 
-use super::{discriminator::TypeName, GraphQLOperationContext, ResolverContextLike};
+use super::discriminator::TypeName;
+use super::{GraphQLOperationContext, ResolverContextLike};
 use crate::core::http::RequestContext;
 
 // TODO: rename to ResolverContext

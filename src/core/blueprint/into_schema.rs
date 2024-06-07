@@ -8,13 +8,10 @@ use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use tracing::Instrument;
 
+use crate::core::blueprint::{Blueprint, Definition, Type};
 use crate::core::http::RequestContext;
-use crate::core::ir::{Eval, EvaluationContext, ResolverContext};
+use crate::core::ir::{Eval, EvaluationContext, ResolverContext, TypeName};
 use crate::core::scalar::CUSTOM_SCALARS;
-use crate::core::{
-    blueprint::{Blueprint, Definition, Type},
-    ir::TypeName,
-};
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {

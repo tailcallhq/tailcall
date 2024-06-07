@@ -13,8 +13,8 @@ mod schema;
 mod server;
 pub mod telemetry;
 mod timeout;
-mod upstream;
 mod union_resolver;
+mod upstream;
 
 pub use auth::*;
 pub use blueprint::*;

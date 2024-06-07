@@ -174,20 +174,20 @@ fn to_bench_id(input: &[&str]) -> BenchmarkId {
 #[derive(Clone)]
 struct MockGraphqlContext;
 
-impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
-    fn value(&'a self) -> Option<&'a Value> {
+impl ResolverContextLike for MockGraphqlContext {
+    fn value(&self) -> Option<&Value> {
         Some(&TEST_VALUES)
     }
 
-    fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
+    fn args(&self) -> Option<&IndexMap<Name, Value>> {
         Some(&TEST_ARGS)
     }
 
-    fn field(&'a self) -> Option<SelectionField> {
+    fn field(&self) -> Option<SelectionField> {
         None
     }
 
-    fn add_error(&'a self, _: async_graphql::ServerError) {}
+    fn add_error(&self, _: async_graphql::ServerError) {}
 }
 
 // assert that everything was set up correctly for the benchmark

@@ -1,12 +1,9 @@
+use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
-use crate::core::ir::IR;
+use crate::core::config::{ConfigModule, Field};
+use crate::core::ir::{Context, Discriminator, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{blueprint::FieldDefinition, ir::Discriminator};
-use crate::core::{
-    config::{ConfigModule, Field},
-    ir::Context,
-};
 
 fn compile_union_resolver(
     config: &ConfigModule,
@@ -16,7 +13,7 @@ fn compile_union_resolver(
     Valid::from_iter(&union_.types, |type_name| {
         Valid::from_option(
             config
-                .find_type(&type_name)
+                .find_type(type_name)
                 .map(|type_| (type_name.as_str(), type_)),
             "Can't find a type that is member of union type".to_string(),
         )
