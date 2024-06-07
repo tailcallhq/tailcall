@@ -15,7 +15,7 @@ use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::core::ir::EvaluationError;
+use crate::core::ir::{EvaluationError, IoId};
 use crate::core::runtime::TargetRuntime;
 
 #[derive(Setters)]
@@ -34,7 +34,7 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
-    pub cache: AsyncCache<u64, ConstValue, EvaluationError>,
+    pub cache: AsyncCache<IoId, ConstValue, EvaluationError>,
 }
 
 impl RequestContext {
@@ -134,14 +134,14 @@ impl RequestContext {
         }
     }
 
-    pub async fn cache_get(&self, key: &u64) -> anyhow::Result<Option<ConstValue>> {
+    pub async fn cache_get(&self, key: &IoId) -> anyhow::Result<Option<ConstValue>> {
         self.runtime.cache.get(key).await
     }
 
     #[allow(clippy::too_many_arguments)]
     pub async fn cache_insert(
         &self,
-        key: u64,
+        key: IoId,
         value: ConstValue,
         ttl: NonZeroU64,
     ) -> anyhow::Result<()> {

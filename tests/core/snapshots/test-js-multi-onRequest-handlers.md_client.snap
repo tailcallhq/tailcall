@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: formatted
+expression: client
 ---
 scalar Date
 
@@ -13,20 +13,11 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
-  user(input: UserInput!): User!
+  bar: String
+  foo: String
 }
 
 scalar Url
-
-type User {
-  id: ID!
-  name: String!
-}
-
-input UserInput {
-  id: ID!
-  name: String!
-}
 
 schema {
   query: Query

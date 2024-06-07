@@ -11,7 +11,7 @@ use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::http::Method::POST;
-use crate::core::ir::{CacheKey, GraphQLOperationContext};
+use crate::core::ir::{CacheKey, GraphQLOperationContext, IoId};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathGraphql;
 
@@ -127,11 +127,11 @@ impl RequestTemplate {
 }
 
 impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
-    fn cache_key(&self, ctx: &Ctx) -> Option<u64> {
+    fn cache_key(&self, ctx: &Ctx) -> Option<IoId> {
         let mut hasher = TailcallHasher::default();
         let graphql_query = self.render_graphql_query(ctx);
         graphql_query.hash(&mut hasher);
-        Some(hasher.finish())
+        Some(IoId::new(hasher.finish()))
     }
 }
 
