@@ -2,21 +2,13 @@ use std::collections::{BTreeMap, HashSet};
 
 use inflector::Inflector;
 
-use super::NameGenerator;
 use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
 
-pub struct TypeNameGenerator<'a> {
-    root_name: &'a str,
-    name_generator: &'a NameGenerator,
-}
+pub struct TypeNameGenerator;
 
-impl<'a> TypeNameGenerator<'a> {
-    pub fn new(root_name: &'a str, name_generator: &'a NameGenerator) -> Self {
-        Self { root_name, name_generator }
-    }
-
+impl TypeNameGenerator {
     fn generate_candidate_names(&self, config: &Config) -> BTreeMap<String, BTreeMap<String, u32>> {
         let mut type_to_candidate_field_mapping: BTreeMap<String, BTreeMap<String, u32>> =
             Default::default();
@@ -92,33 +84,9 @@ impl<'a> TypeNameGenerator<'a> {
         }
         config
     }
-
-    fn generate_root_type_name(&self, mut config: Config) -> Config {
-        let auto_generated_root_name = self.name_generator.get_name();
-
-        if !config.types.contains_key(&auto_generated_root_name) {
-            // if we've already inferred correct name for root type then discard the
-            // suggested name.
-            return config;
-        }
-
-        for type_ in config.types.values_mut() {
-            for field_ in type_.fields.values_mut() {
-                if field_.type_of == auto_generated_root_name {
-                    self.root_name.clone_into(&mut field_.type_of)
-                }
-            }
-        }
-
-        if let Some(type_) = config.types.remove(&auto_generated_root_name) {
-            config.types.insert(self.root_name.to_owned(), type_);
-        }
-
-        config
-    }
 }
 
-impl Transform for TypeNameGenerator<'_> {
+impl Transform for TypeNameGenerator {
     fn transform(&self, config: Config) -> Valid<Config, String> {
         // step 1: generate the required candidate mappings. i.e { Type :
         // [{candidate_name : count}] }
@@ -130,38 +98,19 @@ impl Transform for TypeNameGenerator<'_> {
         // step 3: replace its every occurance.
         let config = self.generate_type_name(finalized_candidates, config);
 
-        // step 4: replace the generated type name with user provided name if it's
-        // possible. i.e if we are able to generate the correct name for root type then
-        // user provided name isn't used.
-        let config = self.generate_root_type_name(config);
-
-        // step 5: return the config.
+        // step 4: return the config.
         Valid::succeed(config)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use std::cell::RefCell;
-
     use anyhow::Ok;
 
     use super::TypeNameGenerator;
     use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
-    use crate::core::counter::Counter;
-    use crate::core::generator::json::NameGenerator;
     use crate::core::valid::Validator;
-
-    impl NameGenerator {
-        pub fn init(start: usize, prefix: &str) -> Self {
-            Self {
-                counter: Counter::new(start),
-                prefix: prefix.to_owned(),
-                current_name: RefCell::new(format!("{}{}", prefix, start)),
-            }
-        }
-    }
 
     #[test]
     fn test_type_name_generator_transform() -> anyhow::Result<()> {
@@ -207,10 +156,7 @@ mod test {
         )
         .to_result()?;
 
-        let name_generator = &NameGenerator::init(31, "T");
-        let transformed_config = TypeNameGenerator::new("RootType", name_generator)
-            .transform(config)
-            .to_result()?;
+        let transformed_config = TypeNameGenerator.transform(config).to_result()?;
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
@@ -249,10 +195,7 @@ mod test {
         )
         .to_result()?;
 
-        let name_generator = &NameGenerator::init(31, "T");
-        let transformed_config = TypeNameGenerator::new("RootType", name_generator)
-            .transform(config)
-            .to_result()?;
+        let transformed_config = TypeNameGenerator.transform(config).to_result()?;
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
