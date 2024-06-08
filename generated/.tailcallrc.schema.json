@@ -192,6 +192,11 @@
         }
       }
     },
+    "Bytes": {
+      "title": "Bytes",
+      "description": "Represents list of bytes",
+      "type": "string"
+    },
     "Cache": {
       "description": "The @cache operator enables caching for the query, field or type it is applied to.",
       "type": "object",
@@ -295,26 +300,26 @@
     },
     "Date": {
       "title": "Date",
+      "description": "A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.",
       "type": "object",
       "required": [
         "Date"
       ],
       "properties": {
         "Date": {
-          "description": "A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.",
           "type": "string"
         }
       }
     },
     "Email": {
       "title": "Email",
+      "description": "field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.",
       "type": "object",
       "required": [
         "Email"
       ],
       "properties": {
         "Email": {
-          "description": "field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.",
           "type": "string",
           "pattern": "/^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/"
         }
@@ -322,13 +327,13 @@
     },
     "Empty": {
       "title": "Empty",
+      "description": "Empty scalar type represents an empty value.",
       "type": "object",
       "required": [
         "Empty"
       ],
       "properties": {
         "Empty": {
-          "description": "Empty scalar type represents an empty value.",
           "type": "null"
         }
       }
@@ -713,6 +718,13 @@
             }
           ]
         },
+        "onRequest": {
+          "description": "onRequest field in @http directive gives the ability to specify the request interception handler.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "output": {
           "description": "Schema of the output of the API call. It is automatically inferred in most cases.",
           "anyOf": [
@@ -745,6 +757,36 @@
         "HTTP2"
       ]
     },
+    "Int128": {
+      "title": "Int128",
+      "description": "Represents signed integer type 128 bit size as string",
+      "type": "integer",
+      "format": "int128"
+    },
+    "Int16": {
+      "title": "Int16",
+      "description": "Represents signed integer type 16bit size",
+      "type": "integer",
+      "format": "int16"
+    },
+    "Int32": {
+      "title": "Int32",
+      "description": "Represents signed integer type 32bit size",
+      "type": "integer",
+      "format": "int32"
+    },
+    "Int64": {
+      "title": "Int64",
+      "description": "Represents signed integer type 64bit size as string",
+      "type": "integer",
+      "format": "int64"
+    },
+    "Int8": {
+      "title": "Int8",
+      "description": "Represents signed integer type 8bit size",
+      "type": "integer",
+      "format": "int8"
+    },
     "JS": {
       "type": "object",
       "required": [
@@ -758,13 +800,13 @@
     },
     "JSON": {
       "title": "JSON",
+      "description": "The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ ECMA-404.pdf).",
       "type": "object",
       "required": [
         "JSON"
       ],
       "properties": {
         "JSON": {
-          "description": "The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ ECMA-404.pdf).",
           "type": "string"
         }
       }
@@ -881,13 +923,13 @@
     },
     "PhoneNumber": {
       "title": "PhoneNumber",
+      "description": "A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).",
       "type": "object",
       "required": [
         "PhoneNumber"
       ],
       "properties": {
         "PhoneNumber": {
-          "description": "A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).",
           "type": "string"
         }
       }
@@ -1288,6 +1330,41 @@
         }
       }
     },
+    "UInt128": {
+      "title": "UInt128",
+      "description": "Represents unsigned integer type 128bit size as string",
+      "type": "integer",
+      "format": "uint128",
+      "minimum": 0.0
+    },
+    "UInt16": {
+      "title": "UInt16",
+      "description": "Represents unsigned integer type 16bit size",
+      "type": "integer",
+      "format": "uint16",
+      "minimum": 0.0
+    },
+    "UInt32": {
+      "title": "UInt32",
+      "description": "Represents unsigned integer type 32bit size",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "UInt64": {
+      "title": "UInt64",
+      "description": "Represents unsigned integer type 64bit size as string",
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0.0
+    },
+    "UInt8": {
+      "title": "UInt8",
+      "description": "Represents unsigned integer type 8bit size",
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 0.0
+    },
     "Union": {
       "type": "object",
       "required": [
@@ -1399,6 +1476,13 @@
             "null"
           ]
         },
+        "onRequest": {
+          "description": "onRequest field gives the ability to specify the global request interception handler.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "poolIdleTimeout": {
           "description": "The time in seconds that the connection pool will wait before closing idle connections.",
           "type": [
@@ -1458,13 +1542,13 @@
     },
     "Url": {
       "title": "Url",
+      "description": "A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.",
       "type": "object",
       "required": [
         "Url"
       ],
       "properties": {
         "Url": {
-          "description": "A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.",
           "type": "string"
         }
       }

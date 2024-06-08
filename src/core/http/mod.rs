@@ -24,3 +24,16 @@ mod telemetry;
 
 pub static TAILCALL_HTTPS_ORIGIN: HeaderValue = HeaderValue::from_static("https://tailcall.run");
 pub static TAILCALL_HTTP_ORIGIN: HeaderValue = HeaderValue::from_static("http://tailcall.run");
+
+#[derive(Default, Clone, Debug)]
+/// User can configure the filter/interceptor
+/// for the http requests.
+pub struct HttpFilter {
+    pub on_request: String,
+}
+
+impl HttpFilter {
+    pub fn new(on_request: &str) -> Self {
+        HttpFilter { on_request: on_request.to_owned() }
+    }
+}
