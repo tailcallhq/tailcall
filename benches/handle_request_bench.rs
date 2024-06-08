@@ -13,8 +13,9 @@ static QUERY: &str = r#"{"query":"query{posts{title}}"}"#;
 
 pub fn benchmark_handle_request(c: &mut Criterion) {
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
-    let sdl = std::fs::read_to_string("./ci-benchmark/benchmark.graphql").unwrap();
-    let config_module: ConfigModule = Config::from_sdl(sdl.as_str()).to_result().unwrap().into();
+    let input_path = "./ci-benchmark/benchmark.graphql";
+    let sdl = std::fs::read_to_string(input_path).unwrap();
+    let config_module: ConfigModule = Config::from_sdl(input_path, sdl.as_str()).to_result().unwrap().into();
 
     let blueprint = Blueprint::try_from(&config_module).unwrap();
     let endpoints = config_module.extensions.endpoint_set;
