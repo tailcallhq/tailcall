@@ -36,7 +36,7 @@ impl UrlTypeMapping {
     /// Finds the most common URL that meets the threshold.
     fn find_common_url(&self, threshold: f32) -> Option<String> {
         if let Some((common_url, frequency)) = self.url_to_frequency_map.get_max_pair() {
-            if *frequency >= (self.url_to_frequency_map.len() as f32 * threshold) as u32 {
+            if *frequency >= (self.url_to_frequency_map.len() as f32 * threshold).ceil() as u32 {
                 return Some(common_url.to_owned());
             }
         }
