@@ -242,8 +242,8 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     .map(|variant| {
                         pos(EnumValueDefinition {
                             description: None,
-                            value: pos(Name::new(variant)),
-                            directives: Vec::new(),
+                            value: pos(Name::new(&variant.name)),
+                            directives: variant.alias.clone().map_or(vec![], |v| vec![pos(v.to_directive())]),
                         })
                     })
                     .collect(),

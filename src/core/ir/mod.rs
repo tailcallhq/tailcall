@@ -10,6 +10,7 @@ mod resolver_context_like;
 use core::future::Future;
 use std::fmt::{Debug, Display};
 use std::pin::Pin;
+use std::collections::BTreeMap;
 
 use async_graphql_value::ConstValue;
 pub use cache::*;
@@ -32,6 +33,7 @@ pub enum IR {
     Cache(Cache),
     Path(Box<IR>, Vec<String>),
     Protect(Box<IR>),
+    Map(Map),
 }
 
 impl Display for IR {
@@ -43,6 +45,7 @@ impl Display for IR {
             IR::Cache(_) => write!(f, "Cache"),
             IR::Path(_, _) => write!(f, "Input"),
             IR::Protect(expr) => write!(f, "Protected({expr})"),
+            IR::Map(_) => write!(f, "Map"),
         }
     }
 }
@@ -62,6 +65,35 @@ impl IR {
 
     pub fn with_args(self, args: IR) -> Self {
         IR::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Map {
+    pub input: Box<IR>,
+    // accept key return value instead of
+    pub map: BTreeMap<String, ConstValue>,
+}
+
+impl Eval for Map {
+    fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+            &'a self,
+            ctx: EvaluationContext<'a, Ctx>,
+        ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value, EvaluationError>> + 'a + Send>>
+        where
+            async_graphql::Value: 'a {
+        Box::pin(async move {
+            let value = self.eval(ctx).await?;
+            if let ConstValue::String(key) = value {
+                if let Some(value) = self.map.get(&key) {
+                    Ok(value.to_owned())
+                } else {
+                    Err(EvaluationError::ExprEvalError(format!("Can't find mapped key: {}.", key)))
+                }
+            } else {
+                Err(EvaluationError::ExprEvalError("Mapped key must be string value.".to_owned()))
+            }
+        })
     }
 }
 
@@ -110,6 +142,7 @@ impl Eval for IR {
                 }
                 IR::IO(operation) => operation.eval(ctx).await,
                 IR::Cache(cached) => cached.eval(ctx).await,
+                IR::Map(map) => map.eval(ctx).await,
             }
         })
     }

@@ -1,0 +1,35 @@
+use std::collections::BTreeMap;
+
+use async_graphql_value::ConstValue;
+
+use crate::core::blueprint::*;
+use crate::core::config;
+use crate::core::config::Field;
+use crate::core::ir::{IR, Map};
+use crate::core::try_fold::TryFold;
+use crate::core::valid::Valid;
+
+pub fn update_enum_alias<'a>(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+        |(config, field, _, _), mut b_field| {
+            let enum_type = config.enums.get(&field.type_of);
+            if let Some(enum_type) = enum_type {
+                let mut map = BTreeMap::<String, ConstValue>::new();
+                for v in enum_type.variants.iter() {
+                    map.insert(v.name.clone(), ConstValue::String(v.name.clone()));
+                    if let Some(alias) = &v.alias {
+                        for option in &alias.options {
+                            map.insert(option.to_owned(), ConstValue::String(v.name.clone()));
+                        }
+                    }
+                }
+                b_field.resolver = b_field.resolver.map(|r| {
+                    IR::Map(Map {input: Box::new(r), map})
+                });
+            }
+            Valid::succeed(b_field)
+        },
+    )
+}

@@ -174,7 +174,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
                 directives,
                 en.values
                     .iter()
-                    .map(|v| format!("  {}", v.node.value))
+                    .map(|v| print_enum_value(&v.node))
                     .collect::<Vec<String>>()
                     .join("\n")
             );
@@ -186,6 +186,15 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
                 enum_def
             }
         } // Handle other type kinds...
+    }
+}
+
+fn print_enum_value(value: &async_graphql::parser::types::EnumValueDefinition) -> String {
+    let directives_str = print_directives(&value.directives);
+    if directives_str.is_empty() {
+        format!("  {}", value.value)
+    } else {
+        format!("  {} {}", value.value, directives_str)
     }
 }
 
