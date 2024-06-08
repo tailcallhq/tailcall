@@ -133,6 +133,7 @@ impl HttpIO for NativeHttp {
     // because of the issue with tracing and clippy - https://github.com/rust-lang/rust-clippy/issues/12281
     #[tracing::instrument(
         skip_all,
+        err,
         fields(
             otel.name = "upstream_request",
             otel.kind = ?SpanKind::Client,
