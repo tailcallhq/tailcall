@@ -1,38 +1,43 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
 
+use super::max_value_map::MaxValueMap;
+
 struct UrlTypeMapping {
-    url_to_type_map: HashMap<String, HashSet<String>>,
+    url_to_frequency_map: MaxValueMap<String, u32>,
+    visited_type_set: HashSet<String>,
 }
 
 impl UrlTypeMapping {
     fn new() -> Self {
-        Self { url_to_type_map: Default::default() }
+        Self {
+            url_to_frequency_map: Default::default(),
+            visited_type_set: Default::default(),
+        }
     }
 
-    fn populate_url_type_map(&mut self, config: &Config) {
+    /// Populates the URL type mapping based on the given configuration.
+    fn populate_url_frequency_map(&mut self, config: &Config) {
         for (type_name, type_) in config.types.iter() {
             for field_ in type_.fields.values() {
                 if let Some(http_directive) = &field_.http {
                     if let Some(base_url) = &http_directive.base_url {
-                        self.url_to_type_map
-                            .entry(base_url.to_owned())
-                            .or_default()
-                            .insert(type_name.to_owned());
+                        self.url_to_frequency_map.increment(base_url.to_owned(), 1);
+                        self.visited_type_set.insert(type_name.to_owned());
                     }
                 }
             }
         }
     }
 
-    fn find_common_url(&self, threshold: f32) -> Option<(String, HashSet<String>)> {
-        let count_of_unique_base_urls = self.url_to_type_map.len();
-        for (base_url, type_set) in &self.url_to_type_map {
-            if type_set.len() >= ((count_of_unique_base_urls as f32) * threshold) as usize {
-                return Some((base_url.to_owned(), type_set.to_owned()));
+    /// Finds the most common URL that meets the threshold.
+    fn find_common_url(&self, threshold: f32) -> Option<String> {
+        if let Some((common_url, frequency)) = self.url_to_frequency_map.get_max_pair() {
+            if *frequency >= (self.url_to_frequency_map.len() as f32 * threshold) as u32 {
+                return Some(common_url.to_owned());
             }
         }
         None
@@ -59,14 +64,12 @@ impl ConsolidateURL {
 
     fn generate_base_url(&self, mut config: Config) -> Config {
         let mut url_type_mapping = UrlTypeMapping::new();
-        url_type_mapping.populate_url_type_map(&config);
+        url_type_mapping.populate_url_frequency_map(&config);
 
-        if let Some((common_url, visited_type_set)) =
-            url_type_mapping.find_common_url(self.threshold)
-        {
+        if let Some(common_url) = url_type_mapping.find_common_url(self.threshold) {
             config.upstream.base_url = Some(common_url.to_owned());
 
-            for type_name in visited_type_set {
+            for type_name in url_type_mapping.visited_type_set {
                 if let Some(type_) = config.types.get_mut(&type_name) {
                     for field_ in type_.fields.values_mut() {
                         if let Some(htto_directive) = &mut field_.http {
