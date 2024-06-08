@@ -2,12 +2,11 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 use async_graphql::{ErrorExtensions, Value as ConstValue};
-use thiserror::Error;
 
 use crate::core::auth;
 
-#[derive(Debug, Error, Clone)]
-pub enum EvaluationError {
+#[derive(Debug, thiserror::Error, Clone)]
+pub enum Error {
     IOError(String),
 
     GRPCError {
@@ -26,46 +25,46 @@ pub enum EvaluationError {
     AuthError(String),
 }
 
-impl Display for EvaluationError {
+impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         crate::core::Error::from(self.to_owned()).fmt(f)
     }
 }
 
-impl From<EvaluationError> for crate::core::Error {
-    fn from(value: EvaluationError) -> Self {
-        use crate::core::Error;
+impl From<Error> for crate::core::Error {
+    fn from(value: Error) -> Self {
+        use crate::core::Error as CoreError;
         match value {
-            EvaluationError::IOError(message) => Error::new("IO Error").description(message),
-            EvaluationError::GRPCError {
+            Error::IOError(message) => CoreError::new("IO Error").description(message),
+            Error::GRPCError {
                 grpc_code,
                 grpc_description,
                 grpc_status_message,
                 grpc_status_details,
-            } => Error::new("GRPC Error")
+            } => CoreError::new("GRPC Error")
                 .description(grpc_description)
-                .caused_by(vec![Error::new(
+                .caused_by(vec![CoreError::new(
                     format!("code: {}, message: {}", grpc_code, grpc_status_message).as_str(),
                 )])
                 .description(grpc_status_details.to_string()),
-            EvaluationError::APIValidationError(errors) => Error::new("API Validation Error")
-                .caused_by(errors.iter().map(|e| Error::new(e)).collect::<Vec<_>>()),
-            EvaluationError::Other(message) => Error::new("Evaluation Error").description(message),
-            EvaluationError::DeserializeError(message) => {
-                Error::new("Deserialization Error").description(message)
+            Error::APIValidationError(errors) => CoreError::new("API Validation Error")
+                .caused_by(errors.iter().map(|e| CoreError::new(e)).collect::<Vec<_>>()),
+            Error::Other(message) => CoreError::new("Evaluation Error").description(message),
+            Error::DeserializeError(message) => {
+                CoreError::new("Deserialization Error").description(message)
             }
 
-            EvaluationError::AuthError(message) => {
-                Error::new("Authentication Error").description(message)
+            Error::AuthError(message) => {
+                CoreError::new("Authentication Error").description(message)
             }
         }
     }
 }
 
-impl ErrorExtensions for EvaluationError {
+impl ErrorExtensions for Error {
     fn extend(&self) -> async_graphql::Error {
         async_graphql::Error::new(format!("{}", self)).extend_with(|_err, e| {
-            if let EvaluationError::GRPCError {
+            if let Error::GRPCError {
                 grpc_code,
                 grpc_description,
                 grpc_status_message,
@@ -81,15 +80,15 @@ impl ErrorExtensions for EvaluationError {
     }
 }
 
-impl From<auth::error::Error> for EvaluationError {
+impl From<auth::error::Error> for Error {
     fn from(value: auth::error::Error) -> Self {
-        EvaluationError::AuthError(value.to_string())
+        Error::AuthError(value.to_string())
     }
 }
 
-impl<'a> From<crate::core::valid::ValidationError<&'a str>> for EvaluationError {
+impl<'a> From<crate::core::valid::ValidationError<&'a str>> for Error {
     fn from(value: crate::core::valid::ValidationError<&'a str>) -> Self {
-        EvaluationError::APIValidationError(
+        Error::APIValidationError(
             value
                 .as_vec()
                 .iter()
@@ -99,11 +98,11 @@ impl<'a> From<crate::core::valid::ValidationError<&'a str>> for EvaluationError 
     }
 }
 
-impl From<Arc<anyhow::Error>> for EvaluationError {
+impl From<Arc<anyhow::Error>> for Error {
     fn from(error: Arc<anyhow::Error>) -> Self {
-        match error.downcast_ref::<EvaluationError>() {
+        match error.downcast_ref::<Error>() {
             Some(err) => err.clone(),
-            None => EvaluationError::IOError(error.to_string()),
+            None => Error::IOError(error.to_string()),
         }
     }
 }
@@ -111,11 +110,11 @@ impl From<Arc<anyhow::Error>> for EvaluationError {
 // TODO: remove conversion from anyhow and don't use anyhow to pass errors
 // since it loses potentially valuable information that could be later provided
 // in the error extensions
-impl From<anyhow::Error> for EvaluationError {
+impl From<anyhow::Error> for Error {
     fn from(value: anyhow::Error) -> Self {
-        match value.downcast::<EvaluationError>() {
+        match value.downcast::<Error>() {
             Ok(err) => err,
-            Err(err) => EvaluationError::IOError(err.to_string()),
+            Err(err) => Error::IOError(err.to_string()),
         }
     }
 }
