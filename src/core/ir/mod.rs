@@ -7,7 +7,6 @@ mod io;
 mod jit;
 mod modify;
 mod resolver_context_like;
-mod current;
 
 use core::future::Future;
 use std::fmt::{Debug, Display};
@@ -26,6 +25,15 @@ pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverC
 use crate::core::blueprint::DynamicValue;
 use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
+
+#[derive(Eq, Hash, PartialEq, Clone, Debug)]
+pub struct CallId(usize);
+
+impl CallId {
+    pub fn new(id: usize) -> Self {
+        Self(id)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum IR {

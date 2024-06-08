@@ -1,36 +1,34 @@
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
 use std::sync::Mutex;
 
 use serde_json_borrow::OwnedValue;
 
-use crate::core::ir::{
-    CacheKey, Eval, EvaluationContext, EvaluationError, IoId, IR, ResolverContextLike,
-};
+use crate::core::CallId;
+use crate::core::counter::Count;
+use crate::core::ir::{Eval, EvaluationContext, EvaluationError, IR, ResolverContextLike};
 use crate::core::ir::jit::model::{Children, ExecutionPlan, Field, FieldId};
 use crate::core::ir::jit::store::{Data, Store};
 
 pub async fn execute_ir<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     plan: &'a ExecutionPlan,
-    store: &'a Mutex<Store<IoId, OwnedValue>>,
+    store: &'a Mutex<Store<CallId, OwnedValue>>,
     mut ctx: EvaluationContext<'a, Ctx>,
 ) -> Result<(), EvaluationError> {
-
     let mut ids = HashMap::new();
     let mut is_first = true;
     let mut store_lock = store.lock().unwrap();
     for parent in plan.parents().iter() {
         if let Some(ir) = parent.ir.as_ref() {
-            let (value, io_id) = execute_field(&mut ctx, ir).await?;
+            let (value, ir_id) = execute_field(plan.counter(), &mut ctx, ir).await?;
             if is_first {
                 let mut extras = HashMap::new();
-                extras.insert(parent.id.to_owned(), io_id.to_owned());
-                store_lock.insert(IoId::new(0), Data { data: None, extras });
+                extras.insert(parent.id.to_owned(), ir_id.to_owned());
+                store_lock.insert(CallId::new(0), Data { data: None, extras });
                 is_first = false;
             }
             let data = Data { data: Some(value), extras: HashMap::new() };
-            ids.insert(parent.id.to_owned(), io_id.to_owned());
-            store_lock.insert(io_id, data);
+            ids.insert(parent.id.to_owned(), ir_id.to_owned());
+            store_lock.insert(ir_id, data);
         }
     }
     drop(store_lock);
@@ -41,12 +39,12 @@ pub async fn execute_ir<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
 }
 
 fn resolve_extras(
-    store: &Mutex<Store<IoId, OwnedValue>>,
+    store: &Mutex<Store<CallId, OwnedValue>>,
     child: &Field<Children>,
-    helper: &HashMap<FieldId, IoId>,
+    helper: &HashMap<FieldId, CallId>,
 ) {
-    let mut store_lock = store.lock().unwrap();
     if let Some(io_id) = helper.get(&child.id) {
+        let mut store_lock = store.lock().unwrap();
         let data = store_lock.get_mut(io_id).unwrap();
         for child in child.children() {
             if child.ir.as_ref().is_some() {
@@ -60,26 +58,24 @@ fn resolve_extras(
 }
 
 async fn execute_field<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+    counter: &dyn Count<Item = CallId>,
     ctx: &mut EvaluationContext<'a, Ctx>,
     ir: &'a IR,
-) -> Result<(OwnedValue, IoId), EvaluationError> {
-    let val = ir.eval(ctx.clone()).await.map_err(|e| {
-        EvaluationError::ExprEvalError(format!("Unable to evaluate: {}", e))
-    })?;
+) -> Result<(OwnedValue, CallId), EvaluationError> {
+    let value = ir
+        .eval(ctx.clone())
+        .await
+        .map_err(|e| EvaluationError::ExprEvalError(format!("Unable to evaluate: {}", e)))?;
 
-    if let Some((value, io_id)) = val {
-        *ctx = ctx.with_value(value.clone());
-        let str_value = value
-            .into_json()
-            .map_err(|e| EvaluationError::DeserializeError(e.to_string()))?;
-        let str_value = str_value.to_string();
-        let owned_value = OwnedValue::from_string(str_value)
-            .map_err(|e| EvaluationError::DeserializeError(e.to_string()))?;
-        return Ok((owned_value, io_id));
-    }
-    Err(EvaluationError::ExprEvalError(
-        "Unable to evaluate".to_string(),
-    ))
+    let ir_id = counter.next();
+
+    let str_value = value
+        .into_json()
+        .map_err(|e| EvaluationError::DeserializeError(e.to_string()))?;
+    let str_value = str_value.to_string();
+    let owned_value = OwnedValue::from_string(str_value)
+        .map_err(|e| EvaluationError::DeserializeError(e.to_string()))?;
+    Ok((owned_value, ir_id))
 }
 
 #[cfg(test)]

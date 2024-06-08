@@ -6,7 +6,7 @@ use async_graphql_parser::types::{OperationType, SelectionSet};
 use super::field_index::{FieldIndex, QueryField};
 use super::model::*;
 use crate::core::blueprint::Blueprint;
-use crate::core::counter::Counter;
+use crate::core::counter::{Count, Counter};
 use crate::core::merge_right::MergeRight;
 
 #[allow(unused)]

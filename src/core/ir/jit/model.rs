@@ -1,6 +1,10 @@
 use std::fmt::{Debug, Formatter};
+use std::ops::Deref;
+use std::rc::Rc;
 
+use crate::core::counter::{Count, MutexCounter};
 use crate::core::ir::IR;
+use crate::core::CallId;
 
 #[allow(unused)]
 #[derive(Debug, Clone)]
@@ -135,6 +139,7 @@ pub struct Children(Vec<Field<Children>>);
 pub struct ExecutionPlan {
     fields: Vec<Field<Parent>>,
     field_children: Vec<Field<Children>>,
+    counter: Rc<dyn Count<Item = CallId>>,
 }
 
 impl ExecutionPlan {
@@ -145,7 +150,15 @@ impl ExecutionPlan {
             .map(|f| f.into_children(&fields))
             .collect::<Vec<_>>();
 
-        Self { fields, field_children }
+        Self {
+            fields,
+            field_children,
+            counter: Rc::new(MutexCounter::default()),
+        }
+    }
+
+    pub fn counter(&self) -> &dyn Count<Item = CallId> {
+        self.counter.deref()
     }
 
     #[allow(unused)]
