@@ -15,7 +15,8 @@ fn is_auto_generated_field_name(field_name: &str) -> bool {
 }
 
 struct CandidateGeneration<'a> {
-    /// maintains the generated candidates in the form of {TypeName: [{candidate_name: frequency}]}
+    /// maintains the generated candidates in the form of {TypeName:
+    /// [{candidate_name: frequency}]}
     candidates: BTreeMap<String, BTreeMap<String, u32>>,
     config: &'a Config,
 }
@@ -26,7 +27,8 @@ impl<'a> CandidateGeneration<'a> {
     }
 
     /// Generates candidate type names based on the provided configuration.
-    /// This method iterates over the configuration and collects candidate type names for each type.
+    /// This method iterates over the configuration and collects candidate type
+    /// names for each type.
     fn generate(mut self) -> Self {
         for type_info in self.config.types.values() {
             for (field_name, field_info) in type_info.fields.iter() {
@@ -50,13 +52,15 @@ impl<'a> CandidateGeneration<'a> {
     }
 
     /// Converges on the most frequent candidate name for each type.
-    /// This method selects the most frequent candidate name for each type, ensuring uniqueness.
+    /// This method selects the most frequent candidate name for each type,
+    /// ensuring uniqueness.
     fn converge(self) -> BTreeMap<String, String> {
         let mut finalized_candidates = BTreeMap::new();
         let mut converged_candidate_set = HashSet::new();
 
         for (type_name, candidate_list) in self.candidates.iter() {
-            // Find the most frequent candidate that hasn't been converged yet and it's not already present in types.
+            // Find the most frequent candidate that hasn't been converged yet and it's not
+            // already present in types.
             if let Some((candidate_name, _)) = candidate_list
                 .iter()
                 .max_by_key(|&(_, count)| count)
