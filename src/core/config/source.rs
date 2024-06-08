@@ -81,7 +81,7 @@ impl Source {
             SourceType::Yml => {
                 Config::from_yaml(data).map_err(|e| ValidationError::new(e.to_string()))
             }
-            SourceType::GraphQL => Config::from_sdl(data).to_result(),
+            SourceType::GraphQL => Config::from_sdl(&self.input_path, data).to_result(),
             SourceType::Json => {
                 Config::from_json(data).map_err(|e| ValidationError::new(e.to_string()))
             }

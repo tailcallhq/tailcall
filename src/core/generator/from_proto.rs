@@ -105,7 +105,7 @@ impl Context {
 
             self.config.enums.insert(
                 type_name,
-                Pos::new(0, 0, Enum { variants: variants_with_comments, doc }),
+                Pos::new(0, 0, None, Enum { variants: variants_with_comments, doc }),
             );
         }
         self
@@ -156,6 +156,7 @@ impl Context {
             let mut ty = Pos::new(
                 0,
                 0,
+                None,
                 Type {
                     doc: self.comments_builder.get_comments(&msg_path),
                     ..Default::default()
@@ -233,7 +234,7 @@ impl Context {
                     .into_method();
 
                 let mut cfg_field = Field::default();
-                let mut body = Pos::new(0, 0, None);
+                let mut body = Pos::new(0, 0, None, None);
 
                 if let Some(graphql_type) = get_input_type(method.input_type())? {
                     let key = graphql_type.clone().into_field().to_string();
@@ -262,12 +263,13 @@ impl Context {
                 cfg_field.grpc = Some(Pos::new(
                     0,
                     0,
+                    None,
                     Grpc {
                         base_url: None,
                         body,
                         group_by: vec![],
                         headers: vec![],
-                        method: Pos::new(0, 0, field_name.id()),
+                        method: Pos::new(0, 0, None, field_name.id()),
                     },
                 ));
 
@@ -281,7 +283,7 @@ impl Context {
                     .entry(self.query.clone())
                     .or_insert_with(|| {
                         self.config.schema.query = Some(self.query.clone());
-                        Pos::new(0, 0, Type::default())
+                        Pos::new(0, 0, None, Type::default())
                     });
 
                 ty.fields.insert(field_name.to_string(), cfg_field);

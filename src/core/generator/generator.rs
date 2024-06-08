@@ -70,6 +70,7 @@ impl Generator {
                     links.push(Pos::new(
                         0,
                         0,
+                        None,
                         Link { id: None, src: metadata.path, type_of: LinkType::Protobuf },
                     ));
                     let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set)?;

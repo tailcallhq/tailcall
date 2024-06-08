@@ -78,9 +78,10 @@ where
         if config.types.contains_key(any_scalar) {
             return any_scalar.to_string();
         }
-        config
-            .types
-            .insert(any_scalar.to_string(), Pos::new(0, 0, Type::default()));
+        config.types.insert(
+            any_scalar.to_string(),
+            Pos::new(0, 0, None, Type::default()),
+        );
         any_scalar.to_string()
     }
 

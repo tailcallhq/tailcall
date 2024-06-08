@@ -73,6 +73,7 @@ mod tests {
         let mut config = Config::default().links(vec![Pos::new(
             0,
             0,
+            None,
             Link {
                 id: None,
                 src: test_file.to_string(),
@@ -87,8 +88,9 @@ mod tests {
         let grpc = Pos::new(
             0,
             0,
+            None,
             Grpc {
-                method: Pos::new(0, 0, method.to_string()),
+                method: Pos::new(0, 0, None, method.to_string()),
                 ..Default::default()
             },
         );
@@ -97,6 +99,7 @@ mod tests {
             Pos::new(
                 0,
                 0,
+                None,
                 Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
             ),
         );

@@ -134,6 +134,7 @@ mod tests {
             export: Some(Pos::new(
                 0,
                 0,
+                None,
                 TelemetryExporter::Stdout(StdoutExporter { pretty: true }),
             )),
             ..Default::default()
@@ -142,6 +143,7 @@ mod tests {
             export: Some(Pos::new(
                 0,
                 0,
+                None,
                 TelemetryExporter::Otlp(OtlpExporter {
                     url: "test-url".to_owned(),
                     headers: vec![KeyValue { key: "header_a".to_owned(), value: "a".to_owned() }],
@@ -153,6 +155,7 @@ mod tests {
             export: Some(Pos::new(
                 0,
                 0,
+                None,
                 TelemetryExporter::Otlp(OtlpExporter {
                     url: "test-url-2".to_owned(),
                     headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }],
@@ -164,6 +167,7 @@ mod tests {
             export: Some(Pos::new(
                 0,
                 0,
+                None,
                 TelemetryExporter::Prometheus(PrometheusExporter {
                     path: "/metrics".to_owned(),
                     format: PrometheusFormat::Text,
@@ -175,6 +179,7 @@ mod tests {
             export: Some(Pos::new(
                 0,
                 0,
+                None,
                 TelemetryExporter::Prometheus(PrometheusExporter {
                     path: "/prom".to_owned(),
                     format: PrometheusFormat::Protobuf,
@@ -214,6 +219,7 @@ mod tests {
                 export: Some(Pos::new(
                     0,
                     0,
+                    None,
                     TelemetryExporter::Otlp(OtlpExporter {
                         url: "test-url-2".to_owned(),
                         headers: vec![KeyValue {

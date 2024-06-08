@@ -676,17 +676,17 @@ impl Config {
         Ok(serde_yaml::from_str(yaml)?)
     }
 
-    pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+    pub fn from_sdl(input_path: &str, sdl: &str) -> Valid<Self, String> {
         let doc = async_graphql::parser::parse_schema(sdl);
         match doc {
-            Ok(doc) => from_document(doc),
+            Ok(doc) => from_document(input_path, doc),
             Err(e) => Valid::fail(e.to_string()),
         }
     }
 
     pub fn from_source(source: Source, schema: &str) -> Result<Self> {
         match source.input_type {
-            SourceType::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
+            SourceType::GraphQL => Ok(Config::from_sdl(&source.input_path, schema).to_result()?),
             SourceType::Json => Ok(Config::from_json(schema)?),
             SourceType::Yml => Ok(Config::from_yaml(schema)?),
         }
@@ -835,6 +835,7 @@ mod tests {
             http: Some(Pos::new(
                 0,
                 0,
+                None,
                 Http { group_by: vec!["id".to_string()], ..Default::default() },
             )),
             ..Default::default()
@@ -844,6 +845,7 @@ mod tests {
             http: Some(Pos::new(
                 0,
                 0,
+                None,
                 Http { group_by: vec![], ..Default::default() },
             )),
             ..Default::default()
@@ -862,11 +864,19 @@ mod tests {
 
     #[test]
     fn test_from_sdl_empty() {
-        let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
+        let file_path: String = Default::default();
+        let actual = Config::from_sdl(&file_path, "type Foo {a: Int}")
+            .to_result()
+            .unwrap();
 
         let expected = Config::default().types(vec![(
             "Foo",
-            Pos::new(1, 1, Type::default().fields(vec![("a", Field::int())])),
+            Pos::new(
+                1,
+                1,
+                Some(file_path),
+                Type::default().fields(vec![("a", Field::int())]),
+            ),
         )]);
         assert_eq!(actual, expected);
     }
@@ -874,6 +884,7 @@ mod tests {
     #[test]
     fn test_unused_types_with_cyclic_types() {
         let config = Config::from_sdl(
+            Default::default(),
             "
             type Bar {a: Int}
             type Foo {a: [Foo]}

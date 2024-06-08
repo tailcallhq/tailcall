@@ -260,7 +260,7 @@ mod tests {
     use crate::core::config::ScriptOptions;
 
     fn server_with_script_options(so: ScriptOptions) -> Server {
-        Server { script: Some(Pos::new(0, 0, so)), ..Default::default() }
+        Server { script: Some(Pos::new(0, 0, None, so)), ..Default::default() }
     }
 
     #[test]
@@ -268,7 +268,7 @@ mod tests {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let b = server_with_script_options(ScriptOptions { timeout: Some(200) });
         let merged = a.merge_right(b);
-        let expected = Pos::new(0, 0, ScriptOptions { timeout: Some(200) });
+        let expected = Pos::new(0, 0, None, ScriptOptions { timeout: Some(200) });
         assert_eq!(merged.script, Some(expected));
     }
 
@@ -277,7 +277,7 @@ mod tests {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let b = server_with_script_options(ScriptOptions { timeout: None });
         let merged = a.merge_right(b);
-        let expected = Pos::new(0, 0, ScriptOptions { timeout: Some(100) });
+        let expected = Pos::new(0, 0, None, ScriptOptions { timeout: Some(100) });
         assert_eq!(merged.script, Some(expected));
     }
 
@@ -286,7 +286,7 @@ mod tests {
         let a = server_with_script_options(ScriptOptions { timeout: None });
         let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let merged = a.merge_right(b);
-        let expected = Pos::new(0, 0, ScriptOptions { timeout: Some(100) });
+        let expected = Pos::new(0, 0, None, ScriptOptions { timeout: Some(100) });
         assert_eq!(merged.script, Some(expected));
     }
 
@@ -295,7 +295,7 @@ mod tests {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let b = Server::default();
         let merged = a.merge_right(b);
-        let expected = Pos::new(0, 0, ScriptOptions { timeout: Some(100) });
+        let expected = Pos::new(0, 0, None, ScriptOptions { timeout: Some(100) });
         assert_eq!(merged.script, Some(expected));
     }
 
@@ -304,7 +304,7 @@ mod tests {
         let a = Server::default();
         let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let merged = a.merge_right(b);
-        let expected = Pos::new(0, 0, ScriptOptions { timeout: Some(100) });
+        let expected = Pos::new(0, 0, None, ScriptOptions { timeout: Some(100) });
         assert_eq!(merged.script, Some(expected));
     }
 

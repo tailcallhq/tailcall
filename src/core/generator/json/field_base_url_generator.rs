@@ -31,7 +31,7 @@ impl Transform for FieldBaseUrlGenerator<'_> {
                 field.http = match field.http.clone() {
                     Some(mut http) => {
                         if http.base_url.is_none() {
-                            http.base_url = Some(Pos::new(0, 0, base_url.clone()));
+                            http.base_url = Some(Pos::new(0, 0, None, base_url.clone()));
                         }
                         Some(http)
                     }
@@ -70,6 +70,7 @@ mod test {
                 http: Some(Pos::new(
                     0,
                     0,
+                    None,
                     Http { path: "/day".to_string(), ..Default::default() },
                 )),
                 ..Default::default()
@@ -82,6 +83,7 @@ mod test {
                 http: Some(Pos::new(
                     0,
                     0,
+                    None,
                     Http { path: "/month".to_string(), ..Default::default() },
                 )),
                 ..Default::default()
@@ -94,6 +96,7 @@ mod test {
                 http: Some(Pos::new(
                     0,
                     0,
+                    None,
                     Http { path: "/status".to_string(), ..Default::default() },
                 )),
                 ..Default::default()
@@ -122,8 +125,14 @@ mod test {
                 http: Some(Pos::new(
                     0,
                     0,
+                    None,
                     Http {
-                        base_url: Some(Pos::new(0, 0, "https://calender.com/api/v1/".to_string())),
+                        base_url: Some(Pos::new(
+                            0,
+                            0,
+                            None,
+                            "https://calender.com/api/v1/".to_string(),
+                        )),
                         path: "/day".to_string(),
                         ..Default::default()
                     },
@@ -138,6 +147,7 @@ mod test {
                 http: Some(Pos::new(
                     0,
                     0,
+                    None,
                     Http { path: "/month".to_string(), ..Default::default() },
                 )),
                 ..Default::default()

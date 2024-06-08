@@ -107,7 +107,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
         self.add_path_variables(field);
         self.add_query_variables(field);
 
-        Pos::new(0, 0, self.http)
+        Pos::new(0, 0, None, self.http)
     }
 }
 

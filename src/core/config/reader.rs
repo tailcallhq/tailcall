@@ -200,6 +200,8 @@ impl ConfigReader {
             config_module = config_module.merge_right(new_config_module);
         }
 
+        println!("{:?}", config_module.clone());
+
         Ok(config_module)
     }
 
@@ -268,7 +270,7 @@ mod reader_tests {
 
         let mut cfg = Config::default();
         cfg.schema.query = Some("Test".to_string());
-        cfg = cfg.types([("Test", Pos::new(0, 0, Type::default()))].to_vec());
+        cfg = cfg.types([("Test", Pos::new(0, 0, None, Type::default()))].to_vec());
 
         let server = start_mock_server();
         let header_server = server.mock(|when, then| {

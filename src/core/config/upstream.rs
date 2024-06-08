@@ -268,6 +268,7 @@ mod tests {
             allowed_headers: Some(Pos::new(
                 0,
                 0,
+                None,
                 headers.iter().map(|s| s.to_string()).collect(),
             )),
             ..Default::default()
@@ -284,6 +285,7 @@ mod tests {
             Some(Pos::new(
                 0,
                 0,
+                None,
                 ["a", "b", "c", "d", "e", "f"]
                     .iter()
                     .map(|s| s.to_string())
@@ -303,6 +305,7 @@ mod tests {
             Some(Pos::new(
                 0,
                 0,
+                None,
                 ["a", "b", "c"].iter().map(|s| s.to_string()).collect()
             ))
         );
@@ -319,6 +322,7 @@ mod tests {
             Some(Pos::new(
                 0,
                 0,
+                None,
                 ["a", "b", "c"].iter().map(|s| s.to_string()).collect()
             ))
         );
