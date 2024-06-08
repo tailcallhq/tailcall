@@ -55,10 +55,6 @@ where
         None
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.map.is_empty()
-    }
-
     pub fn len(&self) -> usize {
         self.map.len()
     }

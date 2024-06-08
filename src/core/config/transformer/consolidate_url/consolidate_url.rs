@@ -1,10 +1,9 @@
 use std::collections::HashSet;
 
+use super::max_value_map::MaxValueMap;
 use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
-
-use super::max_value_map::MaxValueMap;
 
 struct UrlTypeMapping {
     url_to_frequency_map: MaxValueMap<String, u32>,
