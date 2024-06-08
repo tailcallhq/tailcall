@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use async_graphql_value::ConstValue;
 
@@ -20,7 +20,7 @@ pub fn update_enum_alias<'a>(
                 if !has_alias {
                     return Valid::succeed(b_field);
                 }
-                let mut map = BTreeMap::<String, ConstValue>::new();
+                let mut map = HashMap::<String, ConstValue>::new();
                 for v in enum_type.variants.iter() {
                     map.insert(v.name.clone(), ConstValue::String(v.name.clone()));
                     if let Some(alias) = &v.alias {

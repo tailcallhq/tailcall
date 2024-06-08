@@ -8,7 +8,7 @@ mod modify;
 mod resolver_context_like;
 
 use core::future::Future;
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::pin::Pin;
 
@@ -60,7 +60,7 @@ impl IR {
 pub struct Map {
     pub input: Box<IR>,
     // accept key return value instead of
-    pub map: BTreeMap<String, ConstValue>,
+    pub map: HashMap<String, ConstValue>,
 }
 
 impl Eval for Map {
