@@ -1,51 +1,55 @@
 use std::collections::{BTreeMap, HashSet};
 
 use inflector::Inflector;
+use regex::Regex;
 
 use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
 
-pub struct TypeNameGenerator;
+fn is_auto_generated_field_name(field_name: &str) -> bool {
+    lazy_static::lazy_static! {
+        static ref RE: Regex = Regex::new(r"^f\d+$|^fn$").unwrap();
+    }
+    RE.is_match(field_name)
+}
 
-impl TypeNameGenerator {
-    fn generate_candidate_names(&self, config: &Config) -> BTreeMap<String, BTreeMap<String, u32>> {
-        let mut type_to_candidate_field_mapping: BTreeMap<String, BTreeMap<String, u32>> =
-            Default::default();
+struct CandidateGeneration {
+    candidates: BTreeMap<String, BTreeMap<String, u32>>,
+}
 
-        let ingore_type_list = config.get_operation_type_names();
+impl CandidateGeneration {
+    fn new() -> Self {
+        Self { candidates: Default::default() }
+    }
 
-        for (type_name, type_info) in config.types.iter() {
-            if ingore_type_list.contains(type_name) {
-                // ignore operation type fields as it's fields are auto-generated and doesn't
-                // help in us in type name generation.
-                continue;
-            }
-
+    // step 1: generate the required candidates.
+    // i.e { Type : [{candidate_name : count}] }
+    fn generate_candidate_type_names(&mut self, config: &Config) {
+        for type_info in config.types.values() {
             for (field_name, field_info) in type_info.fields.iter() {
-                if config.is_scalar(&field_info.type_of) {
+                if config.is_scalar(&field_info.type_of) || is_auto_generated_field_name(field_name)
+                {
+                    // If field type is scalar or field name is auto-generated, ignore type name inference.
                     continue;
                 }
 
-                let inner_map = type_to_candidate_field_mapping
+                let inner_map = self
+                    .candidates
                     .entry(field_info.type_of.to_owned())
                     .or_default();
 
                 *inner_map.entry(field_name.to_owned()).or_insert(0) += 1;
             }
         }
-
-        type_to_candidate_field_mapping
     }
 
-    fn finalize_candidates(
-        &self,
-        candidate_mappings: BTreeMap<String, BTreeMap<String, u32>>,
-    ) -> BTreeMap<String, String> {
+    // step 2: converge on the candidate name. i.e { Type : Candidate_Name }
+    fn finalize_candidates(&self) -> BTreeMap<String, String> {
         let mut finalized_candidates = BTreeMap::new();
         let mut converged_candidate_set = HashSet::new();
 
-        for (type_name, candidate_list) in candidate_mappings {
+        for (type_name, candidate_list) in self.candidates.iter() {
             // Find the most frequent candidate that hasn't been converged yet.
             if let Some((candidate_name, _)) = candidate_list
                 .into_iter()
@@ -53,19 +57,24 @@ impl TypeNameGenerator {
                 .filter(|(candidate_name, _)| !converged_candidate_set.contains(candidate_name))
             {
                 let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
-                finalized_candidates.insert(type_name, singularized_candidate_name);
+                finalized_candidates.insert(type_name.to_owned(), singularized_candidate_name);
                 converged_candidate_set.insert(candidate_name);
             }
         }
 
         finalized_candidates
     }
+}
 
-    fn generate_type_name(
-        &self,
-        finalized_candidates: BTreeMap<String, String>,
-        mut config: Config,
-    ) -> Config {
+pub struct TypeNameGenerator;
+
+impl TypeNameGenerator {
+    /// Generates type names based on inferred candidates from the provided configuration.
+    fn generate_type_name(&self, mut config: Config) -> Config {
+        let mut candidate_gen = CandidateGeneration::new();
+        candidate_gen.generate_candidate_type_names(&config);
+        let finalized_candidates = candidate_gen.finalize_candidates();
+
         for (old_type_name, new_type_name) in finalized_candidates {
             if let Some(type_) = config.types.remove(old_type_name.as_str()) {
                 // Add newly generated type.
@@ -88,17 +97,8 @@ impl TypeNameGenerator {
 
 impl Transform for TypeNameGenerator {
     fn transform(&self, config: Config) -> Valid<Config, String> {
-        // step 1: generate the required candidate mappings. i.e { Type :
-        // [{candidate_name : count}] }
-        let candidate_mappings = self.generate_candidate_names(&config);
+        let config = self.generate_type_name(config);
 
-        // step 2: converge on the candidate name. i.e { Type : Candidate_Name }
-        let finalized_candidates = self.finalize_candidates(candidate_mappings);
-
-        // step 3: replace its every occurance.
-        let config = self.generate_type_name(finalized_candidates, config);
-
-        // step 4: return the config.
         Valid::succeed(config)
     }
 }
