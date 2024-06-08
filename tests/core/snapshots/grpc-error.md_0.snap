@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "GRPC Error\nCaused by:\n  • Status: 3\n  • Message: grpc message\n  • Description: Client specified an invalid argument",
+        "message": "GRPC Error: {code: 3, message: \"error message\", details: []}\nCaused by:\n  • code: 3, message: grpc message",
         "locations": [
           {
             "line": 1,

@@ -8,7 +8,7 @@ use crate::core::auth;
 
 #[derive(Debug, Error, Clone)]
 pub enum EvaluationError {
-    IOException(String),
+    IOError(String),
 
     GRPCError {
         grpc_code: i32,
@@ -19,7 +19,7 @@ pub enum EvaluationError {
 
     APIValidationError(Vec<String>),
 
-    ExprEvalError(String),
+    Other(String),
 
     DeserializeError(String),
 
@@ -36,28 +36,28 @@ impl From<EvaluationError> for crate::core::Error {
     fn from(value: EvaluationError) -> Self {
         use crate::core::Error;
         match value {
-            EvaluationError::IOException(message) => Error::new("IOException").description(message),
+            EvaluationError::IOError(message) => Error::new("IO Error").description(message),
             EvaluationError::GRPCError {
                 grpc_code,
                 grpc_description,
                 grpc_status_message,
                 grpc_status_details,
-            } => Error::new("GRPCError")
+            } => Error::new("GRPC Error")
                 .description(grpc_description)
                 .caused_by(vec![Error::new(
                     format!("code: {}, message: {}", grpc_code, grpc_status_message).as_str(),
                 )])
                 .description(grpc_status_details.to_string()),
-            EvaluationError::APIValidationError(errors) => Error::new("APIValidationError")
+            EvaluationError::APIValidationError(errors) => Error::new("API Validation Error")
                 .caused_by(errors.iter().map(|e| Error::new(e)).collect::<Vec<_>>()),
-            EvaluationError::ExprEvalError(message) => {
-                Error::new("ExprEvalError").description(message)
-            }
+            EvaluationError::Other(message) => Error::new("Evaluation Error").description(message),
             EvaluationError::DeserializeError(message) => {
-                Error::new("DeserializeError").description(message)
+                Error::new("Deserialization Error").description(message)
             }
 
-            EvaluationError::AuthError(message) => Error::new("AuthError").description(message),
+            EvaluationError::AuthError(message) => {
+                Error::new("Authentication Error").description(message)
+            }
         }
     }
 }
@@ -103,7 +103,7 @@ impl From<Arc<anyhow::Error>> for EvaluationError {
     fn from(error: Arc<anyhow::Error>) -> Self {
         match error.downcast_ref::<EvaluationError>() {
             Some(err) => err.clone(),
-            None => EvaluationError::IOException(error.to_string()),
+            None => EvaluationError::IOError(error.to_string()),
         }
     }
 }
@@ -115,7 +115,7 @@ impl From<anyhow::Error> for EvaluationError {
     fn from(value: anyhow::Error) -> Self {
         match value.downcast::<EvaluationError>() {
             Ok(err) => err,
-            Err(err) => EvaluationError::IOException(err.to_string()),
+            Err(err) => EvaluationError::IOError(err.to_string()),
         }
     }
 }
