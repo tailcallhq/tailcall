@@ -1,12 +1,10 @@
 mod ambiguous_type;
 mod consolidate_url;
-mod max_value_map;
 mod remove_unused;
 mod type_merger;
 
 pub use ambiguous_type::{AmbiguousType, Resolution};
 pub use consolidate_url::ConsolidateURL;
-pub use max_value_map::MaxValueMap;
 pub use remove_unused::RemoveUnused;
 pub use type_merger::TypeMerger;
 
