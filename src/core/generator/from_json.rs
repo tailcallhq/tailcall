@@ -43,7 +43,7 @@ pub fn from_json(
             .to_result()?;
     }
 
-    let config = ConsolidateURL::new(0.8).transform(config).to_result()?;
+    let config = ConsolidateURL::new(0.5).transform(config).to_result()?;
 
     Ok(config)
 }
