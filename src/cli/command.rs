@@ -45,7 +45,7 @@ pub enum Command {
 
         /// Prints the input config in the provided format.
         #[clap(short, long)]
-        format: Option<config::Source>,
+        format: Option<config::SourceType>,
     },
 
     /// Initialize a new project
@@ -67,7 +67,7 @@ pub enum Command {
 
         /// Format of the output file
         #[clap(short, long)]
-        output: Option<config::Source>,
+        output: Option<config::SourceType>,
 
         /// Root query name
         #[arg(default_value = "Query")]

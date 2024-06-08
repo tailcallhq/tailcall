@@ -14,7 +14,7 @@ use markdown::ParseOptions;
 use tailcall::cli::javascript;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::cache::InMemoryCache;
-use tailcall::core::config::{ConfigModule, Source};
+use tailcall::core::config::{ConfigModule, Source, SourceType};
 use tailcall::core::http::AppContext;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::worker::{Command, Event};
@@ -167,7 +167,7 @@ impl ExecutionSpec {
                                 )),
                             }?;
 
-                            let source = Source::from_str(&lang)?;
+                            let source = Source::new(path.to_str().unwrap().to_string(), SourceType::from_str(&lang)?);
 
                             match name {
                                 "config" => {
@@ -176,9 +176,9 @@ impl ExecutionSpec {
                                 }
                                 "mock" => {
                                     if mock.is_none() {
-                                        mock = match source {
-                                            Source::Json => Ok(serde_json::from_str(&content)?),
-                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                        mock = match source.input_type {
+                                            SourceType::Json => Ok(serde_json::from_str(&content)?),
+                                            SourceType::Yml => Ok(serde_yaml::from_str(&content)?),
                                             _ => Err(anyhow!("Unexpected language in mock block in {:?} (only JSON and YAML are supported)", path)),
                                         }?;
                                     } else {
@@ -187,9 +187,9 @@ impl ExecutionSpec {
                                 }
                                 "env" => {
                                     if env.is_none() {
-                                        env = match source {
-                                            Source::Json => Ok(serde_json::from_str(&content)?),
-                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                        env = match source.input_type {
+                                            SourceType::Json => Ok(serde_json::from_str(&content)?),
+                                            SourceType::Yml => Ok(serde_yaml::from_str(&content)?),
                                             _ => Err(anyhow!("Unexpected language in env block in {:?} (only JSON and YAML are supported)", path)),
                                         }?;
                                     } else {
@@ -198,9 +198,9 @@ impl ExecutionSpec {
                                 }
                                 "test" => {
                                     if test.is_none() {
-                                        test = match source {
-                                            Source::Json => Ok(serde_json::from_str(&content)?),
-                                            Source::Yml => Ok(serde_yaml::from_str(&content)?),
+                                        test = match source.input_type {
+                                            SourceType::Json => Ok(serde_json::from_str(&content)?),
+                                            SourceType::Yml => Ok(serde_yaml::from_str(&content)?),
                                             _ => Err(anyhow!("Unexpected language in test block in {:?} (only JSON and YAML are supported)", path)),
                                         }?;
                                     } else {

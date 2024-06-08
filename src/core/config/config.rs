@@ -11,7 +11,7 @@ use serde_json::Value;
 
 use super::position::Pos;
 use super::telemetry::Telemetry;
-use super::{KeyValue, Link, Server, Upstream};
+use super::{KeyValue, Link, Server, SourceType, Upstream};
 use crate::core::config::from_document::from_document;
 use crate::core::config::source::Source;
 use crate::core::http::Method;
@@ -685,10 +685,10 @@ impl Config {
     }
 
     pub fn from_source(source: Source, schema: &str) -> Result<Self> {
-        match source {
-            Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
-            Source::Json => Ok(Config::from_json(schema)?),
-            Source::Yml => Ok(Config::from_yaml(schema)?),
+        match source.input_type {
+            SourceType::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
+            SourceType::Json => Ok(Config::from_json(schema)?),
+            SourceType::Yml => Ok(Config::from_yaml(schema)?),
         }
     }
 
