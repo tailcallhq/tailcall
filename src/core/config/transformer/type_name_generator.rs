@@ -105,97 +105,37 @@ impl Transform for TypeNameGenerator {
 
 #[cfg(test)]
 mod test {
+    use std::fs;
+
     use anyhow::Ok;
+    use tailcall_fixtures::configs;
 
     use super::TypeNameGenerator;
     use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
     use crate::core::valid::Validator;
 
+    fn read_fixture(path: &str) -> String {
+        fs::read_to_string(path).unwrap()
+    }
+
     #[test]
-    fn test_type_name_generator_transform() -> anyhow::Result<()> {
-        let config = Config::from_sdl(
-            r#"schema @server @upstream {
-            query: Query
-          }
-          
-          type Query {
-            f1: [RootType1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
-          }
-          
-          type T1 {
-            lat: String
-            lng: String
-          }
-          
-          type T2 {
-            city: String
-            geo: T1
-            street: String
-            suite: String
-            zipcode: String
-          }
-          
-          type T3 {
-            bs: String
-            catchPhrase: String
-            name: String
-          }
-          
-          type RootType1 {
-            address: T2
-            company: T3
-            email: String
-            id: Int
-            name: String
-            phone: String
-            username: String
-            website: String
-          }
-          "#,
-        )
-        .to_result()?;
+    fn test_type_name_generator_transform() {
+        let config = Config::from_sdl(read_fixture(configs::AUTO_GENERATE_CONFIG).as_str())
+            .to_result()
+            .unwrap();
 
-        let transformed_config = TypeNameGenerator.transform(config).to_result()?;
+        let transformed_config = TypeNameGenerator.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
-
-        Ok(())
     }
 
     #[test]
     fn test_type_name_generator_with_cyclic_types() -> anyhow::Result<()> {
-        let config = Config::from_sdl(
-            r#"schema @server @upstream {
-            query: Query
-          }
-          
-          type Query {
-            f1: [RootType1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
-          }
-          
-          type RootType1 {
-            id: ID!
-            name: String!
-            posts: [T32]!
-          }
+        let config = Config::from_sdl(read_fixture(configs::CYCLIC_CONFIG).as_str())
+            .to_result()
+            .unwrap();
 
-          type T32 {
-            id: ID!
-            title: String!
-            content: String!
-            author: RootType1!
-            cycle: T33
-          }
-
-          type T33 {
-            id: ID!
-            cycle: T33
-          }
-          "#,
-        )
-        .to_result()?;
-
-        let transformed_config = TypeNameGenerator.transform(config).to_result()?;
+        let transformed_config = TypeNameGenerator.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
