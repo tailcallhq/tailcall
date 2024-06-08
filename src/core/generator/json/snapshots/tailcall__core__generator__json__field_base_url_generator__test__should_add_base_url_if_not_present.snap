@@ -1,0 +1,9 @@
+---
+source: src/core/generator/json/field_base_url_generator.rs
+expression: config.to_sdl()
+---
+type Query {
+  f1: Int @http(baseURL: "https://calender.com/api/v1/", path: "/day")
+  f2: String @http(baseURL: "http://localhost:8080", path: "/month")
+  f3: String
+}
