@@ -4,8 +4,7 @@ use std::sync::Arc;
 use async_graphql::{ErrorExtensions, Value as ConstValue};
 use thiserror::Error;
 
-use crate::cli::CLIError;
-use crate::core::auth;
+use crate::core::{auth, CLIError};
 
 #[derive(Debug, Error, Clone)]
 pub enum EvaluationError {

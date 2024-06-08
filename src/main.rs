@@ -4,8 +4,8 @@
 use std::cell::Cell;
 
 use mimalloc::MiMalloc;
-use tailcall::cli::CLIError;
 use tailcall::core::tracing::default_tracing_tailcall;
+use tailcall::core::CLIError;
 use tracing::subscriber::DefaultGuard;
 
 #[global_allocator]
