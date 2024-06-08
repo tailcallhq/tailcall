@@ -31,7 +31,7 @@ impl UrlTypeMapping {
     fn find_common_url(&self, threshold: f32) -> Option<(String, HashSet<String>)> {
         let count_of_unique_base_urls = self.url_to_type_map.len();
         for (base_url, type_set) in &self.url_to_type_map {
-            if (type_set.len() as f32) >= (count_of_unique_base_urls as f32) * threshold {
+            if type_set.len() >= ((count_of_unique_base_urls as f32) * threshold) as usize {
                 return Some((base_url.to_owned(), type_set.to_owned()));
             }
         }
