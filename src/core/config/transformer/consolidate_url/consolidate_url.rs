@@ -100,59 +100,42 @@ impl Transform for ConsolidateURL {
 
 #[cfg(test)]
 mod test {
-    use anyhow::Ok;
+    use std::fs;
+
+    use tailcall_fixtures::configs;
 
     use super::*;
     use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
     use crate::core::valid::Validator;
 
-    #[test]
-    fn should_generate_upstream_base_url_when_all_http_directive_has_same_base_url(
-    ) -> anyhow::Result<()> {
-        let config = Config::from_sdl(
-            r#"
-            schema @server @upstream {
-            query: Query
-          }
-          
-          type Query {
-            f1: [Int] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
-            f2: [Int] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/post")
-            f3: [Int] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/todos")
-          }
-          
-          "#,
-        )
-        .to_result()?;
-
-        let transformed_config = ConsolidateURL::new(0.5).transform(config).to_result()?;
-        insta::assert_snapshot!(transformed_config.to_sdl());
-
-        Ok(())
+    fn read_fixture(path: &str) -> String {
+        fs::read_to_string(path).unwrap()
     }
 
     #[test]
-    fn should_not_generate_upstream_base_url_when_all_http_directive_has_same_base_url(
-    ) -> anyhow::Result<()> {
-        let config = Config::from_sdl(
-            r#"schema @server @upstream {
-            query: Query
-          }
-          
-          type Query {
-            f1: [Int] @http(baseURL: "https://jsonplaceholder-1.typicode.com", path: "/users")
-            f2: [Int] @http(baseURL: "https://jsonplaceholder-2.typicode.com", path: "/post")
-            f3: [Int] @http(baseURL: "https://jsonplaceholder-3.typicode.com", path: "/todos")
-          }
- 
-          "#,
-        )
-        .to_result()?;
+    fn should_generate_correct_upstream_when_multiple_base_urls_present() {
+        let config = Config::from_sdl(read_fixture(configs::MULTI_URL_CONFIG).as_str())
+            .to_result()
+            .unwrap();
 
-        let transformed_config = ConsolidateURL::new(0.5).transform(config).to_result()?;
+        let transformed_config = ConsolidateURL::new(0.5)
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
+    }
 
-        Ok(())
+    #[test]
+    fn should_not_generate_upstream_when_threshold_is_not_matched() {
+        let config = Config::from_sdl(read_fixture(configs::MULTI_URL_CONFIG).as_str())
+            .to_result()
+            .unwrap();
+
+        let transformed_config = ConsolidateURL::new(0.9)
+            .transform(config)
+            .to_result()
+            .unwrap();
+        insta::assert_snapshot!(transformed_config.to_sdl());
     }
 }
