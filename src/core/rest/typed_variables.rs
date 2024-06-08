@@ -1,6 +1,8 @@
 use async_graphql::parser::types::{BaseType, Type};
 use async_graphql_value::ConstValue;
 
+use super::{Error, Result};
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum UrlParamType {
     String,
@@ -34,18 +36,25 @@ impl UrlParamType {
 }
 
 impl TryFrom<&Type> for UrlParamType {
-    type Error = anyhow::Error;
-    fn try_from(value: &Type) -> anyhow::Result<Self> {
+    type Error = Error;
+
+    fn try_from(value: &Type) -> Result<Self> {
         match &value.base {
             BaseType::Named(name) => match name.as_str() {
                 "String" => Ok(Self::String),
                 "Int" => Ok(Self::Number(N::Int)),
                 "Boolean" => Ok(Self::Boolean),
                 "Float" => Ok(Self::Number(N::Float)),
-                _ => Err(anyhow::anyhow!("unsupported type: {}", name)),
+                _ => Err(Error::TypeMismatch {
+                    expected: "String, Int, Boolean, Float".to_string(),
+                    actual: name.clone().to_string(),
+                }),
             },
             // TODO: support for list types
-            _ => Err(anyhow::anyhow!("unsupported type: {:?}", value)),
+            _ => Err(Error::TypeMismatch {
+                expected: "String, Int, Boolean, Float".to_string(),
+                actual: format!("{:?}", value.base),
+            }),
         }
     }
 }
@@ -62,7 +71,7 @@ impl TypedVariable {
         Self { type_of: tpe, name: name.to_string(), nullable: false }
     }
 
-    pub fn try_from(type_of: &Type, name: &str) -> anyhow::Result<Self> {
+    pub fn try_from(type_of: &Type, name: &str) -> Result<Self> {
         let tpe = UrlParamType::try_from(type_of)?;
         Ok(Self::new(tpe, name))
     }

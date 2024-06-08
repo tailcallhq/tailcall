@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use anyhow::bail;
 use async_graphql::parser::types::Directive;
 use async_graphql_value::Value;
 use derive_setters::Setters;
@@ -8,6 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::http::Method;
 use crate::core::is_default;
+
+use super::{Error, Result};
 
 /// A structure that represents the REST directive.
 /// It allows easy parsing of the GraphQL query and extracting the REST
@@ -24,9 +25,9 @@ pub(crate) struct Rest {
 }
 
 impl TryFrom<&Directive> for Rest {
-    type Error = anyhow::Error;
+    type Error = Error;
 
-    fn try_from(directive: &Directive) -> anyhow::Result<Self> {
+    fn try_from(directive: &Directive) -> Result<Self> {
         let mut rest = Rest::default();
 
         let mut has_path = false;
@@ -69,18 +70,18 @@ impl TryFrom<&Directive> for Rest {
 
         match (has_method, has_path) {
             (true, true) => Ok(rest),
-            (true, false) => {
-                bail!("Path not provided in the directive: {:?}", directive);
-            }
-            (false, true) => {
-                bail!("Method not provided in the directive: {:?}", directive);
-            }
-            (false, false) => {
-                bail!(
-                    "Method and Path not provided in the directive: {:?}",
-                    directive
-                );
-            }
+            (true, false) => Err(Error::Missing {
+                msg: "Path not provided in the directive".to_string(),
+                directive: directive.clone(),
+            }),
+            (false, true) => Err(Error::Missing {
+                msg: "Method not provided in the directive".to_string(),
+                directive: directive.clone(),
+            }),
+            (false, false) => Err(Error::Missing {
+                msg: "Method and Path not provided in the directive".to_string(),
+                directive: directive.clone(),
+            }),
         }
     }
 }
