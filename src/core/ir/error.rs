@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_graphql::{ErrorExtensions, Value as ConstValue};
 use thiserror::Error;
 
-use crate::core::{auth, Error};
+use crate::core::auth;
 
 #[derive(Debug, Error, Clone)]
 pub enum EvaluationError {
@@ -28,51 +28,36 @@ pub enum EvaluationError {
 
 impl Display for EvaluationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            EvaluationError::IOException(msg) => {
-                write!(
-                    f,
-                    "{}",
-                    Error::new("IO Exception").caused_by(vec![Error::new(msg)])
-                )
-            }
-            EvaluationError::APIValidationError(errors) => {
-                let cli_errors: Vec<Error> = errors.iter().map(|e| Error::new(e)).collect();
-                write!(
-                    f,
-                    "{}",
-                    Error::new("API Validation Error").caused_by(cli_errors)
-                )
-            }
-            EvaluationError::ExprEvalError(msg) => write!(
-                f,
-                "{}",
-                Error::new("Expr Eval Error").caused_by(vec![Error::new(msg)])
-            ),
-            EvaluationError::DeserializeError(msg) => write!(
-                f,
-                "{}",
-                Error::new("Deserialize Error").caused_by(vec![Error::new(msg)])
-            ),
-            EvaluationError::AuthError(msg) => write!(
-                f,
-                "{}",
-                Error::new("Authentication Failure").caused_by(vec![Error::new(msg)])
-            ),
+        crate::core::Error::from(self.to_owned()).fmt(f)
+    }
+}
+
+impl From<EvaluationError> for crate::core::Error {
+    fn from(value: EvaluationError) -> Self {
+        use crate::core::Error;
+        match value {
+            EvaluationError::IOException(message) => Error::new("IOException").description(message),
             EvaluationError::GRPCError {
                 grpc_code,
                 grpc_description,
                 grpc_status_message,
-                grpc_status_details: _,
-            } => write!(
-                f,
-                "{}",
-                Error::new("GRPC Error").caused_by(vec![
-                    Error::new(format!("Status: {}", grpc_code).as_str()),
-                    Error::new(format!("Message: {}", grpc_status_message).as_str()),
-                    Error::new(format!("Description: {}", grpc_description).as_str())
-                ])
-            ),
+                grpc_status_details,
+            } => Error::new("GRPCError")
+                .description(grpc_description)
+                .caused_by(vec![Error::new(
+                    format!("code: {}, message: {}", grpc_code, grpc_status_message).as_str(),
+                )])
+                .description(grpc_status_details.to_string()),
+            EvaluationError::APIValidationError(errors) => Error::new("APIValidationError")
+                .caused_by(errors.iter().map(|e| Error::new(e)).collect::<Vec<_>>()),
+            EvaluationError::ExprEvalError(message) => {
+                Error::new("ExprEvalError").description(message)
+            }
+            EvaluationError::DeserializeError(message) => {
+                Error::new("DeserializeError").description(message)
+            }
+
+            EvaluationError::AuthError(message) => Error::new("AuthError").description(message),
         }
     }
 }
