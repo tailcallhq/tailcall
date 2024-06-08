@@ -94,7 +94,7 @@ impl Response<Bytes> {
         let grpc_status = match Status::from_header_map(&self.headers) {
             Some(status) => status,
             None => {
-                return Error::IOException("Error while parsing upstream headers".to_owned()).into()
+                return Error::IOError("Error while parsing upstream headers".to_owned()).into()
             }
         };
 

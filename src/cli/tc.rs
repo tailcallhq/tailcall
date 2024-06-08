@@ -11,15 +11,15 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
+use crate::cli;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
-use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
 use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
-use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
+use crate::core::{print_schema, Error};
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
@@ -60,7 +60,7 @@ pub async fn run() -> Result<()> {
             if let Some(format) = format {
                 Fmt::display(format.encode(&config_module)?);
             }
-            let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
+            let blueprint = Blueprint::try_from(&config_module).map_err(Error::from);
 
             match blueprint {
                 Ok(blueprint) => {
