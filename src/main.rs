@@ -5,7 +5,7 @@ use std::cell::Cell;
 
 use mimalloc::MiMalloc;
 use tailcall::core::tracing::default_tracing_tailcall;
-use tailcall::core::CLIError;
+use tailcall::core::Error;
 use tracing::subscriber::DefaultGuard;
 
 #[global_allocator]
@@ -47,7 +47,7 @@ fn main() -> anyhow::Result<()> {
         Ok(_) => {}
         Err(error) => {
             // Ensure all errors are converted to CLIErrors before being printed.
-            let cli_error: CLIError = error.into();
+            let cli_error: Error = error.into();
             tracing::error!("{}", cli_error.color(true));
             std::process::exit(exitcode::CONFIG);
         }

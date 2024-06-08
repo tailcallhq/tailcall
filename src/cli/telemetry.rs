@@ -27,7 +27,7 @@ use super::metrics::init_metrics;
 use crate::core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::core::runtime::TargetRuntime;
 use crate::core::tracing::{default_tracing_tailcall, get_log_level, tailcall_filter_target};
-use crate::core::CLIError;
+use crate::core::Error;
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     Resource::default().merge(&Resource::new(vec![
@@ -204,8 +204,8 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                     | global::Error::Log(LogError::Other(_)),
             ) {
                 tracing::subscriber::with_default(default_tracing_tailcall(), || {
-                    let cli = crate::core::CLIError::new("Open Telemetry Error")
-                        .caused_by(vec![CLIError::new(error.to_string().as_str())])
+                    let cli = crate::core::Error::new("Open Telemetry Error")
+                        .caused_by(vec![Error::new(error.to_string().as_str())])
                         .trace(vec!["schema".to_string(), "@telemetry".to_string()]);
                     tracing::error!("{}", cli.color(true));
                 });

@@ -45,7 +45,7 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
-pub use error::CLIError;
+pub use error::Error;
 use http::Response;
 use ir::IoId;
 pub use tailcall_macros as macros;

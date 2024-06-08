@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_graphql::{ErrorExtensions, Value as ConstValue};
 use thiserror::Error;
 
-use crate::core::{auth, CLIError};
+use crate::core::{auth, Error};
 
 #[derive(Debug, Error, Clone)]
 pub enum EvaluationError {
@@ -33,31 +33,31 @@ impl Display for EvaluationError {
                 write!(
                     f,
                     "{}",
-                    CLIError::new("IO Exception").caused_by(vec![CLIError::new(msg)])
+                    Error::new("IO Exception").caused_by(vec![Error::new(msg)])
                 )
             }
             EvaluationError::APIValidationError(errors) => {
-                let cli_errors: Vec<CLIError> = errors.iter().map(|e| CLIError::new(e)).collect();
+                let cli_errors: Vec<Error> = errors.iter().map(|e| Error::new(e)).collect();
                 write!(
                     f,
                     "{}",
-                    CLIError::new("API Validation Error").caused_by(cli_errors)
+                    Error::new("API Validation Error").caused_by(cli_errors)
                 )
             }
             EvaluationError::ExprEvalError(msg) => write!(
                 f,
                 "{}",
-                CLIError::new("Expr Eval Error").caused_by(vec![CLIError::new(msg)])
+                Error::new("Expr Eval Error").caused_by(vec![Error::new(msg)])
             ),
             EvaluationError::DeserializeError(msg) => write!(
                 f,
                 "{}",
-                CLIError::new("Deserialize Error").caused_by(vec![CLIError::new(msg)])
+                Error::new("Deserialize Error").caused_by(vec![Error::new(msg)])
             ),
             EvaluationError::AuthError(msg) => write!(
                 f,
                 "{}",
-                CLIError::new("Authentication Failure").caused_by(vec![CLIError::new(msg)])
+                Error::new("Authentication Failure").caused_by(vec![Error::new(msg)])
             ),
             EvaluationError::GRPCError {
                 grpc_code,
@@ -67,10 +67,10 @@ impl Display for EvaluationError {
             } => write!(
                 f,
                 "{}",
-                CLIError::new("GRPC Error").caused_by(vec![
-                    CLIError::new(format!("Status: {}", grpc_code).as_str()),
-                    CLIError::new(format!("Message: {}", grpc_status_message).as_str()),
-                    CLIError::new(format!("Description: {}", grpc_description).as_str())
+                Error::new("GRPC Error").caused_by(vec![
+                    Error::new(format!("Status: {}", grpc_code).as_str()),
+                    Error::new(format!("Message: {}", grpc_status_message).as_str()),
+                    Error::new(format!("Description: {}", grpc_description).as_str())
                 ])
             ),
         }

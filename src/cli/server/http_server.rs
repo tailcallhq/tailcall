@@ -10,7 +10,7 @@ use super::server_config::ServerConfig;
 use crate::cli::telemetry::init_opentelemetry;
 use crate::core::blueprint::{Blueprint, Http};
 use crate::core::config::ConfigModule;
-use crate::core::CLIError;
+use crate::core::Error;
 
 pub struct Server {
     config_module: ConfigModule,
@@ -32,7 +32,7 @@ impl Server {
 
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
-        let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
+        let blueprint = Blueprint::try_from(&self.config_module).map_err(Error::from)?;
         let server_config = Arc::new(
             ServerConfig::new(
                 blueprint.clone(),
