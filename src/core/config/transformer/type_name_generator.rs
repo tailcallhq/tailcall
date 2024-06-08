@@ -14,23 +14,27 @@ fn is_auto_generated_field_name(field_name: &str) -> bool {
     RE.is_match(field_name)
 }
 
-struct CandidateGeneration {
+struct CandidateGeneration<'a> {
+    /// maintains the generated candidates in the form of {TypeName: [{candidate_name: frequency}]}
     candidates: BTreeMap<String, BTreeMap<String, u32>>,
+    config: &'a Config,
 }
 
-impl CandidateGeneration {
-    fn new() -> Self {
-        Self { candidates: Default::default() }
+impl<'a> CandidateGeneration<'a> {
+    fn new(config: &'a Config) -> Self {
+        Self { candidates: Default::default(), config }
     }
 
-    // step 1: generate the required candidates.
-    // i.e { Type : [{candidate_name : count}] }
-    fn generate_candidate_type_names(&mut self, config: &Config) {
-        for type_info in config.types.values() {
+    /// Generates candidate type names based on the provided configuration.
+    /// This method iterates over the configuration and collects candidate type names for each type.
+    fn generate(mut self) -> Self {
+        for type_info in self.config.types.values() {
             for (field_name, field_info) in type_info.fields.iter() {
-                if config.is_scalar(&field_info.type_of) || is_auto_generated_field_name(field_name)
+                if self.config.is_scalar(&field_info.type_of)
+                    || is_auto_generated_field_name(field_name)
                 {
-                    // If field type is scalar or field name is auto-generated, ignore type name inference.
+                    // If field type is scalar or field name is auto-generated, ignore type name
+                    // inference.
                     continue;
                 }
 
@@ -42,19 +46,24 @@ impl CandidateGeneration {
                 *inner_map.entry(field_name.to_owned()).or_insert(0) += 1;
             }
         }
+        self
     }
 
-    // step 2: converge on the candidate name. i.e { Type : Candidate_Name }
-    fn finalize_candidates(&self) -> BTreeMap<String, String> {
+    /// Converges on the most frequent candidate name for each type.
+    /// This method selects the most frequent candidate name for each type, ensuring uniqueness.
+    fn converge(self) -> BTreeMap<String, String> {
         let mut finalized_candidates = BTreeMap::new();
         let mut converged_candidate_set = HashSet::new();
 
         for (type_name, candidate_list) in self.candidates.iter() {
-            // Find the most frequent candidate that hasn't been converged yet.
+            // Find the most frequent candidate that hasn't been converged yet and it's not already present in types.
             if let Some((candidate_name, _)) = candidate_list
-                .into_iter()
+                .iter()
                 .max_by_key(|&(_, count)| count)
-                .filter(|(candidate_name, _)| !converged_candidate_set.contains(candidate_name))
+                .filter(|(candidate_name, _)| {
+                    !converged_candidate_set.contains(candidate_name)
+                        && !self.config.types.contains_key(*candidate_name)
+                })
             {
                 let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
                 finalized_candidates.insert(type_name.to_owned(), singularized_candidate_name);
@@ -69,11 +78,10 @@ impl CandidateGeneration {
 pub struct TypeNameGenerator;
 
 impl TypeNameGenerator {
-    /// Generates type names based on inferred candidates from the provided configuration.
+    /// Generates type names based on inferred candidates from the provided
+    /// configuration.
     fn generate_type_name(&self, mut config: Config) -> Config {
-        let mut candidate_gen = CandidateGeneration::new();
-        candidate_gen.generate_candidate_type_names(&config);
-        let finalized_candidates = candidate_gen.finalize_candidates();
+        let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
 
         for (old_type_name, new_type_name) in finalized_candidates {
             if let Some(type_) = config.types.remove(old_type_name.as_str()) {
