@@ -8,9 +8,9 @@ mod modify;
 mod resolver_context_like;
 
 use core::future::Future;
+use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::pin::Pin;
-use std::collections::BTreeMap;
 
 use async_graphql_value::ConstValue;
 pub use cache::*;
@@ -65,21 +65,27 @@ pub struct Map {
 
 impl Eval for Map {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-            &'a self,
-            ctx: EvaluationContext<'a, Ctx>,
-        ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value, EvaluationError>> + 'a + Send>>
-        where
-            async_graphql::Value: 'a {
+        &'a self,
+        ctx: EvaluationContext<'a, Ctx>,
+    ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value, EvaluationError>> + 'a + Send>>
+    where
+        async_graphql::Value: 'a,
+    {
         Box::pin(async move {
             let value = self.input.eval(ctx).await?;
             if let ConstValue::String(key) = value {
                 if let Some(value) = self.map.get(&key) {
                     Ok(value.to_owned())
                 } else {
-                    Err(EvaluationError::ExprEvalError(format!("Can't find mapped key: {}.", key)))
+                    Err(EvaluationError::ExprEvalError(format!(
+                        "Can't find mapped key: {}.",
+                        key
+                    )))
                 }
             } else {
-                Err(EvaluationError::ExprEvalError("Mapped key must be string value.".to_owned()))
+                Err(EvaluationError::ExprEvalError(
+                    "Mapped key must be string value.".to_owned(),
+                ))
             }
         })
     }

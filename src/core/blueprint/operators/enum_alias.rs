@@ -5,7 +5,7 @@ use async_graphql_value::ConstValue;
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::Field;
-use crate::core::ir::{IR, Map};
+use crate::core::ir::{Map, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
 
@@ -29,9 +29,9 @@ pub fn update_enum_alias<'a>(
                         }
                     }
                 }
-                b_field.resolver = b_field.resolver.map(|r| {
-                    IR::Map(Map {input: Box::new(r), map})
-                });
+                b_field.resolver = b_field
+                    .resolver
+                    .map(|r| IR::Map(Map { input: Box::new(r), map }));
             }
             Valid::succeed(b_field)
         },

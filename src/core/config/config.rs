@@ -402,14 +402,36 @@ pub struct Enum {
 }
 
 /// Definition of GraphQL value
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
 pub struct Variant {
     pub name: String,
     // directive: alias
     pub alias: Option<Alias>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
 pub struct Alias {
     pub options: BTreeSet<String>,
 }

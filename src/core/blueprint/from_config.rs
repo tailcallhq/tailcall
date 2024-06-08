@@ -94,7 +94,13 @@ where
         }
         JsonSchema::Obj(schema_fields)
     } else if let Some(type_enum_) = type_enum_ {
-        JsonSchema::Enum(type_enum_.variants.iter().map(|variant| variant.name.clone()).collect::<BTreeSet<String>>())
+        JsonSchema::Enum(
+            type_enum_
+                .variants
+                .iter()
+                .map(|variant| variant.name.clone())
+                .collect::<BTreeSet<String>>(),
+        )
     } else {
         match type_of {
             "String" => JsonSchema::Str,

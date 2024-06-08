@@ -23,5 +23,5 @@ type Query {
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: 'query { foo }'
+    query: "query { foo }"
 ```

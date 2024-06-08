@@ -243,7 +243,10 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                         pos(EnumValueDefinition {
                             description: None,
                             value: pos(Name::new(&variant.name)),
-                            directives: variant.alias.clone().map_or(vec![], |v| vec![pos(v.to_directive())]),
+                            directives: variant
+                                .alias
+                                .clone()
+                                .map_or(vec![], |v| vec![pos(v.to_directive())]),
                         })
                     })
                     .collect(),

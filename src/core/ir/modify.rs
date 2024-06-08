@@ -38,7 +38,9 @@ impl IR {
                     }
                     IR::Path(expr, path) => IR::Path(expr.modify_box(modifier), path),
                     IR::Protect(expr) => IR::Protect(expr.modify_box(modifier)),
-                    IR::Map(Map {input, map}) => IR::Map(Map {input: input.modify_box(modifier), map}),
+                    IR::Map(Map { input, map }) => {
+                        IR::Map(Map { input: input.modify_box(modifier), map })
+                    }
                 }
             }
         }

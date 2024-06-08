@@ -93,6 +93,21 @@
       },
       "additionalProperties": false
     },
+    "Alias": {
+      "type": "object",
+      "required": [
+        "options"
+      ],
+      "properties": {
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
     "Apollo": {
       "type": "object",
       "required": [
@@ -361,7 +376,7 @@
         "variants": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/Variant"
           },
           "uniqueItems": true
         }
@@ -1549,6 +1564,28 @@
       ],
       "properties": {
         "Url": {
+          "type": "string"
+        }
+      }
+    },
+    "Variant": {
+      "description": "Definition of GraphQL value",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Alias"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
           "type": "string"
         }
       }

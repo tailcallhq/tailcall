@@ -103,7 +103,10 @@ impl Context {
 
             let doc = self.comments_builder.get_comments(&enum_type_path);
 
-            let variants_with_comments = variants_with_comments.into_iter().map(|v| Variant {name: v, alias: None}).collect();
+            let variants_with_comments = variants_with_comments
+                .into_iter()
+                .map(|v| Variant { name: v, alias: None })
+                .collect();
 
             self.config
                 .enums
