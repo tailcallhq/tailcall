@@ -6,7 +6,9 @@ use crate::core::config::Config;
 use crate::core::valid::Valid;
 
 struct UrlTypeMapping {
+    /// maintains the url to it's frequency mapping.
     url_to_frequency_map: MaxValueMap<String, u32>,
+    /// maintains the types that contains the base_url in it's fields.
     visited_type_set: HashSet<String>,
 }
 
@@ -72,8 +74,8 @@ impl ConsolidateURL {
                 if let Some(type_) = config.types.get_mut(&type_name) {
                     for field_ in type_.fields.values_mut() {
                         if let Some(htto_directive) = &mut field_.http {
-                            if let Some(base_url) = htto_directive.base_url.to_owned() {
-                                if base_url == common_url {
+                            if let Some(base_url) = &htto_directive.base_url {
+                                if *base_url == common_url {
                                     htto_directive.base_url = None;
                                 }
                             }
