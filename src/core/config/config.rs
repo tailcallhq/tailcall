@@ -436,7 +436,7 @@ pub struct Http {
 
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+    pub group_by: Vec<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
@@ -481,7 +481,7 @@ pub struct Call {
     /// Steps are composed together to form a call.
     /// If you have multiple steps, the output of the previous step is passed as
     /// input to the next step.
-    pub steps: Pos<Vec<Step>>,
+    pub steps: Vec<Pos<Step>>,
 }
 
 ///
@@ -526,7 +526,7 @@ pub struct Grpc {
     pub body: Pos<Option<String>>,
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+    pub group_by: Vec<Pos<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@grpc` operator. It is used by specifying a
@@ -840,7 +840,10 @@ mod tests {
                     0,
                     0,
                     None,
-                    Http { group_by: vec!["id".to_string()], ..Default::default() },
+                    Http {
+                        group_by: vec![Pos::new(0, 0, None, "id".to_string())],
+                        ..Default::default()
+                    },
                 )),
                 ..Default::default()
             },

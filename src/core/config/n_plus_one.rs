@@ -167,7 +167,10 @@ mod tests {
                                     0,
                                     0,
                                     None,
-                                    Http { group_by: vec!["id".into()], ..Default::default() },
+                                    Http {
+                                        group_by: vec![Pos::new(0, 0, None, "id".into())],
+                                        ..Default::default()
+                                    },
                                 )),
                         ),
                     )]),

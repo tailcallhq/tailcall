@@ -141,7 +141,7 @@ fn compile_call(
     })
 }
 
-fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
+fn get_type_and_field(call: &Pos<config::Step>) -> Option<(String, String)> {
     if let Some(query) = &call.query {
         Some(("Query".to_string(), query.clone()))
     } else {
@@ -152,7 +152,7 @@ fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
 }
 
 fn get_field_and_field_name<'a>(
-    call: &'a config::Step,
+    call: &'a Pos<config::Step>,
     config_module: &'a ConfigModule,
 ) -> Valid<(&'a Pos<Field>, String, &'a Pos<config::Type>), String> {
     Valid::from_option(

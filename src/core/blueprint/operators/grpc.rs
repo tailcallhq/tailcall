@@ -89,17 +89,21 @@ fn validate_schema(
 fn validate_group_by(
     field_schema: &FieldSchema,
     operation: &ProtobufOperation,
-    group_by: Vec<String>,
+    group_by: Vec<Pos<String>>,
 ) -> Valid<(), String> {
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
     let mut field_descriptor: Result<FieldDescriptor, ValidationError<String>> = None.ok_or(
-        ValidationError::new(format!("field {} not found", group_by[0])),
+        ValidationError::new(format!("field {} not found", group_by[0].inner)),
     );
     for item in group_by.iter().take(&group_by.len() - 1) {
-        field_descriptor = output_type
-            .get_field_by_json_name(item.as_str())
-            .ok_or(ValidationError::new(format!("field {} not found", item)));
+        field_descriptor =
+            output_type
+                .get_field_by_json_name(item.as_str())
+                .ok_or(ValidationError::new(format!(
+                    "field {} not found",
+                    item.inner
+                )));
     }
     let output_type = field_descriptor.and_then(|f| JsonSchema::try_from(&f));
 
@@ -202,7 +206,13 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             if !grpc.group_by.is_empty() {
                 IR::IO(IO::Grpc {
                     req_template,
-                    group_by: Some(GroupBy::new(grpc.group_by.clone())),
+                    group_by: Some(GroupBy::new(
+                        grpc.group_by
+                            .clone()
+                            .into_iter()
+                            .map(|group| group.inner)
+                            .collect(),
+                    )),
                     dl_id: None,
                 })
             } else {
