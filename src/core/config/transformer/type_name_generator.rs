@@ -80,7 +80,7 @@ pub struct TypeNameGenerator;
 impl TypeNameGenerator {
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
-    fn generate_type_name(&self, mut config: Config) -> Config {
+    fn generate_type_names(&self, mut config: Config) -> Config {
         let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
 
         for (old_type_name, new_type_name) in finalized_candidates {
@@ -105,7 +105,7 @@ impl TypeNameGenerator {
 
 impl Transform for TypeNameGenerator {
     fn transform(&self, config: Config) -> Valid<Config, String> {
-        let config = self.generate_type_name(config);
+        let config = self.generate_type_names(config);
 
         Valid::succeed(config)
     }
