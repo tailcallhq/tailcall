@@ -3,19 +3,19 @@ use std::hash::{Hash, Hasher};
 use std::sync::Mutex;
 
 use serde_json_borrow::OwnedValue;
-use tailcall_hasher::TailcallHasher;
 
+use crate::core::ir::{
+    CacheKey, Eval, EvaluationContext, EvaluationError, IoId, IR, ResolverContextLike,
+};
 use crate::core::ir::jit::model::{Children, ExecutionPlan, Field, FieldId};
 use crate::core::ir::jit::store::{Data, Store};
-use crate::core::ir::{
-    CacheKey, Eval, EvaluationContext, EvaluationError, IoId, ResolverContextLike, IR,
-};
 
 pub async fn execute_ir<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     plan: &'a ExecutionPlan,
     store: &'a Mutex<Store<IoId, OwnedValue>>,
     mut ctx: EvaluationContext<'a, Ctx>,
 ) -> Result<(), EvaluationError> {
+
     let mut ids = HashMap::new();
     let mut is_first = true;
     let mut store_lock = store.lock().unwrap();
@@ -63,22 +63,10 @@ async fn execute_field<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     ctx: &mut EvaluationContext<'a, Ctx>,
     ir: &'a IR,
 ) -> Result<(OwnedValue, IoId), EvaluationError> {
-    let val = match ir {
-        IR::IO(io) => {
-            // TODO: We can change signature of eval to take ref
-            let value = io.eval(ctx.clone()).await?;
-            let io_id = io.cache_key(ctx).ok_or(EvaluationError::CacheKeyError(
-                "Unable to generate cache key".to_string(),
-            ))?;
-            Some((value, io_id))
-        }
-        ir => {
-            let value = ir.eval(ctx.clone()).await?;
-            let mut hasher = TailcallHasher::default();
-            value.to_string().hash(&mut hasher);
-            Some((value, IoId::new(hasher.finish())))
-        }
-    };
+    let val = ir.eval(ctx.clone()).await.map_err(|e| {
+        EvaluationError::ExprEvalError(format!("Unable to evaluate: {}", e))
+    })?;
+
     if let Some((value, io_id)) = val {
         *ctx = ctx.with_value(value.clone());
         let str_value = value
@@ -105,13 +93,13 @@ mod tests {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::Config;
     use crate::core::http::RequestContext;
+    use crate::core::ir::EvaluationContext;
     use crate::core::ir::jit::builder::ExecutionPlanBuilder;
     use crate::core::ir::jit::execute::execute_ir;
     use crate::core::ir::jit::store::Store;
     use crate::core::ir::jit::synth::Synth;
-    use crate::core::ir::EvaluationContext;
-    use crate::core::valid::Validator;
     use crate::core::ResolverContextLike;
+    use crate::core::valid::Validator;
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 

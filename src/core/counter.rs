@@ -13,3 +13,5 @@ impl Counter {
         curr
     }
 }
+
+pub struct MutexCounter();

@@ -7,6 +7,7 @@ mod io;
 mod jit;
 mod modify;
 mod resolver_context_like;
+mod current;
 
 use core::future::Future;
 use std::fmt::{Debug, Display};
