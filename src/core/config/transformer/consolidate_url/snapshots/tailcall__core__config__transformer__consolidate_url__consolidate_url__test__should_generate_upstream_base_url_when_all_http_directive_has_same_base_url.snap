@@ -1,0 +1,13 @@
+---
+source: src/core/config/transformer/consolidate_url/consolidate_url.rs
+expression: transformed_config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  f1: [Int] @http(path: "/users")
+  f2: [Int] @http(path: "/post")
+  f3: [Int] @http(path: "/todos")
+}
