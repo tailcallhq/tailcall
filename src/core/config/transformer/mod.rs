@@ -8,7 +8,6 @@ pub use remove_unused::RemoveUnused;
 pub use type_merger::TypeMerger;
 pub use type_name_generator::TypeNameGenerator;
 
-
 use super::Config;
 use crate::core::valid::{Valid, Validator};
 
