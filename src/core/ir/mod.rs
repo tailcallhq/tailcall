@@ -59,7 +59,7 @@ impl Eval for IR {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, Error>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 IR::Context(op) => match op {

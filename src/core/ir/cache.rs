@@ -5,7 +5,7 @@ use std::pin::Pin;
 
 use async_graphql_value::ConstValue;
 
-use super::{Eval, EvaluationContext, EvaluationError, ResolverContextLike, IR};
+use super::{Error, Eval, EvaluationContext, ResolverContextLike, IR};
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub struct IoId(u64);
@@ -45,7 +45,7 @@ impl Eval for Cache {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, Error>> + 'a + Send>> {
         Box::pin(async move {
             if let IR::IO(io) = self.expr.deref() {
                 let key = io.cache_key(&ctx);
