@@ -71,7 +71,7 @@ impl Eval for Map {
         where
             async_graphql::Value: 'a {
         Box::pin(async move {
-            let value = self.eval(ctx).await?;
+            let value = self.input.eval(ctx).await?;
             if let ConstValue::String(key) = value {
                 if let Some(value) = self.map.get(&key) {
                     Ok(value.to_owned())

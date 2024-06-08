@@ -9,20 +9,8 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": null,
-    "errors": [
-      {
-        "message": "internal: invalid item for enum \"Foo\"",
-        "locations": [
-          {
-            "line": 1,
-            "column": 9
-          }
-        ],
-        "path": [
-          "foo"
-        ]
-      }
-    ]
+    "data": {
+      "foo": "BAR"
+    }
   }
 }

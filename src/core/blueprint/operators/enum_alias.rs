@@ -16,6 +16,10 @@ pub fn update_enum_alias<'a>(
         |(config, field, _, _), mut b_field| {
             let enum_type = config.enums.get(&field.type_of);
             if let Some(enum_type) = enum_type {
+                let has_alias = enum_type.variants.iter().any(|v| v.alias.is_some());
+                if !has_alias {
+                    return Valid::succeed(b_field);
+                }
                 let mut map = BTreeMap::<String, ConstValue>::new();
                 for v in enum_type.variants.iter() {
                     map.insert(v.name.clone(), ConstValue::String(v.name.clone()));
