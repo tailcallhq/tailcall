@@ -16,7 +16,7 @@ use tailcall_query_plan::plan::{GeneralPlan, OperationPlan};
 async fn test_simple() {
     let root_dir = Path::new(tailcall_fixtures::configs::SELF);
     let input_path = root_dir.join("user-posts.graphql");
-    let config = fs::read_to_string(input_path).unwrap();
+    let config = fs::read_to_string(input_path.clone()).unwrap();
     let config = Config::from_sdl(input_path.to_str().unwrap(), &config).to_result().unwrap();
     let config = ConfigModule::from(config);
     let blueprint = Blueprint::try_from(&config).unwrap();
