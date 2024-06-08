@@ -291,7 +291,7 @@ pub mod tests {
                 0,
                 0,
                 None,
-                Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+                Type::default().fields(vec![("bar", Pos::new(0, 0, None, Field::default().grpc(grpc)))]),
             ),
         );
         Ok(reader

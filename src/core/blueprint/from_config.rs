@@ -66,7 +66,7 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
     blueprint
 }
 
-pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
+pub fn to_json_schema_for_field(field: &Pos<Field>, config: &Config) -> JsonSchema {
     to_json_schema(field, config)
 }
 pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {

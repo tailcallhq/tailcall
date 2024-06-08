@@ -95,13 +95,18 @@ where
             let field = if !JSONValidator::is_graphql_compatible(json_val) {
                 // if object, array is empty or object has in-compatible fields then
                 // generate scalar for it.
-                Field {
-                    type_of: self.generate_scalar(config),
-                    list: json_val.is_array(),
-                    ..Default::default()
-                }
+                Pos::new(
+                    0,
+                    0,
+                    None,
+                    Field {
+                        type_of: self.generate_scalar(config),
+                        list: json_val.is_array(),
+                        ..Default::default()
+                    },
+                )
             } else {
-                let mut field = Field::default();
+                let mut field: Pos<Field> = Default::default();
                 if is_primitive(json_val) {
                     field.type_of = to_gql_type(json_val);
                 } else {

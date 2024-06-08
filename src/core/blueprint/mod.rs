@@ -31,6 +31,8 @@ pub use upstream::*;
 use crate::core::config::{Arg, ConfigModule, Field};
 use crate::core::try_fold::TryFold;
 
+use super::config::position::Pos;
+
 pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, String>;
 
 pub(crate) trait TypeLike {
@@ -40,7 +42,7 @@ pub(crate) trait TypeLike {
     fn list_type_required(&self) -> bool;
 }
 
-impl TypeLike for Field {
+impl TypeLike for Pos<Field> {
     fn name(&self) -> &str {
         &self.type_of
     }

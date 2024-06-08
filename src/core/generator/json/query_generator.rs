@@ -21,11 +21,16 @@ impl<'a> QueryGenerator<'a> {
 
 impl OperationGenerator for QueryGenerator<'_> {
     fn generate(&self, root_type: &str, mut config: Config) -> Valid<Config, String> {
-        let mut field = Field {
-            list: self.is_json_list,
-            type_of: root_type.to_owned(),
-            ..Default::default()
-        };
+        let mut field = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                list: self.is_json_list,
+                type_of: root_type.to_owned(),
+                ..Default::default()
+            },
+        );
 
         // generate required http directive.
         let http_directive_gen = HttpDirectiveGenerator::new(self.url);

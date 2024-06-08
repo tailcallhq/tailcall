@@ -87,7 +87,7 @@ pub struct Config {
 pub struct Type {
     ///
     /// A map of field name and its definition.
-    pub fields: BTreeMap<String, Field>,
+    pub fields: BTreeMap<String, Pos<Field>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Additional fields to be added to the type
@@ -115,7 +115,7 @@ pub struct Type {
 }
 
 impl Type {
-    pub fn fields(mut self, fields: Vec<(&str, Field)>) -> Self {
+    pub fn fields(mut self, fields: Vec<(&str, Pos<Field>)>) -> Self {
         let mut graphql_fields = BTreeMap::new();
         for (name, field) in fields {
             graphql_fields.insert(name.to_string(), field);
@@ -829,27 +829,37 @@ mod tests {
 
     #[test]
     fn test_field_has_or_not_batch_resolver() {
-        let f1 = Field { ..Default::default() };
+        let f1 = Pos::new(0, 0, None, Field { ..Default::default() });
 
-        let f2 = Field {
-            http: Some(Pos::new(
-                0,
-                0,
-                None,
-                Http { group_by: vec!["id".to_string()], ..Default::default() },
-            )),
-            ..Default::default()
-        };
+        let f2 = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                http: Some(Pos::new(
+                    0,
+                    0,
+                    None,
+                    Http { group_by: vec!["id".to_string()], ..Default::default() },
+                )),
+                ..Default::default()
+            },
+        );
 
-        let f3 = Field {
-            http: Some(Pos::new(
-                0,
-                0,
-                None,
-                Http { group_by: vec![], ..Default::default() },
-            )),
-            ..Default::default()
-        };
+        let f3 = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                http: Some(Pos::new(
+                    0,
+                    0,
+                    None,
+                    Http { group_by: vec![], ..Default::default() },
+                )),
+                ..Default::default()
+            },
+        );
 
         assert!(!f1.has_batched_resolver());
         assert!(f2.has_batched_resolver());
@@ -874,8 +884,8 @@ mod tests {
             Pos::new(
                 1,
                 1,
-                Some(file_path),
-                Type::default().fields(vec![("a", Field::int())]),
+                Some(file_path.clone()),
+                Type::default().fields(vec![("a", Pos::new(1, 11, Some(file_path), Field::int()))]),
             ),
         )]);
         assert_eq!(actual, expected);

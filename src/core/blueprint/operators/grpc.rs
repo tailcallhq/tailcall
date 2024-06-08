@@ -55,7 +55,7 @@ fn to_operation(
     })
 }
 
-fn json_schema_from_field(config: &Config, field: &Field) -> FieldSchema {
+fn json_schema_from_field(config: &Config, field: &Pos<Field>) -> FieldSchema {
     let field_schema = crate::core::blueprint::to_json_schema_for_field(field, config);
     let args_schema = crate::core::blueprint::to_json_schema_for_args(&field.args, config);
     FieldSchema { args: args_schema, field: field_schema }
@@ -119,7 +119,7 @@ fn validate_group_by(
 pub struct CompileGrpc<'a> {
     pub config_module: &'a ConfigModule,
     pub operation_type: &'a GraphQLOperationType,
-    pub field: &'a Field,
+    pub field: &'a Pos<Field>,
     pub grpc: &'a Pos<Grpc>,
     pub validate_with_schema: bool,
 }
@@ -215,11 +215,16 @@ pub fn update_grpc<'a>(
     operation_type: &'a GraphQLOperationType,
 ) -> TryFold<
     'a,
-    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
     FieldDefinition,
     String,
 > {
-    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &'a str), FieldDefinition, String>::new(
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &'a str), FieldDefinition, String>::new(
         |(config_module, field, type_of, _name), b_field| {
             let Some(grpc) = &field.grpc else {
                 return Valid::succeed(b_field);

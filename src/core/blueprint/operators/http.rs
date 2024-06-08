@@ -11,7 +11,7 @@ use crate::core::{config, helpers};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
-    field: &config::Field,
+    field: &Pos<config::Field>,
     http: &Pos<config::Http>,
 ) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
@@ -82,11 +82,16 @@ pub fn compile_http(
 
 pub fn update_http<'a>() -> TryFold<
     'a,
-    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
     FieldDefinition,
     String,
 > {
-    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &'a str), FieldDefinition, String>::new(
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &'a str), FieldDefinition, String>::new(
         |(config_module, field, type_of, _), b_field| {
             let Some(http) = &field.http.as_ref() else {
                 return Valid::succeed(b_field);

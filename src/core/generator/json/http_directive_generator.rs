@@ -59,7 +59,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
         Self { url, http: Http::default() }
     }
 
-    fn add_path_variables(&mut self, field: &mut Field) {
+    fn add_path_variables(&mut self, field: &mut Pos<Field>) {
         let re = Regex::new(r"/(\d+)").unwrap();
         let mut arg_index = 1;
         let path_url = self.url.path();
@@ -84,7 +84,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
         self.http.path = mustache_compatible_url.to_string();
     }
 
-    fn add_query_variables(&mut self, field: &mut Field) {
+    fn add_query_variables(&mut self, field: &mut Pos<Field>) {
         let url_utility = UrlUtility::new(self.url);
 
         for query in url_utility.get_query_params() {
@@ -103,7 +103,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
         }
     }
 
-    pub fn generate_http_directive(mut self, field: &mut Field) -> Pos<Http> {
+    pub fn generate_http_directive(mut self, field: &mut Pos<Field>) -> Pos<Http> {
         self.add_path_variables(field);
         self.add_query_variables(field);
 

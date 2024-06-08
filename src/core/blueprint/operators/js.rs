@@ -19,11 +19,16 @@ pub fn compile_js(inputs: CompileJs) -> Valid<IR, String> {
 
 pub fn update_js_field<'a>() -> TryFold<
     'a,
-    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
     FieldDefinition,
     String,
 > {
-    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         |(module, field, _, _), b_field| {
             let Some(js) = &field.script else {
                 return Valid::succeed(b_field);

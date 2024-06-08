@@ -60,7 +60,7 @@ type InvalidPathHandler = dyn Fn(&str, &[String], &[String]) -> Valid<Type, Stri
 type PathResolverErrorHandler = dyn Fn(&str, &str, &str, &[String]) -> Valid<Type, String>;
 
 struct ProcessFieldWithinTypeContext<'a> {
-    field: &'a config::Field,
+    field: &'a Pos<config::Field>,
     field_name: &'a str,
     remaining_path: &'a [String],
     type_info: &'a Pos<config::Type>,
@@ -74,7 +74,7 @@ struct ProcessFieldWithinTypeContext<'a> {
 #[derive(Clone)]
 struct ProcessPathContext<'a> {
     path: &'a [String],
-    field: &'a config::Field,
+    field: &'a Pos<config::Field>,
     type_info: &'a Pos<config::Type>,
     is_required: bool,
     config_module: &'a ConfigModule,
@@ -259,11 +259,16 @@ fn to_object_type_definition(
 
 fn update_args<'a>() -> TryFold<
     'a,
-    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
     FieldDefinition,
     String,
 > {
-    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(_, field, _typ, name), _| {
             // TODO! assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
@@ -323,11 +328,16 @@ fn update_resolver_from_path(
 /// schema.
 pub fn fix_dangling_resolvers<'a>() -> TryFold<
     'a,
-    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
     FieldDefinition,
     String,
 > {
-    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(config, field, ty, name), mut b_field| {
             if !field.has_resolver()
                 && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
@@ -346,11 +356,16 @@ pub fn fix_dangling_resolvers<'a>() -> TryFold<
 /// if `Field::cache` is present for that field
 pub fn update_cache_resolvers<'a>() -> TryFold<
     'a,
-    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
     FieldDefinition,
     String,
 > {
-    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(_config, field, typ, _name), mut b_field| {
             if let Some(cache) = field.cache.as_ref().or(typ.cache.as_ref()) {
                 b_field.map_expr(|expression| Cache::wrap(cache.max_age, expression))
@@ -490,7 +505,7 @@ fn to_fields(
 
 #[allow(clippy::too_many_arguments)]
 pub fn to_field_definition(
-    field: &Field,
+    field: &Pos<Field>,
     operation_type: &GraphQLOperationType,
     object_name: &str,
     config_module: &ConfigModule,

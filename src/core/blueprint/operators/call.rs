@@ -13,11 +13,16 @@ pub fn update_call<'a>(
     object_name: &'a str,
 ) -> TryFold<
     'a,
-    (&'a ConfigModule, &'a Field, &'a Pos<config::Type>, &'a str),
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
     FieldDefinition,
     String,
 > {
-    TryFold::<(&ConfigModule, &Field, &Pos<config::Type>, &str), FieldDefinition, String>::new(
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(config, field, _, name), b_field| {
             let Some(ref calls) = field.call else {
                 return Valid::succeed(b_field);
@@ -149,7 +154,7 @@ fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
 fn get_field_and_field_name<'a>(
     call: &'a config::Step,
     config_module: &'a ConfigModule,
-) -> Valid<(&'a Field, String, &'a Pos<config::Type>), String> {
+) -> Valid<(&'a Pos<Field>, String, &'a Pos<config::Type>), String> {
     Valid::from_option(
         get_type_and_field(call),
         "call must have query or mutation".to_string(),

@@ -168,7 +168,7 @@ impl Context {
                     .extend(self.namespace.as_slice())
                     .into_field();
 
-                let mut cfg_field = Field::default();
+                let mut cfg_field: Pos<Field> = Default::default();
 
                 let label = field.label().as_str_name().to_lowercase();
                 cfg_field.list = label.contains("repeated");
@@ -233,7 +233,7 @@ impl Context {
                     .push(service_name)
                     .into_method();
 
-                let mut cfg_field = Field::default();
+                let mut cfg_field: Pos<Field> = Default::default();
                 let mut body = Pos::new(0, 0, None, None);
 
                 if let Some(graphql_type) = get_input_type(method.input_type())? {

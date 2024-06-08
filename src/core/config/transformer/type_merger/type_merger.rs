@@ -169,9 +169,24 @@ mod test {
 
     #[test]
     fn test_cyclic_merge_case() -> anyhow::Result<()> {
-        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
-        let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };
+        let str_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "String".to_owned(), ..Default::default() },
+        );
+        let int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Int".to_owned(), ..Default::default() },
+        );
+        let bool_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Boolean".to_owned(), ..Default::default() },
+        );
 
         let mut ty1: Pos<Type> = Default::default();
         ty1.fields.insert("body".to_string(), str_field.clone());
@@ -183,7 +198,12 @@ mod test {
         let mut ty2: Pos<Type> = Default::default();
         ty2.fields.insert(
             "t1".to_string(),
-            Field { type_of: "T1".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T1".to_string(), ..Default::default() },
+            ),
         );
         ty2.fields
             .insert("is_verified".to_string(), bool_field.clone());
@@ -198,11 +218,21 @@ mod test {
         let mut q_type: Pos<Type> = Default::default();
         q_type.fields.insert(
             "q1".to_string(),
-            Field { type_of: "T1".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T1".to_string(), ..Default::default() },
+            ),
         );
         q_type.fields.insert(
             "q2".to_string(),
-            Field { type_of: "T2".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T2".to_string(), ..Default::default() },
+            ),
         );
 
         config.types.insert("Query".to_owned(), q_type);
@@ -217,11 +247,36 @@ mod test {
 
     #[test]
     fn test_type_merger() -> anyhow::Result<()> {
-        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
-        let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };
-        let float_field = Field { type_of: "Float".to_owned(), ..Default::default() };
-        let id_field = Field { type_of: "ID".to_owned(), ..Default::default() };
+        let str_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "String".to_owned(), ..Default::default() },
+        );
+        let int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Int".to_owned(), ..Default::default() },
+        );
+        let bool_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Boolean".to_owned(), ..Default::default() },
+        );
+        let float_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Float".to_owned(), ..Default::default() },
+        );
+        let id_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "ID".to_owned(), ..Default::default() },
+        );
 
         let mut ty: Pos<Type> = Default::default();
         ty.fields.insert("f1".to_string(), str_field.clone());
@@ -239,19 +294,39 @@ mod test {
         let mut q_type: Pos<Type> = Default::default();
         q_type.fields.insert(
             "q1".to_string(),
-            Field { type_of: "T1".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T1".to_string(), ..Default::default() },
+            ),
         );
         q_type.fields.insert(
             "q2".to_string(),
-            Field { type_of: "T2".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T2".to_string(), ..Default::default() },
+            ),
         );
         q_type.fields.insert(
             "q3".to_string(),
-            Field { type_of: "T3".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T3".to_string(), ..Default::default() },
+            ),
         );
         q_type.fields.insert(
             "q4".to_string(),
-            Field { type_of: "T4".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T4".to_string(), ..Default::default() },
+            ),
         );
 
         config.types.insert("Query".to_owned(), q_type);

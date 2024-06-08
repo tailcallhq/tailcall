@@ -39,7 +39,7 @@ fn validate_type_has_resolvers(
 
 pub fn validate_field_has_resolver(
     name: &str,
-    field: &Field,
+    field: &Pos<Field>,
     types: &BTreeMap<String, Pos<Type>>,
     parent_ty: &Pos<Type>,
 ) -> Valid<(), String> {

@@ -4,6 +4,7 @@ use async_graphql_value::{ConstValue, Name};
 
 use super::{Config, ConfigModule};
 use crate::core::blueprint::TypeLike;
+use crate::core::config::position;
 use crate::core::directive::DirectiveCodec;
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -254,7 +255,9 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
     ServiceDocument { definitions }
 }
 
-fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDirective>> {
+fn get_directives(
+    field: &position::Pos<crate::core::config::Field>,
+) -> Vec<Positioned<ConstDirective>> {
     let directives = vec![
         field.http.as_ref().map(|d| pos(d.inner.to_directive())),
         field.script.as_ref().map(|d| pos(d.inner.to_directive())),

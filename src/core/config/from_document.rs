@@ -373,43 +373,59 @@ fn to_fields_inner<T, F>(
     fields: &Vec<Positioned<T>>,
     transform: F,
     input_path: &str,
-) -> Valid<BTreeMap<String, config::Field>, String>
+) -> Valid<BTreeMap<String, Pos<config::Field>>, String>
 where
-    F: Fn(&T, &str) -> Valid<config::Field, String>,
+    F: Fn(&T, &ParserPos, &str) -> Valid<Pos<config::Field>, String>,
     T: HasName,
 {
     Valid::from_iter(fields, |field| {
         let field_name = pos_name_to_string(field.node.name());
-        transform(&field.node, input_path).map(|field| (field_name, field))
+        transform(&field.node, &field.pos, input_path).map(|field| (field_name, field))
     })
     .map(BTreeMap::from_iter)
 }
 fn to_fields(
     fields: &Vec<Positioned<FieldDefinition>>,
     input_path: &str,
-) -> Valid<BTreeMap<String, config::Field>, String> {
+) -> Valid<BTreeMap<String, Pos<config::Field>>, String> {
     to_fields_inner(fields, to_field, input_path)
 }
 fn to_input_object_fields(
     input_object_fields: &Vec<Positioned<InputValueDefinition>>,
     input_path: &str,
-) -> Valid<BTreeMap<String, config::Field>, String> {
+) -> Valid<BTreeMap<String, Pos<config::Field>>, String> {
     to_fields_inner(input_object_fields, to_input_object_field, input_path)
 }
-fn to_field(field_definition: &FieldDefinition, input_path: &str) -> Valid<config::Field, String> {
-    to_common_field(field_definition, to_args(field_definition), input_path)
+fn to_field(
+    field_definition: &FieldDefinition,
+    field_position: &ParserPos,
+    input_path: &str,
+) -> Valid<Pos<config::Field>, String> {
+    to_common_field(
+        field_definition,
+        field_position,
+        to_args(field_definition),
+        input_path,
+    )
 }
 fn to_input_object_field(
     field_definition: &InputValueDefinition,
+    field_position: &ParserPos,
     input_path: &str,
-) -> Valid<config::Field, String> {
-    to_common_field(field_definition, BTreeMap::new(), input_path)
+) -> Valid<Pos<config::Field>, String> {
+    to_common_field(
+        field_definition,
+        field_position,
+        BTreeMap::new(),
+        input_path,
+    )
 }
 fn to_common_field<F>(
     field: &F,
+    field_position: &ParserPos,
     args: BTreeMap<String, config::Arg>,
     input_path: &str,
-) -> Valid<config::Field, String>
+) -> Valid<Pos<config::Field>, String>
 where
     F: Fieldlike,
 {
@@ -472,24 +488,29 @@ where
     .map(
         |(http, graphql, cache, grpc, omit, modify, script, call, protected)| {
             let const_field = to_const_field(directives);
-            config::Field {
-                type_of,
-                list,
-                required: !nullable,
-                list_type_required,
-                args,
-                doc,
-                modify,
-                omit,
-                http,
-                grpc,
-                script,
-                const_field,
-                graphql,
-                cache,
-                call,
-                protected,
-            }
+            Pos::new(
+                field_position.line,
+                field_position.column,
+                Some(input_path.to_owned()),
+                config::Field {
+                    type_of,
+                    list,
+                    required: !nullable,
+                    list_type_required,
+                    args,
+                    doc,
+                    modify,
+                    omit,
+                    http,
+                    grpc,
+                    script,
+                    const_field,
+                    graphql,
+                    cache,
+                    call,
+                    protected,
+                },
+            )
         },
     )
 }

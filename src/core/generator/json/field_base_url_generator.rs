@@ -65,42 +65,57 @@ mod test {
         let mut query_type: Pos<Type> = Default::default();
         query_type.fields.insert(
             "f1".to_string(),
-            Field {
-                type_of: "Int".to_string(),
-                http: Some(Pos::new(
-                    0,
-                    0,
-                    None,
-                    Http { path: "/day".to_string(), ..Default::default() },
-                )),
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "Int".to_string(),
+                    http: Some(Pos::new(
+                        0,
+                        0,
+                        None,
+                        Http { path: "/day".to_string(), ..Default::default() },
+                    )),
+                    ..Default::default()
+                },
+            ),
         );
         query_type.fields.insert(
             "f2".to_string(),
-            Field {
-                type_of: "String".to_string(),
-                http: Some(Pos::new(
-                    0,
-                    0,
-                    None,
-                    Http { path: "/month".to_string(), ..Default::default() },
-                )),
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "String".to_string(),
+                    http: Some(Pos::new(
+                        0,
+                        0,
+                        None,
+                        Http { path: "/month".to_string(), ..Default::default() },
+                    )),
+                    ..Default::default()
+                },
+            ),
         );
         query_type.fields.insert(
             "f3".to_string(),
-            Field {
-                type_of: "String".to_string(),
-                http: Some(Pos::new(
-                    0,
-                    0,
-                    None,
-                    Http { path: "/status".to_string(), ..Default::default() },
-                )),
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "String".to_string(),
+                    http: Some(Pos::new(
+                        0,
+                        0,
+                        None,
+                        Http { path: "/status".to_string(), ..Default::default() },
+                    )),
+                    ..Default::default()
+                },
+            ),
         );
         config.types.insert("Query".to_string(), query_type);
 
@@ -120,46 +135,61 @@ mod test {
         let mut query_type: Pos<Type> = Default::default();
         query_type.fields.insert(
             "f1".to_string(),
-            Field {
-                type_of: "Int".to_string(),
-                http: Some(Pos::new(
-                    0,
-                    0,
-                    None,
-                    Http {
-                        base_url: Some(Pos::new(
-                            0,
-                            0,
-                            None,
-                            "https://calender.com/api/v1/".to_string(),
-                        )),
-                        path: "/day".to_string(),
-                        ..Default::default()
-                    },
-                )),
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "Int".to_string(),
+                    http: Some(Pos::new(
+                        0,
+                        0,
+                        None,
+                        Http {
+                            base_url: Some(Pos::new(
+                                0,
+                                0,
+                                None,
+                                "https://calender.com/api/v1/".to_string(),
+                            )),
+                            path: "/day".to_string(),
+                            ..Default::default()
+                        },
+                    )),
+                    ..Default::default()
+                },
+            ),
         );
         query_type.fields.insert(
             "f2".to_string(),
-            Field {
-                type_of: "String".to_string(),
-                http: Some(Pos::new(
-                    0,
-                    0,
-                    None,
-                    Http { path: "/month".to_string(), ..Default::default() },
-                )),
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "String".to_string(),
+                    http: Some(Pos::new(
+                        0,
+                        0,
+                        None,
+                        Http { path: "/month".to_string(), ..Default::default() },
+                    )),
+                    ..Default::default()
+                },
+            ),
         );
         query_type.fields.insert(
             "f3".to_string(),
-            Field {
-                type_of: "String".to_string(),
-                http: None,
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "String".to_string(),
+                    http: None,
+                    ..Default::default()
+                },
+            ),
         );
         config.types.insert("Query".to_string(), query_type);
 

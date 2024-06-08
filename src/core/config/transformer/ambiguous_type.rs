@@ -156,7 +156,7 @@ mod tests {
     fn build_qry(mut config: Config) -> Config {
         let mut query: Pos<Type> = Default::default();
         let mut field1 =
-            crate::core::config::Field { type_of: "Type1".to_string(), ..Default::default() };
+            Pos::new(0, 0, None, crate::core::config::Field { type_of: "Type1".to_string(), ..Default::default() });
 
         let arg1 = crate::core::config::Arg { type_of: "Type1".to_string(), ..Default::default() };
 
@@ -189,21 +189,21 @@ mod tests {
 
         type1.fields.insert(
             "name".to_string(),
-            crate::core::config::Field::default().type_of("String".to_string()),
+            Pos::new(0, 0, None, crate::core::config::Field::default().type_of("String".to_string())),
         );
 
         type2.fields.insert(
             "ty1".to_string(),
-            crate::core::config::Field::default().type_of("Type1".to_string()),
+            Pos::new(0, 0, None, crate::core::config::Field::default().type_of("Type1".to_string())),
         );
 
         type3.fields.insert(
             "ty1".to_string(),
-            crate::core::config::Field::default().type_of("Type1".to_string()),
+            Pos::new(0, 0, None, crate::core::config::Field::default().type_of("Type1".to_string())),
         );
         type3.fields.insert(
             "ty2".to_string(),
-            crate::core::config::Field::default().type_of("Type2".to_string()),
+            Pos::new(0, 0, None, crate::core::config::Field::default().type_of("Type2".to_string())),
         );
 
         config.types.insert("Type1".to_string(), type1);

@@ -102,49 +102,99 @@ mod test {
         let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         foo1.fields.insert(
             "b".to_owned(),
-            Field { type_of: "String".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "String".to_owned(), ..Default::default() },
+            ),
         );
         foo1.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         foo2.fields.insert(
             "b".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Float".to_owned(), ..Default::default() },
+            ),
         );
         foo2.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         bar1.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Float".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         bar2.fields.insert(
             "c".to_owned(),
-            Field { type_of: "String".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "String".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut cfg: Config = Config::default();
@@ -164,53 +214,108 @@ mod test {
         let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         foo1.fields.insert(
             "b".to_owned(),
-            Field { type_of: "String".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "String".to_owned(), ..Default::default() },
+            ),
         );
         foo1.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         foo2.fields.insert(
             "b".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Float".to_owned(), ..Default::default() },
+            ),
         );
         foo2.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         bar1.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Float".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         bar2.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Float".to_owned(), ..Default::default() },
+            ),
         );
         bar2.fields.insert(
             "k".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut cfg: Config = Config::default();
@@ -230,25 +335,45 @@ mod test {
         let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Foo1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Foo1".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Foo2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Foo2".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut cfg: Config = Config::default();
@@ -268,36 +393,66 @@ mod test {
         let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Far1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Far1".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Far2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Far2".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut far1: Pos<Type> = Default::default();
         far1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         let mut far2: Pos<Type> = Default::default();
         far2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut cfg: Config = Config::default();
