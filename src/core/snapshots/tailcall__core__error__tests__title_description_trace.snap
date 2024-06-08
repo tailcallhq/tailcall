@@ -1,0 +1,5 @@
+---
+source: src/core/error.rs
+expression: error.to_string()
+---
+Server could not be started: The port is already in use [at @server.port]

@@ -220,9 +220,7 @@ impl From<Box<dyn std::error::Error>> for Error {
 
 #[cfg(test)]
 mod tests {
-
     use pretty_assertions::assert_eq;
-    use stripmargin::StripMargin;
 
     use super::*;
     use crate::core::valid::Cause;
@@ -265,17 +263,15 @@ mod tests {
     #[test]
     fn test_title() {
         let error = Error::new("Server could not be started");
-        let expected = r"Server could not be started".strip_margin();
-        assert_eq!(error.to_string(), expected);
+        insta::assert_snapshot!(error.to_string());
     }
 
     #[test]
     fn test_title_description() {
         let error = Error::new("Server could not be started")
             .description("The port is already in use".to_string());
-        let expected = r"|Server could not be started: The port is already in use".strip_margin();
 
-        assert_eq!(error.to_string(), expected);
+        insta::assert_snapshot!(error.to_string());
     }
 
     #[test]
@@ -284,11 +280,7 @@ mod tests {
             .description("The port is already in use".to_string())
             .trace(vec!["@server".into(), "port".into()]);
 
-        let expected =
-            r"|Server could not be started: The port is already in use [at @server.port]"
-                .strip_margin();
-
-        assert_eq!(error.to_string(), expected);
+        insta::assert_snapshot!(error.to_string());
     }
 
     #[test]
@@ -303,12 +295,7 @@ mod tests {
             "baseURL".into(),
         ])]);
 
-        let expected = r"|Configuration Error
-                     |Caused by:
-                     |  • Base URL needs to be specified [at User.posts.@http.baseURL]"
-            .strip_margin();
-
-        assert_eq!(error.to_string(), expected);
+        insta::assert_snapshot!(error.to_string());
     }
 
     #[test]
@@ -342,15 +329,7 @@ mod tests {
             ]),
         ]);
 
-        let expected = r"|Configuration Error
-                     |Caused by:
-                     |  • Base URL needs to be specified [at User.posts.@http.baseURL]
-                     |  • Base URL needs to be specified [at Post.users.@http.baseURL]
-                     |  • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]
-                     |  • Base URL needs to be specified [at Query.posts.@http.baseURL]"
-            .strip_margin();
-
-        assert_eq!(error.to_string(), expected);
+        insta::assert_snapshot!(error.to_string());
     }
 
     #[test]
@@ -360,12 +339,8 @@ mod tests {
             .trace(vec!["Query", "users", "@http", "baseURL"]);
         let valid = ValidationError::from(cause);
         let error = Error::from(valid);
-        let expected = r"|Invalid Configuration
-                     |Caused by:
-                     |  • Base URL needs to be specified: Set `baseURL` in @http or @server directives [at Query.users.@http.baseURL]"
-            .strip_margin();
 
-        assert_eq!(error.to_string(), expected);
+        insta::assert_snapshot!(error.to_string());
     }
 
     #[test]

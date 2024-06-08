@@ -1,0 +1,7 @@
+---
+source: src/core/error.rs
+expression: error.to_string()
+---
+Configuration Error
+Caused by:
+  • Base URL needs to be specified [at User.posts.@http.baseURL]
