@@ -1,9 +1,43 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use super::MaxValueMap;
 use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
+
+struct UrlTypeMapping {
+    url_to_type_map: HashMap<String, HashSet<String>>,
+}
+
+impl UrlTypeMapping {
+    fn new() -> Self {
+        Self { url_to_type_map: Default::default() }
+    }
+
+    fn populate_url_type_map(&mut self, config: &Config) {
+        for (type_name, type_) in config.types.iter() {
+            for field_ in type_.fields.values() {
+                if let Some(http_directive) = &field_.http {
+                    if let Some(base_url) = &http_directive.base_url {
+                        self.url_to_type_map
+                            .entry(base_url.to_owned())
+                            .or_default()
+                            .insert(type_name.to_owned());
+                    }
+                }
+            }
+        }
+    }
+
+    fn find_common_url(&self, threshold: f32) -> Option<(String, HashSet<String>)> {
+        let count_of_unique_base_urls = self.url_to_type_map.len();
+        for (base_url, type_set) in &self.url_to_type_map {
+            if (type_set.len() as f32) >= (count_of_unique_base_urls as f32) * threshold {
+                return Some((base_url.to_owned(), type_set.to_owned()));
+            }
+        }
+        None
+    }
+}
 
 pub struct ConsolidateURL {
     threshold: f32,
@@ -24,51 +58,31 @@ impl ConsolidateURL {
     }
 
     fn generate_base_url(&self, mut config: Config) -> Config {
-        // maintain the base_url frequency map to determine the most common base url.
-        let mut url_frequency_map = MaxValueMap::new();
-        let mut type_with_base_url_fields = HashSet::new();
+        let mut url_type_mapping = UrlTypeMapping::new();
+        url_type_mapping.populate_url_type_map(&config);
 
-        for (type_name, type_) in config.types.iter() {
-            for field_ in type_.fields.values() {
-                if let Some(http_directive) = &field_.http {
-                    if let Some(base_url) = &http_directive.base_url {
-                        url_frequency_map.increment(base_url.to_owned(), 1);
-                        type_with_base_url_fields.insert(type_name.to_owned());
-                    }
-                }
-            }
-        }
-
-        // If there is a most common base URL, update the config.
-        if let Some((most_common_base_url, most_common_base_url_frequency)) =
-            url_frequency_map.get_max_pair()
+        if let Some((common_url, visited_type_set)) =
+            url_type_mapping.find_common_url(self.threshold)
         {
-            let should_perform_consolidation = most_common_base_url_frequency.to_owned() as f32
-                >= (url_frequency_map.len() as f32 * self.threshold);
+            config.upstream.base_url = Some(common_url.to_owned());
 
-            if !should_perform_consolidation {
-                tracing::warn!(
-                    "Threshold matching base url not found, transformation cannot be performed."
-                );
-                return config;
-            }
-
-            config.upstream.base_url = Some(most_common_base_url.to_owned());
-
-            // Remove the base URL from the HTTP directives in the relevant types.
-            for type_name in type_with_base_url_fields {
+            for type_name in visited_type_set {
                 if let Some(type_) = config.types.get_mut(&type_name) {
                     for field_ in type_.fields.values_mut() {
-                        if let Some(http_directive) = &mut field_.http {
-                            if let Some(base_url) = http_directive.base_url.clone() {
-                                if &base_url == most_common_base_url {
-                                    http_directive.base_url = None;
+                        if let Some(htto_directive) = &mut field_.http {
+                            if let Some(base_url) = htto_directive.base_url.to_owned() {
+                                if base_url == common_url {
+                                    htto_directive.base_url = None;
                                 }
                             }
                         }
                     }
                 }
             }
+        } else {
+            tracing::warn!(
+                "Threshold matching base url not found, transformation cannot be performed."
+            );
         }
 
         config
