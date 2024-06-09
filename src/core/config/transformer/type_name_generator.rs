@@ -6,10 +6,16 @@ use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
 
+#[derive(Debug, Default)]
+struct CandidateStats {
+    frequency: u32,
+    priority: u8,
+}
+
 struct CandidateGeneration<'a> {
-    /// maintains the generated candidates in the form of {TypeName:
-    /// [{candidate_name: frequency}]}
-    candidates: BTreeMap<String, BTreeMap<String, u32>>,
+    /// maintains the generated candidates in the form of
+    /// {TypeName: {{candidate_name: {frequency: 1, priority: 0}}}}
+    candidates: BTreeMap<String, BTreeMap<String, CandidateStats>>,
     config: &'a Config,
 }
 
@@ -22,7 +28,7 @@ impl<'a> CandidateGeneration<'a> {
     /// This method iterates over the configuration and collects candidate type
     /// names for each type.
     fn generate(mut self) -> Self {
-        for type_info in self.config.types.values() {
+        for (type_name, type_info) in self.config.types.iter() {
             for (field_name, field_info) in type_info.fields.iter() {
                 if self.config.is_scalar(&field_info.type_of) {
                     // If field type is scalar then ignore type name inference.
@@ -34,7 +40,22 @@ impl<'a> CandidateGeneration<'a> {
                     .entry(field_info.type_of.to_owned())
                     .or_default();
 
-                *inner_map.entry(field_name.to_owned()).or_insert(0) += 1;
+                if let Some(key_val) = inner_map.get_mut(field_name) {
+                    key_val.frequency += 1
+                } else {
+                    // in order to infer the types correctly, always prioritize the non-operation
+                    // types but final selection will still depend upon the
+                    // frequency.
+                    let priority = match self.config.is_root_operation_type(type_name) {
+                        true => 0,
+                        false => 1,
+                    };
+
+                    inner_map.insert(
+                        field_name.to_owned(),
+                        CandidateStats { frequency: 1, priority },
+                    );
+                }
             }
         }
         self
@@ -52,11 +73,11 @@ impl<'a> CandidateGeneration<'a> {
             // already present in types.
             if let Some((candidate_name, _)) = candidate_list
                 .iter()
-                .max_by_key(|&(_, count)| count)
                 .filter(|(candidate_name, _)| {
                     !converged_candidate_set.contains(candidate_name)
                         && !self.config.types.contains_key(*candidate_name)
                 })
+                .max_by_key(|&(_, candidate)| (candidate.frequency, candidate.priority))
             {
                 let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
                 finalized_candidates.insert(type_name.to_owned(), singularized_candidate_name);
