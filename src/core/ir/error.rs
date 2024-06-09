@@ -27,13 +27,13 @@ pub enum Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        crate::core::Error::from(self.to_owned()).fmt(f)
+        crate::core::Errata::from(self.to_owned()).fmt(f)
     }
 }
 
-impl From<Error> for crate::core::Error {
+impl From<Error> for crate::core::Errata {
     fn from(value: Error) -> Self {
-        use crate::core::Error as CoreError;
+        use crate::core::Errata as CoreError;
         match value {
             Error::IOError(message) => CoreError::new("IO Error").description(message),
             Error::GRPCError {
