@@ -2,41 +2,39 @@ use std::cell::Cell;
 use std::fmt::Debug;
 use std::sync::Mutex;
 
-use crate::core::ir::CallId;
+use num::Num;
 
-pub trait Count: Debug {
+pub trait Count {
     type Item;
-    fn next(&self) -> Self::Item;
+    fn next(&mut self) -> Self::Item;
 }
 
-#[allow(unused)]
-#[derive(Default, Debug)]
-pub struct Counter(Cell<usize>);
-impl Counter {
-    pub fn new(start: usize) -> Self {
+pub struct Counter<A>(Cell<A>);
+impl<A> Counter<A> {
+    pub fn new(start: A) -> Self {
         Self(Cell::new(start))
     }
 }
 
-impl Count for Counter {
-    type Item = usize;
+impl<A: num::Num> Count for Counter<A> {
+    type Item = A;
 
-    fn next(&self) -> Self::Item {
+    fn next(&mut self) -> A {
         let curr = self.0.get();
-        self.0.set(curr + 1);
+        self.0.set(curr + A::one());
         curr
     }
 }
 
 #[derive(Default, Debug)]
-pub struct AtomicCounter(Mutex<usize>);
+pub struct AtomicCounter<A>(Mutex<A>);
 
-impl Count for AtomicCounter {
-    type Item = CallId;
+impl<A: num::Num> Count for AtomicCounter<A> {
+    type Item = A;
 
-    fn next(&self) -> CallId {
+    fn next(&mut self) -> A {
         let mut x = self.0.lock().unwrap();
-        *x += 1;
-        CallId::new(*x)
+        *x += A::one();
+        *x
     }
 }
