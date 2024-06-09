@@ -10,7 +10,7 @@ schema {
 }
 
 type Query {
-  foo(name: String!): Foo
+  foo: Foo
 }
 
 type Foo {
