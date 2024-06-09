@@ -1,18 +1,10 @@
 use std::collections::{BTreeMap, HashSet};
 
 use inflector::Inflector;
-use regex::Regex;
 
 use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
-
-fn is_auto_generated_field_name(field_name: &str) -> bool {
-    lazy_static::lazy_static! {
-        static ref RE: Regex = Regex::new(r"^f\d+$|^fn$").unwrap();
-    }
-    RE.is_match(field_name)
-}
 
 struct CandidateGeneration<'a> {
     /// maintains the generated candidates in the form of {TypeName:
@@ -32,11 +24,8 @@ impl<'a> CandidateGeneration<'a> {
     fn generate(mut self) -> Self {
         for type_info in self.config.types.values() {
             for (field_name, field_info) in type_info.fields.iter() {
-                if self.config.is_scalar(&field_info.type_of)
-                    || is_auto_generated_field_name(field_name)
-                {
-                    // If field type is scalar or field name is auto-generated, ignore type name
-                    // inference.
+                if self.config.is_scalar(&field_info.type_of) {
+                    // If field type is scalar then ignore type name inference.
                     continue;
                 }
 
