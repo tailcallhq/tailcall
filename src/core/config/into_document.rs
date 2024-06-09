@@ -196,7 +196,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             directives: type_def
                 .added_fields
                 .iter()
-                .map(|added_field: &super::AddField| pos(added_field.to_directive()))
+                .map(|added_field| pos(added_field.inner.to_directive()))
                 .chain(
                     type_def
                         .cache

@@ -336,7 +336,7 @@ where
     .map(|(cache, fields, protected, tag)| {
         let doc = description.to_owned().map(|pos| pos.node);
         let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
-        let added_fields = to_add_fields_from_directives(directives);
+        let added_fields = to_add_fields_from_directives(directives, input_path);
         Pos::new(
             type_position.line,
             type_position.column,
@@ -605,12 +605,21 @@ fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::E
 
 fn to_add_fields_from_directives(
     directives: &[Positioned<ConstDirective>],
-) -> Vec<config::AddField> {
+    input_path: &str,
+) -> Vec<Pos<config::AddField>> {
     directives
         .iter()
         .filter_map(|directive| {
             if directive.node.name.node == config::AddField::directive_name() {
                 config::AddField::from_directive(&directive.node)
+                    .and_then(|field| {
+                        Valid::succeed(Pos::new(
+                            directive.pos.line,
+                            directive.pos.column,
+                            Some(input_path.to_owned()),
+                            field,
+                        ))
+                    })
                     .to_result()
                     .ok()
             } else {

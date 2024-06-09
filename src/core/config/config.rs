@@ -91,7 +91,7 @@ pub struct Type {
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Additional fields to be added to the type
-    pub added_fields: Vec<AddField>,
+    pub added_fields: Vec<Pos<AddField>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Documentation for the type that is publicly visible.

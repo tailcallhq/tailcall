@@ -421,7 +421,7 @@ fn to_fields(
         },
     );
 
-    let to_added_field = |add_field: &config::AddField,
+    let to_added_field = |add_field: &Pos<config::AddField>,
                           type_of: &Pos<config::Type>|
      -> Valid<blueprint::FieldDefinition, String> {
         let source_field = type_of
