@@ -386,7 +386,6 @@ fn to_fields(
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
         |(name, field)| {
-            // println!("{}",name);
             validate_field_type_exist(config_module, field)
                 .and(to_field_definition(
                     field,
