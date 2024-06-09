@@ -17,6 +17,12 @@ pub enum Error {
 
     #[error("{msg}: {directive:?}")]
     Missing { msg: String, directive: Directive },
+
+    #[error("Method not found")]
+    MissingMethod,
+
+    #[error("Path not found")]
+    MissingPath,
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

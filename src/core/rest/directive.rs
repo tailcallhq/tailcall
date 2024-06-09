@@ -66,21 +66,12 @@ impl TryFrom<&Directive> for Rest {
                 _ => {}
             };
         }
-
-        match (has_method, has_path) {
-            (true, true) => Ok(rest),
-            (true, false) => Err(Error::Missing {
-                msg: "Path not provided in the directive".to_string(),
-                directive: directive.clone(),
-            }),
-            (false, true) => Err(Error::Missing {
-                msg: "Method not provided in the directive".to_string(),
-                directive: directive.clone(),
-            }),
-            (false, false) => Err(Error::Missing {
-                msg: "Method and Path not provided in the directive".to_string(),
-                directive: directive.clone(),
-            }),
+        if !has_method {
+            Err(Error::MissingMethod)
+        } else if !has_path {
+            Err(Error::MissingPath)
+        } else {
+            Ok(rest)
         }
     }
 }
