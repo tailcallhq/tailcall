@@ -145,6 +145,30 @@ impl<A, E> Valid<A, E> {
         }
     }
 
+    pub fn from_iter_mut<B>(
+        iter: impl IntoIterator<Item = A>,
+        mut f: impl FnMut(A) -> Valid<B, E>,
+    ) -> Valid<Vec<B>, E> {
+        let mut values: Vec<B> = Vec::new();
+        let mut errors: ValidationError<E> = ValidationError::empty();
+        for a in iter.into_iter() {
+            match f(a).to_result() {
+                Ok(b) => {
+                    values.push(b);
+                }
+                Err(err) => {
+                    errors = errors.combine(err);
+                }
+            }
+        }
+
+        if errors.is_empty() {
+            Valid::succeed(values)
+        } else {
+            Valid::from_validation_err(errors)
+        }
+    }
+
     pub fn from_option(option: Option<A>, e: E) -> Valid<A, E> {
         match option {
             Some(a) => Valid::succeed(a),

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use async_graphql_value::ConstValue;
 use regex::Regex;
 
@@ -322,8 +324,10 @@ pub fn fix_dangling_resolvers<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, ty, name), mut b_field| {
+            let mut set = HashSet::new();
             if !field.has_resolver()
-                && validate_field_has_resolver(name, field, &config.types, ty).is_succeed()
+                && validate_field_has_resolver(name, field, &config.types, ty, &mut set)
+                    .is_succeed()
             {
                 b_field = b_field.resolver(Some(IR::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
@@ -375,7 +379,8 @@ fn to_fields(
     } else {
         GraphQLOperationType::Query
     };
-
+    // println!("ty: {}: ",config_module.config.types.iter().find(|(_,v)|
+    // type_of.eq(*v)).map(|(k,_)| k.clone()).unwrap_or_default());
     // Process fields that are not marked as `omit`
     let fields = Valid::from_iter(
         type_of
@@ -383,6 +388,7 @@ fn to_fields(
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
         |(name, field)| {
+            // println!("{}",name);
             validate_field_type_exist(config_module, field)
                 .and(to_field_definition(
                     field,
