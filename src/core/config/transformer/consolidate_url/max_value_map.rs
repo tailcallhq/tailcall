@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-/// A data structure that holds K and V, and allows query the max valued key.
+/// A data structure that holds K and V, and allows querying the max valued key
+/// in O(1) time complexity
 pub struct MaxValueMap<K, V> {
     map: HashMap<K, V>,
     max_valued_key: Option<K>,
