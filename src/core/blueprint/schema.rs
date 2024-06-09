@@ -36,7 +36,7 @@ fn validate_type_has_resolvers(
 
     visited.insert(name.to_string());
 
-    Valid::from_iter_mut(ty.fields.iter(), |(name, field)| {
+    Valid::from_iter(ty.fields.iter(), |(name, field)| {
         validate_field_has_resolver(name, field, types, ty, visited)
     })
     .trace(name)
