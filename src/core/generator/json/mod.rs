@@ -13,7 +13,7 @@ pub use types_generator::TypesGenerator;
 use crate::core::counter::{Count, Counter};
 
 pub struct NameGenerator {
-    counter: Counter,
+    counter: Counter<usize>,
     prefix: String,
 }
 
