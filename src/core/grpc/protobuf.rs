@@ -122,7 +122,10 @@ impl ProtobufService {
             .service_descriptor
             .methods()
             .find(|method| method.name() == grpc_method.name)
-            .ok_or_else(|| Error::MissingMethod { grpc_method: grpc_method.clone() })?;
+            .ok_or_else(|| Error::MissingMethod {
+                grpc_method: grpc_method.clone(),
+                method: grpc_method.name.to_string(),
+            })?;
 
         let input_type = method.input();
         let output_type = method.output();

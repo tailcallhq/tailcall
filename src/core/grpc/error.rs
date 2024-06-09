@@ -32,8 +32,11 @@ pub enum Error {
     #[error("Protox Parse Error")]
     ProtoxParseError(protox_parse::ParseError),
 
-    #[error("Couldn't find method {grpc_method}")]
-    MissingMethod { grpc_method: GrpcMethod },
+    #[error("Couldn't find method {method}")]
+    MissingMethod {
+        grpc_method: GrpcMethod,
+        method: String,
+    },
 
     #[error("Unable to find list field on type")]
     MissingListField,
