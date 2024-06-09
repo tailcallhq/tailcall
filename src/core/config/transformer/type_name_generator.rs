@@ -12,6 +12,49 @@ struct CandidateStats {
     priority: u8,
 }
 
+struct CandidateConvergence<'a> {
+    /// maintains the generated candidates in the form of
+    /// {TypeName: {{candidate_name: {frequency: 1, priority: 0}}}}
+    candidates: BTreeMap<String, BTreeMap<String, CandidateStats>>,
+    config: &'a Config,
+}
+
+impl<'a> CandidateConvergence<'a> {
+    fn new(candate_gen: CandidateGeneration<'a>) -> Self {
+        Self {
+            candidates: candate_gen.candidates,
+            config: candate_gen.config,
+        }
+    }
+
+    /// Converges on the most frequent candidate name for each type.
+    /// This method selects the most frequent candidate name for each type,
+    /// ensuring uniqueness.
+    fn converge(self) -> BTreeMap<String, String> {
+        let mut finalized_candidates = BTreeMap::new();
+        let mut converged_candidate_set = HashSet::new();
+
+        for (type_name, candidate_list) in self.candidates.iter() {
+            // Find the most frequent candidate that hasn't been converged yet and it's not
+            // already present in types.
+            if let Some((candidate_name, _)) = candidate_list
+                .iter()
+                .filter(|(candidate_name, _)| {
+                    !converged_candidate_set.contains(candidate_name)
+                        && !self.config.types.contains_key(*candidate_name)
+                })
+                .max_by_key(|&(_, candidate)| (candidate.frequency, candidate.priority))
+            {
+                let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
+                finalized_candidates.insert(type_name.to_owned(), singularized_candidate_name);
+                converged_candidate_set.insert(candidate_name);
+            }
+        }
+
+        finalized_candidates
+    }
+}
+
 struct CandidateGeneration<'a> {
     /// maintains the generated candidates in the form of
     /// {TypeName: {{candidate_name: {frequency: 1, priority: 0}}}}
@@ -27,7 +70,7 @@ impl<'a> CandidateGeneration<'a> {
     /// Generates candidate type names based on the provided configuration.
     /// This method iterates over the configuration and collects candidate type
     /// names for each type.
-    fn generate(mut self) -> Self {
+    fn generate(mut self) -> CandidateConvergence<'a> {
         for (type_name, type_info) in self.config.types.iter() {
             for (field_name, field_info) in type_info.fields.iter() {
                 if self.config.is_scalar(&field_info.type_of) {
@@ -58,34 +101,7 @@ impl<'a> CandidateGeneration<'a> {
                 }
             }
         }
-        self
-    }
-
-    /// Converges on the most frequent candidate name for each type.
-    /// This method selects the most frequent candidate name for each type,
-    /// ensuring uniqueness.
-    fn converge(self) -> BTreeMap<String, String> {
-        let mut finalized_candidates = BTreeMap::new();
-        let mut converged_candidate_set = HashSet::new();
-
-        for (type_name, candidate_list) in self.candidates.iter() {
-            // Find the most frequent candidate that hasn't been converged yet and it's not
-            // already present in types.
-            if let Some((candidate_name, _)) = candidate_list
-                .iter()
-                .filter(|(candidate_name, _)| {
-                    !converged_candidate_set.contains(candidate_name)
-                        && !self.config.types.contains_key(*candidate_name)
-                })
-                .max_by_key(|&(_, candidate)| (candidate.frequency, candidate.priority))
-            {
-                let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
-                finalized_candidates.insert(type_name.to_owned(), singularized_candidate_name);
-                converged_candidate_set.insert(candidate_name);
-            }
-        }
-
-        finalized_candidates
+        CandidateConvergence::new(self)
     }
 }
 
