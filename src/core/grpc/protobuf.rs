@@ -15,19 +15,8 @@ use crate::core::blueprint::GrpcMethod;
 
 fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
     let mut deserializer = Deserializer::from_str(input);
-    let message = match DynamicMessage::deserialize(descriptor.clone(), &mut deserializer) {
-        Ok(message) => message,
-        Err(_) => {
-            return Err(Error::GenericError {
-                msg: format!(
-                    "Failed to parse input according to type {}",
-                    descriptor.full_name()
-                ),
-            });
-        }
-    };
+    let message = DynamicMessage::deserialize(descriptor.clone(), &mut deserializer)?;
     deserializer.end()?;
-
     Ok(message)
 }
 
@@ -62,7 +51,7 @@ pub fn protobuf_value_as_str(value: &prost_reflect::Value) -> String {
 pub fn get_field_value_as_str(message: &DynamicMessage, field_name: &str) -> Result<String> {
     let field = message
         .get_field_by_name(field_name)
-        .ok_or(Error::GenericError { msg: format!("Unable to find key : {}", field_name) })?;
+        .ok_or(Error::MissingField(field_name.to_owned()))?;
 
     Ok(protobuf_value_as_str(&field))
 }
@@ -88,9 +77,7 @@ impl ProtobufSet {
         let service_descriptor = self
             .descriptor_pool
             .get_service_by_name(&service_name)
-            .ok_or_else(|| Error::GenericError {
-                msg: format!("Couldn't find definitions for service {service_name}"),
-            })?;
+            .ok_or_else(|| Error::MissingService(service_name))?;
 
         Ok(ProtobufService { service_descriptor })
     }
@@ -223,17 +210,7 @@ impl ProtobufOperation {
         // see https://www.oreilly.com/library/view/grpc-up-and/9781492058328/ch04.html#:~:text=Length%2DPrefixed%20Message%20Framing
         // 1st byte - compression flag
         // 2-4th bytes - length of the message
-        let message = match DynamicMessage::decode(self.output_type.clone(), &bytes[5..]) {
-            Ok(message) => message,
-            Err(_) => {
-                return Err(Error::GenericError {
-                    msg: format!(
-                        "Failed to parse response for type {}",
-                        self.output_type.full_name()
-                    ),
-                });
-            }
-        };
+        let message = DynamicMessage::decode(self.output_type.clone(), &bytes[5..])?;
 
         let mut serializer = serde_json::Serializer::new(vec![]);
         message.serialize_with_options(&mut serializer, &self.serialize_options)?;

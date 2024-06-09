@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use derive_more::From;
 use prost_reflect::DescriptorError;
 use serde_json;
@@ -11,9 +9,8 @@ pub enum Error {
     #[error("Serde Json Error")]
     SerdeJsonError(serde_json::Error),
 
-    #[error("Arc Error")]
-    ArcError(Arc<anyhow::Error>),
-
+    // #[error("Arc Error")]
+    // ArcError(Arc<anyhow::Error>),
     #[error("Prost Encode Error")]
     ProstEncodeError(prost::EncodeError),
 
@@ -38,10 +35,13 @@ pub enum Error {
     #[error("Unable to find list field on type")]
     MissingListField,
 
-    #[error("{msg}")]
-    GenericError {
-        msg: String,
-    },
+    #[error("Field not found {0}")]
+    #[from(ignore)]
+    MissingField(String),
+
+    #[error("Service not found {0}")]
+    #[from(ignore)]
+    MissingService(String),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
