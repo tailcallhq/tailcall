@@ -4,7 +4,9 @@ use url::Url;
 use super::json::{
     FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
 };
-use crate::core::config::transformer::{RemoveUnused, Transform, TransformerOps, TypeMerger};
+use crate::core::config::transformer::{
+    ConsolidateURL, RemoveUnused, Transform, TransformerOps, TypeMerger,
+};
 use crate::core::config::Config;
 use crate::core::valid::Validator;
 
@@ -40,6 +42,8 @@ pub fn from_json(
             .transform(config)
             .to_result()?;
     }
+
+    let config = ConsolidateURL::new(0.5).transform(config).to_result()?;
 
     Ok(config)
 }

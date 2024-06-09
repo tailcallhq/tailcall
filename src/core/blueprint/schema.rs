@@ -32,9 +32,9 @@ fn validate_type_has_resolvers(
 ) -> Valid<(), String> {
     if visited.contains(name) {
         return Valid::succeed(());
-    } else {
-        visited.insert(name.to_string());
     }
+
+    visited.insert(name.to_string());
 
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
         validate_field_has_resolver(name, field, types, visited)

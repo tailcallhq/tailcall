@@ -1,4 +1,5 @@
 use anyhow::Result;
+use futures_util::future::join_all;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 use reqwest::Method;

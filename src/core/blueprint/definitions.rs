@@ -378,7 +378,6 @@ fn to_fields(
     } else {
         GraphQLOperationType::Query
     };
-
     // Process fields that are not marked as `omit`
     let fields = Valid::from_iter(
         type_of

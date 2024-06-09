@@ -382,7 +382,7 @@ impl OpenApiToConfigConverter {
         }
 
         self.types
-            .insert("Query".to_string(), Type { fields, ..Default::default() });
+            .insert(self.query.clone(), Type { fields, ..Default::default() });
 
         for (name, obj_or_ref) in components.schemas.into_iter() {
             let name = name.to_case(Case::Pascal);
@@ -413,7 +413,7 @@ impl OpenApiToConfigConverter {
                 ..Default::default()
             },
             schema: RootSchema {
-                query: self.types.get("Query").map(|_| "Query".into()),
+                query: self.types.get(&self.query).map(|_| self.query),
                 ..Default::default()
             },
             types: self.types,
