@@ -51,6 +51,9 @@ pub fn validate_field_has_resolver(
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
         .when(|| {
+            if visited.contains(&field.type_of) {
+                return true;
+            }
             if !field.has_resolver() {
                 let type_name = &field.type_of;
                 if let Some(ty) = types.get(type_name) {
