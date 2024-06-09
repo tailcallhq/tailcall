@@ -45,16 +45,10 @@ impl TryFrom<&Type> for UrlParamType {
                 "Int" => Ok(Self::Number(N::Int)),
                 "Boolean" => Ok(Self::Boolean),
                 "Float" => Ok(Self::Number(N::Float)),
-                _ => Err(Error::TypeMismatch {
-                    expected: "String, Int, Boolean, Float".to_string(),
-                    actual: name.clone().to_string(),
-                }),
+                _ => Err(Error::UnexpectedNamedType(name.to_owned())),
             },
             // TODO: support for list types
-            _ => Err(Error::TypeMismatch {
-                expected: "String, Int, Boolean, Float".to_string(),
-                actual: format!("{:?}", value.base),
-            }),
+            _ => Err(Error::UnexpectedType(value.to_owned())),
         }
     }
 }
