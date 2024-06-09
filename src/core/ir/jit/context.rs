@@ -5,12 +5,12 @@ use serde_json_borrow::OwnedValue;
 
 use super::model::{ExecutionPlan, Field, FieldId, Parent};
 use super::store::Store;
-use crate::core::ir::{EvaluationError, IoId, IR};
+use crate::core::ir::{CallId, EvaluationError, IR};
 
 #[allow(unused)]
 pub struct ExecutionContext {
     plan: ExecutionPlan,
-    store: Mutex<Store<IoId, OwnedValue>>,
+    store: Mutex<Store<CallId, OwnedValue>>,
 }
 
 #[allow(unused)]
@@ -67,7 +67,7 @@ impl ExecutionContext {
             .collect::<Vec<_>>()
     }
 
-    pub async fn execute(self) -> Result<Store<IoId, OwnedValue>, EvaluationError> {
+    pub async fn execute(self) -> Result<Store<CallId, OwnedValue>, EvaluationError> {
         future::join_all(
             self.root()
                 .iter()
