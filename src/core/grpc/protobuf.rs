@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 
-use anyhow::{anyhow, bail, Context, Result};
 use async_graphql::Value;
 use prost::bytes::BufMut;
 use prost::Message;
@@ -11,19 +10,13 @@ use prost_reflect::{
 };
 use serde_json::Deserializer;
 
+use super::{Error, Result};
 use crate::core::blueprint::GrpcMethod;
 
 fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
     let mut deserializer = Deserializer::from_str(input);
-    let message =
-        DynamicMessage::deserialize(descriptor.clone(), &mut deserializer).with_context(|| {
-            format!(
-                "Failed to parse input according to type {}",
-                descriptor.full_name()
-            )
-        })?;
+    let message = DynamicMessage::deserialize(descriptor.clone(), &mut deserializer)?;
     deserializer.end()?;
-
     Ok(message)
 }
 
@@ -58,7 +51,7 @@ pub fn protobuf_value_as_str(value: &prost_reflect::Value) -> String {
 pub fn get_field_value_as_str(message: &DynamicMessage, field_name: &str) -> Result<String> {
     let field = message
         .get_field_by_name(field_name)
-        .ok_or(anyhow!("Unable to find key"))?;
+        .ok_or(Error::MissingField(field_name.to_owned()))?;
 
     Ok(protobuf_value_as_str(&field))
 }
@@ -84,7 +77,7 @@ impl ProtobufSet {
         let service_descriptor = self
             .descriptor_pool
             .get_service_by_name(&service_name)
-            .with_context(|| format!("Couldn't find definitions for service {service_name}"))?;
+            .ok_or_else(|| Error::MissingService(service_name))?;
 
         Ok(ProtobufService { service_descriptor })
     }
@@ -116,7 +109,7 @@ impl ProtobufService {
             .service_descriptor
             .methods()
             .find(|method| method.name() == grpc_method.name)
-            .with_context(|| format!("Couldn't find method {}", grpc_method.name))?;
+            .ok_or_else(|| Error::MissingMethod(grpc_method.to_owned()))?;
 
         let input_type = method.input();
         let output_type = method.output();
@@ -181,12 +174,10 @@ impl ProtobufOperation {
             .input_type
             .fields()
             .find(|field| field.is_list())
-            .ok_or(anyhow!("Unable to find list field on type"))?;
+            .ok_or(Error::MissingListField)?;
 
         let field_kind = field_descriptor.kind();
-        let child_message_descriptor = field_kind
-            .as_message()
-            .ok_or(anyhow!("Couldn't resolve message"))?;
+        let child_message_descriptor = field_kind.as_message().ok_or(Error::MessageNotResolved)?;
         let mut message = DynamicMessage::new(self.input_type.clone());
 
         let child_messages = child_inputs
@@ -213,19 +204,13 @@ impl ProtobufOperation {
 
     pub fn convert_output<T: serde::de::DeserializeOwned>(&self, bytes: &[u8]) -> Result<T> {
         if bytes.len() < 5 {
-            bail!("Empty response");
+            return Err(Error::EmptyResponse);
         }
         // ignore 5 first bytes as they are part of Length-Prefixed Message Framing
         // see https://www.oreilly.com/library/view/grpc-up-and/9781492058328/ch04.html#:~:text=Length%2DPrefixed%20Message%20Framing
         // 1st byte - compression flag
         // 2-4th bytes - length of the message
-        let message =
-            DynamicMessage::decode(self.output_type.clone(), &bytes[5..]).with_context(|| {
-                format!(
-                    "Failed to parse response for type {}",
-                    self.output_type.full_name()
-                )
-            })?;
+        let message = DynamicMessage::decode(self.output_type.clone(), &bytes[5..])?;
 
         let mut serializer = serde_json::Serializer::new(vec![]);
         message.serialize_with_options(&mut serializer, &self.serialize_options)?;
@@ -576,7 +561,7 @@ pub mod tests {
         );
 
         // numbers out of range
-        let input: anyhow::Error = operation
+        let input: Error = operation
             .convert_input(
                 r#"{
                 "floatNum": 1e154561.14848449464654948484542189,

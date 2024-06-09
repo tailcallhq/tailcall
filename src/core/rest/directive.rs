@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
-use anyhow::bail;
 use async_graphql::parser::types::Directive;
 use async_graphql_value::Value;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
+use super::{Error, Result};
 use crate::core::http::Method;
 use crate::core::is_default;
 
@@ -24,9 +24,9 @@ pub(crate) struct Rest {
 }
 
 impl TryFrom<&Directive> for Rest {
-    type Error = anyhow::Error;
+    type Error = Error;
 
-    fn try_from(directive: &Directive) -> anyhow::Result<Self> {
+    fn try_from(directive: &Directive) -> Result<Self> {
         let mut rest = Rest::default();
 
         let mut has_path = false;
@@ -66,21 +66,12 @@ impl TryFrom<&Directive> for Rest {
                 _ => {}
             };
         }
-
-        match (has_method, has_path) {
-            (true, true) => Ok(rest),
-            (true, false) => {
-                bail!("Path not provided in the directive: {:?}", directive);
-            }
-            (false, true) => {
-                bail!("Method not provided in the directive: {:?}", directive);
-            }
-            (false, false) => {
-                bail!(
-                    "Method and Path not provided in the directive: {:?}",
-                    directive
-                );
-            }
+        if !has_method {
+            Err(Error::MissingMethod)
+        } else if !has_path {
+            Err(Error::MissingPath)
+        } else {
+            Ok(rest)
         }
     }
 }

@@ -11,7 +11,7 @@ use serde_json::json;
 use crate::core::blueprint::GrpcMethod;
 use crate::core::config::ConfigReaderContext;
 use crate::core::grpc::protobuf::ProtobufSet;
-use crate::core::grpc::RequestTemplate;
+use crate::core::grpc::{self, RequestTemplate};
 use crate::core::mustache::Mustache;
 use crate::core::runtime::TargetRuntime;
 
@@ -24,7 +24,7 @@ const REFLECTION_PROTO: &str = include_str!(concat!(
 ));
 
 /// This function is just used for better exception handling
-fn get_protobuf_set() -> Result<ProtobufSet> {
+fn get_protobuf_set() -> grpc::Result<ProtobufSet> {
     let descriptor = protox_parse::parse("reflection", REFLECTION_PROTO)?;
     let mut descriptor_set = FileDescriptorSet::default();
     descriptor_set.file.push(descriptor);
