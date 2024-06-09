@@ -29,9 +29,9 @@ impl Count for Counter {
 }
 
 #[derive(Default, Debug)]
-pub struct MutexCounter(Mutex<usize>);
+pub struct AtomicCounter(Mutex<usize>);
 
-impl Count for MutexCounter {
+impl Count for AtomicCounter {
     type Item = CallId;
 
     fn next(&self) -> CallId {
