@@ -411,6 +411,11 @@ pub struct Enum {
 /// REST API. In this scenario, the GraphQL server will make a GET request to
 /// the API endpoint specified when the `users` field is queried.
 pub struct Http {
+    #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
+    /// onRequest field in @http directive gives the ability to specify the
+    /// request interception handler.
+    pub on_request: Option<String>,
+
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
@@ -790,6 +795,10 @@ impl Config {
         }
         while let Some(type_name) = stack.pop() {
             if let Some(typ) = self.types.get(&type_name) {
+                if set.contains(&type_name) {
+                    continue;
+                }
+
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
@@ -849,6 +858,32 @@ mod tests {
             "Foo",
             Type::default().fields(vec![("a", Field::int())]),
         )]);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_unused_types_with_cyclic_types() {
+        let config = Config::from_sdl(
+            "
+            type Bar {a: Int}
+            type Foo {a: [Foo]}
+
+            type Query {
+                foos: [Foo]
+            }
+
+            schema {
+                query: Query
+            }
+            ",
+        )
+        .to_result()
+        .unwrap();
+
+        let actual = config.unused_types();
+        let mut expected = HashSet::new();
+        expected.insert("Bar".to_string());
+
         assert_eq!(actual, expected);
     }
 }

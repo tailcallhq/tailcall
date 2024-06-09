@@ -106,7 +106,7 @@ which = { version = "6.0.1", optional = true }
 async-recursion = "1.1.1"
 tempfile = "3.10.1"
 rquickjs = { "version" = "0.5.1", optional = true, features = ["macro"] }
-strum_macros = "0.26.2"
+strum_macros = "0.26.4"
 # TODO: disable some levels with features?
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3.18", features = [
@@ -249,4 +249,9 @@ harness = false
 
 [[test]]
 name = "execution_spec"
+harness = false
+
+[[test]]
+name = "json_to_config_spec"
+path = "src/core/generator/tests/json_to_config_spec.rs"
 harness = false
