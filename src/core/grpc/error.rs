@@ -32,17 +32,16 @@ pub enum Error {
     #[error("Protox Parse Error")]
     ProtoxParseError(protox_parse::ParseError),
 
-    #[error("Couldn't find method {method}")]
-    MissingMethod {
-        grpc_method: GrpcMethod,
-        method: String,
-    },
+    #[error("Couldn't find method {}", ._0.name)]
+    MissingMethod(GrpcMethod),
 
     #[error("Unable to find list field on type")]
     MissingListField,
 
     #[error("{msg}")]
-    GenericError { msg: String },
+    GenericError {
+        msg: String,
+    },
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
