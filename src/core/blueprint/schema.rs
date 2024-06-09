@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use async_graphql::parser::types::ConstDirective;
 
@@ -16,8 +16,8 @@ fn validate_query(config: &Config) -> Valid<(), String> {
         let Some(query) = config.find_type(query_type_name) else {
             return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
         };
-
-        validate_type_has_resolvers(query_type_name, query, &config.types)
+        let mut set = HashSet::new();
+        validate_type_has_resolvers(query_type_name, query, &config.types, &mut set)
     })
     .unit()
 }
@@ -28,19 +28,28 @@ fn validate_type_has_resolvers(
     name: &str,
     ty: &Type,
     types: &BTreeMap<String, Type>,
+    visited: &mut HashSet<String>,
 ) -> Valid<(), String> {
+    if visited.contains(name) {
+        return Valid::succeed(());
+    }
+
+    visited.insert(name.to_string());
+
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
-        validate_field_has_resolver(name, field, types, ty)
+        validate_field_has_resolver(name, field, types, ty, visited)
     })
     .trace(name)
     .unit()
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
     types: &BTreeMap<String, Type>,
     parent_ty: &Type,
+    visited: &mut HashSet<String>,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
         .when(|| {
@@ -53,7 +62,7 @@ pub fn validate_field_has_resolver(
                     if ty.scalar() {
                         return true;
                     }
-                    let res = validate_type_has_resolvers(type_name, ty, types);
+                    let res = validate_type_has_resolvers(type_name, ty, types, visited);
                     return !res.is_succeed();
                 } else {
                     // It's a Scalar
@@ -94,8 +103,8 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
             return Valid::fail("Mutation type is not defined".to_owned())
                 .trace(mutation_type_name);
         };
-
-        validate_type_has_resolvers(mutation_type_name, mutation, &config.types)
+        let mut set = HashSet::new();
+        validate_type_has_resolvers(mutation_type_name, mutation, &config.types, &mut set)
     } else {
         Valid::succeed(())
     }
