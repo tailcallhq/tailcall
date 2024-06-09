@@ -1,7 +1,7 @@
 mod directive;
 mod endpoint;
 mod endpoint_set;
-mod error;
+pub mod error;
 mod operation;
 mod partial_request;
 mod path;

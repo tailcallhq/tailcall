@@ -1,13 +1,13 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use anyhow::Result;
 use tokio::sync::oneshot::{self};
 
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
 use crate::cli::telemetry::init_opentelemetry;
+use crate::cli::Result;
 use crate::core::blueprint::{Blueprint, Http};
 use crate::core::config::ConfigModule;
 use crate::core::Errata;

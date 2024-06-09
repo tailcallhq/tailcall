@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::Path;
 
-use anyhow::Result;
 use clap::Parser;
 use convert_case::{Case, Casing};
 use dotenvy::dotenv;
@@ -10,7 +9,7 @@ use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
-use super::update_checker;
+use super::{update_checker, Result};
 use crate::cli;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
