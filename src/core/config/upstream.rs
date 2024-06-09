@@ -67,7 +67,7 @@ pub struct Upstream {
     /// `allowedHeaders` defines the HTTP headers allowed to be forwarded to
     /// upstream services. If not set, no headers are forwarded, enhancing
     /// security but possibly limiting data flow.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub allowed_headers: Option<Pos<BTreeSet<String>>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
@@ -76,7 +76,7 @@ pub struct Upstream {
     /// [@http](#http) operator must specify its own `baseURL`. If neither
     /// `@upstream` nor [@http](#http) provides a `baseURL`, it results in a
     /// compilation error.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub base_url: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
@@ -84,18 +84,18 @@ pub struct Upstream {
     /// maximum size of the batch), `delay` (the delay in milliseconds between
     /// each batch), and `headers` (an array of HTTP headers to be included in
     /// the batch).
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub batch: Option<Pos<Batch>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The time in seconds that the connection will wait for a response before
     /// timing out.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub connect_timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub http_cache: Option<Pos<u64>>,
 
     #[setters(strip_option)]
@@ -104,36 +104,36 @@ pub struct Upstream {
     /// always issue HTTP2 requests, without checking if the server supports it
     /// or not. By default it is set to `false` for all HTTP requests made by
     /// the server, but is automatically set to true for GRPC.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub http_2_only: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The time in seconds between each keep-alive message sent to maintain the
     /// connection.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub keep_alive_interval: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The time in seconds that the connection will wait for a keep-alive
     /// message before closing.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub keep_alive_timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// A boolean value that determines whether keep-alive messages should be
     /// sent while the connection is idle.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub keep_alive_while_idle: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The maximum number of idle connections that will be maintained per host.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub pool_max_idle_per_host: Option<Pos<usize>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The time in seconds that the connection pool will wait before closing
     /// idle connections.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub pool_idle_timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
@@ -141,31 +141,31 @@ pub struct Upstream {
     /// upstream requests will be routed before reaching their intended
     /// endpoint. By specifying a proxy URL, you introduce an additional layer,
     /// enabling custom routing and security policies.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub proxy: Option<Pos<Proxy>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The time in seconds between each TCP keep-alive message sent to maintain
     /// the connection.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub tcp_keep_alive: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The maximum time in seconds that the connection will wait for a
     /// response.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The User-Agent header value to be used in HTTP requests. @default
     /// `Tailcall/1.0`
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub user_agent: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
     /// is made more than once within the context of a single GraphQL request.
-    #[is_positioned_option]
+    #[positioned_field(option_field)]
     pub dedupe: Option<Pos<bool>>,
 }
 

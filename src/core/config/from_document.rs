@@ -612,7 +612,14 @@ fn to_add_fields_from_directives(
         .filter_map(|directive| {
             if directive.node.name.node == config::AddField::directive_name() {
                 config::AddField::from_directive(&directive.node)
-                    .and_then(|field| {
+                    .and_then(|mut field| {
+                        directive.node.arguments.iter().for_each(|(key, _)| {
+                            let key_snake_case = key.node.to_case(Case::Snake);
+                            field.set_field_position(
+                                key_snake_case.as_str(),
+                                (key.pos.line, key.pos.column),
+                            )
+                        });
                         Valid::succeed(Pos::new(
                             directive.pos.line,
                             directive.pos.column,

@@ -1,0 +1,24 @@
+schema {
+  query: Query
+}
+
+type User
+  @addField(name: "street", path: ["address", "street"]) {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  phone: String
+  website: String
+  address: Address @modify(omit: true)
+}
+
+type Address {
+  street: String!
+  city: String!
+  state: String!
+}
+
+type Query {
+  user(id: Int!): User @http(path: "/users/{{.args.id}}")
+}

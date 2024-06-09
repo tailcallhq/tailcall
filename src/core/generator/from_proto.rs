@@ -267,7 +267,7 @@ impl Context {
                     Grpc {
                         base_url: None,
                         body,
-                        group_by: vec![],
+                        group_by: Pos::new(0, 0, None, vec![]),
                         headers: vec![],
                         method: Pos::new(0, 0, None, field_name.id()),
                     },

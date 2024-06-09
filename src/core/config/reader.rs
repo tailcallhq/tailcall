@@ -200,6 +200,8 @@ impl ConfigReader {
             config_module = config_module.merge_right(new_config_module);
         }
 
+        dbg!("{:?}", config_module.clone());
+
         Ok(config_module)
     }
 

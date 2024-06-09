@@ -443,7 +443,7 @@ fn to_fields(
                         .iter()
                         .map(|s| s.to_owned())
                         .collect::<Vec<_>>(),
-                    None => add_field.path.clone(),
+                    None => add_field.path.inner.clone(),
                 };
                 let invalid_path_handler = |field_name: &str,
                                             _added_field_path: &[String],

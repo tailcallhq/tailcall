@@ -14,7 +14,7 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
     expand_merge_right_derive(input)
 }
 
-#[proc_macro_derive(PositionedConfig, attributes(is_positioned_option))]
+#[proc_macro_derive(PositionedConfig, attributes(positioned_field))]
 pub fn positioned_config(input: TokenStream) -> TokenStream {
     expand_positoned_config(input)
 }

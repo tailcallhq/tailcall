@@ -13,10 +13,12 @@ use super::position::Pos;
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, SourceType, Upstream};
 use crate::core::config::from_document::from_document;
+use crate::core::config::positioned_config::PositionedConfig;
 use crate::core::config::source::Source;
 use crate::core::http::Method;
 use crate::core::json::JsonSchema;
 use crate::core::macros::MergeRight;
+use crate::core::macros::PositionedConfig;
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{is_default, scalar};
@@ -436,7 +438,7 @@ pub struct Http {
 
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<Pos<String>>,
+    pub group_by: Pos<Vec<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
@@ -526,7 +528,7 @@ pub struct Grpc {
     pub body: Pos<Option<String>>,
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<Pos<String>>,
+    pub group_by: Pos<Vec<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@grpc` operator. It is used by specifying a
@@ -600,14 +602,18 @@ pub struct Expr {
     pub body: Value,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, PositionedConfig,
+)]
 #[serde(deny_unknown_fields)]
 /// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 pub struct AddField {
     /// Name of the new field to be added
-    pub name: String,
+    #[positioned_field(field)]
+    pub name: Pos<String>,
     /// Path of the data where the field should point to
-    pub path: Vec<String>,
+    #[positioned_field(field)]
+    pub path: Pos<Vec<String>>,
 }
 
 impl Config {
@@ -841,7 +847,7 @@ mod tests {
                     0,
                     None,
                     Http {
-                        group_by: vec![Pos::new(0, 0, None, "id".to_string())],
+                        group_by: Pos::new(0, 0, None, vec!["id".to_string()]),
                         ..Default::default()
                     },
                 )),
@@ -858,7 +864,7 @@ mod tests {
                     0,
                     0,
                     None,
-                    Http { group_by: vec![], ..Default::default() },
+                    Http { group_by: Pos::new(0, 0, None, vec![]), ..Default::default() },
                 )),
                 ..Default::default()
             },

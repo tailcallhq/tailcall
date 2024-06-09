@@ -1,15 +1,11 @@
 /// This file will be changed in favor of the macro left here untill all types are positioned
 use super::{
-    AddField, Arg, Cache, Call, Enum, Expr, Field, GraphQL, Grpc, Http, Inline, Link, LinkType,
-    Modify, Omit, Protected, Step, Tag, Telemetry, TelemetryExporter, Type, Union, JS,
+    Arg, Cache, Call, Enum, Expr, Field, GraphQL, Grpc, Http, Inline, Link, LinkType, Modify, Omit,
+    Protected, Step, Tag, Telemetry, TelemetryExporter, Union, JS,
 };
 
 pub trait PositionedConfig {
     fn set_field_position(&mut self, _field: &str, _position: (usize, usize));
-}
-
-impl PositionedConfig for Type {
-    fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
 }
 
 impl PositionedConfig for Tag {
@@ -77,10 +73,6 @@ impl PositionedConfig for GraphQL {
 }
 
 impl PositionedConfig for Expr {
-    fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
-}
-
-impl PositionedConfig for AddField {
     fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
 }
 

@@ -70,13 +70,7 @@ pub fn compile_http(
             if !http.group_by.is_empty() && http.method == Method::GET {
                 IR::IO(IO::Http {
                     req_template,
-                    group_by: Some(GroupBy::new(
-                        http.group_by
-                            .clone()
-                            .into_iter()
-                            .map(|group| group.inner)
-                            .collect(),
-                    )),
+                    group_by: Some(GroupBy::new(http.group_by.clone().inner)),
                     dl_id: None,
                     http_filter,
                 })
