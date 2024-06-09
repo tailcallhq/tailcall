@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Issue {
+  id: ID!
+  relatedIssues: [Issue]
+  repository: Repository
+  title: String!
+}
+
+type Query {
+  repository(name: String!, owner: String!): Repository
+}
+
+type Repository {
+  id: ID!
+  issues: [Issue]
+  name: String!
+}

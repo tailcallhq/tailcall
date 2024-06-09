@@ -43,6 +43,7 @@ fn validate_type_has_resolvers(
     .unit()
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
