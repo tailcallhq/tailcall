@@ -3,7 +3,7 @@ source: src/core/ir/jit/builder.rs
 expression: plan
 ---
 ExecutionPlan {
-    fields: [
+    parent: [
         Field {
             id: 0,
             name: "user",
@@ -42,7 +42,7 @@ ExecutionPlan {
             ),
         },
     ],
-    field_children: [
+    children: [
         Field {
             id: 0,
             name: "user",

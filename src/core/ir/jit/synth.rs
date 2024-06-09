@@ -2,22 +2,22 @@ pub use serde_json_borrow::*;
 
 use super::model::{Children, Field};
 use super::store::{Data, Store};
-use crate::core::ir::IoId;
+use crate::core::ir::CallId;
 
 #[allow(unused)]
 pub struct Synth {
     operation: Field<Children>,
-    store: Store<IoId, OwnedValue>,
+    store: Store<CallId, OwnedValue>,
 }
 
 #[allow(unused)]
 impl Synth {
-    pub fn new(operation: Field<Children>, store: Store<IoId, OwnedValue>) -> Self {
+    pub fn new(operation: Field<Children>, store: Store<CallId, OwnedValue>) -> Self {
         Synth { operation, store }
     }
 
     pub fn synthesize(&self) -> Value<'_> {
-        let value = self.store.get(&IoId::new(0));
+        let value = self.store.get(&CallId::new(0));
         self.iter(&self.operation, value)
     }
 
@@ -28,7 +28,7 @@ impl Synth {
     pub fn iter<'a>(
         &'a self,
         node: &'a Field<Children>,
-        parent: Option<&'a Data<IoId, OwnedValue>>,
+        parent: Option<&'a Data<CallId, OwnedValue>>,
     ) -> Value<'a> {
         match parent {
             Some(parent) => match parent.data.as_ref().map(|v| v.get_value()) {
@@ -55,7 +55,7 @@ impl Synth {
         &'a self,
         node: &'a Field<Children>,
         parent: Option<&'a Value<'a>>,
-        value: &Data<IoId, OwnedValue>,
+        value: &Data<CallId, OwnedValue>,
     ) -> Value<'a> {
         match parent {
             Some(Value::Object(obj)) => {
@@ -117,7 +117,7 @@ mod tests {
     use crate::core::ir::jit::model::FieldId;
     use crate::core::ir::jit::store::{Data, Store};
     use crate::core::ir::jit::synth::Synth;
-    use crate::core::ir::IoId;
+    use crate::core::ir::CallId;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -148,7 +148,7 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn synth(query: &str, data: Vec<(IoId, Data<IoId, OwnedValue>)>) -> String {
+    fn synth(query: &str, data: Vec<(CallId, Data<CallId, OwnedValue>)>) -> String {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
@@ -172,18 +172,18 @@ mod tests {
         let store = vec![
             // Insert Root
             (
-                IoId::new(0),
+                CallId::new(0),
                 Data {
                     data: None,
-                    extras: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(0), CallId::new(1))].into_iter()),
                 },
             ),
             // Insert /posts
             (
-                IoId::new(1),
+                CallId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(POSTS).unwrap()),
-                    extras: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(0), CallId::new(1))].into_iter()),
                 },
             ),
         ];
@@ -205,18 +205,18 @@ mod tests {
         let store = vec![
             // Insert Root
             (
-                IoId::new(0),
+                CallId::new(0),
                 Data {
                     data: None,
-                    extras: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(0), CallId::new(1))].into_iter()),
                 },
             ),
             // Insert /users
             (
-                IoId::new(1),
+                CallId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(USERS).unwrap()),
-                    extras: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(0), CallId::new(1))].into_iter()),
                 },
             ),
         ];
@@ -237,15 +237,15 @@ mod tests {
         let store = vec![
             // Insert Root
             (
-                IoId::new(0),
+                CallId::new(0),
                 Data {
                     data: None,
-                    extras: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(0), CallId::new(1))].into_iter()),
                 },
             ),
             // Insert /user/:id
             (
-                IoId::new(1),
+                CallId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(USER).unwrap()),
                     extras: Default::default(),
@@ -269,23 +269,23 @@ mod tests {
         let store = vec![
             // Insert Root
             (
-                IoId::new(0),
+                CallId::new(0),
                 Data {
                     data: None,
-                    extras: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(0), CallId::new(1))].into_iter()),
                 },
             ),
             // Insert /posts/:id
             (
-                IoId::new(1),
+                CallId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(POST).unwrap()),
-                    extras: HashMap::from_iter(vec![(FieldId::new(3), IoId::new(2))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(3), CallId::new(2))].into_iter()),
                 },
             ),
             // Insert /user/:id
             (
-                IoId::new(2),
+                CallId::new(2),
                 Data {
                     data: Some(OwnedValue::from_str(USER).unwrap()),
                     extras: Default::default(),
@@ -310,23 +310,23 @@ mod tests {
         let store = vec![
             // Insert Root
             (
-                IoId::new(0),
+                CallId::new(0),
                 Data {
                     data: None,
-                    extras: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(0), CallId::new(1))].into_iter()),
                 },
             ),
             // Insert /posts
             (
-                IoId::new(1),
+                CallId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(POSTS).unwrap()),
-                    extras: HashMap::from_iter(vec![(FieldId::new(3), IoId::new(2))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(3), CallId::new(2))].into_iter()),
                 },
             ),
             // Insert /user/:id
             (
-                IoId::new(2),
+                CallId::new(2),
                 Data {
                     data: Some(OwnedValue::from_str(USER).unwrap()),
                     extras: Default::default(),
@@ -351,30 +351,30 @@ mod tests {
         let store = vec![
             // Insert Root
             (
-                IoId::new(0),
+                CallId::new(0),
                 Data {
                     data: None,
-                    extras: HashMap::from_iter(vec![(FieldId::new(0), IoId::new(1))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(0), CallId::new(1))].into_iter()),
                 },
             ),
             // Insert /posts
             (
-                IoId::new(1),
+                CallId::new(1),
                 Data {
                     data: Some(OwnedValue::from_str(POSTS).unwrap()),
-                    extras: HashMap::from_iter(vec![(FieldId::new(2), IoId::new(2))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(2), CallId::new(2))].into_iter()),
                 },
             ),
             // Insert /user/:id
             (
-                IoId::new(2),
+                CallId::new(2),
                 Data {
                     data: Some(OwnedValue::from_str(USER).unwrap()),
-                    extras: HashMap::from_iter(vec![(FieldId::new(4), IoId::new(3))].into_iter()),
+                    extras: HashMap::from_iter(vec![(FieldId::new(4), CallId::new(3))].into_iter()),
                 },
             ),
             (
-                IoId::new(3),
+                CallId::new(3),
                 Data {
                     data: Some(OwnedValue::from_str(TODO).unwrap()),
                     extras: Default::default(),

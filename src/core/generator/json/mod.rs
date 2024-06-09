@@ -10,10 +10,10 @@ pub use query_generator::QueryGenerator;
 pub use schema_generator::SchemaGenerator;
 pub use types_generator::TypesGenerator;
 
-use crate::core::counter::Counter;
+use crate::core::counter::{Count, Counter};
 
 pub struct NameGenerator {
-    counter: Counter,
+    counter: Counter<usize>,
     prefix: String,
 }
 
