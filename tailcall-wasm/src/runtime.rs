@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 use tailcall::core::cache::InMemoryCache;
+use tailcall::core::ir::IoId;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 
@@ -21,7 +22,7 @@ fn init_env() -> Arc<dyn EnvIO> {
     Arc::new(WasmEnv::init())
 }
 
-fn init_cache() -> Arc<InMemoryCache<u64, ConstValue>> {
+fn init_cache() -> Arc<InMemoryCache<IoId, ConstValue>> {
     Arc::new(InMemoryCache::new())
 }
 
@@ -38,7 +39,7 @@ pub fn init_rt() -> TargetRuntime {
         file,
         cache,
         extensions: Arc::new(vec![]),
-        http_worker: None,
+        cmd_worker: None,
         worker: None,
     }
 }

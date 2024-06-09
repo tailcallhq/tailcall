@@ -5346,7 +5346,7 @@ dependencies = [
  "async-trait",
  "console_error_panic_hook",
  "dashmap",
- "hyper 0.14.28",
+ "hyper 0.14.29",
  "reqwest",
  "serde_json",
  "tailcall",
