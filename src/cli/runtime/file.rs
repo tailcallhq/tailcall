@@ -1,5 +1,6 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+use crate::cli::Result;
 use crate::core::{Errata, FileIO};
 
 #[derive(Clone)]
@@ -11,14 +12,14 @@ impl NativeFileIO {
     }
 }
 
-async fn read(path: &str) -> anyhow::Result<String> {
+async fn read(path: &str) -> Result<String> {
     let mut file = tokio::fs::File::open(path).await?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).await?;
     Ok(String::from_utf8(buffer)?)
 }
 
-async fn write<'a>(path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+async fn write<'a>(path: &'a str, content: &'a [u8]) -> Result<()> {
     let mut file = tokio::fs::File::create(path).await?;
     file.write_all(content).await?;
     Ok(())

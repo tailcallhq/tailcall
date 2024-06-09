@@ -1,5 +1,4 @@
-use anyhow::{anyhow, Result};
-
+use super::{Error, Result};
 use crate::core::runtime::TargetRuntime;
 
 fn cache_metrics(runtime: &TargetRuntime) -> Result<()> {
@@ -22,7 +21,8 @@ fn cache_metrics(runtime: &TargetRuntime) -> Result<()> {
 fn process_resources_metrics() -> Result<()> {
     let meter = opentelemetry::global::meter("process-resources");
 
-    opentelemetry_system_metrics::init_process_observer(meter).map_err(|err| anyhow!(err))
+    opentelemetry_system_metrics::init_process_observer(meter)
+        .map_err(|_| Error::InitProcessObserverError)
 }
 
 pub fn init_metrics(runtime: &TargetRuntime) -> Result<()> {

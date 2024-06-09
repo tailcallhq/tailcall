@@ -11,4 +11,5 @@ pub mod telemetry;
 pub mod runtime;
 pub(crate) mod update_checker;
 
+pub use error::{Error, Result};
 pub use tc::run;
