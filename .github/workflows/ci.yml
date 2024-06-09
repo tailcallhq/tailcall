@@ -184,7 +184,7 @@ jobs:
 
       - name: Cache NASM
         if: runner.os == 'Windows'
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             nasm-2.16.02

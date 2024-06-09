@@ -11,6 +11,7 @@ use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::core::config::Batch;
 use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
+use tailcall::core::ir::IoId;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 
@@ -50,7 +51,7 @@ impl FileIO for File {
 struct Cache;
 #[async_trait::async_trait]
 impl tailcall::core::Cache for Cache {
-    type Key = u64;
+    type Key = IoId;
     type Value = ConstValue;
 
     async fn set<'a>(&'a self, _: Self::Key, _: Self::Value, _: NonZeroU64) -> anyhow::Result<()> {
@@ -79,7 +80,7 @@ pub fn benchmark_data_loader(c: &mut Criterion) {
                     file: Arc::new(File {}),
                     cache: Arc::new(Cache {}),
                     extensions: Arc::new(vec![]),
-                    http_worker: None,
+                    cmd_worker: None,
                     worker: None,
                 };
                 let loader = HttpDataLoader::new(rt, None, false);

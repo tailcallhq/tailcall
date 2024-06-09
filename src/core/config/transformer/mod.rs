@@ -1,5 +1,12 @@
 mod ambiguous_type;
+mod consolidate_url;
+mod remove_unused;
+mod type_merger;
+
 pub use ambiguous_type::{AmbiguousType, Resolution};
+pub use consolidate_url::ConsolidateURL;
+pub use remove_unused::RemoveUnused;
+pub use type_merger::TypeMerger;
 
 use super::Config;
 use crate::core::valid::{Valid, Validator};
