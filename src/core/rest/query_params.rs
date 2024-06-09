@@ -4,6 +4,7 @@ use async_graphql::{Name, Variables};
 
 use super::type_map::TypeMap;
 use super::typed_variables::TypedVariable;
+use super::{Error, Result};
 
 #[derive(Debug, PartialEq, Default, Clone)]
 pub struct QueryParams {
@@ -19,12 +20,11 @@ impl From<Vec<(&str, TypedVariable)>> for QueryParams {
 }
 
 impl QueryParams {
-    pub fn try_from_map(q: &TypeMap, map: BTreeMap<String, String>) -> anyhow::Result<Self> {
+    pub fn try_from_map(q: &TypeMap, map: BTreeMap<String, String>) -> Result<Self> {
         let mut params = Vec::new();
         for (k, v) in map {
             let t = TypedVariable::try_from(
-                q.get(&k)
-                    .ok_or(anyhow::anyhow!("undefined query param: {}", k))?,
+                q.get(&k).ok_or(Error::UndefinedQueryParam(k.to_string()))?,
                 &v,
             )?;
             params.push((k, t));

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
-use super::Request;
+use super::{Request, Result};
 use crate::core::blueprint::Blueprint;
 use crate::core::http::RequestContext;
 use crate::core::macros::MergeRight;
@@ -43,7 +43,7 @@ impl EndpointSet<Unchecked> {
         self.endpoints.push(endpoint);
     }
 
-    pub fn try_new(operations: &str) -> anyhow::Result<EndpointSet<Unchecked>> {
+    pub fn try_new(operations: &str) -> Result<EndpointSet<Unchecked>> {
         let mut set = EndpointSet::default();
 
         for endpoint in Endpoint::try_new(operations)? {
@@ -61,7 +61,7 @@ impl EndpointSet<Unchecked> {
         self,
         blueprint: &Blueprint,
         target_runtime: TargetRuntime,
-    ) -> anyhow::Result<EndpointSet<Checked>> {
+    ) -> Result<EndpointSet<Checked>> {
         let mut operations = vec![];
 
         let req_ctx = RequestContext::new(target_runtime);

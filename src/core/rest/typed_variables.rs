@@ -17,7 +17,7 @@ pub enum N {
 }
 
 impl N {
-    fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
+    fn to_value(&self, value: &str) -> Result<ConstValue> {
         Ok(match self {
             Self::Int => ConstValue::from(value.parse::<i64>()?),
             Self::Float => ConstValue::from(value.parse::<f64>()?),
@@ -26,7 +26,7 @@ impl N {
 }
 
 impl UrlParamType {
-    fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
+    fn to_value(&self, value: &str) -> Result<ConstValue> {
         Ok(match self {
             Self::String => ConstValue::String(value.to_string()),
             Self::Number(n) => n.to_value(value)?,
@@ -70,7 +70,7 @@ impl TypedVariable {
         Ok(Self::new(tpe, name))
     }
 
-    pub fn to_value(&self, value: &str) -> anyhow::Result<ConstValue> {
+    pub fn to_value(&self, value: &str) -> Result<ConstValue> {
         self.type_of.to_value(value)
     }
 
