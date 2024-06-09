@@ -2,7 +2,7 @@
 source: src/core/generator/generator.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream {
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
 }
 
@@ -45,8 +45,8 @@ type Product {
 }
 
 type Query {
-  f1(p1: Int!): [RootType1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}/comments")
-  f2(p1: Int!): RootType2 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}")
+  f1(p1: Int!): [RootType1] @http(path: "/posts/{{.args.p1}}/comments")
+  f2(p1: Int!): RootType2 @http(path: "/posts/{{.args.p1}}")
   f3(q: String): RootType3 @http(baseURL: "https://dummyjson.com", path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
 }
 
