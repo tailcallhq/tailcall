@@ -45,9 +45,9 @@ type Product {
 }
 
 type Query {
-  f1(p1: Int!): [RootType1] @http(path: "/posts/{{.args.p1}}/comments")
-  f2(p1: Int!): RootType2 @http(path: "/posts/{{.args.p1}}")
-  f3(q: String): RootType3 @http(baseURL: "https://dummyjson.com", path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
+  root1(p1: Int!): [Root1] @http(path: "/posts/{{.args.p1}}/comments")
+  root2(p1: Int!): Root2 @http(path: "/posts/{{.args.p1}}")
+  root3(q: String): Root3 @http(baseURL: "https://dummyjson.com", path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
 }
 
 type Review {
@@ -58,7 +58,7 @@ type Review {
   reviewerName: String
 }
 
-type RootType1 {
+type Root1 {
   body: String
   email: String
   id: Int
@@ -66,14 +66,14 @@ type RootType1 {
   postId: Int
 }
 
-type RootType2 {
+type Root2 {
   body: String
   id: Int
   title: String
   userId: Int
 }
 
-type RootType3 {
+type Root3 {
   limit: Int
   products: [Product]
   skip: Int

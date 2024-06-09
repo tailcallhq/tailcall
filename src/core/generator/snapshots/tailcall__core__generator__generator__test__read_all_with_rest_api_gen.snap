@@ -25,7 +25,12 @@ type Geo {
   lng: String
 }
 
-type M4 {
+type Query {
+  root1: [Root2] @http(path: "/users")
+  root2(p1: Int!): Root2 @http(path: "/users/{{.args.p1}}")
+}
+
+type Root2 {
   address: Address
   company: Company
   email: String
@@ -34,9 +39,4 @@ type M4 {
   phone: String
   username: String
   website: String
-}
-
-type Query {
-  f1: [M4] @http(path: "/users")
-  f2(p1: Int!): M4 @http(path: "/users/{{.args.p1}}")
 }

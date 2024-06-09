@@ -7,5 +7,5 @@ schema @server @upstream(baseURL: "https://example.com") {
 }
 
 type Query {
-  f1: [String] @http(path: "/users")
+  root1: [String] @http(path: "/users")
 }

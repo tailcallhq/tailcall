@@ -9,10 +9,10 @@ schema @server @upstream(baseURL: "https://example.com") {
 scalar Any
 
 type Query {
-  f1: RootType1 @http(path: "/")
+  root1: Root1 @http(path: "/")
 }
 
-type RootType1 {
+type Root1 {
   campaignTemplates: Any
   colors: [Any]
 }

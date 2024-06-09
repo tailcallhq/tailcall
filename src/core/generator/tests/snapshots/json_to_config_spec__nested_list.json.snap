@@ -18,9 +18,9 @@ type People {
 }
 
 type Query {
-  f1(children: Boolean): RootType1 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
+  root1(children: Boolean): Root1 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
 }
 
-type RootType1 {
+type Root1 {
   people: [People]
 }
