@@ -1,5 +1,5 @@
 ---
-source: src/core/error.rs
+source: src/core/errata.rs
 expression: error.to_string()
 ---
 Server could not be started
