@@ -9,5 +9,5 @@ schema @server @upstream(baseURL: "https://example.com") {
 scalar Any
 
 type Query {
-  root1: [Any] @http(path: "/api/v2/users")
+  f1: [Any] @http(path: "/api/v2/users")
 }

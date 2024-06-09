@@ -10,12 +10,12 @@ type Container {
   age: Int
 }
 
-type Query {
-  root1: Root1 @http(path: "/")
+type F1 {
+  container: T3
 }
 
-type Root1 {
-  container: T3
+type Query {
+  f1: F1 @http(path: "/")
 }
 
 type T2 {

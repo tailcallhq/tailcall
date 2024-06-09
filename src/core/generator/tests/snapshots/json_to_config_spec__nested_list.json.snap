@@ -11,6 +11,10 @@ type Children {
   name: String
 }
 
+type F1 {
+  people: [People]
+}
+
 type People {
   age: Int
   children: [Children]
@@ -18,9 +22,5 @@ type People {
 }
 
 type Query {
-  root1(children: Boolean): Root1 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
-}
-
-type Root1 {
-  people: [People]
+  f1(children: Boolean): F1 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
 }

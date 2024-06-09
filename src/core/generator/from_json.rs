@@ -27,7 +27,7 @@ pub fn from_json(
 ) -> anyhow::Result<Config> {
     let mut config = Config::default();
     // TODO: field names in operation type will be provided by user in config.
-    let field_name_gen = NameGenerator::new("root");
+    let field_name_gen = NameGenerator::new("f");
     let type_name_gen = NameGenerator::new("T");
 
     for request in config_gen_req.iter() {

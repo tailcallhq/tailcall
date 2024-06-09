@@ -20,17 +20,7 @@ type Company {
   name: String
 }
 
-type Geo {
-  lat: String
-  lng: String
-}
-
-type Query {
-  root1: [Root2] @http(path: "/users")
-  root2(p1: Int!): Root2 @http(path: "/users/{{.args.p1}}")
-}
-
-type Root2 {
+type F2 {
   address: Address
   company: Company
   email: String
@@ -39,4 +29,14 @@ type Root2 {
   phone: String
   username: String
   website: String
+}
+
+type Geo {
+  lat: String
+  lng: String
+}
+
+type Query {
+  f1: [F2] @http(path: "/users")
+  f2(p1: Int!): F2 @http(path: "/users/{{.args.p1}}")
 }
