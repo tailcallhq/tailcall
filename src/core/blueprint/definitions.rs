@@ -379,8 +379,6 @@ fn to_fields(
     } else {
         GraphQLOperationType::Query
     };
-    // println!("ty: {}: ",config_module.config.types.iter().find(|(_,v)|
-    // type_of.eq(*v)).map(|(k,_)| k.clone()).unwrap_or_default());
     // Process fields that are not marked as `omit`
     let fields = Valid::from_iter(
         type_of
