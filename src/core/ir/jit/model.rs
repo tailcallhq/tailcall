@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::IR;
@@ -53,6 +54,7 @@ pub struct Field<A: Clone> {
 }
 
 const EMPTY_VEC: &Vec<Field<Children>> = &Vec::new();
+
 impl Field<Children> {
     #[allow(unused)]
     pub fn children(&self) -> &Vec<Field<Children>> {
@@ -68,12 +70,23 @@ impl Field<Parent> {
         self.refs.as_ref().map(|Parent(id)| id)
     }
 
-    fn into_children(self, fields: &[Field<Parent>]) -> Field<Children> {
+    fn into_children(
+        self,
+        fields: &[Field<Parent>],
+        set: &mut HashSet<FieldId>,
+    ) -> Option<Field<Children>> {
+        if set.contains(&self.id) {
+            return None;
+        }
+
         let mut children = Vec::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
                 if *id == self.id {
-                    children.push(field.to_owned().into_children(fields));
+                    if let Some(child) = field.to_owned().into_children(fields, set) {
+                        children.push(child);
+                        set.insert(field.id.to_owned());
+                    }
                 }
             }
         }
@@ -83,15 +96,17 @@ impl Field<Parent> {
         } else {
             Some(Children(children))
         };
-
-        Field {
+        if set.contains(&self.id) {
+            return None;
+        }
+        Some(Field {
             id: self.id,
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
             args: self.args,
             refs,
-        }
+        })
     }
 }
 
@@ -116,12 +131,14 @@ impl<A: Debug + Clone> Debug for Field<A> {
 
 #[derive(Clone)]
 pub struct Parent(FieldId);
+
 #[allow(unused)]
 impl Parent {
     pub fn new(id: FieldId) -> Self {
         Parent(id)
     }
 }
+
 impl Debug for Parent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Parent({:?})", self.0)
@@ -139,13 +156,17 @@ pub struct ExecutionPlan {
 
 impl ExecutionPlan {
     pub fn new(fields: Vec<Field<Parent>>) -> Self {
-        let field_children = fields
-            .clone()
-            .into_iter()
-            .map(|f| f.into_children(&fields))
-            .collect::<Vec<_>>();
+        let children = Self::make_children(&fields);
+        Self { parent: fields, children }
+    }
 
-        Self { parent: fields, children: field_children }
+    fn make_children(fields: &[Field<Parent>]) -> Vec<Field<Children>> {
+        let mut set = HashSet::new();
+        fields
+            .iter()
+            .cloned()
+            .filter_map(|f| f.into_children(fields, &mut set))
+            .collect::<Vec<_>>()
     }
 
     #[allow(unused)]
