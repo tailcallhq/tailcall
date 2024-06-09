@@ -7,7 +7,7 @@ expression: errors
     "message": "No resolver has been found in the schema",
     "trace": [
       "Query",
-      "repository"
+      "foo"
     ],
     "description": null
   }

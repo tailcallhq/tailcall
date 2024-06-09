@@ -5,24 +5,20 @@ error: true
 # test-recursive-types
 
 ```graphql @config
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema {
   query: Query
 }
 
 type Query {
-  repository(owner: String!, name: String!): Repository
+  foo(name: String!): Foo
 }
 
-type Repository {
-  id: ID!
-  name: String!
-  issues: [Issue]
+type Foo {
+  bars: [Bar]
 }
 
-type Issue {
-  id: ID!
-  title: String!
-  repository: Repository
-  relatedIssues: [Issue]
+type Bar {
+  foo: Foo
+  relatedBars: [Bar]
 }
 ```
