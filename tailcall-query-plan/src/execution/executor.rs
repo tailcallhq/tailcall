@@ -70,7 +70,8 @@ impl<'a> ExecutorContext<'a> {
     async fn eval(&self, field_plan: &FieldPlan, value: Option<&Value>) -> Result<Value> {
         let arguments = self.operation_plan.arguments_map.get(&field_plan.id);
         let graphql_ctx = GraphqlContext { arguments, value };
-        let eval_ctx = EvaluationContext::new(self.req_ctx, &graphql_ctx);
+        let index_map = IndexMap::new();
+        let eval_ctx = EvaluationContext::new(self.req_ctx, &graphql_ctx, &index_map);
 
         field_plan.eval(eval_ctx).await
     }

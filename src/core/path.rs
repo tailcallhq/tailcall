@@ -107,7 +107,7 @@ mod tests {
         use std::sync::Arc;
 
         use async_graphql::SelectionField;
-        use async_graphql_value::{ConstValue as Value, Name, Number};
+        use async_graphql_value::{ConstValue as Value, ConstValue, Name, Number};
         use hyper::header::HeaderValue;
         use hyper::HeaderMap;
         use indexmap::IndexMap;
@@ -217,8 +217,10 @@ mod tests {
             req_ctx
         });
 
+        static DEFAULT_VALUES: Lazy<IndexMap<Name, ConstValue>> = Lazy::new(IndexMap::new);
+
         static EVAL_CTX: Lazy<EvaluationContext<'static, MockGraphqlContext>> =
-            Lazy::new(|| EvaluationContext::new(&REQ_CTX, &MockGraphqlContext));
+            Lazy::new(|| EvaluationContext::new(&REQ_CTX, &MockGraphqlContext, &DEFAULT_VALUES));
 
         #[test]
         fn path_to_string() {

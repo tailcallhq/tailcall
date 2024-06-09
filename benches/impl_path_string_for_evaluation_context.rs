@@ -258,7 +258,8 @@ pub fn bench_main(c: &mut Criterion) {
     let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
 
     req_ctx.server.vars = TEST_VARS.clone();
-    let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
+    let index_map = IndexMap::new();
+    let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext, &index_map);
 
     assert_test(&eval_ctx);
 

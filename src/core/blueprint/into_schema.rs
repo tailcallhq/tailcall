@@ -1,10 +1,12 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql::ErrorExtensions;
-use async_graphql_value::ConstValue;
+use async_graphql_value::{ConstValue, Name};
 use futures_util::TryFutureExt;
+use indexmap::IndexMap;
 use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, Type};
@@ -51,7 +53,10 @@ fn insert_serde_value_to_input_value(
     }
 }
 
-fn to_type(def: &Definition) -> dynamic::Type {
+fn to_type(
+    def: &Definition,
+    input_type_default_values: Arc<HashMap<String, ConstValue>>,
+) -> dynamic::Type {
     match def {
         Definition::Object(def) => {
             let mut object = dynamic::Object::new(def.name.clone());
@@ -59,6 +64,15 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
+                let default_values: IndexMap<Name, ConstValue> = field
+                    .args
+                    .iter()
+                    .filter_map(|typ| {
+                        let key = typ.of_type.name();
+                        let value = input_type_default_values.get(key);
+                        value.map(|v| (Name::new(&typ.name), v.clone()))
+                    })
+                    .collect();
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
@@ -69,7 +83,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                         match &field.resolver {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
-                                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                let ctx = EvaluationContext::new(req_ctx, &ctx, &default_values);
                                 FieldFuture::from_value(
                                     ctx.path_value(&[field_name]).map(|a| a.into_owned()),
                                 )
@@ -80,10 +94,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                     otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
                                 );
                                 let expr = expr.to_owned();
+                                let default_values = default_values.clone();
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();
-                                        let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                        let ctx =
+                                            EvaluationContext::new(req_ctx, &ctx, &default_values);
 
                                         let const_value =
                                             expr.eval(ctx).await.map_err(|err| err.extend())?;
@@ -179,6 +195,30 @@ fn to_type(def: &Definition) -> dynamic::Type {
     }
 }
 
+fn get_all_input_type_default_values(blueprint: &Blueprint) -> HashMap<String, ConstValue> {
+    blueprint
+        .definitions
+        .iter()
+        .filter_map(|def| match def {
+            Definition::InputObject(input_object) => {
+                let map = input_object
+                    .fields
+                    .iter()
+                    .filter_map(|fld| {
+                        fld.default_value.clone().and_then(|value| {
+                            ConstValue::from_json(value)
+                                .ok()
+                                .map(|val| (Name::new(&fld.name), val))
+                        })
+                    })
+                    .collect::<IndexMap<_, ConstValue>>();
+                Some((input_object.name.clone(), ConstValue::Object(map)))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
 impl From<&Blueprint> for SchemaBuilder {
     fn from(blueprint: &Blueprint) -> Self {
         let query = blueprint.query();
@@ -191,8 +231,10 @@ impl From<&Blueprint> for SchemaBuilder {
             ));
         }
 
+        let all_input_type_default_values = Arc::new(get_all_input_type_default_values(blueprint));
+
         for def in blueprint.definitions.iter() {
-            schema = schema.register(to_type(def));
+            schema = schema.register(to_type(def, all_input_type_default_values.clone()));
         }
 
         schema
