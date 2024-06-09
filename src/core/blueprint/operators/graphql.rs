@@ -20,7 +20,13 @@ pub fn compile_graphql(
             .or(config.upstream.base_url.as_ref()),
         "No base URL defined".to_string(),
     )
-    .zip(helpers::headers::to_mustache_headers(&graphql.headers))
+    .zip(helpers::headers::to_mustache_headers(
+        &graphql
+            .headers
+            .iter()
+            .map(|header| header.inner.clone())
+            .collect::<Vec<_>>(),
+    ))
     .and_then(|(base_url, headers)| {
         Valid::from(
             RequestTemplate::new(
@@ -34,8 +40,8 @@ pub fn compile_graphql(
         )
     })
     .map(|req_template| {
-        let field_name = graphql.name.clone();
-        let batch = graphql.batch;
+        let field_name = graphql.name.inner.clone();
+        let batch = graphql.batch.inner;
         IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
     })
 }

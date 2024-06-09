@@ -75,7 +75,10 @@ mod test {
                         0,
                         0,
                         None,
-                        Http { path: "/day".to_string(), ..Default::default() },
+                        Http {
+                            path: Pos::new(0, 0, None, "/day".to_string()),
+                            ..Default::default()
+                        },
                     )),
                     ..Default::default()
                 },
@@ -93,7 +96,10 @@ mod test {
                         0,
                         0,
                         None,
-                        Http { path: "/month".to_string(), ..Default::default() },
+                        Http {
+                            path: Pos::new(0, 0, None, "/month".to_string()),
+                            ..Default::default()
+                        },
                     )),
                     ..Default::default()
                 },
@@ -111,7 +117,10 @@ mod test {
                         0,
                         0,
                         None,
-                        Http { path: "/status".to_string(), ..Default::default() },
+                        Http {
+                            path: Pos::new(0, 0, None, "/status".to_string()),
+                            ..Default::default()
+                        },
                     )),
                     ..Default::default()
                 },
@@ -152,7 +161,7 @@ mod test {
                                 None,
                                 "https://calender.com/api/v1/".to_string(),
                             )),
-                            path: "/day".to_string(),
+                            path: Pos::new(0, 0, None, "/day".to_string()),
                             ..Default::default()
                         },
                     )),
@@ -172,7 +181,10 @@ mod test {
                         0,
                         0,
                         None,
-                        Http { path: "/month".to_string(), ..Default::default() },
+                        Http {
+                            path: Pos::new(0, 0, None, "/month".to_string()),
+                            ..Default::default()
+                        },
                     )),
                     ..Default::default()
                 },

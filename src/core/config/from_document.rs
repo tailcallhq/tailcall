@@ -140,7 +140,12 @@ fn process_schema_optional_directives<T: DirectiveCodec<T> + Clone + PositionedC
         directives.find(|directive| directive.node.name.node.as_ref() == directive_name)
     {
         T::from_directive(&directive.node)
-            .and_then(|config| {
+            .and_then(|mut config| {
+                directive.node.arguments.iter().for_each(|(key, _)| {
+                    let key_snake_case = key.node.to_case(Case::Snake);
+                    config
+                        .set_field_position(key_snake_case.as_str(), (key.pos.line, key.pos.column))
+                });
                 Valid::succeed(Pos::new(
                     directive.pos.line,
                     directive.pos.column,
@@ -487,7 +492,7 @@ where
     ))
     .map(
         |(http, graphql, cache, grpc, omit, modify, script, call, protected)| {
-            let const_field = to_const_field(directives);
+            let const_field = to_const_field(directives, input_path);
             Pos::new(
                 field_position.line,
                 field_position.column,
@@ -591,10 +596,21 @@ fn to_enum(
         Enum { variants, doc },
     )
 }
-fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
+fn to_const_field(
+    directives: &[Positioned<ConstDirective>],
+    input_path: &str,
+) -> Option<Pos<config::Expr>> {
     directives.iter().find_map(|directive| {
         if directive.node.name.node == config::Expr::directive_name() {
             config::Expr::from_directive(&directive.node)
+                .and_then(|config| {
+                    Valid::succeed(Pos::new(
+                        directive.pos.line,
+                        directive.pos.column,
+                        Some(input_path.to_owned()),
+                        config,
+                    ))
+                })
                 .to_result()
                 .ok()
         } else {

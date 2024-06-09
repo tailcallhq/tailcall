@@ -59,9 +59,10 @@ pub struct Proxy {
 /// keep-alive intervals, and more. If not specified, default values are used.
 pub struct Upstream {
     #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// onRequest field gives the ability to specify the global request
     /// interception handler.
-    pub on_request: Option<String>,
+    pub on_request: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `allowedHeaders` defines the HTTP headers allowed to be forwarded to
@@ -71,101 +72,101 @@ pub struct Upstream {
     pub allowed_headers: Option<Pos<BTreeSet<String>>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// This refers to the default base URL for your APIs. If it's not
     /// explicitly mentioned in the `@upstream` operator, then each
     /// [@http](#http) operator must specify its own `baseURL`. If neither
     /// `@upstream` nor [@http](#http) provides a `baseURL`, it results in a
     /// compilation error.
-    #[positioned_field(option_field)]
     pub base_url: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// An object that specifies the batch settings, including `maxSize` (the
     /// maximum size of the batch), `delay` (the delay in milliseconds between
     /// each batch), and `headers` (an array of HTTP headers to be included in
     /// the batch).
-    #[positioned_field(option_field)]
     pub batch: Option<Pos<Batch>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The time in seconds that the connection will wait for a response before
     /// timing out.
-    #[positioned_field(option_field)]
     pub connect_timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.
     #[positioned_field(option_field)]
+    /// Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.
     pub http_cache: Option<Pos<u64>>,
 
     #[setters(strip_option)]
     #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The `http2Only` setting allows you to specify whether the client should
     /// always issue HTTP2 requests, without checking if the server supports it
     /// or not. By default it is set to `false` for all HTTP requests made by
     /// the server, but is automatically set to true for GRPC.
-    #[positioned_field(option_field)]
     pub http_2_only: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The time in seconds between each keep-alive message sent to maintain the
     /// connection.
-    #[positioned_field(option_field)]
     pub keep_alive_interval: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The time in seconds that the connection will wait for a keep-alive
     /// message before closing.
-    #[positioned_field(option_field)]
     pub keep_alive_timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// A boolean value that determines whether keep-alive messages should be
     /// sent while the connection is idle.
-    #[positioned_field(option_field)]
     pub keep_alive_while_idle: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// The maximum number of idle connections that will be maintained per host.
     #[positioned_field(option_field)]
+    /// The maximum number of idle connections that will be maintained per host.
     pub pool_max_idle_per_host: Option<Pos<usize>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The time in seconds that the connection pool will wait before closing
     /// idle connections.
-    #[positioned_field(option_field)]
     pub pool_idle_timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The `proxy` setting defines an intermediary server through which the
     /// upstream requests will be routed before reaching their intended
     /// endpoint. By specifying a proxy URL, you introduce an additional layer,
     /// enabling custom routing and security policies.
-    #[positioned_field(option_field)]
     pub proxy: Option<Pos<Proxy>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The time in seconds between each TCP keep-alive message sent to maintain
     /// the connection.
-    #[positioned_field(option_field)]
     pub tcp_keep_alive: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The maximum time in seconds that the connection will wait for a
     /// response.
-    #[positioned_field(option_field)]
     pub timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The User-Agent header value to be used in HTTP requests. @default
     /// `Tailcall/1.0`
-    #[positioned_field(option_field)]
     pub user_agent: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
     /// is made more than once within the context of a single GraphQL request.
-    #[positioned_field(option_field)]
     pub dedupe: Option<Pos<bool>>,
 }
 
@@ -255,7 +256,7 @@ impl Upstream {
     }
 
     pub fn get_on_request(&self) -> Option<String> {
-        self.on_request.clone()
+        self.on_request.clone().map(|Pos { inner, .. }| inner)
     }
 }
 

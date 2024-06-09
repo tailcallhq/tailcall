@@ -1,7 +1,7 @@
 /// This file will be changed in favor of the macro left here untill all types are positioned
 use super::{
-    Arg, Cache, Call, Enum, Expr, Field, GraphQL, Grpc, Http, Inline, Link, LinkType, Modify, Omit,
-    Protected, Step, Tag, Telemetry, TelemetryExporter, Union, JS,
+    Arg, Enum, Field, Inline, Link, LinkType, Modify, Omit, Protected, Tag, Telemetry,
+    TelemetryExporter, Union, JS,
 };
 
 pub trait PositionedConfig {
@@ -9,10 +9,6 @@ pub trait PositionedConfig {
 }
 
 impl PositionedConfig for Tag {
-    fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
-}
-
-impl PositionedConfig for Cache {
     fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
 }
 
@@ -49,30 +45,6 @@ impl PositionedConfig for Union {
 }
 
 impl PositionedConfig for Enum {
-    fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
-}
-
-impl PositionedConfig for Http {
-    fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
-}
-
-impl PositionedConfig for Call {
-    fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
-}
-
-impl PositionedConfig for Step {
-    fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
-}
-
-impl PositionedConfig for Grpc {
-    fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
-}
-
-impl PositionedConfig for GraphQL {
-    fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
-}
-
-impl PositionedConfig for Expr {
     fn set_field_position(&mut self, _field: &str, _position: (usize, usize)) {}
 }
 

@@ -15,7 +15,7 @@ pub fn compile_http(
     http: &Pos<config::Http>,
 ) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
-        .when(|| !http.group_by.is_empty() && http.method != Method::GET)
+        .when(|| !http.group_by.is_empty() && http.method.inner != Method::GET)
         .and(
             Valid::<(), String>::fail(
                 "GroupBy can only be applied if batching is enabled".to_string(),
@@ -32,7 +32,13 @@ pub fn compile_http(
                 .or(config_module.upstream.base_url.as_ref()),
             "No base URL defined".to_string(),
         ))
-        .zip(helpers::headers::to_mustache_headers(&http.headers))
+        .zip(helpers::headers::to_mustache_headers(
+            &http
+                .headers
+                .iter()
+                .map(|header| header.inner.to_owned())
+                .collect::<Vec<_>>(),
+        ))
         .and_then(|(base_url, headers)| {
             let mut base_url = base_url.trim_end_matches('/').to_owned();
             base_url.push_str(http.path.clone().as_str());
@@ -48,12 +54,12 @@ pub fn compile_http(
 
             RequestTemplate::try_from(
                 Endpoint::new(base_url.to_string())
-                    .method(http.method.clone())
+                    .method(http.method.inner.clone())
                     .query(query)
                     .output(output_schema)
                     .input(input_schema)
-                    .body(http.body.clone())
-                    .encoding(http.encoding.clone()),
+                    .body(http.body.to_owned().map(|body| body.inner))
+                    .encoding(http.encoding.inner.clone()),
             )
             .map(|req_tmpl| req_tmpl.headers(headers))
             .map_err(|e| ValidationError::new(e.to_string()))
@@ -65,9 +71,9 @@ pub fn compile_http(
                 .on_request
                 .clone()
                 .or(config_module.upstream.on_request.clone())
-                .map(|on_request| HttpFilter { on_request });
+                .map(|on_request| HttpFilter { on_request: on_request.inner });
 
-            if !http.group_by.is_empty() && http.method == Method::GET {
+            if !http.group_by.is_empty() && http.method.inner == Method::GET {
                 IR::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.group_by.clone().inner)),

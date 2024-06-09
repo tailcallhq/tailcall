@@ -7,8 +7,9 @@ use syn::Data;
 
 #[derive(Debug)]
 enum FieldType {
-    OptionField,
     Field,
+    OptionField,
+    ListField,
     Unknown,
 }
 
@@ -22,6 +23,9 @@ fn get_field_type(attrs: &[syn::Attribute]) -> syn::Result<FieldType> {
                     Ok(())
                 } else if meta.path.is_ident("field") {
                     field_type = FieldType::Field;
+                    Ok(())
+                } else if meta.path.is_ident("list_field") {
+                    field_type = FieldType::ListField;
                     Ok(())
                 } else {
                     Err(syn::Error::new(attr.span(), "Unknown helper attribute."))
@@ -58,6 +62,13 @@ pub fn expand_positoned_config(item: TokenStream) -> TokenStream {
                         Ok(FieldType::Field) => Some(quote! {
                             #field_name => {
                                 self.#field.set_position(position.0, position.1);
+                            }
+                        }),
+                        Ok(FieldType::ListField) => Some(quote! {
+                            #field_name => {
+                                for field in self.#field.iter_mut() {
+                                    field.set_position(position.0, position.1);
+                                }
                             }
                         }),
                         _ => None,

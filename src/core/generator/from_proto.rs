@@ -234,7 +234,7 @@ impl Context {
                     .into_method();
 
                 let mut cfg_field: Pos<Field> = Default::default();
-                let mut body = Pos::new(0, 0, None, None);
+                let mut body = None;
 
                 if let Some(graphql_type) = get_input_type(method.input_type())? {
                     let key = graphql_type.clone().into_field().to_string();
@@ -250,7 +250,7 @@ impl Context {
                         default_value: None,
                     };
 
-                    *body = Some(format!("{{{{.args.{key}}}}}"));
+                    body = Some(Pos::new(0, 0, None, format!("{{{{.args.{key}}}}}")));
                     cfg_field.args.insert(key, val);
                 }
 

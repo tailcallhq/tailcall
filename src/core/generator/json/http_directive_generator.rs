@@ -81,7 +81,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
         });
 
         // add path in http directive.
-        self.http.path = mustache_compatible_url.to_string();
+        self.http.path = Pos::new(0, 0, None, mustache_compatible_url.to_string());
     }
 
     fn add_query_variables(&mut self, field: &mut Pos<Field>) {
@@ -96,9 +96,12 @@ impl<'a> HttpDirectiveGenerator<'a> {
             };
 
             let value: String = format!("{{{{.args.{}}}}}", query.key);
-            self.http
-                .query
-                .push(KeyValue { key: query.key.clone(), value });
+            self.http.query.push(Pos::new(
+                0,
+                0,
+                None,
+                KeyValue { key: query.key.clone(), value },
+            ));
             field.args.insert(query.key, arg);
         }
     }
