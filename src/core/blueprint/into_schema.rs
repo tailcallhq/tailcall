@@ -42,6 +42,8 @@ fn to_field_value<'a>(
     let type_name = ctx.type_name.take();
 
     Ok(match (value, type_name) {
+        // NOTE: Mostly type_name is going to be None so we should keep that as the first check.
+        (value, None) => FieldValue::from(value),
         (ConstValue::List(values), Some(TypeName::Vec(names))) => FieldValue::list(
             values
                 .into_iter()
@@ -52,7 +54,6 @@ fn to_field_value<'a>(
             FieldValue::from(value).with_type(type_name)
         }
         (ConstValue::Null, _) => FieldValue::NULL,
-        (value, None) => FieldValue::from(value),
         (_, Some(_)) => bail!("Failed to match type_name"),
     })
 }
