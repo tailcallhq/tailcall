@@ -5,7 +5,7 @@ use super::json::{
     FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
 };
 use crate::core::config::transformer::{
-    ConsolidateURL, RemoveUnused, Transform, TransformerOps, TypeMerger,
+    ConsolidateURL, RemoveUnused, Transform, TransformerOps, TypeMerger, TypeNameGenerator,
 };
 use crate::core::config::Config;
 use crate::core::valid::Validator;
@@ -39,6 +39,7 @@ pub fn from_json(
             .pipe(FieldBaseUrlGenerator::new(&request.url, query))
             .pipe(RemoveUnused)
             .pipe(TypeMerger::new(0.8)) //TODO: take threshold value from user
+            .pipe(TypeNameGenerator)
             .transform(config)
             .to_result()?;
     }
