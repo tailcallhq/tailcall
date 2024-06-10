@@ -1,11 +1,11 @@
 use lazy_static::lazy_static;
-use sysinfo::{System, SystemExt};
+use sysinfo::System;
 
 lazy_static! {
     static ref TOTAL_MEMORY: u64 = {
         let mut sys = System::new();
         sys.refresh_all();
-        sys.get_total_memory() * 1024
+        sys.total_memory() * 1024
     };
 }
 
