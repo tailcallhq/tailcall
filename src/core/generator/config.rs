@@ -3,10 +3,9 @@ use std::path::Path;
 use path_clean::PathClean;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use crate::core::config;
-
-use super::source::ImportSource;
 
 #[derive(Serialize, Deserialize, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -80,21 +79,27 @@ pub struct GeneratorConfig {
 impl GeneratorConfig {
     /// Resolves all the paths present inside the GeneratorConfig.
     pub fn resolve_paths(mut self, file_path: &str) -> anyhow::Result<Self> {
-        let config_path = Path::new(file_path).parent().unwrap_or(Path::new("."));
+        let config_path = Path::new(file_path).parent().unwrap_or(Path::new(""));
 
         for input in self.input.iter_mut() {
-            if let InputSource::Import { src } = &mut input.source {
-                match ImportSource::detect(&src)? {
-                    ImportSource::Proto => {
-                        let src_path = Path::new(&src);
-                        if !src_path.is_relative() {
-                            continue;
-                        }
-
-                        let cleaned_path = config_path.join(src_path).clean();
+            match &mut input.source {
+                InputSource::Config { src } => {
+                    if let Ok(_) = Url::parse(src) {
+                        // no need to explictely resolve urls.
+                        continue;
+                    } else if Path::new(&src).is_relative() {
+                        let cleaned_path = config_path.join(&src).clean();
                         *src = cleaned_path.to_string_lossy().into_owned();
                     }
-                    _ => {}
+                }
+                InputSource::Import { src } => {
+                    if let Ok(_) = Url::parse(src) {
+                        // no need to explictely resolve urls.
+                        continue;
+                    } else if Path::new(&src).is_relative() {
+                        let cleaned_path = config_path.join(&src).clean();
+                        *src = cleaned_path.to_string_lossy().into_owned();
+                    }
                 }
             }
         }
