@@ -6,6 +6,12 @@ use std::sync::{Arc, Mutex};
 use futures_util::Future;
 use tokio::sync::broadcast;
 
+pub trait Key: Send + Sync + Eq + Hash + Clone {}
+impl<A: Send + Sync + Eq + Hash + Clone> Key for A {}
+
+pub trait Value: Send + Sync + Clone {}
+impl<A: Send + Sync + Clone> Value for A {}
+
 pub struct Dedupe<Key, Value> {
     cache: Arc<Mutex<HashMap<Key, State<Value>>>>,
     size: usize,
@@ -24,7 +30,7 @@ enum Step<Value> {
 }
 
 // TODO: Use Arc or something to make cloning faster
-impl<K: Send + Sync + Eq + Hash + Clone, V: Send + Sync + Clone> Dedupe<K, V> {
+impl<K: Key, V: Value> Dedupe<K, V> {
     pub fn new(size: usize, persist: bool) -> Self {
         Self { cache: Arc::new(Mutex::new(HashMap::new())), size, persist }
     }
@@ -64,6 +70,24 @@ impl<K: Send + Sync + Eq + Hash + Clone, V: Send + Sync + Clone> Dedupe<K, V> {
                 Step::Send(tx.clone())
             }
         }
+    }
+}
+
+pub struct DedupeResult<K, V, E>(Dedupe<K, Result<V, E>>);
+
+impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
+    pub fn new(persist: bool) -> Self {
+        Self(Dedupe::new(1, persist))
+    }
+}
+
+impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
+    pub async fn dedupe(
+        &self,
+        key: &K,
+        or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<V, E>> + Send>> + Send,
+    ) -> Result<V, E> {
+        self.0.dedupe(key, or_else).await
     }
 }
 
