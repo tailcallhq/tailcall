@@ -96,9 +96,7 @@ impl Field<Parent> {
         } else {
             Some(Children(children))
         };
-        if set.contains(&self.id) {
-            return None;
-        }
+
         Some(Field {
             id: self.id,
             name: self.name,
