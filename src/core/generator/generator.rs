@@ -19,6 +19,7 @@ use crate::core::{
 };
 
 use super::config::{GeneratorConfig, InputSource};
+use super::json::NameGenerator;
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work
@@ -66,6 +67,9 @@ impl Generator {
     }
 
     pub async fn run(&self, gen_config: GeneratorConfig) -> Result<ConfigModule> {
+        let field_name_gen = NameGenerator::new("f");
+        let type_name_gen = NameGenerator::new("T");
+
         let resolvers = gen_config.input.into_iter().map(|input| async {
             match input.source {
                 InputSource::Config { src } => {
@@ -95,7 +99,8 @@ impl Generator {
                         ImportSource::Url => {
                             let response = fetch_response(src.as_ref(), &self.runtime).await?;
 
-                            let config = from_json(&[response], "Query")?;
+                            let config =
+                                from_json(&[response], "Query", &field_name_gen, &type_name_gen)?;
                             Ok(config)
                         }
                     }
@@ -146,7 +151,12 @@ impl Generator {
                 .into_iter()
                 .collect::<anyhow::Result<Vec<_>>>()?;
 
-                let config = from_json(&results, query)?;
+                let config = from_json(
+                    &results,
+                    query,
+                    &NameGenerator::new("f"),
+                    &NameGenerator::new("T"),
+                )?;
                 Ok(ConfigModule::from(config))
             }
         }
