@@ -4,7 +4,9 @@ use url::Url;
 use super::json::{
     FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
 };
-use crate::core::config::transformer::{RemoveUnused, Transform, TransformerOps, TypeMerger};
+use crate::core::config::transformer::{
+    ConsolidateURL, RemoveUnused, Transform, TransformerOps, TypeMerger, TypeNameGenerator,
+};
 use crate::core::config::Config;
 use crate::core::valid::Validator;
 
@@ -24,6 +26,7 @@ pub fn from_json(
     query: &str,
 ) -> anyhow::Result<Config> {
     let mut config = Config::default();
+    // TODO: field names in operation type will be provided by user in config.
     let field_name_gen = NameGenerator::new("f");
     let type_name_gen = NameGenerator::new("T");
 
@@ -37,9 +40,12 @@ pub fn from_json(
             .pipe(FieldBaseUrlGenerator::new(&request.url, query))
             .pipe(RemoveUnused)
             .pipe(TypeMerger::new(0.8)) //TODO: take threshold value from user
+            .pipe(TypeNameGenerator)
             .transform(config)
             .to_result()?;
     }
+
+    let config = ConsolidateURL::new(0.5).transform(config).to_result()?;
 
     Ok(config)
 }

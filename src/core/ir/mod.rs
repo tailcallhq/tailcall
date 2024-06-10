@@ -9,7 +9,7 @@ mod modify;
 mod resolver_context_like;
 
 use core::future::Future;
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use std::pin::Pin;
 
 use async_graphql_value::ConstValue;
@@ -21,34 +21,22 @@ pub use evaluation_context::EvaluationContext;
 pub use graphql_operation_context::GraphQLOperationContext;
 pub use io::*;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};
+use strum_macros::Display;
 
 use crate::core::blueprint::DynamicValue;
 use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Display)]
 pub enum IR {
     Context(Context),
     Dynamic(DynamicValue),
+    #[strum(to_string = "{0}")]
     IO(IO),
     Cache(Cache),
     Path(Box<IR>, Vec<String>),
     Protect(Box<IR>),
     Discriminate(Discriminator, Box<IR>),
-}
-
-impl Display for IR {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            IR::Context(_) => write!(f, "Context"),
-            IR::Dynamic(_) => write!(f, "Literal"),
-            IR::IO(io) => write!(f, "{io}"),
-            IR::Cache(_) => write!(f, "Cache"),
-            IR::Path(_, _) => write!(f, "Input"),
-            IR::Protect(expr) => write!(f, "Protected({expr})"),
-            IR::Discriminate(_, expr) => write!(f, "Discriminate({expr})"),
-        }
-    }
 }
 
 #[derive(Clone, Debug)]

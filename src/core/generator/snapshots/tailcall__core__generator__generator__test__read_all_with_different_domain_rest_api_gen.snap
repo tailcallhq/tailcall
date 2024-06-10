@@ -2,17 +2,17 @@
 source: src/core/generator/generator.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream {
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-type Query {
-  f1(p1: Int!): [T1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}/comments")
-  f2(p1: Int!): T2 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}")
-  f3(q: String): T19 @http(baseURL: "https://dummyjson.com", path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
+type Dimension {
+  depth: Int
+  height: Int
+  width: Int
 }
 
-type T1 {
+type F1 {
   body: String
   email: String
   id: Int
@@ -20,21 +20,42 @@ type T1 {
   postId: Int
 }
 
-type T18 {
+type F2 {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
+type F3 {
+  limit: Int
+  products: [Product]
+  skip: Int
+  total: Int
+}
+
+type Meum {
+  barcode: String
+  createdAt: String
+  qrCode: String
+  updatedAt: String
+}
+
+type Product {
   availabilityStatus: String
   brand: String
   category: String
   description: String
-  dimensions: T3
+  dimensions: Dimension
   discountPercentage: Int
   id: Int
   images: [String]
-  meta: T5
+  meta: Meum
   minimumOrderQuantity: Int
   price: Int
   rating: Int
   returnPolicy: String
-  reviews: [T4]
+  reviews: [Review]
   shippingInformation: String
   sku: String
   stock: Int
@@ -45,37 +66,16 @@ type T18 {
   weight: Int
 }
 
-type T19 {
-  limit: Int
-  products: [T18]
-  skip: Int
-  total: Int
+type Query {
+  f1(p1: Int!): [F1] @http(path: "/posts/{{.args.p1}}/comments")
+  f2(p1: Int!): F2 @http(path: "/posts/{{.args.p1}}")
+  f3(q: String): F3 @http(baseURL: "https://dummyjson.com", path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
 }
 
-type T2 {
-  body: String
-  id: Int
-  title: String
-  userId: Int
-}
-
-type T3 {
-  depth: Int
-  height: Int
-  width: Int
-}
-
-type T4 {
+type Review {
   comment: String
   date: String
   rating: Int
   reviewerEmail: String
   reviewerName: String
-}
-
-type T5 {
-  barcode: String
-  createdAt: String
-  qrCode: String
-  updatedAt: String
 }
