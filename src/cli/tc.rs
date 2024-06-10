@@ -109,7 +109,21 @@ pub async fn run() -> Result<()> {
                 config::Source::GraphQL => config.to_sdl(),
             };
 
-            // TODO: check if file already exists
+            // if output file already exists, ask user if we can overwrite it or not.
+            if is_exits(&output_path) {
+                let should_overwrite = Confirm::new(
+                    format!(
+                        "The output file '{}' already exists. Do you want to overwrite it?",
+                        output_path
+                    )
+                    .as_str(),
+                )
+                .with_default(true)
+                .prompt()?;
+                if !should_overwrite {
+                    return Ok(());
+                }
+            }
             runtime.file.write(&output_path, config.as_bytes()).await?;
 
             tracing::info!("Config successfully generated at {output_path}");
@@ -119,8 +133,13 @@ pub async fn run() -> Result<()> {
     }
 }
 
+/// Checks if file or folder already exists or not.
+fn is_exits(path: &str) -> bool {
+    fs::metadata(path).is_ok()
+}
+
 pub async fn init(folder_path: &str) -> Result<()> {
-    let folder_exists = fs::metadata(folder_path).is_ok();
+    let folder_exists = is_exits(folder_path);
 
     if !folder_exists {
         let confirm = Confirm::new(&format!(
