@@ -29,7 +29,6 @@ impl CachingBehavior for NoCache {
     }
 }
 
-/// A simple async cache that uses a `DashMap` to store the values.
 pub struct AsyncCache<Key, Value, Error, Behavior>
 where
     Behavior: CachingBehavior,
@@ -349,13 +348,14 @@ mod tests {
         }
     }
     async fn compute_value(i: usize) -> Result<String, String> {
-        sleep(Duration::from_millis(1)).await;
+        println!("Should happen only once");
+        // sleep(Duration::from_millis(1)).await;
         Ok(format!("value{}", i))
     }
 
-    #[tokio::test(worker_threads = 4, flavor = "multi_thread")]
+    #[tokio::test(worker_threads = 16, flavor = "multi_thread")]
     async fn test_deadlock_scenario() {
-        let cache = Arc::new(AsyncCache::<u64, String, String, NoCache>::new());
+        let cache = Arc::new(AsyncCache::<u64, String, String, Cache>::new());
         let key = 1;
 
         let mut handles = Vec::new();
