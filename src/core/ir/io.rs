@@ -368,7 +368,7 @@ impl<'a, Context: ResolverContextLike<'a> + Send + Sync> HttpRequestExecutor<'a,
     async fn execute_with_worker(
         &self,
         mut request: reqwest::Request,
-        worker: &Arc<dyn WorkerIO<Event, Command>>,
+        worker: &Arc<dyn WorkerIO<Event, Command, Error = Error>>,
         http_filter: &HttpFilter,
     ) -> Result<Response<async_graphql::Value>, Error> {
         let js_request = WorkerRequest::try_from(&request)?;

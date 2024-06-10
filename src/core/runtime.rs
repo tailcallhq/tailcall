@@ -116,7 +116,9 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+        type Error = anyhow::Error;
+    
+        async fn execute(&self, request: reqwest::Request) -> crate::core::Result<Response<Bytes>, Self::Error> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?
@@ -138,20 +140,20 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+        type Error = crate::core::Error;
+    
+        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> crate::core::Result<(), Self::Error> {
             let mut file = tokio::fs::File::create(path).await?;
             file.write_all(content)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
+                .await?;
             Ok(())
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+        async fn read<'a>(&'a self, path: &'a str) -> crate::core::Result<String, Self::Error> {
             let mut file = tokio::fs::File::open(path).await?;
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
+                .await?;
             Ok(String::from_utf8(buffer)?)
         }
     }
