@@ -35,7 +35,7 @@ pub struct RequestContext {
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
     pub cache: AsyncCache<IoId, ConstValue, EvaluationError, Cache>,
-    pub async_loader: Arc<AsyncCache<u64, ConstValue, EvaluationError, NoCache>>,
+    pub async_loader: Arc<AsyncCache<IoId, ConstValue, EvaluationError, NoCache>>,
 }
 
 impl RequestContext {

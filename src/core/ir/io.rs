@@ -88,11 +88,11 @@ impl Eval for IO {
                     (true, true) => {
                         ctx.request_ctx
                             .cache
-                            .get_or_eval(key, || {
+                            .get_or_eval(key.clone(), || {
                                 Box::pin(async move {
                                     ctx.request_ctx
                                         .async_loader
-                                        .get_or_eval(key, || Box::pin(self.eval_inner(ctx)))
+                                        .get_or_eval(key.clone(), || Box::pin(self.eval_inner(ctx)))
                                         .await
                                         .as_ref()
                                         .clone()
