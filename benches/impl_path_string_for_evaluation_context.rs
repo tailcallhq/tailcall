@@ -15,6 +15,7 @@ use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use tailcall::cli::runtime::cache_size::get_memory_by_percentage;
 use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::http::{RequestContext, Response};
@@ -22,7 +23,7 @@ use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
 use tailcall::core::path::PathString;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
-use tailcall_http_cache::HttpCacheManager;
+use tailcall_http_cache::{HttpCacheManager, HttpMemoryCapCache};
 
 struct Http {
     client: ClientWithMiddleware,
@@ -57,12 +58,28 @@ impl Http {
 
         let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-        if upstream.http_cache > 0 {
-            client = client.with(Cache(HttpCache {
-                mode: CacheMode::Default,
-                manager: HttpCacheManager::new(upstream.http_cache),
-                options: HttpCacheOptions::default(),
-            }))
+        let http_cache_size = upstream.http_cache.as_ref().map(|cache| cache.size);
+        let http_cache_enable = upstream.http_cache.as_ref().map(|cache| cache.enable);
+        if http_cache_size > Some(0) {
+            if http_cache_enable == Some(false) {
+                client = client.with(Cache(HttpCache {
+                    mode: CacheMode::Default,
+                    manager: HttpCacheManager::new(http_cache_size.unwrap()),
+                    options: HttpCacheOptions::default(),
+                }))
+            } else {
+                let memory_by_percentage = http_cache_size
+                    .as_ref()
+                    .map(|percentage| get_memory_by_percentage(*percentage))
+                    .unwrap_or(0);
+                if memory_by_percentage != 0 {
+                    client = client.with(Cache(HttpCache {
+                        mode: CacheMode::Default,
+                        manager: HttpMemoryCapCache::new(memory_by_percentage),
+                        options: HttpCacheOptions::default(),
+                    }))
+                }
+            }
         }
         Self { client: client.build(), http2_only: upstream.http2_only }
     }

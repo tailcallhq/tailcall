@@ -750,6 +750,21 @@
       },
       "additionalProperties": false
     },
+    "HttpCache": {
+      "type": "object",
+      "properties": {
+        "enable": {
+          "default": false,
+          "type": "boolean"
+        },
+        "size": {
+          "default": 0,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
     "HttpVersion": {
       "type": "string",
       "enum": [
@@ -1443,19 +1458,14 @@
           ]
         },
         "httpCache": {
-          "description": "Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint64",
-          "minimum": 0.0
-        },
-        "httpCachePercentage": {
-          "description": "Providing httpCachePercentage allocates a maximum of that percentage of RAM to the HTTP cache. Defaults to `0` if unspecified.",
-          "type": [
-            "string",
-            "null"
+          "description": "This object has an Enable flag and a Size field, the enable flag is used when the user wants to specify memory as a percentage of system memory(i.e RAM). If disabled the size field represents the max number of memory slots in cache. Providing httpCache size enables Tailcall's HTTP caching,adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234),to enhance performance by minimizing redundant data fetches.Defaults to `0` if unspecified.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/HttpCache"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "keepAliveInterval": {

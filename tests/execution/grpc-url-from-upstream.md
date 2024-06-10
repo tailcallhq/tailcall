@@ -39,7 +39,7 @@ message NewsList {
 ```graphql @config
 schema
   @server(port: 8000)
-  @upstream(httpCache: 42, batch: {delay: 10}, baseURL: "http://localhost:50051")
+  @upstream(httpCache: {enable: false, size: 42}, batch: {delay: 10}, baseURL: "http://localhost:50051")
   @link(id: "news", src: "news.proto", type: Protobuf) {
   query: Query
 }

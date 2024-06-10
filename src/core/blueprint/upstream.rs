@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use derive_setters::Setters;
 
-use crate::core::config::{self, Batch, ConfigModule};
+use crate::core::config::{self, Batch, ConfigModule, HttpCache};
 use crate::core::valid::{Valid, ValidationError, Validator};
 
 #[derive(PartialEq, Eq, Clone, Debug, schemars::JsonSchema)]
@@ -24,8 +24,7 @@ pub struct Upstream {
     pub user_agent: String,
     pub allowed_headers: BTreeSet<String>,
     pub base_url: Option<String>,
-    pub http_cache: u64,
-    pub http_cache_percentage: Option<String>,
+    pub http_cache: Option<HttpCache>,
     pub batch: Option<Batch>,
     pub http2_only: bool,
     pub dedupe: bool,
@@ -67,7 +66,8 @@ impl TryFrom<&ConfigModule> for Upstream {
         get_batch(&config_upstream)
             .fuse(get_base_url(&config_upstream))
             .fuse(get_proxy(&config_upstream))
-            .map(|(batch, base_url, proxy)| Upstream {
+            .fuse(get_http_cache(&config_upstream))
+            .map(|(batch, base_url, proxy, http_cache)| Upstream {
                 pool_idle_timeout: (config_upstream).get_pool_idle_timeout(),
                 pool_max_idle_per_host: (config_upstream).get_pool_max_idle_per_host(),
                 keep_alive_interval: (config_upstream).get_keep_alive_interval(),
@@ -80,9 +80,8 @@ impl TryFrom<&ConfigModule> for Upstream {
                 user_agent: (config_upstream).get_user_agent(),
                 allowed_headers,
                 base_url,
-                http_cache: (config_upstream).get_http_cache_size(),
-                http_cache_percentage: (config_upstream).get_http_cache_percentage(),
                 batch,
+                http_cache,
                 http2_only: (config_upstream).get_http_2_only(),
                 dedupe: (config_upstream).get_dedupe(),
                 on_request: (config_upstream).get_on_request(),
@@ -103,7 +102,15 @@ fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
         },
     )
 }
-
+fn get_http_cache(upstream: &config::Upstream) -> Valid<Option<HttpCache>, String> {
+    match &upstream.http_cache {
+        Some(_) => Valid::succeed(Some(HttpCache {
+            enable: (upstream).get_http_cache_enable(),
+            size: (upstream).get_http_cache_size(),
+        })),
+        None => Valid::succeed(None),
+    }
+}
 fn get_base_url(upstream: &config::Upstream) -> Valid<Option<String>, String> {
     if let Some(ref base_url) = upstream.base_url {
         Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string())))

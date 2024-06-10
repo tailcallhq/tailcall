@@ -5,7 +5,7 @@
   "$schema": "./.tailcallrc.schema.json",
   "upstream": {
     "baseURL": "https://jsonplaceholder.typicode.com",
-    "httpCache": 42
+    "httpCache": {"size": 42}
   },
   "schema": {
     "query": "Query"

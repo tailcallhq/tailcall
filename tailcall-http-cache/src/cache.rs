@@ -33,31 +33,19 @@ pub struct Store {
     policy: CachePolicy,
 }
 impl Store {
-    // Method to calculate the size in bytes of the Store struct
-
     pub fn size_in_bytes(&self) -> usize {
         let mut size = 0;
 
-        // Size of the `body` field
         size += self.response.body.len();
-
-        // Size of the `headers` field
         size += self
             .response
             .headers
             .iter()
             .fold(0, |acc, (k, v)| acc + k.len() + v.len());
 
-        // Size of the `status` field
         size += size_of_val(&self.response.status);
-
-        // Size of the `url` field
         size += size_of_val(&self.response.url);
-
-        // Size of the `version` field
         size += size_of_val(&self.response.version);
-
-        // Size of the `policy` field
         size += size_of_val(&self.policy);
 
         size

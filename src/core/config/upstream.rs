@@ -29,6 +29,13 @@ impl Default for Batch {
     }
 }
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
+#[serde(rename_all = "camelCase", default)]
+#[derive(Default)]
+pub struct HttpCache {
+    pub enable: bool,
+    pub size: u64,
+}
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
 pub struct Proxy {
     pub url: String,
 }
@@ -83,13 +90,11 @@ pub struct Upstream {
     pub connect_timeout: Option<u64>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.
-    pub http_cache: Option<u64>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// Providing httpCachePercentage allocates a maximum of that percentage of
-    /// RAM to the HTTP cache. Defaults to `0` if unspecified.
-    pub http_cache_percentage: Option<String>,
+    /// This object has an Enable flag and a Size field,
+    /// the enable flag is used when the user wants to specify memory as a
+    /// percentage of system memory(i.e RAM). If disabled the size field
+    /// represents the max number of memory slots in cache. Providing httpCache size enables Tailcall's HTTP caching,adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234),to enhance performance by minimizing redundant data fetches.Defaults to `0` if unspecified.
+    pub http_cache: Option<HttpCache>,
 
     #[setters(strip_option)]
     #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
@@ -182,12 +187,10 @@ impl Upstream {
             .unwrap_or("Tailcall/1.0".to_string())
     }
     pub fn get_http_cache_size(&self) -> u64 {
-        self.http_cache.unwrap_or(0)
+        self.http_cache.clone().unwrap_or_default().size
     }
-    pub fn get_http_cache_percentage(&self) -> Option<String> {
-        self.http_cache_percentage
-            .clone()
-            .or_else(|| Some(String::from("0")))
+    pub fn get_http_cache_enable(&self) -> bool {
+        self.http_cache.clone().unwrap_or_default().enable
     }
     pub fn get_allowed_headers(&self) -> BTreeSet<String> {
         self.allowed_headers.clone().unwrap_or_default()

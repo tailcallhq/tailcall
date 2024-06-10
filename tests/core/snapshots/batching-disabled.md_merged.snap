@@ -7,7 +7,7 @@ schema
   @upstream(
     baseURL: "http://jsonplaceholder.typicode.com"
     batch: {delay: 0, headers: [], maxSize: 100}
-    httpCache: 42
+    httpCache: {enable: false, size: 42}
   ) {
   query: Query
 }

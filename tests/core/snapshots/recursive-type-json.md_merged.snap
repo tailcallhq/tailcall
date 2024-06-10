@@ -1,8 +1,8 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com", httpCache: 42) {
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com", httpCache: {enable: false, size: 42}) {
   query: Query
 }
 

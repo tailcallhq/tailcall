@@ -367,16 +367,13 @@ directive @upstream(
   """
   http2Only: Boolean
   """
-  Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching 
-  RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant 
-  data fetches. Defaults to `0` if unspecified.
+  This object has an Enable flag and a Size field, the enable flag is used when the 
+  user wants to specify memory as a percentage of system memory(i.e RAM). If disabled 
+  the size field represents the max number of memory slots in cache. Providing httpCache 
+  size enables Tailcall's HTTP caching,adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234),to 
+  enhance performance by minimizing redundant data fetches.Defaults to `0` if unspecified.
   """
-  httpCache: Int
-  """
-  Providing httpCachePercentage allocates a maximum of that percentage of RAM to the 
-  HTTP cache. Defaults to `0` if unspecified.
-  """
-  httpCachePercentage: String
+  httpCache: HttpCache
   """
   The time in seconds between each keep-alive message sent to maintain the connection.
   """
@@ -680,6 +677,10 @@ input Http {
   added to the URL.
   """
   query: [KeyValue]
+}
+input HttpCache {
+  enable: Boolean!
+  size: Int!
 }
 enum HttpVersion {
   HTTP1
