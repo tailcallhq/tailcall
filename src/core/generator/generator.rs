@@ -80,11 +80,7 @@ impl Generator {
                 }
                 InputSource::Import { src, resolved_src } => {
                     let source = ImportSource::detect(&src)?;
-                    let resolved_src = if let Some(resolved_import_src) = resolved_src {
-                        resolved_import_src
-                    } else {
-                        src.clone()
-                    };
+                    let resolved_src = resolved_src.unwrap_or(src.clone());
 
                     match source {
                         ImportSource::Proto => {
