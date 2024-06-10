@@ -59,7 +59,7 @@ pub struct Proxy {
 /// keep-alive intervals, and more. If not specified, default values are used.
 pub struct Upstream {
     #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
-    #[positioned_field(option_field)]
+    #[positioned_field(option_field, input_source_name = "onRequest")]
     /// onRequest field gives the ability to specify the global request
     /// interception handler.
     pub on_request: Option<Pos<String>>,
@@ -68,11 +68,10 @@ pub struct Upstream {
     /// `allowedHeaders` defines the HTTP headers allowed to be forwarded to
     /// upstream services. If not set, no headers are forwarded, enhancing
     /// security but possibly limiting data flow.
-    #[positioned_field(option_field)]
     pub allowed_headers: Option<Pos<BTreeSet<String>>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    #[positioned_field(option_field)]
+    #[positioned_field(option_field, input_source_name = "baseURL")]
     /// This refers to the default base URL for your APIs. If it's not
     /// explicitly mentioned in the `@upstream` operator, then each
     /// [@http](#http) operator must specify its own `baseURL`. If neither
@@ -101,7 +100,7 @@ pub struct Upstream {
 
     #[setters(strip_option)]
     #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
-    #[positioned_field(option_field)]
+    #[positioned_field(option_field, input_source_name = "http2Only")]
     /// The `http2Only` setting allows you to specify whether the client should
     /// always issue HTTP2 requests, without checking if the server supports it
     /// or not. By default it is set to `false` for all HTTP requests made by

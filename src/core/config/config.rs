@@ -439,13 +439,13 @@ pub struct Enum {
 /// the API endpoint specified when the `users` field is queried.
 pub struct Http {
     #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
-    #[positioned_field(option_field)]
+    #[positioned_field(option_field, input_source_name = "onRequest")]
     /// onRequest field in @http directive gives the ability to specify the
     /// request interception handler.
     pub on_request: Option<Pos<String>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    #[positioned_field(option_field)]
+    #[positioned_field(option_field, input_source_name = "baseURL")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
     pub base_url: Option<Pos<String>>,
@@ -465,7 +465,7 @@ pub struct Http {
     pub encoding: Pos<Encoding>,
 
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
-    #[positioned_field(field)]
+    #[positioned_field(field, input_source_name = "batchKey")]
     /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Pos<Vec<String>>,
 
@@ -581,7 +581,7 @@ pub struct Step {
 /// endpoint specified when the `users` field is queried.
 pub struct Grpc {
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
-    #[positioned_field(option_field)]
+    #[positioned_field(option_field, input_source_name = "baseURL")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
     pub base_url: Option<Pos<String>>,
@@ -631,33 +631,33 @@ pub struct GraphQL {
     pub args: Option<Vec<KeyValue>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field, input_source_name = "baseURL")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
-    #[positioned_field(option_field)]
     pub base_url: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(field)]
     /// If the upstream GraphQL server supports request batching, you can
     /// specify the 'batch' argument to batch several requests into a single
     /// batch request.
     ///
     /// Make sure you have also specified batch settings to the `@upstream` and
     /// to the `@graphQL` operator.
-    #[positioned_field(field)]
     pub batch: Pos<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(list_field)]
     /// The headers parameter allows you to customize the headers of the GraphQL
     /// request made by the `@graphQL` operator. It is used by specifying a
     /// key-value map of header names and their values.
-    #[positioned_field(list_field)]
     pub headers: Vec<Pos<KeyValue>>,
 
+    #[positioned_field(field)]
     /// Specifies the root field on the upstream to request data from. This maps
     /// a field in your schema to a field in the upstream schema. When a query
     /// is received for this field, Tailcall requests data from the
     /// corresponding upstream field.
-    #[positioned_field(field)]
     pub name: Pos<String>,
 }
 

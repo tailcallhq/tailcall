@@ -5,7 +5,7 @@ use super::{
 };
 
 pub trait PositionedConfig {
-    fn set_field_position(&mut self, _field: &str, _position: (usize, usize));
+    fn set_field_position(&mut self, field: &str, _position: (usize, usize));
 }
 
 impl PositionedConfig for Tag {

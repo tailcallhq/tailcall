@@ -10,3 +10,4 @@ proc-macro = true
 syn = { version = "2.0.60", features = ["derive", "full"] }
 quote = "1.0.36"
 proc-macro2 = "1.0.81"
+convert_case = "0.6.0"
