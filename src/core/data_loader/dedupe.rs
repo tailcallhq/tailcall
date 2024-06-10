@@ -76,6 +76,7 @@ mod tests {
 
     // FIXME: Migrate tests from async_cache
 
+    
     async fn compute_value(i: usize) -> String {
         println!("Should happen only once");
         format!("value_{}", i)
@@ -102,6 +103,7 @@ mod tests {
             let _ = handle.await.unwrap();
             // let expected = format!("value_{}", i);
 
+            // FIXME: Insert a proper assertion test
             // assert_eq!(actual, expected);
         }
     }
