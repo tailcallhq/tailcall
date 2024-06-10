@@ -12,8 +12,14 @@ use crate::core::config;
 pub enum InputSource {
     /// src: maintains the same src written in config.
     /// resolved_src: holds the correctly resolved src with respect to config.
-    Config { src: String, resolved_src: Option<String> },
-    Import { src: String, resolved_src: Option<String> },
+    Config {
+        src: String,
+        resolved_src: Option<String>,
+    },
+    Import {
+        src: String,
+        resolved_src: Option<String>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, JsonSchema)]
@@ -80,32 +86,14 @@ pub struct GeneratorConfig {
 
 impl GeneratorConfig {
     /// Resolves all the paths present inside the GeneratorConfig.
-    pub fn resolve_paths(mut self, file_path: &str) -> anyhow::Result<Self> {
+    pub fn resolve_paths(mut self, file_path: &str) -> Self {
         let config_path = Path::new(file_path).parent().unwrap_or(Path::new(""));
 
         for input in self.input.iter_mut() {
             match &mut input.source {
-                InputSource::Config { src, resolved_src } => {
-                    if let Ok(_) = Url::parse(src) {
-                        // no need to explictely resolve urls.
-                        *resolved_src = Some(src.to_owned());
-                    } else if Path::new(&src).is_relative() {
-                        let cleaned_path = config_path.join(&src).clean();
-                        *resolved_src = Some(cleaned_path.to_string_lossy().into_owned());
-                    } else {
-                        *resolved_src = Some(src.to_owned());
-                    }
-                }
-                InputSource::Import { src, resolved_src } => {
-                    if let Ok(_) = Url::parse(src) {
-                        // no need to explictely resolve urls.
-                        *resolved_src = Some(src.to_owned());
-                    } else if Path::new(&src).is_relative() {
-                        let cleaned_path = config_path.join(&src).clean();
-                        *resolved_src = Some(cleaned_path.to_string_lossy().into_owned());
-                    } else {
-                        *resolved_src = Some(src.to_owned());
-                    }
+                InputSource::Config { src, resolved_src }
+                | InputSource::Import { src, resolved_src } => {
+                    *resolved_src = Some(resolve_path(src, config_path));
                 }
             }
         }
@@ -116,7 +104,18 @@ impl GeneratorConfig {
             self.output.file = cleaned_path.to_string_lossy().into_owned();
         }
 
-        Ok(self)
+        self
+    }
+}
+
+fn resolve_path(src: &str, config_path: &Path) -> String {
+    if Url::parse(src).is_ok() {
+        src.to_owned()
+    } else if Path::new(src).is_relative() {
+        let cleaned_path = config_path.join(src).clean();
+        cleaned_path.to_string_lossy().into_owned()
+    } else {
+        src.to_owned()
     }
 }
 
@@ -151,7 +150,7 @@ mod tests {
         let file_path = "../../../tailcall-fixtures/fixtures/generator/simple-json.json";
         let content = std::fs::read_to_string(tailcall_fixtures::generator::SIMPLE_JSON).unwrap();
         let config: GeneratorConfig = serde_json::from_str(&content).unwrap();
-        let config = config.resolve_paths(file_path).unwrap();
+        let config = config.resolve_paths(file_path);
         assert_debug_snapshot!(&config);
     }
 }
