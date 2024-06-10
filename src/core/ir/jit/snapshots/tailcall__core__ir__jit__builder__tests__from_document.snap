@@ -71,37 +71,5 @@ ExecutionPlan {
                 ),
             ),
         },
-        Field {
-            id: 1,
-            name: "user",
-            ir: "Some(..)",
-            type_of: User,
-            refs: Some(
-                Children(
-                    [
-                        Field {
-                            id: 2,
-                            name: "id",
-                            type_of: Int!,
-                        },
-                        Field {
-                            id: 3,
-                            name: "name",
-                            type_of: String!,
-                        },
-                    ],
-                ),
-            ),
-        },
-        Field {
-            id: 2,
-            name: "id",
-            type_of: Int!,
-        },
-        Field {
-            id: 3,
-            name: "name",
-            type_of: String!,
-        },
     ],
 }

@@ -142,6 +142,7 @@ impl ExecutionPlan {
         let field_children = fields
             .clone()
             .into_iter()
+            .filter(|f| f.refs.is_none())
             .map(|f| f.into_children(&fields))
             .collect::<Vec<_>>();
 
