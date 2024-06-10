@@ -84,7 +84,7 @@ pub fn expand_positoned_config(item: TokenStream) -> TokenStream {
                             Some(quote! {
                                 #rename_or_field_name => {
                                     if let Some(ref mut positioned_field) = self.#field {
-                                        positioned_field.set_position(position.0, position.1);
+                                        positioned_field.set_position(position);
                                     }
                                 }
                             })
@@ -94,7 +94,7 @@ pub fn expand_positoned_config(item: TokenStream) -> TokenStream {
                                 renamed_field.unwrap_or_else(|| field_name.clone());
                             Some(quote! {
                                 #rename_or_field_name => {
-                                    self.#field.set_position(position.0, position.1);
+                                    self.#field.set_position(position);
                                 }
                             })
                         }
@@ -104,7 +104,7 @@ pub fn expand_positoned_config(item: TokenStream) -> TokenStream {
                             Some(quote! {
                                 #rename_or_field_name => {
                                     for field in self.#field.iter_mut() {
-                                        field.set_position(position.0, position.1);
+                                        field.set_position(position);
                                     }
                                 }
                             })
@@ -116,7 +116,7 @@ pub fn expand_positoned_config(item: TokenStream) -> TokenStream {
 
             let generated_code = quote! {
                 impl PositionedConfig for #struct_identifier {
-                    fn set_field_position(&mut self, field: &str, position: (usize, usize)) {
+                    fn set_field_position(&mut self, field: &str, position: (usize, usize, &str)) {
                         match field {
                             #(#fields_matches,)*
                             _ => {}

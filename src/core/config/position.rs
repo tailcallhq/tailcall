@@ -24,9 +24,10 @@ impl<T> Pos<T> {
         Self { line, column, file_path, inner }
     }
 
-    pub fn set_position(&mut self, line: usize, column: usize) {
-        self.line = line;
-        self.column = column;
+    pub fn set_position(&mut self, position: (usize, usize, &str)) {
+        self.line = position.0;
+        self.column = position.1;
+        self.file_path = Some(position.2.to_owned());
     }
 }
 

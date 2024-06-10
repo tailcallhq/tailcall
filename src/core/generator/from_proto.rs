@@ -206,7 +206,7 @@ impl Context {
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
 
-            ty.tag = Some(Tag { id: msg_type.id() });
+            ty.tag = Some(Pos::new(0, 0, None, Tag { id: msg_type.id() }));
 
             self = self.insert_type(msg_type.to_string(), ty);
         }

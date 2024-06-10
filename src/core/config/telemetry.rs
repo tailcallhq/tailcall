@@ -3,10 +3,12 @@ use serde::{Deserialize, Serialize};
 
 use super::position::Pos;
 use super::KeyValue;
+use crate::core::config::positioned_config::PositionedConfig;
 use crate::core::config::{Apollo, ConfigReaderContext};
 use crate::core::helpers::headers::to_mustache_headers;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
+use crate::core::macros::PositionedConfig;
 use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Mustache;
 use crate::core::valid::Validator;
@@ -68,7 +70,17 @@ pub enum TelemetryExporter {
     Apollo(Apollo),
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
+)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The @telemetry directive facilitates seamless integration with

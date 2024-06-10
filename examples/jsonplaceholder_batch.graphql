@@ -9,7 +9,7 @@ type Query {
 }
 
 type User {
-  id: Int!
+  id: Int @cache(maxAge: 100)
   name: String!
   username: String!
   email: String!

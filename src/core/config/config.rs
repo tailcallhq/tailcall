@@ -113,7 +113,7 @@ pub struct Type {
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Contains source information for the type.
-    pub tag: Option<Tag>,
+    pub tag: Option<Pos<Tag>>,
 }
 
 impl Type {
@@ -132,7 +132,16 @@ impl Type {
 }
 
 #[derive(
-    Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    PositionedConfig,
 )]
 #[serde(deny_unknown_fields)]
 /// Used to represent an identifier for a type. Typically used via only by the
@@ -165,7 +174,16 @@ pub struct Cache {
 }
 
 #[derive(
-    Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema, MergeRight,
+    Clone,
+    Debug,
+    Deserialize,
+    Serialize,
+    PartialEq,
+    Eq,
+    Default,
+    schemars::JsonSchema,
+    MergeRight,
+    PositionedConfig,
 )]
 pub struct Protected {}
 
@@ -190,7 +208,9 @@ pub struct RootSchema {
     pub subscription: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, PositionedConfig,
+)]
 #[serde(deny_unknown_fields)]
 /// Used to omit a field from public consumption.
 pub struct Omit {}
@@ -199,7 +219,16 @@ pub struct Omit {}
 /// A field definition containing all the metadata information about resolving a
 /// field.
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Setters,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
 )]
 #[setters(strip_option)]
 pub struct Field {
@@ -370,12 +399,16 @@ impl Field {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, PositionedConfig,
+)]
 pub struct JS {
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, PositionedConfig,
+)]
 #[serde(deny_unknown_fields)]
 pub struct Modify {
     #[serde(default, skip_serializing_if = "is_default")]
@@ -384,12 +417,22 @@ pub struct Modify {
     pub omit: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PositionedConfig)]
 pub struct Inline {
     pub path: Vec<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Default,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
+)]
 pub struct Arg {
     #[serde(rename = "type")]
     pub type_of: String,
@@ -400,7 +443,7 @@ pub struct Arg {
     #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub modify: Option<Modify>,
+    pub modify: Option<Pos<Modify>>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub default_value: Option<Value>,
 }

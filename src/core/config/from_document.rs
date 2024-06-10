@@ -88,7 +88,10 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default + Clone + Positioned
     {
         T::from_directive(&directive.node).and_then(|mut config| {
             directive.node.arguments.iter().for_each(|(key, _)| {
-                config.set_field_position(key.node.as_str(), (key.pos.line, key.pos.column))
+                config.set_field_position(
+                    key.node.as_str(),
+                    (key.pos.line, key.pos.column, input_path),
+                )
             });
             Valid::succeed(Pos::new(
                 directive.pos.line,
@@ -140,7 +143,10 @@ fn process_schema_optional_directives<T: DirectiveCodec<T> + Clone + PositionedC
         T::from_directive(&directive.node)
             .and_then(|mut config| {
                 directive.node.arguments.iter().for_each(|(key, _)| {
-                    config.set_field_position(key.node.as_str(), (key.pos.line, key.pos.column))
+                    config.set_field_position(
+                        key.node.as_str(),
+                        (key.pos.line, key.pos.column, input_path),
+                    )
                 });
                 Valid::succeed(Pos::new(
                     directive.pos.line,
@@ -333,7 +339,11 @@ where
         Protected::directive_name().as_str(),
         input_path,
     ))
-    .fuse(Tag::from_directives(directives.iter()))
+    .fuse(process_schema_optional_directives(
+        directives.iter(),
+        Tag::directive_name().as_str(),
+        input_path,
+    ))
     .map(|(cache, fields, protected, tag)| {
         let doc = description.to_owned().map(|pos| pos.node);
         let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
@@ -405,7 +415,7 @@ fn to_field(
     to_common_field(
         field_definition,
         field_position,
-        to_args(field_definition),
+        to_args(field_definition, input_path),
         input_path,
     )
 }
@@ -522,18 +532,18 @@ fn to_type_of(type_: &Type) -> String {
         BaseType::List(ty) => to_type_of(ty),
     }
 }
-fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> {
+fn to_args(field_definition: &FieldDefinition, input_path: &str) -> BTreeMap<String, config::Arg> {
     let mut args: BTreeMap<String, config::Arg> = BTreeMap::new();
 
     for arg in field_definition.arguments.iter() {
         let arg_name = pos_name_to_string(&arg.node.name);
-        let arg_val = to_arg(&arg.node);
+        let arg_val = to_arg(&arg.node, input_path);
         args.insert(arg_name, arg_val);
     }
 
     args
 }
-fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
+fn to_arg(input_value_definition: &InputValueDefinition, input_path: &str) -> config::Arg {
     let type_of = to_type_of(&input_value_definition.ty.node);
     let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
     let required = !input_value_definition.ty.node.nullable;
@@ -541,10 +551,15 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
         .description
         .to_owned()
         .map(|pos| pos.node);
-    let modify = Modify::from_directives(input_value_definition.directives.iter())
-        .to_result()
-        .ok()
-        .flatten();
+
+    let modify = process_schema_optional_directives(
+        input_value_definition.directives.iter(),
+        Modify::directive_name().as_str(),
+        input_path,
+    )
+    .to_result()
+    .ok()
+    .flatten();
     let default_value = if let Some(pos) = input_value_definition.default_value.as_ref() {
         let value = &pos.node;
         serde_json::to_value(value).ok()
@@ -628,7 +643,7 @@ fn to_add_fields_from_directives(
                         directive.node.arguments.iter().for_each(|(key, _)| {
                             field.set_field_position(
                                 key.node.as_str(),
-                                (key.pos.line, key.pos.column),
+                                (key.pos.line, key.pos.column, input_path),
                             )
                         });
                         Valid::succeed(Pos::new(

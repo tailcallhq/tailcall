@@ -32,76 +32,76 @@ use crate::core::macros::PositionedConfig;
 /// behaves and helps tune tailcall for various use-cases.
 pub struct Server {
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `apolloTracing` exposes GraphQL query performance data, including
     /// execution time of queries and individual resolvers.
-    #[positioned_field(option_field)]
     pub apollo_tracing: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `batchRequests` combines multiple requests into one, improving
     /// performance but potentially introducing latency and complicating
     /// debugging. Use judiciously. @default `false`.
-    #[positioned_field(option_field)]
     pub batch_requests: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `headers` contains key-value pairs that are included as default headers
     /// in server responses, allowing for consistent header management across
     /// all responses.
-    #[positioned_field(option_field)]
     pub headers: Option<Pos<Headers>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `globalResponseTimeout` sets the maximum query duration before
     /// termination, acting as a safeguard against long-running queries.
-    #[positioned_field(option_field)]
     pub global_response_timeout: Option<Pos<i64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `hostname` sets the server hostname.
     #[positioned_field(option_field)]
+    /// `hostname` sets the server hostname.
     pub hostname: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `introspection` allows clients to fetch schema information directly,
     /// aiding tools and applications in understanding available types, fields,
     /// and operations. @default `true`.
-    #[positioned_field(option_field)]
     pub introspection: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `pipelineFlush` allows to control flushing behavior of the server
     /// pipeline.
-    #[positioned_field(option_field)]
     pub pipeline_flush: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `port` sets the Tailcall running port. @default `8000`.
     #[positioned_field(option_field)]
+    /// `port` sets the Tailcall running port. @default `8000`.
     pub port: Option<Pos<u16>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `queryValidation` checks incoming GraphQL queries against the schema,
     /// preventing errors from invalid queries. Can be disabled for performance.
     /// @default `false`.
-    #[positioned_field(option_field)]
     pub query_validation: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `responseValidation` Tailcall automatically validates responses from
     /// upstream services using inferred schema. @default `false`.
-    #[positioned_field(option_field)]
     pub response_validation: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// A link to an external JS file that listens on every HTTP request
     /// response event.
-    #[positioned_field(option_field)]
     pub script: Option<Pos<ScriptOptions>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// `showcase` enables the /showcase/graphql endpoint.
     #[positioned_field(option_field)]
+    /// `showcase` enables the /showcase/graphql endpoint.
     pub showcase: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
@@ -111,15 +111,15 @@ pub struct Server {
     pub vars: Vec<KeyValue>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `version` sets the HTTP version for the server. Options are `HTTP1` and
     /// `HTTP2`. @default `HTTP1`.
-    #[positioned_field(option_field)]
     pub version: Option<Pos<HttpVersion>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
-    #[positioned_field(option_field)]
     pub workers: Option<Pos<usize>>,
 }
 

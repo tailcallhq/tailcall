@@ -209,7 +209,12 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                         .as_ref()
                         .map(|protected| pos(protected.inner.to_directive())),
                 )
-                .chain(type_def.tag.as_ref().map(|tag| pos(tag.to_directive())))
+                .chain(
+                    type_def
+                        .tag
+                        .as_ref()
+                        .map(|tag| pos(tag.inner.to_directive())),
+                )
                 .collect::<Vec<_>>(),
             kind,
         })));
