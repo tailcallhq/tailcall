@@ -167,7 +167,10 @@ impl ExecutionSpec {
                                 )),
                             }?;
 
-                            let source = Source::new(path.to_str().unwrap().to_string(), SourceType::from_str(&lang)?);
+                            let source = Source::new(
+                                path.to_str().unwrap().to_string(),
+                                SourceType::from_str(&lang)?,
+                            );
 
                             match name {
                                 "config" => {

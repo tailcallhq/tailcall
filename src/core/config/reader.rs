@@ -65,7 +65,10 @@ impl ConfigReader {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
 
-                    let config = Config::from_source(Source::new(path.clone(), SourceType::detect(&source.path)?), &content)?;
+                    let config = Config::from_source(
+                        Source::new(path.clone(), SourceType::detect(&source.path)?),
+                        &content,
+                    )?;
 
                     config_module = config_module.merge_right(ConfigModule::from(config.clone()));
 

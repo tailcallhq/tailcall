@@ -274,7 +274,7 @@ fn to_union_types(
                             .to_owned()
                             .map(|pos| pos.node),
                         &type_definition.pos,
-                        &input_path,
+                        input_path,
                     ),
                     _ => return None,
                 };
