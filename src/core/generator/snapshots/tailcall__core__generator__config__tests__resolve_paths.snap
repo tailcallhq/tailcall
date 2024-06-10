@@ -7,16 +7,25 @@ GeneratorConfig {
         Input {
             source: Config {
                 src: "https://tailcall.run/configs/abc.json",
+                resolved_src: Some(
+                    "https://tailcall.run/configs/abc.json",
+                ),
             },
         },
         Input {
             source: Config {
-                src: "../../../tailcall-fixtures/fixtures/generator/jsonplaceholder.graphql",
+                src: "./jsonplaceholder.graphql",
+                resolved_src: Some(
+                    "../../../tailcall-fixtures/fixtures/generator/jsonplaceholder.graphql",
+                ),
             },
         },
         Input {
             source: Import {
                 src: "https://jsonplaceholder.typicode.com/posts",
+                resolved_src: Some(
+                    "https://jsonplaceholder.typicode.com/posts",
+                ),
             },
         },
     ],
