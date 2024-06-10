@@ -1,6 +1,6 @@
 ---
 source: src/core/generator/from_openapi.rs
-expression: "OpenApiToConfigConverter::new(\"Query\",\n                content.as_str()).unwrap().convert().to_sdl()"
+expression: apis_guru
 ---
 schema @server @upstream(baseURL: "https://api.apis.guru/v2") {
   query: Query

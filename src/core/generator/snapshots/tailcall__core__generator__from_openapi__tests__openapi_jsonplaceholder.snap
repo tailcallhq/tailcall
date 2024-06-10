@@ -1,6 +1,6 @@
 ---
 source: src/core/generator/from_openapi.rs
-expression: "OpenApiToConfigConverter::new(\"Query\",\n                content.as_str()).unwrap().convert().to_sdl()"
+expression: jsonplaceholder
 ---
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
