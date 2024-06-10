@@ -72,9 +72,10 @@ impl Generator {
 
         let resolvers = gen_config.input.into_iter().map(|input| async {
             match input.source {
-                InputSource::Config { src, resolved_src: _ } => {
+                InputSource::Config { src, resolved_src } => {
                     let source = config::Source::detect(&src)?;
-                    let schema = self.reader.read_file(&src).await?;
+                    let resolved_src = resolved_src.unwrap_or(src.clone());
+                    let schema = self.reader.read_file(&resolved_src).await?;
 
                     Config::from_source(source, &schema.content)
                 }
