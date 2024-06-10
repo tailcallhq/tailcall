@@ -25,6 +25,10 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike> {
     // Overridden Arguments for Async GraphQL Context
     graphql_ctx_args: Option<Arc<Value>>,
 
+    /// Type name of resolved data that is calculated
+    /// dynamically based on the shape of the value itself.
+    /// Required for proper Union type resolutions.
+    /// More details at [TypeName]
     pub type_name: Option<TypeName>,
 }
 

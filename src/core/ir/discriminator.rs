@@ -10,15 +10,41 @@ use indexmap::IndexMap;
 use crate::core::config::Type;
 use crate::core::valid::{Cause, Valid, Validator};
 
+/// Represents the type name for the resolved value.
+/// It is used when the GraphQL executor needs to resolve values of a union
+/// type. In order to select the correct fields, the executor must know the
+/// exact type name for each resolved value. And in cases when the output is
+/// list of union type it should resolve exact type for every entry in list.
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum TypeName {
     Single(String),
     Vec(Vec<String>),
 }
 
+/// Resolver for type member of union.
+/// Based on types definitions and provided value can
+/// resolve what's the type of the value
+///
+/// ## Resolution algorithm
+///
+/// The resolution algorithm is based on following points:
+/// - common set of fields it's a set of all fields that are defined in type
+///   members of union
+/// - if resolved value is a list then the resolution should be run for every
+///   entry in list as for separate value
+/// - if field from common set if presented in resolved value then the result
+///   type is one of the types that have this field
+/// - if field from common set is required in some types and this field is not
+///   present in resolved value then the result type is not one of those types
+/// - by repeating checks from above for every field in common set we will end
+///   up with smaller set of possible types and even, what is more likely, with
+///   only single possible type
 #[derive(Clone)]
 pub struct Discriminator {
+    /// List of all types that are member of Union
     types: Vec<String>,
+    /// Set of all fields that are part of types with
+    /// the [FieldInfo] about its relations to types
     fields_info: IndexMap<String, FieldInfo>,
 }
 
@@ -43,6 +69,10 @@ impl std::fmt::Debug for Discriminator {
     }
 }
 
+/// Represents relations between field and type
+/// - `presented_in` - the field is a part of the type definition despite
+///   nullability
+/// - `required_in` - the field is a part of the type and it's non-nullable
 #[derive(Default, Debug, Clone)]
 struct FieldInfo {
     presented_in: Repr,
@@ -50,6 +80,8 @@ struct FieldInfo {
 }
 
 impl FieldInfo {
+    /// Displays the [Repr] data inside FieldInfo as type names instead of raw
+    /// underlying representation
     fn display_types(&self, f: &mut dyn Write, types: &[String]) -> std::fmt::Result {
         f.write_str("presented_in: ")?;
         f.write_fmt(format_args!(
@@ -86,8 +118,10 @@ impl Discriminator {
 
                 let repr = Repr::from_type_index(i);
 
+                // add info for this field that it's presented in this type
                 *info.presented_in |= *repr;
 
+                // and info if it's required in this type
                 if field.required {
                     *info.required_in |= *repr;
                 }
@@ -207,19 +241,32 @@ impl Discriminator {
                 *possible_types &= !*info.required_in;
             }
 
-            match *possible_types {
-                0 => bail!("Failed to find corresponding type for value"),
-                x if x.is_power_of_two() => {
-                    return Ok(possible_types.first_covered_type(&self.types))
-                }
-                _ => {}
+            if possible_types.is_empty() {
+                // no possible types, something is wrong with the resolved value
+                bail!("Failed to find corresponding type for value")
+            }
+
+            if !possible_types.is_covering_multiple_types() {
+                // we've got only one possible type so return it
+                // even despite the fact the value could be totally wrong if we check other
+                // fields. But we want to cover positive cases and we want to do
+                // it as soon as possible and the wrong value will be probably
+                // wrong anyway to use later
+                return Ok(possible_types.first_covered_type(&self.types));
             }
         }
 
+        // we have multiple possible types. Return the first one
+        // that is defined earlier in config
         Ok(possible_types.first_covered_type(&self.types))
     }
 }
 
+/// Representation for set of types if some condition is hold.
+/// The condition is represented as a bit inside the usize number
+/// where bit position from the right in binary representation of usize
+/// is the index of type in the set and the if the value of the bit is
+/// 1 then the condition is hold
 #[derive(Copy, Clone, Default)]
 struct Repr(usize);
 
@@ -244,18 +291,23 @@ impl DerefMut for Repr {
 }
 
 impl Repr {
+    /// Create new Repr where condition is hold for every type
     fn all_covered(len: usize) -> Self {
         Self((1 << len) - 1)
     }
 
+    /// Create new Repr where condition is hold
+    /// for type with passed index
     fn from_type_index(index: usize) -> Self {
         Self(1 << index)
     }
 
+    /// Search for first type in list for which condition is hold
     fn first_covered_type<'types>(&self, types: &'types [String]) -> &'types str {
         &types[self.0.trailing_zeros() as usize]
     }
 
+    /// Returns list of all types for which condition is hold
     fn covered_types<'types>(&self, types: &'types [String]) -> Vec<&'types str> {
         let mut x = *self;
         let mut result = Vec::new();
@@ -269,10 +321,17 @@ impl Repr {
         result
     }
 
+    /// Check if the condition is not hold for any type
+    fn is_empty(&self) -> bool {
+        self.0 == 0
+    }
+
+    /// Check if condition is hold for every type
     fn is_covering_all_types(&self, len: usize) -> bool {
         self.trailing_ones() == len as u32
     }
 
+    /// Check if condition is hold for more than 1 type
     fn is_covering_multiple_types(&self) -> bool {
         !self.is_power_of_two()
     }
