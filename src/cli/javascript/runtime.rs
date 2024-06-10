@@ -83,7 +83,9 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    async fn call(&self, name: &str, event: Event) -> Result<Option<Command>> {
+    type Error = Error;
+
+    async fn call(&self, name: &str, event: Event) -> crate::core::Result<Option<Command>, Self::Error> {
         let script = self.script.clone();
         let name = name.to_string(); // TODO
         if let Some(runtime) = &self.tokio_runtime {
@@ -101,7 +103,9 @@ impl WorkerIO<Event, Command> for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
-    async fn call(&self, name: &str, input: ConstValue) -> Result<Option<ConstValue>> {
+    type Error = Error;
+
+    async fn call(&self, name: &str, input: ConstValue) -> crate::core::Result<Option<ConstValue>, Self::Error> {
         let script = self.script.clone();
         let name = name.to_string();
         let value = serde_json::to_string(&input)?;

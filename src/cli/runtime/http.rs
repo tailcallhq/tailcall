@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::cli::Result;
+use crate::cli::Error;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;
@@ -129,6 +129,8 @@ impl NativeHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for NativeHttp {
+    type Error = Error;
+
     #[allow(clippy::blocks_in_conditions)]
     // because of the issue with tracing and clippy - https://github.com/rust-lang/rust-clippy/issues/12281
     #[tracing::instrument(
@@ -142,7 +144,7 @@ impl HttpIO for NativeHttp {
             network.protocol.version = ?request.version()
         )
     )]
-    async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Bytes>> {
+    async fn execute(&self, mut request: reqwest::Request) -> crate::core::Result<Response<Bytes>, Self::Error> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }

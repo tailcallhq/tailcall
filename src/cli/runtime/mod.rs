@@ -19,13 +19,13 @@ fn init_env() -> Arc<dyn EnvIO> {
 }
 
 // Provides access to file system in native rust environment
-fn init_file() -> Arc<dyn FileIO> {
+fn init_file() -> Arc<dyn FileIO<Error = crate::cli::Error>> {
     Arc::new(file::NativeFileIO::init())
 }
 
 fn init_http_worker_io(
     script: Option<blueprint::Script>,
-) -> Option<Arc<dyn WorkerIO<Event, Command>>> {
+) -> Option<Arc<dyn WorkerIO<Event, Command, Error = crate::cli::Error>>> {
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
@@ -37,7 +37,7 @@ fn init_http_worker_io(
 
 fn init_resolver_worker_io(
     script: Option<blueprint::Script>,
-) -> Option<Arc<dyn WorkerIO<async_graphql::Value, async_graphql::Value>>> {
+) -> Option<Arc<dyn WorkerIO<async_graphql::Value, async_graphql::Value, Error = crate::cli::Error>>> {
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
@@ -48,7 +48,7 @@ fn init_resolver_worker_io(
 }
 
 // Provides access to http in native rust environment
-fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
+fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO<Error = crate::cli::Error>> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream,
         &blueprint.telemetry,
@@ -56,7 +56,7 @@ fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
 }
 
 // Provides access to http in native rust environment
-fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
+fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO<Error = crate::cli::Error>> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream.clone().http2_only(true),
         &blueprint.telemetry,

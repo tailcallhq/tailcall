@@ -1,6 +1,6 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::cli::Result;
+use crate::cli::{Result, Error};
 use crate::core::{Errata, FileIO};
 
 #[derive(Clone)]
@@ -27,7 +27,9 @@ async fn write<'a>(path: &'a str, content: &'a [u8]) -> Result<()> {
 
 #[async_trait::async_trait]
 impl FileIO for NativeFileIO {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<()> {
+    type Error = Error;
+
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> crate::core::Result<(), Self::Error> {
         write(path, content).await.map_err(|err| {
             Errata::new(format!("Failed to write file: {}", path).as_str())
                 .description(err.to_string())

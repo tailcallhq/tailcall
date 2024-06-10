@@ -38,6 +38,8 @@ pub mod tracing;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
+mod error;
+pub use error::{Error, Result};
 
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;
@@ -56,18 +58,22 @@ pub trait EnvIO: Send + Sync + 'static {
 
 #[async_trait::async_trait]
 pub trait HttpIO: Sync + Send + 'static {
+    type Error: Sync + Send + 'static;
+
     async fn execute(
         &self,
         request: reqwest::Request,
-    ) -> anyhow::Result<Response<hyper::body::Bytes>> {
+    ) -> Result<Response<hyper::body::Bytes>, Self::Error> {
         self.execute(request).await
     }
 }
 
 #[async_trait::async_trait]
 pub trait FileIO: Send + Sync {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()>;
-    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String>;
+    type Error: Send + Sync;
+
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<(), Self::Error>;
+    async fn read<'a>(&'a self, path: &'a str) -> Result<String, Self::Error>;
 }
 
 #[async_trait::async_trait]
@@ -89,8 +95,10 @@ pub type EntityCache = dyn Cache<Key = IoId, Value = ConstValue>;
 
 #[async_trait::async_trait]
 pub trait WorkerIO<In, Out>: Send + Sync + 'static {
+    type Error: Send + Sync + 'static;
+
     /// Calls a global JS function
-    async fn call(&self, name: &str, input: In) -> anyhow::Result<Option<Out>>;
+    async fn call(&self, name: &str, input: In) -> Result<Option<Out>, Self::Error>;
 }
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
