@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::Result;
+use crate::cli::Result;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;

@@ -23,7 +23,8 @@ pub async fn start_http_2(
     let addr = sc.addr();
     let incoming = AddrIncoming::bind(&addr)?;
     let acceptor = TlsAcceptor::builder()
-        .with_single_cert(cert, key.clone_key())?
+        .with_single_cert(cert, key.clone_key())
+        .map_err(|_| Error::RustlsInternalError)?
         .with_http2_alpn()
         .with_incoming(incoming);
     let make_svc_single_req = make_service_fn(|_conn| {

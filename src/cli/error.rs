@@ -82,6 +82,18 @@ pub enum Error {
 
     #[error("Init Process Observer Error")]
     InitProcessObserverError,
+
+    #[error("JS Runtime is stopped")]
+    JsRuntimeStoppedError,
+
+    #[error("Rustls internal error")]
+    RustlsInternalError,
+
+    #[error("Reqwest middleware error")]
+    ReqwestMiddlewareError(reqwest_middleware::Error),
+
+    #[error("Reqwest error")]
+    ReqwestError(reqwest::Error),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
