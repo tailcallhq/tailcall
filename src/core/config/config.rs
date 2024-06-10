@@ -411,6 +411,11 @@ pub struct Enum {
 /// REST API. In this scenario, the GraphQL server will make a GET request to
 /// the API endpoint specified when the `users` field is queried.
 pub struct Http {
+    #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
+    /// onRequest field in @http directive gives the ability to specify the
+    /// request interception handler.
+    pub on_request: Option<String>,
+
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
@@ -605,6 +610,19 @@ pub struct AddField {
 }
 
 impl Config {
+    pub fn is_root_operation_type(&self, type_name: &str) -> bool {
+        let type_name = type_name.to_lowercase();
+
+        [
+            &self.schema.query,
+            &self.schema.mutation,
+            &self.schema.subscription,
+        ]
+        .iter()
+        .filter_map(|&root_name| root_name.as_ref())
+        .any(|root_name| root_name.to_lowercase() == type_name)
+    }
+
     pub fn port(&self) -> u16 {
         self.server.port.unwrap_or(8000)
     }
@@ -790,6 +808,10 @@ impl Config {
         }
         while let Some(type_name) = stack.pop() {
             if let Some(typ) = self.types.get(&type_name) {
+                if set.contains(&type_name) {
+                    continue;
+                }
+
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
@@ -850,5 +872,70 @@ mod tests {
             Type::default().fields(vec![("a", Field::int())]),
         )]);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_unused_types_with_cyclic_types() {
+        let config = Config::from_sdl(
+            "
+            type Bar {a: Int}
+            type Foo {a: [Foo]}
+
+            type Query {
+                foos: [Foo]
+            }
+
+            schema {
+                query: Query
+            }
+            ",
+        )
+        .to_result()
+        .unwrap();
+
+        let actual = config.unused_types();
+        let mut expected = HashSet::new();
+        expected.insert("Bar".to_string());
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_query() {
+        let mut config = Config::default();
+        config.schema.query = Some("Query".to_string());
+
+        assert!(config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_mutation() {
+        let mut config = Config::default();
+        config.schema.mutation = Some("Mutation".to_string());
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_subscription() {
+        let mut config = Config::default();
+        config.schema.subscription = Some("Subscription".to_string());
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_no_root_operation() {
+        let config = Config::default();
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
     }
 }

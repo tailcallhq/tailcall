@@ -619,7 +619,7 @@ fn write_all_input_types(
 
     let scalar = CUSTOM_SCALARS
         .iter()
-        .map(|(k, v)| (k.clone(), v.scalar()))
+        .map(|(k, v)| (k.clone(), v.schema()))
         .collect::<Map<String, Schema>>();
 
     let mut scalar_defs = BTreeMap::new();
@@ -628,11 +628,8 @@ fn write_all_input_types(
         let scalar_definition = obj
             .clone()
             .into_object()
-            .object
-            .as_ref()
-            .and_then(|a| a.properties.get(name))
-            .and_then(|a| a.clone().into_object().metadata)
-            .and_then(|a| a.description);
+            .metadata
+            .and_then(|m| m.description);
 
         if let Some(scalar_definition) = scalar_definition {
             scalar_defs.insert(name.clone(), scalar_definition);
