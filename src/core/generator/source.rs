@@ -1,3 +1,4 @@
+use regex::Regex;
 use thiserror::Error;
 
 ///
@@ -23,16 +24,24 @@ impl ImportSource {
         }
     }
 
-    fn ends_with(&self, file: &str) -> bool {
-        file.ends_with(&format!(".{}", self.ext()))
+    fn ends_with(&self, src: &str) -> bool {
+        src.ends_with(&format!(".{}", self.ext()))
     }
 
-    /// Detect the config format from the file name
+    fn is_url(self, src: &str) -> bool {
+        let url_regex = Regex::new(r"^https?://").unwrap();
+        url_regex.is_match(src)
+    }
+
+    /// Detect the config format from the src
     pub fn detect(name: &str) -> Result<Self, UnsupportedFileFormat> {
-        const ALL: &[ImportSource] = &[ImportSource::Proto];
+        const ALL: &[ImportSource] = &[ImportSource::Proto, ImportSource::Url];
 
         ALL.iter()
-            .find(|format| format.ends_with(name))
+            .find(|format| match format {
+                ImportSource::Proto => format.ends_with(name),
+                ImportSource::Url => format.is_url(name),
+            })
             .copied()
             .ok_or(UnsupportedFileFormat(name.to_string()))
     }
