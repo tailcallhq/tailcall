@@ -1,12 +1,64 @@
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, HashSet, VecDeque};
 
 use convert_case::{Case, Casing};
+use oas3::spec::{ObjectOrReference, SchemaType};
 use oas3::{Schema, Spec};
 
-use crate::core::config::{Config, Enum, Field, Http, RootSchema, Type, Union, Upstream};
+use crate::core::config::{
+    Arg, Config, Enum, Field, Http, KeyValue, RootSchema, Type, Union, Upstream,
+};
 use crate::core::http::Method;
 
-#[allow(unused)]
+fn schema_type_to_string(typ: &SchemaType) -> String {
+    let typ_str = match typ {
+        SchemaType::Boolean => "Boolean",
+        SchemaType::Integer => "Int",
+        SchemaType::Number => "Int",
+        SchemaType::String => "String",
+        SchemaType::Array => "Array",
+        SchemaType::Object => "Object",
+    };
+
+    typ_str.to_string()
+}
+
+fn schema_to_primitive_type(typ: &SchemaType) -> Option<String> {
+    match typ {
+        SchemaType::Array | SchemaType::Object => None,
+        x => Some(schema_type_to_string(x)),
+    }
+}
+
+enum TypeName {
+    ListOf(Box<TypeName>),
+    Name(String),
+}
+
+impl TypeName {
+    fn name(&self) -> Option<String> {
+        match self {
+            TypeName::ListOf(_) => None,
+            TypeName::Name(name) => Some(name.clone()),
+        }
+    }
+
+    fn into_tuple(self) -> (bool, String) {
+        match self {
+            TypeName::ListOf(inner) => (true, inner.name().unwrap()),
+            TypeName::Name(name) => (false, name),
+        }
+    }
+}
+
+fn name_from_ref_path<T>(obj_or_ref: &ObjectOrReference<T>) -> Option<String> {
+    match obj_or_ref {
+        ObjectOrReference::Ref { ref_path } => {
+            Some(ref_path.split('/').last().unwrap().to_case(Case::Pascal))
+        }
+        ObjectOrReference::Object(_) => None,
+    }
+}
+
 #[derive(Default)]
 pub struct OpenApiToConfigConverter {
     pub query: String,
@@ -29,10 +81,66 @@ impl OpenApiToConfigConverter {
         })
     }
 
+    fn get_schema_type(&mut self, schema: Schema, name: Option<String>) -> TypeName {
+        if let Some(element) = schema.items {
+            let inner_schema = element.resolve(&self.spec).unwrap();
+            if inner_schema.schema_type == Some(SchemaType::String)
+                && !inner_schema.enum_values.is_empty()
+            {
+                let name = self.insert_inline_type(inner_schema);
+                TypeName::ListOf(Box::new(TypeName::Name(name)))
+            } else if let Some(name) = name_from_ref_path(element.as_ref())
+                .or_else(|| schema_to_primitive_type(inner_schema.schema_type.as_ref()?))
+            {
+                TypeName::ListOf(Box::new(TypeName::Name(name)))
+            } else {
+                TypeName::ListOf(Box::new(self.get_schema_type(inner_schema, None)))
+            }
+        } else if schema.schema_type == Some(SchemaType::String) && !schema.enum_values.is_empty() {
+            let name = self.insert_inline_type(schema);
+            TypeName::Name(name)
+        } else if let Some(
+            typ @ (SchemaType::Integer
+            | SchemaType::String
+            | SchemaType::Number
+            | SchemaType::Boolean),
+        ) = schema.schema_type
+        {
+            TypeName::Name(schema_type_to_string(&typ))
+        } else if schema.additional_properties.is_some() {
+            TypeName::Name("JSON".to_string())
+        } else if let Some(name) = name {
+            TypeName::Name(name)
+        } else if self.can_define_type(&schema) {
+            let name = self.insert_inline_type(schema);
+            TypeName::Name(name)
+        } else {
+            TypeName::Name("JSON".to_string())
+        }
+    }
+
+    fn insert_inline_type(&mut self, schema: Schema) -> String {
+        let name = format!("Type{}", self.inline_types.len());
+        if self.inline_types_frozen {
+            self.inline_types_other.push_back(schema);
+        } else {
+            self.inline_types.push_back(schema);
+        }
+        name
+    }
+
+    fn can_define_type(&self, schema: &Schema) -> bool {
+        !schema.properties.is_empty()
+            || !schema.all_of.is_empty()
+            || !schema.any_of.is_empty()
+            || !schema.one_of.is_empty()
+            || !schema.enum_values.is_empty()
+    }
+
     pub fn create_types(&mut self) {
         let mut fields = BTreeMap::new();
 
-        for (path, path_item) in self.spec.paths.clone().into_iter() {
+        for (mut path, path_item) in self.spec.paths.clone().into_iter() {
             let (method, operation) = [
                 (Method::GET, path_item.get),
                 (Method::HEAD, path_item.head),
@@ -58,7 +166,7 @@ impl OpenApiToConfigConverter {
                 continue;
             };
 
-            let Some(_output_type) = response
+            let Some(output_type) = response
                 .content
                 .first_key_value()
                 .map(|(_, v)| v)
@@ -68,8 +176,62 @@ impl OpenApiToConfigConverter {
                 continue;
             };
 
+            let args: BTreeMap<String, Arg> = operation
+                .parameters
+                .iter()
+                .map(|param| {
+                    let param = param.resolve(&self.spec).unwrap();
+
+                    let (is_list, name) = self
+                        .get_schema_type(param.schema.clone().unwrap(), param.param_type.clone())
+                        .into_tuple();
+                    (
+                        param.name,
+                        Arg {
+                            type_of: name,
+                            list: is_list,
+                            required: param.required.unwrap_or_default(),
+                            doc: None,
+                            modify: None,
+                            default_value: None,
+                        },
+                    )
+                })
+                .collect();
+
+            let (is_list, name) = self
+                .get_schema_type(
+                    output_type.resolve(&self.spec).unwrap(),
+                    name_from_ref_path(&output_type),
+                )
+                .into_tuple();
+
+            let mut url_params = HashSet::new();
+            if !args.is_empty() {
+                let re = regex::Regex::new(r"\{\w+\}").unwrap();
+                path = re
+                    .replacen(path.as_str(), 0, |cap: &regex::Captures| {
+                        let arg_name = &cap[0][1..cap[0].len() - 1];
+                        url_params.insert(arg_name.to_string());
+                        format!("{{{{args.{}}}}}", arg_name)
+                    })
+                    .to_string();
+            }
+
+            let query_params = args
+                .iter()
+                .filter(|&(key, _)| !url_params.contains(key))
+                .map(|(key, _)| KeyValue {
+                    key: key.to_string(),
+                    value: format!("{{{{args.{}}}}}", key),
+                })
+                .collect();
+
             let field = Field {
-                http: Some(Http { path, method, ..Default::default() }),
+                type_of: name,
+                list: is_list,
+                args,
+                http: Some(Http { path, method, query: query_params, ..Default::default() }),
                 doc: operation.description,
                 ..Default::default()
             };

@@ -10,9 +10,9 @@ type Query {
   """
   Returns a post by id
   """
-  getPost:  @http(path: "/posts/{id}")
+  getPost(id: Int!): Post @http(path: "/posts/{{args.id}}")
   """
   Returns all posts
   """
-  getPosts:  @http(path: "/posts")
+  getPosts: [Post] @http(path: "/posts")
 }
