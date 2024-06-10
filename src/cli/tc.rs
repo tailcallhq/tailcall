@@ -93,6 +93,9 @@ pub async fn run() -> Result<()> {
                 ConfigSource::Yml => serde_yaml::from_str(&config)?,
             };
 
+            // resolves the relative paths present inside config.
+            let gen_config = gen_config.resolve_paths(&file_path)?;
+
             let generator = Generator::new(runtime.clone());
 
             let output_path = gen_config.output.file.clone();

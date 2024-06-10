@@ -1,7 +1,12 @@
+use std::path::Path;
+
+use path_clean::PathClean;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::core::config;
+
+use super::source::ImportSource;
 
 #[derive(Serialize, Deserialize, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -70,6 +75,38 @@ pub struct GeneratorConfig {
     pub generate: GenerateOptions,
     #[serde(default)]
     pub transform: Transform,
+}
+
+impl GeneratorConfig {
+    /// Resolves all the paths present inside the GeneratorConfig.
+    pub fn resolve_paths(mut self, file_path: &str) -> anyhow::Result<Self> {
+        let config_path = Path::new(file_path).parent().unwrap_or(Path::new("."));
+
+        for input in self.input.iter_mut() {
+            if let InputSource::Import { src } = &mut input.source {
+                match ImportSource::detect(&src)? {
+                    ImportSource::Proto => {
+                        let src_path = Path::new(&src);
+                        if !src_path.is_relative() {
+                            continue;
+                        }
+
+                        let cleaned_path = config_path.join(src_path).clean();
+                        *src = cleaned_path.to_string_lossy().into_owned();
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        let output_config_path = Path::new(&self.output.file);
+        if output_config_path.is_relative() {
+            let cleaned_path = config_path.join(output_config_path).clean();
+            self.output.file = cleaned_path.to_string_lossy().into_owned();
+        }
+
+        Ok(self)
+    }
 }
 
 mod defaults {
