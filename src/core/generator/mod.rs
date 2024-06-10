@@ -8,4 +8,5 @@ mod proto;
 pub mod source;
 
 pub use from_json::{from_json, ConfigGenerationRequest};
+pub use json::NameGenerator;
 pub use generator::Generator;
