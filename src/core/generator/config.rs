@@ -10,8 +10,10 @@ use crate::core::config;
 #[derive(Serialize, Deserialize, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum InputSource {
-    Config { src: String },
-    Import { src: String },
+    /// src: maintains the same src written in config.
+    /// resolved_src: holds the correctly resolved src with respect to config.
+    Config { src: String, resolved_src: Option<String> },
+    Import { src: String, resolved_src: Option<String> },
 }
 
 #[derive(Serialize, Deserialize, Debug, JsonSchema)]
@@ -83,22 +85,26 @@ impl GeneratorConfig {
 
         for input in self.input.iter_mut() {
             match &mut input.source {
-                InputSource::Config { src } => {
+                InputSource::Config { src, resolved_src } => {
                     if let Ok(_) = Url::parse(src) {
                         // no need to explictely resolve urls.
-                        continue;
+                        *resolved_src = Some(src.to_owned());
                     } else if Path::new(&src).is_relative() {
                         let cleaned_path = config_path.join(&src).clean();
-                        *src = cleaned_path.to_string_lossy().into_owned();
+                        *resolved_src = Some(cleaned_path.to_string_lossy().into_owned());
+                    } else {
+                        *resolved_src = Some(src.to_owned());
                     }
                 }
-                InputSource::Import { src } => {
+                InputSource::Import { src, resolved_src } => {
                     if let Ok(_) = Url::parse(src) {
                         // no need to explictely resolve urls.
-                        continue;
+                        *resolved_src = Some(src.to_owned());
                     } else if Path::new(&src).is_relative() {
                         let cleaned_path = config_path.join(&src).clean();
-                        *src = cleaned_path.to_string_lossy().into_owned();
+                        *resolved_src = Some(cleaned_path.to_string_lossy().into_owned());
+                    } else {
+                        *resolved_src = Some(src.to_owned());
                     }
                 }
             }

@@ -72,32 +72,36 @@ impl Generator {
 
         let resolvers = gen_config.input.into_iter().map(|input| async {
             match input.source {
-                InputSource::Config { src } => {
+                InputSource::Config { src, resolved_src: _ } => {
                     let source = config::Source::detect(&src)?;
                     let schema = self.reader.read_file(&src).await?;
 
                     Config::from_source(source, &schema.content)
                 }
-                InputSource::Import { src } => {
+                InputSource::Import { src, resolved_src } => {
                     let source = ImportSource::detect(&src)?;
+                    let resolved_src = if let Some(resolved_import_src) = resolved_src {
+                        resolved_import_src
+                    } else {
+                        src.clone()
+                    };
 
                     match source {
                         ImportSource::Proto => {
-                            let metadata = self.proto_reader.read(&src).await?;
+                            let metadata = self.proto_reader.read(&resolved_src).await?;
                             let descriptor_set =
                                 resolve_file_descriptor_set(metadata.descriptor_set)?;
                             let mut config = from_proto(&[descriptor_set], "Query")?;
 
-                            config.links.push(Link {
-                                id: None,
-                                src: metadata.path,
-                                type_of: LinkType::Protobuf,
-                            });
+                            config
+                                .links
+                                .push(Link { id: None, src, type_of: LinkType::Protobuf });
 
                             Ok(config)
                         }
                         ImportSource::Url => {
-                            let response = fetch_response(src.as_ref(), &self.runtime).await?;
+                            let response =
+                                fetch_response(resolved_src.as_ref(), &self.runtime).await?;
 
                             let config =
                                 from_json(&[response], "Query", &field_name_gen, &type_name_gen)?;
