@@ -14,6 +14,13 @@ directive @addField(
 ) repeatable  on OBJECT
 
 """
+The @alias directive indicates that aliases of one enum value.
+"""
+directive @alias(
+  options: [String!]
+) on ENUM_VALUE_DEFINITION
+
+"""
 The @cache operator enables caching for the query, field or type it is applied to.
 """
 directive @cache(

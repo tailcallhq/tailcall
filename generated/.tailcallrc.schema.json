@@ -94,6 +94,7 @@
       "additionalProperties": false
     },
     "Alias": {
+      "description": "The @alias directive indicates that aliases of one enum value.",
       "type": "object",
       "required": [
         "options"
