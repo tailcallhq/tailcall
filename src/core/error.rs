@@ -77,6 +77,9 @@ pub mod http {
 
         #[error("Reqwest Middleware Error")]
         ReqwestMiddleware(reqwest_middleware::Error),
+
+        #[error("Tonic Status Error")]
+        TonicStatus(tonic::Status),
     }
 
     #[derive(From, thiserror::Error, Debug)]

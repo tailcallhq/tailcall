@@ -59,6 +59,7 @@ mod tests {
     use crate::core::ir::Error;
     use crate::core::runtime::TargetRuntime;
     use crate::core::HttpIO;
+    use crate::core::error::http::HttpError;
 
     enum TestScenario {
         SuccessWithoutGrpcStatus,
@@ -73,7 +74,7 @@ mod tests {
 
     #[async_trait]
     impl HttpIO for TestHttp {
-        type Error = crate::core::ir::Error;
+        type Error = HttpError;
 
         async fn execute(&self, _request: Request) -> crate::core::Result<Response<Bytes>, Self::Error> {
             let mut headers = HeaderMap::new();

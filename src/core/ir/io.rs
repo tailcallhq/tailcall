@@ -24,6 +24,8 @@ use crate::core::valid::Validator;
 use crate::core::worker::*;
 use crate::core::{grpc, http, WorkerIO};
 
+use crate::core::error::worker::WorkerError;
+
 #[derive(Clone, Debug, strum_macros::Display)]
 pub enum IO {
     Http {
@@ -368,7 +370,7 @@ impl<'a, Context: ResolverContextLike<'a> + Send + Sync> HttpRequestExecutor<'a,
     async fn execute_with_worker(
         &self,
         mut request: reqwest::Request,
-        worker: &Arc<dyn WorkerIO<Event, Command, Error = Error>>,
+        worker: &Arc<dyn WorkerIO<Event, Command, Error = WorkerError>>,
         http_filter: &HttpFilter,
     ) -> Result<Response<async_graphql::Value>, Error> {
         let js_request = WorkerRequest::try_from(&request)?;
