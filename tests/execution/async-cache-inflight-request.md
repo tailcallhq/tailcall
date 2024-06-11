@@ -3,7 +3,7 @@
 ```graphql @config
 schema
   @server(port: 8000, queryValidation: false)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", dedupeInRequest: true, dedupeInFlight: true) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", dedupe: true, dedupeInFlight: true) {
   query: Query
 }
 

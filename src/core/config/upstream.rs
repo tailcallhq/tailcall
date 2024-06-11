@@ -144,7 +144,7 @@ pub struct Upstream {
     #[serde(default, skip_serializing_if = "is_default")]
     /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
     /// is made more than once within the context of a single GraphQL request.
-    pub dedupe_in_request: Option<bool>,
+    pub dedupe: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
@@ -209,8 +209,8 @@ impl Upstream {
         self.http2_only.unwrap_or(false)
     }
 
-    pub fn get_dedupe_in_request(&self) -> bool {
-        self.dedupe_in_request.unwrap_or(false)
+    pub fn get_dedupe(&self) -> bool {
+        self.dedupe.unwrap_or(false)
     }
 
     pub fn get_dedupe_in_flight(&self) -> bool {

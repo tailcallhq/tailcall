@@ -1428,6 +1428,13 @@
           "format": "uint64",
           "minimum": 0.0
         },
+        "dedupe": {
+          "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once within the context of a single GraphQL request.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "dedupeExecution": {
           "description": "When set to `true`, it will ensure no graphQL execution is made more than once if similar query is being executed within the context of the Application.",
           "type": [
@@ -1437,13 +1444,6 @@
         },
         "dedupeInFlight": {
           "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once if similar request is inflight within the context of the Application.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "dedupeInRequest": {
-          "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once within the context of a single GraphQL request.",
           "type": [
             "boolean",
             "null"
