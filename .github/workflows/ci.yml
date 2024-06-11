@@ -513,7 +513,6 @@ jobs:
         uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          name: "@tailcallhq/tailcall"
           package: npm/@tailcallhq/tailcall
           access: public
       - name: Run generate-root.js script
@@ -526,7 +525,6 @@ jobs:
         uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          name: graphql-runtime
           package: npm/@tailcallhq/tailcall
           access: public
       - name: Run generate-root.js script
@@ -539,7 +537,6 @@ jobs:
         uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          name: graphql-core
           package: npm/@tailcallhq/tailcall
           access: public
       - name: Run generate-root.js script
@@ -552,7 +549,6 @@ jobs:
         uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          name: "@tailcallhq/graphql"
           package: npm/@tailcallhq/tailcall
           access: public
       - name: Run generate-root.js script
@@ -565,7 +561,6 @@ jobs:
         uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          name: graphql-runkit
           package: npm/@tailcallhq/tailcall
           access: public
         env:
