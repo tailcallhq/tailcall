@@ -11,18 +11,15 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
+use crate::cli::fmt::Fmt;
+use crate::cli::server::Server;
+use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
-use crate::core::generator::Generator;
+use crate::core::generator::FromGeneralizedConfig;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::{cli::fmt::Fmt, core::generator::config::GeneratorConfig};
-use crate::{cli::server::Server, core::config};
-use crate::{
-    cli::{self, CLIError},
-    core::generator::source::ConfigSource,
-};
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
@@ -85,48 +82,13 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Gen { file_path } => {
-            let source = ConfigSource::detect(&file_path)?;
-            let config = runtime.file.read(&file_path).await?;
-
-            let gen_config: GeneratorConfig = match source {
-                ConfigSource::Json => serde_json::from_str(&config)?,
-                ConfigSource::Yml => serde_yaml::from_str(&config)?,
-            };
-
-            // resolves the relative paths present inside config.
-            let gen_config = gen_config.resolve_paths(&file_path);
-
-            let generator = Generator::new(runtime.clone());
-
-            let output_path = gen_config.output.file.clone();
-            let config = generator.run(gen_config).await?;
-
-            let output_source = config::Source::detect(&output_path)?;
-
-            let config = match output_source {
-                config::Source::Json => config.to_json(true)?,
-                config::Source::Yml => config.to_yaml()?,
-                config::Source::GraphQL => config.to_sdl(),
-            };
-
-            // if output file already exists, ask user if we can overwrite it or not.
-            if is_exits(&output_path) {
-                let should_overwrite = Confirm::new(
-                    format!(
-                        "The output file '{}' already exists. Do you want to overwrite it?",
-                        output_path
-                    )
-                    .as_str(),
-                )
-                .with_default(true)
-                .prompt()?;
-                if !should_overwrite {
-                    return Ok(());
-                }
-            }
-            runtime.file.write(&output_path, config.as_bytes()).await?;
-
-            tracing::info!("Config successfully generated at {output_path}");
+            FromGeneralizedConfig::new(runtime.clone())
+                .read(&file_path)
+                .await?
+                .generate()
+                .await?
+                .write()
+                .await?;
 
             Ok(())
         }
@@ -134,12 +96,12 @@ pub async fn run() -> Result<()> {
 }
 
 /// Checks if file or folder already exists or not.
-fn is_exits(path: &str) -> bool {
+fn is_exists(path: &str) -> bool {
     fs::metadata(path).is_ok()
 }
 
 pub async fn init(folder_path: &str) -> Result<()> {
-    let folder_exists = is_exits(folder_path);
+    let folder_exists = is_exists(folder_path);
 
     if !folder_exists {
         let confirm = Confirm::new(&format!(
