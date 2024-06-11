@@ -1,6 +1,6 @@
 mod cache;
 mod data_loader;
-mod dedupe;
+pub mod dedupe;
 mod factory;
 mod loader;
 mod storage;

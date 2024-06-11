@@ -93,7 +93,7 @@ impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
 
 #[cfg(test)]
 mod tests {
-
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
 
     use tokio::join;
@@ -152,36 +152,41 @@ mod tests {
         pretty_assertions::assert_eq!(a, b);
     }
 
-    async fn compute_value(i: usize) -> String {
+    async fn compute_value(counter: Arc<AtomicUsize>) -> String {
+        counter.fetch_add(1, Ordering::SeqCst);
         sleep(Duration::from_millis(1)).await;
-        format!("value_{}", i)
+        format!("value_{}", counter.load(Ordering::SeqCst))
     }
 
     #[tokio::test(worker_threads = 16, flavor = "multi_thread")]
     async fn test_deadlock_scenario() {
         let _ = tracing_subscriber::fmt();
-        let cache = Arc::new(Dedupe::<u64, String>::new(1000, false));
+        let cache = Arc::new(Dedupe::<u64, String>::new(1000, true));
         let key = 1;
-
+        let counter = Arc::new(AtomicUsize::new(0));
         let mut handles = Vec::new();
 
         // Spawn multiple tasks to simulate concurrent access
-        for i in 0..100000 {
+        for i in 0..1000000 {
             let cache = cache.clone();
+            let counter = counter.clone();
             let handle = tokio::task::spawn(async move {
-                let result = cache.dedupe(&key, || Box::pin(compute_value(i))).await;
+                let result = cache
+                    .dedupe(&key, || Box::pin(compute_value(counter)))
+                    .await;
                 (i, result)
             });
             handles.push(handle);
         }
-
-        // Await each task and check results for any potential errors or deadlocks
-        for (i, handle) in handles.into_iter().enumerate() {
-            let (_, actual) = handle.await.unwrap();
-            let expected = format!("value_{}", i);
-
-            // FIXME: Insert a proper assertion test
-            assert_eq!(actual, expected);
+        // Await each task for any potential deadlocks
+        for handle in handles.into_iter() {
+            let _ = handle.await.unwrap();
         }
+        // Check that compute_value was called exactly once
+        assert_eq!(
+            counter.load(Ordering::SeqCst),
+            1,
+            "compute_value was called more than once"
+        );
     }
 }
