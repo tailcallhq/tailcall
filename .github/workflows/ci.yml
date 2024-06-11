@@ -401,7 +401,7 @@ jobs:
 
       - name: NPM Publish
         if: (startsWith(github.event.head_commit.message, 'feat') || startsWith(github.event.head_commit.message, 'fix')) && (github.event_name == 'push' && github.ref == 'refs/heads/main')
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
           package: npm/@tailcallhq/core-${{matrix.build}}
