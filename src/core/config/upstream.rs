@@ -148,15 +148,9 @@ pub struct Upstream {
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
-    /// is made more than once if similar request is inflight within the context
-    /// of the Application.
+    /// is made more than once if similar request is inflight across the
+    /// server's lifetime.
     pub dedupe_in_flight: Option<bool>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// When set to `true`, it will ensure no graphQL execution is made more
-    /// than once if similar query is being executed within the context of the
-    /// Application.
-    pub dedupe_execution: Option<bool>,
 }
 
 impl Upstream {
@@ -215,10 +209,6 @@ impl Upstream {
 
     pub fn get_dedupe_in_flight(&self) -> bool {
         self.dedupe_in_flight.unwrap_or(false)
-    }
-
-    pub fn get_dedupe_execution(&self) -> bool {
-        self.dedupe_execution.unwrap_or(false)
     }
 
     pub fn get_on_request(&self) -> Option<String> {
