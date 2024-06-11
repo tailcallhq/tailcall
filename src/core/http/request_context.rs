@@ -7,10 +7,9 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
-use crate::core::async_cache::AsyncCache;
 use crate::core::auth::context::AuthContext;
 use crate::core::blueprint::{Server, Upstream};
-use crate::core::data_loader::DataLoader;
+use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
@@ -34,7 +33,8 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
-    pub cache: AsyncCache<IoId, ConstValue, EvaluationError>,
+    pub cache: DedupeResult<IoId, ConstValue, EvaluationError>,
+    pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, EvaluationError>>,
 }
 
 impl RequestContext {
@@ -50,7 +50,8 @@ impl RequestContext {
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: target_runtime,
-            cache: AsyncCache::new(),
+            cache: DedupeResult::new(true),
+            dedupe_handler: Arc::new(DedupeResult::new(false)),
             allowed_headers: HeaderMap::new(),
             auth_ctx: AuthContext::default(),
         }
@@ -200,7 +201,8 @@ impl From<&AppContext> for RequestContext {
             min_max_age: Arc::new(Mutex::new(None)),
             cache_public: Arc::new(Mutex::new(None)),
             runtime: app_ctx.runtime.clone(),
-            cache: AsyncCache::new(),
+            cache: DedupeResult::new(true),
+            dedupe_handler: app_ctx.dedupe_handler.clone(),
         }
     }
 }
