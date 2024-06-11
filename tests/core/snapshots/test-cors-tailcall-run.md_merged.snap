@@ -1,0 +1,23 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(
+    headers: {
+      cors: {
+        allowHeaders: ["*"]
+        allowMethods: ["GET", "POST", "OPTIONS"]
+        allowOrigins: ["https://tailcall.run"]
+        vary: ["origin", "access-control-request-method", "access-control-request-headers"]
+      }
+    }
+    port: 8000
+  )
+  @upstream(baseURL: "http://example.com") {
+  query: Query
+}
+
+type Query {
+  example: String @http(path: "/example")
+}

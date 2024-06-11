@@ -1,0 +1,14 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "access-control-allow-headers": "*",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-origin": "https://tailcall.run",
+    "vary": "origin, access-control-request-method, access-control-request-headers"
+  },
+  "body": null
+}

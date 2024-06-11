@@ -2,15 +2,11 @@
 
 ```graphql @config
 schema
-  @upstream(baseURL: "http://example.com", batch: {delay: 1, maxSize: 1000})
+  @upstream(baseURL: "http://example.com")
   @server(
-    port: 8000,
+    port: 8000
     headers: {
-      cors: {
-        allowHeaders: ["*"]
-        allowMethods: ["GET", "POST", "OPTIONS"]
-        allowOrigins: ["https://tailcall.run"]
-      }
+      cors: {allowHeaders: ["*"], allowMethods: ["GET", "POST", "OPTIONS"], allowOrigins: ["https://tailcall.run"]}
     }
   ) {
   query: Query
