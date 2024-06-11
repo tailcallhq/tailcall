@@ -101,8 +101,6 @@ mod tests {
 
     use super::*;
 
-    // FIXME: Migrate tests from async_cache
-
     #[tokio::test]
     async fn test_no_key() {
         let cache = Arc::new(Dedupe::<u64, u64>::new(1000, true));
