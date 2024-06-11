@@ -17,15 +17,18 @@ pub enum ConfigSource {
 }
 
 impl ImportSource {
-    fn ext(&self) -> &str {
+    fn ext(&self) -> Option<&str> {
         match self {
-            ImportSource::Proto => "proto",
-            ImportSource::Url => "url",
+            ImportSource::Proto => Some("proto"),
+            ImportSource::Url => None,
         }
     }
 
     fn ends_with(&self, src: &str) -> bool {
-        src.ends_with(&format!(".{}", self.ext()))
+        if let Some(ext) = self.ext() {
+            return src.ends_with(&format!(".{}", ext));
+        }
+        false
     }
 
     fn is_url(self, src: &str) -> bool {
