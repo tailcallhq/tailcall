@@ -217,18 +217,50 @@ mod tests {
         let request_ctx = RequestContext::new(rt);
         let gql_ctx = MockGraphqlContext { value: Default::default(), args: Default::default() };
         let ctx = EvaluationContext::new(&request_ctx, &gql_ctx);
-
+        let mut args = IndexMap::new();
+        args.insert(Name::new("id"), Value::Number(1.into()));
+        let ctx = ctx.with_args(Value::Object(args));
         serde_json::to_string_pretty(&synth.synthesize(ctx)).unwrap()
+    }
+
+    enum Type {
+        Posts,
+        Users,
+        User,
+        Post,
+        Todos,
+    }
+
+    fn pair(hash: Type) -> (IoId, OwnedValue) {
+        match hash {
+            Type::Posts => (
+                IoId::new(14498246702353884536),
+                OwnedValue::from_str(POSTS).unwrap(),
+            ),
+            Type::Users => (
+                IoId::new(16572466311295908938),
+                OwnedValue::from_str(USERS).unwrap(),
+            ),
+            Type::User => (
+                IoId::new(3962897047488223852),
+                OwnedValue::from_str(USER).unwrap(),
+            ),
+            Type::Post => (
+                IoId::new(17338861358924206527),
+                OwnedValue::from_str(POST).unwrap(),
+            ),
+            Type::Todos => (
+                IoId::new(14457768933109454390),
+                OwnedValue::from_str(TODOS).unwrap(),
+            ),
+        }
     }
 
     #[tokio::test]
     async fn test_synth() {
         let store = vec![
             // Insert /posts
-            (
-                IoId::new(14498246702353884536),
-                OwnedValue::from_str(POSTS).unwrap(),
-            ),
+            pair(Type::Posts),
         ];
 
         let actual = synth(
@@ -247,10 +279,7 @@ mod tests {
     async fn test_synth_users() {
         let store = vec![
             // Insert /users
-            (
-                IoId::new(16572466311295908938),
-                OwnedValue::from_str(USERS).unwrap(),
-            ),
+            pair(Type::Users),
         ];
         let actual = synth(
             r#"
@@ -268,10 +297,7 @@ mod tests {
     async fn test_synth_post_id() {
         let store = vec![
             // Insert /user/:id
-            (
-                IoId::new(12070278117653709596),
-                OwnedValue::from_str(USER).unwrap(),
-            ),
+            pair(Type::User),
         ];
         let actual = synth(
             r#"
@@ -289,15 +315,9 @@ mod tests {
     async fn test_synth_post_id_to_user() {
         let store = vec![
             // Insert /posts/:id
-            (
-                IoId::new(1934628112471474585),
-                OwnedValue::from_str(POST).unwrap(),
-            ),
+            pair(Type::Post),
             // Insert /user/:id
-            (
-                IoId::new(3962897047488223852),
-                OwnedValue::from_str(USER).unwrap(),
-            ),
+            pair(Type::User),
         ];
 
         let actual = synth(
@@ -316,15 +336,9 @@ mod tests {
     async fn test_synth_all_posts_users() {
         let store = vec![
             // Insert /posts
-            (
-                IoId::new(14498246702353884536),
-                OwnedValue::from_str(POSTS).unwrap(),
-            ),
+            pair(Type::Posts),
             // Insert /user/:id
-            (
-                IoId::new(3962897047488223852),
-                OwnedValue::from_str(USER).unwrap(),
-            ),
+            pair(Type::User),
         ];
 
         let actual = synth(
@@ -343,19 +357,10 @@ mod tests {
     async fn test_synth_all_posts_users_todos() {
         let store = vec![
             // Insert /posts
-            (
-                IoId::new(14498246702353884536),
-                OwnedValue::from_str(POSTS).unwrap(),
-            ),
+            pair(Type::Posts),
             // Insert /user/:id
-            (
-                IoId::new(3962897047488223852),
-                OwnedValue::from_str(USER).unwrap(),
-            ),
-            (
-                IoId::new(9916354818029950088),
-                OwnedValue::from_str(TODOS).unwrap(),
-            ),
+            pair(Type::User),
+            pair(Type::Todos),
         ];
 
         let actual = synth(
