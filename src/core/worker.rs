@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::{is_default, Response};
 
+use super::error::worker::WorkerError;
+
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
 pub enum Scheme {
     #[default]
@@ -64,7 +66,7 @@ impl WorkerResponse {
 }
 
 impl TryFrom<WorkerResponse> for Response<Bytes> {
-    type Error = anyhow::Error;
+    type Error = WorkerError;
 
     fn try_from(res: WorkerResponse) -> Result<Self, Self::Error> {
         let res = res.0;
@@ -77,7 +79,7 @@ impl TryFrom<WorkerResponse> for Response<Bytes> {
 }
 
 impl TryFrom<WorkerResponse> for Response<async_graphql::Value> {
-    type Error = anyhow::Error;
+    type Error = WorkerError;
 
     fn try_from(res: WorkerResponse) -> Result<Self, Self::Error> {
         let body: async_graphql::Value = match res.body() {
@@ -90,7 +92,7 @@ impl TryFrom<WorkerResponse> for Response<async_graphql::Value> {
 }
 
 impl TryFrom<Response<Bytes>> for WorkerResponse {
-    type Error = anyhow::Error;
+    type Error = WorkerError;
 
     fn try_from(res: Response<Bytes>) -> Result<Self, Self::Error> {
         let body = String::from_utf8_lossy(res.body.as_ref()).to_string();
@@ -103,7 +105,7 @@ impl TryFrom<Response<Bytes>> for WorkerResponse {
 }
 
 impl TryFrom<Response<async_graphql::Value>> for WorkerResponse {
-    type Error = anyhow::Error;
+    type Error = WorkerError;
 
     fn try_from(res: Response<async_graphql::Value>) -> Result<Self, Self::Error> {
         let body = serde_json::to_string(&res.body)?;
@@ -150,7 +152,7 @@ impl WorkerRequest {
         self.0.method().to_string()
     }
 
-    pub fn headers(&self) -> anyhow::Result<BTreeMap<String, String>> {
+    pub fn headers(&self) -> Result<BTreeMap<String, String>, WorkerError> {
         let headers = self.0.headers();
         let mut map = BTreeMap::new();
         for (k, v) in headers.iter() {
@@ -170,12 +172,12 @@ impl WorkerRequest {
 }
 
 impl TryFrom<&reqwest::Request> for WorkerRequest {
-    type Error = anyhow::Error;
+    type Error = WorkerError;
 
     fn try_from(value: &Request) -> Result<Self, Self::Error> {
         let request = value
             .try_clone()
-            .ok_or(anyhow::anyhow!("unable to clone request"))?;
+            .ok_or(WorkerError::RequestCloneFailed)?;
         Ok(WorkerRequest(request))
     }
 }

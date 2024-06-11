@@ -12,6 +12,7 @@ use crate::core::cache::InMemoryCache;
 use crate::core::runtime::TargetRuntime;
 use crate::core::worker::{Command, Event};
 use crate::core::{blueprint, EnvIO, FileIO, HttpIO, WorkerIO};
+use crate::core::error as CoreError;
 
 // Provides access to env in native rust environment
 fn init_env() -> Arc<dyn EnvIO> {
@@ -19,13 +20,13 @@ fn init_env() -> Arc<dyn EnvIO> {
 }
 
 // Provides access to file system in native rust environment
-fn init_file() -> Arc<dyn FileIO<Error = crate::cli::Error>> {
+fn init_file() -> Arc<dyn FileIO<Error = CoreError::file::FileError>> {
     Arc::new(file::NativeFileIO::init())
 }
 
 fn init_http_worker_io(
     script: Option<blueprint::Script>,
-) -> Option<Arc<dyn WorkerIO<Event, Command, Error = crate::cli::Error>>> {
+) -> Option<Arc<dyn WorkerIO<Event, Command, Error = CoreError::worker::WorkerError>>> {
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
@@ -37,7 +38,7 @@ fn init_http_worker_io(
 
 fn init_resolver_worker_io(
     script: Option<blueprint::Script>,
-) -> Option<Arc<dyn WorkerIO<async_graphql::Value, async_graphql::Value, Error = crate::cli::Error>>> {
+) -> Option<Arc<dyn WorkerIO<async_graphql::Value, async_graphql::Value, Error = CoreError::worker::WorkerError>>> {
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
@@ -48,7 +49,7 @@ fn init_resolver_worker_io(
 }
 
 // Provides access to http in native rust environment
-fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO<Error = crate::cli::Error>> {
+fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO<Error = CoreError::http::HttpError>> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream,
         &blueprint.telemetry,
@@ -56,7 +57,7 @@ fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO<Error = crate::cli::Error>
 }
 
 // Provides access to http in native rust environment
-fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO<Error = crate::cli::Error>> {
+fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO<Error = CoreError::http::HttpError>> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream.clone().http2_only(true),
         &blueprint.telemetry,

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
+use super::error;
 use super::ir::IoId;
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::worker::{Command, Event};
@@ -13,15 +14,15 @@ use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
 #[derive(Clone)]
 pub struct TargetRuntime {
     /// HTTP client for making standard HTTP requests.
-    pub http: Arc<dyn HttpIO>,
+    pub http: Arc<dyn HttpIO<Error = error::http::HttpError>>,
     /// HTTP client optimized for HTTP/2 requests.
-    pub http2_only: Arc<dyn HttpIO>,
+    pub http2_only: Arc<dyn HttpIO<Error = error::http::HttpError>>,
     /// Interface for accessing environment variables specific to the target
     /// environment.
     pub env: Arc<dyn EnvIO>,
     /// Interface for file operations, tailored to the target environment's
     /// capabilities.
-    pub file: Arc<dyn FileIO>,
+    pub file: Arc<dyn FileIO<Error = error::file::FileError>>,
     /// Cache for storing and retrieving entity data, improving performance and
     /// reducing external calls.
     pub cache: Arc<dyn Cache<Key = IoId, Value = ConstValue>>,
@@ -29,9 +30,9 @@ pub struct TargetRuntime {
     /// functionality or integrate additional features.
     pub extensions: Arc<Vec<SchemaExtension>>,
     /// Worker middleware for handling HTTP requests.
-    pub cmd_worker: Option<Arc<dyn WorkerIO<Event, Command>>>,
+    pub cmd_worker: Option<Arc<dyn WorkerIO<Event, Command, Error = error::worker::WorkerError>>>,
     /// Worker middleware for resolving data.
-    pub worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>>,
+    pub worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue, Error = error::worker::WorkerError>>>,
 }
 
 impl TargetRuntime {
@@ -47,7 +48,6 @@ pub mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use anyhow::{anyhow, Result};
     use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
@@ -62,7 +62,7 @@ pub mod test {
     use crate::core::http::Response;
     use crate::core::runtime::TargetRuntime;
     use crate::core::worker::{Command, Event};
-    use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
+    use crate::core::{blueprint, error, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -116,7 +116,7 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        type Error = anyhow::Error;
+        type Error = error::http::HttpError;
     
         async fn execute(&self, request: reqwest::Request) -> crate::core::Result<Response<Bytes>, Self::Error> {
             let response = self.client.execute(request).await;
@@ -140,7 +140,7 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        type Error = crate::core::Error;
+        type Error = error::file::FileError;
     
         async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> crate::core::Result<(), Self::Error> {
             let mut file = tokio::fs::File::create(path).await?;

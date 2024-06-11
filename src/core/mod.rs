@@ -38,7 +38,7 @@ pub mod tracing;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
-mod error;
+pub mod error;
 pub use error::{Error, Result};
 
 // Re-export everything from `tailcall_macros` as `macros`

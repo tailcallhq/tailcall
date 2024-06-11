@@ -8,6 +8,7 @@ use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 use crate::cli::{Error, Result};
 use crate::core::worker::{Command, Event, WorkerRequest};
 use crate::core::{blueprint, WorkerIO};
+use crate::core::error::worker::WorkerError;
 
 struct LocalRuntime(Context);
 
@@ -83,7 +84,7 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    type Error = Error;
+    type Error = WorkerError;
 
     async fn call(&self, name: &str, event: Event) -> crate::core::Result<Option<Command>, Self::Error> {
         let script = self.script.clone();
@@ -95,15 +96,16 @@ impl WorkerIO<Event, Command> for Runtime {
                     call(name, event)
                 })
                 .await?
-        } else {
-            Err(Error::JsRuntimeStoppedError)
+        }
+         else {
+            Err(WorkerError::JsRuntimeStoppedError)
         }
     }
 }
 
 #[async_trait::async_trait]
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
-    type Error = Error;
+    type Error = WorkerError;
 
     async fn call(&self, name: &str, input: ConstValue) -> crate::core::Result<Option<ConstValue>, Self::Error> {
         let script = self.script.clone();
@@ -117,7 +119,7 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
                 })
                 .await?
         } else {
-            Err(Error::JsRuntimeStoppedError)
+            Err(WorkerError::JsRuntimeStoppedError)
         }
     }
 }

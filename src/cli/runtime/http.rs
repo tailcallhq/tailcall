@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use crate::cli::Error;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;
@@ -20,6 +19,7 @@ use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
 use crate::core::blueprint::Upstream;
 use crate::core::http::Response;
+use crate::core::error::http::HttpError;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -129,7 +129,7 @@ impl NativeHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for NativeHttp {
-    type Error = Error;
+    type Error = HttpError;
 
     #[allow(clippy::blocks_in_conditions)]
     // because of the issue with tracing and clippy - https://github.com/rust-lang/rust-clippy/issues/12281
