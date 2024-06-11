@@ -13,6 +13,10 @@ expression: actual
             {
               "title": "My title",
               "completed": false
+            },
+            {
+              "title": "Also My title",
+              "completed": true
             }
           ]
         }
@@ -27,6 +31,10 @@ expression: actual
             {
               "title": "My title",
               "completed": false
+            },
+            {
+              "title": "Also My title",
+              "completed": true
             }
           ]
         }

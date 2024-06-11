@@ -53,7 +53,7 @@ type User {
   phone: String
   website: String
   address: Address
-  todo: [Todo] @http(path: "/todos?userId={{.value.id}}")
+  todo: [Todo] @http(path: "/todos}}")
 }
 
 type Todo {
@@ -75,5 +75,5 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+  user: User @http(path: "/users/{{.value.userId}}")
 }
