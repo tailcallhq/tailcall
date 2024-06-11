@@ -62,37 +62,7 @@ impl Synth {
                         unimplemented!("Need to implement for rest of the IR fields")
                     }
                 }
-            } /*match parent {
-                  Some(parent) => match parent.data.as_ref()
-                  },
-                  None => {
-                      // TODO: drop the Data struct
-                      tracing::info!("Hx");
-                      match node.ir.as_ref() {
-                          Some(IR::IO(io)) => {
-                              let key = io.cache_key(&ctx);
-                              if let Some(key) = key {
-                                  let value = self.store.get(&key);
-                                  if let Some(value) = value {
-                                      tracing::info!("Hx2: {}", node.name);
-                                      // check if value exists, else it'll cause stackoverflow
-                                      self.iter(node, Some(value), ctx)
-                                  } else {
-                                      tracing::info!("Hx1: {}", node.name);
-                                      // Store does not have data with the IO id, so just return null
-                                      Value::Null
-                                  }
-                              } else {
-                                  Value::Null
-                              }
-                          }
-                          None => Value::Null,
-                          _ => {
-                              unimplemented!("Need to implement for rest of the IR fields")
-                          }
-                      }
-                  }
-              }*/
+            }
         }
     }
 
