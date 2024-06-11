@@ -109,21 +109,10 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike + Hash + S
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let headers = req.headers().clone();
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
-    let graphql_request: serde_json::Result<T> = serde_json::from_slice::<T>(&bytes);
+    let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
-            let is_query = request
-                .parse_query()
-                .map(|a| {
-                    let mut is_query = false;
-                    for (_, operation) in a.operations.iter() {
-                        is_query = operation.node.ty == OperationType::Query;
-                    }
-                    is_query
-                })
-                .unwrap_or(false);
-
-            if !app_ctx.blueprint.server.batch_execution && !is_query {
+            if !app_ctx.blueprint.server.batch_execution && !is_query(&mut request) {
                 Ok(execute_query(&app_ctx, &req_ctx, request).await?)
             } else {
                 let operation_id = OperationId::from(&request, &headers);
@@ -158,6 +147,19 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike + Hash + S
             Ok(GraphQLResponse::from(response).into_response()?)
         }
     }
+}
+
+fn is_query<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(request: &mut T) -> bool {
+    request
+        .parse_query()
+        .map(|a| {
+            let mut is_query = false;
+            for (_, operation) in a.operations.iter() {
+                is_query = operation.node.ty == OperationType::Query;
+            }
+            is_query
+        })
+        .unwrap_or(false)
 }
 
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
