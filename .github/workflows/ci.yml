@@ -510,9 +510,10 @@ jobs:
           cd npm
           npm run gen-root -- --version ${{ env.APP_VERSION }} --name @tailcallhq/tailcall
       - name: Publish package Tailcall
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
+          name: "@tailcallhq/tailcall"
           package: npm/@tailcallhq/tailcall
           access: public
       - name: Run generate-root.js script
@@ -522,10 +523,11 @@ jobs:
           cd npm
           npm run gen-root -- --version ${{ env.APP_VERSION }} --name graphql-runtime
       - name: Publish package graphql-runtime
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: npm/graphql-runtime
+          name: graphql-runtime
+          package: npm/@tailcallhq/tailcall
           access: public
       - name: Run generate-root.js script
         env:
@@ -534,10 +536,11 @@ jobs:
           cd npm
           npm run gen-root -- --version ${{ env.APP_VERSION }} --name graphql-core
       - name: Publish package graphql-core
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: npm/graphql-core
+          name: graphql-core
+          package: npm/@tailcallhq/tailcall
           access: public
       - name: Run generate-root.js script
         env:
@@ -546,10 +549,11 @@ jobs:
           cd npm
           npm run gen-root -- --version ${{ env.APP_VERSION }} --name @tailcallhq/graphql
       - name: Publish package @tailcallhq/graphql
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: npm/@tailcallhq/graphql
+          name: "@tailcallhq/graphql"
+          package: npm/@tailcallhq/tailcall
           access: public
       - name: Run generate-root.js script
         env:
@@ -558,10 +562,11 @@ jobs:
           cd npm
           npm run gen-root -- --version ${{ env.APP_VERSION }} --name graphql-runkit
       - name: Publish package graphql-runkit
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: npm/graphql-runkit
+          name: graphql-runkit
+          package: npm/@tailcallhq/tailcall
           access: public
         env:
           APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
