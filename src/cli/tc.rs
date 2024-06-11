@@ -134,12 +134,12 @@ pub async fn run() -> Result<()> {
 }
 
 /// Checks if file or folder already exists or not.
-fn is_exits(path: &str) -> bool {
+fn is_exists(path: &str) -> bool {
     fs::metadata(path).is_ok()
 }
 
 pub async fn init(folder_path: &str) -> Result<()> {
-    let folder_exists = is_exits(folder_path);
+    let folder_exists = is_exists(folder_path);
 
     if !folder_exists {
         let confirm = Confirm::new(&format!(
