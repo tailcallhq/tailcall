@@ -75,7 +75,8 @@ impl Eval for IO {
 
         if let Some(key) = self.cache_key(&ctx) {
             Box::pin(async move {
-                let result = match (
+                
+                match (
                     ctx.request_ctx.upstream.dedupe_in_request,
                     ctx.request_ctx.upstream.dedupe_in_flight,
                 ) {
@@ -105,8 +106,7 @@ impl Eval for IO {
                             .await
                     }
                     (false, false) => unreachable!(), // This case is handled at the beginning
-                };
-                result
+                }
             })
         } else {
             self.eval_inner(ctx)

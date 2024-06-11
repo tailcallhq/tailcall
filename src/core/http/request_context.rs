@@ -9,8 +9,8 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use crate::core::auth::context::AuthContext;
 use crate::core::blueprint::{Server, Upstream};
-use crate::core::data_loader::dedupe::DedupeResult;
 use crate::core::data_loader::DataLoader;
+use crate::core::data_loader::DedupeResult;
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
