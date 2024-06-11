@@ -80,6 +80,9 @@ pub mod http {
 
         #[error("Tonic Status Error")]
         TonicStatus(tonic::Status),
+
+        #[error("Reqwest Error")]
+        ReqwestError(reqwest::Error),
     }
 
     #[derive(From, thiserror::Error, Debug)]
