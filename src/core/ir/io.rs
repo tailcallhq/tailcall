@@ -82,33 +82,31 @@ impl Eval for IO {
                     (true, false) => {
                         ctx.request_ctx
                             .cache
-                            .get_or_eval(key, || Box::pin(self.eval_inner(ctx)))
+                            .dedupe(&key, || Box::pin(self.eval_inner(ctx)))
                             .await
                     }
                     (true, true) => {
                         ctx.request_ctx
                             .cache
-                            .get_or_eval(key.clone(), || {
+                            .dedupe(&key.clone(), || {
                                 Box::pin(async move {
                                     ctx.request_ctx
-                                        .async_loader
-                                        .get_or_eval(key.clone(), || Box::pin(self.eval_inner(ctx)))
+                                        .dedupe_handler
+                                        .dedupe(&key, || Box::pin(self.eval_inner(ctx)))
                                         .await
-                                        .as_ref()
-                                        .clone()
                                 })
                             })
                             .await
                     }
                     (false, true) => {
                         ctx.request_ctx
-                            .async_loader
-                            .get_or_eval(key, || Box::pin(self.eval_inner(ctx)))
+                            .dedupe_handler
+                            .dedupe(&key, || Box::pin(self.eval_inner(ctx)))
                             .await
                     }
                     (false, false) => unreachable!(), // This case is handled at the beginning
                 };
-                result.as_ref().clone()
+                result
             })
         } else {
             self.eval_inner(ctx)

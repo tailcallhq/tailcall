@@ -35,10 +35,10 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         Self { cache: Arc::new(Mutex::new(HashMap::new())), size, persist }
     }
 
-    pub async fn dedupe(
-        &self,
-        key: &K,
-        or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = V> + Send>> + Send,
+    pub async fn dedupe<'a>(
+        &'a self,
+        key: &'a K,
+        or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = V> + 'a + Send>> + Send,
     ) -> V {
         match self.step(key) {
             Step::Value(value) => value,
@@ -82,10 +82,10 @@ impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
 }
 
 impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
-    pub async fn dedupe(
-        &self,
-        key: &K,
-        or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<V, E>> + Send>> + Send,
+    pub async fn dedupe<'a>(
+        &'a self,
+        key: &'a K,
+        or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<V, E>> + 'a + Send>> + Send,
     ) -> Result<V, E> {
         self.0.dedupe(key, or_else).await
     }
