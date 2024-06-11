@@ -1,5 +1,5 @@
-use regex::Regex;
 use thiserror::Error;
+use url::Url;
 
 ///
 /// A list of sources from which a configuration can be created
@@ -17,20 +17,22 @@ pub enum ConfigSource {
 }
 
 impl ImportSource {
-    fn ext(&self) -> &str {
+    fn ext(&self) -> Option<&str> {
         match self {
-            ImportSource::Proto => "proto",
-            ImportSource::Url => "url",
+            ImportSource::Proto => Some("proto"),
+            ImportSource::Url => None,
         }
     }
 
     fn ends_with(&self, src: &str) -> bool {
-        src.ends_with(&format!(".{}", self.ext()))
+        if let Some(ext) = self.ext() {
+            return src.ends_with(&format!(".{}", ext));
+        }
+        false
     }
 
     fn is_url(self, src: &str) -> bool {
-        let url_regex = Regex::new(r"^https?://").unwrap();
-        url_regex.is_match(src)
+        Url::parse(src).is_ok()
     }
 
     /// Detect the config format from the src
@@ -91,6 +93,31 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
+
+    #[test]
+    fn test_detect_proto_import_source() {
+        assert_eq!(
+            ImportSource::detect("./news.proto"),
+            Ok(ImportSource::Proto)
+        );
+        assert!(ImportSource::detect("./jsonplaceholder.txt").is_err());
+    }
+
+    #[test]
+    fn test_detect_url_import_source() {
+        assert_eq!(
+            ImportSource::detect("http://www.google.com"),
+            Ok(ImportSource::Url)
+        );
+        assert_eq!(
+            ImportSource::detect("https://www.google.com"),
+            Ok(ImportSource::Url)
+        );
+        assert_eq!(
+            ImportSource::detect("https://google.com"),
+            Ok(ImportSource::Url)
+        );
+    }
 
     #[test]
     fn test_from_str() {
