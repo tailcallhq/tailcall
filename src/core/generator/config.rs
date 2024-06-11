@@ -1,11 +1,9 @@
 use std::path::Path;
 
-use path_clean::PathClean;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use url::Url;
 
-use crate::core::config;
+use crate::core::config::{self, reader::ConfigReader};
 
 #[derive(Serialize, Deserialize, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -93,29 +91,14 @@ impl GeneratorConfig {
             match &mut input.source {
                 InputSource::Config { src, resolved_src }
                 | InputSource::Import { src, resolved_src } => {
-                    *resolved_src = Some(resolve_path(src, config_path));
+                    *resolved_src = Some(ConfigReader::resolve_path(src, Some(config_path)));
                 }
             }
         }
 
-        let output_config_path = Path::new(&self.output.file);
-        if output_config_path.is_relative() {
-            let cleaned_path = config_path.join(output_config_path).clean();
-            self.output.file = cleaned_path.to_string_lossy().into_owned();
-        }
+        self.output.file = ConfigReader::resolve_path(&self.output.file, Some(config_path));
 
         self
-    }
-}
-
-fn resolve_path(src: &str, config_path: &Path) -> String {
-    if Url::parse(src).is_ok() {
-        src.to_owned()
-    } else if Path::new(src).is_relative() {
-        let cleaned_path = config_path.join(src).clean();
-        cleaned_path.to_string_lossy().into_owned()
-    } else {
-        src.to_owned()
     }
 }
 

@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use path_clean::PathClean;
 use rustls_pemfile;
 use rustls_pki_types::{
     CertificateDer, PrivateKeyDer, PrivatePkcs1KeyDer, PrivatePkcs8KeyDer, PrivateSec1KeyDer,
@@ -236,14 +237,14 @@ impl ConfigReader {
 
     /// Checks if path is a URL or absolute path, returns directly if so.
     /// Otherwise, it joins file path with relative dir path.
-    fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
+    pub fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
         if let Ok(url) = Url::parse(src) {
             url.to_string()
         } else if Path::new(&src).is_absolute() {
             src.to_string()
         } else {
             let path = root_dir.unwrap_or(Path::new(""));
-            path.join(src).to_string_lossy().to_string()
+            path.join(src).clean().to_string_lossy().to_string()
         }
     }
 }
