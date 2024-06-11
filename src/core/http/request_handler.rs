@@ -73,28 +73,25 @@ fn update_cache_control_header(
     response
 }
 
-fn set_common_headers(headers: &mut HeaderMap, app_ctx: &AppContext, req_ctx: &RequestContext) {
-    if !app_ctx.blueprint.server.response_headers.is_empty() {
-        // Add static response headers
-        headers.extend(app_ctx.blueprint.server.response_headers.clone());
-    }
-
-    // Insert Cookie Headers
-    if let Some(ref cookie_headers) = req_ctx.cookie_headers {
-        let cookie_headers = cookie_headers.lock().unwrap();
-        headers.extend(cookie_headers.deref().clone());
-    }
-
-    // Insert Experimental Headers
-    req_ctx.extend_x_headers(headers);
-}
-
 pub fn update_response_headers(
     resp: &mut hyper::Response<hyper::Body>,
     req_ctx: &RequestContext,
     app_ctx: &AppContext,
 ) {
-    set_common_headers(resp.headers_mut(), app_ctx, req_ctx);
+    if !app_ctx.blueprint.server.response_headers.is_empty() {
+        // Add static response headers
+        resp.headers_mut()
+            .extend(app_ctx.blueprint.server.response_headers.clone());
+    }
+
+    // Insert Cookie Headers
+    if let Some(ref cookie_headers) = req_ctx.cookie_headers {
+        let cookie_headers = cookie_headers.lock().unwrap();
+        resp.headers_mut().extend(cookie_headers.deref().clone());
+    }
+
+    // Insert Experimental Headers
+    req_ctx.extend_x_headers(resp.headers_mut());
 }
 
 #[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
