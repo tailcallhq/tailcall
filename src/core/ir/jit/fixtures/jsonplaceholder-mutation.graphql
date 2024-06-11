@@ -1,8 +1,8 @@
 schema
   @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
   @upstream(
-    baseURL: "http://jsonplaceholder.typicode.com",
-    httpCache: 42,
+    baseURL: "http://jsonplaceholder.typicode.com"
+    httpCache: 42
     batch: {delay: 100}
     poolMaxIdlePerHost: 200
     tcpKeepAlive: 60
@@ -82,5 +82,5 @@ type Post {
   userId: Int!
   title: String!
   body: String!
-  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+  user: User @http(path: "/users/{{.value.userId}}")
 }

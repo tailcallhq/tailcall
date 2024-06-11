@@ -11,15 +11,15 @@ pub struct Stores<Key, Value> {
 
 #[derive(Default, Debug, Clone)] // TODO: drop clone and store ref in synth
 pub struct Store<Key, Value> {
-    map: HashMap<Key, Data<Key, Value>>,
+    map: HashMap<Key, Data<Value>>,
 }
 
 #[derive(Debug, Clone)]
-pub struct Data<K, V> {
+pub struct Data<V> {
     pub data: Option<V>,
-    pub extras: HashMap<FieldId, K>,
 }
 
+#[allow(unused)]
 impl<K: PartialEq + Eq + Hash, V> Stores<K, V> {
     pub fn new() -> Self {
         Stores { map: HashMap::new() }
@@ -37,18 +37,11 @@ impl<K: PartialEq + Eq + Hash, V> Store<K, V> {
         Store { map: HashMap::new() }
     }
 
-    pub fn get(&self, key: &K) -> Option<&Data<K, V>> {
+    pub fn get(&self, key: &K) -> Option<&Data<V>> {
         self.map.get(key)
     }
 
-    pub fn insert(&mut self, key: K, value: Data<K, V>) {
-        match self.map.get_mut(&key) {
-            Some(data) => {
-                data.extras.extend(value.extras);
-            }
-            None => {
-                self.map.insert(key, value);
-            }
-        }
+    pub fn insert(&mut self, key: K, value: Data<V>) {
+        self.map.insert(key, value);
     }
 }
