@@ -11,6 +11,8 @@ use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
+use crate::core::http::operation_id::OperationId;
+use crate::core::http::tailcall_response::TailcallResponse;
 use crate::core::http::{DataLoaderRequest, HttpDataLoader};
 use crate::core::ir::{DataLoaderId, EvaluationError, IoId, IO, IR};
 use crate::core::rest::{Checked, EndpointSet};
@@ -26,6 +28,7 @@ pub struct AppContext {
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, EvaluationError>>,
+    pub dedupe_operation_handler: DedupeResult<OperationId, TailcallResponse, EvaluationError>,
 }
 
 impl AppContext {
@@ -131,6 +134,7 @@ impl AppContext {
             endpoints,
             auth_ctx: Arc::new(auth_ctx),
             dedupe_handler: Arc::new(DedupeResult::new(false)),
+            dedupe_operation_handler: DedupeResult::new(false),
         }
     }
 

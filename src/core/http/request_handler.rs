@@ -1,8 +1,10 @@
 use std::collections::BTreeSet;
+use std::hash::Hash;
 use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_graphql::parser::types::OperationType;
 use async_graphql::ServerError;
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
@@ -20,6 +22,9 @@ use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTT
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
+use crate::core::http::operation_id::OperationId;
+use crate::core::http::tailcall_response::TailcallResponse;
+use crate::core::ir::EvaluationError;
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -95,24 +100,49 @@ pub fn update_response_headers(
 }
 
 #[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
-pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
+pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
     req: Request<Body>,
     app_ctx: &AppContext,
     req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
+    let headers = req.headers().clone();
     let bytes = hyper::body::to_bytes(req.into_body()).await?;
-    let graphql_request = serde_json::from_slice::<T>(&bytes);
+    let graphql_request: serde_json::Result<T> = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
-            let _ = request.parse_query();
-            let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+            let is_query = request
+                .parse_query()
+                .map(|a| {
+                    let mut is_query = false;
+                    for (_, operation) in a.operations.iter() {
+                        is_query = operation.node.ty == OperationType::Query;
+                    }
+                    is_query
+                })
+                .unwrap_or(false);
 
-            response = update_cache_control_header(response, app_ctx, req_ctx.clone());
-            let mut resp = response.into_response()?;
-            update_response_headers(&mut resp, &req_ctx, app_ctx);
-            Ok(resp)
+            if !app_ctx.blueprint.server.batch_execution && !is_query {
+                Ok(execute_query(&app_ctx, &req_ctx, request).await?)
+            } else {
+                let operation_id = OperationId::from(&request, &headers);
+                let out = app_ctx
+                    .dedupe_operation_handler
+                    .dedupe(&operation_id, || {
+                        Box::pin(async move {
+                            let resp = execute_query(&app_ctx, &req_ctx, request).await?;
+                            Ok(TailcallResponse::new(
+                                resp.headers().clone(),
+                                hyper::body::to_bytes(resp.into_body())
+                                    .await
+                                    .map_err(|e| EvaluationError::IOException(e.to_string()))?,
+                            ))
+                        })
+                    })
+                    .await?;
+                out.into_response()
+            }
         }
         Err(err) => {
             tracing::error!(
@@ -130,6 +160,19 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
+async fn execute_query<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
+    app_ctx: &&AppContext,
+    req_ctx: &Arc<RequestContext>,
+    request: T,
+) -> anyhow::Result<Response<Body>> {
+    let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+
+    response = update_cache_control_header(response, app_ctx, req_ctx.clone());
+    let mut resp = response.into_response()?;
+    update_response_headers(&mut resp, req_ctx, app_ctx);
+    Ok(resp)
+}
+
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {
     let mut new_headers = HeaderMap::new();
     for (k, v) in headers.iter() {
@@ -143,7 +186,7 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
-async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
+async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
@@ -175,7 +218,7 @@ async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
-async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
+async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
@@ -263,7 +306,7 @@ async fn handle_rest_apis(
     not_found()
 }
 
-async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
+async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     req_counter: &mut RequestCounter,
@@ -317,7 +360,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         http.request.method = %req.method()
     )
 )]
-pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
+pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {
