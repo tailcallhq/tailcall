@@ -29,7 +29,6 @@ enum Step<Value> {
     Send(broadcast::Sender<Value>),
 }
 
-// TODO: Use Arc or something to make cloning faster
 impl<K: Key, V: Value> Dedupe<K, V> {
     pub fn new(size: usize, persist: bool) -> Self {
         Self { cache: Arc::new(Mutex::new(HashMap::new())), size, persist }
