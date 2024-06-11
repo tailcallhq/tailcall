@@ -1,5 +1,5 @@
 mod command;
-mod error;
+pub mod error;
 mod fmt;
 #[cfg(feature = "js")]
 pub mod javascript;

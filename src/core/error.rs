@@ -112,8 +112,11 @@ pub mod worker {
         #[error("Hyper Header To Str Error")]
         HyperHeaderStr(hyper::header::ToStrError),
 
-        #[error("JS Runtime is stopped")]
-        JsRuntimeStoppedError,
+        #[error("CLI Error")]
+        CLIError(crate::cli::error::Error),
+
+        #[error("JS Runtime Stopped Error")]
+        JsRuntimeStopped,
     }
 
     #[derive(From, thiserror::Error, Debug)]

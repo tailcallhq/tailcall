@@ -88,17 +88,17 @@ impl WorkerIO<Event, Command> for Runtime {
 
     async fn call(&self, name: &str, event: Event) -> crate::core::Result<Option<Command>, Self::Error> {
         let script = self.script.clone();
-        let name = name.to_string(); // TODO
+        let name = name.to_string();
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    call(name, event)
+                    call(name, event).map_err(WorkerError::from)
                 })
-                .await?
-        }
-         else {
-            Err(WorkerError::JsRuntimeStoppedError)
+                .await
+                .map_err(|_| WorkerError::ExecutionFailed)?
+        } else {
+            Err(WorkerError::JsRuntimeStopped)
         }
     }
 }
@@ -110,16 +110,17 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
     async fn call(&self, name: &str, input: ConstValue) -> crate::core::Result<Option<ConstValue>, Self::Error> {
         let script = self.script.clone();
         let name = name.to_string();
-        let value = serde_json::to_string(&input)?;
+        let value = serde_json::to_string(&input).map_err(WorkerError::from)?;      
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    execute_inner(name, value).map(Some)
+                    execute_inner(name, value).map(Some).map_err(WorkerError::from)
                 })
-                .await?
+                .await
+                .map_err(|_| WorkerError::ExecutionFailed)?
         } else {
-            Err(WorkerError::JsRuntimeStoppedError)
+            Err(WorkerError::JsRuntimeStopped)
         }
     }
 }

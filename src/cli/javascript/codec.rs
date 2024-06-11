@@ -216,8 +216,9 @@ mod test {
     use super::*;
     use crate::core::http::Response;
     use crate::core::worker::{Command, WorkerRequest, WorkerResponse};
+    use crate::core::error::worker::WorkerError;
 
-    fn create_test_response() -> Result<WorkerResponse> {
+    fn create_test_response() -> Result<WorkerResponse, WorkerError> {
         let mut headers = HeaderMap::new();
         headers.insert("content-type", "application/json".parse().unwrap());
         let response = crate::core::http::Response {
@@ -225,7 +226,7 @@ mod test {
             headers,
             body: Bytes::from("Hello, World!"),
         };
-        let js_response: Result<WorkerResponse> = response.try_into();
+        let js_response: Result<WorkerResponse, WorkerError> = response.try_into();
         js_response
     }
 
@@ -245,7 +246,7 @@ mod test {
     #[test]
     fn test_from_js_response() {
         let js_response = create_test_response().unwrap();
-        let response: Result<crate::core::http::Response<Bytes>> = js_response.try_into();
+        let response: Result<crate::core::http::Response<Bytes>, WorkerError> = js_response.try_into();
         assert!(response.is_ok());
         let response = response.unwrap();
         assert_eq!(response.status, reqwest::StatusCode::OK);
