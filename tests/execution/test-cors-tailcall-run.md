@@ -30,7 +30,7 @@ type Query {
   expected:
     status: 200
     headers:
-      Access-Control-Allow-Origin: https://tailcall.run
-      Access-Control-Allow-Methods: GET, POST, OPTIONS
-      Access-Control-Allow-Headers: "*"
+      access-control-allow-origin: https://tailcall.run
+      access-control-allow-methods: GET, POST, OPTIONS
+      access-control-allow-headers: "*"
 ```
