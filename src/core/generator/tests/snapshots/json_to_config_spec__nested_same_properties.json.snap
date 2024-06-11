@@ -6,24 +6,24 @@ schema @server @upstream(baseURL: "https://example.com") {
   query: Query
 }
 
-type Query {
-  f1: T4 @http(path: "/")
-}
-
-type T1 {
+type Container {
   age: Int
 }
 
+type F1 {
+  container: T3
+}
+
+type Query {
+  f1: F1 @http(path: "/")
+}
+
 type T2 {
-  container: T1
+  container: Container
   name: String
 }
 
 type T3 {
   container: T2
   name: String
-}
-
-type T4 {
-  container: T3
 }

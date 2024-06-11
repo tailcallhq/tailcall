@@ -610,6 +610,19 @@ pub struct AddField {
 }
 
 impl Config {
+    pub fn is_root_operation_type(&self, type_name: &str) -> bool {
+        let type_name = type_name.to_lowercase();
+
+        [
+            &self.schema.query,
+            &self.schema.mutation,
+            &self.schema.subscription,
+        ]
+        .iter()
+        .filter_map(|&root_name| root_name.as_ref())
+        .any(|root_name| root_name.to_lowercase() == type_name)
+    }
+
     pub fn port(&self) -> u16 {
         self.server.port.unwrap_or(8000)
     }
@@ -885,5 +898,44 @@ mod tests {
         expected.insert("Bar".to_string());
 
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_query() {
+        let mut config = Config::default();
+        config.schema.query = Some("Query".to_string());
+
+        assert!(config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_mutation() {
+        let mut config = Config::default();
+        config.schema.mutation = Some("Mutation".to_string());
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_subscription() {
+        let mut config = Config::default();
+        config.schema.subscription = Some("Subscription".to_string());
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_no_root_operation() {
+        let config = Config::default();
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
     }
 }
