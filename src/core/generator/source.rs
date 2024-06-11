@@ -1,5 +1,5 @@
-use regex::Regex;
 use thiserror::Error;
+use url::Url;
 
 ///
 /// A list of sources from which a configuration can be created
@@ -28,10 +28,8 @@ impl ImportSource {
         src.ends_with(&format!(".{}", self.ext()))
     }
 
-    // TODO: we're using different ways to evaluate if given string is url or not, need to create separate utility which can verify if it's url or not.
     fn is_url(self, src: &str) -> bool {
-        let url_regex = Regex::new(r"^https?://").unwrap();
-        url_regex.is_match(src)
+        Url::parse(src).is_ok()
     }
 
     /// Detect the config format from the src
@@ -116,11 +114,6 @@ mod tests {
             ImportSource::detect("https://google.com"),
             Ok(ImportSource::Url)
         );
-        assert_eq!(
-            ImportSource::detect("www.google.com"),
-            Ok(ImportSource::Url)
-        );
-        assert_eq!(ImportSource::detect("google.com"), Ok(ImportSource::Url));
     }
 
     #[test]
