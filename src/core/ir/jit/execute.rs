@@ -94,7 +94,7 @@ async fn foo<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
                     Some(io.data.get_value()),
                     call_ids,
                 )
-                .await?;
+                    .await?;
             }
         }
 
@@ -203,7 +203,7 @@ pub mod tests {
         // tracing::info!("{:#?}", store);
         tracing::info!("{:?}", store.get(&IoId::new(101)));
         let synth = Synth::new(first, store.to_owned());
-        serde_json::to_string_pretty(&synth.synthesize(&ctx)).unwrap()
+        serde_json::to_string_pretty(&synth.synthesize(ctx)).unwrap()
     }
 
     #[tokio::test]
@@ -215,7 +215,7 @@ pub mod tests {
                 }
             "#,
         )
-        .await;
+            .await;
         insta::assert_snapshot!(actual);
     }
 
@@ -224,11 +224,11 @@ pub mod tests {
         let actual = execute(
             r#"
                 query {
-                    posts { id user { id name } }
+                    posts { title userId user { id name todo { completed } } }
                 }
             "#,
         )
-        .await;
+            .await;
         insta::assert_snapshot!(actual);
     }
 }

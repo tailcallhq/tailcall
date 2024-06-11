@@ -18,7 +18,7 @@ impl Synth {
 
     pub fn synthesize<'b, Ctx: ResolverContextLike<'b> + Sync + Send>(
         &self,
-        ctx: &'b EvaluationContext<'b, Ctx>,
+        ctx: EvaluationContext<'b, Ctx>,
     ) -> Value {
         self.iter(&self.operation, None, ctx)
     }
@@ -31,7 +31,7 @@ impl Synth {
         &'a self,
         node: &'a Field<Children>,
         parent: Option<&'a Data<OwnedValue>>,
-        ctx: &'b EvaluationContext<'b, Ctx>,
+        ctx: EvaluationContext<'b, Ctx>,
     ) -> Value<'a> {
         match parent {
             Some(parent) => match parent.data.as_ref().map(|v| v.get_value()) {
@@ -39,12 +39,12 @@ impl Synth {
                     if !Self::is_array(&node.type_of, val) {
                         return Value::Null;
                     };
-                    self.iter_inner(node, Some(val), parent, ctx)
+                    self.iter_inner(node, Some(val), parent, ctx.clone())
                 }
                 _ => {
                     match node.ir.as_ref() {
                         Some(IR::IO(io)) => {
-                            let key = io.cache_key(ctx);
+                            let key = io.cache_key(&ctx);
                             if let Some(key) = key {
                                 let value = self.store.get(&key);
                                 if let Some(value) = value {
@@ -67,15 +67,18 @@ impl Synth {
             },
             None => {
                 // TODO: drop the Data struct
+                tracing::info!("Hx");
                 match node.ir.as_ref() {
                     Some(IR::IO(io)) => {
-                        let key = io.cache_key(ctx);
+                        let key = io.cache_key(&ctx);
                         if let Some(key) = key {
                             let value = self.store.get(&key);
                             if let Some(value) = value {
+                                tracing::info!("Hx2: {}", node.name);
                                 // check if value exists, else it'll cause stackoverflow
                                 self.iter(node, Some(value), ctx)
                             } else {
+                                tracing::info!("Hx1: {}", node.name);
                                 // Store does not have data with the IO id, so just return null
                                 Value::Null
                             }
@@ -97,7 +100,7 @@ impl Synth {
         node: &'a Field<Children>,
         parent: Option<&'a Value<'a>>,
         value: &'a Data<OwnedValue>,
-        ctx: &'b EvaluationContext<'b, Ctx>,
+        ctx: EvaluationContext<'b, Ctx>,
     ) -> Value<'a> {
         match parent {
             Some(Value::Object(obj)) => {
@@ -116,16 +119,16 @@ impl Synth {
                         if let Some(val) = val {
                             ans.insert(
                                 child.name.as_str(),
-                                self.iter_inner(child, Some(val), value, ctx),
+                                self.iter_inner(child, Some(val), value, ctx.clone()),
                             );
                         } else {
                             let current = match child.ir.as_ref() {
                                 Some(IR::IO(io)) => {
-                                    io.cache_key(ctx).and_then(|io_id| self.store.get(&io_id))
+                                    io.cache_key(&ctx).and_then(|io_id| self.store.get(&io_id))
                                 }
                                 _ => None, // TODO: impl for other IRs
                             };
-                            let value = self.iter(child, current, ctx);
+                            let value = self.iter(child, current, ctx.clone());
                             ans.insert(child.name.as_str(), value);
                         }
                     }
@@ -135,6 +138,8 @@ impl Synth {
             Some(Value::Array(arr)) => {
                 let mut ans = vec![];
                 for val in arr {
+                    let cv = serde_json::from_str(val.to_string().as_str()).unwrap_or_default();
+                    let ctx = ctx.with_value(cv);
                     ans.push(self.iter_inner(node, Some(val), value, ctx));
                 }
 
@@ -214,7 +219,7 @@ mod tests {
         };
         let ctx = EvaluationContext::new(&request_ctx, &gql_ctx);
 
-        serde_json::to_string_pretty(&synth.synthesize(&ctx)).unwrap()
+        serde_json::to_string_pretty(&synth.synthesize(ctx)).unwrap()
     }
 
     #[tokio::test]
