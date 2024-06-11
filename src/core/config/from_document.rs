@@ -302,7 +302,7 @@ fn to_common_field<F>(
     args: BTreeMap<String, config::Arg>,
 ) -> Valid<config::Field, String>
 where
-    F: Fieldlike,
+    F: FieldLike,
 {
     let type_of = field.type_of();
     let base = &type_of.base;
@@ -454,13 +454,13 @@ impl HasName for InputValueDefinition {
     }
 }
 
-trait Fieldlike {
+trait FieldLike {
     fn type_of(&self) -> &Type;
     fn description(&self) -> &Option<Positioned<String>>;
     fn directives(&self) -> &[Positioned<ConstDirective>];
     fn default_value(&self) -> Option<ConstValue>;
 }
-impl Fieldlike for FieldDefinition {
+impl FieldLike for FieldDefinition {
     fn type_of(&self) -> &Type {
         &self.ty.node
     }
@@ -474,7 +474,7 @@ impl Fieldlike for FieldDefinition {
         None
     }
 }
-impl Fieldlike for InputValueDefinition {
+impl FieldLike for InputValueDefinition {
     fn type_of(&self) -> &Type {
         &self.ty.node
     }
