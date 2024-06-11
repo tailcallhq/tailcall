@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_graphql::context::SelectionField;
+use async_graphql::parser::types::OperationType;
 use async_graphql::{Name, ServerError, Value};
 use indexmap::IndexMap;
 
@@ -8,6 +9,7 @@ pub trait ResolverContextLike<'a>: Clone {
     fn value(&'a self) -> Option<&'a Value>;
     fn args(&'a self) -> Option<&'a IndexMap<Name, Value>>;
     fn field(&'a self) -> Option<SelectionField>;
+    fn is_query(&'a self) -> bool;
     fn add_error(&'a self, error: ServerError);
 }
 
@@ -25,6 +27,10 @@ impl<'a> ResolverContextLike<'a> for EmptyResolverContext {
 
     fn field(&'a self) -> Option<SelectionField> {
         None
+    }
+
+    fn is_query(&'a self) -> bool {
+        false
     }
 
     fn add_error(&'a self, _: ServerError) {}
@@ -52,6 +58,10 @@ impl<'a> ResolverContextLike<'a> for ResolverContext<'a> {
 
     fn field(&'a self) -> Option<SelectionField> {
         Some(self.inner.ctx.field())
+    }
+
+    fn is_query(&'a self) -> bool {
+        self.inner.ctx.query_env.operation.node.ty == OperationType::Query
     }
 
     fn add_error(&'a self, error: ServerError) {
