@@ -40,6 +40,7 @@ impl Default for Type {
 }
 
 impl Type {
+    /// gets the name of the type
     pub fn name(&self) -> &str {
         match self {
             Type::NamedType { name, .. } => name,

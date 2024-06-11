@@ -148,6 +148,10 @@ impl<'a> ResolverContextLike<'a> for GraphqlContext<'a> {
         None
     }
 
+    fn is_query(&'a self) -> bool {
+        false
+    }
+
     fn add_error(&'a self, _error: async_graphql::ServerError) {
         // TODO: add implementation
     }
