@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
-use async_graphql::Response;
 use async_graphql_value::ConstValue;
+use hyper::body::Bytes;
 
 use crate::core::auth::context::GlobalAuthContext;
 use crate::core::blueprint::Type::ListType;
@@ -12,8 +12,7 @@ use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::operation_id::OperationId;
-use crate::core::http::tailcall_response::TailcallResponse;
-use crate::core::http::{DataLoaderRequest, HttpDataLoader};
+use crate::core::http::{DataLoaderRequest, HttpDataLoader, Response};
 use crate::core::ir::{DataLoaderId, EvaluationError, IoId, IO, IR};
 use crate::core::rest::{Checked, EndpointSet};
 use crate::core::runtime::TargetRuntime;
@@ -28,7 +27,7 @@ pub struct AppContext {
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
     pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, EvaluationError>>,
-    pub dedupe_operation_handler: DedupeResult<OperationId, TailcallResponse, EvaluationError>,
+    pub dedupe_operation_handler: DedupeResult<OperationId, Response<Bytes>, EvaluationError>,
 }
 
 impl AppContext {
@@ -138,7 +137,7 @@ impl AppContext {
         }
     }
 
-    pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
+    pub async fn execute(&self, request: impl Into<DynamicRequest>) -> async_graphql::Response {
         self.schema.execute(request).await
     }
 }

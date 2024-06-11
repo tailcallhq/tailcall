@@ -21,7 +21,6 @@ mod request_handler;
 mod request_template;
 mod response;
 pub mod showcase;
-pub mod tailcall_response;
 mod telemetry;
 
 pub static TAILCALL_HTTPS_ORIGIN: HeaderValue = HeaderValue::from_static("https://tailcall.run");

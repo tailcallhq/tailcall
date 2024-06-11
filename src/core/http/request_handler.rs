@@ -23,8 +23,6 @@ use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
 use crate::core::http::operation_id::OperationId;
-use crate::core::http::tailcall_response::TailcallResponse;
-use crate::core::ir::EvaluationError;
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -121,16 +119,11 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike + Hash + S
                     .dedupe(&operation_id, || {
                         Box::pin(async move {
                             let resp = execute_query(&app_ctx, &req_ctx, request).await?;
-                            Ok(TailcallResponse::new(
-                                resp.headers().clone(),
-                                hyper::body::to_bytes(resp.into_body())
-                                    .await
-                                    .map_err(|e| EvaluationError::IOException(e.to_string()))?,
-                            ))
+                            Ok(crate::core::http::Response::from_hyper(resp).await?)
                         })
                     })
                     .await?;
-                out.into_response()
+                Ok(hyper::Response::from(out))
             }
         }
         Err(err) => {
