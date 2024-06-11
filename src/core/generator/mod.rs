@@ -5,10 +5,10 @@ mod generator;
 mod graphql_type;
 mod json;
 mod proto;
-mod config_io;
+mod from_generalized_config;
 pub mod source;
 
 pub use from_json::{from_json, ConfigGenerationRequest};
 pub use json::NameGenerator;
 pub use generator::Generator;
-pub use config_io::FromGeneralizedConfig;
+pub use from_generalized_config::FromGeneralizedConfig;
