@@ -32,7 +32,8 @@ pub struct TargetRuntime {
     /// Worker middleware for handling HTTP requests.
     pub cmd_worker: Option<Arc<dyn WorkerIO<Event, Command, Error = error::worker::WorkerError>>>,
     /// Worker middleware for resolving data.
-    pub worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue, Error = error::worker::WorkerError>>>,
+    pub worker:
+        Option<Arc<dyn WorkerIO<ConstValue, ConstValue, Error = error::worker::WorkerError>>>,
 }
 
 impl TargetRuntime {
@@ -117,8 +118,11 @@ pub mod test {
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
         type Error = error::http::HttpError;
-    
-        async fn execute(&self, request: reqwest::Request) -> crate::core::Result<Response<Bytes>, Self::Error> {
+
+        async fn execute(
+            &self,
+            request: reqwest::Request,
+        ) -> crate::core::Result<Response<Bytes>, Self::Error> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?
@@ -141,19 +145,21 @@ pub mod test {
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
         type Error = error::file::FileError;
-    
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> crate::core::Result<(), Self::Error> {
+
+        async fn write<'a>(
+            &'a self,
+            path: &'a str,
+            content: &'a [u8],
+        ) -> crate::core::Result<(), Self::Error> {
             let mut file = tokio::fs::File::create(path).await?;
-            file.write_all(content)
-                .await?;
+            file.write_all(content).await?;
             Ok(())
         }
 
         async fn read<'a>(&'a self, path: &'a str) -> crate::core::Result<String, Self::Error> {
             let mut file = tokio::fs::File::open(path).await?;
             let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer)
-                .await?;
+            file.read_to_end(&mut buffer).await?;
             Ok(String::from_utf8(buffer)?)
         }
     }

@@ -5,9 +5,8 @@ use hyper::body::Bytes;
 use reqwest::Request;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{is_default, Response};
-
 use super::error::worker::WorkerError;
+use crate::core::{is_default, Response};
 
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
 pub enum Scheme {
@@ -175,9 +174,7 @@ impl TryFrom<&reqwest::Request> for WorkerRequest {
     type Error = WorkerError;
 
     fn try_from(value: &Request) -> Result<Self, Self::Error> {
-        let request = value
-            .try_clone()
-            .ok_or(WorkerError::RequestCloneFailed)?;
+        let request = value.try_clone().ok_or(WorkerError::RequestCloneFailed)?;
         Ok(WorkerRequest(request))
     }
 }

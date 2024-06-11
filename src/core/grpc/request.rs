@@ -53,13 +53,13 @@ mod tests {
     use tonic::{Code, Status};
 
     use crate::core::blueprint::GrpcMethod;
+    use crate::core::error::http::HttpError;
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::grpc::request::execute_grpc_request;
     use crate::core::http::Response;
     use crate::core::ir::Error;
     use crate::core::runtime::TargetRuntime;
     use crate::core::HttpIO;
-    use crate::core::error::http::HttpError;
 
     enum TestScenario {
         SuccessWithoutGrpcStatus,
@@ -76,7 +76,10 @@ mod tests {
     impl HttpIO for TestHttp {
         type Error = HttpError;
 
-        async fn execute(&self, _request: Request) -> crate::core::Result<Response<Bytes>, Self::Error> {
+        async fn execute(
+            &self,
+            _request: Request,
+        ) -> crate::core::Result<Response<Bytes>, Self::Error> {
             let mut headers = HeaderMap::new();
             let message = Bytes::from_static(b"\0\0\0\0\x0e\n\x0ctest message");
             let error = Bytes::from_static(b"\x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details");

@@ -214,9 +214,9 @@ mod test {
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
 
     use super::*;
+    use crate::core::error::worker::WorkerError;
     use crate::core::http::Response;
     use crate::core::worker::{Command, WorkerRequest, WorkerResponse};
-    use crate::core::error::worker::WorkerError;
 
     fn create_test_response() -> Result<WorkerResponse, WorkerError> {
         let mut headers = HeaderMap::new();
@@ -246,7 +246,8 @@ mod test {
     #[test]
     fn test_from_js_response() {
         let js_response = create_test_response().unwrap();
-        let response: Result<crate::core::http::Response<Bytes>, WorkerError> = js_response.try_into();
+        let response: Result<crate::core::http::Response<Bytes>, WorkerError> =
+            js_response.try_into();
         assert!(response.is_ok());
         let response = response.unwrap();
         assert_eq!(response.status, reqwest::StatusCode::OK);

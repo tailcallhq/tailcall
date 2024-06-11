@@ -6,9 +6,9 @@ use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
 use crate::cli::{Error, Result};
+use crate::core::error::worker::WorkerError;
 use crate::core::worker::{Command, Event, WorkerRequest};
 use crate::core::{blueprint, WorkerIO};
-use crate::core::error::worker::WorkerError;
 
 struct LocalRuntime(Context);
 
@@ -86,7 +86,11 @@ impl Drop for Runtime {
 impl WorkerIO<Event, Command> for Runtime {
     type Error = WorkerError;
 
-    async fn call(&self, name: &str, event: Event) -> crate::core::Result<Option<Command>, Self::Error> {
+    async fn call(
+        &self,
+        name: &str,
+        event: Event,
+    ) -> crate::core::Result<Option<Command>, Self::Error> {
         let script = self.script.clone();
         let name = name.to_string();
         if let Some(runtime) = &self.tokio_runtime {
@@ -107,15 +111,21 @@ impl WorkerIO<Event, Command> for Runtime {
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
     type Error = WorkerError;
 
-    async fn call(&self, name: &str, input: ConstValue) -> crate::core::Result<Option<ConstValue>, Self::Error> {
+    async fn call(
+        &self,
+        name: &str,
+        input: ConstValue,
+    ) -> crate::core::Result<Option<ConstValue>, Self::Error> {
         let script = self.script.clone();
         let name = name.to_string();
-        let value = serde_json::to_string(&input).map_err(WorkerError::from)?;      
+        let value = serde_json::to_string(&input).map_err(WorkerError::from)?;
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    execute_inner(name, value).map(Some).map_err(WorkerError::from)
+                    execute_inner(name, value)
+                        .map(Some)
+                        .map_err(WorkerError::from)
                 })
                 .await
                 .map_err(|_| WorkerError::ExecutionFailed)?

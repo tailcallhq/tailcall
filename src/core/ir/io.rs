@@ -10,6 +10,7 @@ use super::{CacheKey, Eval, EvaluationContext, IoId, ResolverContextLike};
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::GraphQLOperationType;
 use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::error::worker::WorkerError;
 use crate::core::graphql::{self, GraphqlDataLoader};
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::grpc::protobuf::ProtobufOperation;
@@ -23,8 +24,6 @@ use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
 use crate::core::worker::*;
 use crate::core::{grpc, http, WorkerIO};
-
-use crate::core::error::worker::WorkerError;
 
 #[derive(Clone, Debug, strum_macros::Display)]
 pub enum IO {

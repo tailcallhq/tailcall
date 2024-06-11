@@ -27,7 +27,10 @@ pub mod file {
 
     #[derive(From, thiserror::Error, Debug)]
     #[error("Error occurred with file '{file_path}': {error}")]
-    pub struct Error{pub file_path: String, pub error: FileError}
+    pub struct Error {
+        pub file_path: String,
+        pub error: FileError,
+    }
 
     #[derive(From, thiserror::Error, Debug)]
     pub enum FileError {
@@ -36,10 +39,10 @@ pub mod file {
 
         #[error("No permission to access the file")]
         NoPermission,
-        
+
         #[error("Access denied")]
         AccessDenied,
-        
+
         #[error("Invalid file format")]
         InvalidFormat,
 

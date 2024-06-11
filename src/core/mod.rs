@@ -14,6 +14,7 @@ pub mod directive;
 pub mod document;
 pub mod endpoint;
 mod errata;
+pub mod error;
 pub mod generator;
 pub mod graphql;
 pub mod grpc;
@@ -38,9 +39,6 @@ pub mod tracing;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
-pub mod error;
-pub use error::{Error, Result};
-
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;
 use std::hash::Hash;
@@ -48,6 +46,7 @@ use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
 pub use errata::Errata;
+pub use error::{Error, Result};
 use http::Response;
 use ir::IoId;
 pub use tailcall_macros as macros;
