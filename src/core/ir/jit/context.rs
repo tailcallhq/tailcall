@@ -20,7 +20,7 @@ impl ExecutionContext {
         ir: &IR,
         parent: Option<&OwnedValue>,
     ) -> Result<OwnedValue, EvaluationError> {
-        super::execute::execute_ir(ir, parent).await
+        todo!()
     }
     fn find_children(&self, id: FieldId) -> Vec<Field<Parent>> {
         todo!()

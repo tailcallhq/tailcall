@@ -1,0 +1,68 @@
+---
+source: src/core/ir/jit/execute.rs
+expression: actual
+---
+{
+  "users": [
+    {
+      "id": 1,
+      "address": {
+        "street": "Kulas Light"
+      }
+    },
+    {
+      "id": 2,
+      "address": {
+        "street": "Victor Plains"
+      }
+    },
+    {
+      "id": 3,
+      "address": {
+        "street": "Douglas Extension"
+      }
+    },
+    {
+      "id": 4,
+      "address": {
+        "street": "Hoeger Mall"
+      }
+    },
+    {
+      "id": 5,
+      "address": {
+        "street": "Skiles Walks"
+      }
+    },
+    {
+      "id": 6,
+      "address": {
+        "street": "Norberto Crossing"
+      }
+    },
+    {
+      "id": 7,
+      "address": {
+        "street": "Rex Trail"
+      }
+    },
+    {
+      "id": 8,
+      "address": {
+        "street": "Ellsworth Summit"
+      }
+    },
+    {
+      "id": 9,
+      "address": {
+        "street": "Dayna Park"
+      }
+    },
+    {
+      "id": 10,
+      "address": {
+        "street": "Kattie Turnpike"
+      }
+    }
+  ]
+}

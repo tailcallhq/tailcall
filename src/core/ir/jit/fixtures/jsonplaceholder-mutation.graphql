@@ -46,14 +46,13 @@ input InputUser {
 
 type User {
   id: Int!
-  userId: Int!
   name: String!
   username: String!
   email: String!
   phone: String
   website: String
   address: Address
-  todo: [Todo] @http(path: "/todos")
+  todo: Todo @http(path: "/todos/{{.value.id}}")
 }
 
 type Todo {
