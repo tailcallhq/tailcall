@@ -2,10 +2,9 @@ use std::fs;
 
 use inquire::Confirm;
 
-use super::config::GeneratorConfig;
-use super::source::ConfigSource;
-use super::{Generator, Resolved};
 use crate::core::config::{self, ConfigModule};
+use crate::core::generator::source::ConfigSource;
+use crate::core::generator::{Generator, GeneratorConfig, Resolved};
 use crate::core::runtime::TargetRuntime;
 
 /// Checks if file or folder already exists or not.
@@ -13,7 +12,6 @@ fn is_exists(path: &str) -> bool {
     fs::metadata(path).is_ok()
 }
 
-/// FIXME: move this to CLI
 pub struct ConfigConsoleGenerator {
     config_path: String,
     runtime: TargetRuntime,
