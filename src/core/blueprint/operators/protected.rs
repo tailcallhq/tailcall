@@ -3,7 +3,7 @@ use crate::core::config::position::Pos;
 use crate::core::config::{self, ConfigModule, Field};
 use crate::core::ir::{Context, IR};
 use crate::core::try_fold::TryFold;
-use crate::core::valid::Valid;
+use crate::core::valid::{Valid, Validator};
 
 pub fn update_protected<'a>(
     type_name: &'a str,
@@ -28,13 +28,13 @@ pub fn update_protected<'a>(
                     .is_some()
             {
                 if config.input_types.contains(type_name) {
-                    return Valid::fail("Input types can not be protected".to_owned());
+                    return Valid::fail("Input types can not be protected".to_owned()).trace(field.to_trace_err().as_str());
                 }
 
                 if !config.extensions.has_auth() {
                     return Valid::fail(
                         "@protected operator is used but there is no @link definitions for auth providers".to_owned(),
-                    );
+                    ).trace(field.to_trace_err().as_str());
                 }
 
                 b_field.resolver =

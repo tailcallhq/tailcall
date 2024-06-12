@@ -6,9 +6,7 @@ expression: errors
   {
     "message": "Couldn't find definitions for service news.YourServiceName",
     "trace": [
-      "Query",
-      "news",
-      "@grpc"
+      "tests/execution/test-grpc-service.md 6#18"
     ],
     "description": null
   }

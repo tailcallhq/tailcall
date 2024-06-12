@@ -6,9 +6,7 @@ expression: errors
   {
     "message": "missing key: id",
     "trace": [
-      "Query",
-      "news",
-      "@grpc",
+      "tests/execution/test-grpc-missing-fields.md 6#19",
       "NewsData",
       "news"
     ],

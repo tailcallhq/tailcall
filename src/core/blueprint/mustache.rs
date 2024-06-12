@@ -118,13 +118,13 @@ impl FieldDefinition {
         match &self.resolver {
             Some(IR::IO(IO::Http { req_template, .. })) => {
                 Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
-                    parts_validator.validate(parts, false).trace("path")
+                    parts_validator.validate(parts, false)
                 })
                 .and(Valid::from_iter(req_template.query.clone(), |query| {
                     let (_, mustache) = query;
 
                     Valid::from_iter(mustache.expression_segments(), |parts| {
-                        parts_validator.validate(parts, true).trace("query")
+                        parts_validator.validate(parts, true)
                     })
                 }))
                 .unit()
@@ -132,14 +132,14 @@ impl FieldDefinition {
             Some(IR::IO(IO::GraphQL { req_template, .. })) => {
                 Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
                     Valid::from_iter(mustache.expression_segments(), |parts| {
-                        parts_validator.validate(parts, true).trace("headers")
+                        parts_validator.validate(parts, true)
                     })
                 })
                 .and_then(|_| {
                     if let Some(args) = &req_template.operation_arguments {
                         Valid::from_iter(args, |(_, mustache)| {
                             Valid::from_iter(mustache.expression_segments(), |parts| {
-                                parts_validator.validate(parts, true).trace("args")
+                                parts_validator.validate(parts, true)
                             })
                         })
                     } else {
@@ -150,12 +150,12 @@ impl FieldDefinition {
             }
             Some(IR::IO(IO::Grpc { req_template, .. })) => {
                 Valid::from_iter(req_template.url.expression_segments(), |parts| {
-                    parts_validator.validate(parts, false).trace("path")
+                    parts_validator.validate(parts, false)
                 })
                 .and(
                     Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
                         Valid::from_iter(mustache.expression_segments(), |parts| {
-                            parts_validator.validate(parts, true).trace("headers")
+                            parts_validator.validate(parts, true)
                         })
                     })
                     .unit(),
@@ -163,7 +163,7 @@ impl FieldDefinition {
                 .and_then(|_| {
                     if let Some(body) = &req_template.body {
                         Valid::from_iter(body.expression_segments(), |parts| {
-                            parts_validator.validate(parts, true).trace("body")
+                            parts_validator.validate(parts, true)
                         })
                     } else {
                         Valid::succeed(Default::default())

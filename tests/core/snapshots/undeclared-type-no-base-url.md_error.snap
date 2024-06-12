@@ -6,17 +6,14 @@ expression: errors
   {
     "message": "Undeclared type 'User' was found",
     "trace": [
-      "Query",
-      "users"
+      "tests/execution/undeclared-type-no-base-url.md 6#3"
     ],
     "description": null
   },
   {
     "message": "No base URL defined",
     "trace": [
-      "Query",
-      "users",
-      "@http"
+      "tests/execution/undeclared-type-no-base-url.md 6#17"
     ],
     "description": null
   }

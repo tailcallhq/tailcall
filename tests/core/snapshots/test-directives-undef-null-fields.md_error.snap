@@ -6,150 +6,105 @@ expression: errors
   {
     "message": "value 'nonNullableNestedUser' is not of a scalar type",
     "trace": [
-      "Post",
-      "nestedNonScalar",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 35#5"
     ],
     "description": null
   },
   {
     "message": "value 'id' is a nullable type",
     "trace": [
-      "Post",
-      "nestedNullable",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 39#5"
     ],
     "description": null
   },
   {
     "message": "no value 'nonNullableUser.nonNullableNestedUser.userId' found",
     "trace": [
-      "Post",
-      "nestedUndefinedValue",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 37#5"
     ],
     "description": null
   },
   {
     "message": "value 'nestedUser' is a nullable type",
     "trace": [
-      "Post",
-      "nestedUserNullable",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 33#5"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "Post",
-      "userArg",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 28#17"
     ],
     "description": null
   },
   {
     "message": "unknown template directive 'Vale'",
     "trace": [
-      "Post",
-      "userInvalidDirective",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 29#30"
     ],
     "description": null
   },
   {
     "message": "value 'nonNullableUser' is not of a scalar type",
     "trace": [
-      "Post",
-      "userNonScalar",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 30#23"
     ],
     "description": null
   },
   {
     "message": "value 'userId' is a nullable type",
     "trace": [
-      "Post",
-      "userNullValue",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 40#23"
     ],
     "description": null
   },
   {
     "message": "value 'user' is a nullable type",
     "trace": [
-      "Post",
-      "userNullable",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 31#22"
     ],
     "description": null
   },
   {
     "message": "no value 'userid' found",
     "trace": [
-      "Post",
-      "userUndefinedValue",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 44#28"
     ],
     "description": null
   },
   {
     "message": "no value 'userid' found",
     "trace": [
-      "Post",
-      "userUndefinedValueQuery",
-      "@http",
-      "query"
+      "tests/execution/test-directives-undef-null-fields.md 47#5"
     ],
     "description": null
   },
   {
     "message": "var 'garbage' is not set in the server config",
     "trace": [
-      "Query",
-      "userAccessHeadersVars",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 17#5"
     ],
     "description": null
   },
   {
     "message": "can't use list type 'id' here",
     "trace": [
-      "Query",
-      "userListArg",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 18#31"
     ],
     "description": null
   },
   {
     "message": "argument 'id' is a nullable type",
     "trace": [
-      "Query",
-      "userNullableArg",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 19#33"
     ],
     "description": null
   },
   {
     "message": "no argument 'uid' found",
     "trace": [
-      "Query",
-      "userUndefinedArg",
-      "@http",
-      "path"
+      "tests/execution/test-directives-undef-null-fields.md 20#34"
     ],
     "description": null
   }

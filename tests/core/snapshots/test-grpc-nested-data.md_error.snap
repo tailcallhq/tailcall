@@ -6,9 +6,7 @@ expression: errors
   {
     "message": "expected Non repeatable type",
     "trace": [
-      "Query",
-      "newsById",
-      "@grpc",
+      "tests/execution/test-grpc-nested-data.md 11#5",
       "News"
     ],
     "description": null

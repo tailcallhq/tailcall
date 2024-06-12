@@ -98,11 +98,11 @@ pub fn update_http<'a>() -> TryFold<
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_module, http)
+            compile_http(config_module, http).trace(http.to_trace_err().as_str())
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field
-                        .validate_field(type_of, config_module)
+                        .validate_field(type_of, config_module).trace(http.to_trace_err().as_str())
                         .map_to(b_field)
                 })
         },

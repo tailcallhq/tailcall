@@ -83,6 +83,7 @@ pub fn update_const_field<'a>() -> TryFold<
                 value: &const_field.body,
                 validate: true,
             })
+            .trace(const_field.to_trace_err().as_str())
             .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )

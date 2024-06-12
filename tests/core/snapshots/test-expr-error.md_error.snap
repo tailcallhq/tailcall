@@ -6,9 +6,7 @@ expression: errors
   {
     "message": "expected field to be non-nullable",
     "trace": [
-      "Query",
-      "user",
-      "@expr",
+      "tests/execution/test-expr-error.md 11#14",
       "age"
     ],
     "description": null

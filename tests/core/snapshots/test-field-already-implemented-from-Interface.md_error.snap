@@ -6,18 +6,13 @@ expression: errors
   {
     "message": "no argument 'input' found",
     "trace": [
-      "Query",
-      "user",
-      "@http",
-      "path"
+      "tests/execution/test-field-already-implemented-from-Interface.md 15#14"
     ],
     "description": null
   },
   {
     "message": "Field is already implemented from interface",
     "trace": [
-      "User",
-      "userId",
       "@modify"
     ],
     "description": null
@@ -25,8 +20,6 @@ expression: errors
   {
     "message": "Field is already implemented from interface",
     "trace": [
-      "User",
-      "userName",
       "@modify"
     ],
     "description": null

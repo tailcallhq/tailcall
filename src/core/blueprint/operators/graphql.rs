@@ -65,9 +65,9 @@ pub fn update_graphql<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_graphql(config, operation_type, graphql)
+            compile_graphql(config, operation_type, graphql).trace(graphql.to_trace_err().as_str())
                 .map(|resolver| b_field.resolver(Some(resolver)))
-                .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
+                .and_then(|b_field| b_field.validate_field(type_of, config).trace(graphql.to_trace_err().as_str()).map_to(b_field))
         },
     )
 }

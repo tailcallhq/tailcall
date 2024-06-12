@@ -14,48 +14,35 @@ expression: errors
   {
     "message": "no argument 'id' found",
     "trace": [
-      "Post",
-      "argumentMismatchGraphQL",
-      "@call",
-      "userWithGraphQLResolver"
+      "tests/execution/test-call-operator-errors.md 22#33"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "Post",
-      "headersMismatchGraphQL",
-      "@call",
-      "userWithGraphQLResolver"
+      "tests/execution/test-call-operator-errors.md 23#32"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "Post",
-      "urlMismatchHttp",
-      "@call",
-      "user"
+      "tests/execution/test-call-operator-errors.md 21#25"
     ],
     "description": null
   },
   {
     "message": "call must have query or mutation",
     "trace": [
-      "Post",
-      "withoutOperator",
-      "@call"
+      "tests/execution/test-call-operator-errors.md 20#31"
     ],
     "description": null
   },
   {
     "message": "userWithoutResolver field has no resolver",
     "trace": [
-      "Post",
-      "withoutResolver",
-      "@call"
+      "tests/execution/test-call-operator-errors.md 19#25"
     ],
     "description": null
   }

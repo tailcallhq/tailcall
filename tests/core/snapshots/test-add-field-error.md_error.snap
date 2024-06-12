@@ -6,7 +6,6 @@ expression: errors
   {
     "message": "Cannot add field",
     "trace": [
-      "Query",
       "@addField",
       "street"
     ],

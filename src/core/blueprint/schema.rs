@@ -15,7 +15,8 @@ fn validate_query(config: &Config) -> Valid<(), String> {
     )
     .and_then(|ref query_type_name| {
         let Some(query) = config.find_type(query_type_name) else {
-            return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
+            return Valid::fail("Query type is not defined".to_owned())
+                .trace(query_type_name.to_trace_err().as_str());
         };
         let mut set = HashSet::new();
         validate_type_has_resolvers(query_type_name, query, &config.types, &mut set)

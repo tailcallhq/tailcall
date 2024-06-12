@@ -29,9 +29,7 @@ expression: errors
   {
     "message": "expected string",
     "trace": [
-      "Query",
-      "bar",
-      "@expr"
+      "tests/execution/test-all-blueprint-errors.md 10#21"
     ],
     "description": null
   }

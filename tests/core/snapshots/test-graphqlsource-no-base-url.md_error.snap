@@ -6,9 +6,7 @@ expression: errors
   {
     "message": "No base URL defined",
     "trace": [
-      "Post",
-      "user",
-      "@graphQL"
+      "tests/execution/test-graphqlsource-no-base-url.md 7#14"
     ],
     "description": null
   }

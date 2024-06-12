@@ -244,11 +244,11 @@ pub fn update_grpc<'a>(
                 field,
                 grpc,
                 validate_with_schema: true,
-            })
+            }).trace(grpc.to_trace_err().as_str())
             .map(|resolver| b_field.resolver(Some(resolver)))
             .and_then(|b_field| {
                 b_field
-                    .validate_field(type_of, config_module)
+                    .validate_field(type_of, config_module).trace(grpc.to_trace_err().as_str())
                     .map_to(b_field)
             })
         },

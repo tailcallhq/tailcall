@@ -380,10 +380,11 @@ pub fn update_cache_resolvers<'a>() -> TryFold<
     )
 }
 
-fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
+fn validate_field_type_exist(config: &Config, field: &Pos<Field>) -> Valid<(), String> {
     let field_type = &field.type_of;
     if !scalar::is_predefined_scalar(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
+            .trace(field.to_trace_err().as_str())
     } else {
         Valid::succeed(())
     }
@@ -413,16 +414,14 @@ fn to_fields(
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
         |(name, field)| {
-            validate_field_type_exist(config_module, field)
-                .and(to_field_definition(
-                    field,
-                    &operation_type,
-                    object_name,
-                    config_module,
-                    type_of,
-                    name,
-                ))
-                .trace(name)
+            validate_field_type_exist(config_module, field).and(to_field_definition(
+                field,
+                &operation_type,
+                object_name,
+                config_module,
+                type_of,
+                name,
+            ))
         },
     );
 
@@ -523,20 +522,21 @@ pub fn to_field_definition(
         return Valid::fail(format!(
             "Multiple resolvers detected [{}]",
             directives.join(", ")
-        ));
+        ))
+        .trace(field.to_trace_err().as_str());
     }
 
     update_args()
-        .and(update_http().trace(config::Http::trace_name().as_str()))
-        .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
-        .and(update_const_field().trace(config::Expr::trace_name().as_str()))
+        .and(update_http())
+        .and(update_grpc(operation_type))
+        .and(update_const_field())
         .and(update_js_field().trace(config::JS::trace_name().as_str()))
-        .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
+        .and(update_graphql(operation_type))
         .and(update_modify().trace(config::Modify::trace_name().as_str()))
-        .and(update_call(operation_type, object_name).trace(config::Call::trace_name().as_str()))
+        .and(update_call(operation_type, object_name))
         .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
-        .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
+        .and(update_protected(object_name))
         .try_fold(
             &(config_module, field, type_of, name),
             FieldDefinition::default(),
@@ -555,20 +555,20 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
             } else if dbl_usage {
                 Valid::fail("type is used in input and output".to_string()).trace(name)
             } else {
-                to_object_type_definition(name, type_, config_module)
-                    .trace(name)
-                    .and_then(|definition| match definition.clone() {
+                to_object_type_definition(name, type_, config_module).and_then(|definition| {
+                    match definition.clone() {
                         Definition::Object(object_type_definition) => {
                             if config_module.input_types.contains(name) {
-                                to_input_object_type_definition(object_type_definition).trace(name)
+                                to_input_object_type_definition(object_type_definition)
                             } else if config_module.interface_types.contains(name) {
-                                to_interface_type_definition(object_type_definition).trace(name)
+                                to_interface_type_definition(object_type_definition)
                             } else {
                                 Valid::succeed(definition)
                             }
                         }
                         _ => Valid::succeed(definition),
-                    })
+                    }
+                })
             }
         })
         .map(|mut types| {

@@ -6,9 +6,7 @@ expression: errors
   {
     "message": "expected type to be required",
     "trace": [
-      "Query",
-      "news",
-      "@grpc",
+      "tests/execution/test-grpc-optional.md 6#18",
       "NewsData"
     ],
     "description": null

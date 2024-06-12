@@ -6,7 +6,7 @@ expression: errors
   {
     "message": "Query type is not defined",
     "trace": [
-      "QueryType"
+      "tests/execution/test-missing-root-types.md 2#10"
     ],
     "description": null
   },

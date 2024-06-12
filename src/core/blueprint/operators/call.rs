@@ -86,7 +86,7 @@ fn compile_call(
                         .collect::<Vec<String>>()
                         .join(", ")
                 ))
-                .trace(field_name.as_str());
+                .trace(call.to_trace_err().as_str());
             }
 
             to_field_definition(
@@ -100,6 +100,7 @@ fn compile_call(
             .and_then(|b_field| {
                 if b_field.resolver.is_none() {
                     Valid::fail(format!("{} field has no resolver", field_name))
+                        .trace(call.to_trace_err().as_str())
                 } else {
                     Valid::succeed(b_field)
                 }
@@ -138,6 +139,7 @@ fn compile_call(
             }),
             "Steps can't be empty".to_string(),
         )
+        .trace(call.to_trace_err().as_str())
     })
 }
 
@@ -159,16 +161,19 @@ fn get_field_and_field_name<'a>(
         get_type_and_field(call),
         "call must have query or mutation".to_string(),
     )
+    .trace(call.to_trace_err().as_str())
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
             config_module.config.find_type(&type_name),
             format!("{} type not found on config", type_name),
         )
+        .trace(call.to_trace_err().as_str())
         .and_then(|query_type| {
             Valid::from_option(
                 query_type.fields.get(&field_name),
                 format!("{} field not found", field_name),
             )
+            .trace(call.to_trace_err().as_str())
             .fuse(Valid::succeed(field_name))
             .fuse(Valid::succeed(query_type))
             .into()

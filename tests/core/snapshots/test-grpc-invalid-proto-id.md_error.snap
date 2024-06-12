@@ -6,9 +6,7 @@ expression: errors
   {
     "message": "Protobuf files were not specified in the config",
     "trace": [
-      "Query",
-      "news",
-      "@grpc"
+      "tests/execution/test-grpc-invalid-proto-id.md 6#18"
     ],
     "description": null
   }

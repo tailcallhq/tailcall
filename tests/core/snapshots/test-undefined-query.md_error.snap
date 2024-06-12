@@ -6,40 +6,28 @@ expression: errors
   {
     "message": "no type 'user.nested.inner.id.test' found",
     "trace": [
-      "Post",
-      "innerIdNested",
-      "@http",
-      "query"
+      "tests/execution/test-undefined-query.md 10#24"
     ],
     "description": null
   },
   {
     "message": "no value 'user.nested.inner.test' found",
     "trace": [
-      "Post",
-      "innerNested",
-      "@http",
-      "query"
+      "tests/execution/test-undefined-query.md 9#22"
     ],
     "description": null
   },
   {
     "message": "no value 'user.nested.test' found",
     "trace": [
-      "Post",
-      "nested",
-      "@http",
-      "query"
+      "tests/execution/test-undefined-query.md 8#17"
     ],
     "description": null
   },
   {
     "message": "no value 'test' found",
     "trace": [
-      "Post",
-      "user",
-      "@http",
-      "query"
+      "tests/execution/test-undefined-query.md 7#15"
     ],
     "description": null
   }
