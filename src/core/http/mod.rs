@@ -15,7 +15,6 @@ mod data_loader;
 mod cache;
 mod data_loader_request;
 mod method;
-pub mod operation_id;
 mod request_context;
 mod request_handler;
 mod request_template;

@@ -4,6 +4,7 @@ use async_graphql::dynamic::{self, DynamicRequest};
 use async_graphql_value::ConstValue;
 use hyper::body::Bytes;
 
+use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
@@ -11,7 +12,6 @@ use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
-use crate::core::http::operation_id::OperationId;
 use crate::core::http::{DataLoaderRequest, HttpDataLoader, Response};
 use crate::core::ir::{DataLoaderId, EvaluationError, IoId, IO, IR};
 use crate::core::rest::{Checked, EndpointSet};

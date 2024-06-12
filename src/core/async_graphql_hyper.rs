@@ -1,13 +1,18 @@
 use std::any::Any;
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
 use async_graphql::{BatchResponse, Executor, Value};
+use headers::HeaderMap;
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use tailcall_hasher::TailcallHasher;
+
+#[derive(PartialEq, Eq, Clone, Hash, Debug)]
+pub struct OperationId(u64);
 
 #[async_trait::async_trait]
 pub trait GraphQLRequestLike: Hash + Send {
@@ -28,6 +33,17 @@ pub trait GraphQLRequestLike: Hash + Send {
                 is_query
             })
             .unwrap_or(false)
+    }
+
+    fn operation_id(&self, headers: &HeaderMap) -> OperationId {
+        let mut hasher = TailcallHasher::default();
+        let state = &mut hasher;
+        for (name, value) in headers.iter() {
+            name.hash(state);
+            value.hash(state);
+        }
+        self.hash(state);
+        OperationId(hasher.finish())
     }
 }
 

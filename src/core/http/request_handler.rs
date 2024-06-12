@@ -20,7 +20,6 @@ use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTT
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
-use crate::core::http::operation_id::OperationId;
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -111,7 +110,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
             if !(app_ctx.blueprint.server.batch_execution && request.is_query()) {
                 Ok(execute_query(&app_ctx, &req_ctx, request).await?)
             } else {
-                let operation_id = OperationId::from(&request, &headers);
+                let operation_id = request.operation_id(&headers);
                 let out = app_ctx
                     .dedupe_operation_handler
                     .dedupe(&operation_id, || {
