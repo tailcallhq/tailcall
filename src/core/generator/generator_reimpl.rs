@@ -27,6 +27,7 @@ fn resolve_file_descriptor_set(
     Ok(descriptor_set)
 }
 
+/// Generator supports the config generation from following inputs.
 pub enum GeneratorInput {
     Config { schema: String, source: Source },
     Proto { metadata: ProtoMetadata },
