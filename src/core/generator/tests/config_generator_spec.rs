@@ -30,6 +30,7 @@ pub fn run_config_generator_spec(path: &Path) -> datatest_stable::Result<()> {
 #[derive(Serialize, Deserialize)]
 struct GeneratorTest {
     config: GeneratorConfig<UnResolved>,
+    #[serde(default)]
     resolvers: serde_json::Value,
 }
 
@@ -84,7 +85,7 @@ pub async fn run_test(path: &str) -> anyhow::Result<()> {
     let gen = GeneratorReImpl::new("f", "T");
     let cfg_module = gen.run("Query", &generator_inp)?;
 
-    insta::assert_snapshot!(cfg_module.config.to_sdl());
+    insta::assert_snapshot!(path, cfg_module.config.to_sdl());
 
     Ok(())
 }
