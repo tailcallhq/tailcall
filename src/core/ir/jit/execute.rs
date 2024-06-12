@@ -31,6 +31,7 @@ pub async fn execute_ir<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     Ok(())
 }
 
+#[allow(clippy::multiple_bound_locations)]
 #[async_recursion::async_recursion]
 async fn iter<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     store: &mut Store<IoId, OwnedValue>,

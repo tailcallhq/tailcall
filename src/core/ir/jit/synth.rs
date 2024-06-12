@@ -50,7 +50,6 @@ impl Synth {
                                 // check if value exists, else it'll cause stackoverflow
                                 self.iter(node, Some(value), ctx)
                             } else {
-                                println!("{}: {:?}", node.name, key);
                                 // Store does not have data with the IO id, so just return null
                                 Value::Null
                             }
