@@ -6,7 +6,7 @@ use regex::Regex;
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
 use crate::core::config::position::Pos;
-use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
+use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Union};
 use crate::core::directive::DirectiveCodec;
 use crate::core::ir::{Cache, Context, IR};
 use crate::core::try_fold::TryFold;
