@@ -10,13 +10,13 @@ use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
+use super::generator::ConfigConsoleGenerator;
 use super::update_checker;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
-use crate::core::generator::FromGeneralizedConfig;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
@@ -82,12 +82,8 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Gen { file_path } => {
-            FromGeneralizedConfig::new(runtime.clone())
-                .read(&file_path)
-                .await?
+            ConfigConsoleGenerator::new(&file_path, runtime.clone())
                 .generate()
-                .await?
-                .write()
                 .await?;
 
             Ok(())

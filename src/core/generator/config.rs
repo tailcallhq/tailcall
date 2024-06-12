@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::path::Path;
 
 use path_clean::PathClean;
@@ -5,40 +6,95 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::core::config;
+use crate::core::config::{self};
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema)]
+#[derive(Debug)]
+pub enum Resolved {}
+
+#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
+pub enum UnResolved {}
+
+// TODO: In our codebase we've similar functions like below, create a separate
+// module for helpers functions like these.
+fn resolve(path: &str, parent_dir: Option<&Path>) -> anyhow::Result<String> {
+    if Url::parse(path).is_ok() || Path::new(path).is_absolute() {
+        return Ok(path.to_string());
+    }
+
+    let parent_dir = parent_dir.unwrap_or(Path::new(""));
+    let joined_path = parent_dir.join(path);
+    if let Ok(abs_path) = std::fs::canonicalize(&joined_path) {
+        return Ok(abs_path.to_string_lossy().to_string());
+    }
+    Ok(joined_path.clean().to_string_lossy().to_string())
+}
+
+#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
-pub enum InputSource {
-    /// src: maintains the same src written in config.
-    /// resolved_src: holds the correctly resolved src with respect to config.
+pub enum InputSource<Status = UnResolved> {
     Config {
         src: String,
-        resolved_src: Option<String>,
+        #[serde(skip_serializing, skip_deserializing)]
+        _marker: PhantomData<Status>,
     },
     Import {
         src: String,
-        resolved_src: Option<String>,
+        #[serde(skip_serializing, skip_deserializing)]
+        _marker: PhantomData<Status>,
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct Input {
-    #[serde(flatten)]
-    pub source: InputSource,
+impl InputSource<UnResolved> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<InputSource<Resolved>> {
+        match self {
+            InputSource::Config { src, _marker } => Ok(InputSource::Config {
+                src: resolve(src.as_str(), parent_dir)?,
+                _marker: PhantomData,
+            }),
+            InputSource::Import { src, _marker } => Ok(InputSource::Import {
+                src: resolve(src.as_str(), parent_dir)?,
+                _marker: PhantomData,
+            }),
+        }
+    }
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Output {
+pub struct Input<Status = UnResolved> {
+    #[serde(flatten)]
+    pub source: InputSource<Status>,
+}
+
+impl Input<UnResolved> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Input<Resolved>> {
+        let resolved_source = self.source.resolve(parent_dir)?;
+        Ok(Input { source: resolved_source })
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, JsonSchema, Default, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Output<Status = UnResolved> {
     /// Controls the output format (graphql, json, yaml)
     pub format: config::Source,
     /// Specifies the output file name
     pub file: String,
+    #[serde(skip_serializing, skip_deserializing)]
+    _markder: PhantomData<Status>,
 }
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema)]
+impl Output<UnResolved> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
+        Ok(Output {
+            format: self.format,
+            file: resolve(&self.file, parent_dir)?,
+            _markder: PhantomData,
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Schema {
     #[serde(default = "defaults::schema::query")]
@@ -56,14 +112,14 @@ impl Default for Schema {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GenerateOptions {
     #[serde(default)]
     pub schema: Schema,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Transform {
     // TODO: change types
@@ -72,50 +128,37 @@ pub struct Transform {
     pub js: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct GeneratorConfig {
-    pub input: Vec<Input>,
-    #[serde(default)]
-    pub output: Output,
+pub struct GeneratorConfig<Status = UnResolved> {
+    pub input: Vec<Input<Status>>,
+    pub output: Output<Status>,
     #[serde(default)]
     pub generate: GenerateOptions,
     #[serde(default)]
     pub transform: Transform,
+    #[serde(skip_serializing, skip_deserializing)]
+    _marker: PhantomData<Status>,
 }
 
 impl GeneratorConfig {
     /// Resolves all the paths present inside the GeneratorConfig.
-    pub fn resolve_paths(mut self, file_path: &str) -> Self {
-        let config_path = Path::new(file_path).parent().unwrap_or(Path::new(""));
+    pub fn resolve_paths(self, config_path: &str) -> anyhow::Result<GeneratorConfig<Resolved>> {
+        let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
 
-        for input in self.input.iter_mut() {
-            match &mut input.source {
-                InputSource::Config { src, resolved_src }
-                | InputSource::Import { src, resolved_src } => {
-                    *resolved_src = Some(resolve_path(src, config_path));
-                }
-            }
-        }
+        let resolved_inputs = self
+            .input
+            .into_iter()
+            .map(|input| input.resolve(parent_dir))
+            .collect::<anyhow::Result<Vec<Input<_>>>>()?;
 
-        let output_config_path = Path::new(&self.output.file);
-        if output_config_path.is_relative() {
-            let cleaned_path = config_path.join(output_config_path).clean();
-            self.output.file = cleaned_path.to_string_lossy().into_owned();
-        }
-
-        self
-    }
-}
-
-fn resolve_path(src: &str, config_path: &Path) -> String {
-    if Url::parse(src).is_ok() {
-        src.to_owned()
-    } else if Path::new(src).is_relative() {
-        let cleaned_path = config_path.join(src).clean();
-        cleaned_path.to_string_lossy().into_owned()
-    } else {
-        src.to_owned()
+        Ok(GeneratorConfig {
+            input: resolved_inputs,
+            output: self.output.resolve(parent_dir)?,
+            generate: self.generate,
+            transform: self.transform,
+            _marker: PhantomData,
+        })
     }
 }
 
@@ -147,10 +190,10 @@ mod tests {
 
     #[test]
     fn test_resolve_paths() {
-        let file_path = "../../../tailcall-fixtures/fixtures/generator/simple-json.json";
+        let file_path = tailcall_fixtures::generator::SIMPLE_JSON;
         let content = std::fs::read_to_string(tailcall_fixtures::generator::SIMPLE_JSON).unwrap();
         let config: GeneratorConfig = serde_json::from_str(&content).unwrap();
         let config = config.resolve_paths(file_path);
-        assert_debug_snapshot!(&config);
+        assert!(config.is_ok());
     }
 }

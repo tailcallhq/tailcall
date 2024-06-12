@@ -34,7 +34,7 @@ pub fn from_json(
         let query_generator =
             QueryGenerator::new(request.resp.is_array(), &request.url, query, &field_name);
 
-        config = TypesGenerator::new(&request.resp, query_generator, &type_name_gen)
+        config = TypesGenerator::new(&request.resp, query_generator, type_name_gen)
             .pipe(SchemaGenerator::new(query.to_owned()))
             .pipe(FieldBaseUrlGenerator::new(&request.url, query))
             .pipe(RemoveUnused)

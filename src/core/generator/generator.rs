@@ -5,21 +5,18 @@ use prost_reflect::DescriptorPool;
 use reqwest::Method;
 use url::Url;
 
-use crate::core::generator::{from_json, source::ImportSource, ConfigGenerationRequest};
+use super::config::{GeneratorConfig, InputSource, Resolved};
+use super::json::NameGenerator;
+use crate::core::config::transformer::AmbiguousType;
+use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
+use crate::core::generator::from_proto::from_proto;
+use crate::core::generator::source::ImportSource;
+use crate::core::generator::{from_json, ConfigGenerationRequest};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::ResourceReader;
+use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::runtime::TargetRuntime;
-use crate::core::{
-    config::transformer::AmbiguousType, generator::from_proto::from_proto, valid::Validator,
-};
-use crate::core::{
-    config::{self, Config, ConfigModule, Link, LinkType},
-    resource_reader::Cached,
-};
-
-use super::config::{GeneratorConfig, InputSource};
-use super::json::NameGenerator;
+use crate::core::valid::Validator;
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work
@@ -49,6 +46,9 @@ async fn fetch_response(
     Ok(ConfigGenerationRequest::new(parsed_url, body))
 }
 
+// FIXME: Generator shouldn't perform IO operations, it should be pure
+// computation that uses the provided information as data and generates a
+// GraphQL configuration.
 pub struct Generator {
     runtime: TargetRuntime,
     reader: ResourceReader<Cached>,
@@ -66,26 +66,24 @@ impl Generator {
         }
     }
 
-    pub async fn run(&self, gen_config: GeneratorConfig) -> Result<ConfigModule> {
+    pub async fn run(&self, gen_config: GeneratorConfig<Resolved>) -> Result<ConfigModule> {
         let field_name_gen = NameGenerator::new("f");
         let type_name_gen = NameGenerator::new("T");
 
         let resolvers = gen_config.input.into_iter().map(|input| async {
             match input.source {
-                InputSource::Config { src, resolved_src } => {
+                InputSource::Config { src, _marker } => {
                     let source = config::Source::detect(&src)?;
-                    let resolved_src = resolved_src.unwrap_or(src.clone());
-                    let schema = self.reader.read_file(&resolved_src).await?;
+                    let schema = self.reader.read_file(&src).await?;
 
                     Config::from_source(source, &schema.content)
                 }
-                InputSource::Import { src, resolved_src } => {
+                InputSource::Import { src, _marker } => {
                     let source = ImportSource::detect(&src)?;
-                    let resolved_src = resolved_src.unwrap_or(src.clone());
 
                     match source {
                         ImportSource::Proto => {
-                            let metadata = self.proto_reader.read(&resolved_src).await?;
+                            let metadata = self.proto_reader.read(&src).await?;
                             let descriptor_set =
                                 resolve_file_descriptor_set(metadata.descriptor_set)?;
                             let mut config = from_proto(&[descriptor_set], "Query")?;
@@ -97,8 +95,7 @@ impl Generator {
                             Ok(config)
                         }
                         ImportSource::Url => {
-                            let response =
-                                fetch_response(resolved_src.as_ref(), &self.runtime).await?;
+                            let response = fetch_response(src.as_ref(), &self.runtime).await?;
 
                             let config =
                                 from_json(&[response], "Query", &field_name_gen, &type_name_gen)?;

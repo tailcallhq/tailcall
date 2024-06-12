@@ -1,14 +1,14 @@
+mod config;
+
 mod from_json;
-pub mod config;
 mod from_proto;
 mod generator;
 mod graphql_type;
 mod json;
 mod proto;
-mod config_io;
 pub mod source;
 
+pub use config::*;
 pub use from_json::{from_json, ConfigGenerationRequest};
-pub use json::NameGenerator;
 pub use generator::Generator;
-pub use config_io::FromGeneralizedConfig;
+pub use json::NameGenerator;

@@ -8,6 +8,8 @@ pub mod server;
 mod tc;
 pub mod telemetry;
 
+pub mod generator;
+
 pub mod runtime;
 pub(crate) mod update_checker;
 

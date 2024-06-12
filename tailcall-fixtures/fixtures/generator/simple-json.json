@@ -1,53 +1,44 @@
 {
-	"input": [
-		{
-			"config": {
-				"src": "../configs/user-posts.graphql"
-			}
-		},
-		{
-			"import": {
-				"src": "https://jsonplaceholder.typicode.com/comments",
-				"headers": {
-					"Content-Type": "application/yaml",
-					"Authorization": "Bearer 123"
-				}
-			}
-		},
-		{
-			"import": {
-				"src": "https://jsonplaceholder.typicode.com/posts/1"
-			}
-		},
-		{
-			"import": {
-				"src": "https://jsonplaceholder.typicode.com/users/2"
-			}
-		}
-	],
-	"generate": {
-		"schema": {
-			"query": "Query"
-		}
-	},
-	"output": {
-		"useLinks": true,
-		"format": "json",
-		"file": "./output.json"
-	},
-	"transform": {
-		"ambiguousNameResolver": {
-			"inputPrefix": "IN",
-			"outputPrefix": "OUT",
-			"inputPostFix": "IN",
-			"outputPostFix": "OUT"
-		},
-		"mergeTypes": {
-			"threshold": 0.9
-		},
-		"js": {
-			"source": "transformer.js",
-			"functionName": "transform"
-		}
-	}
+  "input": [
+    {
+      "import": {
+        "src": "../protobuf/news.proto"
+      }
+    },
+    {
+      "config": {
+        "src": "../configs/user-posts.graphql"
+      }
+    },
+    {
+      "import": {
+        "src": "https://jsonplaceholder.typicode.com/posts"
+      }
+    }
+  ],
+  "generate": {
+    "schema": {
+      "query": "Query"
+    }
+  },
+  "output": {
+    "useLinks": true,
+    "format": "graphQL",
+    "file": "./output.graphql"
+  },
+  "transform": {
+    "ambiguousNameResolver": {
+      "inputPrefix": "IN",
+      "outputPrefix": "OUT",
+      "inputPostFix": "IN",
+      "outputPostFix": "OUT"
+    },
+    "mergeTypes": {
+      "threshold": 0.9
+    },
+    "js": {
+      "source": "transformer.js",
+      "functionName": "transform"
+    }
+  }
 }
