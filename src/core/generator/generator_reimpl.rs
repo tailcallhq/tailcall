@@ -27,7 +27,7 @@ fn resolve_file_descriptor_set(
     Ok(descriptor_set)
 }
 
-pub enum GeneratorType {
+pub enum GeneratorInput {
     Config { schema: String, source: Source },
     Proto { metadata: ProtoMetadata },
     Json { url: Url, data: Value },
@@ -48,16 +48,16 @@ impl Generator {
     pub fn run(
         &self,
         query: &str,
-        config_generation_req: &[GeneratorType],
+        config_generation_req: &[GeneratorInput],
     ) -> anyhow::Result<ConfigModule> {
         let mut config = Config::default();
 
         for req in config_generation_req {
             match req {
-                GeneratorType::Config { schema, source } => {
+                GeneratorInput::Config { schema, source } => {
                     config = config.merge_right(Config::from_source(source.to_owned(), schema)?)
                 }
-                GeneratorType::Json { url, data } => {
+                GeneratorInput::Json { url, data } => {
                     let req = ConfigGenerationRequest::new(url.to_owned(), data.to_owned());
                     config = config.merge_right(from_json(
                         &[req],
@@ -66,7 +66,7 @@ impl Generator {
                         &self.type_name_gen,
                     )?);
                 }
-                GeneratorType::Proto { metadata } => {
+                GeneratorInput::Proto { metadata } => {
                     let descriptor_set =
                         resolve_file_descriptor_set(metadata.descriptor_set.to_owned())?;
                     config = config.merge_right(from_proto(&[descriptor_set], query)?);

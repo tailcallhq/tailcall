@@ -5,7 +5,7 @@ use inquire::Confirm;
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::{ConfigSource, ImportSource};
 use crate::core::generator::{
-    GeneratorConfig, GeneratorReImpl, GeneratorType, InputSource, Resolved,
+    GeneratorConfig, GeneratorInput, GeneratorReImpl, InputSource, Resolved,
 };
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
@@ -32,7 +32,7 @@ impl ConfigConsoleGenerator {
     }
 
     /// Writes the configuration to the output file if allowed.
-    async fn write(self, graphql_config: ConfigModule, output_path: &str) -> anyhow::Result<()> {
+    async fn write(self, graphql_config: &ConfigModule, output_path: &str) -> anyhow::Result<()> {
         let output_source = config::Source::detect(output_path)?;
         let config = match output_source {
             config::Source::Json => graphql_config.to_json(true)?,
@@ -91,7 +91,7 @@ impl ConfigConsoleGenerator {
     async fn resolve_io(
         &self,
         config: GeneratorConfig<Resolved>,
-    ) -> anyhow::Result<Vec<GeneratorType>> {
+    ) -> anyhow::Result<Vec<GeneratorInput>> {
         let mut generator_type_inputs = vec![];
 
         let reader = ResourceReader::cached(self.runtime.clone());
@@ -104,21 +104,21 @@ impl ConfigConsoleGenerator {
                     match source {
                         ImportSource::Url => {
                             let contents = reader.read_file(&src).await?.content;
-                            generator_type_inputs.push(GeneratorType::Json {
+                            generator_type_inputs.push(GeneratorInput::Json {
                                 url: src.parse()?,
                                 data: serde_json::from_str(&contents)?,
                             });
                         }
                         ImportSource::Proto => {
                             let metadata = proto_reader.read(&src).await?;
-                            generator_type_inputs.push(GeneratorType::Proto { metadata });
+                            generator_type_inputs.push(GeneratorInput::Proto { metadata });
                         }
                     }
                 }
                 InputSource::Config { src, _marker } => {
                     let source = config::Source::detect(&src)?;
                     let schema = reader.read_file(&src).await?.content;
-                    generator_type_inputs.push(GeneratorType::Config { schema, source });
+                    generator_type_inputs.push(GeneratorInput::Config { schema, source });
                 }
             }
         }
@@ -126,15 +126,15 @@ impl ConfigConsoleGenerator {
         Ok(generator_type_inputs)
     }
 
-    /// Reads the configuration from the specified path.
-    pub async fn generate(self) -> anyhow::Result<()> {
+    /// generates the final configuration.
+    pub async fn generate(self) -> anyhow::Result<ConfigModule> {
         let config = self.read().await?;
         let path = config.output.file.to_owned();
         let generator_input = self.resolve_io(config).await?;
 
         let config = self.generator_reimpl.run("Query", &generator_input)?;
 
-        self.write(config, &path).await?;
-        Ok(())
+        self.write(&config, &path).await?;
+        Ok(config)
     }
 }

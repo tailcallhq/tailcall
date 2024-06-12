@@ -11,5 +11,5 @@ pub mod source;
 pub use config::*;
 pub use from_json::{from_json, ConfigGenerationRequest};
 pub use generator::Generator;
-pub use generator_reimpl::{Generator as GeneratorReImpl, GeneratorType};
+pub use generator_reimpl::{Generator as GeneratorReImpl, GeneratorInput};
 pub use json::NameGenerator;
