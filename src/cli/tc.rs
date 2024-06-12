@@ -16,7 +16,7 @@ use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
-use crate::core::generator::FromGeneralizedConfig;
+use crate::core::generator::Reader;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
@@ -82,13 +82,7 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Gen { file_path } => {
-            FromGeneralizedConfig::new(runtime.clone())
-                .read(&file_path)
-                .await?
-                .generate()
-                .await?
-                .write()
-                .await?;
+            Reader::new(runtime.clone(), &file_path).generate().await?;
 
             Ok(())
         }

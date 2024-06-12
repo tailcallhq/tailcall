@@ -3,7 +3,8 @@ use std::path::Path;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::core::config::{self, reader::ConfigReader};
+use crate::core::config::reader::ConfigReader;
+use crate::core::config::{self};
 
 #[derive(Serialize, Deserialize, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]

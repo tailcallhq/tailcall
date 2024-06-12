@@ -5,21 +5,18 @@ use prost_reflect::DescriptorPool;
 use reqwest::Method;
 use url::Url;
 
-use crate::core::generator::{from_json, source::ImportSource, ConfigGenerationRequest};
-use crate::core::merge_right::MergeRight;
-use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::ResourceReader;
-use crate::core::runtime::TargetRuntime;
-use crate::core::{
-    config::transformer::AmbiguousType, generator::from_proto::from_proto, valid::Validator,
-};
-use crate::core::{
-    config::{self, Config, ConfigModule, Link, LinkType},
-    resource_reader::Cached,
-};
-
 use super::config::{GeneratorConfig, InputSource};
 use super::json::NameGenerator;
+use crate::core::config::transformer::AmbiguousType;
+use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
+use crate::core::generator::from_proto::from_proto;
+use crate::core::generator::source::ImportSource;
+use crate::core::generator::{from_json, ConfigGenerationRequest};
+use crate::core::merge_right::MergeRight;
+use crate::core::proto_reader::ProtoReader;
+use crate::core::resource_reader::{Cached, ResourceReader};
+use crate::core::runtime::TargetRuntime;
+use crate::core::valid::Validator;
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work

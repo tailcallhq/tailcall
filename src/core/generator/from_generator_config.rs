@@ -2,12 +2,11 @@ use std::fs;
 
 use inquire::Confirm;
 
-use crate::core::{
-    config::{self, ConfigModule},
-    runtime::TargetRuntime,
-};
-
-use super::{config::GeneratorConfig, source::ConfigSource, Generator};
+use super::config::GeneratorConfig;
+use super::source::ConfigSource;
+use super::Generator;
+use crate::core::config::{self, ConfigModule};
+use crate::core::runtime::TargetRuntime;
 
 /// Checks if file or folder already exists or not.
 fn is_exists(path: &str) -> bool {
@@ -25,7 +24,8 @@ impl Writer {
         Self { config, runtime, output_path }
     }
 
-    /// Checks if the output file already exists and prompts for overwrite confirmation.
+    /// Checks if the output file already exists and prompts for overwrite
+    /// confirmation.
     pub fn should_overwrite(&self, output_path: &str) -> anyhow::Result<bool> {
         if is_exists(output_path) {
             let should_overwrite = Confirm::new(
@@ -58,7 +58,7 @@ impl Writer {
         if self.should_overwrite(output_path)? {
             self.runtime
                 .file
-                .write(&output_path, config.as_bytes())
+                .write(output_path, config.as_bytes())
                 .await?;
 
             tracing::info!("Config successfully generated at {output_path}");
@@ -88,17 +88,19 @@ impl ConfigGenerator {
 
 pub struct Reader {
     runtime: TargetRuntime,
+    config_path: String,
 }
 
 impl Reader {
-    pub fn new(runtime: TargetRuntime) -> Self {
-        Self { runtime }
+    pub fn new(runtime: TargetRuntime, config_path: &str) -> Self {
+        Self { runtime, config_path: config_path.to_string() }
     }
 
     /// Reads the configuration from the specified path.
-    pub async fn read(self, config_path: &str) -> anyhow::Result<ConfigGenerator> {
-        let source = ConfigSource::detect(&config_path)?;
-        let config_content = self.runtime.file.read(&config_path).await?;
+    pub async fn generate(self) -> anyhow::Result<()> {
+        let config_path = &self.config_path;
+        let source = ConfigSource::detect(config_path)?;
+        let config_content = self.runtime.file.read(config_path).await?;
 
         let config: GeneratorConfig = match source {
             ConfigSource::Json => serde_json::from_str(&config_content)?,
@@ -108,14 +110,11 @@ impl Reader {
         // while reading resolve the internal paths of generalized config.
         let config = config.resolve_paths(config_path);
 
-        Ok(ConfigGenerator::new(config, self.runtime))
-    }
-}
-
-pub struct FromGeneralizedConfig;
-
-impl FromGeneralizedConfig {
-    pub fn new(runtime: TargetRuntime) -> Reader {
-        Reader::new(runtime)
+        ConfigGenerator::new(config, self.runtime)
+            .generate()
+            .await?
+            .write()
+            .await?;
+        Ok(())
     }
 }
