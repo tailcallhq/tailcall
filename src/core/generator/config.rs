@@ -177,19 +177,13 @@ mod defaults {
 #[cfg(test)]
 mod tests {
     use insta::assert_debug_snapshot;
-    use serde::Deserialize;
 
     use super::GeneratorConfig;
 
-    #[derive(Deserialize)]
-    struct GeneratorTest {
-        config: GeneratorConfig,
-    }
-
     fn read_json_fixture(path: &str) -> GeneratorConfig {
         let content = std::fs::read_to_string(path).unwrap();
-        let generator_test: GeneratorTest = serde_json::from_str(&content).unwrap();
-        generator_test.config
+        let config: GeneratorConfig = serde_json::from_str(&content).unwrap();
+        config
     }
 
     #[test]

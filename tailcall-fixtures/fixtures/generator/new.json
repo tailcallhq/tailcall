@@ -1,36 +1,34 @@
 {
-  "config": {
-    "input": [
-      {
-        "import": {
-          "src": "../protobuf/news.proto"
-        }
+  "input": [
+    {
+      "import": {
+        "src": "../protobuf/news.proto"
       }
-    ],
-    "generate": {
-      "schema": {
-        "query": "Query"
-      }
+    }
+  ],
+  "generate": {
+    "schema": {
+      "query": "Query"
+    }
+  },
+  "output": {
+    "useLinks": true,
+    "format": "graphQL",
+    "file": "./output.graphql"
+  },
+  "transform": {
+    "ambiguousNameResolver": {
+      "inputPrefix": "IN",
+      "outputPrefix": "OUT",
+      "inputPostFix": "IN",
+      "outputPostFix": "OUT"
     },
-    "output": {
-      "useLinks": true,
-      "format": "graphQL",
-      "file": "./output.graphql"
+    "mergeTypes": {
+      "threshold": 0.9
     },
-    "transform": {
-      "ambiguousNameResolver": {
-        "inputPrefix": "IN",
-        "outputPrefix": "OUT",
-        "inputPostFix": "IN",
-        "outputPostFix": "OUT"
-      },
-      "mergeTypes": {
-        "threshold": 0.9
-      },
-      "js": {
-        "source": "transformer.js",
-        "functionName": "transform"
-      }
+    "js": {
+      "source": "transformer.js",
+      "functionName": "transform"
     }
   }
 }
