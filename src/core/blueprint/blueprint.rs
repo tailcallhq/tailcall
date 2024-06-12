@@ -62,6 +62,7 @@ impl Default for Type {
 }
 
 impl Type {
+    /// gets the name of the type
     pub fn name(&self) -> &str {
         match self {
             Type::NamedType { name, .. } => name,
@@ -91,6 +92,7 @@ pub enum Definition {
     Union(UnionTypeDefinition),
 }
 impl Definition {
+    /// gets the name of the definition
     pub fn name(&self) -> &str {
         match self {
             Definition::Interface(def) => &def.name,
