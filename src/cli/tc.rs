@@ -11,19 +11,17 @@ use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
+use crate::cli::fmt::Fmt;
+use crate::cli::server::Server;
+use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
-use crate::core::generator::config::UnResolved;
+use crate::core::generator::config::{GeneratorConfig, UnResolved};
+use crate::core::generator::source::ConfigSource;
 use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
-use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::{cli::fmt::Fmt, core::generator::config::GeneratorConfig};
-use crate::{cli::server::Server, core::config};
-use crate::{
-    cli::{self, CLIError},
-    core::generator::source::ConfigSource,
-};
+use crate::core::{config, print_schema};
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";

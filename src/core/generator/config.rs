@@ -1,4 +1,5 @@
-use std::{marker::PhantomData, path::Path};
+use std::marker::PhantomData;
+use std::path::Path;
 
 use path_clean::PathClean;
 use schemars::JsonSchema;
@@ -13,7 +14,8 @@ pub enum Resolved {}
 #[derive(Serialize, Deserialize, Debug, JsonSchema)]
 pub enum UnResolved {}
 
-// TODO: In our codebase we've similar functions like below, create a separate module for helpers functions like these.
+// TODO: In our codebase we've similar functions like below, create a separate
+// module for helpers functions like these.
 fn resolve(path: &str, parent_dir: Option<&Path>) -> anyhow::Result<String> {
     if Url::parse(path).is_ok() || Path::new(path).is_absolute() {
         return Ok(path.to_string());
