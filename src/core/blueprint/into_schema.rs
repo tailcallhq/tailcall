@@ -63,6 +63,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
                     field_name,
                     type_ref.clone(),
                     move |ctx| {
+                        // region: HOT CODE
+                        // --------------------------------------------------
+                        //                HOT CODE STARTS HERE
+                        // --------------------------------------------------
+
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
 
@@ -99,17 +104,22 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 )
                             }
                         }
+
+                        // --------------------------------------------------
+                        //                HOT CODE ENDS HERE
+                        // --------------------------------------------------
+                        // endregion: hot_code
                     },
                 );
                 if let Some(description) = &field.description {
                     dyn_schema_field = dyn_schema_field.description(description);
                 }
                 for arg in field.args.iter() {
-                    let input_value =
-                        dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type));
-                    let input_value =
-                        insert_serde_value_to_input_value(input_value, arg.default_value.clone());
-                    dyn_schema_field = dyn_schema_field.argument(input_value);
+                    dyn_schema_field =
+                        dyn_schema_field.argument(insert_serde_value_to_input_value(
+                            dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type)),
+                            arg.default_value.clone(),
+                        ));
                 }
                 object = object.field(dyn_schema_field);
             }
