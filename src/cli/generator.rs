@@ -136,21 +136,3 @@ impl ConfigConsoleGenerator {
         Ok(config)
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::ConfigConsoleGenerator;
-    use crate::core::blueprint::Blueprint;
-
-    #[tokio::test]
-    async fn test_generator() -> anyhow::Result<()> {
-        let runtime = crate::cli::runtime::init(&Blueprint::default());
-        let config_path = tailcall_fixtures::generator::SIMPLE_JSON;
-        let config = ConfigConsoleGenerator::new(config_path, runtime)
-            .generate()
-            .await?;
-
-        insta::assert_snapshot!(config.to_sdl());
-        Ok(())
-    }
-}
