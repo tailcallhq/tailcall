@@ -99,7 +99,7 @@ impl ConfigConsoleGenerator {
 
         for input in config.input {
             match input.source {
-                InputSource::Import { src, _marker } => {
+                InputSource::Import { src, .. } => {
                     let source = ImportSource::detect(&src)?;
                     match source {
                         ImportSource::Url => {
@@ -115,7 +115,7 @@ impl ConfigConsoleGenerator {
                         }
                     }
                 }
-                InputSource::Config { src, _marker } => {
+                InputSource::Config { src, .. } => {
                     let source = config::Source::detect(&src)?;
                     let schema = reader.read_file(&src).await?.content;
                     generator_type_inputs.push(GeneratorInput::Config { schema, source });
