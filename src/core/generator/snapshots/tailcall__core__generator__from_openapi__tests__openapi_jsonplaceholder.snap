@@ -2,4 +2,6 @@
 source: src/core/generator/from_openapi.rs
 expression: jsonplaceholder
 ---
-
+schema @server @upstream {
+  query: Query
+}

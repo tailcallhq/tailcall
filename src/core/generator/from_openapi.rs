@@ -1,45 +1,23 @@
-use std::collections::BTreeMap;
-
 use oas3::Spec;
 
-use crate::core::config::{Config, Enum, RootSchema, Type, Union, Upstream};
+use crate::core::config::Config;
 
 #[derive(Default)]
 pub struct OpenApiToConfigConverter {
-    pub query: String,
-    pub spec: Spec,
-    pub types: BTreeMap<String, Type>,
-    pub unions: BTreeMap<String, Union>,
-    pub enums: BTreeMap<String, Enum>,
+    #[allow(unused)]
+    spec: Spec,
+    config: Config,
 }
 
 impl OpenApiToConfigConverter {
     pub fn new(query: impl AsRef<str>, spec_str: impl AsRef<str>) -> anyhow::Result<Self> {
         let spec = oas3::from_reader(spec_str.as_ref().as_bytes())?;
-        Ok(Self {
-            query: query.as_ref().to_string(),
-            spec,
-            ..Default::default()
-        })
+        let config = Config::default().query(query.as_ref());
+        Ok(Self { config, spec })
     }
 
     pub fn convert(self) -> Config {
-        let config = Config {
-            server: Default::default(),
-            upstream: Upstream {
-                base_url: self.spec.servers.first().cloned().map(|server| server.url),
-                ..Default::default()
-            },
-            schema: RootSchema {
-                query: self.types.get(&self.query).map(|_| self.query),
-                ..Default::default()
-            },
-            types: self.types,
-            unions: self.unions,
-            enums: self.enums,
-            ..Default::default()
-        };
-        config
+        self.config
     }
 }
 
