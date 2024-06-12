@@ -102,15 +102,15 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> Result<Response<Body>> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let headers = req.headers().clone();
-    let bytes = hyper::body::to_bytes(req.into_body()).await?;
+    let (req, body) = req.into_parts();
+    let bytes = hyper::body::to_bytes(body).await?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
             if !(app_ctx.blueprint.server.batch_execution && request.is_query()) {
                 Ok(execute_query(&app_ctx, &req_ctx, request).await?)
             } else {
-                let operation_id = request.operation_id(&headers);
+                let operation_id = request.operation_id(&req.headers);
                 let out = app_ctx
                     .dedupe_operation_handler
                     .dedupe(&operation_id, || {
