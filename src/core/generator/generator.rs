@@ -95,7 +95,6 @@ mod test {
     use prost_reflect::prost_types::FileDescriptorSet;
 
     use super::{Generator, GeneratorInput};
-
     use crate::core::proto_reader::ProtoMetadata;
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
