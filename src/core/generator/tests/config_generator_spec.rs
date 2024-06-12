@@ -13,7 +13,7 @@ use tokio::runtime::Runtime;
 
 datatest_stable::harness!(
     run_config_generator_spec,
-    "tailcall-fixtures/fixtures/generator/",
+    "src/core/generator/tests/fixtures/generator/",
     r"^.*\.json"
 );
 
