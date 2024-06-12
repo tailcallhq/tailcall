@@ -60,7 +60,7 @@ impl IR {
 pub struct Map {
     pub input: Box<IR>,
     // accept key return value instead of
-    pub map: HashMap<String, ConstValue>,
+    pub map: HashMap<String, String>,
 }
 
 impl Eval for Map {
@@ -75,7 +75,7 @@ impl Eval for Map {
             let value = self.input.eval(ctx).await?;
             if let ConstValue::String(key) = value {
                 if let Some(value) = self.map.get(&key) {
-                    Ok(value.to_owned())
+                    Ok(ConstValue::String(value.to_owned()))
                 } else {
                     Err(EvaluationError::ExprEvalError(format!(
                         "Can't find mapped key: {}.",

@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use async_graphql_value::ConstValue;
-
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::Field;
@@ -20,12 +18,12 @@ pub fn update_enum_alias<'a>(
                 if !has_alias {
                     return Valid::succeed(b_field);
                 }
-                let mut map = HashMap::<String, ConstValue>::new();
+                let mut map = HashMap::<String, String>::new();
                 for v in enum_type.variants.iter() {
-                    map.insert(v.name.clone(), ConstValue::String(v.name.clone()));
+                    map.insert(v.name.clone(), v.name.clone());
                     if let Some(alias) = &v.alias {
                         for option in &alias.options {
-                            map.insert(option.to_owned(), ConstValue::String(v.name.clone()));
+                            map.insert(option.to_owned(), v.name.clone());
                         }
                     }
                 }
