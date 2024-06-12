@@ -8,8 +8,8 @@ use crate::core::config::{self, reader::ConfigReader};
 #[derive(Serialize, Deserialize, Debug, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum InputSource {
-    /// src: maintains the same src written in config.
-    /// resolved_src: holds the correctly resolved src with respect to config.
+    /// src: holds the path with respect the config.
+    /// resolved_src: holds path with respect the server (from where we're running).
     Config {
         src: String,
         resolved_src: Option<String>,
