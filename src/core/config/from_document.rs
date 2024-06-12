@@ -292,14 +292,15 @@ fn to_input_object_fields(
     to_fields_inner(input_object_fields, to_input_object_field)
 }
 fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> {
-    to_common_field(field_definition, to_args(field_definition))
+    to_common_field(field_definition, to_args(field_definition), None)
 }
 fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
-    to_common_field(field_definition, BTreeMap::new())
+    to_common_field(field_definition, BTreeMap::new(), field_definition.default_value.as_ref().map(|f| f.node.clone()))
 }
 fn to_common_field<F>(
     field: &F,
     args: BTreeMap<String, config::Arg>,
+    default_value: Option<ConstValue>,
 ) -> Valid<config::Field, String>
 where
     F: FieldLike,
@@ -309,8 +310,7 @@ where
     let nullable = &type_of.nullable;
     let description = field.description();
     let directives = field.directives();
-    let default_value = field
-        .default_value()
+    let default_value = default_value
         .map(ConstValue::into_json)
         .transpose()
         .map_err(|err| ValidationError::new(err.to_string()))
@@ -458,7 +458,6 @@ trait FieldLike {
     fn type_of(&self) -> &Type;
     fn description(&self) -> &Option<Positioned<String>>;
     fn directives(&self) -> &[Positioned<ConstDirective>];
-    fn default_value(&self) -> Option<ConstValue>;
 }
 impl FieldLike for FieldDefinition {
     fn type_of(&self) -> &Type {
@@ -470,9 +469,6 @@ impl FieldLike for FieldDefinition {
     fn directives(&self) -> &[Positioned<ConstDirective>] {
         &self.directives
     }
-    fn default_value(&self) -> Option<ConstValue> {
-        None
-    }
 }
 impl FieldLike for InputValueDefinition {
     fn type_of(&self) -> &Type {
@@ -483,9 +479,6 @@ impl FieldLike for InputValueDefinition {
     }
     fn directives(&self) -> &[Positioned<ConstDirective>] {
         &self.directives
-    }
-    fn default_value(&self) -> Option<ConstValue> {
-        self.default_value.as_ref().map(|val| val.node.clone())
     }
 }
 
