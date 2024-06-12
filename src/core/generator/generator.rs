@@ -130,4 +130,23 @@ mod test {
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }
+
+    fn parse_json(path: &str) -> serde_json::Value {
+        let content = std::fs::read_to_string(path).unwrap();
+        serde_json::from_str(&content).unwrap()
+    }
+
+    #[test]
+    fn should_generate_config_from_json() -> anyhow::Result<()> {
+        let gen = Generator::new("f", "T");
+        let cfg_module = gen.run(
+            "Query",
+            &[GeneratorInput::Json {
+                url: "https://example.com".parse()?,
+                data: parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json"),
+            }],
+        )?;
+        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        Ok(())
+    }
 }
