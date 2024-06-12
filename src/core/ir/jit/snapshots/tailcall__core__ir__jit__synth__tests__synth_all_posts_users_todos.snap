@@ -9,34 +9,18 @@ expression: actual
       "user": {
         "name": "Jane Doe",
         "todo": {
-          "todo": [
-            {
-              "title": "My title",
-              "completed": false
-            },
-            {
-              "title": "Also My title",
-              "completed": true
-            }
-          ]
+          "title": "My title",
+          "completed": false
         }
       }
     },
     {
       "title": "Also My Title",
       "user": {
-        "name": "Jane Doe",
+        "name": "Not Jane Doe",
         "todo": {
-          "todo": [
-            {
-              "title": "My title",
-              "completed": false
-            },
-            {
-              "title": "Also My title",
-              "completed": true
-            }
-          ]
+          "title": "Also My title",
+          "completed": true
         }
       }
     }

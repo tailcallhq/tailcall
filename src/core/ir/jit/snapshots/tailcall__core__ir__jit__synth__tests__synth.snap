@@ -12,7 +12,7 @@ expression: actual
     {
       "title": "Also My Title",
       "body": "This is my second post.",
-      "userId": 1
+      "userId": 2
     }
   ]
 }
