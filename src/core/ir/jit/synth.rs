@@ -50,6 +50,7 @@ impl Synth {
                                 // check if value exists, else it'll cause stackoverflow
                                 self.iter(node, Some(value), ctx)
                             } else {
+                                println!("{}: {:?}", node.name, key);
                                 // Store does not have data with the IO id, so just return null
                                 Value::Null
                             }
@@ -147,7 +148,7 @@ mod tests {
     const POSTS: &str = r#"
         [
             {"id": 1, "title": "My title", "title":"Hello", "body": "This is my first post.", "userId": 1},
-            {"id": 2, "title": "Also My Title", "title":"Alo", "body": "This is my second post.", "userId": 1}
+            {"id": 2, "title": "Also My Title", "title":"Alo", "body": "This is my second post.", "userId": 2}
         ]
     "#;
 
@@ -158,19 +159,23 @@ mod tests {
         ]
     "#;
 
-    const USER: &str = r#"
+    const USER1: &str = r#"
         {"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1}
+    "#;
+
+    const USER2: &str = r#"
+        {"name": "Not Jane Doe", "address": { "street": "Not Kulas Light" }, "userId": 2}
     "#;
 
     const POST: &str = r#"
         {"id": 1, "title": "My title", "title":"Hello", "body": "This is my first post.", "userId": 1}
     "#;
 
-    const TODOS: &str = r#"
-        [
-            {"id": 1, "title": "My title", "completed": false},
+    const TODO1: &str = r#"
+            {"id": 1, "title": "My title", "completed": false}
+        "#;
+    const TODO2: &str = r#"
             {"id": 2, "title": "Also My title", "completed": true}
-        ]
         "#;
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
@@ -226,9 +231,11 @@ mod tests {
     enum Type {
         Posts,
         Users,
-        User,
+        User1,
+        User2,
         Post,
-        Todos,
+        Todo1,
+        Todo2,
     }
 
     fn pair(hash: Type) -> (IoId, OwnedValue) {
@@ -241,17 +248,25 @@ mod tests {
                 IoId::new(16572466311295908938),
                 OwnedValue::from_str(USERS).unwrap(),
             ),
-            Type::User => (
+            Type::User1 => (
                 IoId::new(3962897047488223852),
-                OwnedValue::from_str(USER).unwrap(),
+                OwnedValue::from_str(USER1).unwrap(),
+            ),
+            Type::User2 => (
+                IoId::new(10073430538102289747),
+                OwnedValue::from_str(USER2).unwrap(),
             ),
             Type::Post => (
                 IoId::new(17338861358924206527),
                 OwnedValue::from_str(POST).unwrap(),
             ),
-            Type::Todos => (
-                IoId::new(14457768933109454390),
-                OwnedValue::from_str(TODOS).unwrap(),
+            Type::Todo1 => (
+                IoId::new(10360672997904495333),
+                OwnedValue::from_str(TODO1).unwrap(),
+            ),
+            Type::Todo2 => (
+                IoId::new(17001216088184495387),
+                OwnedValue::from_str(TODO2).unwrap(),
             ),
         }
     }
@@ -297,7 +312,7 @@ mod tests {
     async fn test_synth_post_id() {
         let store = vec![
             // Insert /user/:id
-            pair(Type::User),
+            pair(Type::User1),
         ];
         let actual = synth(
             r#"
@@ -317,7 +332,7 @@ mod tests {
             // Insert /posts/:id
             pair(Type::Post),
             // Insert /user/:id
-            pair(Type::User),
+            pair(Type::User1),
         ];
 
         let actual = synth(
@@ -338,7 +353,8 @@ mod tests {
             // Insert /posts
             pair(Type::Posts),
             // Insert /user/:id
-            pair(Type::User),
+            pair(Type::User1),
+            pair(Type::User2),
         ];
 
         let actual = synth(
@@ -359,8 +375,10 @@ mod tests {
             // Insert /posts
             pair(Type::Posts),
             // Insert /user/:id
-            pair(Type::User),
-            pair(Type::Todos),
+            pair(Type::User1),
+            pair(Type::User2),
+            pair(Type::Todo1),
+            pair(Type::Todo2),
         ];
 
         let actual = synth(
