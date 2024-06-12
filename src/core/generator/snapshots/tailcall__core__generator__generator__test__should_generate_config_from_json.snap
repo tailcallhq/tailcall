@@ -1,0 +1,23 @@
+---
+source: src/core/generator/generator.rs
+expression: cfg_module.config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://example.com") {
+  query: Query
+}
+
+scalar Any
+
+type Body {
+  campaignTemplates: Any
+  colors: [Any]
+}
+
+type F1 {
+  body: Body
+  url: String
+}
+
+type Query {
+  f1: F1 @http(path: "/")
+}
