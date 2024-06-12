@@ -18,7 +18,7 @@ GeneratorConfig {
         },
         Input {
             source: Import {
-                src: "https://jsonplaceholder.typicode.com/posts",
+                src: "https://jsonplaceholder.typicode.com/posts/1",
                 _marker: PhantomData<tailcall::core::generator::config::UnResolved>,
             },
         },
