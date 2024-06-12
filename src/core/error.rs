@@ -73,6 +73,30 @@ pub enum Error {
     #[error("Failed to decode fileDescriptorProto from BASE64")]
     FileDescriptorProtoDecodeFailed,
 
+    #[error("Invalid header value")]
+    HyperInvalidHeaderValue(hyper::header::InvalidHeaderValue),
+
+    #[error("Invalid header name")]
+    HyperInvalidHeaderName(hyper::header::InvalidHeaderName),
+
+    #[error("Hyper HTTP Error")]
+    HyperHttpError(hyper::http::Error),
+
+    #[error("Prometheus Error")]
+    Prometheus(prometheus::Error),
+
+    #[error("Hyper Error")]
+    Hyper(hyper::Error),
+
+    #[error("Invalid URI")]
+    InvalidUri(hyper::http::uri::InvalidUri),
+
+    #[error("Mustache cannot be converted to const value")]
+    InvalidMustacheConstConversion,
+
+    #[error("Protox Error")]
+    Protox(protox::Error),
+
     #[error("File Error")]
     File(file::FileError),
 

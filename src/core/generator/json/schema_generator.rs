@@ -26,14 +26,13 @@ impl Transform for SchemaGenerator {
 
 #[cfg(test)]
 mod test {
-    use anyhow::Ok;
-
     use super::SchemaGenerator;
     use crate::core::config::transformer::Transform;
+    use crate::core::error::Error;
     use crate::core::valid::Validator;
 
     #[test]
-    fn test_schema_generator_with_query() -> anyhow::Result<()> {
+    fn test_schema_generator_with_query() -> Result<(), Error> {
         let schema_gen = SchemaGenerator::new("Query".to_owned());
         let config = schema_gen.transform(Default::default()).to_result()?;
         insta::assert_snapshot!(config.to_sdl());

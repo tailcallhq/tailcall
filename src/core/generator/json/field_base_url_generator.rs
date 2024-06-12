@@ -45,16 +45,16 @@ impl Transform for FieldBaseUrlGenerator<'_> {
 
 #[cfg(test)]
 mod test {
-    use anyhow::Ok;
     use url::Url;
 
     use super::FieldBaseUrlGenerator;
     use crate::core::config::transformer::Transform;
     use crate::core::config::{Config, Field, Http, Type};
+    use crate::core::error::Error;
     use crate::core::valid::Validator;
 
     #[test]
-    fn should_add_base_url_for_http_fields() -> anyhow::Result<()> {
+    fn should_add_base_url_for_http_fields() -> Result<(), Error> {
         let url = Url::parse("https://example.com").unwrap();
         let query = "Query";
         let field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
@@ -94,7 +94,7 @@ mod test {
     }
 
     #[test]
-    fn should_add_base_url_if_not_present() -> anyhow::Result<()> {
+    fn should_add_base_url_if_not_present() -> Result<(), Error> {
         let url = Url::parse("http://localhost:8080").unwrap();
         let query = "Query";
         let field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
@@ -138,7 +138,7 @@ mod test {
     }
 
     #[test]
-    fn should_not_add_base_url_when_query_not_present() -> anyhow::Result<()> {
+    fn should_not_add_base_url_when_query_not_present() -> Result<(), Error> {
         let url = Url::parse("https://example.com").unwrap();
         let query = "Query";
         let field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);

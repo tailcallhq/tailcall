@@ -26,16 +26,16 @@ pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, Strin
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use hyper::header::HeaderName;
 
     use super::to_mustache_headers;
     use crate::core::config::KeyValue;
+    use crate::core::error::Error;
     use crate::core::mustache::Mustache;
     use crate::core::valid::Validator;
 
     #[test]
-    fn valid_headers() -> Result<()> {
+    fn valid_headers() -> Result<(), Error> {
         let input: Vec<KeyValue> = serde_json::from_str(
             r#"[{"key": "a", "value": "str"}, {"key": "b", "value": "123"}]"#,
         )?;

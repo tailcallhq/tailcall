@@ -2,6 +2,7 @@ use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
 
+use crate::core::error::Error;
 use crate::core::mustache::Mustache;
 
 #[derive(Debug, Clone)]
@@ -13,23 +14,21 @@ pub enum DynamicValue {
 }
 
 impl TryFrom<&DynamicValue> for ConstValue {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(value: &DynamicValue) -> Result<Self, Self::Error> {
         match value {
             DynamicValue::Value(v) => Ok(v.to_owned()),
-            DynamicValue::Mustache(_) => Err(anyhow::anyhow!(
-                "mustache cannot be converted to const value"
-            )),
+            DynamicValue::Mustache(_) => Err(Error::InvalidMustacheConstConversion),
             DynamicValue::Object(obj) => {
-                let out: Result<IndexMap<Name, ConstValue>, anyhow::Error> = obj
+                let out: Result<IndexMap<Name, ConstValue>, Error> = obj
                     .into_iter()
                     .map(|(k, v)| Ok((k.to_owned(), ConstValue::try_from(v)?.to_owned())))
                     .collect();
                 Ok(ConstValue::Object(out?))
             }
             DynamicValue::Array(arr) => {
-                let out: Result<Vec<ConstValue>, anyhow::Error> =
+                let out: Result<Vec<ConstValue>, Error> =
                     arr.iter().map(ConstValue::try_from).collect();
                 Ok(ConstValue::List(out?))
             }
@@ -50,7 +49,7 @@ impl DynamicValue {
 }
 
 impl TryFrom<&Value> for DynamicValue {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
         match value {

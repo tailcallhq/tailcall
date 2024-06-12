@@ -6,6 +6,8 @@ use serde_json::Value;
 use tailcall::core::generator::{from_json, ConfigGenerationRequest};
 use url::Url;
 
+use crate::core::error::Error;
+
 #[derive(Serialize, Deserialize)]
 struct JsonFixture {
     url: String,
@@ -30,13 +32,13 @@ pub fn run_json_to_config_spec(path: &Path) -> datatest_stable::Result<()> {
     Ok(())
 }
 
-fn load_json(path: &Path) -> anyhow::Result<(String, Value)> {
+fn load_json(path: &Path) -> Result<(String, Value), Error> {
     let contents = fs::read_to_string(path)?;
     let json_data: JsonFixture = serde_json::from_str(&contents).unwrap();
     Ok((json_data.url, json_data.body))
 }
 
-fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {
+fn test_spec(path: &Path, url: Url, body: Value) -> Result<(), Error> {
     let config = from_json(&[ConfigGenerationRequest::new(url, body)], "Query")?;
     let snapshot_name = path.file_name().unwrap().to_str().unwrap();
     insta::assert_snapshot!(snapshot_name, config.to_sdl());

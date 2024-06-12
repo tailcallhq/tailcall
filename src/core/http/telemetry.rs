@@ -1,4 +1,3 @@
-use anyhow::Result;
 use hyper::{Body, Request, Response};
 use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
@@ -10,6 +9,7 @@ use opentelemetry_semantic_conventions::trace::{
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::core::blueprint::telemetry::Telemetry;
+use crate::core::error::Error;
 
 static HTTP_SERVER_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -56,7 +56,7 @@ impl RequestCounter {
         }
     }
 
-    pub fn update(self, response: &Result<Response<Body>>) {
+    pub fn update(self, response: &Result<Response<Body>, Error>) {
         if let Some(mut attributes) = self.attributes {
             if let Ok(response) = response {
                 attributes.push(get_response_status_code(response))
