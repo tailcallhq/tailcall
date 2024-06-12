@@ -34,13 +34,19 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     }
 }
 
-fn insert_serde_value_to_input_value(
+/// We set the default value for an `InputValue` by reading it from the
+/// blueprint and assigning it to the provided `InputValue` during the
+/// generation of the `async_graphql::Schema`. The `InputValue` represents the
+/// structure of arguments and their types that can be passed to a field. In
+/// other GraphQL implementations, this is commonly referred to as
+/// `InputValueDefinition`.
+fn set_default_value(
     input_value: dynamic::InputValue,
     value: Option<serde_json::Value>,
 ) -> dynamic::InputValue {
-    if let Some(default_value) = value {
-        match ConstValue::from_json(default_value) {
-            Ok(default_value) => input_value.default_value(default_value),
+    if let Some(value) = value {
+        match ConstValue::from_json(value) {
+            Ok(const_value) => input_value.default_value(const_value),
             Err(err) => {
                 tracing::warn!("conversion from serde_json::Value to ConstValue failed for default_value with error {err:?}");
                 input_value
@@ -115,11 +121,10 @@ fn to_type(def: &Definition) -> dynamic::Type {
                     dyn_schema_field = dyn_schema_field.description(description);
                 }
                 for arg in field.args.iter() {
-                    dyn_schema_field =
-                        dyn_schema_field.argument(insert_serde_value_to_input_value(
-                            dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type)),
-                            arg.default_value.clone(),
-                        ));
+                    dyn_schema_field = dyn_schema_field.argument(set_default_value(
+                        dynamic::InputValue::new(arg.name.clone(), to_type_ref(&arg.of_type)),
+                        arg.default_value.clone(),
+                    ));
                 }
                 object = object.field(dyn_schema_field);
             }
@@ -151,8 +156,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 if let Some(description) = &field.description {
                     input_field = input_field.description(description);
                 }
-                let input_field =
-                    insert_serde_value_to_input_value(input_field, field.default_value.clone());
+                let input_field = set_default_value(input_field, field.default_value.clone());
                 input_object = input_object.field(input_field);
             }
             if let Some(description) = &def.description {

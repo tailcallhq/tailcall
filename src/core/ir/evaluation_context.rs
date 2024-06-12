@@ -67,7 +67,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
                 .map(|a| Cow::Owned(Value::Object(a.clone())))
         } else {
             let arg = self.graphql_ctx.args()?.get(path[0].as_ref())?;
-            get_path_value(arg, &path[1..]).cloned().map(Cow::Owned)
+            get_path_value(arg, &path[1..]).map(Cow::Borrowed)
         }
     }
 
