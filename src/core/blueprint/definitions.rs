@@ -360,6 +360,7 @@ pub fn fix_dangling_resolvers<'a>() -> TryFold<
 
 /// Wraps the IO Expression with Expression::Cached
 /// if `Field::cache` is present for that field
+#[allow(clippy::type_complexity)]
 pub fn update_cache_resolvers<'a>() -> TryFold<
     'a,
     (

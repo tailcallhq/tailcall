@@ -46,6 +46,7 @@ pub fn compile_graphql(
     })
 }
 
+#[allow(clippy::type_complexity)]
 pub fn update_graphql<'a>(
     operation_type: &'a GraphQLOperationType,
 ) -> TryFold<

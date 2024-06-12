@@ -71,8 +71,12 @@ impl SourceType {
 }
 
 impl Source {
+    fn normalize_path(path: String) -> String {
+        path.replace("\\", "/")
+    }
+
     pub fn new(input_path: String, input_type: SourceType) -> Self {
-        Self { input_path, input_type }
+        Self { input_path: Source::normalize_path(input_path), input_type }
     }
 
     /// Decode the config from the given data
