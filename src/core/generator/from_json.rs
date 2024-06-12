@@ -24,11 +24,10 @@ impl ConfigGenerationRequest {
 pub fn from_json(
     config_gen_req: &[ConfigGenerationRequest],
     query: &str,
+    field_name_gen: &NameGenerator,
+    type_name_gen: &NameGenerator,
 ) -> anyhow::Result<Config> {
     let mut config = Config::default();
-    // TODO: field names in operation type will be provided by user in config.
-    let field_name_gen = NameGenerator::new("f");
-    let type_name_gen = NameGenerator::new("T");
 
     for request in config_gen_req.iter() {
         let field_name = field_name_gen.generate_name();

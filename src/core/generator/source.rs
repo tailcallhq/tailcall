@@ -1,4 +1,5 @@
 use thiserror::Error;
+use url::Url;
 
 ///
 /// A list of sources from which a configuration can be created
@@ -16,23 +17,33 @@ pub enum ConfigSource {
 }
 
 impl ImportSource {
-    fn ext(&self) -> &str {
+    fn ext(&self) -> Option<&str> {
         match self {
-            ImportSource::Proto => "proto",
-            ImportSource::Url => "url",
+            ImportSource::Proto => Some("proto"),
+            ImportSource::Url => None,
         }
     }
 
-    fn ends_with(&self, file: &str) -> bool {
-        file.ends_with(&format!(".{}", self.ext()))
+    fn ends_with(&self, src: &str) -> bool {
+        if let Some(ext) = self.ext() {
+            return src.ends_with(&format!(".{}", ext));
+        }
+        false
     }
 
-    /// Detect the config format from the file name
+    fn is_url(self, src: &str) -> bool {
+        Url::parse(src).is_ok()
+    }
+
+    /// Detect the config format from the src
     pub fn detect(name: &str) -> Result<Self, UnsupportedFileFormat> {
-        const ALL: &[ImportSource] = &[ImportSource::Proto];
+        const ALL: &[ImportSource] = &[ImportSource::Proto, ImportSource::Url];
 
         ALL.iter()
-            .find(|format| format.ends_with(name))
+            .find(|format| match format {
+                ImportSource::Proto => format.ends_with(name),
+                ImportSource::Url => format.is_url(name),
+            })
             .copied()
             .ok_or(UnsupportedFileFormat(name.to_string()))
     }
@@ -82,6 +93,31 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
+
+    #[test]
+    fn test_detect_proto_import_source() {
+        assert_eq!(
+            ImportSource::detect("./news.proto"),
+            Ok(ImportSource::Proto)
+        );
+        assert!(ImportSource::detect("./jsonplaceholder.txt").is_err());
+    }
+
+    #[test]
+    fn test_detect_url_import_source() {
+        assert_eq!(
+            ImportSource::detect("http://www.google.com"),
+            Ok(ImportSource::Url)
+        );
+        assert_eq!(
+            ImportSource::detect("https://www.google.com"),
+            Ok(ImportSource::Url)
+        );
+        assert_eq!(
+            ImportSource::detect("https://google.com"),
+            Ok(ImportSource::Url)
+        );
+    }
 
     #[test]
     fn test_from_str() {
