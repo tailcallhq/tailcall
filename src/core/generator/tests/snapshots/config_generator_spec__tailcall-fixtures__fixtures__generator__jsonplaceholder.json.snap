@@ -1,0 +1,66 @@
+---
+source: src/core/generator/tests/config_generator_spec.rs
+expression: cfg_module.config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Address {
+  city: String
+  geo: Geo
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type Company {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type F1 {
+  address: Address
+  company: Company
+  email: String
+  id: Int
+  name: String
+  phone: String
+  username: String
+  website: String
+}
+
+type F2 {
+  completed: Boolean
+  id: Int
+  title: String
+  userId: Int
+}
+
+type F3 {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
+type F4 {
+  body: String
+  email: String
+  id: Int
+  name: String
+  postId: Int
+}
+
+type Geo {
+  lat: String
+  lng: String
+}
+
+type Query {
+  f1(p1: Int!): F1 @http(path: "/users/{{.args.p1}}")
+  f2(p1: Int!): F2 @http(path: "/todos/{{.args.p1}}")
+  f3(p1: Int!): F3 @http(path: "/posts/{{.args.p1}}")
+  f4(p1: Int!): F4 @http(path: "/comments/{{.args.p1}}")
+}
