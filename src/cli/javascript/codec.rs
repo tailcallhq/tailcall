@@ -205,7 +205,6 @@ impl<'js> FromJs<'js> for WorkerResponse {
 mod test {
     use std::collections::BTreeMap;
 
-    use anyhow::Result;
     use headers::{HeaderName, HeaderValue};
     use hyper::body::Bytes;
     use pretty_assertions::assert_eq;
