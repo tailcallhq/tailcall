@@ -2,7 +2,7 @@ use std::any::Any;
 use std::hash::Hash;
 
 use anyhow::Result;
-use async_graphql::parser::types::ExecutableDocument;
+use async_graphql::parser::types::{ExecutableDocument, OperationType};
 use async_graphql::{BatchResponse, Executor, Value};
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
@@ -17,6 +17,18 @@ pub trait GraphQLRequestLike {
         E: Executor;
 
     fn parse_query(&mut self) -> Option<&ExecutableDocument>;
+
+    fn is_query(&mut self) -> bool {
+        self.parse_query()
+            .map(|a| {
+                let mut is_query = false;
+                for (_, operation) in a.operations.iter() {
+                    is_query = operation.node.ty == OperationType::Query;
+                }
+                is_query
+            })
+            .unwrap_or(false)
+    }
 }
 
 #[derive(Debug, Deserialize)]

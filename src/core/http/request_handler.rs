@@ -4,7 +4,6 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_graphql::parser::types::OperationType;
 use async_graphql::ServerError;
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
@@ -110,7 +109,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike + Hash + S
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
-            if !(app_ctx.blueprint.server.batch_execution && is_query(&mut request)) {
+            if !(app_ctx.blueprint.server.batch_execution && request.is_query()) {
                 Ok(execute_query(&app_ctx, &req_ctx, request).await?)
             } else {
                 let operation_id = OperationId::from(&request, &headers);
@@ -140,19 +139,6 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike + Hash + S
             Ok(GraphQLResponse::from(response).into_response()?)
         }
     }
-}
-
-fn is_query<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(request: &mut T) -> bool {
-    request
-        .parse_query()
-        .map(|a| {
-            let mut is_query = false;
-            for (_, operation) in a.operations.iter() {
-                is_query = operation.node.ty == OperationType::Query;
-            }
-            is_query
-        })
-        .unwrap_or(false)
 }
 
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
