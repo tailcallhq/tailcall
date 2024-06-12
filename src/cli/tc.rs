@@ -13,6 +13,7 @@ use super::command::{Cli, Command};
 use super::update_checker;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
+use crate::core::generator::config::UnResolved;
 use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
@@ -88,13 +89,13 @@ pub async fn run() -> Result<()> {
             let source = ConfigSource::detect(&file_path)?;
             let config = runtime.file.read(&file_path).await?;
 
-            let gen_config: GeneratorConfig = match source {
+            let gen_config: GeneratorConfig<UnResolved> = match source {
                 ConfigSource::Json => serde_json::from_str(&config)?,
                 ConfigSource::Yml => serde_yaml::from_str(&config)?,
             };
 
             // resolves the relative paths present inside config.
-            let gen_config = gen_config.resolve_paths(&file_path);
+            let gen_config = gen_config.resolve_paths(&file_path)?;
 
             let generator = Generator::new(runtime.clone());
 
