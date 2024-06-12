@@ -10,6 +10,7 @@ mod resolver_context_like;
 
 use core::future::Future;
 use std::fmt::Debug;
+use std::hash::{Hash, Hasher};
 use std::pin::Pin;
 
 use async_graphql_value::ConstValue;
@@ -21,6 +22,7 @@ pub use graphql_operation_context::GraphQLOperationContext;
 pub use io::*;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};
 use strum_macros::Display;
+use tailcall_hasher::TailcallHasher;
 
 use crate::core::blueprint::DynamicValue;
 use crate::core::json::JsonLike;
@@ -54,6 +56,21 @@ pub enum Context {
     PushValue { expr: Box<IR>, and_then: Box<IR> },
 }
 
+impl Hash for Context {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Context::Value => "value".hash(state),
+            Context::Path(path) => path.hash(state),
+            Context::PushArgs { .. } => {
+                "push_args".hash(state);
+            }
+            Context::PushValue { .. } => {
+                "push_value".hash(state);
+            }
+        }
+    }
+}
+
 impl IR {
     pub fn and_then(self, next: Self) -> Self {
         IR::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
@@ -62,10 +79,54 @@ impl IR {
     pub fn with_args(self, args: IR) -> Self {
         IR::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
     }
+    pub fn call_id<'a, Ctx: ResolverContextLike<'a> + Send + Sync>(
+        &self,
+        ctx: &'a EvaluationContext<'a, Ctx>,
+    ) -> CallId {
+        match self {
+            IR::IO(io) => {
+                let key = io.cache_key(ctx);
+                match key {
+                    Some(key) => CallId::new(key.as_u64() as usize),
+                    None => {
+                        todo!()
+                    }
+                }
+            }
+            IR::Dynamic(val) => {
+                let mut hasher = TailcallHasher::default();
+                val.hash(&mut hasher);
+                CallId::new(hasher.finish() as usize)
+            }
+            IR::Context(context) => {
+                let mut hasher = TailcallHasher::default();
+                let val = ctx.value().map(|v| v.to_string()).unwrap_or_default();
+                val.hash(&mut hasher);
+                context.hash(&mut hasher);
+                CallId::new(hasher.finish() as usize)
+            }
+            IR::Cache(cache) => {
+                let mut hasher = TailcallHasher::default();
+                cache.hash(&mut hasher);
+                CallId::new(hasher.finish() as usize)
+            }
+            IR::Path(_, v) => {
+                let mut hasher = TailcallHasher::default();
+                v.hash(&mut hasher);
+                CallId::new(hasher.finish() as usize)
+            }
+            IR::Protect(_) => {
+                let protected = "protected";
+                let mut hasher = TailcallHasher::default();
+                protected.hash(&mut hasher);
+                CallId::new(hasher.finish() as usize)
+            }
+        }
+    }
 }
 
 impl Eval for IR {
-    #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
+    #[tracing::instrument(skip_all, fields(otel.name = % self), err)]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,

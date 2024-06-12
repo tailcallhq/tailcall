@@ -1,4 +1,5 @@
 use core::future::Future;
+use std::hash::Hash;
 use std::num::NonZeroU64;
 use std::ops::Deref;
 use std::pin::Pin;
@@ -26,6 +27,12 @@ pub trait CacheKey<Ctx> {
 pub struct Cache {
     pub max_age: NonZeroU64,
     pub expr: Box<IR>,
+}
+
+impl Hash for Cache {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.max_age.hash(state);
+    }
 }
 
 impl Cache {

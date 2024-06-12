@@ -1,3 +1,5 @@
+use std::hash::{Hash, Hasher};
+
 use async_graphql_value::{ConstValue, Name};
 use indexmap::IndexMap;
 use serde_json::Value;
@@ -10,6 +12,17 @@ pub enum DynamicValue {
     Mustache(Mustache),
     Object(IndexMap<Name, DynamicValue>),
     Array(Vec<DynamicValue>),
+}
+
+impl Hash for DynamicValue {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            DynamicValue::Value(v) => v.to_string().hash(state),
+            DynamicValue::Mustache(m) => m.hash(state),
+            DynamicValue::Object(obj) => obj.as_slice().hash(state),
+            DynamicValue::Array(arr) => arr.hash(state),
+        }
+    }
 }
 
 impl TryFrom<&DynamicValue> for ConstValue {
