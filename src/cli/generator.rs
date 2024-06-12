@@ -3,8 +3,12 @@ use std::fs;
 use inquire::Confirm;
 
 use crate::core::config::{self, ConfigModule};
-use crate::core::generator::source::ConfigSource;
-use crate::core::generator::{Generator, GeneratorConfig, Resolved};
+use crate::core::generator::source::{ConfigSource, ImportSource};
+use crate::core::generator::{
+    GeneratorConfig, GeneratorReImpl, GeneratorType, InputSource, Resolved,
+};
+use crate::core::proto_reader::ProtoReader;
+use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
 
 /// Checks if file or folder already exists or not.
@@ -15,14 +19,14 @@ fn is_exists(path: &str) -> bool {
 pub struct ConfigConsoleGenerator {
     config_path: String,
     runtime: TargetRuntime,
-    generator: Generator,
+    generator_reimpl: GeneratorReImpl,
 }
 
 impl ConfigConsoleGenerator {
     pub fn new(config_path: &str, runtime: TargetRuntime) -> Self {
         Self {
-            generator: Generator::new(runtime.clone()),
             config_path: config_path.to_string(),
+            generator_reimpl: GeneratorReImpl::new("f", "T"),
             runtime,
         }
     }
@@ -79,14 +83,56 @@ impl ConfigConsoleGenerator {
         };
 
         // While reading resolve the internal paths of generalized config.
-        Ok(config.resolve_paths(config_path)?)
+        config.resolve_paths(config_path)
+    }
+
+    /// performs all the i/o's required in the config file and generates
+    /// concrete vec containing data for generator.
+    async fn resolve_io(
+        &self,
+        config: GeneratorConfig<Resolved>,
+    ) -> anyhow::Result<Vec<GeneratorType>> {
+        let mut generator_type_inputs = vec![];
+
+        let reader = ResourceReader::cached(self.runtime.clone());
+        let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
+
+        for input in config.input {
+            match input.source {
+                InputSource::Import { src, _marker } => {
+                    let source = ImportSource::detect(&src)?;
+                    match source {
+                        ImportSource::Url => {
+                            let contents = reader.read_file(&src).await?.content;
+                            generator_type_inputs.push(GeneratorType::Json {
+                                url: src.parse()?,
+                                data: serde_json::from_str(&contents)?,
+                            });
+                        }
+                        ImportSource::Proto => {
+                            let metadata = proto_reader.read(&src).await?;
+                            generator_type_inputs.push(GeneratorType::Proto { metadata });
+                        }
+                    }
+                }
+                InputSource::Config { src, _marker } => {
+                    let source = config::Source::detect(&src)?;
+                    let schema = reader.read_file(&src).await?.content;
+                    generator_type_inputs.push(GeneratorType::Config { schema, source });
+                }
+            }
+        }
+
+        Ok(generator_type_inputs)
     }
 
     /// Reads the configuration from the specified path.
     pub async fn generate(self) -> anyhow::Result<()> {
         let config = self.read().await?;
         let path = config.output.file.to_owned();
-        let config = self.generator.run(config).await?;
+        let generator_input = self.resolve_io(config).await?;
+
+        let config = self.generator_reimpl.run("Query", &generator_input)?;
 
         self.write(config, &path).await?;
         Ok(())
