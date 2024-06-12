@@ -51,7 +51,7 @@ pub trait GraphQLRequestLike: Hash + Send {
 pub struct GraphQLBatchRequest(pub async_graphql::BatchRequest);
 impl GraphQLBatchRequest {}
 impl Hash for GraphQLBatchRequest {
-    //Todo: Fix Hash implementation for BatchRequest, which should ideally batch
+    //TODO: Fix Hash implementation for BatchRequest, which should ideally batch
     // execution of individual requests instead of the whole chunk of requests as
     // one.
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
