@@ -1,5 +1,4 @@
 use std::collections::BTreeSet;
-use std::hash::Hash;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -97,7 +96,7 @@ pub fn update_response_headers(
 }
 
 #[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
-pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
+pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: &AppContext,
     req_counter: &mut RequestCounter,
@@ -141,7 +140,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike + Hash + S
     }
 }
 
-async fn execute_query<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
+async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: &&AppContext,
     req_ctx: &Arc<RequestContext>,
     request: T,
@@ -167,7 +166,7 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
     new_headers
 }
 
-async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
+async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
@@ -199,7 +198,7 @@ async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike + Hash 
     }
 }
 
-async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
+async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
@@ -287,7 +286,7 @@ async fn handle_rest_apis(
     not_found()
 }
 
-async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
+async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     req_counter: &mut RequestCounter,
@@ -341,7 +340,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike + Hash + 
         http.request.method = %req.method()
     )
 )]
-pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike + Hash + Send>(
+pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
 ) -> Result<Response<Body>> {

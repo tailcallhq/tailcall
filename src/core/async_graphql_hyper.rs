@@ -10,7 +10,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 #[async_trait::async_trait]
-pub trait GraphQLRequestLike {
+pub trait GraphQLRequestLike: Hash + Send {
     fn data<D: Any + Clone + Send + Sync>(self, data: D) -> Self;
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
     where
@@ -35,6 +35,9 @@ pub trait GraphQLRequestLike {
 pub struct GraphQLBatchRequest(pub async_graphql::BatchRequest);
 impl GraphQLBatchRequest {}
 impl Hash for GraphQLBatchRequest {
+    //Todo: Fix Hash implementation for BatchRequest, which should ideally batch
+    // execution of individual requests instead of the whole chunk of requests as
+    // one.
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         for request in self.0.iter() {
             request.query.hash(state);
