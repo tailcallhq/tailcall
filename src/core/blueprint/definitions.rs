@@ -323,9 +323,10 @@ pub fn fix_dangling_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(config, field, _ty, name), mut b_field| {
+        move |(config, field, ty, name), mut b_field| {
+            let mut set = HashSet::new();
             if !field.has_resolver()
-                && validate_field_has_resolver(name, field, &config.types, &mut HashSet::new())
+                && validate_field_has_resolver(name, field, &config.types, ty, &mut set)
                     .is_succeed()
             {
                 b_field = b_field.resolver(Some(IR::Dynamic(DynamicValue::Value(

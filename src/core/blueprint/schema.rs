@@ -16,8 +16,8 @@ fn validate_query(config: &Config) -> Valid<(), String> {
         let Some(query) = config.find_type(query_type_name) else {
             return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
         };
-
-        validate_type_has_resolvers(query_type_name, query, &config.types, &mut HashSet::new())
+        let mut set = HashSet::new();
+        validate_type_has_resolvers(query_type_name, query, &config.types, &mut set)
     })
     .unit()
 }
@@ -37,21 +37,23 @@ fn validate_type_has_resolvers(
     visited.insert(name.to_string());
 
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
-        validate_field_has_resolver(name, field, types, visited)
+        validate_field_has_resolver(name, field, types, ty, visited)
     })
     .trace(name)
     .unit()
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
     types: &BTreeMap<String, Type>,
+    parent_ty: &Type,
     visited: &mut HashSet<String>,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
         .when(|| {
-            if visited.contains(&field.type_of) {
+            if types.get(&field.type_of).eq(&Some(parent_ty)) {
                 return true;
             }
             if !field.has_resolver() {
@@ -101,13 +103,8 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
             return Valid::fail("Mutation type is not defined".to_owned())
                 .trace(mutation_type_name);
         };
-
-        validate_type_has_resolvers(
-            mutation_type_name,
-            mutation,
-            &config.types,
-            &mut HashSet::new(),
-        )
+        let mut set = HashSet::new();
+        validate_type_has_resolvers(mutation_type_name, mutation, &config.types, &mut set)
     } else {
         Valid::succeed(())
     }
