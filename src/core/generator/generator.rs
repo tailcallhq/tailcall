@@ -143,7 +143,9 @@ mod test {
             "Query",
             &[GeneratorInput::Json {
                 url: "https://example.com".parse()?,
-                data: parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json"),
+                data: parse_json(
+                    "src/core/generator/tests/fixtures/json/incompatible_properties.json",
+                ),
             }],
         )?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
