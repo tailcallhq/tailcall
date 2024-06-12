@@ -4,7 +4,7 @@ use inquire::Confirm;
 
 use super::config::GeneratorConfig;
 use super::source::ConfigSource;
-use super::Generator;
+use super::{Generator, Resolved};
 use crate::core::config::{self, ConfigModule};
 use crate::core::runtime::TargetRuntime;
 
@@ -70,7 +70,7 @@ impl ConfigConsoleGenerator {
         Ok(true)
     }
 
-    async fn read(&self) -> anyhow::Result<GeneratorConfig> {
+    async fn read(&self) -> anyhow::Result<GeneratorConfig<Resolved>> {
         let config_path = &self.config_path;
         let source = ConfigSource::detect(config_path)?;
         let config_content = self.runtime.file.read(config_path).await?;
@@ -81,14 +81,14 @@ impl ConfigConsoleGenerator {
         };
 
         // While reading resolve the internal paths of generalized config.
-        Ok(config.resolve_paths(config_path))
+        Ok(config.resolve_paths(config_path)?)
     }
 
     /// Reads the configuration from the specified path.
     pub async fn generate(self) -> anyhow::Result<()> {
         let config = self.read().await?;
         let path = config.output.file.to_owned();
-        let config = self.generator.run(config.clone()).await?;
+        let config = self.generator.run(config).await?;
 
         self.write(config, &path).await?;
         Ok(())
