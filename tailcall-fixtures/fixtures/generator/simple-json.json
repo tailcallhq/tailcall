@@ -1,17 +1,13 @@
 {
   "input": [
     {
-      "config": {
-        "src": "https://tailcall.run/configs/abc.json",
-        "headers": {
-          "Content-Type": "application/yaml",
-          "Authorization": "Bearer 123"
-        }
+      "import": {
+        "src": "../protobuf/news.proto"
       }
     },
     {
       "config": {
-        "src": "./jsonplaceholder.graphql"
+        "src": "../configs/user-posts.graphql"
       }
     },
     {
@@ -27,8 +23,8 @@
   },
   "output": {
     "useLinks": true,
-    "format": "json",
-    "file": "./output.json"
+    "format": "graphQL",
+    "file": "./output.graphql"
   },
   "transform": {
     "ambiguousNameResolver": {
