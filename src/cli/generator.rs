@@ -4,9 +4,7 @@ use inquire::Confirm;
 
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::{ConfigSource, ImportSource};
-use crate::core::generator::{
-    GeneratorConfig, GeneratorInput, GeneratorReImpl, InputSource, Resolved,
-};
+use crate::core::generator::{Generator, GeneratorConfig, GeneratorInput, InputSource, Resolved};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
@@ -19,14 +17,14 @@ fn is_exists(path: &str) -> bool {
 pub struct ConfigConsoleGenerator {
     config_path: String,
     runtime: TargetRuntime,
-    generator_reimpl: GeneratorReImpl,
+    generator: Generator,
 }
 
 impl ConfigConsoleGenerator {
     pub fn new(config_path: &str, runtime: TargetRuntime) -> Self {
         Self {
             config_path: config_path.to_string(),
-            generator_reimpl: GeneratorReImpl::new("f", "T"),
+            generator: Generator::new("f", "T"),
             runtime,
         }
     }
@@ -132,7 +130,7 @@ impl ConfigConsoleGenerator {
         let path = config.output.file.to_owned();
         let generator_input = self.resolve_io(config).await?;
 
-        let config = self.generator_reimpl.run("Query", &generator_input)?;
+        let config = self.generator.run("Query", &generator_input)?;
 
         self.write(&config, &path).await?;
         Ok(config)
