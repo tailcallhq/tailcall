@@ -81,6 +81,7 @@ impl Generator {
                 }
             }
         }
+        // TODO: add transformers
         let config = ConfigModule::from(config)
             .transform(AmbiguousType::default())
             .to_result()?;
@@ -92,28 +93,39 @@ impl Generator {
 #[cfg(test)]
 mod test {
     use prost_reflect::prost_types::FileDescriptorSet;
-    use tailcall_fixtures::protobuf;
 
     use super::{Generator, GeneratorInput};
-    
-    
+
     use crate::core::proto_reader::ProtoMetadata;
-    
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
-        Ok(protox::compile(files, [protobuf::SELF])?)
+        Ok(protox::compile(files, [tailcall_fixtures::protobuf::SELF])?)
     }
 
     #[test]
     fn should_generate_config_from_proto() -> anyhow::Result<()> {
-        let news_proto = protobuf::NEWS;
-        let set = compile_protobuf(&[protobuf::NEWS])?;
+        let news_proto = tailcall_fixtures::protobuf::NEWS;
+        let set = compile_protobuf(&[news_proto])?;
 
         let gen = Generator::new("f", "T");
         let cfg_module = gen.run(
             "Query",
             &[GeneratorInput::Proto {
                 metadata: ProtoMetadata { descriptor_set: set, path: news_proto.to_string() },
+            }],
+        )?;
+        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        Ok(())
+    }
+
+    #[test]
+    fn should_generate_config_from_configs() -> anyhow::Result<()> {
+        let gen = Generator::new("f", "T");
+        let cfg_module = gen.run(
+            "Query",
+            &[GeneratorInput::Config {
+                schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
+                source: crate::core::config::Source::GraphQL,
             }],
         )?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
