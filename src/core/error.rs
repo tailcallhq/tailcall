@@ -4,9 +4,10 @@ use derive_more::From;
 use inquire::InquireError;
 use prost_reflect::DescriptorError;
 
-use super::{config::UnsupportedConfigFormat, valid::ValidationError};
+use super::config::UnsupportedConfigFormat;
 use super::grpc::error::Error as GrpcError;
 use super::rest::error::Error as RestError;
+use super::valid::ValidationError;
 use crate::cli::error::Error as CLIError;
 use crate::core::errata::Errata as ErrataError;
 

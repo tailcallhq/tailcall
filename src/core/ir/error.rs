@@ -6,6 +6,7 @@ use async_graphql::{ErrorExtensions, Value as ConstValue};
 use crate::core::auth;
 use crate::core::error::http::HttpError;
 use crate::core::error::worker::WorkerError;
+use crate::core::error::Error as CoreError;
 
 #[derive(Debug, thiserror::Error, Clone)]
 pub enum Error {
@@ -29,6 +30,8 @@ pub enum Error {
     WorkerError(String),
 
     HttpError(String),
+
+    CoreError(String),
 }
 
 impl Display for Error {
@@ -67,6 +70,8 @@ impl From<Error> for crate::core::Errata {
             Error::WorkerError(message) => CoreError::new("Worker Error").description(message),
 
             Error::HttpError(message) => CoreError::new("HTTP Error").description(message),
+
+            Error::CoreError(message) => CoreError::new("Core Error").description(message),
         }
     }
 }
@@ -113,6 +118,12 @@ impl From<HttpError> for Error {
 impl From<HttpError> for Arc<Error> {
     fn from(value: HttpError) -> Self {
         Arc::new(Error::HttpError(value.to_string()))
+    }
+}
+
+impl From<CoreError> for Error {
+    fn from(value: CoreError) -> Self {
+        Error::CoreError(value.to_string())
     }
 }
 

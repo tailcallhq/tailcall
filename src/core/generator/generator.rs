@@ -5,19 +5,21 @@ use reqwest::Method;
 use url::Url;
 
 use crate::core::config::{Config, ConfigModule, Link, LinkType};
+use crate::core::error::Error;
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::{from_json, ConfigGenerationRequest, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
-use crate::core::error::Error;
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work
 // TODO: probably we can drop this in case the config_reader will use
 // protox::compile instead of more low-level protox_parse::parse
-fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<FileDescriptorSet, Error> {
+fn resolve_file_descriptor_set(
+    descriptor_set: FileDescriptorSet,
+) -> Result<FileDescriptorSet, Error> {
     let descriptor_set = DescriptorPool::from_file_descriptor_set(descriptor_set)?;
     let descriptor_set = FileDescriptorSet {
         file: descriptor_set

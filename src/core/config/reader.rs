@@ -9,12 +9,12 @@ use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
 use crate::core::config::{Config, ConfigReaderContext, Source};
+use crate::core::error::Error;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
-use crate::core::error::Error;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.

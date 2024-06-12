@@ -149,9 +149,9 @@ mod tests {
 
     use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{Config, ConfigModule, Type};
+    use crate::core::error::Error;
     use crate::core::generator::Source;
     use crate::core::valid::Validator;
-    use crate::core::error::Error;
 
     fn build_qry(mut config: Config) -> Config {
         let mut query = Type::default();

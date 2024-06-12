@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::core::config::ConfigReaderContext;
+use crate::core::error::Error;
 use crate::core::is_default;
 use crate::core::mustache::Mustache;
-use crate::core::error::Error;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]

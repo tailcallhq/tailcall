@@ -5,10 +5,10 @@ use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
+use crate::core::error::Error;
 use crate::core::proto_reader::fetch::GrpcReflection;
 use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::runtime::TargetRuntime;
-use crate::core::error::Error;
 
 pub struct ProtoReader {
     reader: ResourceReader<Cached>,

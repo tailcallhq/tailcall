@@ -1,8 +1,8 @@
 use thiserror::Error;
 
 use super::Config;
-use crate::core::valid::{ValidationError, Validator};
 use crate::core::error::Error;
+use crate::core::valid::{ValidationError, Validator};
 
 #[derive(Clone, Default)]
 pub enum Source {

@@ -284,7 +284,7 @@ impl Context {
 
 fn graphql_type_from_ref(name: &str) -> Result<GraphQLType<Unparsed>, Error> {
     if !name.starts_with('.') {
-        return Err(Error::InvalidReferenceTypeName(name.to_string()))
+        return Err(Error::InvalidReferenceTypeName(name.to_string()));
     }
 
     let name = &name[1..];

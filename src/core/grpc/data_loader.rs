@@ -13,11 +13,11 @@ use super::request::execute_grpc_request;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::error::Error;
 use crate::core::grpc::request::create_grpc_request;
 use crate::core::http::Response;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
-use crate::core::error::Error;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {

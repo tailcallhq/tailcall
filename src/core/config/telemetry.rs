@@ -3,13 +3,13 @@ use serde::{Deserialize, Serialize};
 
 use super::KeyValue;
 use crate::core::config::{Apollo, ConfigReaderContext};
+use crate::core::error::Error;
 use crate::core::helpers::headers::to_mustache_headers;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Mustache;
 use crate::core::valid::Validator;
-use crate::core::error::Error;
 
 mod defaults {
     pub mod prometheus {

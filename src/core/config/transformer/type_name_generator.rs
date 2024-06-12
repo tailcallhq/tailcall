@@ -150,8 +150,8 @@ mod test {
     use super::TypeNameGenerator;
     use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
-    use crate::core::valid::Validator;
     use crate::core::error::Error;
+    use crate::core::valid::Validator;
 
     fn read_fixture(path: &str) -> String {
         fs::read_to_string(path).unwrap()

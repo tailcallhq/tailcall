@@ -10,13 +10,13 @@ use url::Url;
 
 use super::request::create_grpc_request;
 use crate::core::config::GraphQLOperationType;
+use crate::core::error::Error;
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::{CacheKey, IoId};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
-use crate::core::error::Error;
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
@@ -65,7 +65,10 @@ impl RequestTemplate {
         header_map
     }
 
-    pub fn render<C: PathString + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate, Error> {
+    pub fn render<C: PathString + HasHeaders>(
+        &self,
+        ctx: &C,
+    ) -> Result<RenderedRequestTemplate, Error> {
         let url = self.create_url(ctx)?;
         let headers = self.render_headers(ctx);
         let body = self.render_body(ctx);
