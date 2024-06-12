@@ -1,0 +1,54 @@
+{
+  "config": {
+    "input": [
+      {
+        "import": {
+          "src": "../../../../../../tailcall-fixtures/fixtures/protobuf/news.proto"
+        }
+      },
+      {
+        "config": {
+          "src": "../../../../../../tailcall-fixtures/fixtures/configs/user-posts.graphql"
+        }
+      },
+      {
+        "import": {
+          "src": "https://jsonplaceholder.typicode.com/posts/1"
+        }
+      }
+    ],
+    "generate": {
+      "schema": {
+        "query": "Query"
+      }
+    },
+    "output": {
+      "useLinks": true,
+      "format": "graphQL",
+      "file": "./output.graphql"
+    },
+    "transform": {
+      "ambiguousNameResolver": {
+        "inputPrefix": "IN",
+        "outputPrefix": "OUT",
+        "inputPostFix": "IN",
+        "outputPostFix": "OUT"
+      },
+      "mergeTypes": {
+        "threshold": 0.9
+      },
+      "js": {
+        "source": "transformer.js",
+        "functionName": "transform"
+      }
+    }
+  },
+  "resolvers": {
+    "https://jsonplaceholder.typicode.com/posts/1": {
+      "userId": 1,
+      "id": 1,
+      "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+      "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto"
+    }
+  }
+}

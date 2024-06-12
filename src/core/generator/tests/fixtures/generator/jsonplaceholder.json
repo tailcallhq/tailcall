@@ -1,0 +1,95 @@
+{
+  "config": {
+    "input": [
+      {
+        "import": {
+          "src": "https://jsonplaceholder.typicode.com/users/1"
+        }
+      },
+      {
+        "import": {
+          "src": "https://jsonplaceholder.typicode.com/todos/1"
+        }
+      },
+      {
+        "import": {
+          "src": "https://jsonplaceholder.typicode.com/posts/1"
+        }
+      },
+      {
+        "import": {
+          "src": "https://jsonplaceholder.typicode.com/comments/1"
+        }
+      }
+    ],
+    "generate": {
+      "schema": {
+        "query": "Query"
+      }
+    },
+    "output": {
+      "useLinks": true,
+      "format": "graphQL",
+      "file": "./output.graphql"
+    },
+    "transform": {
+      "ambiguousNameResolver": {
+        "inputPrefix": "IN",
+        "outputPrefix": "OUT",
+        "inputPostFix": "IN",
+        "outputPostFix": "OUT"
+      },
+      "mergeTypes": {
+        "threshold": 0.9
+      },
+      "js": {
+        "source": "transformer.js",
+        "functionName": "transform"
+      }
+    }
+  },
+  "resolvers": {
+    "https://jsonplaceholder.typicode.com/users/1": {
+      "id": 1,
+      "name": "Leanne Graham",
+      "username": "Bret",
+      "email": "Sincere@april.biz",
+      "address": {
+        "street": "Kulas Light",
+        "suite": "Apt. 556",
+        "city": "Gwenborough",
+        "zipcode": "92998-3874",
+        "geo": {
+          "lat": "-37.3159",
+          "lng": "81.1496"
+        }
+      },
+      "phone": "1-770-736-8031 x56442",
+      "website": "hildegard.org",
+      "company": {
+        "name": "Romaguera-Crona",
+        "catchPhrase": "Multi-layered client-server neural-net",
+        "bs": "harness real-time e-markets"
+      }
+    },
+    "https://jsonplaceholder.typicode.com/todos/1": {
+      "userId": 1,
+      "id": 1,
+      "title": "delectus aut autem",
+      "completed": false
+    },
+    "https://jsonplaceholder.typicode.com/posts/1": {
+      "userId": 1,
+      "id": 1,
+      "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+      "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto"
+    },
+    "https://jsonplaceholder.typicode.com/comments/1": {
+      "postId": 1,
+      "id": 1,
+      "name": "id labore ex et quam laborum",
+      "email": "Eliseo@gardner.biz",
+      "body": "laudantium enim quasi est quidem magnam voluptate ipsam eos\ntempora quo necessitatibus\ndolor quam autem quasi\nreiciendis et nam sapiente accusantium"
+    }
+  }
+}
