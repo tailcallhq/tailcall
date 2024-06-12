@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::config::reader::ConfigReader;
 use crate::core::config::{self};
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum InputSource {
     /// src: maintains the same src written in config.
@@ -21,14 +21,14 @@ pub enum InputSource {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Input {
     #[serde(flatten)]
     pub source: InputSource,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Output {
     /// Controls the output format (graphql, json, yaml)
@@ -37,7 +37,7 @@ pub struct Output {
     pub file: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Schema {
     #[serde(default = "defaults::schema::query")]
@@ -55,14 +55,14 @@ impl Default for Schema {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GenerateOptions {
     #[serde(default)]
     pub schema: Schema,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Transform {
     // TODO: change types
@@ -71,7 +71,7 @@ pub struct Transform {
     pub js: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema)]
+#[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneratorConfig {
     pub input: Vec<Input>,

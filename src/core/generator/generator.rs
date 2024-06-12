@@ -46,6 +46,9 @@ async fn fetch_response(
     Ok(ConfigGenerationRequest::new(parsed_url, body))
 }
 
+// FIXME: Generator shouldn't perform IO operations, it should be pure
+// computation that uses the provided information as data and generates a
+// GraphQL configuration.
 pub struct Generator {
     runtime: TargetRuntime,
     reader: ResourceReader<Cached>,
