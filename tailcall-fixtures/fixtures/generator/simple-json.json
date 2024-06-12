@@ -11,7 +11,7 @@
 		},
 		{
 			"config": {
-				"src": "./jsonplaceholder.graphql"
+				"src": "../configs/user-posts.graphql"
 			}
 		},
 		{
