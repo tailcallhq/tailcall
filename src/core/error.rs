@@ -86,6 +86,13 @@ pub mod http {
 
         #[error("Reqwest Error")]
         ReqwestError(reqwest::Error),
+
+        #[error("Serde Json Error")]
+        SerdeJson(serde_json::Error),
+
+        #[error("Unable to find key {0} in query params")]
+        #[from(ignore)]
+        KeyNotFound(String),
     }
 
     #[derive(From, thiserror::Error, Debug)]
@@ -129,6 +136,27 @@ pub mod worker {
     #[error("Worker Error: {source}")]
     pub struct Error {
         pub source: WorkerError,
+    }
+}
+
+pub mod graphql {
+    use derive_more::From;
+
+    use super::http::HttpError;
+
+    #[derive(From, thiserror::Error, Debug)]
+    pub enum GraphqlError {
+        #[error("Serde Json Error")]
+        SerdeJson(serde_json::Error),
+
+        #[error("HTTP Error")]
+        Http(HttpError),
+    }
+
+    #[derive(From, thiserror::Error, Debug)]
+    #[error("Graphql Error: {source}")]
+    pub struct Error {
+        pub source: GraphqlError,
     }
 }
 

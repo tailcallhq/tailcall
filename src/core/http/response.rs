@@ -63,7 +63,7 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>> {
+    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>, HttpError> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,

@@ -110,6 +110,12 @@ impl From<HttpError> for Error {
     }
 }
 
+impl From<HttpError> for Arc<Error> {
+    fn from(value: HttpError) -> Self {
+        Arc::new(Error::HttpError(value.to_string()))
+    }
+}
+
 impl<'a> From<crate::core::valid::ValidationError<&'a str>> for Error {
     fn from(value: crate::core::valid::ValidationError<&'a str>) -> Self {
         Error::APIValidationError(
@@ -119,6 +125,12 @@ impl<'a> From<crate::core::valid::ValidationError<&'a str>> for Error {
                 .map(|e| e.message.to_owned())
                 .collect(),
         )
+    }
+}
+
+impl From<Arc<Error>> for Error {
+    fn from(error: Arc<Error>) -> Self {
+        Error::WorkerError(error.to_string())
     }
 }
 
