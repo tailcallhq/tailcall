@@ -26,6 +26,10 @@ const ALL: [SourceType; 3] = [SourceType::Json, SourceType::Yml, SourceType::Gra
 #[error("Unsupported config extension: {0}")]
 pub struct UnsupportedConfigFormat(pub String);
 
+fn normalize_path(path: String) -> String {
+    path.replace("\\", "/")
+}
+
 impl std::str::FromStr for SourceType {
     type Err = UnsupportedConfigFormat;
 
@@ -71,12 +75,8 @@ impl SourceType {
 }
 
 impl Source {
-    fn normalize_path(path: String) -> String {
-        path.replace("\\", "/")
-    }
-
     pub fn new(input_path: String, input_type: SourceType) -> Self {
-        Self { input_path: Source::normalize_path(input_path), input_type }
+        Self { input_path: normalize_path(input_path), input_type }
     }
 
     /// Decode the config from the given data
