@@ -9,6 +9,7 @@ use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};
 
+#[allow(clippy::type_complexity)]
 pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &Pos<config::Http>,

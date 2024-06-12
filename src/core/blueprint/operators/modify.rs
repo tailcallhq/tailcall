@@ -6,6 +6,7 @@ use crate::core::ir::{Context, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
 
+#[allow(clippy::type_complexity)]
 pub fn update_modify<'a>() -> TryFold<
     'a,
     (

@@ -259,6 +259,7 @@ fn to_object_type_definition(
     })
 }
 
+#[allow(clippy::type_complexity)]
 fn update_args<'a>() -> TryFold<
     'a,
     (
@@ -328,6 +329,7 @@ fn update_resolver_from_path(
 /// resolvers that cannot be resolved from the root of the schema. This function
 /// finds such dangling resolvers and creates a resolvable path from the root
 /// schema.
+#[allow(clippy::type_complexity)]
 pub fn fix_dangling_resolvers<'a>() -> TryFold<
     'a,
     (

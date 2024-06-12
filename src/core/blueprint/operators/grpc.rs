@@ -219,6 +219,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
         })
 }
 
+#[allow(clippy::type_complexity)]
 pub fn update_grpc<'a>(
     operation_type: &'a GraphQLOperationType,
 ) -> TryFold<

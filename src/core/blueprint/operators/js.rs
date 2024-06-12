@@ -16,7 +16,7 @@ pub fn compile_js(inputs: CompileJs) -> Valid<IR, String> {
     Valid::from_option(inputs.script.as_ref(), "script is required".to_string())
         .map(|_| IR::IO(IO::Js { name: name.to_string() }))
 }
-
+#[allow(clippy::type_complexity)]
 pub fn update_js_field<'a>() -> TryFold<
     'a,
     (
