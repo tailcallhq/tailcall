@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_resolve_paths() {
-        let file_path = "./tailcall-fixtures/fixtures/generator/simple-json.json";
+        let file_path = tailcall_fixtures::generator::SIMPLE_JSON;
         let content = std::fs::read_to_string(tailcall_fixtures::generator::SIMPLE_JSON).unwrap();
         let config: GeneratorConfig = serde_json::from_str(&content).unwrap();
         let config = config.resolve_paths(file_path);
