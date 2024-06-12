@@ -70,6 +70,7 @@ pub enum Definition {
     Union(UnionTypeDefinition),
 }
 impl Definition {
+    /// gets the name of the definition
     pub fn name(&self) -> &str {
         match self {
             Definition::Interface(def) => &def.name,

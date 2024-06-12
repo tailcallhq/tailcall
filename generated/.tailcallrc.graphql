@@ -232,6 +232,11 @@ directive @server(
   """
   apolloTracing: Boolean
   """
+  When set to `true`, it will ensure no graphQL execution is made more than once if 
+  similar query is being executed across the server's lifetime.
+  """
+  batchExecution: Boolean
+  """
   `batchRequests` combines multiple requests into one, improving performance but potentially 
   introducing latency and complicating debugging. Use judiciously. @default `false`.
   """
