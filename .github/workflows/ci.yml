@@ -506,7 +506,7 @@ jobs:
           APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
         run: |
           cd npm
-          npm run gen-root -- --version ${{ env.APP_VERSION }}
+          npm run gen-root -- --version ${{ env.APP_VERSION }} --name @tailcallhq/tailcall
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
       - name: Publish packages
