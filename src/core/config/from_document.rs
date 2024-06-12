@@ -376,6 +376,8 @@ where
         )
     })
 }
+
+#[allow(clippy::too_many_arguments)]
 fn to_input_object(
     input_object_type: InputObjectType,
     description: &Option<Positioned<String>>,
