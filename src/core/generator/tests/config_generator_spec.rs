@@ -1,16 +1,14 @@
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
-use tailcall::core::{
-    blueprint::Blueprint,
-    config,
-    generator::{
-        source::ImportSource, GeneratorConfig, GeneratorInput, GeneratorReImpl, InputSource,
-        Resolved, UnResolved,
-    },
-    proto_reader::ProtoReader,
-    resource_reader::ResourceReader,
+use tailcall::core::blueprint::Blueprint;
+use tailcall::core::config;
+use tailcall::core::generator::source::ImportSource;
+use tailcall::core::generator::{
+    Generator, GeneratorConfig, GeneratorInput, InputSource, Resolved, UnResolved,
 };
+use tailcall::core::proto_reader::ProtoReader;
+use tailcall::core::resource_reader::ResourceReader;
 use tokio::runtime::Runtime;
 
 datatest_stable::harness!(
@@ -49,7 +47,7 @@ async fn resolve_io(
     for input in config.input.iter() {
         match &input.source {
             InputSource::Import { src, _marker } => {
-                let source = ImportSource::detect(&src)?;
+                let source = ImportSource::detect(src)?;
                 match source {
                     ImportSource::Url => {
                         let content = resolvers
@@ -66,7 +64,7 @@ async fn resolve_io(
                 }
             }
             InputSource::Config { src, _marker } => {
-                let source = config::Source::detect(&src)?;
+                let source = config::Source::detect(src)?;
                 let schema = reader.read_file(&src).await?.content;
                 generator_type_inputs.push(GeneratorInput::Config { schema, source });
             }
@@ -82,7 +80,7 @@ pub async fn run_test(path: &str) -> anyhow::Result<()> {
 
     let resolved_config = config.config.resolve_paths(path)?;
     let generator_inp = resolve_io(resolved_config, config.resolvers).await?;
-    let gen = GeneratorReImpl::new("f", "T");
+    let gen = Generator::new("f", "T");
     let cfg_module = gen.run("Query", &generator_inp)?;
 
     insta::assert_snapshot!(path, cfg_module.config.to_sdl());
