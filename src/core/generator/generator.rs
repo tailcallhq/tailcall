@@ -5,9 +5,11 @@ use url::Url;
 
 use super::from_proto::from_proto;
 use super::{from_json, ConfigGenerationRequest, NameGenerator};
+use crate::core::config::transformer::AmbiguousType;
 use crate::core::config::{Config, ConfigModule, Link, LinkType, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
+use crate::core::valid::Validator;
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work
@@ -79,6 +81,42 @@ impl Generator {
                 }
             }
         }
-        Ok(ConfigModule::from(config))
+        let config = ConfigModule::from(config)
+            .transform(AmbiguousType::default())
+            .to_result()?;
+
+        Ok(config)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use prost_reflect::prost_types::FileDescriptorSet;
+    use tailcall_fixtures::protobuf;
+
+    use super::{Generator, GeneratorInput};
+    
+    
+    use crate::core::proto_reader::ProtoMetadata;
+    
+
+    fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
+        Ok(protox::compile(files, [protobuf::SELF])?)
+    }
+
+    #[test]
+    fn should_generate_config_from_proto() -> anyhow::Result<()> {
+        let news_proto = protobuf::NEWS;
+        let set = compile_protobuf(&[protobuf::NEWS])?;
+
+        let gen = Generator::new("f", "T");
+        let cfg_module = gen.run(
+            "Query",
+            &[GeneratorInput::Proto {
+                metadata: ProtoMetadata { descriptor_set: set, path: news_proto.to_string() },
+            }],
+        )?;
+        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        Ok(())
     }
 }
