@@ -510,7 +510,7 @@ jobs:
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
       - name: Publish packages
-        uses: JS-DevTools/npm-publish@v3
+        uses: JS-DevTools/npm-publish@main
         with:
           token: ${{ secrets.NPM_TOKEN }}
           package: npm/@tailcallhq/tailcall
