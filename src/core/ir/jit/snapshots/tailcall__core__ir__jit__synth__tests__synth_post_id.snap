@@ -3,6 +3,6 @@ source: src/core/ir/jit/synth.rs
 expression: actual
 ---
 {
-  "userId": 1,
+  "id": 1,
   "name": "Jane Doe"
 }

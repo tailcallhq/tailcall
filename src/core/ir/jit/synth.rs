@@ -50,6 +50,7 @@ impl Synth {
                                 // check if value exists, else it'll cause stackoverflow
                                 self.iter(node, Some(value), ctx)
                             } else {
+                                println!("{}: {:?}", node.name, key);
                                 // Store does not have data with the IO id, so just return null
                                 Value::Null
                             }
@@ -153,17 +154,17 @@ mod tests {
 
     const USERS: &str = r#"
         [
-            {"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1},
-            {"name": "Not Jane Doe", "address": { "street": "Not Kulas Light" }, "userId": 2}
+            {"name": "Jane Doe", "address": { "street": "Kulas Light" }, "id": 1},
+            {"name": "Not Jane Doe", "address": { "street": "Not Kulas Light" }, "id": 2}
         ]
     "#;
 
     const USER1: &str = r#"
-        {"name": "Jane Doe", "address": { "street": "Kulas Light" }, "userId": 1}
+        {"name": "Jane Doe", "address": { "street": "Kulas Light" }, "id": 1}
     "#;
 
     const USER2: &str = r#"
-        {"name": "Not Jane Doe", "address": { "street": "Not Kulas Light" }, "userId": 2}
+        {"name": "Not Jane Doe", "address": { "street": "Not Kulas Light" }, "id": 2}
     "#;
 
     const POST: &str = r#"
@@ -320,7 +321,7 @@ mod tests {
         let actual = synth(
             r#"
                 query {
-                    user(id: 1) { userId name }
+                    user(id: 1) { id name }
                 }
             "#,
             store,
