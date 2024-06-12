@@ -16,6 +16,7 @@ use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::{CacheKey, IoId};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
+use crate::core::error::Error;
 
 static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc");
 
@@ -44,7 +45,7 @@ impl Hash for RenderedRequestTemplate {
 }
 
 impl RequestTemplate {
-    fn create_url<C: PathString>(&self, ctx: &C) -> Result<Url> {
+    fn create_url<C: PathString>(&self, ctx: &C) -> Result<Url, Error> {
         let url = url::Url::parse(self.url.render(ctx).as_str())?;
 
         Ok(url)
@@ -64,7 +65,7 @@ impl RequestTemplate {
         header_map
     }
 
-    pub fn render<C: PathString + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
+    pub fn render<C: PathString + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate, Error> {
         let url = self.create_url(ctx)?;
         let headers = self.render_headers(ctx);
         let body = self.render_body(ctx);
@@ -94,7 +95,7 @@ impl RequestTemplate {
 }
 
 impl RenderedRequestTemplate {
-    pub fn to_request(&self) -> Result<reqwest::Request> {
+    pub fn to_request(&self) -> Result<reqwest::Request, Error> {
         let mut req = reqwest::Request::new(Method::POST, self.url.clone());
         req.headers_mut().extend(self.headers.clone());
 

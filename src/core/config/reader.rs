@@ -14,6 +14,7 @@ use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
+use crate::core::error::Error;
 
 /// Reads the configuration from a file or from an HTTP URL and resolves all
 /// linked extensions to create a ConfigModule.
@@ -39,7 +40,7 @@ impl ConfigReader {
         &self,
         mut config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
-    ) -> anyhow::Result<ConfigModule> {
+    ) -> Result<ConfigModule, Error> {
         let links: Vec<Link> = config_module
             .config
             .links
@@ -141,7 +142,7 @@ impl ConfigReader {
     }
 
     /// Reads the certificate from a given file
-    async fn load_cert(&self, content: String) -> anyhow::Result<Vec<CertificateDer<'static>>> {
+    async fn load_cert(&self, content: String) -> Result<Vec<CertificateDer<'static>>, Error> {
         let certificates = rustls_pemfile::certs(&mut content.as_bytes())?;
 
         Ok(certificates.into_iter().map(CertificateDer::from).collect())
@@ -151,7 +152,7 @@ impl ConfigReader {
     async fn load_private_key(
         &self,
         content: String,
-    ) -> anyhow::Result<Vec<PrivateKeyDer<'static>>> {
+    ) -> Result<Vec<PrivateKeyDer<'static>>, Error> {
         let keys = rustls_pemfile::read_all(&mut content.as_bytes())?;
 
         Ok(keys
@@ -172,7 +173,7 @@ impl ConfigReader {
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString + Send + Sync>(&self, file: T) -> anyhow::Result<ConfigModule> {
+    pub async fn read<T: ToString + Send + Sync>(&self, file: T) -> Result<ConfigModule, Error> {
         self.read_all(&[file]).await
     }
 
@@ -180,7 +181,7 @@ impl ConfigReader {
     pub async fn read_all<T: ToString + Send + Sync>(
         &self,
         files: &[T],
-    ) -> anyhow::Result<ConfigModule> {
+    ) -> Result<ConfigModule, Error> {
         let files = self.resource_reader.read_files(files).await?;
         let mut config_module = ConfigModule::default();
 
@@ -208,7 +209,7 @@ impl ConfigReader {
         &self,
         config: Config,
         parent_dir: Option<&Path>,
-    ) -> anyhow::Result<ConfigModule> {
+    ) -> Result<ConfigModule, Error> {
         // Create initial config set
         let config_module = ConfigModule::from(config);
 

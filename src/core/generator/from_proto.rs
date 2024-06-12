@@ -1,6 +1,5 @@
 use std::collections::{BTreeSet, HashSet};
 
-use anyhow::{bail, Result};
 use derive_setters::Setters;
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto, SourceCodeInfo,
@@ -11,6 +10,7 @@ use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
+use crate::core::error::Error;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -116,7 +116,7 @@ impl Context {
         messages: &[DescriptorProto],
         parent_path: &PathBuilder,
         is_nested: bool,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         for (index, message) in messages.iter().enumerate() {
             let msg_name = message.name();
 
@@ -212,7 +212,7 @@ impl Context {
         mut self,
         services: &[ServiceDescriptorProto],
         parent_path: &PathBuilder,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         if services.is_empty() {
             return Ok(self);
         }
@@ -282,9 +282,9 @@ impl Context {
     }
 }
 
-fn graphql_type_from_ref(name: &str) -> Result<GraphQLType<Unparsed>> {
+fn graphql_type_from_ref(name: &str) -> Result<GraphQLType<Unparsed>, Error> {
     if !name.starts_with('.') {
-        bail!("Expected fully-qualified name for reference type but got {name}. This is a bug!");
+        return Err(Error::InvalidReferenceTypeName(name.to_string()))
     }
 
     let name = &name[1..];
@@ -318,7 +318,7 @@ fn convert_primitive_type(proto_ty: &str) -> String {
 }
 
 /// Determines the output type for a service method.
-fn get_output_type(output_ty: &str) -> Result<GraphQLType<Unparsed>> {
+fn get_output_type(output_ty: &str) -> Result<GraphQLType<Unparsed>, Error> {
     // type, required
     match output_ty {
         ".google.protobuf.Empty" => {
@@ -332,7 +332,7 @@ fn get_output_type(output_ty: &str) -> Result<GraphQLType<Unparsed>> {
     }
 }
 
-fn get_input_type(input_ty: &str) -> Result<Option<GraphQLType<Unparsed>>> {
+fn get_input_type(input_ty: &str) -> Result<Option<GraphQLType<Unparsed>>, Error> {
     match input_ty {
         ".google.protobuf.Empty" | "" => Ok(None),
         _ => graphql_type_from_ref(input_ty).map(Some),
@@ -340,7 +340,7 @@ fn get_input_type(input_ty: &str) -> Result<Option<GraphQLType<Unparsed>>> {
 }
 
 /// The main entry point that builds a Config object from proto descriptor sets.
-pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<Config> {
+pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<Config, Error> {
     let mut ctx = Context::new(query);
     for descriptor_set in descriptor_sets.iter() {
         for file_descriptor in descriptor_set.file.iter() {

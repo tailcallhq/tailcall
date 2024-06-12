@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use hyper::header::HeaderName;
@@ -14,6 +14,7 @@ use crate::core::grpc::protobuf::ProtobufSet;
 use crate::core::grpc::{self, RequestTemplate};
 use crate::core::mustache::Mustache;
 use crate::core::runtime::TargetRuntime;
+use crate::core::error::Error;
 
 ///
 /// Loading reflection proto
@@ -48,15 +49,15 @@ struct FileDescriptorProtoResponse {
 }
 
 impl FileDescriptorProtoResponse {
-    fn get(self) -> Result<Vec<u8>> {
+    fn get(self) -> Result<Vec<u8>, Error> {
         let file_descriptor_proto = self
             .file_descriptor_proto
             .first()
-            .context("Received empty fileDescriptorProto")?;
+            .ok_or_else(|| Error::EmptyFileDescriptorProto)?;
 
         BASE64_STANDARD
             .decode(file_descriptor_proto)
-            .context("Failed to decode fileDescriptorProto from BASE64")
+            .map_err(|_| Error::FileDescriptorProtoDecodeFailed)
     }
 }
 
@@ -88,13 +89,13 @@ impl GrpcReflection {
         }
     }
     /// Makes `ListService` request to the grpc reflection server
-    pub async fn list_all_files(&self) -> Result<Vec<String>> {
+    pub async fn list_all_files(&self) -> Result<Vec<String>, Error> {
         // Extracting names from services
         let methods: Vec<String> = self
             .execute(json!({"list_services": ""}))
             .await?
             .list_services_response
-            .context("Couldn't find definitions for service ServerReflection")?
+            .ok_or_else(|| Error::MissingServerReflectionDefinitions)?
             .service
             .iter()
             .map(|s| s.name.clone())
@@ -104,7 +105,7 @@ impl GrpcReflection {
     }
 
     /// Makes `Get Service` request to the grpc reflection server
-    pub async fn get_by_service(&self, service: &str) -> Result<FileDescriptorProto> {
+    pub async fn get_by_service(&self, service: &str) -> Result<FileDescriptorProto, Error> {
         let resp = self
             .execute(json!({"file_containing_symbol": service}))
             .await?;
@@ -112,7 +113,7 @@ impl GrpcReflection {
         request_proto(resp).await
     }
 
-    async fn execute(&self, body: serde_json::Value) -> Result<ReflectionResponse> {
+    async fn execute(&self, body: serde_json::Value) -> Result<ReflectionResponse, Error> {
         let server_reflection_method = &self.server_reflection_method;
         let protobuf_set = get_protobuf_set()?;
         let reflection_service = protobuf_set.find_service(server_reflection_method)?;
@@ -155,10 +156,10 @@ impl GrpcReflection {
 }
 
 /// For extracting `FileDescriptorProto` from `CustomResponse`
-async fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorProto> {
+async fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorProto, Error> {
     let file_descriptor_resp = response
         .file_descriptor_response
-        .context("Expected fileDescriptorResponse but found none")?;
+        .ok_or_else(|| Error::MissingFileDescriptorResponse)?;
     let file_descriptor_proto =
         FileDescriptorProto::decode(file_descriptor_resp.get()?.as_bytes())?;
 

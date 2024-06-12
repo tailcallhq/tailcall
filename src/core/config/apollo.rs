@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::config::ConfigReaderContext;
 use crate::core::is_default;
 use crate::core::mustache::Mustache;
+use crate::core::error::Error;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -28,7 +29,7 @@ pub struct Apollo {
 }
 
 impl Apollo {
-    pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> anyhow::Result<()> {
+    pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> Result<(), Error> {
         let Apollo { api_key, graph_ref, user_version, platform, version } = self;
 
         let api_key_tmpl = Mustache::parse(api_key)?;

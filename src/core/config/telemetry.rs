@@ -9,6 +9,7 @@ use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Mustache;
 use crate::core::valid::Validator;
+use crate::core::error::Error;
 
 mod defaults {
     pub mod prometheus {
@@ -97,7 +98,7 @@ impl Telemetry {
         self
     }
 
-    pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> Result<()> {
+    pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> Result<(), Error> {
         match &mut self.export {
             Some(TelemetryExporter::Otlp(otlp)) => {
                 let url_tmpl = Mustache::parse(&otlp.url)?;

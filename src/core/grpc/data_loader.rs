@@ -17,6 +17,7 @@ use crate::core::grpc::request::create_grpc_request;
 use crate::core::http::Response;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
+use crate::core::error::Error;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {
@@ -35,7 +36,7 @@ impl GrpcDataLoader {
     async fn load_dedupe_only(
         &self,
         keys: &[DataLoaderRequest],
-    ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
+    ) -> Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>, Error> {
         let results = keys.iter().map(|key| async {
             let result = match key.to_request() {
                 Ok(req) => execute_grpc_request(&self.runtime, &self.operation, req).await,

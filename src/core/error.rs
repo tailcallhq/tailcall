@@ -1,6 +1,11 @@
 use std::string::FromUtf8Error;
 
 use derive_more::From;
+use prost_reflect::DescriptorError;
+
+use super::{config::UnsupportedConfigFormat, valid::ValidationError};
+use super::grpc::error::Error as GrpcError;
+use super::rest::error::Error as RestError;
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
@@ -10,14 +15,68 @@ pub enum Error {
     #[error("Utf8 Error")]
     Utf8(FromUtf8Error),
 
+    #[error("Validation Error : {0}")]
+    ValidationError(ValidationError<std::string::String>),
+
+    #[error("Serde Json Error")]
+    SerdeJson(serde_json::Error),
+
+    #[error("Serde Yaml Error")]
+    SerdeYaml(serde_yaml::Error),
+
+    #[error("Descriptor Error")]
+    Descriptor(DescriptorError),
+
+    #[error("Expected fully-qualified name for reference type but got {0}")]
+    InvalidReferenceTypeName(String),
+
+    #[error("Package name is required")]
+    PackageNameNotFound,
+
+    #[error("Protox Parse Error")]
+    ProtoxParse(protox_parse::ParseError),
+
+    #[error("URL Parse Error")]
+    UrlParse(url::ParseError),
+
+    #[error("Unable to extract content of google well-known proto file")]
+    GoogleProtoFileContentNotExtracted,
+
+    #[error("Unsupported Config Format")]
+    UnsupportedConfigFormat(UnsupportedConfigFormat),
+
+    #[error("Couldn't find definitions for service ServerReflection")]
+    MissingServerReflectionDefinitions,
+
+    #[error("Grpc Error")]
+    GrpcError(GrpcError),
+
+    #[error("Serde Path To Error")]
+    SerdePathToError(serde_path_to_error::Error<serde_json::Error>),
+
+    #[error("Rest Error")]
+    RestError(RestError),
+
+    #[error("Expected fileDescriptorResponse but found none")]
+    MissingFileDescriptorResponse,
+
+    #[error("Prost Decode Error")]
+    ProstDecodeError(prost::DecodeError),
+
+    #[error("Received empty fileDescriptorProto")]
+    EmptyFileDescriptorProto,
+
+    #[error("Failed to decode fileDescriptorProto from BASE64")]
+    FileDescriptorProtoDecodeFailed,
+
     #[error("File Error")]
-    File(file::Error),
+    File(file::FileError),
 
     #[error("Http Error")]
-    Http(http::Error),
+    Http(http::HttpError),
 
     #[error("Worker Error")]
-    Worker(worker::Error),
+    Worker(worker::WorkerError),
 }
 
 pub mod file {

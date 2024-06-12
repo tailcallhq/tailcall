@@ -2,7 +2,6 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
-use anyhow::Result;
 use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
@@ -19,6 +18,7 @@ use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{is_default, scalar};
+use crate::core::error::Error;
 
 #[derive(
     Serialize,
@@ -639,11 +639,11 @@ impl Config {
         self.enums.get(name)
     }
 
-    pub fn to_yaml(&self) -> Result<String> {
+    pub fn to_yaml(&self) -> Result<String, Error> {
         Ok(serde_yaml::to_string(self)?)
     }
 
-    pub fn to_json(&self, pretty: bool) -> Result<String> {
+    pub fn to_json(&self, pretty: bool) -> Result<String, Error> {
         if pretty {
             Ok(serde_json::to_string_pretty(self)?)
         } else {
@@ -680,11 +680,11 @@ impl Config {
             || self.enums.contains_key(name)
     }
 
-    pub fn from_json(json: &str) -> Result<Self> {
+    pub fn from_json(json: &str) -> Result<Self, Error> {
         Ok(serde_json::from_str(json)?)
     }
 
-    pub fn from_yaml(yaml: &str) -> Result<Self> {
+    pub fn from_yaml(yaml: &str) -> Result<Self, Error> {
         Ok(serde_yaml::from_str(yaml)?)
     }
 
@@ -696,7 +696,7 @@ impl Config {
         }
     }
 
-    pub fn from_source(source: Source, schema: &str) -> Result<Self> {
+    pub fn from_source(source: Source, schema: &str) -> Result<Self, Error> {
         match source {
             Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
             Source::Json => Ok(Config::from_json(schema)?),

@@ -151,6 +151,7 @@ mod tests {
     use crate::core::config::{Config, ConfigModule, Type};
     use crate::core::generator::Source;
     use crate::core::valid::Validator;
+    use crate::core::error::Error;
 
     fn build_qry(mut config: Config) -> Config {
         let mut query = Type::default();
@@ -235,7 +236,7 @@ mod tests {
         assert_eq!(actual, expected);
     }
     #[tokio::test]
-    async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
+    async fn test_resolve_ambiguous_news_types() -> Result<(), Error> {
         let gen = crate::core::generator::Generator::init(crate::core::runtime::test::init(None));
         let news = tailcall_fixtures::protobuf::NEWS;
         let config_module = gen

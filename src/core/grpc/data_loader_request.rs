@@ -5,6 +5,7 @@ use anyhow::Result;
 use tailcall_hasher::TailcallHasher;
 
 use super::request_template::RenderedRequestTemplate;
+use crate::core::error::Error;
 
 #[derive(Debug, Clone, Eq)]
 pub struct DataLoaderRequest {
@@ -45,7 +46,7 @@ impl DataLoaderRequest {
         Self { template, batch_headers }
     }
 
-    pub fn to_request(&self) -> Result<reqwest::Request> {
+    pub fn to_request(&self) -> Result<reqwest::Request, Error> {
         self.template.to_request()
     }
 }
