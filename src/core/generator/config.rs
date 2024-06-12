@@ -177,22 +177,33 @@ mod defaults {
 #[cfg(test)]
 mod tests {
     use insta::assert_debug_snapshot;
+    use serde::Deserialize;
 
     use super::GeneratorConfig;
 
+    #[derive(Deserialize)]
+    struct GeneratorTest {
+        config: GeneratorConfig,
+        #[serde(default)]
+        resolvers: serde_json::Value,
+    }
+
+    fn read_json_fixture(path: &str) -> GeneratorConfig {
+        let content = std::fs::read_to_string(path).unwrap();
+        let generator_test: GeneratorTest = serde_json::from_str(&content).unwrap();
+        generator_test.config
+    }
+
     #[test]
     fn test_from_json() {
-        let content = std::fs::read_to_string(tailcall_fixtures::generator::SIMPLE_JSON).unwrap();
-        let config: GeneratorConfig = serde_json::from_str(&content).unwrap();
-
+        let config = read_json_fixture(tailcall_fixtures::generator::SIMPLE_JSON);
         assert_debug_snapshot!(&config);
     }
 
     #[test]
     fn test_resolve_paths() {
         let file_path = tailcall_fixtures::generator::SIMPLE_JSON;
-        let content = std::fs::read_to_string(tailcall_fixtures::generator::SIMPLE_JSON).unwrap();
-        let config: GeneratorConfig = serde_json::from_str(&content).unwrap();
+        let config = read_json_fixture(file_path);
         let config = config.resolve_paths(file_path);
         assert!(config.is_ok());
     }
