@@ -42,7 +42,8 @@ pub fn from_document(input_path: &str, doc: ServiceDocument) -> Valid<Config, St
     let types = to_types(&type_definitions, input_path);
     let unions = to_union_types(&type_definitions, input_path);
     let enums = to_enum_types(&type_definitions, input_path);
-    let schema = schema_definition(&doc).map(to_root_schema);
+    let schema = schema_definition(&doc)
+        .map(|schema_definition| to_root_schema(schema_definition, input_path));
 
     schema_definition(&doc).and_then(|sd| {
         server(sd, input_path)
@@ -199,14 +200,33 @@ fn telemetry(
     )
 }
 
-fn to_root_schema(schema_definition: &SchemaDefinition) -> RootSchema {
-    let query = schema_definition.query.as_ref();
-    let mutation = schema_definition.mutation.as_ref().map(pos_name_to_string);
-    let subscription = schema_definition
-        .subscription
-        .as_ref()
-        .map(pos_name_to_string);
-    RootSchema { query: query.map(pos_name_to_string), mutation, subscription }
+fn to_root_schema(schema_definition: &SchemaDefinition, input_path: &str) -> RootSchema {
+    let query = schema_definition.query.as_ref().map(|query| {
+        Pos::new(
+            query.pos.line,
+            query.pos.column,
+            Some(input_path.to_owned()),
+            query.node.to_string(),
+        )
+    });
+    let mutation = schema_definition.mutation.as_ref().map(|mutation| {
+        Pos::new(
+            mutation.pos.line,
+            mutation.pos.column,
+            Some(input_path.to_owned()),
+            mutation.node.to_string(),
+        )
+    });
+    let subscription = schema_definition.subscription.as_ref().map(|subscription| {
+        Pos::new(
+            subscription.pos.line,
+            subscription.pos.column,
+            Some(input_path.to_owned()),
+            subscription.node.to_string(),
+        )
+    });
+
+    RootSchema { query, mutation, subscription }
 }
 fn pos_name_to_string(pos: &Positioned<Name>) -> String {
     pos.node.to_string()

@@ -270,7 +270,7 @@ mod reader_tests {
         let runtime = crate::core::runtime::test::init(None);
 
         let mut cfg = Config::default();
-        cfg.schema.query = Some("Test".to_string());
+        cfg.schema.query = Some(Pos::new(0, 0, None, "Test".to_string()));
         cfg = cfg.types([("Test", Pos::new(0, 0, None, Type::default()))].to_vec());
 
         let server = start_mock_server();

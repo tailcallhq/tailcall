@@ -1,3 +1,4 @@
+use crate::core::config::position::Pos;
 use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
 use crate::core::valid::Valid;
@@ -12,7 +13,7 @@ impl SchemaGenerator {
     }
 
     pub fn generate_schema(&self, config: &mut Config) {
-        config.schema.query = Some(self.query_type.to_owned());
+        config.schema.query = Some(Pos::new(0, 0, None, self.query_type.to_owned()));
         // TODO: add support for mutation and subscription.
     }
 }

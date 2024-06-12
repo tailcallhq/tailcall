@@ -29,6 +29,17 @@ impl<T> Pos<T> {
         self.column = position.1;
         self.file_path = Some(position.2.to_owned());
     }
+
+    pub fn to_trace_err(&self) -> String {
+        format!(
+            "{} {}#{}",
+            self.file_path
+                .as_ref()
+                .map_or("", |file_path| file_path.as_str()),
+            self.line,
+            self.column
+        )
+    }
 }
 
 impl<T: Default> Default for Pos<T> {

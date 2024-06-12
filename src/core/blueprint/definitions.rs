@@ -397,6 +397,8 @@ fn to_fields(
     let operation_type = if config_module
         .schema
         .mutation
+        .as_ref()
+        .map(|mutation| mutation.inner.clone())
         .as_deref()
         .eq(&Some(object_name))
     {

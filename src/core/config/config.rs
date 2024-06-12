@@ -201,11 +201,11 @@ pub struct Protected {}
 )]
 #[setters(strip_option)]
 pub struct RootSchema {
-    pub query: Option<String>,
+    pub query: Option<Pos<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub mutation: Option<String>,
+    pub mutation: Option<Pos<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub subscription: Option<String>,
+    pub subscription: Option<Pos<String>>,
 }
 
 #[derive(
@@ -796,7 +796,7 @@ impl Config {
     }
 
     pub fn query(mut self, query: &str) -> Self {
-        self.schema.query = Some(query.to_string());
+        self.schema.query = Some(Pos::new(0, 0, None, query.to_string()));
         self
     }
 
@@ -936,10 +936,10 @@ impl Config {
         let mut set = HashSet::new();
         let mut stack = Vec::new();
         if let Some(query) = &self.schema.query {
-            stack.push(query.clone());
+            stack.push(query.inner.clone());
         }
         if let Some(mutation) = &self.schema.mutation {
-            stack.push(mutation.clone());
+            stack.push(mutation.inner.clone());
         }
         while let Some(type_name) = stack.pop() {
             if let Some(typ) = self.types.get(&type_name) {
@@ -1071,7 +1071,7 @@ mod tests {
     #[test]
     fn test_is_root_operation_type_with_query() {
         let mut config = Config::default();
-        config.schema.query = Some("Query".to_string());
+        config.schema.query = Some(Pos::new(0, 0, None, "Query".to_string()));
 
         assert!(config.is_root_operation_type("Query"));
         assert!(!config.is_root_operation_type("Mutation"));
@@ -1081,7 +1081,7 @@ mod tests {
     #[test]
     fn test_is_root_operation_type_with_mutation() {
         let mut config = Config::default();
-        config.schema.mutation = Some("Mutation".to_string());
+        config.schema.mutation = Some(Pos::new(0, 0, None, "Mutation".to_string()));
 
         assert!(!config.is_root_operation_type("Query"));
         assert!(config.is_root_operation_type("Mutation"));
@@ -1091,7 +1091,7 @@ mod tests {
     #[test]
     fn test_is_root_operation_type_with_subscription() {
         let mut config = Config::default();
-        config.schema.subscription = Some("Subscription".to_string());
+        config.schema.subscription = Some(Pos::new(0, 0, None, "Subscription".to_string()));
 
         assert!(!config.is_root_operation_type("Query"));
         assert!(!config.is_root_operation_type("Mutation"));

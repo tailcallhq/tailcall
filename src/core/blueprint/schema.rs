@@ -121,8 +121,12 @@ pub fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
             ))
             .zip(to_directive(config.server.to_directive()))
             .map(|(query_type_name, directive)| SchemaDefinition {
-                query: query_type_name.to_owned(),
-                mutation: config.schema.mutation.clone(),
+                query: query_type_name.inner.to_owned(),
+                mutation: config
+                    .schema
+                    .mutation
+                    .as_ref()
+                    .map(|mutation| mutation.inner.to_owned()),
                 directives: vec![directive],
             })
     })

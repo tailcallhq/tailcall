@@ -41,17 +41,21 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
     let schema_definition = SchemaDefinition {
         extend: false,
         directives,
-        query: config.schema.query.clone().map(|name| pos(Name::new(name))),
+        query: config
+            .schema
+            .query
+            .clone()
+            .map(|name| pos(Name::new(name.inner))),
         mutation: config
             .schema
             .mutation
             .clone()
-            .map(|name| pos(Name::new(name))),
+            .map(|name| pos(Name::new(name.inner))),
         subscription: config
             .schema
             .subscription
             .clone()
-            .map(|name| pos(Name::new(name))),
+            .map(|name| pos(Name::new(name.inner))),
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
     for (type_name, type_def) in config.types.iter() {
