@@ -13,14 +13,14 @@ expression: errors
   {
     "message": "Field is already implemented from interface",
     "trace": [
-      "@modify"
+      "tests/execution/test-field-already-implemented-from-Interface.md 11#15"
     ],
     "description": null
   },
   {
     "message": "Field is already implemented from interface",
     "trace": [
-      "@modify"
+      "tests/execution/test-field-already-implemented-from-Interface.md 10#21"
     ],
     "description": null
   }

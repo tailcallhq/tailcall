@@ -533,7 +533,7 @@ pub fn to_field_definition(
         .and(update_const_field())
         .and(update_js_field().trace(config::JS::trace_name().as_str()))
         .and(update_graphql(operation_type))
-        .and(update_modify().trace(config::Modify::trace_name().as_str()))
+        .and(update_modify())
         .and(update_call(operation_type, object_name))
         .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
