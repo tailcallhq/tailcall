@@ -184,8 +184,6 @@ mod tests {
     #[derive(Deserialize)]
     struct GeneratorTest {
         config: GeneratorConfig,
-        #[serde(default)]
-        resolvers: serde_json::Value,
     }
 
     fn read_json_fixture(path: &str) -> GeneratorConfig {
