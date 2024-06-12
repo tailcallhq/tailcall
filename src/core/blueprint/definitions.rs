@@ -452,7 +452,7 @@ fn to_fields(
                         .collect::<Vec<_>>(),
                     None => add_field.path.inner.clone(),
                 };
-                let invalid_path_handler = |field_name: &str,
+                let invalid_path_handler = |_field_name: &str,
                                             _added_field_path: &[String],
                                             original_path: &[String]|
                  -> Valid<Type, String> {
@@ -460,7 +460,6 @@ fn to_fields(
                         "Cannot add field".to_string(),
                         format!("Path [{}] does not exist", original_path.join(", ")),
                     )
-                    .trace(field_name)
                 };
                 let path_resolver_error_handler = |resolver_name: &str,
                                                    field_type: &str,
@@ -491,8 +490,7 @@ fn to_fields(
                     },
                     field_definition,
                 )
-            })
-            .trace(config::AddField::trace_name().as_str()),
+            }),
             None => Valid::fail(format!(
                 "Could not find field {} in path {}",
                 add_field.path[0],
@@ -502,7 +500,7 @@ fn to_fields(
     };
 
     let added_fields = Valid::from_iter(type_of.added_fields.iter(), |added_field| {
-        to_added_field(added_field, type_of)
+        to_added_field(added_field, type_of).trace(added_field.to_trace_err().as_str())
     });
     fields.zip(added_fields).map(|(mut fields, added_fields)| {
         fields.extend(added_fields);

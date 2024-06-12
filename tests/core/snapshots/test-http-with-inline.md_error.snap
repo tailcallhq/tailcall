@@ -6,7 +6,7 @@ expression: errors
   {
     "message": "Cannot add field",
     "trace": [
-      "@addField"
+      "tests/execution/test-http-with-inline.md 5#12"
     ],
     "description": "Path: [post, user, name] contains resolver http at [Post.user]"
   }

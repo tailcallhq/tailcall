@@ -6,7 +6,7 @@ expression: errors
   {
     "message": "Cannot add field",
     "trace": [
-      "@addField"
+      "tests/execution/test-expr-with-add-field.md 5#12"
     ],
     "description": "Path: [post, user, name] contains resolver expr at [Post.user]"
   }
