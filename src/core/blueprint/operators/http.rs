@@ -11,7 +11,6 @@ use crate::core::{config, helpers};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
-    field: &Pos<config::Field>,
     http: &Pos<config::Http>,
 ) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
@@ -49,15 +48,11 @@ pub fn compile_http(
                 .iter()
                 .map(|key_value| (key_value.key.clone(), key_value.value.clone()))
                 .collect();
-            let output_schema = to_json_schema_for_field(field, config_module);
-            let input_schema = to_json_schema_for_args(&field.args, config_module);
 
             RequestTemplate::try_from(
                 Endpoint::new(base_url.to_string())
                     .method(http.method.inner.clone())
                     .query(query)
-                    .output(output_schema)
-                    .input(input_schema)
                     .body(http.body.to_owned().map(|body| body.inner))
                     .encoding(http.encoding.inner.clone()),
             )
@@ -103,7 +98,7 @@ pub fn update_http<'a>() -> TryFold<
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_module, field, http)
+            compile_http(config_module, http)
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field

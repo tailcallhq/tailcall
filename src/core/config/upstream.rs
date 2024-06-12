@@ -167,6 +167,12 @@ pub struct Upstream {
     /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
     /// is made more than once within the context of a single GraphQL request.
     pub dedupe: Option<Pos<bool>>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
+    /// is made more than once if similar request is inflight across the
+    /// server's lifetime.
+    pub dedupe_in_flight: Option<bool>,
 }
 
 impl Upstream {
@@ -252,6 +258,10 @@ impl Upstream {
         self.dedupe
             .as_ref()
             .map_or(false, |Pos { inner, .. }| *inner)
+    }
+
+    pub fn get_dedupe_in_flight(&self) -> bool {
+        self.dedupe_in_flight.unwrap_or(false)
     }
 
     pub fn get_on_request(&self) -> Option<String> {
