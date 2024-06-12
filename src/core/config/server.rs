@@ -45,6 +45,12 @@ pub struct Server {
     pub batch_requests: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    /// When set to `true`, it will ensure no graphQL execution is made more
+    /// than once if similar query is being executed across the
+    /// server's lifetime.
+    pub batch_execution: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
     #[positioned_field(option_field)]
     /// `headers` contains key-value pairs that are included as default headers
     /// in server responses, allowing for consistent header management across
@@ -251,6 +257,10 @@ impl Server {
         self.pipeline_flush
             .as_ref()
             .map_or(true, |Pos { inner, .. }| *inner)
+    }
+
+    pub fn get_batch_execution(&self) -> bool {
+        self.batch_execution.unwrap_or(false)
     }
 }
 

@@ -36,6 +36,7 @@ pub struct Server {
     pub cors: Option<Cors>,
     pub experimental_headers: HashSet<HeaderName>,
     pub auth: Option<Auth>,
+    pub batch_execution: bool,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -150,6 +151,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                         script,
                         cors,
                         auth,
+                        batch_execution: config_server.get_batch_execution(),
                     }
                 },
             )
