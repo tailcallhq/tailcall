@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
-use super::{update_checker, Result};
+use super::update_checker;
 use crate::cli;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
@@ -19,6 +19,7 @@ use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::rest::{EndpointSet, Unchecked};
 use crate::core::{print_schema, Errata};
+use crate::core::error::Error;
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
@@ -26,7 +27,7 @@ const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 lazy_static! {
     static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();
 }
-pub async fn run() -> Result<()> {
+pub async fn run() -> Result<(), Error> {
     if let Ok(path) = dotenv() {
         tracing::info!("Env file: {:?} loaded", path);
     }
@@ -93,7 +94,7 @@ pub async fn run() -> Result<()> {
     }
 }
 
-pub async fn init(folder_path: &str) -> Result<()> {
+pub async fn init(folder_path: &str) -> Result<(), Error> {
     let folder_exists = fs::metadata(folder_path).is_ok();
 
     if !folder_exists {

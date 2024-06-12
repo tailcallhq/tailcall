@@ -1,11 +1,14 @@
 use std::string::FromUtf8Error;
 
 use derive_more::From;
+use inquire::InquireError;
 use prost_reflect::DescriptorError;
 
 use super::{config::UnsupportedConfigFormat, valid::ValidationError};
 use super::grpc::error::Error as GrpcError;
 use super::rest::error::Error as RestError;
+use crate::cli::error::Error as CLIError;
+use crate::core::errata::Errata as ErrataError;
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
@@ -77,6 +80,15 @@ pub enum Error {
 
     #[error("Worker Error")]
     Worker(worker::WorkerError),
+
+    #[error("CLI Error")]
+    CLIError(CLIError),
+
+    #[error("Inquire Error")]
+    InquireError(InquireError),
+
+    #[error("Errata Error")]
+    Errata(ErrataError),
 }
 
 pub mod file {

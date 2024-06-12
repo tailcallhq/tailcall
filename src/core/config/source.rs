@@ -2,6 +2,7 @@ use thiserror::Error;
 
 use super::Config;
 use crate::core::valid::{ValidationError, Validator};
+use crate::core::error::Error;
 
 #[derive(Clone, Default)]
 pub enum Source {
@@ -55,7 +56,7 @@ impl Source {
     }
 
     /// Encode the config to the given format
-    pub fn encode(&self, config: &Config) -> Result<String, anyhow::Error> {
+    pub fn encode(&self, config: &Config) -> Result<String, Error> {
         match self {
             Source::Yml => Ok(config.to_yaml()?),
             Source::GraphQL => Ok(config.to_sdl()),
