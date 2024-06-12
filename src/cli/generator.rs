@@ -139,9 +139,8 @@ impl ConfigConsoleGenerator {
 
 #[cfg(test)]
 mod test {
-    use crate::core::blueprint::Blueprint;
-
     use super::ConfigConsoleGenerator;
+    use crate::core::blueprint::Blueprint;
 
     #[tokio::test]
     async fn test_generator() -> anyhow::Result<()> {
