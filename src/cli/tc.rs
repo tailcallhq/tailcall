@@ -110,7 +110,7 @@ pub async fn run() -> Result<()> {
             };
 
             // if output file already exists, ask user if we can overwrite it or not.
-            if is_exits(&output_path) {
+            if is_exists(&output_path) {
                 let should_overwrite = Confirm::new(
                     format!(
                         "The output file '{}' already exists. Do you want to overwrite it?",
@@ -118,7 +118,7 @@ pub async fn run() -> Result<()> {
                     )
                     .as_str(),
                 )
-                .with_default(true)
+                .with_default(false)
                 .prompt()?;
                 if !should_overwrite {
                     return Ok(());
