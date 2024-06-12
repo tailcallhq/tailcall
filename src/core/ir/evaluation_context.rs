@@ -3,8 +3,6 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use async_graphql::{SelectionField, ServerError, Value};
-use async_graphql_value::{ConstValue, Name};
-use indexmap::IndexMap;
 use reqwest::header::HeaderMap;
 
 use super::{GraphQLOperationContext, ResolverContextLike};
@@ -15,8 +13,6 @@ use crate::core::http::RequestContext;
 pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
     // Context create for each GraphQL Request
     pub request_ctx: &'a RequestContext,
-
-    default_values: &'a IndexMap<Name, Value>,
 
     // Async GraphQL Context
     // Contains current value and arguments
@@ -48,14 +44,9 @@ impl<'a, A: ResolverContextLike<'a>> EvaluationContext<'a, A> {
 }
 
 impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
-    pub fn new(
-        req_ctx: &'a RequestContext,
-        graphql_ctx: &'a Ctx,
-        default_values: &'a IndexMap<Name, Value>,
-    ) -> EvaluationContext<'a, Ctx> {
+    pub fn new(req_ctx: &'a RequestContext, graphql_ctx: &'a Ctx) -> EvaluationContext<'a, Ctx> {
         Self {
             request_ctx: req_ctx,
-            default_values,
             graphql_ctx,
             graphql_ctx_value: None,
             graphql_ctx_args: None,
@@ -75,21 +66,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
                 .args()
                 .map(|a| Cow::Owned(Value::Object(a.clone())))
         } else {
-            let args: IndexMap<Name, ConstValue> = self
-                .graphql_ctx
-                .args()?
-                .iter()
-                .map(|(k, v1)| {
-                    (
-                        k.clone(),
-                        self.default_values
-                            .get(k)
-                            .map(|v2| combined_const_values(v2, v1))
-                            .unwrap_or_else(|| v1.clone()),
-                    )
-                })
-                .collect();
-            let arg = args.get(path[0].as_ref())?;
+            let arg = self.graphql_ctx.args()?.get(path[0].as_ref())?;
             get_path_value(arg, &path[1..]).cloned().map(Cow::Owned)
         }
     }
@@ -207,22 +184,6 @@ pub fn get_path_value<'a, T: AsRef<str>>(input: &'a Value, path: &[T]) -> Option
     }
 
     value
-}
-
-fn combined_const_values(lhs: &ConstValue, rhs: &ConstValue) -> ConstValue {
-    match (lhs, rhs) {
-        (ConstValue::Object(lhs), ConstValue::Object(rhs)) => {
-            let mut combined = lhs.clone();
-            for (key, value) in rhs.iter() {
-                combined.insert(key.clone(), value.clone());
-            }
-            ConstValue::Object(combined)
-        }
-        (ConstValue::List(lhs), ConstValue::List(rhs)) => {
-            lhs.iter().cloned().chain(rhs.iter().cloned()).collect()
-        }
-        (_, rhs) => rhs.clone(),
-    }
 }
 
 #[cfg(test)]

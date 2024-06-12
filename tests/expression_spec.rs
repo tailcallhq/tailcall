@@ -12,8 +12,7 @@ mod tests {
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
         let res_ctx = EmptyResolverContext {};
-        let index_map = indexmap::IndexMap::new();
-        let eval_ctx = EvaluationContext::new(&req_ctx, &res_ctx, &index_map);
+        let eval_ctx = EvaluationContext::new(&req_ctx, &res_ctx);
         expr.eval(eval_ctx).await
     }
 

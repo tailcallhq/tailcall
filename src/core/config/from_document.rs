@@ -295,7 +295,14 @@ fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> 
     to_common_field(field_definition, to_args(field_definition), None)
 }
 fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
-    to_common_field(field_definition, BTreeMap::new(), field_definition.default_value.as_ref().map(|f| f.node.clone()))
+    to_common_field(
+        field_definition,
+        BTreeMap::new(),
+        field_definition
+            .default_value
+            .as_ref()
+            .map(|f| f.node.clone()),
+    )
 }
 fn to_common_field<F>(
     field: &F,
