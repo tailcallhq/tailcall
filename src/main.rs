@@ -4,10 +4,10 @@
 use std::cell::Cell;
 
 use mimalloc::MiMalloc;
+use tailcall::core::error::Error;
 use tailcall::core::tracing::default_tracing_tailcall;
 use tailcall::core::Errata;
 use tracing::subscriber::DefaultGuard;
-use tailcall::core::error::Error;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;

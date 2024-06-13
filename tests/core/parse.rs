@@ -15,6 +15,7 @@ use tailcall::cli::javascript;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::config::{ConfigModule, Source};
+use tailcall::core::error::worker::WorkerError;
 use tailcall::core::http::AppContext;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::worker::{Command, Event};
@@ -277,19 +278,19 @@ impl ExecutionSpec {
 
         let http2_only = http.clone();
 
-        let http_worker: Option<Arc<dyn WorkerIO<Event, Command>>> =
+        let http_worker: Option<Arc<dyn WorkerIO<Event, Command, Error = WorkerError>>> =
             if let Some(script) = script.clone() {
                 Some(javascript::init_worker_io(script))
             } else {
                 None
             };
 
-        let worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>> = if let Some(script) = script
-        {
-            Some(javascript::init_worker_io(script))
-        } else {
-            None
-        };
+        let worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue, Error = WorkerError>>> =
+            if let Some(script) = script {
+                Some(javascript::init_worker_io(script))
+            } else {
+                None
+            };
 
         let runtime = TargetRuntime {
             http,

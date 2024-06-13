@@ -5,7 +5,7 @@ pub mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use anyhow::{anyhow, Result};
+    use anyhow::Result;
     use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
@@ -14,6 +14,8 @@ pub mod test {
     use tailcall::cli::javascript::init_worker_io;
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
+    use tailcall::core::error::file::FileError;
+    use tailcall::core::error::http::HttpError;
     use tailcall::core::http::Response;
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::worker::{Command, Event};
@@ -73,7 +75,8 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+        type Error = HttpError;
+        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, HttpError> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?
@@ -95,20 +98,17 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+        type Error = FileError;
+        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<(), Self::Error> {
             let mut file = tokio::fs::File::create(path).await?;
-            file.write_all(content)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
+            file.write_all(content).await?;
             Ok(())
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+        async fn read<'a>(&'a self, path: &'a str) -> Result<String, Self::Error> {
             let mut file = tokio::fs::File::open(path).await?;
             let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
+            file.read_to_end(&mut buffer).await?;
             Ok(String::from_utf8(buffer)?)
         }
     }

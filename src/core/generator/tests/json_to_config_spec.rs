@@ -3,10 +3,9 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall::core::error::Error;
 use tailcall::core::generator::{from_json, ConfigGenerationRequest};
 use url::Url;
-
-use crate::core::error::Error;
 
 #[derive(Serialize, Deserialize)]
 struct JsonFixture {

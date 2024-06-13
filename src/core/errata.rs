@@ -3,8 +3,8 @@ use std::fmt::{Debug, Display};
 use colored::Colorize;
 use derive_setters::Setters;
 
-use crate::core::valid::ValidationError;
 use crate::core::error::Error as CoreError;
+use crate::core::valid::ValidationError;
 
 /// The moral equivalent of a serde_json::Value but for errors.
 /// It's a data structure like Value that can hold any error in an untyped

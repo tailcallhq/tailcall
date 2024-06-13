@@ -133,7 +133,7 @@ pub mod file {
 
     #[derive(From, thiserror::Error, Debug)]
     pub enum FileError {
-        #[error("File not found")]
+        #[error("No such file or directory (os error 2)")]
         NotFound,
 
         #[error("No permission to access the file")]
@@ -144,6 +144,12 @@ pub mod file {
 
         #[error("Invalid file format")]
         InvalidFormat,
+
+        #[error("Invalid file path")]
+        InvalidFilePath,
+
+        #[error("Invalid OS string")]
+        InvalidOsString,
 
         #[error("Failed to read file : {0}")]
         FileReadFailed(String),
@@ -160,6 +166,9 @@ pub mod file {
 
         #[error("File writing not supported on Lambda.")]
         LambdaFileWriteNotSupported,
+
+        #[error("Cannot write to a file in an execution spec")]
+        ExecutionSpecFileWriteFailed,
     }
 }
 
@@ -195,6 +204,25 @@ pub mod http {
         #[error("Unable to find key {0} in query params")]
         #[from(ignore)]
         KeyNotFound(String),
+
+        #[error("Invalid Status Code")]
+        InvalidStatusCode(hyper::http::status::InvalidStatusCode),
+
+        #[error("Status Code error")]
+        StatusCode,
+
+        #[error("Invalid Header Value")]
+        InvalidHeaderValue(hyper::header::InvalidHeaderValue),
+
+        #[error("Invalid Header Name")]
+        InvalidHeaderName(hyper::header::InvalidHeaderName),
+
+        #[error("No mock found for request: {method} {url} in {spec_path}")]
+        NoMockFound {
+            method: String,
+            url: String,
+            spec_path: String,
+        },
     }
 
     #[derive(From, thiserror::Error, Debug)]
