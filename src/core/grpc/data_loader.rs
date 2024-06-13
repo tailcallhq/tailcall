@@ -12,12 +12,12 @@ use super::request::execute_grpc_request;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
-use crate::core::ir::Error;
+use crate::core::error::Error as CoreError;
 use crate::core::grpc::request::create_grpc_request;
 use crate::core::http::Response;
+use crate::core::ir::Error;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
-use crate::core::error::Error as CoreError;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {
@@ -67,7 +67,8 @@ impl GrpcDataLoader {
         let inputs = keys.iter().map(|key| key.template.body.as_str());
         let (multiple_body, grouped_keys) = self
             .operation
-            .convert_multiple_inputs(inputs, group_by.key()).map_err(|err| CoreError::GrpcError(err))?;
+            .convert_multiple_inputs(inputs, group_by.key())
+            .map_err(|err| CoreError::GrpcError(err))?;
 
         let first_request = keys[0].clone();
         let multiple_request = create_grpc_request(

@@ -3,10 +3,10 @@ use reqwest::Request;
 use url::Url;
 
 use super::protobuf::ProtobufOperation;
-use crate::core::http::Response;
-use crate::core::runtime::TargetRuntime;
-use crate::core::ir::Error;
 use crate::core::error::Error as CoreError;
+use crate::core::http::Response;
+use crate::core::ir::Error;
+use crate::core::runtime::TargetRuntime;
 
 pub static GRPC_STATUS: &str = "grpc-status";
 
@@ -37,7 +37,7 @@ pub async fn execute_grpc_request(
             Err(response.to_grpc_error(operation))
         };
     }
-    return Err(CoreError::RequestExecutionFailed)?
+    return Err(CoreError::RequestExecutionFailed)?;
 }
 
 #[cfg(test)]
@@ -190,7 +190,7 @@ mod tests {
                 }
                 _ => panic!("Expected GRPCError"),
             }
-        }        
+        }
         Ok(())
     }
 

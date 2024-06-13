@@ -238,11 +238,7 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
 async fn execute_grpc_request_with_dl<
     'ctx,
     Ctx: ResolverContextLike<'ctx>,
-    Dl: Loader<
-        grpc::DataLoaderRequest,
-        Value = Response<async_graphql::Value>,
-        Error = Arc<Error>,
-    >,
+    Dl: Loader<grpc::DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<Error>>,
 >(
     ctx: &EvaluationContext<'ctx, Ctx>,
     rendered: RenderedRequestTemplate,

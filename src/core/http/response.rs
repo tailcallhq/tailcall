@@ -8,9 +8,9 @@ use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
 use crate::core::error::http::HttpError;
+use crate::core::error::Error as CoreError;
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::ir::Error;
-use crate::core::error::Error as CoreError;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
@@ -85,7 +85,9 @@ impl Response<Bytes> {
         operation: &ProtobufOperation,
     ) -> Result<Response<async_graphql::Value>, Error> {
         let mut resp = Response::default();
-        let body = operation.convert_output::<async_graphql::Value>(&self.body).map_err(|err| CoreError::GrpcError(err))?;
+        let body = operation
+            .convert_output::<async_graphql::Value>(&self.body)
+            .map_err(|err| CoreError::GrpcError(err))?;
         resp.body = body;
         resp.status = self.status;
         resp.headers = self.headers;
