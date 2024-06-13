@@ -95,7 +95,8 @@ impl<'a> Similarity<'a> {
 #[cfg(test)]
 mod test {
     use super::Similarity;
-    use crate::core::config::{position::Pos, Config, Field, Type};
+    use crate::core::config::position::Pos;
+    use crate::core::config::{Config, Field, Type};
 
     #[test]
     fn should_return_false_when_thresh_is_not_met() {

@@ -28,10 +28,9 @@ pub use server::*;
 pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
+use super::config::position::Pos;
 use crate::core::config::{Arg, ConfigModule, Field};
 use crate::core::try_fold::TryFold;
-
-use super::config::position::Pos;
 
 pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, String>;
 

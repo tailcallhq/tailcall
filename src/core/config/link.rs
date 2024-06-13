@@ -1,8 +1,8 @@
-use crate::core::config::positioned_config::PositionedConfig;
-use crate::core::macros::PositionedConfig;
 use serde::{Deserialize, Serialize};
 
 use super::super::is_default;
+use crate::core::config::positioned_config::PositionedConfig;
+use crate::core::macros::PositionedConfig;
 
 #[derive(
     Default,

@@ -1,4 +1,3 @@
-use crate::core::directive::DirectiveCodec;
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
@@ -15,10 +14,10 @@ use super::{KeyValue, Link, Server, SourceType, Upstream};
 use crate::core::config::from_document::from_document;
 use crate::core::config::positioned_config::PositionedConfig;
 use crate::core::config::source::Source;
+use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
 use crate::core::json::JsonSchema;
-use crate::core::macros::MergeRight;
-use crate::core::macros::PositionedConfig;
+use crate::core::macros::{MergeRight, PositionedConfig};
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{is_default, scalar};

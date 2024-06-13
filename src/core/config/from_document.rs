@@ -6,8 +6,7 @@ use async_graphql::parser::types::{
     InterfaceType, ObjectType, SchemaDefinition, ServiceDocument, Type, TypeDefinition, TypeKind,
     TypeSystemDefinition, UnionType,
 };
-use async_graphql::parser::Pos as ParserPos;
-use async_graphql::parser::Positioned;
+use async_graphql::parser::{Pos as ParserPos, Positioned};
 use async_graphql::Name;
 
 use super::position::Pos;

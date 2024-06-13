@@ -6,7 +6,6 @@ mod merge_right;
 mod positioned_config;
 
 use crate::merge_right::expand_merge_right_derive;
-
 use crate::positioned_config::expand_positoned_config;
 
 #[proc_macro_derive(MergeRight, attributes(merge_right))]
