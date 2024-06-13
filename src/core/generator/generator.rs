@@ -117,7 +117,10 @@ mod test {
         let cfg_module = gen.run(
             "Query",
             &[GeneratorInput::Proto {
-                metadata: ProtoMetadata { descriptor_set: set, path: news_proto.to_string() },
+                metadata: ProtoMetadata {
+                    descriptor_set: set,
+                    path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
+                },
             }],
         )?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
