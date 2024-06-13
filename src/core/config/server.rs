@@ -30,9 +30,12 @@ pub struct Server {
     pub batch_requests: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// When set to `true`, it will ensure no graphQL execution is made more
-    /// than once if similar query is being executed across the
-    /// server's lifetime.
+    /// Enables deduplication of IO operations to enhance performance.
+    ///
+    /// This flag prevents duplicate IO requests from being executed
+    /// concurrently, reducing resource load. Caution: May lead to issues
+    /// with APIs that expect unique results for identical inputs, such as
+    /// nonce-based APIs.
     pub dedupe: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]

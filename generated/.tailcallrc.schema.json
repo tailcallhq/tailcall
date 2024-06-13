@@ -1024,7 +1024,7 @@
           ]
         },
         "dedupe": {
-          "description": "When set to `true`, it will ensure no graphQL execution is made more than once if similar query is being executed across the server's lifetime.",
+          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
           "type": [
             "boolean",
             "null"

@@ -72,8 +72,7 @@ impl Eval for IO {
         if let Some(key) = self.cache_key(&ctx) {
             Box::pin(async move {
                 if ctx.request_ctx.server.dedupe {
-                    ctx
-                        .request_ctx
+                    ctx.request_ctx
                         .cache
                         .dedupe(&key.clone(), || {
                             Box::pin(async move {
