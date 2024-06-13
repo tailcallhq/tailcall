@@ -66,10 +66,9 @@ impl Eval for IO {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         // Note: Handled the case separately for performance reasons. It avoids cache
         // key generation when it's not required
-        if (!ctx.request_ctx.server.dedupe) || !ctx.is_query() {
+        if !ctx.request_ctx.server.dedupe || !ctx.is_query() {
             return self.eval_inner(ctx);
         }
-
         if let Some(key) = self.cache_key(&ctx) {
             Box::pin(async move {
                 if ctx.request_ctx.server.dedupe {
