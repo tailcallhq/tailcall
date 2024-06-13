@@ -7,6 +7,7 @@ use tailcall::core::generator::source::ImportSource;
 use tailcall::core::generator::{
     Generator, GeneratorConfig, GeneratorInput, InputSource, Resolved, UnResolved,
 };
+use tailcall::core::helpers::path::to_relative_path;
 use tailcall::core::proto_reader::ProtoReader;
 use tailcall::core::resource_reader::ResourceReader;
 use tokio::runtime::Runtime;
@@ -43,6 +44,9 @@ async fn resolve_io(
 
     let reader = ResourceReader::cached(runtime.clone());
     let proto_reader = ProtoReader::init(reader.clone(), runtime.clone());
+    let output_dir = Path::new(&config.output.file)
+        .parent()
+        .unwrap_or(Path::new(""));
 
     for input in config.input.iter() {
         match &input.source {
@@ -58,7 +62,10 @@ async fn resolve_io(
                             .push(GeneratorInput::Json { url: src.parse()?, data: content })
                     }
                     ImportSource::Proto => {
-                        let metadata = proto_reader.read(&src).await?;
+                        let mut metadata = proto_reader.read(&src).await?;
+                        if let Some(relative_path_to_proto) = to_relative_path(output_dir, src) {
+                            metadata.path = relative_path_to_proto;
+                        }
                         generator_type_inputs.push(GeneratorInput::Proto { metadata });
                     }
                 }
