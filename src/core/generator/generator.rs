@@ -5,11 +5,9 @@ use url::Url;
 
 use super::from_proto::from_proto;
 use super::{from_json, ConfigGenerationRequest, NameGenerator};
-use crate::core::config::transformer::AmbiguousType;
 use crate::core::config::{Config, ConfigModule, Link, LinkType, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
-use crate::core::valid::Validator;
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work
@@ -81,12 +79,12 @@ impl Generator {
                 }
             }
         }
-        // TODO: add transformers
-        let config = ConfigModule::from(config)
-            .transform(AmbiguousType::default())
-            .to_result()?;
+        // TODO: add more transformers here and fix the bug present in AmbiguousType.
+        // let config = ConfigModule::from(config)
+        //     .transform(AmbiguousType::default())
+        //     .to_result()?;
 
-        Ok(config)
+        Ok(ConfigModule::from(config))
     }
 }
 
