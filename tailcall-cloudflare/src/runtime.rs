@@ -3,6 +3,8 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use async_graphql_value::ConstValue;
+use tailcall::core::error::file::FileError;
+use tailcall::core::error::http::HttpError;
 use tailcall::core::ir::IoId;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
@@ -13,11 +15,11 @@ fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
     Arc::new(env::CloudflareEnv::init(env))
 }
 
-fn init_file(env: Rc<worker::Env>, bucket_id: &str) -> anyhow::Result<Arc<dyn FileIO>> {
+fn init_file(env: Rc<worker::Env>, bucket_id: &str) -> anyhow::Result<Arc<dyn FileIO<Error = FileError>>> {
     Ok(Arc::new(file::CloudflareFileIO::init(env, bucket_id)?))
 }
 
-fn init_http() -> Arc<dyn HttpIO> {
+fn init_http() -> Arc<dyn HttpIO<Error = HttpError>> {
     Arc::new(http::CloudflareHttp::init())
 }
 
