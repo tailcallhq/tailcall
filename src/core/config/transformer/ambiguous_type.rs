@@ -254,6 +254,8 @@ mod tests {
             }],
         )?;
 
+        let cfg_module = cfg_module.transform(AmbiguousType::default()).to_result()?;
+
         let actual = cfg_module
             .config
             .types
