@@ -241,7 +241,7 @@ async fn execute_grpc_request_with_dl<
     Dl: Loader<
         grpc::DataLoaderRequest,
         Value = Response<async_graphql::Value>,
-        Error = Arc<anyhow::Error>,
+        Error = Arc<Error>,
     >,
 >(
     ctx: &EvaluationContext<'ctx, Ctx>,

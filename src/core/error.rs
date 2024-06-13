@@ -97,6 +97,9 @@ pub enum Error {
     #[error("Protox Error")]
     Protox(protox::Error),
 
+    #[error("Failed to execute request")]
+    RequestExecutionFailed,
+
     #[error("File Error")]
     File(file::FileError),
 

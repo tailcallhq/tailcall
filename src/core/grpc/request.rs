@@ -1,4 +1,3 @@
-use anyhow::{bail, Result};
 use hyper::{HeaderMap, Method};
 use reqwest::Request;
 use url::Url;
@@ -6,6 +5,8 @@ use url::Url;
 use super::protobuf::ProtobufOperation;
 use crate::core::http::Response;
 use crate::core::runtime::TargetRuntime;
+use crate::core::ir::Error;
+use crate::core::error::Error as CoreError;
 
 pub static GRPC_STATUS: &str = "grpc-status";
 
@@ -21,7 +22,7 @@ pub async fn execute_grpc_request(
     runtime: &TargetRuntime,
     operation: &ProtobufOperation,
     request: Request,
-) -> Result<Response<async_graphql::Value>> {
+) -> Result<Response<async_graphql::Value>, Error> {
     let response = runtime.http2_only.execute(request).await?;
 
     let grpc_status = response
@@ -36,7 +37,7 @@ pub async fn execute_grpc_request(
             Err(response.to_grpc_error(operation))
         };
     }
-    bail!("Failed to execute request");
+    return Err(CoreError::RequestExecutionFailed)?
 }
 
 #[cfg(test)]
@@ -165,17 +166,17 @@ mod tests {
         );
 
         if let Err(err) = result {
-            match err.downcast_ref::<Error>() {
-                Some(Error::GRPCError {
+            match err {
+                Error::GRPCError {
                     grpc_code,
                     grpc_description,
                     grpc_status_message,
                     grpc_status_details,
-                }) => {
+                } => {
                     let code = Code::InvalidArgument;
-                    assert_eq!(*grpc_code, code as i32);
-                    assert_eq!(*grpc_description, code.description());
-                    assert_eq!(*grpc_status_message, "description message");
+                    assert_eq!(grpc_code, code as i32);
+                    assert_eq!(grpc_description, code.description());
+                    assert_eq!(grpc_status_message, "description message");
                     assert_eq!(
                         serde_json::to_value(grpc_status_details)?,
                         json!({
@@ -189,7 +190,7 @@ mod tests {
                 }
                 _ => panic!("Expected GRPCError"),
             }
-        }
+        }        
         Ok(())
     }
 
