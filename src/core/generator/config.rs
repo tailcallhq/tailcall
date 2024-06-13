@@ -1,5 +1,6 @@
+use std::env;
+use std::marker::PhantomData;
 use std::path::Path;
-use std::{env, marker::PhantomData};
 
 use path_clean::PathClean;
 use schemars::JsonSchema;

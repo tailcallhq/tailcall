@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use inquire::Confirm;
+use pathdiff::diff_paths;
 
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::{ConfigSource, ImportSource};
@@ -9,25 +10,20 @@ use crate::core::generator::{Generator, GeneratorConfig, GeneratorInput, InputSo
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
-use pathdiff::diff_paths;
 
 /// Checks if file or folder already exists or not.
 fn is_exists(path: &str) -> bool {
     fs::metadata(path).is_ok()
 }
 
-/// Expects both paths to be absolute and returns a relative path from `from` to `to`.
-fn to_relative(from: &str, to: &str) -> Option<String> {
-    let mut from_path = Path::new(from).to_path_buf();
+/// Expects both paths to be absolute and returns a relative path from `from` to
+/// `to`. expects `from`` to be directory.
+fn to_relative_path(from: &Path, to: &str) -> Option<String> {
+    let from_path = Path::new(from).to_path_buf();
     let to_path = Path::new(to).to_path_buf();
 
-    // Ensure `from` is a directory by getting its parent if it is a file
-    if from_path.is_file() {
-        from_path = from_path.parent()?.to_path_buf();
-    }
-
     // Calculate the relative path from `from_path` to `to_path`
-    diff_paths(&to_path, &from_path).map(|p| p.to_string_lossy().to_string())
+    diff_paths(to_path, from_path).map(|p| p.to_string_lossy().to_string())
 }
 
 pub struct ConfigConsoleGenerator {
@@ -110,6 +106,9 @@ impl ConfigConsoleGenerator {
 
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
+        let output_dir = Path::new(&config.output.file)
+            .parent()
+            .unwrap_or(Path::new(""));
 
         for input in config.input {
             match input.source {
@@ -125,9 +124,7 @@ impl ConfigConsoleGenerator {
                         }
                         ImportSource::Proto => {
                             let mut metadata = proto_reader.read(&src).await?;
-                            if let Some(relative_path_to_proto) =
-                                to_relative(&config.output.file, &src)
-                            {
+                            if let Some(relative_path_to_proto) = to_relative_path(output_dir, &src) {
                                 metadata.path = relative_path_to_proto;
                             }
                             generator_type_inputs.push(GeneratorInput::Proto { metadata });
