@@ -2,10 +2,11 @@ use std::rc::Rc;
 
 use anyhow::anyhow;
 use async_std::task::spawn_local;
+use tailcall::core::error::file::FileError;
 use tailcall::core::FileIO;
 use worker::Env;
 
-use crate::to_anyhow;
+use super::{Error, Result};
 
 #[derive(Clone)]
 pub struct CloudflareFileIO {
@@ -26,42 +27,48 @@ impl CloudflareFileIO {
 unsafe impl Sync for CloudflareFileIO {}
 unsafe impl Send for CloudflareFileIO {}
 
-async fn get(bucket: Rc<worker::Bucket>, path: String) -> anyhow::Result<String> {
-    let maybe_object = bucket
-        .get(path.clone())
-        .execute()
-        .await
-        .map_err(to_anyhow)?;
-    let object = maybe_object.ok_or(anyhow!("File '{}' was not found in bucket", path))?;
+async fn get(bucket: Rc<worker::Bucket>, path: String) -> Result<String> {
+    let maybe_object = bucket.get(path.clone()).execute().await?;
+    let object = maybe_object.ok_or(Error::MissingFileInBucket(path.to_string()))?;
 
     let body = match object.body() {
-        Some(body) => body.text().await.map_err(to_anyhow),
-        None => Ok("".to_string()),
+        Some(body) => body.text().await?,
+        None => "".to_string(),
     };
-    body
+    Ok(body)
 }
 
-async fn put(bucket: Rc<worker::Bucket>, path: String, value: Vec<u8>) -> anyhow::Result<()> {
-    bucket.put(path, value).execute().await.map_err(to_anyhow)?;
+async fn put(bucket: Rc<worker::Bucket>, path: String, value: Vec<u8>) -> Result<()> {
+    bucket.put(path, value).execute().await?;
     Ok(())
 }
 
 #[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+    type Error = FileError;
+
+    async fn write<'a>(
+        &'a self,
+        path: &'a str,
+        content: &'a [u8],
+    ) -> std::result::Result<(), Self::Error> {
         let content = content.to_vec();
         let bucket = self.bucket.clone();
         let path_cloned = path.to_string();
-        spawn_local(put(bucket, path_cloned, content)).await?;
+        let _ = spawn_local(put(bucket, path_cloned, content))
+            .await
+            .map_err(|e| FileError::Cloudflare(e.to_string()));
         tracing::info!("File write: {} ... ok", path);
         Ok(())
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+    async fn read<'a>(&'a self, path: &'a str) -> std::result::Result<String, Self::Error> {
         let bucket = self.bucket.clone();
         let path_cloned = path.to_string();
-        let content = spawn_local(get(bucket, path_cloned)).await?;
+        let content = spawn_local(get(bucket, path_cloned))
+            .await
+            .map_err(|e| FileError::Cloudflare(e.to_string()));
         tracing::info!("File read: {} ... ok", path);
-        Ok(content)
+        content
     }
 }

@@ -169,6 +169,10 @@ pub mod file {
 
         #[error("Cannot write to a file in an execution spec")]
         ExecutionSpecFileWriteFailed,
+
+        #[error("Cloudflare Worker Execution Error : {0}")]
+        #[from(ignore)]
+        Cloudflare(String),
     }
 }
 
