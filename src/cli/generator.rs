@@ -1,4 +1,5 @@
-use std::fs;
+use std::path::Path;
+use std::{env, fs};
 
 use inquire::Confirm;
 
@@ -12,6 +13,17 @@ use crate::core::runtime::TargetRuntime;
 /// Checks if file or folder already exists or not.
 fn is_exists(path: &str) -> bool {
     fs::metadata(path).is_ok()
+}
+
+/// Given absolute URL, it converts to relative of current working directory.
+fn calculate_relative_path(absolute_path: &str) -> anyhow::Result<String> {
+    match env::current_dir() {
+        Ok(base_dir) => match Path::new(absolute_path).strip_prefix(base_dir) {
+            Ok(relative_path) => Ok(relative_path.to_string_lossy().to_string()),
+            Err(_) => Ok(absolute_path.to_string()),
+        },
+        Err(_) => Ok(absolute_path.to_string()),
+    }
 }
 
 pub struct ConfigConsoleGenerator {
@@ -108,7 +120,11 @@ impl ConfigConsoleGenerator {
                             });
                         }
                         ImportSource::Proto => {
-                            let metadata = proto_reader.read(&src).await?;
+                            let mut metadata = proto_reader.read(&src).await?;
+
+                            // we use metadaa path in config's link directive and we want this path
+                            // to be relative.
+                            metadata.path = calculate_relative_path(&src)?;
                             generator_type_inputs.push(GeneratorInput::Proto { metadata });
                         }
                     }
