@@ -97,9 +97,7 @@ impl Response<Bytes> {
     pub fn to_grpc_error(&self, operation: &ProtobufOperation) -> Error {
         let grpc_status = match Status::from_header_map(&self.headers) {
             Some(status) => status,
-            None => {
-                return Error::IOError("Error while parsing upstream headers".to_owned())
-            }
+            None => return Error::IOError("Error while parsing upstream headers".to_owned()),
         };
 
         let mut obj: IndexMap<Name, async_graphql::Value> = IndexMap::new();

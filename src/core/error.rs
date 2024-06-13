@@ -157,6 +157,9 @@ pub mod file {
 
         #[error("Utf8 Error")]
         Utf8(FromUtf8Error),
+
+        #[error("File writing not supported on Lambda.")]
+        LambdaFileWriteNotSupported,
     }
 }
 
