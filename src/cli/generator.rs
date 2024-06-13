@@ -24,7 +24,7 @@ impl ConfigConsoleGenerator {
     pub fn new(config_path: &str, runtime: TargetRuntime) -> Self {
         Self {
             config_path: config_path.to_string(),
-            generator: Generator::new("f", "T"),
+            generator: Generator::default(),
             runtime,
         }
     }

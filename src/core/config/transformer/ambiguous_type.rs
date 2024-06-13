@@ -246,7 +246,7 @@ mod tests {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[protobuf::NEWS])?;
 
-        let gen = Generator::new("f", "T");
+        let gen = Generator::default();
         let cfg_module = gen.run(
             "Query",
             &[GeneratorInput::Proto {

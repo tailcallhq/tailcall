@@ -38,6 +38,15 @@ pub struct Generator {
     type_name_gen: NameGenerator,
 }
 
+impl Default for Generator {
+    fn default() -> Self {
+        Self {
+            field_name_gen: NameGenerator::new("f"),
+            type_name_gen: NameGenerator::new("T"),
+        }
+    }
+}
+
 impl Generator {
     pub fn new(field_prefix: &str, type_prefix: &str) -> Self {
         Self {
@@ -104,7 +113,7 @@ mod test {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[news_proto])?;
 
-        let gen = Generator::new("f", "T");
+        let gen = Generator::default();
         let cfg_module = gen.run(
             "Query",
             &[GeneratorInput::Proto {
@@ -117,7 +126,7 @@ mod test {
 
     #[test]
     fn should_generate_config_from_configs() -> anyhow::Result<()> {
-        let gen = Generator::new("f", "T");
+        let gen = Generator::default();
         let cfg_module = gen.run(
             "Query",
             &[GeneratorInput::Config {
@@ -136,7 +145,7 @@ mod test {
 
     #[test]
     fn should_generate_config_from_json() -> anyhow::Result<()> {
-        let gen = Generator::new("f", "T");
+        let gen = Generator::default();
         let cfg_module = gen.run(
             "Query",
             &[GeneratorInput::Json {
