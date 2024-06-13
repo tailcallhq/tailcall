@@ -72,7 +72,7 @@ impl SourceType {
 
 impl Source {
     fn normalize_path(path: String) -> String {
-        path.replace("\\", "/")
+        path.replace('\\', "/")
     }
 
     pub fn new(input_path: String, input_type: SourceType) -> Self {
