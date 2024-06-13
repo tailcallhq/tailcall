@@ -232,6 +232,11 @@ directive @server(
   """
   apolloTracing: Boolean
   """
+  When set to `true`, it will ensure no graphQL execution is made more than once if 
+  similar query is being executed across the server's lifetime.
+  """
+  batchExecution: Boolean
+  """
   `batchRequests` combines multiple requests into one, improving performance but potentially 
   introducing latency and complicating debugging. Use judiciously. @default `false`.
   """
@@ -359,6 +364,11 @@ directive @upstream(
   than once within the context of a single GraphQL request.
   """
   dedupe: Boolean
+  """
+  When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more 
+  than once if similar request is inflight across the server's lifetime.
+  """
+  dedupeInFlight: Boolean
   """
   The `http2Only` setting allows you to specify whether the client should always issue 
   HTTP2 requests, without checking if the server supports it or not. By default it 
