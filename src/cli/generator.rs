@@ -1,6 +1,8 @@
 use std::fs;
+use std::path::Path;
 
 use inquire::Confirm;
+use pathdiff::diff_paths;
 
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::{ConfigSource, ImportSource};
@@ -14,6 +16,16 @@ fn is_exists(path: &str) -> bool {
     fs::metadata(path).is_ok()
 }
 
+/// Expects both paths to be absolute and returns a relative path from `from` to
+/// `to`. expects `from`` to be directory.
+fn to_relative_path(from: &Path, to: &str) -> Option<String> {
+    let from_path = Path::new(from).to_path_buf();
+    let to_path = Path::new(to).to_path_buf();
+
+    // Calculate the relative path from `from_path` to `to_path`
+    diff_paths(to_path, from_path).map(|p| p.to_string_lossy().to_string())
+}
+
 pub struct ConfigConsoleGenerator {
     config_path: String,
     runtime: TargetRuntime,
@@ -24,7 +36,7 @@ impl ConfigConsoleGenerator {
     pub fn new(config_path: &str, runtime: TargetRuntime) -> Self {
         Self {
             config_path: config_path.to_string(),
-            generator: Generator::new("f", "T"),
+            generator: Generator::default(),
             runtime,
         }
     }
@@ -94,6 +106,9 @@ impl ConfigConsoleGenerator {
 
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
+        let output_dir = Path::new(&config.output.file)
+            .parent()
+            .unwrap_or(Path::new(""));
 
         for input in config.input {
             match input.source {
@@ -108,7 +123,11 @@ impl ConfigConsoleGenerator {
                             });
                         }
                         ImportSource::Proto => {
-                            let metadata = proto_reader.read(&src).await?;
+                            let mut metadata = proto_reader.read(&src).await?;
+                            if let Some(relative_path_to_proto) = to_relative_path(output_dir, &src)
+                            {
+                                metadata.path = relative_path_to_proto;
+                            }
                             generator_type_inputs.push(GeneratorInput::Proto { metadata });
                         }
                     }
