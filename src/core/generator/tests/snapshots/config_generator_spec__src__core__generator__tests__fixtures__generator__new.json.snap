@@ -2,7 +2,7 @@
 source: src/core/generator/tests/config_generator_spec.rs
 expression: cfg_module.config.to_sdl()
 ---
-schema @server @upstream @link(src: "/Users/ranjit/Desktop/tailcall/tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
+schema @server @upstream @link(src: "../../../../../../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
   query: Query
 }
 
