@@ -37,7 +37,7 @@ pub async fn execute_grpc_request(
             Err(response.to_grpc_error(operation))
         };
     }
-    return Err(CoreError::RequestExecutionFailed)?;
+    Err(CoreError::RequestExecutionFailed)?
 }
 
 #[cfg(test)]

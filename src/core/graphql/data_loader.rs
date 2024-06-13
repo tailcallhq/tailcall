@@ -51,7 +51,7 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
                 .execute(batched_req)
                 .await?
                 .to_json()
-                .map_err(|err| GraphqlError::from(err));
+                .map_err(GraphqlError::from);
             let hashmap = extract_responses(result, keys);
             Ok(hashmap)
         } else {

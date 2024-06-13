@@ -87,7 +87,7 @@ impl Response<Bytes> {
         let mut resp = Response::default();
         let body = operation
             .convert_output::<async_graphql::Value>(&self.body)
-            .map_err(|err| CoreError::GrpcError(err))?;
+            .map_err(CoreError::GrpcError)?;
         resp.body = body;
         resp.status = self.status;
         resp.headers = self.headers;
@@ -98,7 +98,7 @@ impl Response<Bytes> {
         let grpc_status = match Status::from_header_map(&self.headers) {
             Some(status) => status,
             None => {
-                return Error::IOError("Error while parsing upstream headers".to_owned()).into()
+                return Error::IOError("Error while parsing upstream headers".to_owned())
             }
         };
 
@@ -141,7 +141,7 @@ impl Response<Bytes> {
         // TODO: because of this conversion to anyhow::Error
         // we lose additional details that could be added
         // through async_graphql::ErrorExtensions
-        return error;
+        error
     }
 
     pub fn to_resp_string(self) -> Result<Response<String>> {

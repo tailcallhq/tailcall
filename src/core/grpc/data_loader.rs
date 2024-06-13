@@ -68,7 +68,7 @@ impl GrpcDataLoader {
         let (multiple_body, grouped_keys) = self
             .operation
             .convert_multiple_inputs(inputs, group_by.key())
-            .map_err(|err| CoreError::GrpcError(err))?;
+            .map_err(CoreError::GrpcError)?;
 
         let first_request = keys[0].clone();
         let multiple_request = create_grpc_request(
