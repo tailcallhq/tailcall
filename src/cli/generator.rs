@@ -124,7 +124,8 @@ impl ConfigConsoleGenerator {
                         }
                         ImportSource::Proto => {
                             let mut metadata = proto_reader.read(&src).await?;
-                            if let Some(relative_path_to_proto) = to_relative_path(output_dir, &src) {
+                            if let Some(relative_path_to_proto) = to_relative_path(output_dir, &src)
+                            {
                                 metadata.path = relative_path_to_proto;
                             }
                             generator_type_inputs.push(GeneratorInput::Proto { metadata });
