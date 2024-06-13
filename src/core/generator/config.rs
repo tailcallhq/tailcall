@@ -1,5 +1,5 @@
-use std::marker::PhantomData;
 use std::path::Path;
+use std::{env, marker::PhantomData};
 
 use path_clean::PathClean;
 use schemars::JsonSchema;
@@ -26,6 +26,10 @@ fn resolve(path: &str, parent_dir: Option<&Path>) -> anyhow::Result<String> {
     if let Ok(abs_path) = std::fs::canonicalize(&joined_path) {
         return Ok(abs_path.to_string_lossy().to_string());
     }
+    if let Ok(cwd) = env::current_dir() {
+        return Ok(cwd.join(joined_path).clean().to_string_lossy().to_string());
+    }
+
     Ok(joined_path.clean().to_string_lossy().to_string())
 }
 

@@ -1,5 +1,5 @@
+use std::fs;
 use std::path::Path;
-use std::{env, fs};
 
 use inquire::Confirm;
 
@@ -9,10 +9,25 @@ use crate::core::generator::{Generator, GeneratorConfig, GeneratorInput, InputSo
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
+use pathdiff::diff_paths;
 
 /// Checks if file or folder already exists or not.
 fn is_exists(path: &str) -> bool {
     fs::metadata(path).is_ok()
+}
+
+/// Expects both paths to be absolute and returns a relative path from `from` to `to`.
+fn to_relative(from: &str, to: &str) -> Option<String> {
+    let mut from_path = Path::new(from).to_path_buf();
+    let to_path = Path::new(to).to_path_buf();
+
+    // Ensure `from` is a directory by getting its parent if it is a file
+    if from_path.is_file() {
+        from_path = from_path.parent()?.to_path_buf();
+    }
+
+    // Calculate the relative path from `from_path` to `to_path`
+    diff_paths(&to_path, &from_path).map(|p| p.to_string_lossy().to_string())
 }
 
 pub struct ConfigConsoleGenerator {
@@ -109,7 +124,12 @@ impl ConfigConsoleGenerator {
                             });
                         }
                         ImportSource::Proto => {
-                            let metadata = proto_reader.read(&src).await?;
+                            let mut metadata = proto_reader.read(&src).await?;
+                            if let Some(relative_path_to_proto) =
+                                to_relative(&config.output.file, &src)
+                            {
+                                metadata.path = relative_path_to_proto;
+                            }
                             generator_type_inputs.push(GeneratorInput::Proto { metadata });
                         }
                     }
