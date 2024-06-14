@@ -6,28 +6,23 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-type M1 {
-  lat: String
-  lng: String
-}
-
-type M2 {
+type Address {
   city: String
-  geo: M1
+  geo: Geo
   street: String
   suite: String
   zipcode: String
 }
 
-type M3 {
+type Company {
   bs: String
   catchPhrase: String
   name: String
 }
 
-type M4 {
-  address: M2
-  company: M3
+type F2 {
+  address: Address
+  company: Company
   email: String
   id: Int
   name: String
@@ -36,7 +31,12 @@ type M4 {
   website: String
 }
 
+type Geo {
+  lat: String
+  lng: String
+}
+
 type Query {
-  f1: [M4] @http(path: "/users")
-  f2(p1: Int!): M4 @http(path: "/users/{{.args.p1}}")
+  f1: [F2] @http(path: "/users")
+  f2(p1: Int!): F2 @http(path: "/users/{{.args.p1}}")
 }

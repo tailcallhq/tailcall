@@ -9,10 +9,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 interface ICLI {
   version: string
+  name: string
 }
 
 const options = parse<ICLI>({
   version: {alias: "v", type: String},
+  name: {alias: "n", type: String},
 })
 
 async function getBuildDefinitions(): Promise<string[]> {
@@ -23,6 +25,7 @@ async function getBuildDefinitions(): Promise<string[]> {
 
 async function genServerPackage(buildDefinitions: string[]) {
   const packageVersion = options.version || "0.1.0"
+  const name = options.name || "@tailcallhq/tailcall"
 
   console.log(`Generating package.json with version ${packageVersion}`)
 
@@ -43,7 +46,7 @@ async function genServerPackage(buildDefinitions: string[]) {
     repository: repository!,
     homepage: homepage!,
     keywords: keywords!,
-    name: "@tailcallhq/tailcall",
+    name: name,
     type: "module",
     version: packageVersion,
     optionalDependencies,
