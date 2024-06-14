@@ -107,7 +107,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
-            if !(app_ctx.blueprint.server.batch_execution && request.is_query()) {
+            if !(app_ctx.blueprint.server.dedupe && request.is_query()) {
                 Ok(execute_query(&app_ctx, &req_ctx, request).await?)
             } else {
                 let operation_id = request.operation_id(&req.headers);
