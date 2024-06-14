@@ -411,6 +411,9 @@
             }
           ]
         },
+        "default_value": {
+          "description": "Stores the default value for the field"
+        },
         "doc": {
           "description": "Publicly visible documentation for the field.",
           "type": [
