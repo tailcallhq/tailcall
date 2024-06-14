@@ -304,10 +304,16 @@ pub struct Field {
     ///
     /// Sets the cache configuration for a field
     pub cache: Option<Pos<Cache>>,
+
     ///
     /// Marks field as protected by auth provider
     #[serde(default)]
     pub protected: Option<Pos<Protected>>,
+
+    ///
+    /// Stores the default value for the field
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub default_value: Option<Value>,
 }
 
 // It's a terminal implementation of MergeRight

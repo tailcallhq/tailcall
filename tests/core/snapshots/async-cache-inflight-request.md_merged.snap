@@ -3,8 +3,8 @@ source: tests/core/spec.rs
 expression: formatter
 ---
 schema
-  @server(port: 8000, queryValidation: false)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", dedupe: true, dedupeInFlight: true) {
+  @server(dedupe: true, port: 8000, queryValidation: false)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 

@@ -8,6 +8,7 @@ use async_graphql::parser::types::{
 };
 use async_graphql::parser::{Pos as ParserPos, Positioned};
 use async_graphql::Name;
+use async_graphql_value::ConstValue;
 
 use super::position::Pos;
 use super::positioned_config::PositionedConfig;
@@ -18,7 +19,7 @@ use crate::core::config::{
     Server, Union, Upstream,
 };
 use crate::core::directive::DirectiveCodec;
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,
@@ -422,6 +423,7 @@ fn to_fields(
 ) -> Valid<BTreeMap<String, Pos<config::Field>>, String> {
     to_fields_inner(fields, to_field, input_path)
 }
+
 fn to_input_object_fields(
     input_object_fields: &Vec<Positioned<InputValueDefinition>>,
     input_path: &str,
@@ -438,6 +440,7 @@ fn to_field(
         field_position,
         to_args(field_definition, input_path),
         input_path,
+        None,
     )
 }
 fn to_input_object_field(
@@ -450,6 +453,10 @@ fn to_input_object_field(
         field_position,
         BTreeMap::new(),
         input_path,
+        field_definition
+            .default_value
+            .as_ref()
+            .map(|f| f.node.clone()),
     )
 }
 fn to_common_field<F>(
@@ -457,15 +464,21 @@ fn to_common_field<F>(
     field_position: &ParserPos,
     args: BTreeMap<String, config::Arg>,
     input_path: &str,
+    default_value: Option<ConstValue>,
 ) -> Valid<Pos<config::Field>, String>
 where
-    F: Fieldlike,
+    F: FieldLike,
 {
     let type_of = field.type_of();
     let base = &type_of.base;
     let nullable = &type_of.nullable;
     let description = field.description();
     let directives = field.directives();
+    let default_value = default_value
+        .map(ConstValue::into_json)
+        .transpose()
+        .map_err(|err| ValidationError::new(err.to_string()))
+        .into();
 
     let type_of = to_type_of(type_of);
     let list = matches!(&base, BaseType::List(_));
@@ -517,8 +530,9 @@ where
         Protected::directive_name().as_str(),
         input_path,
     ))
+    .fuse(default_value)
     .map(
-        |(http, graphql, cache, grpc, omit, modify, script, call, protected)| {
+        |(http, graphql, cache, grpc, omit, modify, script, call, protected, default_value)| {
             let const_field = to_const_field(directives, input_path);
             Pos::new(
                 field_position.line,
@@ -541,6 +555,7 @@ where
                     cache,
                     call,
                     protected,
+                    default_value,
                 },
             )
         },
@@ -697,12 +712,12 @@ impl HasName for InputValueDefinition {
     }
 }
 
-trait Fieldlike {
+trait FieldLike {
     fn type_of(&self) -> &Type;
     fn description(&self) -> &Option<Positioned<String>>;
     fn directives(&self) -> &[Positioned<ConstDirective>];
 }
-impl Fieldlike for FieldDefinition {
+impl FieldLike for FieldDefinition {
     fn type_of(&self) -> &Type {
         &self.ty.node
     }
@@ -713,7 +728,7 @@ impl Fieldlike for FieldDefinition {
         &self.directives
     }
 }
-impl Fieldlike for InputValueDefinition {
+impl FieldLike for InputValueDefinition {
     fn type_of(&self) -> &Type {
         &self.ty.node
     }

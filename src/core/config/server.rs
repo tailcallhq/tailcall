@@ -43,10 +43,13 @@ pub struct Server {
     pub batch_requests: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    /// When set to `true`, it will ensure no graphQL execution is made more
-    /// than once if similar query is being executed across the
-    /// server's lifetime.
-    pub batch_execution: Option<bool>,
+    /// Enables deduplication of IO operations to enhance performance.
+    ///
+    /// This flag prevents duplicate IO requests from being executed
+    /// concurrently, reducing resource load. Caution: May lead to issues
+    /// with APIs that expect unique results for identical inputs, such as
+    /// nonce-based APIs.
+    pub dedupe: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     #[positioned_field(option_field)]
@@ -257,8 +260,8 @@ impl Server {
             .map_or(true, |Pos { inner, .. }| *inner)
     }
 
-    pub fn get_batch_execution(&self) -> bool {
-        self.batch_execution.unwrap_or(false)
+    pub fn get_dedupe(&self) -> bool {
+        self.dedupe.unwrap_or(false)
     }
 }
 
