@@ -65,7 +65,7 @@ impl IR {
 }
 
 impl Eval for IR {
-    #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
+    #[tracing::instrument(skip_all, fields(otel.name = % self), err)]
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
@@ -92,7 +92,7 @@ impl Eval for IR {
                     }
                 },
                 IR::Path(input, path) => {
-                    let inp = &input.eval(ctx).await?;
+                    let inp: &ConstValue = &input.eval(ctx).await?;
                     Ok(inp
                         .get_path(path)
                         .unwrap_or(&async_graphql::Value::Null)

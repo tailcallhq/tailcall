@@ -3,16 +3,15 @@ use tokio::sync::Mutex;
 
 use crate::core::ir::jit::model::{Children, ExecutionPlan, Field};
 use crate::core::ir::jit::store::Store;
-use crate::core::ir::{
-    CacheKey, Eval, EvaluationContext, EvaluationError, IoId, ResolverContextLike, IR,
-};
+use crate::core::ir::{Eval, EvaluationContext, EvaluationError, IoId, ResolverContextLike, IR};
 
-struct IO {
-    data: OwnedValue,
-    id: IoId,
+pub struct IO {
+    pub data: OwnedValue,
+    pub id: Option<IoId>,
 }
+
 impl IO {
-    fn new(value: OwnedValue, id: IoId) -> Self {
+    pub fn new(value: OwnedValue, id: Option<IoId>) -> Self {
         Self { data: value, id }
     }
 }
@@ -69,8 +68,9 @@ async fn iter<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
                 iter(store, child, ctx.clone(), Some(io.data.get_value())).await?;
             }
         }
-
-        store.insert(call_id, io.data);
+        if let Some(call_id) = call_id {
+            store.insert(call_id, io.data);
+        }
     }
 
     Ok(())
@@ -81,28 +81,7 @@ async fn execute<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     ctx: EvaluationContext<'a, Ctx>,
 ) -> Result<IO, EvaluationError> {
     // TODO: should implement some kind of key for all fields of IR
-    match ir {
-        IR::IO(io) => {
-            let io_id = io.cache_key(&ctx).ok_or(EvaluationError::ExprEvalError(
-                "Unable to generate cache key".to_string(),
-            ))?;
-            let value = ir.eval(ctx).await.map_err(|e| {
-                EvaluationError::ExprEvalError(format!("Unable to evaluate: {}", e))
-            })?;
-
-            let value = value
-                .into_json()
-                .map_err(|e| EvaluationError::DeserializeError(e.to_string()))?;
-
-            let owned_val = OwnedValue::from_string(value.to_string()).map_err(|e| {
-                EvaluationError::DeserializeError(format!("Failed to deserialize IO value: {}", e))
-            })?;
-            Ok(IO::new(owned_val, io_id))
-        }
-        _ => Err(EvaluationError::ExprEvalError(
-            "Unable to generate cache key".to_string(),
-        )),
-    }
+    ir.eval(ctx).await
 }
 
 #[cfg(test)]
@@ -173,8 +152,8 @@ pub mod tests {
         let first = children.first().unwrap().to_owned();
 
         let store = store.into_inner();
-        let synth = Synth::new(first, store);
-        serde_json::to_string_pretty(&synth.synthesize(ctx)).unwrap()
+        let synth = Synth::new(first, store, ctx.clone());
+        serde_json::to_string_pretty(&synth.synthesize()).unwrap()
     }
 
     #[tokio::test]
