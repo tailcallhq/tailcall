@@ -73,7 +73,7 @@ impl Eval for IO {
             Box::pin(async move {
                 ctx.request_ctx
                     .cache
-                    .dedupe(&key.clone(), || async move {
+                    .dedupe(&key, || async {
                         ctx.request_ctx
                             .dedupe_handler
                             .dedupe(&key, || self.eval_inner(ctx))
