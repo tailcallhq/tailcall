@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream(baseURL: "http://abc.com") {
+  query: Query
+}
+
+input Input {
+  id: Int = 1
+}
+
+type Query {
+  bar(input: Input = {id: 3}): Int @http(path: "/foo/{{.args.input.id}}")
+  foo(input: Input!): Int @http(path: "/foo/{{.args.input.id}}")
+}
