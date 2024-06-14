@@ -9,14 +9,14 @@ use crate::core::merge_right::MergeRight;
 )]
 #[serde(transparent)]
 pub struct Pos<T> {
+    pub inner: T,
+
     #[serde(skip_serializing, skip_deserializing)]
     pub line: usize,
     #[serde(skip_serializing, skip_deserializing)]
     pub column: usize,
     #[serde(skip_serializing, skip_deserializing)]
     pub file_path: Option<String>,
-
-    pub inner: T,
 }
 
 impl<T> Pos<T> {
