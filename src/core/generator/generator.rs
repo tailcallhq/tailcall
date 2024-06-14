@@ -4,7 +4,7 @@ use serde_json::Value;
 use url::Url;
 
 use super::from_proto::from_proto;
-use super::{from_json, ConfigGenerationRequest, NameGenerator};
+use super::{from_json, RequestSample, NameGenerator};
 use crate::core::config::{Config, ConfigModule, Link, LinkType, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
@@ -67,7 +67,7 @@ impl Generator {
                     config = config.merge_right(Config::from_source(source.to_owned(), schema)?)
                 }
                 GeneratorInput::Json { url, data } => {
-                    let req = ConfigGenerationRequest::new(url.to_owned(), data.to_owned());
+                    let req = RequestSample::new(url.to_owned(), data.to_owned());
                     config = config.merge_right(from_json(
                         &[req],
                         query,

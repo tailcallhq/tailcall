@@ -3,7 +3,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::core::generator::{from_json, ConfigGenerationRequest, NameGenerator};
+use tailcall::core::generator::{from_json, RequestSample, NameGenerator};
 use url::Url;
 
 #[derive(Serialize, Deserialize)]
@@ -41,7 +41,7 @@ fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {
     let type_name_gen = NameGenerator::new("T");
 
     let config = from_json(
-        &[ConfigGenerationRequest::new(url, body)],
+        &[RequestSample::new(url, body)],
         "Query",
         &field_name_gen,
         &type_name_gen,

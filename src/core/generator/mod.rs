@@ -8,6 +8,6 @@ mod proto;
 pub mod source;
 
 pub use config::*;
-pub use from_json::{from_json, ConfigGenerationRequest};
+pub use from_json::{from_json, RequestSample};
 pub use generator::{Generator, GeneratorInput};
 pub use json::NameGenerator;
