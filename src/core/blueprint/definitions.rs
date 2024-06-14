@@ -42,7 +42,7 @@ pub fn to_input_object_type_definition(
             .map(|field| InputFieldDefinition {
                 name: field.name.clone(),
                 description: field.description.clone(),
-                default_value: None,
+                default_value: field.default_value.clone(),
                 of_type: field.of_type.clone(),
             })
             .collect(),
@@ -280,6 +280,7 @@ fn update_args<'a>(
                 of_type: to_type(*field, None),
                 directives: Vec::new(),
                 resolver: None,
+                default_value: field.default_value.clone(),
             })
         },
     )

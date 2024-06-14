@@ -44,6 +44,10 @@ impl<'a, A: ResolverContextLike> EvaluationContext<'a, A> {
         ctx.graphql_ctx_args = Some(Arc::new(args));
         ctx
     }
+
+    pub fn is_query(&self) -> bool {
+        self.graphql_ctx.is_query()
+    }
 }
 
 impl<'a, Ctx: ResolverContextLike> EvaluationContext<'a, Ctx> {

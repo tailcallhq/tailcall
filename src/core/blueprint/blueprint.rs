@@ -40,6 +40,7 @@ impl Default for Type {
 }
 
 impl Type {
+    /// gets the name of the type
     pub fn name(&self) -> &str {
         match self {
             Type::NamedType { name, .. } => name,
@@ -70,6 +71,7 @@ pub enum Definition {
     Union(UnionTypeDefinition),
 }
 impl Definition {
+    /// gets the name of the definition
     pub fn name(&self) -> &str {
         match self {
             Definition::Interface(def) => &def.name,
@@ -142,6 +144,7 @@ pub struct FieldDefinition {
     pub resolver: Option<IR>,
     pub directives: Vec<Directive>,
     pub description: Option<String>,
+    pub default_value: Option<serde_json::Value>,
 }
 
 impl FieldDefinition {

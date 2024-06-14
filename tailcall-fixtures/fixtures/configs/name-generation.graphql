@@ -1,0 +1,21 @@
+schema @server(port: 8000, hostname: "0.0.0.0") @upstream(baseURL: "http://example.typicode.com", httpCache: 42) {
+  query: Query
+}
+type T3 {
+  name: String
+  hexCode: String
+}
+
+type T2 {
+  colors: [T3]
+  isColorPageExists: Boolean
+  isColorsImageAvailable: Boolean
+}
+
+type T1 {
+  color: T2
+}
+
+type Query {
+  f1: T1 @http(path: "/colors")
+}

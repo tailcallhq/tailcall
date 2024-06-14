@@ -205,6 +205,10 @@ mod tests {
                 None
             }
 
+            fn is_query(&self) -> bool {
+                false
+            }
+
             fn add_error(&self, _: async_graphql::ServerError) {}
         }
 

@@ -237,6 +237,13 @@ directive @server(
   """
   batchRequests: Boolean
   """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
+  """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
   """
@@ -354,11 +361,6 @@ directive @upstream(
   The time in seconds that the connection will wait for a response before timing out.
   """
   connectTimeout: Int
-  """
-  When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more 
-  than once within the context of a single GraphQL request.
-  """
-  dedupe: Boolean
   """
   The `http2Only` setting allows you to specify whether the client should always issue 
   HTTP2 requests, without checking if the server supports it or not. By default it 

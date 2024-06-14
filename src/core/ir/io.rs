@@ -64,22 +64,27 @@ impl Eval for IO {
         &'slf self,
         ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'ctx + Send>> {
-        if ctx.request_ctx.upstream.dedupe {
+        // Note: Handled the case separately for performance reasons. It avoids cache
+        // key generation when it's not required
+        if !ctx.request_ctx.server.dedupe || !ctx.is_query() {
+            return self.eval_inner(ctx);
+        }
+        if let Some(key) = self.cache_key(ctx) {
             Box::pin(async move {
-                let key = self.cache_key(ctx);
-                if let Some(key) = key {
-                    ctx.request_ctx
-                        .cache
-                        .get_or_eval(key, move || Box::pin(self.eval_inner(ctx)))
-                        .await
-                        .as_ref()
-                        .clone()
-                } else {
-                    self.eval_inner(ctx).await
-                }
+                ctx.request_ctx
+                    .cache
+                    .dedupe(&key, || {
+                        Box::pin(async {
+                            ctx.request_ctx
+                                .dedupe_handler
+                                .dedupe(&key, || Box::pin(self.eval_inner(ctx)))
+                                .await
+                        })
+                    })
+                    .await
             })
         } else {
-            Box::pin(self.eval_inner(ctx))
+            self.eval_inner(ctx)
         }
     }
 }
