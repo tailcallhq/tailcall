@@ -5,12 +5,12 @@ use crate::core::ir::jit::model::{Children, ExecutionPlan, Field};
 use crate::core::ir::jit::store::Store;
 use crate::core::ir::{Eval, EvaluationContext, EvaluationError, IoId, ResolverContextLike, IR};
 
-pub struct IO {
+pub struct IOExit {
     pub data: OwnedValue,
     pub id: Option<IoId>,
 }
 
-impl IO {
+impl IOExit {
     pub fn new(value: OwnedValue, id: Option<IoId>) -> Self {
         Self { data: value, id }
     }
@@ -79,7 +79,7 @@ async fn iter<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
 async fn execute<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     ir: &'a IR,
     ctx: EvaluationContext<'a, Ctx>,
-) -> Result<IO, EvaluationError> {
+) -> Result<IOExit, EvaluationError> {
     // TODO: should implement some kind of key for all fields of IR
     ir.eval(ctx).await
 }

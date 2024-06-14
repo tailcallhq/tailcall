@@ -3,7 +3,7 @@ use std::pin::Pin;
 
 use serde_json_borrow::{OwnedValue, Value};
 
-use crate::core::ir::jit::execute::IO;
+use crate::core::ir::jit::execute::IOExit;
 use crate::core::ir::jit::store::Store;
 use crate::core::ir::{
     CacheKey, Context, Eval, EvalSync, EvaluationContext, EvaluationError, IoId,
@@ -44,18 +44,18 @@ fn get_path<'a, T: AsRef<str>>(mut val: &'a Value<'a>, path: &[T]) -> Option<&'a
     Some(val)
 }
 
-impl Eval<IO> for IR {
+impl Eval<IOExit> for IR {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<IO, EvaluationError>> + 'a + Send>>
+    ) -> Pin<Box<dyn Future<Output = Result<IOExit, EvaluationError>> + 'a + Send>>
     where
-        IO: 'a,
+        IOExit: 'a,
     {
         Box::pin(async move {
             match self {
                 IR::Context(op) => match op {
-                    Context::Value => Ok(IO::new(
+                    Context::Value => Ok(IOExit::new(
                         into_owned(ctx.value().cloned().unwrap_or(async_graphql::Value::Null))?,
                         None,
                     )),
@@ -65,11 +65,11 @@ impl Eval<IO> for IR {
                             .map(|a| a.into_owned())
                             .unwrap_or(async_graphql::Value::Null);
 
-                        Ok(IO::new(into_owned(val)?, None))
+                        Ok(IOExit::new(into_owned(val)?, None))
                     }
                     Context::PushArgs { expr, and_then } => {
                         let args = into_const(
-                            <IR as Eval<IO>>::eval::<'_, Ctx>(expr, ctx.clone())
+                            <IR as Eval<IOExit>>::eval::<'_, Ctx>(expr, ctx.clone())
                                 .await?
                                 .data
                                 .get_value(),
@@ -79,7 +79,7 @@ impl Eval<IO> for IR {
                     }
                     Context::PushValue { expr, and_then } => {
                         let value = into_const(
-                            <IR as Eval<IO>>::eval::<'_, Ctx>(expr, ctx.clone())
+                            <IR as Eval<IOExit>>::eval::<'_, Ctx>(expr, ctx.clone())
                                 .await?
                                 .data
                                 .get_value(),
@@ -89,7 +89,7 @@ impl Eval<IO> for IR {
                     }
                 },
                 IR::Path(input, path) => {
-                    let val = <IR as Eval<IO>>::eval::<'_, Ctx>(input, ctx).await?;
+                    let val = <IR as Eval<IOExit>>::eval::<'_, Ctx>(input, ctx).await?;
                     let io_id = val.id;
                     let val = get_path(val.data.get_value(), path)
                         .unwrap_or(&Value::Null)
@@ -102,12 +102,12 @@ impl Eval<IO> for IR {
                         ))
                     })?;
 
-                    Ok(IO::new(val, io_id))
+                    Ok(IOExit::new(val, io_id))
                 }
                 IR::Dynamic(value) => {
                     let val = value.render_value(&ctx);
                     let val = into_owned(val)?;
-                    Ok(IO::new(val, None))
+                    Ok(IOExit::new(val, None))
                 }
                 IR::Protect(expr) => {
                     ctx.request_ctx
@@ -128,12 +128,12 @@ impl Eval<IO> for IR {
                     })?;
                     let owned_val = into_owned(value)?;
 
-                    Ok(IO::new(owned_val, Some(io_id)))
+                    Ok(IOExit::new(owned_val, Some(io_id)))
                 }
                 IR::Cache(cached) => {
                     let val = cached.eval(ctx).await?;
                     let val = into_owned(val)?;
-                    Ok(IO::new(val, None))
+                    Ok(IOExit::new(val, None))
                 }
             }
         })
