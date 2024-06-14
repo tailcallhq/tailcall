@@ -127,11 +127,11 @@ impl RequestTemplate {
 }
 
 impl<Ctx: PathGraphql + HasHeaders + GraphQLOperationContext> CacheKey<Ctx> for RequestTemplate {
-    fn cache_key(&self, ctx: &Ctx) -> Option<IoId> {
+    fn cache_key(&self, ctx: &Ctx) -> IoId {
         let mut hasher = TailcallHasher::default();
         let graphql_query = self.render_graphql_query(ctx);
         graphql_query.hash(&mut hasher);
-        Some(IoId::new(hasher.finish()))
+        IoId::new(hasher.finish())
     }
 }
 

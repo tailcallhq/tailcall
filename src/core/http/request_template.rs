@@ -225,7 +225,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
 }
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
-    fn cache_key(&self, ctx: &Ctx) -> Option<IoId> {
+    fn cache_key(&self, ctx: &Ctx) -> IoId {
         let mut hasher = TailcallHasher::default();
         let state = &mut hasher;
 
@@ -248,7 +248,7 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
         let url = self.create_url(ctx).unwrap();
         url.hash(state);
 
-        Some(IoId::new(hasher.finish()))
+        IoId::new(hasher.finish())
     }
 }
 
@@ -736,7 +736,7 @@ mod tests {
         use crate::core::ir::{CacheKey, IoId};
         use crate::core::mustache::Mustache;
 
-        fn assert_no_duplicate<const N: usize>(arr: [Option<IoId>; N]) {
+        fn assert_no_duplicate<const N: usize>(arr: [IoId; N]) {
             let len = arr.len();
             let set = HashSet::from(arr);
             assert_eq!(len, set.len());

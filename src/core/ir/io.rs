@@ -1,10 +1,12 @@
 use core::future::Future;
+use std::hash::{Hash, Hasher};
 use std::pin::Pin;
 use std::sync::Arc;
 
 use async_graphql::from_value;
 use async_graphql_value::ConstValue;
 use reqwest::Request;
+use tailcall_hasher::TailcallHasher;
 
 use super::{CacheKey, Eval, EvaluationContext, IoId, ResolverContextLike};
 use crate::core::config::group_by::GroupBy;
@@ -69,23 +71,20 @@ impl Eval for IO {
         if !ctx.request_ctx.server.dedupe || !ctx.is_query() {
             return self.eval_inner(ctx);
         }
-        if let Some(key) = self.cache_key(&ctx) {
-            Box::pin(async move {
-                ctx.request_ctx
-                    .cache
-                    .dedupe(&key.clone(), || {
-                        Box::pin(async move {
-                            ctx.request_ctx
-                                .dedupe_handler
-                                .dedupe(&key, || Box::pin(self.eval_inner(ctx)))
-                                .await
-                        })
+        let key = self.cache_key(&ctx);
+        Box::pin(async move {
+            ctx.request_ctx
+                .cache
+                .dedupe(&key.clone(), || {
+                    Box::pin(async move {
+                        ctx.request_ctx
+                            .dedupe_handler
+                            .dedupe(&key, || Box::pin(self.eval_inner(ctx)))
+                            .await
                     })
-                    .await
-            })
-        } else {
-            self.eval_inner(ctx)
-        }
+                })
+                .await
+        })
     }
 }
 
@@ -167,12 +166,18 @@ impl IO {
 }
 
 impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<'a, Ctx>> for IO {
-    fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> Option<IoId> {
+    fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> IoId {
         match self {
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
             IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
             IO::GraphQL { req_template, .. } => req_template.cache_key(ctx),
-            IO::Js { .. } => None,
+            IO::Js { name } => {
+                let mut hasher = TailcallHasher::default();
+                let val = ctx.value().map(|v| v.to_string()).unwrap_or_default();
+                format!("{}{}", name, val).hash(&mut hasher);
+
+                IoId::new(hasher.finish())
+            }
         }
     }
 }

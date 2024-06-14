@@ -19,7 +19,7 @@ impl IoId {
     }
 }
 pub trait CacheKey<Ctx> {
-    fn cache_key(&self, ctx: &Ctx) -> Option<IoId>;
+    fn cache_key(&self, ctx: &Ctx) -> IoId;
 }
 
 #[derive(Clone, Debug)]
@@ -49,20 +49,16 @@ impl Eval for Cache {
         Box::pin(async move {
             if let IR::IO(io) = self.expr.deref() {
                 let key = io.cache_key(&ctx);
-                if let Some(key) = key {
-                    if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
-                        Ok(val)
-                    } else {
-                        let val = self.expr.eval(ctx.clone()).await?;
-                        ctx.request_ctx
-                            .runtime
-                            .cache
-                            .set(key, val.clone(), self.max_age)
-                            .await?;
-                        Ok(val)
-                    }
+                if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
+                    Ok(val)
                 } else {
-                    self.expr.eval(ctx).await
+                    let val = self.expr.eval(ctx.clone()).await?;
+                    ctx.request_ctx
+                        .runtime
+                        .cache
+                        .set(key, val.clone(), self.max_age)
+                        .await?;
+                    Ok(val)
                 }
             } else {
                 Ok(self.expr.eval(ctx).await?)
