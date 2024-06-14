@@ -1,78 +1,65 @@
+use std::ops::Deref;
+
 pub use serde_json_borrow::*;
 
 use super::model::{Children, Field};
 use super::store::Store;
-use crate::core::ir::{CacheKey, EvaluationContext, IoId, ResolverContextLike, IR};
+use crate::core::ir::{EvalSync, EvaluationContext, IoId, ResolverContextLike};
 
 #[allow(unused)]
-pub struct Synth {
+pub struct Synth<'b, Ctx: ResolverContextLike<'b> + Sync + Send> {
     operation: Field<Children>,
     store: Store<IoId, OwnedValue>,
+    ctx: EvaluationContext<'b, Ctx>,
 }
 
 #[allow(unused)]
-impl Synth {
-    pub fn new(operation: Field<Children>, store: Store<IoId, OwnedValue>) -> Self {
-        Synth { operation, store }
+impl<'b, Ctx: ResolverContextLike<'b> + Sync + Send> Synth<'b, Ctx> {
+    pub fn new(
+        operation: Field<Children>,
+        store: Store<IoId, OwnedValue>,
+        ctx: EvaluationContext<'b, Ctx>,
+    ) -> Self {
+        Synth { operation, store, ctx }
     }
 
-    pub fn synthesize<'b, Ctx: ResolverContextLike<'b> + Sync + Send>(
-        &self,
-        ctx: EvaluationContext<'b, Ctx>,
-    ) -> Value {
-        self.iter(&self.operation, None, ctx)
+    pub fn synthesize(&'b self) -> Value {
+        self.iter(&self.operation, None, self.ctx.clone())
     }
 
     fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
         type_of.is_list() == value.is_array()
     }
 
-    pub fn iter<'a, 'b, Ctx: ResolverContextLike<'b> + Sync + Send>(
-        &'a self,
-        node: &'a Field<Children>,
-        parent: Option<&'a OwnedValue>,
+    pub fn iter(
+        &'b self,
+        node: &'b Field<Children>,
+        parent: Option<Value<'b>>,
         ctx: EvaluationContext<'b, Ctx>,
-    ) -> Value<'a> {
-        match parent.map(|v| v.get_value()) {
+    ) -> Value<'_> {
+        match parent {
             Some(val) => {
-                if !Self::is_array(&node.type_of, val) {
+                if !Self::is_array(&node.type_of, &val) {
                     return Value::Null;
                 };
                 self.iter_inner(node, Some(val), ctx)
             }
-            _ => {
-                match node.ir.as_ref() {
-                    Some(IR::IO(io)) => {
-                        let key = io.cache_key(&ctx);
-                        if let Some(key) = key {
-                            let value = self.store.get(&key);
-                            if let Some(value) = value {
-                                // check if value exists, else it'll cause stackoverflow
-                                self.iter(node, Some(value), ctx)
-                            } else {
-                                println!("{}: {:?}", node.name, key);
-                                // Store does not have data with the IO id, so just return null
-                                Value::Null
-                            }
-                        } else {
-                            Value::Null
-                        }
-                    }
-                    None => Value::Null,
-                    _ => {
-                        unimplemented!("Need to implement for rest of the IR fields")
-                    }
+            _ => match node.ir.as_ref() {
+                Some(ir) => {
+                    let val = ir.eval_sync(&self.store, ctx.clone()).ok();
+                    self.iter(node, val.map(|v| v.deref().clone()), ctx)
                 }
-            }
+                None => Value::Null,
+            },
         }
     }
 
-    fn iter_inner<'a, 'b, Ctx: ResolverContextLike<'b> + Sync + Send>(
-        &'a self,
-        node: &'a Field<Children>,
-        parent: Option<&'a Value<'a>>,
+    fn iter_inner(
+        &'b self,
+        node: &'b Field<Children>,
+        parent: Option<Value<'b>>,
         ctx: EvaluationContext<'b, Ctx>,
-    ) -> Value<'a> {
+    ) -> Value<'b> {
         match parent {
             Some(Value::Object(obj)) => {
                 let mut ans = ObjectAsVec::default();
@@ -83,14 +70,23 @@ impl Synth {
                 let ctx = ctx.with_value(cv);
                 if children.is_empty() {
                     // if it's a leaf node, then push the value
-                    let val = obj.iter().find(|(k, _)| node.name.eq(*k)).map(|(_, v)| v);
+                    let val = obj
+                        .into_vec()
+                        .into_iter()
+                        .find(|(k, _)| node.name.eq(k))
+                        .map(|(_, v)| v);
                     if let Some(val) = val {
                         ans.insert(node.name.as_str(), val.to_owned());
                     }
                 } else {
                     // if it has children, then pick value from obj and pass it to children.
                     for child in children {
-                        let val = obj.iter().find(|(k, _)| child.name.eq(*k)).map(|(_, v)| v);
+                        let val = obj
+                            .clone()
+                            .into_vec()
+                            .into_iter()
+                            .find(|(k, _)| child.name.eq(k))
+                            .map(|(_, v)| v);
                         if let Some(val) = val {
                             ans.insert(
                                 child.name.as_str(),
@@ -98,10 +94,11 @@ impl Synth {
                             );
                         } else {
                             let current = match child.ir.as_ref() {
-                                Some(IR::IO(io)) => {
-                                    io.cache_key(&ctx).and_then(|io_id| self.store.get(&io_id))
-                                }
-                                _ => None, // TODO: impl for other IRs
+                                Some(ir) => ir
+                                    .eval_sync(&self.store, ctx.clone())
+                                    .ok()
+                                    .map(|v| v.deref().clone()),
+                                None => None,
                             };
                             let value = self.iter(child, current, ctx.clone());
                             ans.insert(child.name.as_str(), value);
@@ -122,7 +119,7 @@ impl Synth {
                 object.insert(node.name.as_str(), Value::Array(ans));
                 Value::Object(object)
             }
-            Some(val) => val.to_owned(),
+            Some(val) => val,
             None => Value::Null,
         }
     }
@@ -220,7 +217,6 @@ mod tests {
         });
 
         let children = plan.as_children();
-        let synth = Synth::new(children.first().unwrap().to_owned(), store);
 
         let rt = crate::core::runtime::test::init(None);
         let request_ctx = RequestContext::new(rt);
@@ -229,7 +225,10 @@ mod tests {
         let mut args = IndexMap::new();
         args.insert(Name::new("id"), Value::Number(1.into()));
         let ctx = ctx.with_args(Value::Object(args));
-        serde_json::to_string_pretty(&synth.synthesize(ctx)).unwrap()
+
+        let synth = Synth::new(children.first().unwrap().to_owned(), store, ctx);
+
+        serde_json::to_string_pretty(&synth.synthesize()).unwrap()
     }
 
     enum Type {

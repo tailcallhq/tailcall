@@ -9,6 +9,7 @@ use super::{Eval, EvaluationContext, EvaluationError, ResolverContextLike, IR};
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub struct IoId(u64);
+
 impl IoId {
     pub fn new(id: u64) -> Self {
         Self(id)
@@ -18,6 +19,7 @@ impl IoId {
         self.0
     }
 }
+
 pub trait CacheKey<Ctx> {
     fn cache_key(&self, ctx: &Ctx) -> Option<IoId>;
 }
@@ -53,7 +55,7 @@ impl Eval for Cache {
                     if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
                         Ok(val)
                     } else {
-                        let val = self.expr.eval(ctx.clone()).await?;
+                        let val: ConstValue = self.expr.eval(ctx.clone()).await?;
                         ctx.request_ctx
                             .runtime
                             .cache
