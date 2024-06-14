@@ -10,3 +10,4 @@ mod source;
 pub use from_json::{from_json, ConfigGenerationRequest};
 pub use generator::Generator;
 pub use source::Source;
+pub use from_openapi::{from_openapi_spec, OpenApiToConfigConverter};
