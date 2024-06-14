@@ -459,6 +459,7 @@ fn to_input_object_field(
             .map(|f| f.node.clone()),
     )
 }
+#[allow(clippy::too_many_arguments)]
 fn to_common_field<F>(
     field: &F,
     field_position: &ParserPos,
