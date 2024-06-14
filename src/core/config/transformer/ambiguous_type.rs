@@ -147,9 +147,10 @@ mod tests {
 
     use maplit::hashset;
 
+    use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{Config, ConfigModule, Type};
+    use crate::core::generator::source::ImportSource;
     use crate::core::valid::Validator;
-    use crate::core::{config::transformer::AmbiguousType, generator::source::ImportSource};
 
     fn build_qry(mut config: Config) -> Config {
         let mut query = Type::default();

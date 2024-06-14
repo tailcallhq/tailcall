@@ -5,21 +5,18 @@ use prost_reflect::DescriptorPool;
 use reqwest::Method;
 use url::Url;
 
-use crate::core::generator::{from_json, source::ImportSource, ConfigGenerationRequest};
+use super::config::{GeneratorConfig, InputSource, Resolved};
+use super::json::NameGenerator;
+use crate::core::config::transformer::AmbiguousType;
+use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
+use crate::core::generator::from_proto::from_proto;
+use crate::core::generator::source::ImportSource;
+use crate::core::generator::{from_json, RequestSample};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::ResourceReader;
+use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::runtime::TargetRuntime;
-use crate::core::{
-    config::transformer::AmbiguousType, generator::from_proto::from_proto, valid::Validator,
-};
-use crate::core::{
-    config::{self, Config, ConfigModule, Link, LinkType},
-    resource_reader::Cached,
-};
-
-use super::config::{GeneratorConfig, InputSource};
-use super::json::NameGenerator;
+use crate::core::valid::Validator;
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work
@@ -41,12 +38,12 @@ fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<File
 async fn fetch_response(
     url: &str,
     runtime: &TargetRuntime,
-) -> anyhow::Result<ConfigGenerationRequest> {
+) -> anyhow::Result<RequestSample> {
     let parsed_url = Url::parse(url)?;
     let request = reqwest::Request::new(Method::GET, parsed_url.clone());
     let resp = runtime.http.execute(request).await?;
     let body = serde_json::from_slice(&resp.body)?;
-    Ok(ConfigGenerationRequest::new(parsed_url, body))
+    Ok(RequestSample::new(parsed_url, body))
 }
 
 pub struct Generator {
@@ -66,19 +63,19 @@ impl Generator {
         }
     }
 
-    pub async fn run(&self, gen_config: GeneratorConfig) -> Result<ConfigModule> {
+    pub async fn run(&self, gen_config: GeneratorConfig<Resolved>) -> Result<ConfigModule> {
         let field_name_gen = NameGenerator::new("f");
         let type_name_gen = NameGenerator::new("T");
 
         let resolvers = gen_config.input.into_iter().map(|input| async {
             match input.source {
-                InputSource::Config { src } => {
+                InputSource::Config { src, _marker } => {
                     let source = config::Source::detect(&src)?;
                     let schema = self.reader.read_file(&src).await?;
 
                     Config::from_source(source, &schema.content)
                 }
-                InputSource::Import { src } => {
+                InputSource::Import { src, _marker } => {
                     let source = ImportSource::detect(&src)?;
 
                     match source {
@@ -88,11 +85,9 @@ impl Generator {
                                 resolve_file_descriptor_set(metadata.descriptor_set)?;
                             let mut config = from_proto(&[descriptor_set], "Query")?;
 
-                            config.links.push(Link {
-                                id: None,
-                                src: metadata.path,
-                                type_of: LinkType::Protobuf,
-                            });
+                            config
+                                .links
+                                .push(Link { id: None, src, type_of: LinkType::Protobuf });
 
                             Ok(config)
                         }

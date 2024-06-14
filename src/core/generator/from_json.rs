@@ -10,19 +10,19 @@ use crate::core::config::transformer::{
 use crate::core::config::Config;
 use crate::core::valid::Validator;
 
-pub struct ConfigGenerationRequest {
+pub struct RequestSample {
     url: Url,
-    resp: Value,
+    response: Value,
 }
 
-impl ConfigGenerationRequest {
+impl RequestSample {
     pub fn new(url: Url, resp: Value) -> Self {
-        Self { url, resp }
+        Self { url, response: resp }
     }
 }
 
 pub fn from_json(
-    config_gen_req: &[ConfigGenerationRequest],
+    config_gen_req: &[RequestSample],
     query: &str,
     field_name_gen: &NameGenerator,
     type_name_gen: &NameGenerator,
@@ -31,10 +31,14 @@ pub fn from_json(
 
     for request in config_gen_req.iter() {
         let field_name = field_name_gen.generate_name();
-        let query_generator =
-            QueryGenerator::new(request.resp.is_array(), &request.url, query, &field_name);
+        let query_generator = QueryGenerator::new(
+            request.response.is_array(),
+            &request.url,
+            query,
+            &field_name,
+        );
 
-        config = TypesGenerator::new(&request.resp, query_generator, &type_name_gen)
+        config = TypesGenerator::new(&request.response, query_generator, type_name_gen)
             .pipe(SchemaGenerator::new(query.to_owned()))
             .pipe(FieldBaseUrlGenerator::new(&request.url, query))
             .pipe(RemoveUnused)

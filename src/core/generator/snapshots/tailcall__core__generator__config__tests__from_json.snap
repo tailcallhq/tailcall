@@ -5,24 +5,28 @@ expression: "&config"
 GeneratorConfig {
     input: [
         Input {
-            source: Config {
-                src: "https://tailcall.run/configs/abc.json",
+            source: Import {
+                src: "../protobuf/news.proto",
+                _marker: PhantomData<tailcall::core::generator::config::UnResolved>,
             },
         },
         Input {
             source: Config {
-                src: "./jsonplaceholder.graphql",
+                src: "../configs/user-posts.graphql",
+                _marker: PhantomData<tailcall::core::generator::config::UnResolved>,
             },
         },
         Input {
             source: Import {
                 src: "https://jsonplaceholder.typicode.com/posts",
+                _marker: PhantomData<tailcall::core::generator::config::UnResolved>,
             },
         },
     ],
     output: Output {
-        format: "json",
-        file: "./output.json",
+        format: GraphQL,
+        file: "./output.graphql",
+        _markder: PhantomData<tailcall::core::generator::config::UnResolved>,
     },
     generate: GenerateOptions {
         schema: Schema {
@@ -51,4 +55,5 @@ GeneratorConfig {
             },
         ),
     },
+    _marker: PhantomData<tailcall::core::generator::config::UnResolved>,
 }
