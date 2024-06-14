@@ -206,7 +206,13 @@ fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String 
             .iter()
             .map(|arg| {
                 let nullable = if arg.node.ty.node.nullable { "" } else { "!" };
-                format!("{}: {}{}", arg.node.name, arg.node.ty.node.base, nullable)
+                format!(
+                    "{}: {}{}{}",
+                    arg.node.name,
+                    arg.node.ty.node.base,
+                    nullable,
+                    print_default_value(arg.node.default_value.as_ref())
+                )
             })
             .collect::<Vec<String>>()
             .join(", ");
@@ -224,14 +230,25 @@ fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String 
     doc + node.trim_end()
 }
 
+fn print_default_value(value: Option<&Positioned<ConstValue>>) -> String {
+    value
+        .as_ref()
+        .map(|val| format!(" = {val}"))
+        .unwrap_or_default()
+}
+
 fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition) -> String {
     let directives_str = print_directives(&field.directives);
     let doc = field.description.as_ref().map_or(String::new(), |d| {
         format!(r#"  """{}  {}{}  """{}"#, "\n", d.node, "\n", "\n")
     });
     format!(
-        "{}  {}: {}{}",
-        doc, field.name.node, field.ty.node, directives_str
+        "{}  {}: {}{}{}",
+        doc,
+        field.name.node,
+        field.ty.node,
+        directives_str,
+        print_default_value(field.default_value.as_ref())
     )
 }
 fn print_directive(directive: &DirectiveDefinition) -> String {
