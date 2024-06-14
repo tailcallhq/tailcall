@@ -7,6 +7,7 @@ on:
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize]
+  merge_group:
 permissions:
   contents: read
 
@@ -35,7 +36,7 @@ jobs:
 
   test_aws_build:
     name: Test AWS Lambda Build
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event.name == 'merge_group'
     runs-on: ubuntu-latest
     defaults:
       run:
