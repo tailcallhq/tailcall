@@ -2,7 +2,7 @@ use criterion::Criterion;
 use hyper::Method;
 use serde_json::Value;
 use tailcall::cli::runtime::NativeHttp;
-use tailcall::core::generator::{from_json, ConfigGenerationRequest, NameGenerator};
+use tailcall::core::generator::{from_json, RequestSample, NameGenerator};
 use tailcall::core::HttpIO;
 
 pub fn benchmark_from_json_method(c: &mut Criterion) {
@@ -19,7 +19,7 @@ pub fn benchmark_from_json_method(c: &mut Criterion) {
         reqs.push(body);
     });
 
-    let cfg_gen_reqs = [ConfigGenerationRequest::new(
+    let cfg_gen_reqs = [RequestSample::new(
         request_url.parse().unwrap(),
         reqs[0].clone(),
     )];

@@ -11,7 +11,7 @@ use crate::core::config::transformer::AmbiguousType;
 use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::source::ImportSource;
-use crate::core::generator::{from_json, ConfigGenerationRequest};
+use crate::core::generator::{from_json, RequestSample};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, ResourceReader};
@@ -38,12 +38,12 @@ fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<File
 async fn fetch_response(
     url: &str,
     runtime: &TargetRuntime,
-) -> anyhow::Result<ConfigGenerationRequest> {
+) -> anyhow::Result<RequestSample> {
     let parsed_url = Url::parse(url)?;
     let request = reqwest::Request::new(Method::GET, parsed_url.clone());
     let resp = runtime.http.execute(request).await?;
     let body = serde_json::from_slice(&resp.body)?;
-    Ok(ConfigGenerationRequest::new(parsed_url, body))
+    Ok(RequestSample::new(parsed_url, body))
 }
 
 pub struct Generator {
