@@ -56,7 +56,7 @@ fn init_resolver_worker_io(
 }
 
 // Provides access to http in native rust environment
-fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO<Error = CoreError::http::Error>> {
+fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream,
         &blueprint.telemetry,
@@ -64,7 +64,7 @@ fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO<Error = CoreError::http::E
 }
 
 // Provides access to http in native rust environment
-fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO<Error = CoreError::http::Error>> {
+fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream.clone().http2_only(true),
         &blueprint.telemetry,

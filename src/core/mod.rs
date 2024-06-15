@@ -57,12 +57,10 @@ pub trait EnvIO: Send + Sync + 'static {
 
 #[async_trait::async_trait]
 pub trait HttpIO: Sync + Send + 'static {
-    type Error: Sync + Send + 'static;
-
     async fn execute(
         &self,
         request: reqwest::Request,
-    ) -> Result<Response<hyper::body::Bytes>, Self::Error> {
+    ) -> Result<Response<hyper::body::Bytes>, error::http::Error> {
         self.execute(request).await
     }
 }

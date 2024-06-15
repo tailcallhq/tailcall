@@ -72,8 +72,7 @@ impl Http {
 
 #[async_trait]
 impl HttpIO for Http {
-    type Error = http::Error;
-    async fn execute(&self, mut request: Request) -> Result<Response<Bytes>, Self::Error> {
+    async fn execute(&self, mut request: Request) -> Result<Response<Bytes>, http::Error> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }

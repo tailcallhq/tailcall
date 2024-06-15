@@ -129,8 +129,6 @@ impl NativeHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for NativeHttp {
-    type Error = http::Error;
-
     #[allow(clippy::blocks_in_conditions)]
     // because of the issue with tracing and clippy - https://github.com/rust-lang/rust-clippy/issues/12281
     #[tracing::instrument(
@@ -147,7 +145,7 @@ impl HttpIO for NativeHttp {
     async fn execute(
         &self,
         mut request: reqwest::Request,
-    ) -> crate::core::Result<Response<Bytes>, Self::Error> {
+    ) -> crate::core::Result<Response<Bytes>, http::Error> {
         if self.http2_only {
             *request.version_mut() = reqwest::Version::HTTP_2;
         }

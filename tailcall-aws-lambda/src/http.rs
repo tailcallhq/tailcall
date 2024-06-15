@@ -27,8 +27,6 @@ impl LambdaHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for LambdaHttp {
-    type Error = http::Error;
-
     async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, http::Error> {
         let req_str = format!("{} {}", request.method(), request.url());
         let response = self

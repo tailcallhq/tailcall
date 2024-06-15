@@ -21,7 +21,7 @@ fn init_file(
     Ok(Arc::new(file::CloudflareFileIO::init(env, bucket_id)?))
 }
 
-fn init_http() -> Arc<dyn HttpIO<Error = error::http::Error>> {
+fn init_http() -> Arc<dyn HttpIO> {
     Arc::new(http::CloudflareHttp::init())
 }
 

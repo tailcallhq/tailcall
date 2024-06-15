@@ -54,8 +54,7 @@ impl Http {
 
 #[async_trait::async_trait]
 impl HttpIO for Http {
-    type Error = http::Error;
-    async fn execute(&self, req: reqwest::Request) -> Result<Response<Bytes>, Self::Error> {
+    async fn execute(&self, req: reqwest::Request) -> Result<Response<Bytes>, http::Error> {
         // Try to find a matching mock for the incoming request.
         let execution_mock = self
             .mocks

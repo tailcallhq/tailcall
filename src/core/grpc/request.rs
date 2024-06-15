@@ -75,12 +75,10 @@ mod tests {
 
     #[async_trait]
     impl HttpIO for TestHttp {
-        type Error = http::Error;
-
         async fn execute(
             &self,
             _request: Request,
-        ) -> crate::core::Result<Response<Bytes>, Self::Error> {
+        ) -> crate::core::Result<Response<Bytes>, http::Error> {
             let mut headers = HeaderMap::new();
             let message = Bytes::from_static(b"\0\0\0\0\x0e\n\x0ctest message");
             let error = Bytes::from_static(b"\x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details");

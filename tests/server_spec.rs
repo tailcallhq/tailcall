@@ -75,8 +75,7 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        type Error = error::http::Error;
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, Self::Error> {
+        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, error::http::Error> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?

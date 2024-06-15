@@ -28,7 +28,6 @@ impl CloudflareHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for CloudflareHttp {
-    type Error = http::Error;
     // HttpClientOptions are ignored in Cloudflare
     // This is because there is little control over the underlying HTTP client
     async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, http::Error> {

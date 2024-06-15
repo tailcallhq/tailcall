@@ -25,8 +25,7 @@ struct MockHttpClient {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-    type Error = http::Error;
-    async fn execute(&self, _req: Request) -> Result<Response<Bytes>, Self::Error> {
+    async fn execute(&self, _req: Request) -> Result<Response<Bytes>, http::Error> {
         Ok(Response::empty())
     }
 }
