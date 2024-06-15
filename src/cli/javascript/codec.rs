@@ -213,11 +213,11 @@ mod test {
     use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
 
     use super::*;
-    use crate::core::error::worker::WorkerError;
+    use crate::core::error::worker;
     use crate::core::http::Response;
     use crate::core::worker::{Command, WorkerRequest, WorkerResponse};
 
-    fn create_test_response() -> Result<WorkerResponse, WorkerError> {
+    fn create_test_response() -> Result<WorkerResponse, worker::Error> {
         let mut headers = HeaderMap::new();
         headers.insert("content-type", "application/json".parse().unwrap());
         let response = crate::core::http::Response {
@@ -225,7 +225,7 @@ mod test {
             headers,
             body: Bytes::from("Hello, World!"),
         };
-        let js_response: Result<WorkerResponse, WorkerError> = response.try_into();
+        let js_response: Result<WorkerResponse, worker::Error> = response.try_into();
         js_response
     }
 
@@ -245,7 +245,7 @@ mod test {
     #[test]
     fn test_from_js_response() {
         let js_response = create_test_response().unwrap();
-        let response: Result<crate::core::http::Response<Bytes>, WorkerError> =
+        let response: Result<crate::core::http::Response<Bytes>, worker::Error> =
             js_response.try_into();
         assert!(response.is_ok());
         let response = response.unwrap();

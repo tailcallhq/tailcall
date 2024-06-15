@@ -5,7 +5,7 @@ use async_graphql::{ErrorExtensions, Value as ConstValue};
 
 use crate::core::auth;
 use crate::core::error::http::HttpError;
-use crate::core::error::worker::WorkerError;
+use crate::core::error::worker;
 use crate::core::error::Error as CoreError;
 
 #[derive(Debug, thiserror::Error, Clone)]
@@ -102,8 +102,8 @@ impl From<auth::error::Error> for Error {
 }
 
 // Some dummy Implementation
-impl From<WorkerError> for Error {
-    fn from(value: WorkerError) -> Self {
+impl From<worker::Error> for Error {
+    fn from(value: worker::Error) -> Self {
         Error::WorkerError(value.to_string())
     }
 }

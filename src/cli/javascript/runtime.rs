@@ -6,7 +6,7 @@ use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
 use crate::cli::{Error, Result};
-use crate::core::error::worker::WorkerError;
+use crate::core::error::worker;
 use crate::core::worker::{Command, Event, WorkerRequest};
 use crate::core::{blueprint, WorkerIO};
 
@@ -84,7 +84,7 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    type Error = WorkerError;
+    type Error = worker::Error;
 
     async fn call(
         &self,
@@ -97,19 +97,19 @@ impl WorkerIO<Event, Command> for Runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    call(name, event).map_err(WorkerError::from)
+                    call(name, event).map_err(worker::Error::from)
                 })
                 .await
-                .map_err(|_| WorkerError::ExecutionFailed)?
+                .map_err(|_| worker::Error::ExecutionFailed)?
         } else {
-            Err(WorkerError::JsRuntimeStopped)
+            Err(worker::Error::JsRuntimeStopped)
         }
     }
 }
 
 #[async_trait::async_trait]
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
-    type Error = WorkerError;
+    type Error = worker::Error;
 
     async fn call(
         &self,
@@ -118,19 +118,19 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
     ) -> crate::core::Result<Option<ConstValue>, Self::Error> {
         let script = self.script.clone();
         let name = name.to_string();
-        let value = serde_json::to_string(&input).map_err(WorkerError::from)?;
+        let value = serde_json::to_string(&input).map_err(worker::Error::from)?;
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
                     execute_inner(name, value)
                         .map(Some)
-                        .map_err(WorkerError::from)
+                        .map_err(worker::Error::from)
                 })
                 .await
-                .map_err(|_| WorkerError::ExecutionFailed)?
+                .map_err(|_| worker::Error::ExecutionFailed)?
         } else {
-            Err(WorkerError::JsRuntimeStopped)
+            Err(worker::Error::JsRuntimeStopped)
         }
     }
 }

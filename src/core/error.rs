@@ -107,7 +107,7 @@ pub enum Error {
     Http(http::HttpError),
 
     #[error("Worker Error")]
-    Worker(worker::WorkerError),
+    Worker(worker::Error),
 
     #[error("CLI Error")]
     CLI(CLIError),
@@ -240,7 +240,7 @@ pub mod worker {
     use derive_more::From;
 
     #[derive(From, thiserror::Error, Debug)]
-    pub enum WorkerError {
+    pub enum Error {
         #[error("Failed to initialize worker")]
         InitializationFailed,
 
@@ -264,12 +264,6 @@ pub mod worker {
 
         #[error("JS Runtime Stopped Error")]
         JsRuntimeStopped,
-    }
-
-    #[derive(From, thiserror::Error, Debug)]
-    #[error("Worker Error: {source}")]
-    pub struct Error {
-        pub source: WorkerError,
     }
 }
 

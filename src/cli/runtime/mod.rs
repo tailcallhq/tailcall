@@ -25,7 +25,7 @@ fn init_file() -> Arc<dyn FileIO<Error = CoreError::file::FileError>> {
 
 fn init_http_worker_io(
     script: Option<blueprint::Script>,
-) -> Option<Arc<dyn WorkerIO<Event, Command, Error = CoreError::worker::WorkerError>>> {
+) -> Option<Arc<dyn WorkerIO<Event, Command, Error = CoreError::worker::Error>>> {
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
@@ -42,7 +42,7 @@ fn init_resolver_worker_io(
         dyn WorkerIO<
             async_graphql::Value,
             async_graphql::Value,
-            Error = CoreError::worker::WorkerError,
+            Error = CoreError::worker::Error,
         >,
     >,
 > {

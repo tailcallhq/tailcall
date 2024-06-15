@@ -30,10 +30,10 @@ pub struct TargetRuntime {
     /// functionality or integrate additional features.
     pub extensions: Arc<Vec<SchemaExtension>>,
     /// Worker middleware for handling HTTP requests.
-    pub cmd_worker: Option<Arc<dyn WorkerIO<Event, Command, Error = error::worker::WorkerError>>>,
+    pub cmd_worker: Option<Arc<dyn WorkerIO<Event, Command, Error = error::worker::Error>>>,
     /// Worker middleware for resolving data.
     pub worker:
-        Option<Arc<dyn WorkerIO<ConstValue, ConstValue, Error = error::worker::WorkerError>>>,
+        Option<Arc<dyn WorkerIO<ConstValue, ConstValue, Error = error::worker::Error>>>,
 }
 
 impl TargetRuntime {

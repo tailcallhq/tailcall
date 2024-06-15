@@ -10,14 +10,14 @@ mod runtime;
 pub use runtime::Runtime;
 
 use crate::cli::Result;
-use crate::core::error::worker::WorkerError;
+use crate::core::error::worker;
 use crate::core::{blueprint, WorkerIO};
 
 pub fn init_worker_io<T, V>(
     script: blueprint::Script,
-) -> Arc<dyn WorkerIO<T, V, Error = WorkerError> + Send + Sync>
+) -> Arc<dyn WorkerIO<T, V, Error = worker::Error> + Send + Sync>
 where
-    Runtime: WorkerIO<T, V, Error = WorkerError>,
+    Runtime: WorkerIO<T, V, Error = worker::Error>,
 {
     (Arc::new(Runtime::new(script))) as _
 }

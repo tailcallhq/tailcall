@@ -10,7 +10,7 @@ use super::{CacheKey, Eval, EvaluationContext, IoId, ResolverContextLike};
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::GraphQLOperationType;
 use crate::core::data_loader::{DataLoader, Loader};
-use crate::core::error::worker::WorkerError;
+use crate::core::error::worker;
 use crate::core::graphql::{self, GraphqlDataLoader};
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::grpc::protobuf::ProtobufOperation;
@@ -365,7 +365,7 @@ impl<'a, Context: ResolverContextLike<'a> + Send + Sync> HttpRequestExecutor<'a,
     async fn execute_with_worker(
         &self,
         mut request: reqwest::Request,
-        worker: &Arc<dyn WorkerIO<Event, Command, Error = WorkerError>>,
+        worker: &Arc<dyn WorkerIO<Event, Command, Error = worker::Error>>,
         http_filter: &HttpFilter,
     ) -> Result<Response<async_graphql::Value>, Error> {
         let js_request = WorkerRequest::try_from(&request)?;
