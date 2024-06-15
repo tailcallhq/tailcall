@@ -3,7 +3,10 @@ use std::string::FromUtf8Error;
 
 use derive_more::From;
 use inquire::InquireError;
+use opentelemetry::metrics::MetricsError;
+use opentelemetry::trace::TraceError;
 use prost_reflect::DescriptorError;
+use tokio::task::JoinError;
 
 use super::config::UnsupportedConfigFormat;
 use super::grpc::error::Error as GrpcError;
@@ -130,6 +133,18 @@ pub enum Error {
 
     #[error("Rand Error")]
     Rand(rand::Error),
+
+    #[error("Trace Error")]
+    Trace(TraceError),
+
+    #[error("Join Error")]
+    Join(JoinError),
+
+    #[error("Metrics Error")]
+    Metrics(MetricsError),
+
+    #[error("Reqwest Error")]
+    Reqwest(reqwest::Error),
 }
 
 pub mod file {

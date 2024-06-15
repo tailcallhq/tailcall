@@ -1,6 +1,8 @@
+mod error;
+
 use std::sync::{Arc, Mutex};
 
-use anyhow::{anyhow, Result};
+use error::Error;
 use hyper::header::{HeaderName, HeaderValue};
 use hyper::HeaderMap;
 use news::news_service_server::{NewsService, NewsServiceServer};
@@ -174,7 +176,7 @@ static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     ]))
 });
 
-fn init_tracer() -> Result<()> {
+fn init_tracer() -> Result<(), Error> {
     global::set_text_map_propagator(TraceContextPropagator::new());
 
     static TELEMETRY_URL: &str = "https://api.honeycomb.io:443";
@@ -195,7 +197,7 @@ fn init_tracer() -> Result<()> {
         .install_batch(runtime::Tokio)?
         .provider()
         .ok_or(TraceError::Other(
-            anyhow!("Failed to instantiate OTLP provider").into(),
+            Error::OltpProviderInstantiationFailed.into(),
         ))?;
 
     let tracer = provider.tracer("tracing");
@@ -214,7 +216,7 @@ fn init_tracer() -> Result<()> {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), Error> {
     if std::env::var("HONEYCOMB_API_KEY").is_ok() {
         init_tracer()?;
     }

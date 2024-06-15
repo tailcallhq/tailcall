@@ -5412,7 +5412,7 @@ dependencies = [
 name = "tailcall-upstream-grpc"
 version = "0.1.0"
 dependencies = [
- "anyhow",
+ "derive_more",
  "http-body-util",
  "hyper 0.14.29",
  "hyper-util",
@@ -5426,6 +5426,7 @@ dependencies = [
  "prost-types",
  "protoc-bin-vendored",
  "tailcall-fixtures",
+ "thiserror",
  "tokio",
  "tonic",
  "tonic-build 0.11.0",
