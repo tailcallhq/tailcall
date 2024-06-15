@@ -16,8 +16,7 @@ impl IOExit {
     }
 }
 
-#[allow(unused)]
-pub async fn execute_ir<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+pub(super) async fn execute_ir<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
     plan: &'a ExecutionPlan,
     store: &'a Mutex<Store<IoId, OwnedValue>>,
     ctx: &'a EvaluationContext<'a, Ctx>,
@@ -82,103 +81,4 @@ async fn execute<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
 ) -> Result<IOExit, EvaluationError> {
     // TODO: should implement some kind of key for all fields of IR
     ir.eval(ctx).await
-}
-
-#[cfg(test)]
-pub mod tests {
-    use async_graphql::{SelectionField, Value};
-    use async_graphql_value::Name;
-    use indexmap::IndexMap;
-    use tokio::sync::Mutex;
-
-    use crate::core::blueprint::Blueprint;
-    use crate::core::config::Config;
-    use crate::core::http::RequestContext;
-    use crate::core::ir::jit::builder::ExecutionPlanBuilder;
-    use crate::core::ir::jit::execute::execute_ir;
-    use crate::core::ir::jit::store::Store;
-    use crate::core::ir::jit::synth::Synth;
-    use crate::core::ir::{EvaluationContext, ResolverContextLike};
-    use crate::core::tracing::default_tracing_tailcall;
-    use crate::core::valid::Validator;
-
-    const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
-
-    #[derive(Clone)]
-    pub struct MockGraphqlContext {
-        pub value: Value,
-        pub args: IndexMap<Name, Value>,
-    }
-
-    impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
-        fn value(&'a self) -> Option<&'a Value> {
-            Some(&self.value)
-        }
-
-        fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
-            Some(&self.args)
-        }
-
-        fn field(&'a self) -> Option<SelectionField> {
-            None
-        }
-
-        fn is_query(&'a self) -> bool {
-            todo!()
-        }
-
-        fn add_error(&'a self, _: async_graphql::ServerError) {}
-    }
-
-    async fn execute(query: &str) -> String {
-        let _guard = tracing::subscriber::set_default(default_tracing_tailcall());
-
-        let config = Config::from_sdl(CONFIG).to_result().unwrap();
-        let blueprint = Blueprint::try_from(&config.into()).unwrap();
-        let document = async_graphql::parser::parse_query(query).unwrap();
-        let plan = ExecutionPlanBuilder::new(blueprint, document)
-            .build()
-            .unwrap();
-
-        let store = Mutex::new(Store::new());
-
-        let rt = crate::core::runtime::test::init(None);
-        let request_ctx = RequestContext::new(rt);
-        let gql_ctx = MockGraphqlContext { value: Default::default(), args: Default::default() };
-        let ctx = EvaluationContext::new(&request_ctx, &gql_ctx);
-
-        execute_ir(&plan, &store, &ctx).await.unwrap();
-        let children = plan.as_children();
-        let first = children.first().unwrap().to_owned();
-
-        let store = store.into_inner();
-        let synth = Synth::new(first, store, ctx.clone());
-        serde_json::to_string_pretty(&synth.synthesize()).unwrap()
-    }
-
-    #[tokio::test]
-    async fn test_nested() {
-        let actual = execute(
-            r#"
-                query {
-                    users { id address { street } }
-                }
-            "#,
-        )
-        .await;
-        insta::assert_snapshot!(actual);
-    }
-
-    #[tokio::test]
-    async fn foo() {
-        let actual = execute(
-            r#"
-                query {
-                    posts { title userId user { id name todo { completed } } }
-                }
-            "#,
-        )
-        .await;
-        insta::assert_snapshot!(actual);
-    }
 }
