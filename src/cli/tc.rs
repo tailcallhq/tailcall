@@ -1,13 +1,13 @@
-use std::fs;
+use std::fs::{self, File};
+use std::io::Write;
 use std::path::Path;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use convert_case::{Case, Casing};
 use dotenvy::dotenv;
-use inquire::Confirm;
+use inquire::{Confirm, Select, Text};
 use lazy_static::lazy_static;
-use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
 use super::update_checker;
@@ -80,7 +80,10 @@ pub async fn run() -> Result<()> {
                 Err(e) => Err(e.into()),
             }
         }
-        Command::Init { folder_path } => init(&folder_path).await,
+        Command::Init { folder_path } => {
+            init(&folder_path).await?;
+            Ok(())
+        }
         Command::Gen { paths, input, output, query } => {
             let generator = Generator::init(runtime);
             let cfg = generator
@@ -112,70 +115,104 @@ pub async fn init(folder_path: &str) -> Result<()> {
         };
     }
 
-    let tailcallrc = include_str!("../../generated/.tailcallrc.graphql");
-    let tailcallrc_json: &str = include_str!("../../generated/.tailcallrc.schema.json");
+    // Prompt for project details
+    let project_name = Text::new("Project Name:")
+        .with_default("my-app")
+        .prompt()
+        .context("Failed to prompt for project name")?;
 
-    let file_path = Path::new(folder_path).join(FILE_NAME);
-    let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
-    let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
+    let file_formats = vec!["GraphQL", "JSON", "YML"];
+    let file_format = Select::new("File Format:", file_formats)
+        .prompt()
+        .context("Failed to prompt for file format")?;
 
-    let tailcall_exists = fs::metadata(&file_path).is_ok();
+    // Determine file paths based on selected format
+    let (config_directory, config_file_name) = match file_format {
+        "GraphQL" => ("config", FILE_NAME),
+        "JSON" => ("config", JSON_FILE_NAME),
+        "YML" => (".", YML_FILE_NAME),
+        _ => unreachable!(), // This should never happen due to the Select prompt
+    };
 
-    if tailcall_exists {
-        // confirm overwrite
-        let confirm = Confirm::new(&format!("Do you want to overwrite the file {}?", FILE_NAME))
-            .with_default(false)
-            .prompt()?;
+    // Summary and confirmation
+    println!("Creating the following project structure:");
+    println!("- {}/src/main.rs", project_name);
+    println!(
+        "- {}/{}/{}",
+        project_name, config_directory, config_file_name
+    );
 
-        if confirm {
-            fs::write(&file_path, tailcallrc.as_bytes())?;
-            fs::write(&json_file_path, tailcallrc_json.as_bytes())?;
-        }
-    } else {
-        fs::write(&file_path, tailcallrc.as_bytes())?;
-        fs::write(&json_file_path, tailcallrc_json.as_bytes())?;
-    }
+    let confirm = Confirm::new("Is this OK?")
+        .with_default(true)
+        .prompt()
+        .context("Failed to confirm project initialization")?;
 
-    let yml_exists = fs::metadata(&yml_file_path).is_ok();
+    if confirm {
+        // Create project directories and files
+        let project_path = Path::new(folder_path).join(&project_name);
+        let src_path = project_path.join("src");
+        let config_path = project_path.join(config_directory);
 
-    if !yml_exists {
-        fs::write(&yml_file_path, "")?;
+        fs::create_dir_all(&src_path)
+            .with_context(|| format!("Failed to create directory {:?}", &src_path))?;
+        fs::create_dir_all(&config_path)
+            .with_context(|| format!("Failed to create directory {:?}", &config_path))?;
 
-        let graphqlrc = r"|schema:
-         |- './.tailcallrc.graphql'
-    "
-        .strip_margin();
+        // Create main.rs with Hello, World! GraphQL server
+        let main_rs_path = src_path.join("main.rs");
+        let mut main_rs_file = File::create(&main_rs_path)
+            .with_context(|| format!("Failed to create file {:?}", &main_rs_path))?;
 
-        fs::write(&yml_file_path, graphqlrc)?;
-    }
+        writeln!(main_rs_file, r#"
+use async_graphql::Context, Object, Schema;
+use async_std::task;
 
-    let graphqlrc = fs::read_to_string(&yml_file_path)?;
+#[derive(Default)]
+struct Query;
 
-    let file_path = file_path.to_str().unwrap();
+#[Object]
+impl Query {{
+    async fn hello(&self, _ctx: &Context<'_>) -> String {{
+        "Hello, World!".to_string()
+    }}
+}}
 
-    let mut yaml: serde_yaml::Value = serde_yaml::from_str(&graphqlrc)?;
+#[tokio::main]
+async fn main() {{
+    let schema = Schema::build(Query::default(), async_graphql::EmptyMutation, async_graphql::EmptySubscription).finish();
+    let addr = "127.0.0.1:8000".parse().unwrap();
+    let _ = async_graphql_actix_web::run(schema, addr).await.unwrap();
+}}
+"#).with_context(|| "Failed to write to main.rs file")?;
 
-    if let Some(mapping) = yaml.as_mapping_mut() {
-        let schema = mapping
-            .entry("schema".into())
-            .or_insert(serde_yaml::Value::Sequence(Default::default()));
-        if let Some(schema) = schema.as_sequence_mut() {
-            if !schema
-                .iter()
-                .any(|v| v == &serde_yaml::Value::from("./.tailcallrc.graphql"))
-            {
-                let confirm =
-                    Confirm::new(&format!("Do you want to add {} to the schema?", file_path))
-                        .with_default(false)
-                        .prompt()?;
+        // Create configuration file with initial content
+        let config_file_path = config_path.join(config_file_name);
+        let mut config_file = File::create(&config_file_path)
+            .with_context(|| format!("Failed to create file {:?}", &config_file_path))?;
 
-                if confirm {
-                    schema.push(serde_yaml::Value::from("./.tailcallrc.graphql"));
-                    let updated = serde_yaml::to_string(&yaml)?;
-                    fs::write(yml_file_path, updated)?;
-                }
+        // Write initial content based on selected format
+        match file_format {
+            "GraphQL" => {
+                let tailcallrc_graphql = include_str!("../../generated/.tailcallrc.graphql");
+                writeln!(config_file, "{}", tailcallrc_graphql)
+                    .with_context(|| "Failed to write GraphQL configuration file")?;
             }
+            "JSON" => {
+                let tailcallrc_json = include_str!("../../generated/.tailcallrc.schema.json");
+                writeln!(config_file, "{}", tailcallrc_json)
+                    .with_context(|| "Failed to write JSON configuration file")?;
+            }
+            "YML" => {
+                let graphqlrc_yml = include_str!("../../.graphqlrc.yml");
+                writeln!(config_file, "{}", graphqlrc_yml)
+                    .with_context(|| "Failed to write YAML configuration file")?;
+            }
+            _ => {}
         }
+
+        println!("Project initialized successfully.");
+    } else {
+        println!("Initialization cancelled.");
     }
 
     Ok(())
