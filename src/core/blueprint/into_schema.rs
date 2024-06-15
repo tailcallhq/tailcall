@@ -94,10 +94,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();
-                                        let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                        let mut ctx = EvaluationContext::new(req_ctx, &ctx);
 
-                                        let const_value =
-                                            expr.eval(ctx).await.map_err(|err| err.extend())?;
+                                        let const_value = expr
+                                            .eval(&mut ctx)
+                                            .await
+                                            .map_err(|err| err.extend())?;
                                         let p = match const_value {
                                             ConstValue::List(a) => Some(FieldValue::list(a)),
                                             ConstValue::Null => FieldValue::NONE,
