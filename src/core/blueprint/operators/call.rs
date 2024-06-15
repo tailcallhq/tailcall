@@ -8,7 +8,6 @@ use crate::core::ir::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
-#[allow(clippy::type_complexity)]
 pub fn update_call<'a>(
     operation_type: &'a GraphQLOperationType,
     object_name: &'a str,

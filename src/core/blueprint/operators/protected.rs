@@ -4,7 +4,7 @@ use crate::core::config::{self, ConfigModule, Field};
 use crate::core::ir::{Context, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
-#[allow(clippy::type_complexity)]
+
 pub fn update_protected<'a>(
     type_name: &'a str,
 ) -> TryFold<

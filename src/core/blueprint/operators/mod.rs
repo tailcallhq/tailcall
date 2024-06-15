@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 mod call;
 mod enum_alias;
 mod expr;

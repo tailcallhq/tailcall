@@ -81,7 +81,6 @@ pub fn compile_http(
         })
 }
 
-#[allow(clippy::type_complexity)]
 pub fn update_http<'a>() -> TryFold<
     'a,
     (

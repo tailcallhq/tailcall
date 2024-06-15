@@ -60,7 +60,6 @@ pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
     })
 }
 
-#[allow(clippy::type_complexity)]
 pub fn update_const_field<'a>() -> TryFold<
     'a,
     (
