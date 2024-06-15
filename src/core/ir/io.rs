@@ -58,9 +58,9 @@ impl DataLoaderId {
 }
 
 impl Eval for IO {
-    async fn eval<'slf, 'ctx, Ctx>(
-        &'slf self,
-        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    async fn eval<Ctx>(
+        &self,
+        ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
     where
         Ctx: ResolverContextLike + Send + Sync,
@@ -87,9 +87,9 @@ impl Eval for IO {
 }
 
 impl IO {
-    async fn eval_inner<'slf, 'ctx, Ctx>(
-        &'slf self,
-        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    async fn eval_inner<Ctx>(
+        &self,
+        ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
     where
         Ctx: ResolverContextLike + Sync + Send,
@@ -321,9 +321,7 @@ struct HttpRequestExecutor<'a, 'ctx, Context: ResolverContextLike + Send + Sync>
     request_template: &'a http::RequestTemplate,
 }
 
-impl<'a, 'ctx, Context: ResolverContextLike + Send + Sync>
-    HttpRequestExecutor<'a, 'ctx, Context>
-{
+impl<'a, 'ctx, Context: ResolverContextLike + Send + Sync> HttpRequestExecutor<'a, 'ctx, Context> {
     pub fn new(
         evaluation_ctx: &'ctx EvaluationContext<'a, Context>,
         request_template: &'a RequestTemplate,

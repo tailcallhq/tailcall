@@ -63,9 +63,9 @@ pub struct Map {
 }
 
 impl Eval for Map {
-    async fn eval<'slf, 'ctx, Ctx>(
-        &'slf self,
-        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    async fn eval<Ctx>(
+        &self,
+        ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
     where
         Ctx: ResolverContextLike + Sync + Send,
@@ -90,12 +90,12 @@ impl Eval for Map {
 
 impl Eval for IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
-    fn eval<'slf, 'ctx, Ctx>(
-        &'slf self,
-        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    fn eval<Ctx>(
+        &self,
+        ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> impl Future<Output = Result<ConstValue, EvaluationError>>
     where
-        Ctx: ResolverContextLike + Sync + Send,
+        Ctx: ResolverContextLike + Send + Sync,
     {
         Box::pin(async move {
             match self {

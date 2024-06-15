@@ -1,14 +1,14 @@
-use std::future::Future;
 use super::{EvaluationContext, EvaluationError, ResolverContextLike};
+use std::future::Future;
 
 pub trait Eval<Output = async_graphql::Value>
 where
     Self: Send + Sync,
 {
-    fn eval<'slf, 'ctx, Ctx>(
-        &'slf self,
-        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    fn eval<Ctx>(
+        &self,
+        ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> impl Future<Output = Result<Output, EvaluationError>>
     where
-        Ctx: ResolverContextLike + Sync + Send;
+        Ctx: ResolverContextLike + Send + Sync;
 }
