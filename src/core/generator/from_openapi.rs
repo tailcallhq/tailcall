@@ -17,7 +17,7 @@ pub struct OpenApiToConfigConverter {
 fn name_from_ref_path<T>(obj_or_ref: &ObjectOrReference<T>) -> Option<String> {
     match obj_or_ref {
         ObjectOrReference::Ref { ref_path } => {
-            Some(ref_path.split('/').last().unwrap().to_case(Case::Pascal))
+            ref_path.split('/').last().map(|a| a.to_case(Case::Pascal))
         }
         ObjectOrReference::Object(_) => None,
     }
