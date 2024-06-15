@@ -1,16 +1,12 @@
-use core::future::Future;
-use std::pin::Pin;
+use std::future::Future;
 
 use super::{Error, EvaluationContext, ResolverContextLike};
 
-pub trait Eval<Output = async_graphql::Value>
-where
-    Self: Send + Sync,
-{
-    fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<Output, Error>> + 'a + Send>>
+pub trait Eval<Output = async_graphql::Value> {
+    fn eval<Ctx>(
+        &self,
+        ctx: &mut EvaluationContext<'_, Ctx>,
+    ) -> impl Future<Output = Result<Output, Error>>
     where
-        Output: 'a;
+        Ctx: ResolverContextLike + Sync;
 }

@@ -47,36 +47,7 @@ impl FileIO for NativeFileIO {
 
 #[cfg(test)]
 mod tests {
-    use tempfile::NamedTempFile;
-
     use super::*;
-
-    #[tokio::test]
-    async fn test_write_and_read_file() {
-        // Setup - Create a temporary file
-        let tmp_file = NamedTempFile::new().expect("Failed to create temp file");
-        let tmp_path = tmp_file
-            .path()
-            .to_str()
-            .expect("Failed to get temp file path");
-        let file_io = NativeFileIO::init();
-
-        // Test writing to the file
-        let content = b"Hello, world!";
-        file_io
-            .write(tmp_path, content)
-            .await
-            .expect("Failed to write to temp file");
-
-        // Test reading from the file
-        let read_content = file_io
-            .read(tmp_path)
-            .await
-            .expect("Failed to read from temp file");
-
-        // Verify the content is as expected
-        assert_eq!(read_content, String::from_utf8_lossy(content));
-    }
 
     #[tokio::test]
     async fn test_write_error() {

@@ -18,6 +18,7 @@ pub enum Error {
 
     APIValidationError(Vec<String>),
 
+    // FIXME: Use specific error types instead of string
     Other(String),
 
     DeserializeError(String),
