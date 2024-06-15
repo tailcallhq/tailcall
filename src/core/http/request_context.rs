@@ -11,11 +11,11 @@ use crate::core::auth::context::AuthContext;
 use crate::core::blueprint::{Server, Upstream};
 use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
-use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{AppContext, DataLoaderRequest, HttpDataLoader};
 use crate::core::ir::{Error, IoId};
 use crate::core::runtime::TargetRuntime;
+use crate::core::{error, grpc};
 
 #[derive(Setters)]
 pub struct RequestContext {
@@ -135,7 +135,7 @@ impl RequestContext {
         }
     }
 
-    pub async fn cache_get(&self, key: &IoId) -> anyhow::Result<Option<ConstValue>> {
+    pub async fn cache_get(&self, key: &IoId) -> Result<Option<ConstValue>, error::cache::Error> {
         self.runtime.cache.get(key).await
     }
 
@@ -145,7 +145,7 @@ impl RequestContext {
         key: IoId,
         value: ConstValue,
         ttl: NonZeroU64,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), error::cache::Error> {
         self.runtime.cache.set(key, value, ttl).await
     }
 

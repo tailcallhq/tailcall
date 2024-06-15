@@ -9,6 +9,7 @@ use url::Url;
 
 use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;
+use crate::core::error::Error;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::{CacheKey, IoId};
@@ -33,7 +34,7 @@ pub struct RequestTemplate {
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
-    fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+    fn create_url<C: PathString>(&self, ctx: &C) -> Result<Url, Error> {
         let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
@@ -97,7 +98,7 @@ impl RequestTemplate {
     pub fn to_request<C: PathString + HasHeaders>(
         &self,
         ctx: &C,
-    ) -> anyhow::Result<reqwest::Request> {
+    ) -> Result<reqwest::Request, Error> {
         // Create url
         let url = self.create_url(ctx)?;
         let method = self.method.clone();
@@ -113,7 +114,7 @@ impl RequestTemplate {
         &self,
         mut req: reqwest::Request,
         ctx: &C,
-    ) -> anyhow::Result<reqwest::Request> {
+    ) -> Result<reqwest::Request, Error> {
         if let Some(body_path) = &self.body_path {
             match &self.encoding {
                 Encoding::ApplicationJson => {
@@ -166,7 +167,7 @@ impl RequestTemplate {
         req
     }
 
-    pub fn new(root_url: &str) -> anyhow::Result<Self> {
+    pub fn new(root_url: &str) -> Result<Self, Error> {
         Ok(Self {
             root_url: Mustache::parse(root_url)?,
             query: Default::default(),
@@ -179,7 +180,7 @@ impl RequestTemplate {
     }
 
     /// Creates a new RequestTemplate with the given form encoded URL
-    pub fn form_encoded_url(url: &str) -> anyhow::Result<Self> {
+    pub fn form_encoded_url(url: &str) -> Result<Self, Error> {
         Ok(Self::new(url)?.encoding(Encoding::ApplicationXWwwFormUrlencoded))
     }
 
@@ -190,20 +191,20 @@ impl RequestTemplate {
 }
 
 impl TryFrom<Endpoint> for RequestTemplate {
-    type Error = anyhow::Error;
-    fn try_from(endpoint: Endpoint) -> anyhow::Result<Self> {
+    type Error = Error;
+    fn try_from(endpoint: Endpoint) -> Result<Self, Self::Error> {
         let path = Mustache::parse(endpoint.path.as_str())?;
         let query = endpoint
             .query
             .iter()
             .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
-            .collect::<anyhow::Result<Vec<_>>>()?;
+            .collect::<Result<Vec<_>, Error>>()?;
         let method = endpoint.method.clone().to_hyper();
         let headers = endpoint
             .headers
             .iter()
             .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
-            .collect::<anyhow::Result<Vec<_>>>()?;
+            .collect::<Result<Vec<_>, Error>>()?;
 
         let body = if let Some(body) = &endpoint.body {
             Some(Mustache::parse(body.as_str())?)
@@ -263,6 +264,7 @@ mod tests {
     use serde_json::json;
 
     use super::RequestTemplate;
+    use crate::core::error::Error;
     use crate::core::has_headers::HasHeaders;
     use crate::core::mustache::Mustache;
     use crate::core::path::PathString;
@@ -292,7 +294,7 @@ mod tests {
     }
 
     impl RequestTemplate {
-        fn to_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
+        fn to_body<C: PathString + HasHeaders>(&self, ctx: &C) -> Result<String, Error> {
             let body = self
                 .to_request(ctx)?
                 .body()

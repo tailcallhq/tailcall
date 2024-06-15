@@ -1,3 +1,4 @@
+use std::str::Utf8Error;
 use std::string::FromUtf8Error;
 
 use derive_more::From;
@@ -17,7 +18,7 @@ pub enum Error {
     StdIO(std::io::Error),
 
     #[error("Utf8 Error")]
-    Utf8(FromUtf8Error),
+    FromUtf8(FromUtf8Error),
 
     #[error("Validation Error : {0}")]
     Validation(ValidationError<std::string::String>),
@@ -117,6 +118,15 @@ pub enum Error {
 
     #[error("IRError {0}")]
     IRError(ir::Error),
+
+    #[error("Serde URL Encoded Error")]
+    SerdeUrlEncoded(serde_urlencoded::ser::Error),
+
+    #[error("Hyper Header ToStr Error")]
+    HyperHeaderToStr(hyper::header::ToStrError),
+
+    #[error("Utf8 Error")]
+    Utf8(Utf8Error),
 }
 
 pub mod file {
@@ -170,6 +180,8 @@ pub mod file {
 }
 
 pub mod http {
+    use std::string::FromUtf8Error;
+
     use derive_more::From;
 
     #[derive(From, thiserror::Error, Debug)]
@@ -223,6 +235,9 @@ pub mod http {
 
         #[error("Hyper HTTP Error")]
         Hyper(hyper::Error),
+
+        #[error("Utf8 Error")]
+        Utf8(FromUtf8Error),
     }
 }
 
@@ -269,6 +284,23 @@ pub mod graphql {
 
         #[error("HTTP Error")]
         Http(http::Error),
+    }
+}
+
+pub mod cache {
+    use derive_more::From;
+
+    #[derive(From, thiserror::Error, Debug)]
+    pub enum Error {
+        #[error("Serde Json Error")]
+        SerdeJson(serde_json::Error),
+
+        #[error("Worker Error : {0}")]
+        Worker(String),
+
+        #[error("Kv Error : {0}")]
+        #[from(ignore)]
+        Kv(String),
     }
 }
 
