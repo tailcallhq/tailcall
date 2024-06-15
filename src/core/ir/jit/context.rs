@@ -1,10 +1,9 @@
 use serde_json_borrow::OwnedValue;
 use tokio::sync::Mutex;
 
-use crate::core::ir::{EvaluationContext, EvaluationError, IoId, ResolverContextLike};
-
 use super::model::ExecutionPlan;
 use super::store::Store;
+use crate::core::ir::{EvaluationContext, EvaluationError, IoId, ResolverContextLike};
 
 #[allow(unused)]
 pub struct ExecutionContext<'a, Ctx: ResolverContextLike<'a> + Send + Sync> {
@@ -21,16 +20,11 @@ pub struct ExecutionContextInner {
 impl<'a, Ctx: ResolverContextLike<'a> + Send + Sync> ExecutionContext<'a, Ctx> {
     pub fn new(plan: ExecutionPlan, ctx: EvaluationContext<'a, Ctx>) -> Self {
         Self {
-            inner: ExecutionContextInner {
-                plan,
-                store: Mutex::new(Store::new()),
-            },
+            inner: ExecutionContextInner { plan, store: Mutex::new(Store::new()) },
             ctx,
         }
     }
-    pub async fn execute_ir(
-        &'a self,
-    ) -> Result<(), EvaluationError> {
+    pub async fn execute_ir(&'a self) -> Result<(), EvaluationError> {
         super::execute::execute_ir(&self.inner.plan, &self.inner.store, &self.ctx).await
     }
     pub fn into_inner(self) -> ExecutionContextInner {
@@ -116,7 +110,7 @@ pub mod tests {
                 }
             "#,
         )
-            .await;
+        .await;
         insta::assert_snapshot!(actual);
     }
 
@@ -129,7 +123,7 @@ pub mod tests {
                 }
             "#,
         )
-            .await;
+        .await;
         insta::assert_snapshot!(actual);
     }
 }

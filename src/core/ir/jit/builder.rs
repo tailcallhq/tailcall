@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_graphql::parser::types::{DocumentOperations, ExecutableDocument, Selection};
 use async_graphql_parser::types::{OperationType, SelectionSet};
 
-use super::field_index::{FieldIndex, QueryField};
+use super::blueprint_index::{BlueprintIndex, QueryField};
 use super::model::*;
 use crate::core::blueprint::Blueprint;
 use crate::core::counter::{Count, Counter};
@@ -11,7 +11,7 @@ use crate::core::merge_right::MergeRight;
 
 #[allow(unused)]
 pub struct ExecutionPlanBuilder {
-    pub index: FieldIndex,
+    pub index: BlueprintIndex,
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: ExecutableDocument,
@@ -20,7 +20,7 @@ pub struct ExecutionPlanBuilder {
 #[allow(unused)]
 impl ExecutionPlanBuilder {
     pub fn new(blueprint: Blueprint, document: ExecutableDocument) -> Self {
-        let blueprint_index = FieldIndex::init(&blueprint);
+        let blueprint_index = BlueprintIndex::init(&blueprint);
         Self {
             document,
             index: blueprint_index,
