@@ -14,9 +14,9 @@ use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
 #[derive(Clone)]
 pub struct TargetRuntime {
     /// HTTP client for making standard HTTP requests.
-    pub http: Arc<dyn HttpIO<Error = error::http::HttpError>>,
+    pub http: Arc<dyn HttpIO<Error = error::http::Error>>,
     /// HTTP client optimized for HTTP/2 requests.
-    pub http2_only: Arc<dyn HttpIO<Error = error::http::HttpError>>,
+    pub http2_only: Arc<dyn HttpIO<Error = error::http::Error>>,
     /// Interface for accessing environment variables specific to the target
     /// environment.
     pub env: Arc<dyn EnvIO>,
@@ -117,7 +117,7 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        type Error = error::http::HttpError;
+        type Error = error::http::Error;
 
         async fn execute(
             &self,

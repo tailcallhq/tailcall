@@ -4,7 +4,7 @@ use anyhow::Result;
 use hyper::body::Bytes;
 use lambda_http::RequestExt;
 use reqwest::Client;
-use tailcall::core::error::http::HttpError;
+use tailcall::core::error::http;
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
 
@@ -27,9 +27,9 @@ impl LambdaHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for LambdaHttp {
-    type Error = HttpError;
+    type Error = http::Error;
 
-    async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, HttpError> {
+    async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, http::Error> {
         let req_str = format!("{} {}", request.method(), request.url());
         let response = self
             .client

@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use hyper::body::Bytes;
 use reqwest::header::{HeaderName, HeaderValue};
-use tailcall::core::error::http::HttpError;
+use tailcall::core::error::http;
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
 
@@ -54,7 +54,7 @@ impl Http {
 
 #[async_trait::async_trait]
 impl HttpIO for Http {
-    type Error = HttpError;
+    type Error = http::Error;
     async fn execute(&self, req: reqwest::Request) -> Result<Response<Bytes>, Self::Error> {
         // Try to find a matching mock for the incoming request.
         let execution_mock = self
@@ -95,7 +95,7 @@ impl HttpIO for Http {
                     });
                 method_match && url_match && headers_match && body_match
             })
-            .ok_or_else(|| HttpError::NoMockFound {
+            .ok_or_else(|| http::Error::NoMockFound {
                 method: req.method().to_string(),
                 url: req.url().to_string(),
                 spec_path: self.spec_path.to_string(),
@@ -110,7 +110,7 @@ impl HttpIO for Http {
         let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
 
         if status_code.is_client_error() || status_code.is_server_error() {
-            return Err(HttpError::StatusCode);
+            return Err(http::Error::StatusCode);
         }
 
         let mut response = Response { status: status_code, ..Default::default() };

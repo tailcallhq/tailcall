@@ -11,7 +11,7 @@ use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::core::config::Batch;
 use tailcall::core::error::file::FileError;
-use tailcall::core::error::http::HttpError;
+use tailcall::core::error::http;
 use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
 use tailcall::core::ir::IoId;
 use tailcall::core::runtime::TargetRuntime;
@@ -25,7 +25,7 @@ struct MockHttpClient {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-    type Error = HttpError;
+    type Error = http::Error;
     async fn execute(&self, _req: Request) -> Result<Response<Bytes>, Self::Error> {
         Ok(Response::empty())
     }

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_graphql::{ErrorExtensions, Value as ConstValue};
 
 use crate::core::auth;
-use crate::core::error::http::HttpError;
+use crate::core::error::http;
 use crate::core::error::worker;
 use crate::core::error::Error as CoreError;
 
@@ -109,14 +109,14 @@ impl From<worker::Error> for Error {
 }
 
 // Some dummy Implementation
-impl From<HttpError> for Error {
-    fn from(value: HttpError) -> Self {
+impl From<http::Error> for Error {
+    fn from(value: http::Error) -> Self {
         Error::HttpError(value.to_string())
     }
 }
 
-impl From<HttpError> for Arc<Error> {
-    fn from(value: HttpError) -> Self {
+impl From<http::Error> for Arc<Error> {
+    fn from(value: http::Error) -> Self {
         Arc::new(Error::HttpError(value.to_string()))
     }
 }

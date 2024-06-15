@@ -104,7 +104,7 @@ pub enum Error {
     File(file::FileError),
 
     #[error("Http Error")]
-    Http(http::HttpError),
+    Http(http::Error),
 
     #[error("Worker Error")]
     Worker(worker::Error),
@@ -180,7 +180,7 @@ pub mod http {
     use derive_more::From;
 
     #[derive(From, thiserror::Error, Debug)]
-    pub enum HttpError {
+    pub enum Error {
         #[error("HTTP request failed with status code: {status_code}")]
         RequestFailed { status_code: u16 },
 
@@ -228,12 +228,6 @@ pub mod http {
             spec_path: String,
         },
     }
-
-    #[derive(From, thiserror::Error, Debug)]
-    #[error("HTTP Error: {source}")]
-    pub struct Error {
-        pub source: HttpError,
-    }
 }
 
 pub mod worker {
@@ -270,21 +264,15 @@ pub mod worker {
 pub mod graphql {
     use derive_more::From;
 
-    use super::http::HttpError;
+    use super::http;
 
     #[derive(From, thiserror::Error, Debug)]
-    pub enum GraphqlError {
+    pub enum Error {
         #[error("Serde Json Error")]
         SerdeJson(serde_json::Error),
 
         #[error("HTTP Error")]
-        Http(HttpError),
-    }
-
-    #[derive(From, thiserror::Error, Debug)]
-    #[error("Graphql Error: {source}")]
-    pub struct Error {
-        pub source: GraphqlError,
+        Http(http::Error),
     }
 }
 

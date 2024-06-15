@@ -7,7 +7,7 @@ use prost::Message;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
-use crate::core::error::http::HttpError;
+use crate::core::error::http;
 use crate::core::error::Error as CoreError;
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::ir::Error;
@@ -49,7 +49,7 @@ impl FromValue for ConstValue {
 }
 
 impl Response<Bytes> {
-    pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self, HttpError> {
+    pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self, http::Error> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
         let body = resp.bytes().await?;
@@ -64,7 +64,7 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>, HttpError> {
+    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>, http::Error> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
