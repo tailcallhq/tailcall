@@ -1,5 +1,6 @@
-use super::{EvaluationContext, EvaluationError, ResolverContextLike};
 use std::future::Future;
+
+use super::{EvaluationContext, EvaluationError, ResolverContextLike};
 
 pub trait Eval<Output = async_graphql::Value> {
     fn eval<Ctx>(

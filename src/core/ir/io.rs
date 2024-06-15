@@ -118,13 +118,13 @@ impl IO {
                 {
                     let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
                         dl_id.and_then(|index| ctx.request_ctx.gql_data_loaders.get(index.0));
-                    execute_request_with_dl(&ctx, req, data_loader).await?
+                    execute_request_with_dl(ctx, req, data_loader).await?
                 } else {
-                    execute_raw_request(&ctx, req).await?
+                    execute_raw_request(ctx, req).await?
                 };
 
-                set_headers(&ctx, &res);
-                parse_graphql_response(&ctx, res, field_name)
+                set_headers(ctx, &res);
+                parse_graphql_response(ctx, res, field_name)
             }
             IO::Grpc { req_template, dl_id, .. } => {
                 let rendered = req_template.render(ctx)?;
@@ -135,13 +135,13 @@ impl IO {
                 {
                     let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
                         dl_id.and_then(|index| ctx.request_ctx.grpc_data_loaders.get(index.0));
-                    execute_grpc_request_with_dl(&ctx, rendered, data_loader).await?
+                    execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
                 } else {
                     let req = rendered.to_request()?;
-                    execute_raw_grpc_request(&ctx, req, &req_template.operation).await?
+                    execute_raw_grpc_request(ctx, req, &req_template.operation).await?
                 };
 
-                set_headers(&ctx, &res);
+                set_headers(ctx, &res);
 
                 Ok(res.body)
             }
