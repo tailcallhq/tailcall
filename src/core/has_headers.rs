@@ -6,7 +6,7 @@ pub trait HasHeaders {
     fn headers(&self) -> &HeaderMap;
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> HasHeaders for EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike> HasHeaders for EvaluationContext<'a, Ctx> {
     fn headers(&self) -> &HeaderMap {
         self.headers()
     }

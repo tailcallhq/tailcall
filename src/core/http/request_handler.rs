@@ -102,17 +102,26 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> Result<Response<Body>, Error> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let bytes = hyper::body::to_bytes(req.into_body()).await?;
+    let (req, body) = req.into_parts();
+    let bytes = hyper::body::to_bytes(body).await?;
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
-            let _ = request.parse_query();
-            let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-
-            response = update_cache_control_header(response, app_ctx, req_ctx.clone());
-            let mut resp = response.into_response()?;
-            update_response_headers(&mut resp, &req_ctx, app_ctx);
-            Ok(resp)
+            if !(app_ctx.blueprint.server.dedupe && request.is_query()) {
+                Ok(execute_query(&app_ctx, &req_ctx, request).await?)
+            } else {
+                let operation_id = request.operation_id(&req.headers);
+                let out = app_ctx
+                    .dedupe_operation_handler
+                    .dedupe(&operation_id, || {
+                        Box::pin(async move {
+                            let resp = execute_query(&app_ctx, &req_ctx, request).await?;
+                            Ok(crate::core::http::Response::from_hyper(resp).await?)
+                        })
+                    })
+                    .await?;
+                Ok(hyper::Response::from(out))
+            }
         }
         Err(err) => {
             tracing::error!(
@@ -128,6 +137,19 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
             Ok(GraphQLResponse::from(response).into_response()?)
         }
     }
+}
+
+async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
+    app_ctx: &&AppContext,
+    req_ctx: &Arc<RequestContext>,
+    request: T,
+) -> Result<Response<Body>, Error> {
+    let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+
+    response = update_cache_control_header(response, app_ctx, req_ctx.clone());
+    let mut resp = response.into_response()?;
+    update_response_headers(&mut resp, req_ctx, app_ctx);
+    Ok(resp)
 }
 
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {

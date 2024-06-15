@@ -6,6 +6,7 @@ use prost_reflect::DescriptorError;
 
 use super::config::UnsupportedConfigFormat;
 use super::grpc::error::Error as GrpcError;
+use super::ir;
 use super::rest::error::Error as RestError;
 use super::valid::ValidationError;
 use crate::cli::error::Error as CLIError;
@@ -113,6 +114,9 @@ pub enum Error {
 
     #[error("Inquire Error")]
     Inquire(InquireError),
+
+    #[error("IRError {0}")]
+    IRError(ir::Error),
 }
 
 pub mod file {
@@ -216,6 +220,9 @@ pub mod http {
             url: String,
             spec_path: String,
         },
+
+        #[error("Hyper HTTP Error")]
+        Hyper(hyper::Error),
     }
 }
 

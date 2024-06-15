@@ -93,6 +93,22 @@
       },
       "additionalProperties": false
     },
+    "Alias": {
+      "description": "The @alias directive indicates that aliases of one enum value.",
+      "type": "object",
+      "required": [
+        "options"
+      ],
+      "properties": {
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
     "Apollo": {
       "type": "object",
       "required": [
@@ -361,7 +377,7 @@
         "variants": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/Variant"
           },
           "uniqueItems": true
         }
@@ -410,6 +426,9 @@
               "type": "null"
             }
           ]
+        },
+        "default_value": {
+          "description": "Stores the default value for the field"
         },
         "doc": {
           "description": "Publicly visible documentation for the field.",
@@ -494,6 +513,7 @@
         },
         "protected": {
           "description": "Marks field as protected by auth provider",
+          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Protected"
@@ -1023,6 +1043,13 @@
             "null"
           ]
         },
+        "dedupe": {
+          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
           "type": [
@@ -1308,6 +1335,7 @@
         },
         "protected": {
           "description": "Marks field as protected by auth providers",
+          "default": null,
           "anyOf": [
             {
               "$ref": "#/definitions/Protected"
@@ -1428,13 +1456,6 @@
           "format": "uint64",
           "minimum": 0.0
         },
-        "dedupe": {
-          "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once within the context of a single GraphQL request.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
         "http2Only": {
           "description": "The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.",
           "type": [
@@ -1549,6 +1570,28 @@
       ],
       "properties": {
         "Url": {
+          "type": "string"
+        }
+      }
+    },
+    "Variant": {
+      "description": "Definition of GraphQL value",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Alias"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
           "type": "string"
         }
       }

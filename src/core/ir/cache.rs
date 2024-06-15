@@ -1,7 +1,5 @@
-use core::future::Future;
 use std::num::NonZeroU64;
 use std::ops::Deref;
-use std::pin::Pin;
 
 use async_graphql_value::ConstValue;
 
@@ -42,31 +40,29 @@ impl Cache {
 }
 
 impl Eval for Cache {
-    fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, Error>> + 'a + Send>> {
-        Box::pin(async move {
-            if let IR::IO(io) = self.expr.deref() {
-                let key = io.cache_key(&ctx);
-                if let Some(key) = key {
-                    if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
-                        Ok(val)
-                    } else {
-                        let val = self.expr.eval(ctx.clone()).await?;
-                        ctx.request_ctx
-                            .runtime
-                            .cache
-                            .set(key, val.clone(), self.max_age)
-                            .await?;
-                        Ok(val)
-                    }
+    async fn eval<Ctx>(&self, ctx: &mut EvaluationContext<'_, Ctx>) -> Result<ConstValue, Error>
+    where
+        Ctx: ResolverContextLike + Sync,
+    {
+        if let IR::IO(io) = self.expr.deref() {
+            let key = io.cache_key(ctx);
+            if let Some(key) = key {
+                if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
+                    Ok(val)
                 } else {
-                    self.expr.eval(ctx).await
+                    let val = self.expr.eval(ctx).await?;
+                    ctx.request_ctx
+                        .runtime
+                        .cache
+                        .set(key, val.clone(), self.max_age)
+                        .await?;
+                    Ok(val)
                 }
             } else {
-                Ok(self.expr.eval(ctx).await?)
+                self.expr.eval(ctx).await
             }
-        })
+        } else {
+            Ok(self.expr.eval(ctx).await?)
+        }
     }
 }
