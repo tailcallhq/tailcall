@@ -45,10 +45,10 @@ impl Eval for Cache {
         ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
     where
-        Ctx: ResolverContextLike + Send + Sync,
+        Ctx: ResolverContextLike + Sync,
     {
         if let IR::IO(io) = self.expr.deref() {
-            let key = io.cache_key(&ctx);
+            let key = io.cache_key(ctx);
             if let Some(key) = key {
                 if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
                     Ok(val)

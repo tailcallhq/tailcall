@@ -63,14 +63,14 @@ impl Eval for IO {
         ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
     where
-        Ctx: ResolverContextLike + Send + Sync,
+        Ctx: ResolverContextLike + Sync,
     {
         // Note: Handled the case separately for performance reasons. It avoids cache
         // key generation when it's not required
         if !ctx.request_ctx.server.dedupe || !ctx.is_query() {
             return self.eval_inner(ctx).await;
         }
-        if let Some(key) = self.cache_key(&ctx) {
+        if let Some(key) = self.cache_key(ctx) {
             ctx.request_ctx
                 .cache
                 .dedupe(&key, || async {
@@ -92,7 +92,7 @@ impl IO {
         ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
     where
-        Ctx: ResolverContextLike + Sync + Send,
+        Ctx: ResolverContextLike + Sync,
     {
         match self {
             IO::Http { req_template, dl_id, http_filter, .. } => {
@@ -163,7 +163,7 @@ impl IO {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike + Sync + Send> CacheKey<EvaluationContext<'a, Ctx>> for IO {
+impl<'a, Ctx: ResolverContextLike + Sync> CacheKey<EvaluationContext<'a, Ctx>> for IO {
     fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> Option<IoId> {
         match self {
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
@@ -315,13 +315,13 @@ fn parse_graphql_response<Ctx: ResolverContextLike>(
 /// and getting a response. There are optimizations and customizations that the
 /// user might have configured. HttpRequestExecutor is responsible for handling
 /// all of that.
-struct HttpRequestExecutor<'a, 'ctx, Context: ResolverContextLike + Send + Sync> {
+struct HttpRequestExecutor<'a, 'ctx, Context: ResolverContextLike + Sync> {
     evaluation_ctx: &'ctx EvaluationContext<'a, Context>,
     data_loader: Option<&'a DataLoader<DataLoaderRequest, HttpDataLoader>>,
     request_template: &'a http::RequestTemplate,
 }
 
-impl<'a, 'ctx, Context: ResolverContextLike + Send + Sync> HttpRequestExecutor<'a, 'ctx, Context> {
+impl<'a, 'ctx, Context: ResolverContextLike + Sync> HttpRequestExecutor<'a, 'ctx, Context> {
     pub fn new(
         evaluation_ctx: &'ctx EvaluationContext<'a, Context>,
         request_template: &'a RequestTemplate,

@@ -68,7 +68,7 @@ impl Eval for Map {
         ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
     where
-        Ctx: ResolverContextLike + Sync + Send,
+        Ctx: ResolverContextLike + Sync,
     {
         let value = self.input.eval(ctx).await?;
         if let ConstValue::String(key) = value {
@@ -95,7 +95,7 @@ impl Eval for IR {
         ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> impl Future<Output = Result<ConstValue, EvaluationError>>
     where
-        Ctx: ResolverContextLike + Send + Sync,
+        Ctx: ResolverContextLike + Sync,
     {
         Box::pin(async move {
             match self {
