@@ -222,12 +222,12 @@ fn hello_world_config() -> Config {
     let field = Field {
         type_of: "String".to_string(),
         required: true,
-        args: BTreeMap::from_iter(vec![("name".to_string(), arg)].into_iter()),
+        args: BTreeMap::from_iter(vec![("name".to_string(), arg)]),
         ..Default::default()
     };
 
     let ty = Type {
-        fields: BTreeMap::from_iter(vec![("hello".to_string(), field)].into_iter()),
+        fields: BTreeMap::from_iter(vec![("hello".to_string(), field)]),
         ..Default::default()
     };
     config.types.insert("Query".to_string(), ty);
