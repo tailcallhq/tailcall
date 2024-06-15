@@ -1110,4 +1110,29 @@ mod tests {
 "
         );
     }
+
+    #[test]
+    fn test_validation_non_object() {
+        let foo = Type::default().fields(vec![("foo", Field::default())]);
+        let bar = Type::default().fields(vec![("bar", Field::default())]);
+        let types = vec![("Foo", &foo), ("Bar", &bar)];
+
+        let discriminator = Discriminator::new("Test", &types).unwrap();
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!("string")).unwrap())
+                .unwrap_err()
+                .to_string(),
+            "Value expected to be object"
+        );
+
+        assert_eq!(
+            discriminator
+                .resolve_type(&Value::from_json(json!(25)).unwrap())
+                .unwrap_err()
+                .to_string(),
+            "Value expected to be object"
+        );
+    }
 }
