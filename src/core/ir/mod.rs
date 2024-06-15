@@ -7,9 +7,9 @@ mod io;
 mod modify;
 mod resolver_context_like;
 
-use core::future::Future;
+use std::collections::HashMap;
 use std::fmt::Debug;
-use std::pin::Pin;
+use std::future::Future;
 
 use async_graphql_value::ConstValue;
 pub use cache::*;
@@ -34,6 +34,7 @@ pub enum IR {
     Cache(Cache),
     Path(Box<IR>, Vec<String>),
     Protect(Box<IR>),
+    Map(Map),
 }
 
 #[derive(Clone, Debug)]
@@ -54,12 +55,48 @@ impl IR {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct Map {
+    pub input: Box<IR>,
+    // accept key return value instead of
+    pub map: HashMap<String, String>,
+}
+
+impl Eval for Map {
+    async fn eval<Ctx>(
+        &self,
+        ctx: &mut EvaluationContext<'_, Ctx>,
+    ) -> Result<ConstValue, EvaluationError>
+    where
+        Ctx: ResolverContextLike + Sync,
+    {
+        let value = self.input.eval(ctx).await?;
+        if let ConstValue::String(key) = value {
+            if let Some(value) = self.map.get(&key) {
+                Ok(ConstValue::String(value.to_owned()))
+            } else {
+                Err(EvaluationError::ExprEvalError(format!(
+                    "Can't find mapped key: {}.",
+                    key
+                )))
+            }
+        } else {
+            Err(EvaluationError::ExprEvalError(
+                "Mapped key must be string value.".to_owned(),
+            ))
+        }
+    }
+}
+
 impl Eval for IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
-    fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    fn eval<Ctx>(
+        &self,
+        ctx: &mut EvaluationContext<'_, Ctx>,
+    ) -> impl Future<Output = Result<ConstValue, EvaluationError>>
+    where
+        Ctx: ResolverContextLike + Sync,
+    {
         Box::pin(async move {
             match self {
                 IR::Context(op) => match op {
@@ -71,13 +108,13 @@ impl Eval for IR {
                         .map(|a| a.into_owned())
                         .unwrap_or(async_graphql::Value::Null)),
                     Context::PushArgs { expr, and_then } => {
-                        let args = expr.eval(ctx.clone()).await?;
-                        let ctx = ctx.with_args(args).clone();
+                        let args = expr.eval(ctx).await?;
+                        let ctx = &mut ctx.with_args(args);
                         and_then.eval(ctx).await
                     }
                     Context::PushValue { expr, and_then } => {
-                        let value = expr.eval(ctx.clone()).await?;
-                        let ctx = ctx.with_value(value);
+                        let value = expr.eval(ctx).await?;
+                        let ctx = &mut ctx.with_value(value);
                         and_then.eval(ctx).await
                     }
                 },
@@ -88,7 +125,7 @@ impl Eval for IR {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                IR::Dynamic(value) => Ok(value.render_value(&ctx)),
+                IR::Dynamic(value) => Ok(value.render_value(ctx)),
                 IR::Protect(expr) => {
                     ctx.request_ctx
                         .auth_ctx
@@ -99,6 +136,7 @@ impl Eval for IR {
                 }
                 IR::IO(operation) => operation.eval(ctx).await,
                 IR::Cache(cached) => cached.eval(ctx).await,
+                IR::Map(map) => map.eval(ctx).await,
             }
         })
     }

@@ -462,8 +462,44 @@ pub struct Union {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 /// Definition of GraphQL enum type
 pub struct Enum {
-    pub variants: BTreeSet<String>,
+    pub variants: BTreeSet<Variant>,
     pub doc: Option<String>,
+}
+
+/// Definition of GraphQL value
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
+pub struct Variant {
+    pub name: String,
+    // directive: alias
+    pub alias: Option<Alias>,
+}
+
+/// The @alias directive indicates that aliases of one enum value.
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
+pub struct Alias {
+    pub options: BTreeSet<String>,
 }
 
 #[derive(

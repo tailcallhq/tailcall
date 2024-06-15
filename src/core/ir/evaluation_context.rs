@@ -10,7 +10,7 @@ use crate::core::http::RequestContext;
 
 // TODO: rename to ResolverContext
 #[derive(Clone)]
-pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
+pub struct EvaluationContext<'a, Ctx: ResolverContextLike> {
     // Context create for each GraphQL Request
     pub request_ctx: &'a RequestContext,
 
@@ -25,7 +25,7 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike<'a>> {
     graphql_ctx_args: Option<Arc<Value>>,
 }
 
-impl<'a, A: ResolverContextLike<'a>> EvaluationContext<'a, A> {
+impl<'a, A: ResolverContextLike> EvaluationContext<'a, A> {
     pub fn with_value(&self, value: Value) -> EvaluationContext<'a, A> {
         let mut ctx = self.clone();
         ctx.graphql_ctx_value = Some(Arc::new(value));
@@ -43,7 +43,7 @@ impl<'a, A: ResolverContextLike<'a>> EvaluationContext<'a, A> {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike> EvaluationContext<'a, Ctx> {
     pub fn new(req_ctx: &'a RequestContext, graphql_ctx: &'a Ctx) -> EvaluationContext<'a, Ctx> {
         Self {
             request_ctx: req_ctx,
@@ -109,7 +109,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> EvaluationContext<'a, Ctx> {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> GraphQLOperationContext for EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvaluationContext<'a, Ctx> {
     fn selection_set(&self) -> Option<String> {
         let selection_set = self.graphql_ctx.field()?.selection_set();
 

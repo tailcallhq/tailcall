@@ -11,7 +11,7 @@ use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
 use crate::core::config::position::Pos;
-use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type};
+use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type, Variant};
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -103,6 +103,11 @@ impl Context {
                 .to_string();
 
             let doc = self.comments_builder.get_comments(&enum_type_path);
+
+            let variants_with_comments = variants_with_comments
+                .into_iter()
+                .map(|v| Variant { name: v, alias: None })
+                .collect();
 
             self.config.enums.insert(
                 type_name,
