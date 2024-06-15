@@ -13,8 +13,8 @@ impl Fmt {
         format!("{}", meta.yellow())
     }
 
-    pub fn display(s: String) {
-        println!("{}", s);
+    pub fn display<T: AsRef<str>>(s: T) {
+        println!("{}", s.as_ref());
     }
 
     pub fn format_n_plus_one_queries(n_plus_one_info: Vec<Vec<(String, String)>>) -> String {

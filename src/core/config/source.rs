@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter};
+
 use thiserror::Error;
 
 use super::Config;
@@ -9,6 +11,16 @@ pub enum Source {
     Yml,
     #[default]
     GraphQL,
+}
+
+impl Display for Source {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Source::Json => write!(f, "json"),
+            Source::Yml => write!(f, "yml"),
+            Source::GraphQL => write!(f, "graphql"),
+        }
+    }
 }
 
 const JSON_EXT: &str = "json";

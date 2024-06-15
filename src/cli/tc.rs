@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
@@ -5,7 +6,7 @@ use anyhow::Result;
 use clap::Parser;
 use convert_case::{Case, Casing};
 use dotenvy::dotenv;
-use inquire::Confirm;
+use inquire::{Confirm, Select, Text};
 use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
@@ -16,10 +17,12 @@ use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
+use crate::core::config::{Arg, Config, Field, RootSchema, Source, Type};
 use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
+
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
@@ -95,6 +98,21 @@ pub async fn run() -> Result<()> {
 }
 
 pub async fn init(folder_path: &str) -> Result<()> {
+    let project_name = Text::new("Project Name:").prompt().unwrap_or_else(|err| {
+        eprintln!("Error: {}", err);
+        std::process::exit(1);
+    });
+
+    let chosen_format = Select::new(
+        "Choose a file format:",
+        vec![Source::GraphQL, Source::Json, Source::Yml],
+    )
+    .prompt()
+    .unwrap_or_else(|err| {
+        eprintln!("Error: {}", err);
+        std::process::exit(1);
+    });
+
     let folder_exists = fs::metadata(folder_path).is_ok();
 
     if !folder_exists {
@@ -178,7 +196,43 @@ pub async fn init(folder_path: &str) -> Result<()> {
         }
     }
 
+    let file = format!("{}.{}", project_name, chosen_format);
+    let file_path = Path::new(folder_path).join(file);
+    let config = hello_world_config();
+    let content = chosen_format.encode(&config)?;
+    fs::write(&file_path, content)?;
+    tracing::info!("Created file: {}", file_path.to_str().unwrap_or_default());
+
     Ok(())
+}
+
+fn hello_world_config() -> Config {
+    let mut config = Config::default();
+
+    config.server.hostname = Some("localhost".to_string());
+    config.server.port = Some(8000);
+    config.schema = RootSchema::default().query("Query".to_string());
+
+    let arg = Arg {
+        type_of: "String".to_string(),
+        default_value: Some(serde_json::json!("World")),
+        ..Default::default()
+    };
+
+    let field = Field {
+        type_of: "String".to_string(),
+        required: true,
+        args: BTreeMap::from_iter(vec![("name".to_string(), arg)].into_iter()),
+        ..Default::default()
+    };
+
+    let ty = Type {
+        fields: BTreeMap::from_iter(vec![("hello".to_string(), field)].into_iter()),
+        ..Default::default()
+    };
+    config.types.insert("Query".to_string(), ty);
+
+    config
 }
 
 fn log_endpoint_set(endpoint_set: &EndpointSet<Unchecked>) {
