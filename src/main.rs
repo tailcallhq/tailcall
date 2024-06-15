@@ -4,6 +4,7 @@
 use std::cell::Cell;
 
 use mimalloc::MiMalloc;
+use tailcall::core::error::Error;
 use tailcall::core::tracing::default_tracing_tailcall;
 use tailcall::core::Errata;
 use tracing::subscriber::DefaultGuard;
@@ -15,7 +16,7 @@ thread_local! {
     static TRACING_GUARD: Cell<Option<DefaultGuard>> = const { Cell::new(None) };
 }
 
-fn run_blocking() -> anyhow::Result<()> {
+fn run_blocking() -> Result<(), Error> {
     let rt = tokio::runtime::Builder::new_current_thread()
         .on_thread_start(|| {
             // initialize default tracing setup for the cli execution for every thread that
@@ -37,7 +38,7 @@ fn run_blocking() -> anyhow::Result<()> {
     rt.block_on(async { tailcall::cli::run().await })
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<(), Error> {
     // enable tracing subscriber for current thread until this block ends
     // that will show any logs from cli itself to the user
     // despite of @telemetry settings that

@@ -5,9 +5,9 @@ use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use hyper::body::Bytes;
 use reqwest::header::{HeaderName, HeaderValue};
+use tailcall::core::error::http;
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
 
@@ -54,7 +54,7 @@ impl Http {
 
 #[async_trait::async_trait]
 impl HttpIO for Http {
-    async fn execute(&self, req: reqwest::Request) -> anyhow::Result<Response<Bytes>> {
+    async fn execute(&self, req: reqwest::Request) -> Result<Response<Bytes>, http::Error> {
         // Try to find a matching mock for the incoming request.
         let execution_mock = self
             .mocks
@@ -94,12 +94,11 @@ impl HttpIO for Http {
                     });
                 method_match && url_match && headers_match && body_match
             })
-            .ok_or(anyhow!(
-                "No mock found for request: {:?} {} in {}",
-                req.method(),
-                req.url(),
-                self.spec_path
-            ))?;
+            .ok_or_else(|| http::Error::NoMockFound {
+                method: req.method().to_string(),
+                url: req.url().to_string(),
+                spec_path: self.spec_path.to_string(),
+            })?;
 
         execution_mock.actual_hits.fetch_add(1, Ordering::Relaxed);
 
@@ -110,7 +109,7 @@ impl HttpIO for Http {
         let status_code = reqwest::StatusCode::from_u16(mock_response.0.status)?;
 
         if status_code.is_client_error() || status_code.is_server_error() {
-            return Err(anyhow::format_err!("Status code error"));
+            return Err(http::Error::StatusCode);
         }
 
         let mut response = Response { status: status_code, ..Default::default() };

@@ -1,4 +1,3 @@
-use anyhow::Result;
 use futures_util::future::join_all;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
@@ -6,6 +5,7 @@ use reqwest::Method;
 use url::Url;
 
 use crate::core::config::{Config, ConfigModule, Link, LinkType};
+use crate::core::error::Error;
 use crate::core::generator::from_proto::from_proto;
 use crate::core::generator::{from_json, ConfigGenerationRequest, Source};
 use crate::core::merge_right::MergeRight;
@@ -17,7 +17,9 @@ use crate::core::runtime::TargetRuntime;
 // that is important for generation to work
 // TODO: probably we can drop this in case the config_reader will use
 // protox::compile instead of more low-level protox_parse::parse
-fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<FileDescriptorSet> {
+fn resolve_file_descriptor_set(
+    descriptor_set: FileDescriptorSet,
+) -> Result<FileDescriptorSet, Error> {
     let descriptor_set = DescriptorPool::from_file_descriptor_set(descriptor_set)?;
     let descriptor_set = FileDescriptorSet {
         file: descriptor_set
@@ -33,7 +35,7 @@ fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<File
 async fn fetch_response(
     url: &str,
     runtime: &TargetRuntime,
-) -> anyhow::Result<ConfigGenerationRequest> {
+) -> Result<ConfigGenerationRequest, Error> {
     let parsed_url = Url::parse(url)?;
     let request = reqwest::Request::new(Method::GET, parsed_url.clone());
     let resp = runtime.http.execute(request).await?;
@@ -58,7 +60,7 @@ impl Generator {
         input_source: Source,
         paths: &[T],
         query: &str,
-    ) -> Result<ConfigModule> {
+    ) -> Result<ConfigModule, Error> {
         match input_source {
             Source::Proto => {
                 let mut links = vec![];
@@ -82,7 +84,7 @@ impl Generator {
                 )
                 .await
                 .into_iter()
-                .collect::<anyhow::Result<Vec<_>>>()?;
+                .collect::<Result<Vec<_>, Error>>()?;
 
                 let config = from_json(&results, query)?;
                 Ok(ConfigModule::from(config))

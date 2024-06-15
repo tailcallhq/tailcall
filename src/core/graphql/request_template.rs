@@ -8,6 +8,7 @@ use reqwest::header::HeaderValue;
 use tailcall_hasher::TailcallHasher;
 
 use crate::core::config::{GraphQLOperationType, KeyValue};
+use crate::core::error::Error;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::http::Method::POST;
@@ -61,7 +62,7 @@ impl RequestTemplate {
     pub fn to_request<C: PathGraphql + HasHeaders + GraphQLOperationContext>(
         &self,
         ctx: &C,
-    ) -> anyhow::Result<reqwest::Request> {
+    ) -> Result<reqwest::Request, Error> {
         let mut req = reqwest::Request::new(POST.to_hyper(), url::Url::parse(self.url.as_str())?);
         req = self.set_headers(req, ctx);
         req = self.set_body(req, ctx);
@@ -105,14 +106,14 @@ impl RequestTemplate {
         operation_name: &str,
         args: Option<&Vec<KeyValue>>,
         headers: MustacheHeaders,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self, Error> {
         let mut operation_arguments = None;
 
         if let Some(args) = args.as_ref() {
             operation_arguments = Some(
                 args.iter()
                     .map(|kv| Ok((kv.key.to_owned(), Mustache::parse(&kv.value)?)))
-                    .collect::<anyhow::Result<Vec<_>>>()?,
+                    .collect::<Result<Vec<_>, Error>>()?,
             );
         }
 

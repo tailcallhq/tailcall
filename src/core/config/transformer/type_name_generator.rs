@@ -147,12 +147,12 @@ impl Transform for TypeNameGenerator {
 mod test {
     use std::fs;
 
-    use anyhow::Ok;
     use tailcall_fixtures::configs;
 
     use super::TypeNameGenerator;
     use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
+    use crate::core::error::Error;
     use crate::core::valid::Validator;
 
     fn read_fixture(path: &str) -> String {
@@ -170,7 +170,7 @@ mod test {
     }
 
     #[test]
-    fn test_type_name_generator_with_cyclic_types() -> anyhow::Result<()> {
+    fn test_type_name_generator_with_cyclic_types() -> Result<(), Error> {
         let config = Config::from_sdl(read_fixture(configs::CYCLIC_CONFIG).as_str())
             .to_result()
             .unwrap();

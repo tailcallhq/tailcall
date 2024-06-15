@@ -4,6 +4,7 @@ use std::sync::Arc;
 use async_graphql::{ErrorExtensions, Value as ConstValue};
 
 use crate::core::auth;
+use crate::core::error::{http, worker, Error as CoreError};
 
 #[derive(Debug, thiserror::Error, Clone)]
 pub enum Error {
@@ -24,6 +25,12 @@ pub enum Error {
     DeserializeError(String),
 
     AuthError(String),
+
+    WorkerError(String),
+
+    HttpError(String),
+
+    CoreError(String),
 }
 
 impl Display for Error {
@@ -58,6 +65,12 @@ impl From<Error> for crate::core::Errata {
             Error::AuthError(message) => {
                 CoreError::new("Authentication Error").description(message)
             }
+
+            Error::WorkerError(message) => CoreError::new("Worker Error").description(message),
+
+            Error::HttpError(message) => CoreError::new("HTTP Error").description(message),
+
+            Error::CoreError(message) => CoreError::new("Core Error").description(message),
         }
     }
 }
@@ -87,6 +100,32 @@ impl From<auth::error::Error> for Error {
     }
 }
 
+// Some dummy Implementation
+impl From<worker::Error> for Error {
+    fn from(value: worker::Error) -> Self {
+        Error::WorkerError(value.to_string())
+    }
+}
+
+// Some dummy Implementation
+impl From<http::Error> for Error {
+    fn from(value: http::Error) -> Self {
+        Error::HttpError(value.to_string())
+    }
+}
+
+impl From<http::Error> for Arc<Error> {
+    fn from(value: http::Error) -> Self {
+        Arc::new(Error::HttpError(value.to_string()))
+    }
+}
+
+impl From<CoreError> for Error {
+    fn from(value: CoreError) -> Self {
+        Error::CoreError(value.to_string())
+    }
+}
+
 impl<'a> From<crate::core::valid::ValidationError<&'a str>> for Error {
     fn from(value: crate::core::valid::ValidationError<&'a str>) -> Self {
         Error::APIValidationError(
@@ -96,6 +135,12 @@ impl<'a> From<crate::core::valid::ValidationError<&'a str>> for Error {
                 .map(|e| e.message.to_owned())
                 .collect(),
         )
+    }
+}
+
+impl From<Arc<Error>> for Error {
+    fn from(error: Arc<Error>) -> Self {
+        Error::WorkerError(error.to_string())
     }
 }
 

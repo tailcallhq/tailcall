@@ -10,6 +10,7 @@ use url::Url;
 
 use super::request::create_grpc_request;
 use crate::core::config::GraphQLOperationType;
+use crate::core::error::Error;
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
@@ -44,7 +45,7 @@ impl Hash for RenderedRequestTemplate {
 }
 
 impl RequestTemplate {
-    fn create_url<C: PathString>(&self, ctx: &C) -> Result<Url> {
+    fn create_url<C: PathString>(&self, ctx: &C) -> Result<Url, Error> {
         let url = url::Url::parse(self.url.render(ctx).as_str())?;
 
         Ok(url)
@@ -64,7 +65,10 @@ impl RequestTemplate {
         header_map
     }
 
-    pub fn render<C: PathString + HasHeaders>(&self, ctx: &C) -> Result<RenderedRequestTemplate> {
+    pub fn render<C: PathString + HasHeaders>(
+        &self,
+        ctx: &C,
+    ) -> Result<RenderedRequestTemplate, Error> {
         let url = self.create_url(ctx)?;
         let headers = self.render_headers(ctx);
         let body = self.render_body(ctx);
@@ -94,7 +98,7 @@ impl RequestTemplate {
 }
 
 impl RenderedRequestTemplate {
-    pub fn to_request(&self) -> Result<reqwest::Request> {
+    pub fn to_request(&self) -> Result<reqwest::Request, Error> {
         let mut req = reqwest::Request::new(Method::POST, self.url.clone());
         req.headers_mut().extend(self.headers.clone());
 

@@ -8,6 +8,7 @@ use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
+use crate::core::error::Error;
 use crate::core::path::{PathGraphql, PathString};
 
 #[derive(Debug, Clone, PartialEq, Hash)]
@@ -40,7 +41,7 @@ impl Mustache {
     }
 
     // TODO: infallible function, no need to return Result
-    pub fn parse(str: &str) -> anyhow::Result<Mustache> {
+    pub fn parse(str: &str) -> Result<Mustache, Error> {
         let result = parse_mustache(str).finish();
         match result {
             Ok((_, mustache)) => Ok(mustache),

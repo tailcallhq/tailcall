@@ -8,6 +8,7 @@ use crate::core::config::transformer::{
     ConsolidateURL, RemoveUnused, Transform, TransformerOps, TypeMerger, TypeNameGenerator,
 };
 use crate::core::config::Config;
+use crate::core::error::Error;
 use crate::core::valid::Validator;
 
 pub struct ConfigGenerationRequest {
@@ -21,10 +22,7 @@ impl ConfigGenerationRequest {
     }
 }
 
-pub fn from_json(
-    config_gen_req: &[ConfigGenerationRequest],
-    query: &str,
-) -> anyhow::Result<Config> {
+pub fn from_json(config_gen_req: &[ConfigGenerationRequest], query: &str) -> Result<Config, Error> {
     let mut config = Config::default();
     // TODO: field names in operation type will be provided by user in config.
     let field_name_gen = NameGenerator::new("f");

@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::Path;
 
-use anyhow::Result;
 use clap::Parser;
 use convert_case::{Case, Casing};
 use dotenvy::dotenv;
@@ -16,10 +15,11 @@ use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
+use crate::core::error::Error;
 use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
+use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::core::{print_schema, Errata};
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
@@ -27,7 +27,7 @@ const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 lazy_static! {
     static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();
 }
-pub async fn run() -> Result<()> {
+pub async fn run() -> Result<(), Error> {
     if let Ok(path) = dotenv() {
         tracing::info!("Env file: {:?} loaded", path);
     }
@@ -60,7 +60,7 @@ pub async fn run() -> Result<()> {
             if let Some(format) = format {
                 Fmt::display(format.encode(&config_module)?);
             }
-            let blueprint = Blueprint::try_from(&config_module).map_err(Errata::from);
+            let blueprint = Blueprint::try_from(&config_module);
 
             match blueprint {
                 Ok(blueprint) => {
@@ -94,7 +94,7 @@ pub async fn run() -> Result<()> {
     }
 }
 
-pub async fn init(folder_path: &str) -> Result<()> {
+pub async fn init(folder_path: &str) -> Result<(), Error> {
     let folder_exists = fs::metadata(folder_path).is_ok();
 
     if !folder_exists {

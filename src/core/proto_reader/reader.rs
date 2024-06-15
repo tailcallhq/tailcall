@@ -1,11 +1,11 @@
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
 
-use anyhow::Context;
 use futures_util::future::join_all;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
+use crate::core::error::Error;
 use crate::core::proto_reader::fetch::GrpcReflection;
 use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::runtime::TargetRuntime;
@@ -27,7 +27,7 @@ impl ProtoReader {
     }
 
     /// Fetches proto files from a grpc server (grpc reflection)
-    pub async fn fetch<T: AsRef<str>>(&self, url: T) -> anyhow::Result<Vec<ProtoMetadata>> {
+    pub async fn fetch<T: AsRef<str>>(&self, url: T) -> Result<Vec<ProtoMetadata>, Error> {
         let grpc_reflection = GrpcReflection::new(url.as_ref(), self.runtime.clone());
 
         let mut proto_metadata = vec![];
@@ -49,16 +49,16 @@ impl ProtoReader {
     }
 
     /// Asynchronously reads all proto files from a list of paths
-    pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> anyhow::Result<Vec<ProtoMetadata>> {
+    pub async fn read_all<T: AsRef<str>>(&self, paths: &[T]) -> Result<Vec<ProtoMetadata>, Error> {
         let resolved_protos = join_all(paths.iter().map(|v| self.read(v.as_ref())))
             .await
             .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
+            .collect::<Result<Vec<_>, Error>>()?;
         Ok(resolved_protos)
     }
 
     /// Reads a proto file from a path
-    pub async fn read<T: AsRef<str>>(&self, path: T) -> anyhow::Result<ProtoMetadata> {
+    pub async fn read<T: AsRef<str>>(&self, path: T) -> Result<ProtoMetadata, Error> {
         let file_read = self.read_proto(path.as_ref(), None).await?;
         Self::check_package(&file_read)?;
 
@@ -77,7 +77,7 @@ impl ProtoReader {
         &self,
         parent_proto: FileDescriptorProto,
         parent_path: Option<&Path>,
-    ) -> anyhow::Result<Vec<FileDescriptorProto>> {
+    ) -> Result<Vec<FileDescriptorProto>, Error> {
         let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
         let mut queue = VecDeque::new();
         queue.push_back(parent_proto.clone());
@@ -113,11 +113,11 @@ impl ProtoReader {
         &self,
         path: T,
         parent_dir: Option<&Path>,
-    ) -> anyhow::Result<FileDescriptorProto> {
+    ) -> Result<FileDescriptorProto, Error> {
         let content = if let Ok(file) = GoogleFileResolver::new().open_file(path.as_ref()) {
             file.source()
-                .context("Unable to extract content of google well-known proto file")?
-                .to_string()
+                .map(|s| s.to_string())
+                .ok_or_else(|| Error::GoogleProtoFileContentNotExtracted)?
         } else {
             let path = Self::resolve_path(path.as_ref(), parent_dir);
             self.reader.read_file(path).await?.content
@@ -139,9 +139,9 @@ impl ProtoReader {
             src.to_string()
         }
     }
-    fn check_package(proto: &FileDescriptorProto) -> anyhow::Result<()> {
+    fn check_package(proto: &FileDescriptorProto) -> Result<(), Error> {
         if proto.package.is_none() {
-            anyhow::bail!("Package name is required");
+            return Err(Error::PackageNameNotFound);
         }
         Ok(())
     }

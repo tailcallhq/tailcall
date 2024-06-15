@@ -1,6 +1,5 @@
 use std::collections::{BTreeSet, HashSet};
 
-use anyhow::{bail, Result};
 use derive_setters::Setters;
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto, SourceCodeInfo,
@@ -11,6 +10,7 @@ use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type, Variant};
+use crate::core::error::Error;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -121,7 +121,7 @@ impl Context {
         messages: &[DescriptorProto],
         parent_path: &PathBuilder,
         is_nested: bool,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         for (index, message) in messages.iter().enumerate() {
             let msg_name = message.name();
 
@@ -217,7 +217,7 @@ impl Context {
         mut self,
         services: &[ServiceDescriptorProto],
         parent_path: &PathBuilder,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         if services.is_empty() {
             return Ok(self);
         }
@@ -287,9 +287,9 @@ impl Context {
     }
 }
 
-fn graphql_type_from_ref(name: &str) -> Result<GraphQLType<Unparsed>> {
+fn graphql_type_from_ref(name: &str) -> Result<GraphQLType<Unparsed>, Error> {
     if !name.starts_with('.') {
-        bail!("Expected fully-qualified name for reference type but got {name}. This is a bug!");
+        return Err(Error::InvalidReferenceTypeName(name.to_string()));
     }
 
     let name = &name[1..];
@@ -323,7 +323,7 @@ fn convert_primitive_type(proto_ty: &str) -> String {
 }
 
 /// Determines the output type for a service method.
-fn get_output_type(output_ty: &str) -> Result<GraphQLType<Unparsed>> {
+fn get_output_type(output_ty: &str) -> Result<GraphQLType<Unparsed>, Error> {
     // type, required
     match output_ty {
         ".google.protobuf.Empty" => {
@@ -337,7 +337,7 @@ fn get_output_type(output_ty: &str) -> Result<GraphQLType<Unparsed>> {
     }
 }
 
-fn get_input_type(input_ty: &str) -> Result<Option<GraphQLType<Unparsed>>> {
+fn get_input_type(input_ty: &str) -> Result<Option<GraphQLType<Unparsed>>, Error> {
     match input_ty {
         ".google.protobuf.Empty" | "" => Ok(None),
         _ => graphql_type_from_ref(input_ty).map(Some),
@@ -345,7 +345,7 @@ fn get_input_type(input_ty: &str) -> Result<Option<GraphQLType<Unparsed>>> {
 }
 
 /// The main entry point that builds a Config object from proto descriptor sets.
-pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<Config> {
+pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<Config, Error> {
     let mut ctx = Context::new(query);
     for descriptor_set in descriptor_sets.iter() {
         for file_descriptor in descriptor_set.file.iter() {
@@ -371,27 +371,27 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<
 
 #[cfg(test)]
 mod test {
-    use anyhow::Result;
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
 
     use crate::core::config::transformer::{AmbiguousType, Transform};
     use crate::core::config::Config;
+    use crate::core::error::Error;
     use crate::core::valid::Validator;
 
-    fn from_proto_resolved(files: &[FileDescriptorSet], query: &str) -> Result<Config> {
+    fn from_proto_resolved(files: &[FileDescriptorSet], query: &str) -> Result<Config, Error> {
         let config = AmbiguousType::default()
             .transform(super::from_proto(files, query)?)
             .to_result()?;
         Ok(config)
     }
 
-    fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet> {
+    fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet, Error> {
         Ok(protox::compile(files, [protobuf::SELF])?)
     }
 
     #[test]
-    fn test_from_proto() -> Result<()> {
+    fn test_from_proto() -> Result<(), Error> {
         // news_enum.proto covers:
         // test for mutation
         // test for empty objects
@@ -410,7 +410,7 @@ mod test {
     }
 
     #[test]
-    fn test_from_proto_no_pkg_file() -> Result<()> {
+    fn test_from_proto_no_pkg_file() -> Result<(), Error> {
         let set = compile_protobuf(&[protobuf::NEWS_NO_PKG])?;
         let result = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
@@ -418,7 +418,7 @@ mod test {
     }
 
     #[test]
-    fn test_from_proto_no_service_file() -> Result<()> {
+    fn test_from_proto_no_service_file() -> Result<(), Error> {
         let set = compile_protobuf(&[protobuf::NEWS_NO_SERVICE])?;
         let result = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
@@ -427,7 +427,7 @@ mod test {
     }
 
     #[test]
-    fn test_greetings_proto_file() -> Result<()> {
+    fn test_greetings_proto_file() -> Result<(), Error> {
         let set = compile_protobuf(&[protobuf::GREETINGS, protobuf::GREETINGS_MESSAGE]).unwrap();
         let result = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(result);
@@ -436,7 +436,7 @@ mod test {
     }
 
     #[test]
-    fn test_config_from_sdl() -> Result<()> {
+    fn test_config_from_sdl() -> Result<(), Error> {
         let set =
             compile_protobuf(&[protobuf::NEWS, protobuf::GREETINGS_A, protobuf::GREETINGS_B])?;
 
@@ -452,7 +452,7 @@ mod test {
     }
 
     #[test]
-    fn test_required_types() -> Result<()> {
+    fn test_required_types() -> Result<(), Error> {
         // required fields are deprecated in proto3 (https://protobuf.dev/programming-guides/dos-donts/#add-required)
         // this example uses proto2 to test the same.
         // for proto3 it's guaranteed to have a default value (https://protobuf.dev/programming-guides/proto3/#default)
@@ -466,7 +466,7 @@ mod test {
     }
 
     #[test]
-    fn test_movies() -> Result<()> {
+    fn test_movies() -> Result<(), Error> {
         let set = compile_protobuf(&[protobuf::MOVIES])?;
         let config = from_proto_resolved(&[set], "Query")?;
         let config_module = AmbiguousType::default().transform(config).to_result()?;
@@ -477,7 +477,7 @@ mod test {
     }
 
     #[test]
-    fn test_nested_types() -> Result<()> {
+    fn test_nested_types() -> Result<(), Error> {
         let set = compile_protobuf(&[protobuf::NESTED_TYPES])?;
         let config = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
@@ -485,7 +485,7 @@ mod test {
     }
 
     #[test]
-    fn test_map_types() -> Result<()> {
+    fn test_map_types() -> Result<(), Error> {
         let set = compile_protobuf(&[protobuf::MAP])?;
         let config = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
@@ -493,7 +493,7 @@ mod test {
     }
 
     #[test]
-    fn test_optional_fields() -> Result<()> {
+    fn test_optional_fields() -> Result<(), Error> {
         let set = compile_protobuf(&[protobuf::OPTIONAL])?;
         let config = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);
@@ -501,7 +501,7 @@ mod test {
     }
 
     #[test]
-    fn test_scalar_types() -> Result<()> {
+    fn test_scalar_types() -> Result<(), Error> {
         let set = compile_protobuf(&[protobuf::SCALARS])?;
         let config = from_proto_resolved(&[set], "Query")?.to_sdl();
         insta::assert_snapshot!(config);

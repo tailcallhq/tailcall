@@ -8,6 +8,7 @@ use prost::Message;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
+use crate::core::error::{http, Error as CoreError};
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::ir::Error;
 
@@ -48,14 +49,14 @@ impl FromValue for ConstValue {
 }
 
 impl Response<Bytes> {
-    pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {
+    pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self, http::Error> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
         let body = resp.bytes().await?;
         Ok(Response { status, headers, body })
     }
 
-    pub async fn from_hyper(resp: hyper::Response<hyper::Body>) -> Result<Self> {
+    pub async fn from_hyper(resp: hyper::Response<hyper::Body>) -> Result<Self, http::Error> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
         let body = hyper::body::to_bytes(resp.into_body()).await?;
@@ -70,7 +71,7 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>> {
+    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>, http::Error> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
@@ -89,21 +90,21 @@ impl Response<Bytes> {
     pub fn to_grpc_value(
         self,
         operation: &ProtobufOperation,
-    ) -> Result<Response<async_graphql::Value>> {
+    ) -> Result<Response<async_graphql::Value>, Error> {
         let mut resp = Response::default();
-        let body = operation.convert_output::<async_graphql::Value>(&self.body)?;
+        let body = operation
+            .convert_output::<async_graphql::Value>(&self.body)
+            .map_err(CoreError::Grpc)?;
         resp.body = body;
         resp.status = self.status;
         resp.headers = self.headers;
         Ok(resp)
     }
 
-    pub fn to_grpc_error(&self, operation: &ProtobufOperation) -> anyhow::Error {
+    pub fn to_grpc_error(&self, operation: &ProtobufOperation) -> Error {
         let grpc_status = match Status::from_header_map(&self.headers) {
             Some(status) => status,
-            None => {
-                return Error::IOError("Error while parsing upstream headers".to_owned()).into()
-            }
+            None => return Error::IOError("Error while parsing upstream headers".to_owned()),
         };
 
         let mut obj: IndexMap<Name, async_graphql::Value> = IndexMap::new();
@@ -145,7 +146,7 @@ impl Response<Bytes> {
         // TODO: because of this conversion to anyhow::Error
         // we lose additional details that could be added
         // through async_graphql::ErrorExtensions
-        anyhow::Error::new(error)
+        error
     }
 
     pub fn to_resp_string(self) -> Result<Response<String>> {

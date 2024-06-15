@@ -3,6 +3,7 @@ use std::fmt::{Debug, Display};
 use colored::Colorize;
 use derive_setters::Setters;
 
+use crate::core::error::Error as CoreError;
 use crate::core::valid::ValidationError;
 
 /// The moral equivalent of a serde_json::Value but for errors.
@@ -177,6 +178,15 @@ impl From<anyhow::Error> for Errata {
 impl From<std::io::Error> for Errata {
     fn from(error: std::io::Error) -> Self {
         let cli_error = Errata::new("IO Error");
+        let message = error.to_string();
+
+        cli_error.description(message)
+    }
+}
+
+impl From<CoreError> for Errata {
+    fn from(error: CoreError) -> Self {
+        let cli_error = Errata::new("Core Error");
         let message = error.to_string();
 
         cli_error.description(message)

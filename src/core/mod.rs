@@ -13,6 +13,7 @@ pub mod directive;
 pub mod document;
 pub mod endpoint;
 mod errata;
+pub mod error;
 pub mod generator;
 pub mod graphql;
 pub mod grpc;
@@ -37,7 +38,6 @@ pub mod tracing;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
-
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;
 use std::hash::Hash;
@@ -45,6 +45,7 @@ use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
 pub use errata::Errata;
+pub use error::{Error, Result};
 use http::Response;
 use ir::IoId;
 pub use tailcall_macros as macros;
@@ -58,15 +59,19 @@ pub trait HttpIO: Sync + Send + 'static {
     async fn execute(
         &self,
         request: reqwest::Request,
-    ) -> anyhow::Result<Response<hyper::body::Bytes>> {
+    ) -> Result<Response<hyper::body::Bytes>, error::http::Error> {
         self.execute(request).await
     }
 }
 
 #[async_trait::async_trait]
 pub trait FileIO: Send + Sync {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()>;
-    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String>;
+    async fn write<'a>(
+        &'a self,
+        path: &'a str,
+        content: &'a [u8],
+    ) -> Result<(), error::file::Error>;
+    async fn read<'a>(&'a self, path: &'a str) -> Result<String, error::file::Error>;
 }
 
 #[async_trait::async_trait]
@@ -89,7 +94,7 @@ pub type EntityCache = dyn Cache<Key = IoId, Value = ConstValue>;
 #[async_trait::async_trait]
 pub trait WorkerIO<In, Out>: Send + Sync + 'static {
     /// Calls a global JS function
-    async fn call(&self, name: &str, input: In) -> anyhow::Result<Option<Out>>;
+    async fn call(&self, name: &str, input: In) -> Result<Option<Out>, error::worker::Error>;
 }
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {

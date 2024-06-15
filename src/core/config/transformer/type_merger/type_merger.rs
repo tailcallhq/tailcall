@@ -145,6 +145,7 @@ mod test {
     use super::TypeMerger;
     use crate::core::config::transformer::Transform;
     use crate::core::config::{Config, Field, Type};
+    use crate::core::error::Error;
     use crate::core::valid::Validator;
 
     #[test]
@@ -166,7 +167,7 @@ mod test {
     }
 
     #[test]
-    fn test_cyclic_merge_case() -> anyhow::Result<()> {
+    fn test_cyclic_merge_case() -> Result<(), Error> {
         let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
         let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
         let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };
@@ -214,7 +215,7 @@ mod test {
     }
 
     #[test]
-    fn test_type_merger() -> anyhow::Result<()> {
+    fn test_type_merger() -> Result<(), Error> {
         let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
         let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
         let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };

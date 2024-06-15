@@ -14,6 +14,7 @@ use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::{Config, ConfigModule, Source};
+use tailcall::core::error::Error;
 use tailcall::core::http::{handle_request, AppContext};
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::print_schema::print_schema;
@@ -301,7 +302,7 @@ pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
 async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
-) -> anyhow::Result<hyper::Response<Body>> {
+) -> Result<hyper::Response<Body>, Error> {
     let body = request
         .body
         .as_ref()

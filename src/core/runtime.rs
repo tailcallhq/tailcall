@@ -47,7 +47,6 @@ pub mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use anyhow::{anyhow, Result};
     use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
@@ -62,7 +61,7 @@ pub mod test {
     use crate::core::http::Response;
     use crate::core::runtime::TargetRuntime;
     use crate::core::worker::{Command, Event};
-    use crate::core::{blueprint, EnvIO, FileIO, HttpIO};
+    use crate::core::{blueprint, error, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -116,7 +115,10 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+        async fn execute(
+            &self,
+            request: reqwest::Request,
+        ) -> crate::core::Result<Response<Bytes>, error::http::Error> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?
@@ -138,20 +140,23 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+        async fn write<'a>(
+            &'a self,
+            path: &'a str,
+            content: &'a [u8],
+        ) -> crate::core::Result<(), error::file::Error> {
             let mut file = tokio::fs::File::create(path).await?;
-            file.write_all(content)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
+            file.write_all(content).await?;
             Ok(())
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+        async fn read<'a>(
+            &'a self,
+            path: &'a str,
+        ) -> crate::core::Result<String, error::file::Error> {
             let mut file = tokio::fs::File::open(path).await?;
             let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
+            file.read_to_end(&mut buffer).await?;
             Ok(String::from_utf8(buffer)?)
         }
     }

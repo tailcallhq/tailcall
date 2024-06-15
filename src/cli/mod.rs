@@ -1,5 +1,5 @@
 mod command;
-mod error;
+pub mod error;
 mod fmt;
 #[cfg(feature = "js")]
 pub mod javascript;
@@ -11,4 +11,5 @@ pub mod telemetry;
 pub mod runtime;
 pub(crate) mod update_checker;
 
+pub use error::{Error, Result};
 pub use tc::run;

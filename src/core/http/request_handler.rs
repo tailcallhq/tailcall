@@ -2,7 +2,6 @@ use std::collections::BTreeSet;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use anyhow::Result;
 use async_graphql::ServerError;
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
@@ -20,10 +19,11 @@ use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTT
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
+use crate::core::error::Error;
 
 pub const API_URL_PREFIX: &str = "/api";
 
-fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Body>> {
+fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Body>, Error> {
     let metric_families = prometheus::default_registry().gather();
     let mut buffer = vec![];
 
@@ -45,7 +45,7 @@ fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Respon
         .body(Body::from(buffer))?)
 }
 
-fn not_found() -> Result<Response<Body>> {
+fn not_found() -> Result<Response<Body>, Error> {
     Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
         .body(Body::empty())?)
@@ -99,7 +99,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: &AppContext,
     req_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+) -> Result<Response<Body>, Error> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let (req, body) = req.into_parts();
@@ -143,7 +143,7 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: &&AppContext,
     req_ctx: &Arc<RequestContext>,
     request: T,
-) -> anyhow::Result<Response<Body>> {
+) -> Result<Response<Body>, Error> {
     let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
 
     response = update_cache_control_header(response, app_ctx, req_ctx.clone());
@@ -169,7 +169,7 @@ async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+) -> Result<Response<Body>, Error> {
     let method = req.method();
     if method == Method::OPTIONS {
         let mut res = Response::new(Body::default());
@@ -201,7 +201,7 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+) -> Result<Response<Body>, Error> {
     // Safe to call `.unwrap()` because this method will only be called when
     // `cors` is `Some`
     let cors = app_ctx.blueprint.server.cors.as_ref().unwrap();
@@ -254,7 +254,7 @@ async fn handle_rest_apis(
     mut request: Request<Body>,
     app_ctx: Arc<AppContext>,
     req_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+) -> Result<Response<Body>, Error> {
     *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
     let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
     if let Some(p_request) = app_ctx.endpoints.matches(&request) {
@@ -289,7 +289,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
     req_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+) -> Result<Response<Body>, Error> {
     if req.uri().path().starts_with(API_URL_PREFIX) {
         return handle_rest_apis(req, app_ctx, req_counter).await;
     }
@@ -342,7 +342,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: Arc<AppContext>,
-) -> Result<Response<Body>> {
+) -> Result<Response<Body>, Error> {
     telemetry::propagate_context(&req);
     let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
 
