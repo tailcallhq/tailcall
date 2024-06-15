@@ -58,10 +58,10 @@ impl DataLoaderId {
 }
 
 impl Eval for IO {
-    async fn eval<'a, Ctx: super::ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        ctx: super::EvaluationContext<'a, Ctx>,
-    ) -> Result<ConstValue, EvaluationError> {
+    async fn eval<'slf, 'ctx, Ctx>(
+        &'slf self,
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    ) -> Result<ConstValue, EvaluationError> where Ctx: ResolverContextLike<'slf> + Send + Sync {
         // Note: Handled the case separately for performance reasons. It avoids cache
         // key generation when it's not required
         if !ctx.request_ctx.server.dedupe || !ctx.is_query() {
@@ -84,10 +84,10 @@ impl Eval for IO {
 }
 
 impl IO {
-    async fn eval_inner<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        ctx: super::EvaluationContext<'a, Ctx>,
-    ) -> Result<ConstValue, EvaluationError> {
+    async fn eval_inner<'slf, 'ctx, Ctx>(
+        &'slf self,
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    ) -> Result<ConstValue, EvaluationError> where Ctx: ResolverContextLike<'slf> + Sync + Send {
         match self {
             IO::Http { req_template, dl_id, http_filter, .. } => {
                 let worker = &ctx.request_ctx.runtime.cmd_worker;
@@ -105,7 +105,7 @@ impl IO {
                 Ok(response.body)
             }
             IO::GraphQL { req_template, field_name, dl_id, .. } => {
-                let req = req_template.to_request(&ctx)?;
+                let req = req_template.to_request(ctx)?;
 
                 let res = if ctx.request_ctx.upstream.batch.is_some()
                     && matches!(req_template.operation_type, GraphQLOperationType::Query)
@@ -121,7 +121,7 @@ impl IO {
                 parse_graphql_response(&ctx, res, field_name)
             }
             IO::Grpc { req_template, dl_id, .. } => {
-                let rendered = req_template.render(&ctx)?;
+                let rendered = req_template.render(ctx)?;
 
                 let res = if ctx.request_ctx.upstream.batch.is_some() &&
                     // TODO: share check for operation_type for resolvers
@@ -310,15 +310,15 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
 /// and getting a response. There are optimizations and customizations that the
 /// user might have configured. HttpRequestExecutor is responsible for handling
 /// all of that.
-struct HttpRequestExecutor<'a, Context: ResolverContextLike<'a> + Send + Sync> {
-    evaluation_ctx: EvaluationContext<'a, Context>,
+struct HttpRequestExecutor<'a, 'ctx, Context: ResolverContextLike<'a> + Send + Sync> {
+    evaluation_ctx: &'ctx EvaluationContext<'a, Context>,
     data_loader: Option<&'a DataLoader<DataLoaderRequest, HttpDataLoader>>,
     request_template: &'a http::RequestTemplate,
 }
 
-impl<'a, Context: ResolverContextLike<'a> + Send + Sync> HttpRequestExecutor<'a, Context> {
+impl<'a, 'ctx, Context: ResolverContextLike<'a> + Send + Sync> HttpRequestExecutor<'a, 'ctx, Context> {
     pub fn new(
-        evaluation_ctx: EvaluationContext<'a, Context>,
+        evaluation_ctx: &'ctx EvaluationContext<'a, Context>,
         request_template: &'a RequestTemplate,
         id: &Option<DataLoaderId>,
     ) -> Self {
@@ -332,8 +332,7 @@ impl<'a, Context: ResolverContextLike<'a> + Send + Sync> HttpRequestExecutor<'a,
     }
 
     pub fn init_request(&self) -> Result<Request, EvaluationError> {
-        let ctx = &self.evaluation_ctx;
-        Ok(self.request_template.to_request(ctx)?)
+        Ok(self.request_template.to_request(self.evaluation_ctx)?)
     }
 
     async fn execute(

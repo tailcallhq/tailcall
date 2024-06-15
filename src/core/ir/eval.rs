@@ -5,10 +5,10 @@ pub trait Eval<Output = async_graphql::Value>
 where
     Self: Send + Sync,
 {
-    fn eval<'a, Ctx>(
-        &'a self,
-        ctx: EvaluationContext<'a, Ctx>,
+    fn eval<'slf, 'ctx, Ctx>(
+        &'slf self,
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
     ) -> impl Future<Output = Result<Output, EvaluationError>>
     where
-        Ctx: ResolverContextLike<'a> + Sync + Send;
+        Ctx: ResolverContextLike<'slf> + Sync + Send;
 }

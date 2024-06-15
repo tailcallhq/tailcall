@@ -63,12 +63,13 @@ pub struct Map {
 }
 
 impl Eval for Map {
-    async fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        ctx: EvaluationContext<'a, Ctx>,
+    async fn eval<'slf, 'ctx, Ctx>(
+        &'slf self,
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
     where
-        ConstValue: 'a,
+        Ctx: ResolverContextLike<'slf> + Sync + Send,
+        ConstValue: 'slf,
     {
         let value = self.input.eval(ctx).await?;
         if let ConstValue::String(key) = value {
@@ -90,10 +91,10 @@ impl Eval for Map {
 
 impl Eval for IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
-    fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        ctx: EvaluationContext<'a, Ctx>,
-    ) -> impl Future<Output = Result<ConstValue, EvaluationError>> {
+    fn eval<'slf, 'ctx, Ctx>(
+        &'slf self,
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    ) -> impl Future<Output = Result<ConstValue, EvaluationError>> where Ctx: ResolverContextLike<'slf> + Sync + Send {
         Box::pin(async move {
             match self {
                 IR::Context(op) => match op {
@@ -105,13 +106,13 @@ impl Eval for IR {
                         .map(|a| a.into_owned())
                         .unwrap_or(async_graphql::Value::Null)),
                     Context::PushArgs { expr, and_then } => {
-                        let args = expr.eval(ctx.clone()).await?;
-                        let ctx = ctx.with_args(args).clone();
+                        let args = expr.eval(ctx).await?;
+                        let ctx = &mut ctx.with_args(args);
                         and_then.eval(ctx).await
                     }
                     Context::PushValue { expr, and_then } => {
-                        let value = expr.eval(ctx.clone()).await?;
-                        let ctx = ctx.with_value(value);
+                        let value = expr.eval(ctx).await?;
+                        let ctx = &mut ctx.with_value(value);
                         and_then.eval(ctx).await
                     }
                 },
@@ -122,7 +123,7 @@ impl Eval for IR {
                         .unwrap_or(&async_graphql::Value::Null)
                         .clone())
                 }
-                IR::Dynamic(value) => Ok(value.render_value(&ctx)),
+                IR::Dynamic(value) => Ok(value.render_value(ctx)),
                 IR::Protect(expr) => {
                     ctx.request_ctx
                         .auth_ctx

@@ -40,17 +40,17 @@ impl Cache {
 }
 
 impl Eval for Cache {
-    async fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        ctx: EvaluationContext<'a, Ctx>,
-    ) -> Result<ConstValue, EvaluationError> {
+    async fn eval<'slf, 'ctx, Ctx>(
+        &'slf self,
+        ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
+    ) -> Result<ConstValue, EvaluationError> where Ctx: ResolverContextLike<'slf> + Sync + Send {
         if let IR::IO(io) = self.expr.deref() {
             let key = io.cache_key(&ctx);
             if let Some(key) = key {
                 if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
                     Ok(val)
                 } else {
-                    let val = self.expr.eval(ctx.clone()).await?;
+                    let val = self.expr.eval(ctx).await?;
                     ctx.request_ctx
                         .runtime
                         .cache
