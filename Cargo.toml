@@ -159,6 +159,7 @@ tailcall-hasher = { path = "tailcall-hasher" }
 serde_json_borrow = "0.3.0"
 Inflector = "0.11.4"
 indenter = "0.3.3"
+derive_more = "0.99.18"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }

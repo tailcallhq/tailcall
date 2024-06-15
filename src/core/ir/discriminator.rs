@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 use std::fmt::Write;
-use std::ops::{Deref, DerefMut};
 
 use anyhow::{bail, Result};
 use async_graphql::Value;
+use derive_more::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 use indenter::indented;
 use indexmap::IndexMap;
 
@@ -119,11 +119,11 @@ impl Discriminator {
                 let repr = Repr::from_type_index(i);
 
                 // add info for this field that it's presented in this type
-                *info.presented_in |= *repr;
+                info.presented_in |= repr;
 
                 // and info if it's required in this type
                 if field.required {
-                    *info.required_in |= *repr;
+                    info.required_in |= repr;
                 }
             }
         }
@@ -136,7 +136,7 @@ impl Discriminator {
                 let mut repr = Repr::all_covered(union_types.len());
                 for field_name in type_.fields.keys() {
                     if let Some(info) = fields_info.get(field_name.as_str()) {
-                        *repr &= *info.presented_in;
+                        repr &= info.presented_in;
                     }
                 }
 
@@ -183,7 +183,7 @@ impl Discriminator {
 
         // strip some fields that are not valuable for discriminator
         let fields_info = {
-            let mut seen_required_in: HashSet<usize> = HashSet::new();
+            let mut seen_required_in: HashSet<Repr> = HashSet::new();
 
             fields_info
                 .into_iter()
@@ -194,9 +194,9 @@ impl Discriminator {
                         .presented_in
                         .is_covering_all_types(union_types.len())
                         // if multiple fields are required in the same set of types than we can leave only one of such fields
-                        || (*field_info.required_in != 0 && seen_required_in.contains(&field_info.required_in));
+                        || (!field_info.required_in.is_empty() && seen_required_in.contains(&field_info.required_in));
 
-                    seen_required_in.insert(*field_info.required_in);
+                    seen_required_in.insert(field_info.required_in);
 
                     !drop
                 })
@@ -236,9 +236,9 @@ impl Discriminator {
 
         for (field, info) in &self.fields_info {
             if obj.contains_key(field.as_str()) {
-                *possible_types &= *info.presented_in;
+                possible_types &= info.presented_in;
             } else {
-                *possible_types &= !*info.required_in;
+                possible_types &= !info.required_in;
             }
 
             if possible_types.is_empty() {
@@ -267,26 +267,26 @@ impl Discriminator {
 /// where bit position from the right in binary representation of usize
 /// is the index of type in the set and the if the value of the bit is
 /// 1 then the condition is hold
-#[derive(Copy, Clone, Default)]
+#[derive(
+    Copy,
+    Clone,
+    Default,
+    PartialEq,
+    Eq,
+    Hash,
+    BitAnd,
+    BitOr,
+    BitXor,
+    BitAndAssign,
+    BitOrAssign,
+    BitXorAssign,
+    Not,
+)]
 struct Repr(usize);
 
 impl std::fmt::Debug for Repr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{:0b}", self.0))
-    }
-}
-
-impl Deref for Repr {
-    type Target = usize;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Repr {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
 
@@ -315,7 +315,7 @@ impl Repr {
         while x.0 != 0 {
             result.push(x.first_covered_type(types));
 
-            *x = *x & (*x - 1);
+            x.0 = x.0 & (x.0 - 1);
         }
 
         result
@@ -328,12 +328,12 @@ impl Repr {
 
     /// Check if condition is hold for every type
     fn is_covering_all_types(&self, len: usize) -> bool {
-        self.trailing_ones() == len as u32
+        self.0.trailing_ones() == len as u32
     }
 
     /// Check if condition is hold for more than 1 type
     fn is_covering_multiple_types(&self) -> bool {
-        !self.is_power_of_two()
+        !self.0.is_power_of_two()
     }
 }
 
