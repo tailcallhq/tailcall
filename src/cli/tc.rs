@@ -5,7 +5,7 @@ use anyhow::Result;
 use clap::Parser;
 use convert_case::{Case, Casing};
 use dotenvy::dotenv;
-use inquire::Confirm;
+use inquire::{Confirm, Select, Text};
 use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
@@ -80,7 +80,7 @@ pub async fn run() -> Result<()> {
                 Err(e) => Err(e.into()),
             }
         }
-        Command::Init { folder_path } => init(&folder_path).await,
+        Command::Init {..} => init().await,
         Command::Gen { paths, input, output, query } => {
             let generator = Generator::init(runtime);
             let cfg = generator
@@ -94,8 +94,12 @@ pub async fn run() -> Result<()> {
     }
 }
 
-pub async fn init(folder_path: &str) -> Result<()> {
-    let folder_exists = fs::metadata(folder_path).is_ok();
+pub async fn init() -> Result<()> {
+    // Prompt for the project name
+    let project_name: String = Text::new("Project Name:").prompt()?;
+    let folder_path = format!("./{}", project_name);
+
+    let folder_exists = fs::metadata(&folder_path).is_ok();
 
     if !folder_exists {
         let confirm = Confirm::new(&format!(
@@ -106,23 +110,37 @@ pub async fn init(folder_path: &str) -> Result<()> {
         .prompt()?;
 
         if confirm {
-            fs::create_dir_all(folder_path)?;
+            fs::create_dir_all(&folder_path)?;
         } else {
             return Ok(());
-        };
+        }
+    }
+
+    let file_format: String = Select::new(
+        "File Format:",
+        vec!["GraphQL", "JSON", "YML"]
+    ).prompt()?.to_string();
+
+    println!(
+        "Creating the following files:\n- .tailcallrc.graphql\n- .tailcallrc.schema.json\n- .graphqlrc.yml"
+    );
+
+    let confirm = Confirm::new("Is this OK?").with_default(true).prompt()?;
+
+    if !confirm {
+        return Ok(());
     }
 
     let tailcallrc = include_str!("../../generated/.tailcallrc.graphql");
     let tailcallrc_json: &str = include_str!("../../generated/.tailcallrc.schema.json");
 
-    let file_path = Path::new(folder_path).join(FILE_NAME);
-    let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
-    let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
+    let file_path = Path::new(&folder_path).join(FILE_NAME);
+    let json_file_path = Path::new(&folder_path).join(JSON_FILE_NAME);
+    let yml_file_path = Path::new(&folder_path).join(YML_FILE_NAME);
 
     let tailcall_exists = fs::metadata(&file_path).is_ok();
 
     if tailcall_exists {
-        // confirm overwrite
         let confirm = Confirm::new(&format!("Do you want to overwrite the file {}?", FILE_NAME))
             .with_default(false)
             .prompt()?;
