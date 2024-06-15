@@ -1,4 +1,3 @@
-use anyhow::{anyhow, Result};
 use async_std::task::spawn_local;
 use hyper::body::Bytes;
 use reqwest::Client;
@@ -6,7 +5,7 @@ use tailcall::core::error::http;
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
 
-use crate::to_anyhow;
+use super::Error;
 
 #[derive(Clone)]
 pub struct CloudflareHttp {
@@ -49,25 +48,25 @@ impl HttpIO for CloudflareHttp {
     }
 }
 
-pub async fn to_response(response: hyper::Response<hyper::Body>) -> Result<worker::Response> {
+pub async fn to_response(
+    response: hyper::Response<hyper::Body>,
+) -> Result<worker::Response, Error> {
     let status = response.status().as_u16();
     let headers = response.headers().clone();
     let bytes = hyper::body::to_bytes(response).await?;
     let body = worker::ResponseBody::Body(bytes.to_vec());
-    let mut w_response = worker::Response::from_body(body).map_err(to_anyhow)?;
+    let mut w_response = worker::Response::from_body(body)?;
     w_response = w_response.with_status(status);
     let mut_headers = w_response.headers_mut();
     for (name, value) in headers.iter() {
         let value = String::from_utf8(value.as_bytes().to_vec())?;
-        mut_headers
-            .append(name.as_str(), &value)
-            .map_err(to_anyhow)?;
+        mut_headers.append(name.as_str(), &value)?;
     }
 
     Ok(w_response)
 }
 
-pub fn to_method(method: worker::Method) -> Result<hyper::Method> {
+pub fn to_method(method: worker::Method) -> Result<hyper::Method, Error> {
     let method = &*method.to_string().to_uppercase();
     match method {
         "GET" => Ok(hyper::Method::GET),
@@ -79,14 +78,14 @@ pub fn to_method(method: worker::Method) -> Result<hyper::Method> {
         "PATCH" => Ok(hyper::Method::PATCH),
         "CONNECT" => Ok(hyper::Method::CONNECT),
         "TRACE" => Ok(hyper::Method::TRACE),
-        method => Err(anyhow!("Unsupported HTTP method: {}", method)),
+        method => Err(Error::UnsupportedHttpMethod(method.to_string())),
     }
 }
 
-pub async fn to_request(mut req: worker::Request) -> Result<hyper::Request<hyper::Body>> {
-    let body = req.text().await.map_err(to_anyhow)?;
+pub async fn to_request(mut req: worker::Request) -> Result<hyper::Request<hyper::Body>, Error> {
+    let body = req.text().await?;
     let method = req.method();
-    let uri = req.url().map_err(to_anyhow)?.as_str().to_string();
+    let uri = req.url()?.as_str().to_string();
     let headers = req.headers();
     let mut builder = hyper::Request::builder()
         .method(to_method(method)?)

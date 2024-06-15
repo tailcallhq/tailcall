@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use anyhow::anyhow;
 use async_std::task::spawn_local;
 use tailcall::core::error::file;
 use tailcall::core::FileIO;
@@ -14,8 +13,8 @@ pub struct CloudflareFileIO {
 }
 
 impl CloudflareFileIO {
-    pub fn init(env: Rc<Env>, bucket_id: &str) -> anyhow::Result<Self> {
-        let bucket = env.bucket(bucket_id).map_err(|e| anyhow!(e.to_string()))?;
+    pub fn init(env: Rc<Env>, bucket_id: &str) -> Result<Self> {
+        let bucket = env.bucket(bucket_id)?;
         let bucket = Rc::new(bucket);
         Ok(CloudflareFileIO { bucket })
     }

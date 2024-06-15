@@ -167,10 +167,10 @@ async fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorPro
 
 #[cfg(test)]
 mod grpc_fetch {
-    use crate::core::error::Error;
     use std::path::PathBuf;
 
     use super::*;
+    use crate::core::error::Error;
 
     fn get_fake_descriptor() -> Vec<u8> {
         let mut path = PathBuf::from(file!());

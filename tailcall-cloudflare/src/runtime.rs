@@ -1,19 +1,19 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use async_graphql_value::ConstValue;
 use tailcall::core::ir::IoId;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 
+use super::{Error, Result};
 use crate::{cache, env, file, http};
 
 fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
     Arc::new(env::CloudflareEnv::init(env))
 }
 
-fn init_file(env: Rc<worker::Env>, bucket_id: &str) -> anyhow::Result<Arc<dyn FileIO>> {
+fn init_file(env: Rc<worker::Env>, bucket_id: &str) -> Result<Arc<dyn FileIO>> {
     Ok(Arc::new(file::CloudflareFileIO::init(env, bucket_id)?))
 }
 
@@ -27,12 +27,10 @@ fn init_cache(
     Arc::new(cache::CloudflareChronoCache::init(env))
 }
 
-pub fn init(env: Rc<worker::Env>) -> anyhow::Result<TargetRuntime> {
+pub fn init(env: Rc<worker::Env>) -> Result<TargetRuntime> {
     let http = init_http();
     let env_io = init_env(env.clone());
-    let bucket_id = env_io
-        .get("BUCKET")
-        .ok_or(anyhow!("BUCKET var is not set"))?;
+    let bucket_id = env_io.get("BUCKET").ok_or_else(|| Error::BucketVarNotSet)?;
 
     Ok(TargetRuntime {
         http: http.clone(),

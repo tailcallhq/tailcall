@@ -5,8 +5,10 @@ use std::sync::{Arc, RwLock};
 use hyper::{Body, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
+// use tailcall::core::error::Error;
 use tailcall::core::http::{handle_request, showcase, AppContext};
 
+use super::Error;
 use crate::http::{to_request, to_response};
 use crate::runtime;
 
@@ -19,7 +21,7 @@ pub async fn fetch(
     req: worker::Request,
     env: worker::Env,
     _: worker::Context,
-) -> anyhow::Result<worker::Response> {
+) -> Result<worker::Response, Error> {
     tracing::info!(
         "{} {:?}",
         req.method().to_string(),
@@ -42,7 +44,7 @@ pub async fn fetch(
 async fn get_app_ctx(
     env: Rc<worker::Env>,
     req: &Request<Body>,
-) -> anyhow::Result<Result<Arc<AppContext>, Response<Body>>> {
+) -> Result<Result<Arc<AppContext>, Response<Body>>, Error> {
     // Read context from cache
     let file_path = req
         .uri()
