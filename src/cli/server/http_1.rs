@@ -7,7 +7,6 @@ use super::server_config::ServerConfig;
 use crate::cli::{Error, Result};
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::core::http::handle_request;
-use crate::core::Errata;
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,
@@ -31,8 +30,7 @@ pub async fn start_http_1(
             }))
         }
     });
-    let builder = hyper::Server::try_bind(&addr)
-        .map_err(Errata::from)?
+    let builder = hyper::Server::try_bind(&addr)?
         .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
     super::log_launch(sc.as_ref());
 
@@ -47,7 +45,7 @@ pub async fn start_http_1(
             builder.serve(make_svc_single_req).await
         };
 
-    let result = server.map_err(Errata::from);
+    let result = server;
 
     Ok(result?)
 }

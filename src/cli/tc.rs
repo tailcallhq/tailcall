@@ -18,8 +18,8 @@ use crate::core::config::reader::ConfigReader;
 use crate::core::error::Error;
 use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
+use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::core::{print_schema, Errata};
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
@@ -60,7 +60,7 @@ pub async fn run() -> Result<(), Error> {
             if let Some(format) = format {
                 Fmt::display(format.encode(&config_module)?);
             }
-            let blueprint = Blueprint::try_from(&config_module).map_err(Errata::from);
+            let blueprint = Blueprint::try_from(&config_module);
 
             match blueprint {
                 Ok(blueprint) => {

@@ -9,7 +9,6 @@ use super::grpc::error::Error as GrpcError;
 use super::rest::error::Error as RestError;
 use super::valid::ValidationError;
 use crate::cli::error::Error as CLIError;
-use crate::core::errata::Errata as ErrataError;
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
@@ -114,9 +113,6 @@ pub enum Error {
 
     #[error("Inquire Error")]
     Inquire(InquireError),
-
-    #[error("Errata Error")]
-    Errata(ErrataError),
 }
 
 pub mod file {

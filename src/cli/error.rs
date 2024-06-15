@@ -7,7 +7,8 @@ use opentelemetry::metrics::MetricsError;
 use opentelemetry::trace::TraceError;
 use tokio::task::JoinError;
 
-use crate::core::{rest, Errata};
+use crate::core::rest;
+use crate::core::valid::ValidationError;
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
@@ -16,9 +17,6 @@ pub enum Error {
 
     #[error("Rest Error")]
     Rest(rest::error::Error),
-
-    #[error("Errata Error")]
-    Errata(Errata),
 
     #[error("Serde Json Error")]
     SerdeJson(serde_json::Error),
@@ -94,15 +92,9 @@ pub enum Error {
 
     #[error("Reqwest error")]
     Reqwest(reqwest::Error),
+
+    #[error("Validation Error : {0}")]
+    Validation(ValidationError<std::string::String>),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
-
-impl From<rustls::Error> for Errata {
-    fn from(error: rustls::Error) -> Self {
-        let cli_error = Errata::new("Failed to create TLS Acceptor");
-        let message = error.to_string();
-
-        cli_error.description(message)
-    }
-}
