@@ -13,10 +13,7 @@ fn init_env(env: Rc<worker::Env>) -> Arc<dyn EnvIO> {
     Arc::new(env::CloudflareEnv::init(env))
 }
 
-fn init_file(
-    env: Rc<worker::Env>,
-    bucket_id: &str,
-) -> anyhow::Result<Arc<dyn FileIO>> {
+fn init_file(env: Rc<worker::Env>, bucket_id: &str) -> anyhow::Result<Arc<dyn FileIO>> {
     Ok(Arc::new(file::CloudflareFileIO::init(env, bucket_id)?))
 }
 

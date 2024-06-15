@@ -87,8 +87,7 @@ fn set_trace_provider(
             .install_batch(runtime::Tokio)?
             .provider()
             .ok_or(TraceError::Other(
-                Error::TelemetryTrace("Failed to instantiate OTLP provider".to_string())
-                    .into(),
+                Error::TelemetryTrace("Failed to instantiate OTLP provider".to_string()).into(),
             ))?,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),

@@ -15,11 +15,10 @@ pub mod test {
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
     use tailcall::core::error::file;
-    use tailcall::core::error;
     use tailcall::core::http::Response;
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::worker::{Command, Event};
-    use tailcall::core::{EnvIO, FileIO, HttpIO};
+    use tailcall::core::{error, EnvIO, FileIO, HttpIO};
     use tailcall_http_cache::HttpCacheManager;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -75,7 +74,10 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, error::http::Error> {
+        async fn execute(
+            &self,
+            request: reqwest::Request,
+        ) -> Result<Response<Bytes>, error::http::Error> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?

@@ -37,14 +37,7 @@ fn init_http_worker_io(
 
 fn init_resolver_worker_io(
     script: Option<blueprint::Script>,
-) -> Option<
-    Arc<
-        dyn WorkerIO<
-            async_graphql::Value,
-            async_graphql::Value,
-        >,
-    >,
-> {
+) -> Option<Arc<dyn WorkerIO<async_graphql::Value, async_graphql::Value>>> {
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]

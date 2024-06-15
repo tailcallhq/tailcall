@@ -31,8 +31,7 @@ pub struct TargetRuntime {
     /// Worker middleware for handling HTTP requests.
     pub cmd_worker: Option<Arc<dyn WorkerIO<Event, Command>>>,
     /// Worker middleware for resolving data.
-    pub worker:
-        Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>>,
+    pub worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>>,
 }
 
 impl TargetRuntime {
@@ -151,7 +150,10 @@ pub mod test {
             Ok(())
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> crate::core::Result<String, error::file::Error> {
+        async fn read<'a>(
+            &'a self,
+            path: &'a str,
+        ) -> crate::core::Result<String, error::file::Error> {
             let mut file = tokio::fs::File::open(path).await?;
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer).await?;

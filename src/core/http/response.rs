@@ -7,8 +7,7 @@ use prost::Message;
 use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
-use crate::core::error::http;
-use crate::core::error::Error as CoreError;
+use crate::core::error::{http, Error as CoreError};
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::ir::Error;
 

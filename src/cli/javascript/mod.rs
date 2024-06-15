@@ -12,9 +12,7 @@ pub use runtime::Runtime;
 use crate::cli::Result;
 use crate::core::{blueprint, WorkerIO};
 
-pub fn init_worker_io<T, V>(
-    script: blueprint::Script,
-) -> Arc<dyn WorkerIO<T, V> + Send + Sync>
+pub fn init_worker_io<T, V>(script: blueprint::Script) -> Arc<dyn WorkerIO<T, V> + Send + Sync>
 where
     Runtime: WorkerIO<T, V>,
 {

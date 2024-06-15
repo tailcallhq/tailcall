@@ -284,12 +284,12 @@ impl ExecutionSpec {
                 None
             };
 
-        let worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>> =
-            if let Some(script) = script {
-                Some(javascript::init_worker_io(script))
-            } else {
-                None
-            };
+        let worker: Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>> = if let Some(script) = script
+        {
+            Some(javascript::init_worker_io(script))
+        } else {
+            None
+        };
 
         let runtime = TargetRuntime {
             http,
