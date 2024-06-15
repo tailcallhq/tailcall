@@ -87,7 +87,7 @@ impl Response<Bytes> {
         let mut resp = Response::default();
         let body = operation
             .convert_output::<async_graphql::Value>(&self.body)
-            .map_err(CoreError::GrpcError)?;
+            .map_err(CoreError::Grpc)?;
         resp.body = body;
         resp.status = self.status;
         resp.headers = self.headers;

@@ -143,7 +143,7 @@ fn init_rt(script: blueprint::Script) -> Result<()> {
             LocalRuntime::try_new(script).and_then(|runtime| {
                 cell.borrow()
                     .set(runtime)
-                    .map_err(|_| Error::ReinitializeQuickjsRuntimeError)
+                    .map_err(|_| Error::ReinitializeQuickjsRuntime)
             })
         } else {
             Ok(())
@@ -159,12 +159,12 @@ fn prepare_args<'js>(ctx: &Ctx<'js>, req: WorkerRequest) -> rquickjs::Result<(Va
 
 fn call(name: String, event: Event) -> Result<Option<Command>> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
-        let runtime = cell.get_mut().ok_or(Error::RuntimeNotInitializedError)?;
+        let runtime = cell.get_mut().ok_or(Error::RuntimeNotInitialized)?;
         runtime.0.with(|ctx| match event {
             Event::Request(req) => {
                 let fn_as_value = ctx.globals().get::<&str, Function>(name.as_str())?;
 
-                let function = fn_as_value.as_function().ok_or(Error::NotaFunctionError)?;
+                let function = fn_as_value.as_function().ok_or(Error::InvalidFunction)?;
 
                 let args = prepare_args(&ctx, req)?;
                 let command: Option<Value> = function.call(args).ok();
@@ -179,11 +179,11 @@ fn call(name: String, event: Event) -> Result<Option<Command>> {
 
 fn execute_inner(name: String, value: String) -> Result<ConstValue> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
-        let runtime = cell.get_mut().ok_or(Error::RuntimeNotInitializedError)?;
+        let runtime = cell.get_mut().ok_or(Error::RuntimeNotInitialized)?;
         runtime.0.with(|ctx| {
             let fn_as_value = ctx.globals().get::<_, rquickjs::Function>(&name)?;
 
-            let function = fn_as_value.as_function().ok_or(Error::NotaFunctionError)?;
+            let function = fn_as_value.as_function().ok_or(Error::InvalidFunction)?;
             let val: String = function.call((value,))?;
             Ok::<_, Error>(serde_json::from_str(&val)?)
         })

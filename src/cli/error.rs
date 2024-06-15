@@ -12,52 +12,52 @@ use crate::core::{rest, Errata};
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
     #[error("Metrics Error")]
-    MetricsError(MetricsError),
+    Metrics(MetricsError),
 
     #[error("Rest Error")]
-    RestError(rest::error::Error),
+    Rest(rest::error::Error),
 
     #[error("Errata Error")]
-    ErrataError(Errata),
+    Errata(Errata),
 
     #[error("Serde Json Error")]
-    SerdeJsonError(serde_json::Error),
+    SerdeJson(serde_json::Error),
 
     #[error("IO Error")]
-    IOError(std::io::Error),
+    IO(std::io::Error),
 
     #[error("Telemetry Trace Error : {0}")]
-    TelemetryTraceError(String),
+    TelemetryTrace(String),
 
     #[error("Failed to send message")]
     MessageSendFailure,
 
     #[error("Hyper Error")]
-    HyperError(hyper::Error),
+    Hyper(hyper::Error),
 
     #[error("Rustls Error")]
-    RustlsError(rustls::Error),
+    Rustls(rustls::Error),
 
     #[error("Join Error")]
-    JoinError(JoinError),
+    Join(JoinError),
 
     #[error("Opentelemetry Global Error")]
-    OpentelemetryGlobalError(opentelemetry::global::Error),
+    OpentelemetryGlobal(opentelemetry::global::Error),
 
     #[error("Trace Error")]
-    TraceError(TraceError),
+    Trace(TraceError),
 
     #[error("Log Error")]
-    LogError(LogError),
+    Log(LogError),
 
     #[error("Utf8 Error")]
-    Utf8Error(FromUtf8Error),
+    Utf8(FromUtf8Error),
 
     #[error("Inquire Error")]
-    InquireError(InquireError),
+    Inquire(InquireError),
 
     #[error("Serde Yaml Error")]
-    SerdeYamlError(serde_yaml::Error),
+    SerdeYaml(serde_yaml::Error),
 
     #[error("Invalid Header Name")]
     InvalidHeaderName(hyper::header::InvalidHeaderName),
@@ -66,34 +66,34 @@ pub enum Error {
     InvalidHeaderValue(hyper::header::InvalidHeaderValue),
 
     #[error("rquickjs Error")]
-    RQuickjsError(rquickjs::Error),
+    RQuickjs(rquickjs::Error),
 
     #[error("Trying to reinitialize an already initialized QuickJS runtime")]
-    ReinitializeQuickjsRuntimeError,
+    ReinitializeQuickjsRuntime,
 
     #[error("Runtime not initialized")]
-    RuntimeNotInitializedError,
+    RuntimeNotInitialized,
 
     #[error("Deserialize Failed")]
     DeserializeFailed,
 
     #[error("Not a function error")]
-    NotaFunctionError,
+    InvalidFunction,
 
     #[error("Init Process Observer Error")]
-    InitProcessObserverError,
+    InitProcessObserver,
 
     #[error("JS Runtime is stopped")]
-    JsRuntimeStoppedError,
+    JsRuntimeStopped,
 
     #[error("Rustls internal error")]
-    RustlsInternalError,
+    RustlsInternal,
 
     #[error("Reqwest middleware error")]
-    ReqwestMiddlewareError(reqwest_middleware::Error),
+    ReqwestMiddleware(reqwest_middleware::Error),
 
     #[error("Reqwest error")]
-    ReqwestError(reqwest::Error),
+    Reqwest(reqwest::Error),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

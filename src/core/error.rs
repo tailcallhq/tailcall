@@ -20,7 +20,7 @@ pub enum Error {
     Utf8(FromUtf8Error),
 
     #[error("Validation Error : {0}")]
-    ValidationError(ValidationError<std::string::String>),
+    Validation(ValidationError<std::string::String>),
 
     #[error("Serde Json Error")]
     SerdeJson(serde_json::Error),
@@ -53,19 +53,19 @@ pub enum Error {
     MissingServerReflectionDefinitions,
 
     #[error("Grpc Error")]
-    GrpcError(GrpcError),
+    Grpc(GrpcError),
 
     #[error("Serde Path To Error")]
-    SerdePathToError(serde_path_to_error::Error<serde_json::Error>),
+    SerdePath(serde_path_to_error::Error<serde_json::Error>),
 
     #[error("Rest Error")]
-    RestError(RestError),
+    Rest(RestError),
 
     #[error("Expected fileDescriptorResponse but found none")]
     MissingFileDescriptorResponse,
 
     #[error("Prost Decode Error")]
-    ProstDecodeError(prost::DecodeError),
+    ProstDecode(prost::DecodeError),
 
     #[error("Received empty fileDescriptorProto")]
     EmptyFileDescriptorProto,
@@ -110,10 +110,10 @@ pub enum Error {
     Worker(worker::WorkerError),
 
     #[error("CLI Error")]
-    CLIError(CLIError),
+    CLI(CLIError),
 
     #[error("Inquire Error")]
-    InquireError(InquireError),
+    Inquire(InquireError),
 
     #[error("Errata Error")]
     Errata(ErrataError),
@@ -188,7 +188,7 @@ pub mod http {
         Timeout,
 
         #[error("Failed to parse the response body")]
-        ResponseParseError,
+        ResponseParse,
 
         #[error("Invalid URL: {url}")]
         InvalidUrl { url: String },
@@ -200,7 +200,7 @@ pub mod http {
         TonicStatus(tonic::Status),
 
         #[error("Reqwest Error")]
-        ReqwestError(reqwest::Error),
+        Reqwest(reqwest::Error),
 
         #[error("Serde Json Error")]
         SerdeJson(serde_json::Error),
@@ -248,7 +248,7 @@ pub mod worker {
         ExecutionFailed,
 
         #[error("Worker communication error")]
-        CommunicationError,
+        Communication,
 
         #[error("Serde Json Error")]
         SerdeJson(serde_json::Error),
@@ -260,7 +260,7 @@ pub mod worker {
         HyperHeaderStr(hyper::header::ToStrError),
 
         #[error("CLI Error")]
-        CLIError(crate::cli::error::Error),
+        CLI(crate::cli::error::Error),
 
         #[error("JS Runtime Stopped Error")]
         JsRuntimeStopped,

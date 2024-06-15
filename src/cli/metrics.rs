@@ -22,7 +22,7 @@ fn process_resources_metrics() -> Result<()> {
     let meter = opentelemetry::global::meter("process-resources");
 
     opentelemetry_system_metrics::init_process_observer(meter)
-        .map_err(|_| Error::InitProcessObserverError)
+        .map_err(|_| Error::InitProcessObserver)
 }
 
 pub fn init_metrics(runtime: &TargetRuntime) -> Result<()> {
