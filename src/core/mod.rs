@@ -90,10 +90,8 @@ pub type EntityCache = dyn Cache<Key = IoId, Value = ConstValue>;
 
 #[async_trait::async_trait]
 pub trait WorkerIO<In, Out>: Send + Sync + 'static {
-    type Error: Send + Sync + 'static;
-
     /// Calls a global JS function
-    async fn call(&self, name: &str, input: In) -> Result<Option<Out>, Self::Error>;
+    async fn call(&self, name: &str, input: In) -> Result<Option<Out>, error::worker::Error>;
 }
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {

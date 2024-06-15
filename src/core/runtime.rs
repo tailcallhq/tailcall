@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
-use super::error;
 use super::ir::IoId;
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::worker::{Command, Event};
@@ -30,10 +29,10 @@ pub struct TargetRuntime {
     /// functionality or integrate additional features.
     pub extensions: Arc<Vec<SchemaExtension>>,
     /// Worker middleware for handling HTTP requests.
-    pub cmd_worker: Option<Arc<dyn WorkerIO<Event, Command, Error = error::worker::Error>>>,
+    pub cmd_worker: Option<Arc<dyn WorkerIO<Event, Command>>>,
     /// Worker middleware for resolving data.
     pub worker:
-        Option<Arc<dyn WorkerIO<ConstValue, ConstValue, Error = error::worker::Error>>>,
+        Option<Arc<dyn WorkerIO<ConstValue, ConstValue>>>,
 }
 
 impl TargetRuntime {

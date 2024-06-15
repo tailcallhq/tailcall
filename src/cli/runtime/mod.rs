@@ -11,7 +11,7 @@ use crate::core::blueprint::Blueprint;
 use crate::core::cache::InMemoryCache;
 use crate::core::runtime::TargetRuntime;
 use crate::core::worker::{Command, Event};
-use crate::core::{blueprint, error as CoreError, EnvIO, FileIO, HttpIO, WorkerIO};
+use crate::core::{blueprint, EnvIO, FileIO, HttpIO, WorkerIO};
 
 // Provides access to env in native rust environment
 fn init_env() -> Arc<dyn EnvIO> {
@@ -25,7 +25,7 @@ fn init_file() -> Arc<dyn FileIO> {
 
 fn init_http_worker_io(
     script: Option<blueprint::Script>,
-) -> Option<Arc<dyn WorkerIO<Event, Command, Error = CoreError::worker::Error>>> {
+) -> Option<Arc<dyn WorkerIO<Event, Command>>> {
     #[cfg(feature = "js")]
     return Some(super::javascript::init_worker_io(script?));
     #[cfg(not(feature = "js"))]
@@ -42,7 +42,6 @@ fn init_resolver_worker_io(
         dyn WorkerIO<
             async_graphql::Value,
             async_graphql::Value,
-            Error = CoreError::worker::Error,
         >,
     >,
 > {

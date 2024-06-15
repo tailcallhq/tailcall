@@ -84,13 +84,11 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    type Error = worker::Error;
-
     async fn call(
         &self,
         name: &str,
         event: Event,
-    ) -> crate::core::Result<Option<Command>, Self::Error> {
+    ) -> crate::core::Result<Option<Command>, worker::Error> {
         let script = self.script.clone();
         let name = name.to_string();
         if let Some(runtime) = &self.tokio_runtime {
@@ -109,13 +107,11 @@ impl WorkerIO<Event, Command> for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
-    type Error = worker::Error;
-
     async fn call(
         &self,
         name: &str,
         input: ConstValue,
-    ) -> crate::core::Result<Option<ConstValue>, Self::Error> {
+    ) -> crate::core::Result<Option<ConstValue>, worker::Error> {
         let script = self.script.clone();
         let name = name.to_string();
         let value = serde_json::to_string(&input).map_err(worker::Error::from)?;
