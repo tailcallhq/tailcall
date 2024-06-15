@@ -40,6 +40,7 @@ lazy_static! {
         ),
         ("js", vec![Entity::FieldDefinition], false),
         ("tag", vec![Entity::Object], false),
+        ("alias", vec![Entity::EnumValueDefinition], false),
     ];
 }
 
@@ -77,6 +78,7 @@ enum Entity {
     Schema,
     Object,
     FieldDefinition,
+    EnumValueDefinition,
 }
 
 trait ToGraphql {
@@ -94,6 +96,9 @@ impl ToGraphql for Entity {
             }
             Entity::FieldDefinition => {
                 write!(f, "FIELD_DEFINITION")
+            }
+            Entity::EnumValueDefinition => {
+                write!(f, "ENUM_VALUE_DEFINITION")
             }
         }
     }

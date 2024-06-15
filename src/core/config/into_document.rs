@@ -9,6 +9,11 @@ use crate::core::directive::DirectiveCodec;
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
+
+fn transform_default_value(value: Option<serde_json::Value>) -> Option<ConstValue> {
+    value.map(ConstValue::from_json).and_then(Result::ok)
+}
+
 fn config_document(config: &ConfigModule) -> ServiceDocument {
     let mut definitions = Vec::new();
     let mut directives = vec![
@@ -112,7 +117,8 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                             name: pos(Name::new(name.clone())),
                             ty: pos(Type { nullable: !field.required, base: base_type }),
 
-                            default_value: None,
+                            default_value: transform_default_value(field.default_value.clone())
+                                .map(pos),
                             directives,
                         })
                     })
@@ -167,10 +173,10 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                                     name: pos(Name::new(name.clone())),
                                     ty: pos(Type { nullable: !arg.required, base: base_type }),
 
-                                    default_value: arg
-                                        .default_value
-                                        .clone()
-                                        .map(|v| pos(ConstValue::String(v.to_string()))),
+                                    default_value: transform_default_value(
+                                        arg.default_value.clone(),
+                                    )
+                                    .map(pos),
                                     directives: Vec::new(),
                                 })
                             })
@@ -242,8 +248,11 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     .map(|variant| {
                         pos(EnumValueDefinition {
                             description: None,
-                            value: pos(Name::new(variant)),
-                            directives: Vec::new(),
+                            value: pos(Name::new(&variant.name)),
+                            directives: variant
+                                .alias
+                                .clone()
+                                .map_or(vec![], |v| vec![pos(v.to_directive())]),
                         })
                     })
                     .collect(),

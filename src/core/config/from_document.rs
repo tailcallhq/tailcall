@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::parser::types::{
     BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition,
@@ -7,15 +7,16 @@ use async_graphql::parser::types::{
 };
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
+use async_graphql_value::ConstValue;
 
 use super::telemetry::Telemetry;
-use super::{Tag, JS};
+use super::{Alias, Tag, JS};
 use crate::core::config::{
     self, Cache, Call, Config, Enum, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
-    Server, Union, Upstream,
+    Server, Union, Upstream, Variant,
 };
 use crate::core::directive::DirectiveCodec;
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 const DEFAULT_SCHEMA_DEFINITION: &SchemaDefinition = &SchemaDefinition {
     extend: false,
@@ -208,26 +209,22 @@ fn to_union_types(
 fn to_enum_types(
     type_definitions: &[&Positioned<TypeDefinition>],
 ) -> Valid<BTreeMap<String, Enum>, String> {
-    Valid::succeed(
-        type_definitions
-            .iter()
-            .filter_map(|type_definition| {
-                let type_name = pos_name_to_string(&type_definition.node.name);
-                let type_opt = match type_definition.node.kind.clone() {
-                    TypeKind::Enum(enum_type) => to_enum(
-                        enum_type,
-                        type_definition
-                            .node
-                            .description
-                            .to_owned()
-                            .map(|pos| pos.node),
-                    ),
-                    _ => return None,
-                };
-                Some((type_name, type_opt))
-            })
-            .collect(),
-    )
+    Valid::from_iter(type_definitions.iter(), |type_definition| {
+        let type_name = pos_name_to_string(&type_definition.node.name);
+        let type_opt = match type_definition.node.kind.clone() {
+            TypeKind::Enum(enum_type) => to_enum(
+                enum_type,
+                type_definition
+                    .node
+                    .description
+                    .to_owned()
+                    .map(|pos| pos.node),
+            ),
+            _ => return Valid::succeed(None),
+        };
+        type_opt.map(|type_opt| Some((type_name, type_opt)))
+    })
+    .map(|values| values.into_iter().flatten().collect())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -291,23 +288,36 @@ fn to_input_object_fields(
     to_fields_inner(input_object_fields, to_input_object_field)
 }
 fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> {
-    to_common_field(field_definition, to_args(field_definition))
+    to_common_field(field_definition, to_args(field_definition), None)
 }
 fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
-    to_common_field(field_definition, BTreeMap::new())
+    to_common_field(
+        field_definition,
+        BTreeMap::new(),
+        field_definition
+            .default_value
+            .as_ref()
+            .map(|f| f.node.clone()),
+    )
 }
 fn to_common_field<F>(
     field: &F,
     args: BTreeMap<String, config::Arg>,
+    default_value: Option<ConstValue>,
 ) -> Valid<config::Field, String>
 where
-    F: Fieldlike,
+    F: FieldLike,
 {
     let type_of = field.type_of();
     let base = &type_of.base;
     let nullable = &type_of.nullable;
     let description = field.description();
     let directives = field.directives();
+    let default_value = default_value
+        .map(ConstValue::into_json)
+        .transpose()
+        .map_err(|err| ValidationError::new(err.to_string()))
+        .into();
 
     let type_of = to_type_of(type_of);
     let list = matches!(&base, BaseType::List(_));
@@ -322,8 +332,9 @@ where
         .fuse(JS::from_directives(directives.iter()))
         .fuse(Call::from_directives(directives.iter()))
         .fuse(Protected::from_directives(directives.iter()))
+        .fuse(default_value)
         .map(
-            |(http, graphql, cache, grpc, omit, modify, script, call, protected)| {
+            |(http, graphql, cache, grpc, omit, modify, script, call, protected, default_value)| {
                 let const_field = to_const_field(directives);
                 config::Field {
                     type_of,
@@ -342,6 +353,7 @@ where
                     cache,
                     call,
                     protected,
+                    default_value,
                 }
             },
         )
@@ -394,13 +406,21 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
     Union { types, doc: doc.clone() }
 }
 
-fn to_enum(enum_type: EnumType, doc: Option<String>) -> Enum {
-    let variants = enum_type
-        .values
-        .iter()
-        .map(|member| member.node.value.node.as_str().to_owned())
-        .collect();
-    Enum { variants, doc }
+fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {
+    let variants = Valid::from_iter(enum_type.values.iter(), |member| {
+        let name = member.node.value.node.as_str().to_owned();
+        let alias = member
+            .node
+            .directives
+            .iter()
+            .find(|d| d.node.name.node.as_str() == Alias::directive_name());
+        if let Some(alias) = alias {
+            Alias::from_directive(&alias.node).map(|alias| Variant { name, alias: Some(alias) })
+        } else {
+            Valid::succeed(Variant { name, alias: None })
+        }
+    });
+    variants.map(|v| Enum { variants: v.into_iter().collect::<BTreeSet<Variant>>(), doc })
 }
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
     directives.iter().find_map(|directive| {
@@ -445,12 +465,12 @@ impl HasName for InputValueDefinition {
     }
 }
 
-trait Fieldlike {
+trait FieldLike {
     fn type_of(&self) -> &Type;
     fn description(&self) -> &Option<Positioned<String>>;
     fn directives(&self) -> &[Positioned<ConstDirective>];
 }
-impl Fieldlike for FieldDefinition {
+impl FieldLike for FieldDefinition {
     fn type_of(&self) -> &Type {
         &self.ty.node
     }
@@ -461,7 +481,7 @@ impl Fieldlike for FieldDefinition {
         &self.directives
     }
 }
-impl Fieldlike for InputValueDefinition {
+impl FieldLike for InputValueDefinition {
     fn type_of(&self) -> &Type {
         &self.ty.node
     }

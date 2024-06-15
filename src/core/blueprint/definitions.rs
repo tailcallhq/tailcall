@@ -41,7 +41,7 @@ pub fn to_input_object_type_definition(
             .map(|field| InputFieldDefinition {
                 name: field.name.clone(),
                 description: field.description.clone(),
-                default_value: None,
+                default_value: field.default_value.clone(),
                 of_type: field.of_type.clone(),
             })
             .collect(),
@@ -236,8 +236,8 @@ fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
             .iter()
             .map(|variant| EnumValueDefinition {
                 description: None,
-                name: variant.clone(),
-                directives: Vec::new(),
+                name: variant.name.clone(),
+                directives: vec![],
             })
             .collect(),
     })
@@ -279,6 +279,7 @@ fn update_args<'a>(
                 of_type: to_type(*field, None),
                 directives: Vec::new(),
                 resolver: None,
+                default_value: field.default_value.clone(),
             })
         },
     )
@@ -510,6 +511,7 @@ pub fn to_field_definition(
         .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
+        .and(update_enum_alias())
         .try_fold(
             &(config_module, field, type_of, name),
             FieldDefinition::default(),
