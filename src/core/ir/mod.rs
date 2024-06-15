@@ -7,10 +7,9 @@ mod io;
 mod modify;
 mod resolver_context_like;
 
-use core::future::Future;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::pin::Pin;
+use std::future::Future;
 
 use async_graphql_value::ConstValue;
 pub use cache::*;
@@ -64,30 +63,28 @@ pub struct Map {
 }
 
 impl Eval for Map {
-    fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+    async fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value, EvaluationError>> + 'a + Send>>
+    ) -> Result<ConstValue, EvaluationError>
     where
-        async_graphql::Value: 'a,
+        ConstValue: 'a,
     {
-        Box::pin(async move {
-            let value = self.input.eval(ctx).await?;
-            if let ConstValue::String(key) = value {
-                if let Some(value) = self.map.get(&key) {
-                    Ok(ConstValue::String(value.to_owned()))
-                } else {
-                    Err(EvaluationError::ExprEvalError(format!(
-                        "Can't find mapped key: {}.",
-                        key
-                    )))
-                }
+        let value = self.input.eval(ctx).await?;
+        if let ConstValue::String(key) = value {
+            if let Some(value) = self.map.get(&key) {
+                Ok(ConstValue::String(value.to_owned()))
             } else {
-                Err(EvaluationError::ExprEvalError(
-                    "Mapped key must be string value.".to_owned(),
-                ))
+                Err(EvaluationError::ExprEvalError(format!(
+                    "Can't find mapped key: {}.",
+                    key
+                )))
             }
-        })
+        } else {
+            Err(EvaluationError::ExprEvalError(
+                "Mapped key must be string value.".to_owned(),
+            ))
+        }
     }
 }
 
@@ -96,7 +93,7 @@ impl Eval for IR {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> impl Future<Output = Result<ConstValue, EvaluationError>> {
         Box::pin(async move {
             match self {
                 IR::Context(op) => match op {
