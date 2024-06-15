@@ -30,7 +30,7 @@ impl OpenApiToConfigConverter {
         Ok(Self { config, spec })
     }
 
-    pub fn define_queries(mut self) -> Self {
+    pub fn define_queries(mut self) -> Option<Self> {
         let mut fields = BTreeMap::new();
 
         for (path, path_item) in self.spec.paths.clone().into_iter() {
@@ -46,14 +46,12 @@ impl OpenApiToConfigConverter {
             ]
             .into_iter()
             .filter_map(|(method, operation)| operation.map(|operation| (method, operation)))
-            .next()
-            .unwrap();
+            .next()?;
 
             let Ok(response) = operation
                 .responses
                 .first_key_value()
-                .map(|(_, v)| v)
-                .unwrap()
+                .map(|(_, v)| v)?
                 .resolve(&self.spec)
             else {
                 continue;
@@ -87,12 +85,12 @@ impl OpenApiToConfigConverter {
                 .insert(query.to_string(), Type { fields, ..Default::default() });
         }
 
-        self
+        Some(self)
     }
 
-    pub fn convert(mut self) -> Config {
-        self = self.define_queries();
-        self.config
+    pub fn convert(mut self) -> Option<Config> {
+        self = self.define_queries()?;
+        Some(self.config)
     }
 }
 
@@ -105,33 +103,33 @@ mod tests {
 
     #[test]
     fn test_openapi_apis_guru() {
-        let apis_guru = config_from_openapi_spec("apis-guru.yml");
+        let apis_guru = config_from_openapi_spec("apis-guru.yml").unwrap();
         insta::assert_snapshot!(apis_guru);
     }
 
     #[test]
     fn test_openapi_jsonplaceholder() {
-        let jsonplaceholder = config_from_openapi_spec("jsonplaceholder.yml");
+        let jsonplaceholder = config_from_openapi_spec("jsonplaceholder.yml").unwrap();
         insta::assert_snapshot!(jsonplaceholder);
     }
 
     #[test]
     fn test_openapi_spotify() {
-        let spotify = config_from_openapi_spec("spotify.yml");
+        let spotify = config_from_openapi_spec("spotify.yml").unwrap();
         insta::assert_snapshot!(spotify);
     }
 
-    fn config_from_openapi_spec(filename: &str) -> String {
+    fn config_from_openapi_spec(filename: &str) -> Option<String> {
         let spec_path = Path::new("src")
             .join("core")
             .join("generator")
             .join("openapi")
             .join(filename);
 
-        let content = fs::read_to_string(spec_path).unwrap();
+        let content = fs::read_to_string(spec_path).ok()?;
         OpenApiToConfigConverter::new("Query", content.as_str())
-            .unwrap()
-            .convert()
-            .to_sdl()
+            .ok()
+            .and_then(|converter| converter.convert())
+            .map(|config| config.to_sdl())
     }
 }
