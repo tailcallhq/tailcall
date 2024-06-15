@@ -123,10 +123,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         let ctx: ResolverContext = ctx.into();
                                         let ctx = &mut EvaluationContext::new(req_ctx, &ctx);
 
-                                        let value = expr
-                                            .eval(ctx)
-                                            .await
-                                            .map_err(|err| err.extend())?;
+                                        let value =
+                                            expr.eval(ctx).await.map_err(|err| err.extend())?;
 
                                         if let ConstValue::Null = value {
                                             Ok(FieldValue::NONE)
