@@ -1,4 +1,3 @@
-use anyhow::Result;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use hyper::header::HeaderName;
@@ -168,9 +167,8 @@ async fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorPro
 
 #[cfg(test)]
 mod grpc_fetch {
+    use crate::core::error::Error;
     use std::path::PathBuf;
-
-    use anyhow::Result;
 
     use super::*;
 
@@ -199,7 +197,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_resp_service() -> Result<()> {
+    async fn test_resp_service() -> Result<(), Error> {
         let server = start_mock_server();
 
         let http_reflection_file_mock = server.mock(|when, then| {
@@ -227,7 +225,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_resp_list_all() -> Result<()> {
+    async fn test_resp_list_all() -> Result<(), Error> {
         let server = start_mock_server();
 
         let http_reflection_list_all = server.mock(|when, then| {
@@ -259,7 +257,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_list_all_files_empty_response() -> Result<()> {
+    async fn test_list_all_files_empty_response() -> Result<(), Error> {
         let server = start_mock_server();
 
         let http_reflection_list_all_empty = server.mock(|when, then| {
@@ -287,7 +285,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_get_by_service_not_found() -> Result<()> {
+    async fn test_get_by_service_not_found() -> Result<(), Error> {
         let server = start_mock_server();
 
         let http_reflection_service_not_found = server.mock(|when, then| {

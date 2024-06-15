@@ -8,4 +8,7 @@ pub enum Error {
 
     #[error("Invalid Authorization Header")]
     Invalid,
+
+    #[error("Headers Error : {0}")]
+    Headers(String),
 }

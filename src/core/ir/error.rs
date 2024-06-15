@@ -153,24 +153,3 @@ impl From<Arc<Error>> for Error {
         Error::WorkerError(error.to_string())
     }
 }
-
-impl From<Arc<anyhow::Error>> for Error {
-    fn from(error: Arc<anyhow::Error>) -> Self {
-        match error.downcast_ref::<Error>() {
-            Some(err) => err.clone(),
-            None => Error::IOError(error.to_string()),
-        }
-    }
-}
-
-// TODO: remove conversion from anyhow and don't use anyhow to pass errors
-// since it loses potentially valuable information that could be later provided
-// in the error extensions
-impl From<anyhow::Error> for Error {
-    fn from(value: anyhow::Error) -> Self {
-        match value.downcast::<Error>() {
-            Ok(err) => err,
-            Err(err) => Error::IOError(err.to_string()),
-        }
-    }
-}

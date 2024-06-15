@@ -229,7 +229,6 @@ impl ProtobufOperation {
 pub mod tests {
     use std::path::Path;
 
-    use anyhow::Result;
     use prost_reflect::Value;
     use serde_json::json;
     use tailcall_fixtures::protobuf;
@@ -305,7 +304,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn service_not_found() -> Result<()> {
+    async fn service_not_found() -> std::result::Result<(), Error> {
         let grpc_method = GrpcMethod::try_from("greetings._unknown.foo").unwrap();
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::GREETINGS).await?)?;
         let error = file.find_service(&grpc_method).unwrap_err();
@@ -331,7 +330,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn greetings_proto_file() -> Result<()> {
+    async fn greetings_proto_file() -> std::result::Result<(), Error> {
         let grpc_method = GrpcMethod::try_from("greetings.Greeter.SayHello").unwrap();
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::GREETINGS).await?)?;
         let service = file.find_service(&grpc_method)?;
@@ -352,7 +351,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn news_proto_file() -> Result<()> {
+    async fn news_proto_file() -> std::result::Result<(), Error> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;
@@ -378,7 +377,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn news_proto_file_multiple_messages() -> Result<()> {
+    async fn news_proto_file_multiple_messages() -> std::result::Result<(), Error> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetMultipleNews").unwrap();
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;
         let service = file.find_service(&grpc_method)?;
@@ -417,7 +416,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn map_proto_file() -> Result<()> {
+    async fn map_proto_file() -> std::result::Result<(), Error> {
         let grpc_method = GrpcMethod::try_from("map.MapService.GetMap").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::MAP).await?)?;
@@ -445,7 +444,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn optional_proto_file() -> Result<()> {
+    async fn optional_proto_file() -> std::result::Result<(), Error> {
         let grpc_method = GrpcMethod::try_from("type.TypeService.Get").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::OPTIONAL).await?)?;
