@@ -66,45 +66,22 @@ impl Eval for IO {
     ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
         // Note: Handled the case separately for performance reasons. It avoids cache
         // key generation when it's not required
-        if (!ctx.request_ctx.upstream.dedupe_in_flight && !ctx.request_ctx.upstream.dedupe)
-            || !ctx.is_query()
-        {
+        if !ctx.request_ctx.server.dedupe || !ctx.is_query() {
             return self.eval_inner(ctx);
         }
-
         if let Some(key) = self.cache_key(&ctx) {
             Box::pin(async move {
-                match (
-                    ctx.request_ctx.upstream.dedupe,
-                    ctx.request_ctx.upstream.dedupe_in_flight,
-                ) {
-                    (true, false) => {
-                        ctx.request_ctx
-                            .cache
-                            .dedupe(&key, || Box::pin(self.eval_inner(ctx)))
-                            .await
-                    }
-                    (true, true) => {
-                        ctx.request_ctx
-                            .cache
-                            .dedupe(&key.clone(), || {
-                                Box::pin(async move {
-                                    ctx.request_ctx
-                                        .dedupe_handler
-                                        .dedupe(&key, || Box::pin(self.eval_inner(ctx)))
-                                        .await
-                                })
-                            })
-                            .await
-                    }
-                    (false, true) => {
-                        ctx.request_ctx
-                            .dedupe_handler
-                            .dedupe(&key, || Box::pin(self.eval_inner(ctx)))
-                            .await
-                    }
-                    (false, false) => self.eval_inner(ctx).await,
-                }
+                ctx.request_ctx
+                    .cache
+                    .dedupe(&key, || {
+                        Box::pin(async {
+                            ctx.request_ctx
+                                .dedupe_handler
+                                .dedupe(&key, || Box::pin(self.eval_inner(ctx)))
+                                .await
+                        })
+                    })
+                    .await
             })
         } else {
             self.eval_inner(ctx)

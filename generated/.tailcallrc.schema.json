@@ -411,6 +411,9 @@
             }
           ]
         },
+        "default_value": {
+          "description": "Stores the default value for the field"
+        },
         "doc": {
           "description": "Publicly visible documentation for the field.",
           "type": [
@@ -1024,6 +1027,13 @@
             "null"
           ]
         },
+        "dedupe": {
+          "description": "Enables deduplication of IO operations to enhance performance.\n\nThis flag prevents duplicate IO requests from being executed concurrently, reducing resource load. Caution: May lead to issues with APIs that expect unique results for identical inputs, such as nonce-based APIs.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
           "type": [
@@ -1429,20 +1439,6 @@
           ],
           "format": "uint64",
           "minimum": 0.0
-        },
-        "dedupe": {
-          "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once within the context of a single GraphQL request.",
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "dedupeInFlight": {
-          "description": "When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more than once if similar request is inflight across the server's lifetime.",
-          "type": [
-            "boolean",
-            "null"
-          ]
         },
         "http2Only": {
           "description": "The `http2Only` setting allows you to specify whether the client should always issue HTTP2 requests, without checking if the server supports it or not. By default it is set to `false` for all HTTP requests made by the server, but is automatically set to true for GRPC.",
