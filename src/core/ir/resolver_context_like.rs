@@ -36,6 +36,41 @@ impl<'a> ResolverContextLike<'a> for EmptyResolverContext {
     fn add_error(&'a self, _: ServerError) {}
 }
 
+
+#[derive(Clone)]
+pub struct NewResolverContext {
+    pub value: Option<Value>, // TODO: move entire impl to OwnedValue
+    pub args: Option<IndexMap<Name, Value>>,
+}
+
+impl NewResolverContext {
+    pub fn new(value: Option<Value>, args: Option<IndexMap<Name, Value>>) -> Self {
+        NewResolverContext { value, args }
+    }
+}
+
+impl<'a> ResolverContextLike<'a> for NewResolverContext {
+    fn value(&'a self) -> Option<&'a Value> {
+        self.value.as_ref()
+    }
+
+    fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
+        self.args.as_ref()
+    }
+
+    fn field(&'a self) -> Option<SelectionField> {
+        todo!()
+    }
+
+    fn is_query(&'a self) -> bool {
+        todo!()
+    }
+
+    fn add_error(&'a self, _error: ServerError) {
+        todo!()
+    }
+}
+
 #[derive(Clone)]
 pub struct ResolverContext<'a> {
     inner: Arc<async_graphql::dynamic::ResolverContext<'a>>,

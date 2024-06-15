@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::ServerError;
+use async_graphql_parser::types::ExecutableDocument;
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
 use hyper::{Body, HeaderMap, Request, Response, StatusCode};
@@ -11,6 +12,7 @@ use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
 use serde::de::DeserializeOwned;
+use serde_json::Value;
 use tracing::Instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
@@ -20,6 +22,7 @@ use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTT
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
+use crate::core::ir::{EvaluationContext, ExecutionContext, ExecutionPlanBuilder, NewResolverContext, Synth};
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -94,7 +97,7 @@ pub fn update_response_headers(
     req_ctx.extend_x_headers(resp.headers_mut());
 }
 
-#[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
+#[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ? SpanKind::Server))]
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
     app_ctx: &AppContext,
@@ -107,15 +110,20 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
+            let resolver_ctx = NewResolverContext {
+                value: None,
+                args: None, // TODO: pass default args
+            };
+
             if !(app_ctx.blueprint.server.dedupe && request.is_query()) {
-                Ok(execute_query(&app_ctx, &req_ctx, request).await?)
+                Ok(execute_query(app_ctx, &req_ctx, &resolver_ctx, request).await?)
             } else {
                 let operation_id = request.operation_id(&req.headers);
                 let out = app_ctx
                     .dedupe_operation_handler
                     .dedupe(&operation_id, || {
                         Box::pin(async move {
-                            let resp = execute_query(&app_ctx, &req_ctx, request).await?;
+                            let resp = execute_query(app_ctx, &req_ctx, &resolver_ctx, request).await?;
                             Ok(crate::core::http::Response::from_hyper(resp).await?)
                         })
                     })
@@ -140,14 +148,57 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 }
 
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
-    app_ctx: &&AppContext,
-    req_ctx: &Arc<RequestContext>,
-    request: T,
+    app_ctx: &AppContext,
+    req_ctx: &RequestContext,
+    resolver_ctx: &NewResolverContext,
+    mut request: T,
 ) -> anyhow::Result<Response<Body>> {
-    let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+    let doc: &ExecutableDocument = request.parse_query().ok_or(
+        // TODO: change implementation to return result instead of converting it to Option
+        anyhow::anyhow!("Failed to parse the query"),
+    )?;
 
-    response = update_cache_control_header(response, app_ctx, req_ctx.clone());
-    let mut resp = response.into_response()?;
+    let plan = ExecutionPlanBuilder::new(app_ctx.blueprint.clone(), doc.clone()) // TODO: I think we can drop clone on doc
+        .build().map_err(|e| anyhow::anyhow!("{}", e))?;
+
+    let eval_ctx = EvaluationContext::new(req_ctx, resolver_ctx);
+
+
+    let execution_ctx = ExecutionContext::new(plan, eval_ctx.clone());
+    execution_ctx.execute_ir().await?;
+
+    let inner = execution_ctx.into_inner();
+    let store = inner.store.into_inner();
+
+    let children = inner.plan.into_children();
+
+    let mut result = serde_json::Map::new();
+
+    for child in children {
+        let name = child.name.to_owned();
+        let synth = Synth::new(child, store.clone(), eval_ctx.clone());
+        let res = synth.synthesize();
+        if let Some(val) = result.get_mut("data") {
+            match val {
+                Value::Object(obj) => {
+                    obj.insert(name, res.into());
+                }
+                _ => ()
+            }
+        } else {
+            result.insert("data".to_owned(), res.into());
+        }
+    }
+
+    let mut resp = Response::builder()
+        .status(200)
+        .header(CONTENT_TYPE, crate::core::async_graphql_hyper::APPLICATION_JSON.as_ref())
+        .body(hyper::Body::from(serde_json::to_string(&result)?))?;
+
+    /* let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+
+     response = update_cache_control_header(response, app_ctx, req_ctx.clone());
+     let mut resp = response.into_response()?;*/
     update_response_headers(&mut resp, req_ctx, app_ctx);
     Ok(resp)
 }
@@ -278,8 +329,8 @@ async fn handle_rest_apis(
             update_response_headers(&mut resp, &req_ctx, &app_ctx);
             Ok(resp)
         }
-        .instrument(span)
-        .await;
+            .instrument(span)
+            .await;
     }
 
     not_found()
@@ -302,17 +353,17 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
             graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
         }
         hyper::Method::POST
-            if app_ctx.blueprint.server.enable_showcase
-                && req.uri().path() == "/showcase/graphql" =>
-        {
-            let app_ctx =
-                match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await? {
-                    Ok(app_ctx) => app_ctx,
-                    Err(res) => return Ok(res),
-                };
+        if app_ctx.blueprint.server.enable_showcase
+            && req.uri().path() == "/showcase/graphql" =>
+            {
+                let app_ctx =
+                    match showcase::create_app_ctx::<T>(&req, app_ctx.runtime.clone(), false).await? {
+                        Ok(app_ctx) => app_ctx,
+                        Err(res) => return Ok(res),
+                    };
 
-            graphql_request::<T>(req, &app_ctx, req_counter).await
-        }
+                graphql_request::<T>(req, &app_ctx, req_counter).await
+            }
 
         hyper::Method::GET => {
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
@@ -334,9 +385,9 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     err,
     fields(
         otel.name = "request",
-        otel.kind = ?SpanKind::Server,
-        url.path = %req.uri().path(),
-        http.request.method = %req.method()
+        otel.kind = ? SpanKind::Server,
+        url.path = % req.uri().path(),
+        http.request.method = % req.method()
     )
 )]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(

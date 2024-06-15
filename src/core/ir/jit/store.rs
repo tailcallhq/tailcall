@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 #[allow(unused)]
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Store<Key, Value> {
     map: HashMap<Key, Value>,
 }

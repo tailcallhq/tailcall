@@ -18,8 +18,9 @@ pub use error::*;
 pub use eval::*;
 pub use evaluation_context::EvaluationContext;
 pub use graphql_operation_context::GraphQLOperationContext;
+pub use jit::*;
 pub use io::*;
-pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};
+pub use resolver_context_like::{EmptyResolverContext, NewResolverContext, ResolverContext, ResolverContextLike};
 use strum_macros::Display;
 
 use crate::core::blueprint::DynamicValue;
@@ -69,7 +70,7 @@ impl Eval for IR {
     fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
         &'a self,
         ctx: EvaluationContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + 'a + Send>> {
+    ) -> Pin<Box<dyn Future<Output=Result<ConstValue, EvaluationError>> + 'a + Send>> {
         Box::pin(async move {
             match self {
                 IR::Context(op) => match op {

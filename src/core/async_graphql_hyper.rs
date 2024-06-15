@@ -169,7 +169,7 @@ impl GraphQLQuery {
     }
 }
 
-static APPLICATION_JSON: Lazy<HeaderValue> =
+pub static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
