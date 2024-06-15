@@ -127,6 +127,9 @@ pub enum Error {
 
     #[error("Utf8 Error")]
     Utf8(Utf8Error),
+
+    #[error("Rand Error")]
+    Rand(rand::Error),
 }
 
 pub mod file {
@@ -238,6 +241,12 @@ pub mod http {
 
         #[error("Utf8 Error")]
         Utf8(FromUtf8Error),
+
+        #[error("Invalid request host")]
+        InvalidRequestHost,
+
+        #[error("Hyper Http Error")]
+        HyperHttp(hyper::http::Error),
     }
 }
 

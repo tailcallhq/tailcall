@@ -318,7 +318,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn method_not_found() -> Result<()> {
+    async fn method_not_found() -> std::result::Result<(), Error> {
         let grpc_method = GrpcMethod::try_from("greetings.Greeter._unknown").unwrap();
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::GREETINGS).await?)?;
         let service = file.find_service(&grpc_method)?;

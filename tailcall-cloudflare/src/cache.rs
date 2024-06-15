@@ -1,7 +1,6 @@
 use std::num::NonZeroU64;
 use std::rc::Rc;
 
-use anyhow::Result;
 use async_graphql_value::ConstValue;
 use serde_json::Value;
 use tailcall::core::ir::IoId;
@@ -22,8 +21,7 @@ impl CloudflareChronoCache {
     }
 
     fn get_kv(&self) -> Result<KvStore, error::cache::Error> {
-        self
-            .env
+        self.env
             .kv("TMP_KV")
             .map_err(|e| error::cache::Error::Worker(e.to_string()))
     }
