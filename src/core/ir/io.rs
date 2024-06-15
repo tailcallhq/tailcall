@@ -61,7 +61,10 @@ impl Eval for IO {
     async fn eval<'slf, 'ctx, Ctx>(
         &'slf self,
         ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
-    ) -> Result<ConstValue, EvaluationError> where Ctx: ResolverContextLike<'slf> + Send + Sync {
+    ) -> Result<ConstValue, EvaluationError>
+    where
+        Ctx: ResolverContextLike + Send + Sync,
+    {
         // Note: Handled the case separately for performance reasons. It avoids cache
         // key generation when it's not required
         if !ctx.request_ctx.server.dedupe || !ctx.is_query() {
@@ -87,7 +90,10 @@ impl IO {
     async fn eval_inner<'slf, 'ctx, Ctx>(
         &'slf self,
         ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
-    ) -> Result<ConstValue, EvaluationError> where Ctx: ResolverContextLike<'slf> + Sync + Send {
+    ) -> Result<ConstValue, EvaluationError>
+    where
+        Ctx: ResolverContextLike + Sync + Send,
+    {
         match self {
             IO::Http { req_template, dl_id, http_filter, .. } => {
                 let worker = &ctx.request_ctx.runtime.cmd_worker;
@@ -157,7 +163,7 @@ impl IO {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<'a, Ctx>> for IO {
+impl<'a, Ctx: ResolverContextLike + Sync + Send> CacheKey<EvaluationContext<'a, Ctx>> for IO {
     fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> Option<IoId> {
         match self {
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
@@ -168,8 +174,8 @@ impl<'a, Ctx: ResolverContextLike<'a> + Sync + Send> CacheKey<EvaluationContext<
     }
 }
 
-fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+fn set_headers<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
     set_cache_control(ctx, res);
@@ -177,8 +183,8 @@ fn set_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     set_experimental_headers(ctx, res);
 }
 
-fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+fn set_cache_control<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
     if ctx.request_ctx.server.get_enable_cache_control() && res.status.is_success() {
@@ -188,15 +194,15 @@ fn set_cache_control<'ctx, Ctx: ResolverContextLike<'ctx>>(
     }
 }
 
-fn set_experimental_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+fn set_experimental_headers<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
     ctx.request_ctx.add_x_headers(&res.headers);
 }
 
-fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+fn set_cookie_headers<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
     if res.status.is_success() {
@@ -204,8 +210,8 @@ fn set_cookie_headers<'ctx, Ctx: ResolverContextLike<'ctx>>(
     }
 }
 
-async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+async fn execute_raw_request<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     req: Request,
 ) -> Result<Response<async_graphql::Value>, EvaluationError> {
     let response = ctx
@@ -220,8 +226,8 @@ async fn execute_raw_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
     Ok(response)
 }
 
-async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+async fn execute_raw_grpc_request<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     req: Request,
     operation: &ProtobufOperation,
 ) -> Result<Response<async_graphql::Value>, EvaluationError> {
@@ -231,15 +237,14 @@ async fn execute_raw_grpc_request<'ctx, Ctx: ResolverContextLike<'ctx>>(
 }
 
 async fn execute_grpc_request_with_dl<
-    'ctx,
-    Ctx: ResolverContextLike<'ctx>,
+    Ctx: ResolverContextLike,
     Dl: Loader<
         grpc::DataLoaderRequest,
         Value = Response<async_graphql::Value>,
         Error = Arc<anyhow::Error>,
     >,
 >(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+    ctx: &EvaluationContext<'_, Ctx>,
     rendered: RenderedRequestTemplate,
     data_loader: Option<&DataLoader<grpc::DataLoaderRequest, Dl>>,
 ) -> Result<Response<async_graphql::Value>, EvaluationError> {
@@ -262,7 +267,7 @@ async fn execute_grpc_request_with_dl<
 
 async fn execute_request_with_dl<
     'ctx,
-    Ctx: ResolverContextLike<'ctx>,
+    Ctx: ResolverContextLike,
     Dl: Loader<DataLoaderRequest, Value = Response<async_graphql::Value>, Error = Arc<anyhow::Error>>,
 >(
     ctx: &EvaluationContext<'ctx, Ctx>,
@@ -286,8 +291,8 @@ async fn execute_request_with_dl<
         .unwrap_or_default())
 }
 
-fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
-    ctx: &EvaluationContext<'ctx, Ctx>,
+fn parse_graphql_response<Ctx: ResolverContextLike>(
+    ctx: &EvaluationContext<'_, Ctx>,
     res: Response<async_graphql::Value>,
     field_name: &str,
 ) -> Result<async_graphql::Value, EvaluationError> {
@@ -310,13 +315,15 @@ fn parse_graphql_response<'ctx, Ctx: ResolverContextLike<'ctx>>(
 /// and getting a response. There are optimizations and customizations that the
 /// user might have configured. HttpRequestExecutor is responsible for handling
 /// all of that.
-struct HttpRequestExecutor<'a, 'ctx, Context: ResolverContextLike<'a> + Send + Sync> {
+struct HttpRequestExecutor<'a, 'ctx, Context: ResolverContextLike + Send + Sync> {
     evaluation_ctx: &'ctx EvaluationContext<'a, Context>,
     data_loader: Option<&'a DataLoader<DataLoaderRequest, HttpDataLoader>>,
     request_template: &'a http::RequestTemplate,
 }
 
-impl<'a, 'ctx, Context: ResolverContextLike<'a> + Send + Sync> HttpRequestExecutor<'a, 'ctx, Context> {
+impl<'a, 'ctx, Context: ResolverContextLike + Send + Sync>
+    HttpRequestExecutor<'a, 'ctx, Context>
+{
     pub fn new(
         evaluation_ctx: &'ctx EvaluationContext<'a, Context>,
         request_template: &'a RequestTemplate,

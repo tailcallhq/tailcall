@@ -55,9 +55,9 @@ impl Display for FieldPlan {
 }
 
 impl FieldPlan {
-    pub async fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
-        &'a self,
-        mut ctx: EvaluationContext<'a, Ctx>,
+    pub async fn eval<Ctx: ResolverContextLike + Sync + Send>(
+        &self,
+        mut ctx: EvaluationContext<'_, Ctx>,
     ) -> Result<Value> {
         Ok(self.resolver.eval(&mut ctx).await?)
     }

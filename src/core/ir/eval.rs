@@ -10,5 +10,5 @@ where
         ctx: &'ctx mut EvaluationContext<'slf, Ctx>,
     ) -> impl Future<Output = Result<Output, EvaluationError>>
     where
-        Ctx: ResolverContextLike<'slf> + Sync + Send;
+        Ctx: ResolverContextLike + Sync + Send;
 }
