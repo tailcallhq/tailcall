@@ -8,6 +8,7 @@ mod modify;
 mod resolver_context_like;
 
 use core::future::Future;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::pin::Pin;
 
@@ -34,6 +35,7 @@ pub enum IR {
     Cache(Cache),
     Path(Box<IR>, Vec<String>),
     Protect(Box<IR>),
+    Map(Map),
 }
 
 #[derive(Clone, Debug)]
@@ -51,6 +53,41 @@ impl IR {
 
     pub fn with_args(self, args: IR) -> Self {
         IR::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Map {
+    pub input: Box<IR>,
+    // accept key return value instead of
+    pub map: HashMap<String, String>,
+}
+
+impl Eval for Map {
+    fn eval<'a, Ctx: ResolverContextLike<'a> + Sync + Send>(
+        &'a self,
+        ctx: EvaluationContext<'a, Ctx>,
+    ) -> Pin<Box<dyn Future<Output = Result<async_graphql::Value, EvaluationError>> + 'a + Send>>
+    where
+        async_graphql::Value: 'a,
+    {
+        Box::pin(async move {
+            let value = self.input.eval(ctx).await?;
+            if let ConstValue::String(key) = value {
+                if let Some(value) = self.map.get(&key) {
+                    Ok(ConstValue::String(value.to_owned()))
+                } else {
+                    Err(EvaluationError::ExprEvalError(format!(
+                        "Can't find mapped key: {}.",
+                        key
+                    )))
+                }
+            } else {
+                Err(EvaluationError::ExprEvalError(
+                    "Mapped key must be string value.".to_owned(),
+                ))
+            }
+        })
     }
 }
 
@@ -99,6 +136,7 @@ impl Eval for IR {
                 }
                 IR::IO(operation) => operation.eval(ctx).await,
                 IR::Cache(cached) => cached.eval(ctx).await,
+                IR::Map(map) => map.eval(ctx).await,
             }
         })
     }
