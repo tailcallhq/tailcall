@@ -9,8 +9,6 @@ pub enum Error {
     #[error("Serde Json Error")]
     SerdeJsonError(serde_json::Error),
 
-    // #[error("Arc Error")]
-    // ArcError(Arc<anyhow::Error>),
     #[error("Prost Encode Error")]
     ProstEncodeError(prost::EncodeError),
 

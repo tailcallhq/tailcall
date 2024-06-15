@@ -238,8 +238,9 @@ pub mod tests {
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, Grpc, Link, LinkType, Type};
+    use crate::core::error::Error;
 
-    pub async fn get_proto_file(path: &str) -> Result<FileDescriptorSet> {
+    pub async fn get_proto_file(path: &str) -> std::result::Result<FileDescriptorSet, Error> {
         let runtime = crate::core::runtime::test::init(None);
         let reader = ConfigReader::init(runtime);
 
@@ -477,7 +478,7 @@ pub mod tests {
     }
 
     #[tokio::test]
-    async fn scalars_proto_file() -> Result<()> {
+    async fn scalars_proto_file() -> std::result::Result<(), Error> {
         let grpc_method = GrpcMethod::try_from("scalars.Example.Get").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::SCALARS).await?)?;
@@ -561,7 +562,7 @@ pub mod tests {
         );
 
         // numbers out of range
-        let input: Error = operation
+        let input = operation
             .convert_input(
                 r#"{
                 "floatNum": 1e154561.14848449464654948484542189,

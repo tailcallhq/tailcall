@@ -1,6 +1,5 @@
 use std::hash::{Hash, Hasher};
 
-use anyhow::Result;
 use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::{HeaderMap, Method};
