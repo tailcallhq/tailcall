@@ -19,7 +19,7 @@ fn init_env() -> Arc<dyn EnvIO> {
 }
 
 // Provides access to file system in native rust environment
-fn init_file() -> Arc<dyn FileIO<Error = CoreError::file::Error>> {
+fn init_file() -> Arc<dyn FileIO> {
     Arc::new(file::NativeFileIO::init())
 }
 

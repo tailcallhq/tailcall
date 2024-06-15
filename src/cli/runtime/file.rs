@@ -28,13 +28,11 @@ async fn write<'a>(path: &'a str, content: &'a [u8]) -> Result<()> {
 
 #[async_trait::async_trait]
 impl FileIO for NativeFileIO {
-    type Error = file::Error;
-
     async fn write<'a>(
         &'a self,
         path: &'a str,
         content: &'a [u8],
-    ) -> crate::core::Result<(), Self::Error> {
+    ) -> crate::core::Result<(), file::Error> {
         write(path, content)
             .await
             .map_err(|_| file::Error::FileWriteFailed(path.to_string()))?;
@@ -42,7 +40,7 @@ impl FileIO for NativeFileIO {
         Ok(())
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> crate::core::Result<String, Self::Error> {
+    async fn read<'a>(&'a self, path: &'a str) -> crate::core::Result<String, file::Error> {
         let content = read(path)
             .await
             .map_err(|_| file::Error::FileReadFailed(path.to_string()))?;

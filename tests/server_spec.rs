@@ -97,14 +97,13 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        type Error = file::Error;
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<(), Self::Error> {
+        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<(), file::Error> {
             let mut file = tokio::fs::File::create(path).await?;
             file.write_all(content).await?;
             Ok(())
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> Result<String, Self::Error> {
+        async fn read<'a>(&'a self, path: &'a str) -> Result<String, file::Error> {
             let mut file = tokio::fs::File::open(path).await?;
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer).await?;

@@ -29,8 +29,6 @@ pub struct LambdaFileIO;
 
 #[async_trait::async_trait]
 impl FileIO for LambdaFileIO {
-    type Error = file::Error;
-
     async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> Result<(), file::Error> {
         Err(file::Error::LambdaFileWriteNotSupported)
     }

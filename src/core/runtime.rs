@@ -22,7 +22,7 @@ pub struct TargetRuntime {
     pub env: Arc<dyn EnvIO>,
     /// Interface for file operations, tailored to the target environment's
     /// capabilities.
-    pub file: Arc<dyn FileIO<Error = error::file::Error>>,
+    pub file: Arc<dyn FileIO>,
     /// Cache for storing and retrieving entity data, improving performance and
     /// reducing external calls.
     pub cache: Arc<dyn Cache<Key = IoId, Value = ConstValue>>,
@@ -142,19 +142,17 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        type Error = error::file::Error;
-
         async fn write<'a>(
             &'a self,
             path: &'a str,
             content: &'a [u8],
-        ) -> crate::core::Result<(), Self::Error> {
+        ) -> crate::core::Result<(), error::file::Error> {
             let mut file = tokio::fs::File::create(path).await?;
             file.write_all(content).await?;
             Ok(())
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> crate::core::Result<String, Self::Error> {
+        async fn read<'a>(&'a self, path: &'a str) -> crate::core::Result<String, error::file::Error> {
             let mut file = tokio::fs::File::open(path).await?;
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer).await?;

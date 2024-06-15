@@ -45,13 +45,11 @@ async fn put(bucket: Rc<worker::Bucket>, path: String, value: Vec<u8>) -> Result
 
 #[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
-    type Error = file::Error;
-
     async fn write<'a>(
         &'a self,
         path: &'a str,
         content: &'a [u8],
-    ) -> std::result::Result<(), Self::Error> {
+    ) -> std::result::Result<(), file::Error> {
         let content = content.to_vec();
         let bucket = self.bucket.clone();
         let path_cloned = path.to_string();
@@ -62,7 +60,7 @@ impl FileIO for CloudflareFileIO {
         Ok(())
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> std::result::Result<String, Self::Error> {
+    async fn read<'a>(&'a self, path: &'a str) -> std::result::Result<String, file::Error> {
         let bucket = self.bucket.clone();
         let path_cloned = path.to_string();
         let content = spawn_local(get(bucket, path_cloned))
