@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use async_graphql::dynamic::SchemaBuilder;
 
@@ -94,7 +94,13 @@ where
         }
         JsonSchema::Obj(schema_fields)
     } else if let Some(type_enum_) = type_enum_ {
-        JsonSchema::Enum(type_enum_.variants.to_owned())
+        JsonSchema::Enum(
+            type_enum_
+                .variants
+                .iter()
+                .map(|variant| variant.name.clone())
+                .collect::<BTreeSet<String>>(),
+        )
     } else {
         JsonSchema::from_scalar_type(type_of)
     };

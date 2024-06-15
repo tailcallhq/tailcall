@@ -1,4 +1,4 @@
-use super::{Cache, IR};
+use super::{Cache, Map, IR};
 
 impl IR {
     pub fn modify(self, mut f: impl FnMut(&IR) -> Option<IR>) -> IR {
@@ -38,6 +38,9 @@ impl IR {
                     }
                     IR::Path(expr, path) => IR::Path(expr.modify_box(modifier), path),
                     IR::Protect(expr) => IR::Protect(expr.modify_box(modifier)),
+                    IR::Map(Map { input, map }) => {
+                        IR::Map(Map { input: input.modify_box(modifier), map })
+                    }
                     IR::Discriminate(discriminator, expr) => {
                         IR::Discriminate(discriminator, expr.modify_box(modifier))
                     }
