@@ -5,7 +5,7 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use url::Url;
 
-use super::error::file::FileError;
+use super::error::file;
 use crate::core::error::Error;
 use crate::core::runtime::TargetRuntime;
 
@@ -27,7 +27,7 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
     ) -> Result<Vec<FileRead>, Error> {
         let files = files.iter().map(|x| {
             self.read_file(x.to_string())
-                .map_err(|_| Error::File(FileError::FileReadFailed(x.to_string())))
+                .map_err(|_| Error::File(file::Error::FileReadFailed(x.to_string())))
         });
         let content = join_all(files)
             .await

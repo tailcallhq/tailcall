@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use tailcall::core::cache::InMemoryCache;
-use tailcall::core::error::file::FileError;
+use tailcall::core::error::file;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EntityCache, EnvIO, FileIO};
 use tokio::io::AsyncReadExt;
@@ -29,13 +29,13 @@ pub struct LambdaFileIO;
 
 #[async_trait::async_trait]
 impl FileIO for LambdaFileIO {
-    type Error = FileError;
+    type Error = file::Error;
 
-    async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> Result<(), FileError> {
-        Err(FileError::LambdaFileWriteNotSupported)
+    async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> Result<(), file::Error> {
+        Err(file::Error::LambdaFileWriteNotSupported)
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> Result<String, FileError> {
+    async fn read<'a>(&'a self, path: &'a str) -> Result<String, file::Error> {
         let mut file = tokio::fs::File::open(path).await?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).await?;

@@ -101,7 +101,7 @@ pub enum Error {
     RequestExecutionFailed,
 
     #[error("File Error")]
-    File(file::FileError),
+    File(file::Error),
 
     #[error("Http Error")]
     Http(http::Error),
@@ -125,14 +125,7 @@ pub mod file {
     use derive_more::From;
 
     #[derive(From, thiserror::Error, Debug)]
-    #[error("Error occurred with file '{file_path}': {error}")]
-    pub struct Error {
-        pub file_path: String,
-        pub error: FileError,
-    }
-
-    #[derive(From, thiserror::Error, Debug)]
-    pub enum FileError {
+    pub enum Error {
         #[error("No such file or directory (os error 2)")]
         NotFound,
 

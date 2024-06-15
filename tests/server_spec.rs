@@ -14,7 +14,7 @@ pub mod test {
     use tailcall::cli::javascript::init_worker_io;
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
-    use tailcall::core::error::file::FileError;
+    use tailcall::core::error::file;
     use tailcall::core::error;
     use tailcall::core::http::Response;
     use tailcall::core::runtime::TargetRuntime;
@@ -98,7 +98,7 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        type Error = FileError;
+        type Error = file::Error;
         async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<(), Self::Error> {
             let mut file = tokio::fs::File::create(path).await?;
             file.write_all(content).await?;

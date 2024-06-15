@@ -22,7 +22,7 @@ pub struct TargetRuntime {
     pub env: Arc<dyn EnvIO>,
     /// Interface for file operations, tailored to the target environment's
     /// capabilities.
-    pub file: Arc<dyn FileIO<Error = error::file::FileError>>,
+    pub file: Arc<dyn FileIO<Error = error::file::Error>>,
     /// Cache for storing and retrieving entity data, improving performance and
     /// reducing external calls.
     pub cache: Arc<dyn Cache<Key = IoId, Value = ConstValue>>,
@@ -144,7 +144,7 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        type Error = error::file::FileError;
+        type Error = error::file::Error;
 
         async fn write<'a>(
             &'a self,
