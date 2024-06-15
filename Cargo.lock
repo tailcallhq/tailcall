@@ -5398,12 +5398,13 @@ dependencies = [
 name = "tailcall-typedefs"
 version = "0.1.0"
 dependencies = [
- "anyhow",
+ "derive_more",
  "lazy_static",
  "schemars",
  "serde",
  "serde_json",
  "tailcall",
+ "thiserror",
  "tokio",
  "tracing",
 ]

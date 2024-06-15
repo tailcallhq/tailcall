@@ -145,6 +145,12 @@ pub enum Error {
 
     #[error("Reqwest Error")]
     Reqwest(reqwest::Error),
+
+    #[error("Unable to determine path")]
+    PathDeterminationFailed,
+
+    #[error("Schema mismatch Error")]
+    SchemaMismatch,
 }
 
 pub mod file {

@@ -4,13 +4,13 @@ use std::env;
 use std::path::PathBuf;
 use std::process::exit;
 
-use anyhow::{anyhow, Result};
 use gen_gql_schema::update_gql;
 use schemars::schema::{RootSchema, Schema};
 use schemars::Map;
 use serde_json::{json, Value};
 use tailcall::cli;
 use tailcall::core::config::Config;
+use tailcall::core::error::Error;
 use tailcall::core::scalar::CUSTOM_SCALARS;
 use tailcall::core::tracing::default_tracing_for_name;
 
@@ -48,32 +48,28 @@ async fn main() {
     }
 }
 
-async fn mode_check() -> Result<()> {
+async fn mode_check() -> Result<(), Error> {
     let json_schema = get_file_path();
     let rt = cli::runtime::init(&Default::default());
     let file_io = rt.file;
     let content = file_io
-        .read(
-            json_schema
-                .to_str()
-                .ok_or(anyhow!("Unable to determine path"))?,
-        )
+        .read(json_schema.to_str().ok_or(Error::PathDeterminationFailed)?)
         .await?;
     let content = serde_json::from_str::<Value>(&content)?;
     let schema = get_updated_json().await?;
     match content.eq(&schema) {
         true => Ok(()),
-        false => Err(anyhow!("Schema mismatch")),
+        false => Err(Error::SchemaMismatch),
     }
 }
 
-async fn mode_fix() -> Result<()> {
+async fn mode_fix() -> Result<(), Error> {
     update_json().await?;
     update_gql()?;
     Ok(())
 }
 
-async fn update_json() -> Result<()> {
+async fn update_json() -> Result<(), Error> {
     let path = get_file_path();
     let schema = serde_json::to_string_pretty(&get_updated_json().await?)?;
     let rt = cli::runtime::init(&Default::default());
@@ -81,7 +77,7 @@ async fn update_json() -> Result<()> {
     tracing::info!("Updating JSON Schema: {}", path.to_str().unwrap());
     file_io
         .write(
-            path.to_str().ok_or(anyhow!("Unable to determine path"))?,
+            path.to_str().ok_or(Error::PathDeterminationFailed)?,
             schema.as_bytes(),
         )
         .await?;
@@ -92,7 +88,7 @@ fn get_file_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(JSON_SCHEMA_FILE)
 }
 
-async fn get_updated_json() -> Result<Value> {
+async fn get_updated_json() -> Result<Value, Error> {
     let mut schema: RootSchema = schemars::schema_for!(Config);
     let scalar = CUSTOM_SCALARS
         .iter()
