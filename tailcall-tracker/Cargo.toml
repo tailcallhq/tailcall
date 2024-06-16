@@ -15,6 +15,6 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 sysinfo = "0.30.12"
 tailcall-version = { path = "../tailcall-version" }
-derive_more = "0.99.17"
-thiserror = "1.0.59"
-url = { version = "2.5.0", features = ["serde"] }
+derive_more = { workspace = true }
+thiserror = { workspace = true }
+url = { workspace = true }

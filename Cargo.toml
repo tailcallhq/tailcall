@@ -22,6 +22,9 @@ tracing = "0.1.40"
 lazy_static = "1.4.0"
 serde_json = { version = "1.0.116", features = ["preserve_order"] }
 serde = { version = "1.0.200", features = ["derive"] }
+thiserror = "1.0.59"
+url = { version = "2.5.0", features = ["serde"] }
+derive_more = "0.99.17"
 
 
 [dependencies]
@@ -62,13 +65,13 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 reqwest = { workspace = true }
 derive_setters = "0.1.6"
-thiserror = "1.0.59"
+thiserror = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
 serde_qs = "0.13"
 serde_yaml = "0.9.34"
 serde_urlencoded = "0.7.1"
-url = { version = "2.5.0", features = ["serde"] }
+url = { workspace = true }
 indexmap = { workspace = true }
 once_cell = "1.19.0"
 clap = { version = "4.5.4", features = ["derive"] }
@@ -157,7 +160,7 @@ tokio-test = "0.4.4"
 base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
 serde_json_borrow = "0.3.0"
-derive_more = "0.99.17"
+derive_more = { workspace = true }
 Inflector = "0.11.4"
 
 [dev-dependencies]

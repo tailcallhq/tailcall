@@ -15,7 +15,7 @@ async-trait = "0.1.80"
 
 [dev-dependencies]
 tokio = {version = "1.37.0", features = ["full"]}
-url = { version = "2.5.0", features = ["serde"] }
+url = { workspace = true }
 reqwest = { workspace = true }
 http = "0.2.12"
 http-cache = "0.18.0"

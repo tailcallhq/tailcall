@@ -30,8 +30,8 @@ opentelemetry-otlp = { version = "0.16.0", features = [
 tracing = "0.1.40"
 tracing-opentelemetry = "0.24.0"
 tracing-subscriber = "0.3.18"
-derive_more = "0.99.17"
-thiserror = "1.0.59"
+derive_more = { workspace = true }
+thiserror = { workspace = true }
 
 [build-dependencies]
 protoc-bin-vendored = "3.0.0"

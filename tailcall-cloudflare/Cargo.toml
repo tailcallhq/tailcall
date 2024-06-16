@@ -24,5 +24,5 @@ serde_qs = "0.13.0"
 console_error_panic_hook = "0.1.7"
 protox = "0.6.0"
 async-graphql-value = "7.0.3"
-derive_more = "0.99.17"
-thiserror = "1.0.59"
+derive_more = { workspace = true }
+thiserror = { workspace = true }
