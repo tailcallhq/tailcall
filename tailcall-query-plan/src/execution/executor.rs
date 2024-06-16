@@ -7,7 +7,7 @@ use dashmap::DashMap;
 use futures_util::future::{join_all, try_join_all};
 use indexmap::IndexMap;
 use tailcall::core::http::RequestContext;
-use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
+use tailcall::core::ir::{EvalContext, ResolverContextLike};
 
 use super::step::ExecutionStep;
 use crate::plan::{GeneralPlan, OperationPlan};
@@ -70,7 +70,7 @@ impl<'a> ExecutorContext<'a> {
     async fn eval(&self, field_plan: &FieldPlan, value: Option<&Value>) -> Result<Value> {
         let arguments = self.operation_plan.arguments_map.get(&field_plan.id);
         let graphql_ctx = GraphqlContext { arguments, value };
-        let eval_ctx = EvaluationContext::new(self.req_ctx, &graphql_ctx);
+        let eval_ctx = EvalContext::new(self.req_ctx, &graphql_ctx);
 
         field_plan.eval(eval_ctx).await
     }
