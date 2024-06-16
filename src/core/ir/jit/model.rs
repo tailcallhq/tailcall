@@ -138,15 +138,15 @@ pub struct ExecutionPlan {
 }
 
 impl ExecutionPlan {
-    pub fn new(fields: Vec<Field<Parent>>) -> Self {
-        let field_children = fields
+    pub fn new(parent: Vec<Field<Parent>>) -> Self {
+        let children = parent
             .clone()
             .into_iter()
             .filter(|f| f.refs.is_none())
-            .map(|f| f.into_children(&fields))
+            .map(|f| f.into_children(&parent))
             .collect::<Vec<_>>();
 
-        Self { parent: fields, children: field_children }
+        Self { parent, children }
     }
 
     #[allow(unused)]
