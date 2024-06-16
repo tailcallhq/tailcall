@@ -4,7 +4,6 @@ mod evaluation_context;
 mod execute_http;
 
 mod io;
-mod modify;
 mod resolver_context_like;
 
 pub mod model;
