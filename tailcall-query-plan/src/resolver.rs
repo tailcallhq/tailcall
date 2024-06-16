@@ -6,7 +6,7 @@ use async_graphql::parser::types::{Field, Selection, SelectionSet};
 use async_graphql::{Positioned, Value};
 use indenter::indented;
 use tailcall::core::ir::model::IR;
-use tailcall::core::ir::{Eval, EvaluationContext, ResolverContextLike};
+use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Id(pub usize);

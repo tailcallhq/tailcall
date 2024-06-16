@@ -1,5 +1,6 @@
 use std::future::Future;
 use std::ops::Deref;
+use std::pin::Pin;
 
 use async_graphql_value::ConstValue;
 
@@ -8,21 +9,12 @@ use super::{EvaluationContext, EvaluationError, ResolverContextLike};
 use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
 
-pub trait Eval<Output = async_graphql::Value> {
-    fn eval<Ctx>(
-        &self,
-        ctx: &mut EvaluationContext<'_, Ctx>,
-    ) -> impl Future<Output = Result<Output, EvaluationError>>
-    where
-        Ctx: ResolverContextLike + Sync;
-}
-
-impl Eval for IR {
+impl IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
-    fn eval<Ctx>(
-        &self,
-        ctx: &mut EvaluationContext<'_, Ctx>,
-    ) -> impl Future<Output = Result<ConstValue, EvaluationError>>
+    pub fn eval<'a, Ctx>(
+        &'a self,
+        ctx: &'a mut EvaluationContext<'a, Ctx>,
+    ) -> Pin<Box<impl Future<Output = Result<ConstValue, EvaluationError>> + 'a>>
     where
         Ctx: ResolverContextLike + Sync,
     {
@@ -37,13 +29,13 @@ impl Eval for IR {
                         .map(|a| a.into_owned())
                         .unwrap_or(async_graphql::Value::Null)),
                     Context::PushArgs { expr, and_then } => {
-                        let args = expr.eval(ctx).await?;
+                        let args = expr.eval(&mut ctx.clone()).await?;
                         let ctx = &mut ctx.with_args(args);
                         and_then.eval(ctx).await
                     }
                     Context::PushValue { expr, and_then } => {
-                        let value = expr.eval(ctx).await?;
-                        let ctx = &mut ctx.with_value(value);
+                        let value = expr.eval(&mut ctx.clone()).await?;
+                        ctx.with_value(value);
                         and_then.eval(ctx).await
                     }
                 },

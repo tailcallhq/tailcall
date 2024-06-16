@@ -26,7 +26,7 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike> {
 }
 
 impl<'a, A: ResolverContextLike> EvaluationContext<'a, A> {
-    pub fn with_value(&self, value: Value) -> EvaluationContext<'a, A> {
+    pub fn with_value(&mut self, value: Value) -> EvaluationContext<'a, A> {
         let mut ctx = self.clone();
         ctx.graphql_ctx_value = Some(Arc::new(value));
         ctx
