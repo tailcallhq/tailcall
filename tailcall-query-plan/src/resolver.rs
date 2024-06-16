@@ -6,7 +6,7 @@ use async_graphql::parser::types::{Field, Selection, SelectionSet};
 use async_graphql::{Positioned, Value};
 use indenter::indented;
 use tailcall::core::ir::model::IR;
-use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
+use tailcall::core::ir::{EvalContext, ResolverContextLike};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Id(pub usize);
@@ -58,7 +58,7 @@ impl Display for FieldPlan {
 impl FieldPlan {
     pub async fn eval<Ctx: ResolverContextLike + Sync + Send>(
         &self,
-        mut ctx: EvaluationContext<'_, Ctx>,
+        mut ctx: EvalContext<'_, Ctx>,
     ) -> Result<Value> {
         Ok(self.resolver.eval(&mut ctx).await?)
     }

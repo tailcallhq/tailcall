@@ -5,7 +5,7 @@ use std::pin::Pin;
 use async_graphql_value::ConstValue;
 
 use super::model::{Cache, CacheKey, Context, Map, IR};
-use super::{EvaluationContext, EvaluationError, ResolverContextLike};
+use super::{EvalContext, EvaluationError, ResolverContextLike};
 use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
 
@@ -13,7 +13,7 @@ impl IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
     pub fn eval<'a, Ctx>(
         &'a self,
-        ctx: &'a mut EvaluationContext<'a, Ctx>,
+        ctx: &'a mut EvalContext<'a, Ctx>,
     ) -> Pin<Box<impl Future<Output = Result<ConstValue, EvaluationError>> + 'a>>
     where
         Ctx: ResolverContextLike + Sync,

@@ -6,14 +6,14 @@ mod tests {
     use tailcall::core::blueprint::{Blueprint, DynamicValue};
     use tailcall::core::http::RequestContext;
     use tailcall::core::ir::model::IR;
-    use tailcall::core::ir::{EmptyResolverContext, EvaluationContext, EvaluationError};
+    use tailcall::core::ir::{EmptyResolverContext, EvalContext, EvaluationError};
     use tailcall::core::mustache::Mustache;
 
     async fn eval(expr: &IR) -> Result<Value, EvaluationError> {
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
         let res_ctx = EmptyResolverContext {};
-        let mut eval_ctx = EvaluationContext::new(&req_ctx, &res_ctx);
+        let mut eval_ctx = EvalContext::new(&req_ctx, &res_ctx);
         expr.eval(&mut eval_ctx).await
     }
 

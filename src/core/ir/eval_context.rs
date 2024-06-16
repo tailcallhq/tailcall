@@ -10,7 +10,7 @@ use crate::core::http::RequestContext;
 
 // TODO: rename to ResolverContext
 #[derive(Clone)]
-pub struct EvaluationContext<'a, Ctx: ResolverContextLike> {
+pub struct EvalContext<'a, Ctx: ResolverContextLike> {
     // Context create for each GraphQL Request
     pub request_ctx: &'a RequestContext,
 
@@ -25,14 +25,14 @@ pub struct EvaluationContext<'a, Ctx: ResolverContextLike> {
     graphql_ctx_args: Option<Arc<Value>>,
 }
 
-impl<'a, A: ResolverContextLike> EvaluationContext<'a, A> {
-    pub fn with_value(&mut self, value: Value) -> EvaluationContext<'a, A> {
+impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
+    pub fn with_value(&mut self, value: Value) -> EvalContext<'a, Ctx> {
         let mut ctx = self.clone();
         ctx.graphql_ctx_value = Some(Arc::new(value));
         ctx
     }
 
-    pub fn with_args(&self, args: Value) -> EvaluationContext<'a, A> {
+    pub fn with_args(&self, args: Value) -> EvalContext<'a, Ctx> {
         let mut ctx = self.clone();
         ctx.graphql_ctx_args = Some(Arc::new(args));
         ctx
@@ -41,10 +41,8 @@ impl<'a, A: ResolverContextLike> EvaluationContext<'a, A> {
     pub fn is_query(&self) -> bool {
         self.graphql_ctx.is_query()
     }
-}
 
-impl<'a, Ctx: ResolverContextLike> EvaluationContext<'a, Ctx> {
-    pub fn new(req_ctx: &'a RequestContext, graphql_ctx: &'a Ctx) -> EvaluationContext<'a, Ctx> {
+    pub fn new(req_ctx: &'a RequestContext, graphql_ctx: &'a Ctx) -> EvalContext<'a, Ctx> {
         Self {
             request_ctx: req_ctx,
             graphql_ctx,
@@ -109,7 +107,7 @@ impl<'a, Ctx: ResolverContextLike> EvaluationContext<'a, Ctx> {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'a, Ctx> {
     fn selection_set(&self) -> Option<String> {
         let selection_set = self.graphql_ctx.field()?.selection_set();
 
@@ -191,7 +189,7 @@ mod tests {
     use async_graphql::Value;
     use serde_json::json;
 
-    use crate::core::ir::evaluation_context::get_path_value;
+    use crate::core::ir::eval_context::get_path_value;
 
     #[test]
     fn test_path_value() {

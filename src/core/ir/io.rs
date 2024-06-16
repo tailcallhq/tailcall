@@ -1,11 +1,11 @@
 use async_graphql_value::ConstValue;
 
-use super::execute_http::{
+use super::eval_http::{
     execute_grpc_request_with_dl, execute_raw_grpc_request, execute_raw_request,
-    execute_request_with_dl, parse_graphql_response, set_headers, ExecuteHttp,
+    execute_request_with_dl, parse_graphql_response, set_headers, EvalHttp,
 };
 use super::model::{CacheKey, IoId, IO};
-use super::{EvaluationContext, ResolverContextLike};
+use super::{EvalContext, ResolverContextLike};
 use crate::core::config::GraphQLOperationType;
 use crate::core::data_loader::DataLoader;
 use crate::core::graphql::GraphqlDataLoader;
@@ -18,7 +18,7 @@ use crate::core::ir::EvaluationError;
 impl IO {
     pub async fn execute<Ctx>(
         &self,
-        ctx: &mut EvaluationContext<'_, Ctx>,
+        ctx: &mut EvalContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
     where
         Ctx: ResolverContextLike + Sync,
@@ -45,7 +45,7 @@ impl IO {
 
     async fn execute_inner<Ctx>(
         &self,
-        ctx: &mut EvaluationContext<'_, Ctx>,
+        ctx: &mut EvalContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
     where
         Ctx: ResolverContextLike + Sync,
@@ -53,7 +53,7 @@ impl IO {
         match self {
             IO::Http { req_template, dl_id, http_filter, .. } => {
                 let worker = &ctx.request_ctx.runtime.cmd_worker;
-                let executor = ExecuteHttp::new(ctx, req_template, dl_id);
+                let executor = EvalHttp::new(ctx, req_template, dl_id);
                 let request = executor.init_request()?;
                 let response = match (&worker, http_filter) {
                     (Some(worker), Some(http_filter)) => {
@@ -121,8 +121,8 @@ impl IO {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike + Sync> CacheKey<EvaluationContext<'a, Ctx>> for IO {
-    fn cache_key(&self, ctx: &EvaluationContext<'a, Ctx>) -> Option<IoId> {
+impl<'a, Ctx: ResolverContextLike + Sync> CacheKey<EvalContext<'a, Ctx>> for IO {
+    fn cache_key(&self, ctx: &EvalContext<'a, Ctx>) -> Option<IoId> {
         match self {
             IO::Http { req_template, .. } => req_template.cache_key(ctx),
             IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
