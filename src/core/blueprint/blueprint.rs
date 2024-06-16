@@ -10,7 +10,7 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::GlobalTimeout;
+use super::{GlobalTimeout, Index};
 use crate::core::blueprint::{Server, Upstream};
 use crate::core::ir::model::IR;
 use crate::core::schema_extension::SchemaExtension;
@@ -285,5 +285,9 @@ impl Blueprint {
         // We should safely assume the blueprint is correct and,
         // generation of schema cannot fail.
         schema.finish().unwrap()
+    }
+
+    pub fn index(&self) -> Index {
+        Index::from(self)
     }
 }

@@ -31,7 +31,25 @@ impl QueryField {
 }
 
 impl Index {
-    pub fn init(blueprint: &Blueprint) -> Self {
+    #[allow(unused)]
+    pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&QueryField> {
+        self.map
+            .get(type_name)
+            .and_then(|(_, fields_map)| fields_map.get(field_name))
+    }
+
+    pub fn get_query(&self) -> &String {
+        &self.schema.query
+    }
+
+    #[allow(unused)]
+    pub fn get_mutation(&self) -> Option<&str> {
+        self.schema.mutation.as_deref()
+    }
+}
+
+impl From<&Blueprint> for Index {
+    fn from(blueprint: &Blueprint) -> Self {
         let mut map = HashMap::new();
 
         for definition in blueprint.definitions.iter() {
@@ -120,21 +138,5 @@ impl Index {
         }
 
         Self { map, schema: blueprint.schema.to_owned() }
-    }
-
-    #[allow(unused)]
-    pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&QueryField> {
-        self.map
-            .get(type_name)
-            .and_then(|(_, fields_map)| fields_map.get(field_name))
-    }
-
-    pub fn get_query(&self) -> &String {
-        &self.schema.query
-    }
-
-    #[allow(unused)]
-    pub fn get_mutation(&self) -> Option<&str> {
-        self.schema.mutation.as_deref()
     }
 }
