@@ -5345,7 +5345,6 @@ dependencies = [
 name = "tailcall-http-cache"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "http 0.2.12",
  "http-cache",

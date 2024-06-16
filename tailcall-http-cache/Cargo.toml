@@ -19,4 +19,3 @@ url = { workspace = true }
 reqwest = { workspace = true }
 http = "0.2.12"
 http-cache = "0.18.0"
-anyhow = { workspace = true }
