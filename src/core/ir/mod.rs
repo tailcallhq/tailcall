@@ -110,7 +110,7 @@ impl Eval for IR {
                         .to_result()?;
                     expr.eval(ctx).await
                 }
-                IR::IO(operation) => operation.eval(ctx).await,
+                IR::IO(operation) => operation.execute(ctx).await,
                 IR::Cache(Cache { max_age, io }) => {
                     let expr = io.deref();
                     let key = io.cache_key(ctx);
@@ -118,7 +118,7 @@ impl Eval for IR {
                         if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
                             Ok(val)
                         } else {
-                            let val = expr.eval(ctx).await?;
+                            let val = expr.execute(ctx).await?;
                             ctx.request_ctx
                                 .runtime
                                 .cache
@@ -127,7 +127,7 @@ impl Eval for IR {
                             Ok(val)
                         }
                     } else {
-                        expr.eval(ctx).await
+                        expr.execute(ctx).await
                     }
                 }
                 IR::Map(Map { input, map }) => {

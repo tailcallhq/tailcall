@@ -4,7 +4,7 @@ use super::http_executor::{
     execute_grpc_request_with_dl, execute_raw_grpc_request, execute_raw_request,
     execute_request_with_dl, parse_graphql_response, set_headers, HttpRequestExecutor,
 };
-use super::{CacheKey, Eval, EvaluationContext, IoId, ResolverContextLike};
+use super::{CacheKey, EvaluationContext, IoId, ResolverContextLike};
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::GraphQLOperationType;
 use crate::core::data_loader::DataLoader;
@@ -44,13 +44,16 @@ impl DataLoaderId {
     pub fn new(id: usize) -> Self {
         Self(id)
     }
+
     pub fn as_usize(&self) -> usize {
         self.0
     }
 }
 
-impl Eval for IO {
-    async fn eval<Ctx>(
+
+/// FIXME: Rename IO to IOExecutor
+impl IO {
+    pub async fn execute<Ctx>(
         &self,
         ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
@@ -60,7 +63,7 @@ impl Eval for IO {
         // Note: Handled the case separately for performance reasons. It avoids cache
         // key generation when it's not required
         if !ctx.request_ctx.server.dedupe || !ctx.is_query() {
-            return self.eval_inner(ctx).await;
+            return self.execute_inner(ctx).await;
         }
         if let Some(key) = self.cache_key(ctx) {
             ctx.request_ctx
@@ -68,18 +71,16 @@ impl Eval for IO {
                 .dedupe(&key, || async {
                     ctx.request_ctx
                         .dedupe_handler
-                        .dedupe(&key, || self.eval_inner(ctx))
+                        .dedupe(&key, || self.execute_inner(ctx))
                         .await
                 })
                 .await
         } else {
-            self.eval_inner(ctx).await
+            self.execute_inner(ctx).await
         }
     }
-}
 
-impl IO {
-    async fn eval_inner<Ctx>(
+    async fn execute_inner<Ctx>(
         &self,
         ctx: &mut EvaluationContext<'_, Ctx>,
     ) -> Result<ConstValue, EvaluationError>
