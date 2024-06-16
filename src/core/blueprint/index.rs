@@ -8,7 +8,7 @@ use crate::core::blueprint::{
 /// A read optimized index of all the fields in the Blueprint. Provide O(1)
 /// access to getting any field information.
 #[allow(unused)]
-pub struct BlueprintIndex {
+pub struct Index {
     map: HashMap<String, (Definition, HashMap<String, QueryField>)>,
     schema: SchemaDefinition,
 }
@@ -30,8 +30,26 @@ impl QueryField {
     }
 }
 
-impl BlueprintIndex {
-    pub fn init(blueprint: &Blueprint) -> Self {
+impl Index {
+    #[allow(unused)]
+    pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&QueryField> {
+        self.map
+            .get(type_name)
+            .and_then(|(_, fields_map)| fields_map.get(field_name))
+    }
+
+    pub fn get_query(&self) -> &String {
+        &self.schema.query
+    }
+
+    #[allow(unused)]
+    pub fn get_mutation(&self) -> Option<&str> {
+        self.schema.mutation.as_deref()
+    }
+}
+
+impl From<&Blueprint> for Index {
+    fn from(blueprint: &Blueprint) -> Self {
         let mut map = HashMap::new();
 
         for definition in blueprint.definitions.iter() {
@@ -120,21 +138,5 @@ impl BlueprintIndex {
         }
 
         Self { map, schema: blueprint.schema.to_owned() }
-    }
-
-    #[allow(unused)]
-    pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&QueryField> {
-        self.map
-            .get(type_name)
-            .and_then(|(_, fields_map)| fields_map.get(field_name))
-    }
-
-    pub fn get_query(&self) -> &String {
-        &self.schema.query
-    }
-
-    #[allow(unused)]
-    pub fn get_mutation(&self) -> Option<&str> {
-        self.schema.mutation.as_deref()
     }
 }

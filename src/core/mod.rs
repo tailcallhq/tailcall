@@ -33,6 +33,7 @@ pub mod scalar;
 pub mod schema_extension;
 mod serde_value_ext;
 pub mod tracing;
+mod transform;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;

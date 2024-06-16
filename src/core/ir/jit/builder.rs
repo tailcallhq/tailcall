@@ -4,27 +4,26 @@ use async_graphql::parser::types::{
     DocumentOperations, ExecutableDocument, OperationType, Selection, SelectionSet,
 };
 
-use super::blueprint_index::{BlueprintIndex, QueryField};
 use super::model::*;
-use crate::core::blueprint::Blueprint;
+use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::merge_right::MergeRight;
 
 #[allow(unused)]
-pub struct ExecutionPlanBuilder {
-    pub index: BlueprintIndex,
+pub struct Builder {
+    pub index: Index,
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: ExecutableDocument,
 }
 
 #[allow(unused)]
-impl ExecutionPlanBuilder {
+impl Builder {
     pub fn new(blueprint: Blueprint, document: ExecutableDocument) -> Self {
-        let blueprint_index = BlueprintIndex::init(&blueprint);
+        let index = blueprint.index();
         Self {
             document,
-            index: blueprint_index,
+            index,
             arg_id: Counter::default(),
             field_id: Counter::default(),
         }
@@ -132,7 +131,7 @@ mod tests {
     use super::*;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::Config;
-    use crate::core::ir::jit::builder::ExecutionPlanBuilder;
+    use crate::core::ir::jit::builder::Builder;
     use crate::core::valid::Validator;
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
@@ -142,9 +141,7 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        ExecutionPlanBuilder::new(blueprint, document)
-            .build()
-            .unwrap()
+        Builder::new(blueprint, document).build().unwrap()
     }
 
     #[tokio::test]
