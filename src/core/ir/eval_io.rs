@@ -14,8 +14,6 @@ use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::DataLoaderRequest;
 use crate::core::ir::EvaluationError;
 
-/// FIXME: Rename IO to IOExecutor
-
 pub async fn eval_io<Ctx>(
     io: &IO,
     ctx: &mut EvalContext<'_, Ctx>,
