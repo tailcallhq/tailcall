@@ -3,6 +3,7 @@ mod error;
 mod eval;
 mod evaluation_context;
 mod graphql_operation_context;
+mod http_executor;
 mod io;
 mod modify;
 mod resolver_context_like;
