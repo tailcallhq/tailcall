@@ -162,14 +162,14 @@ pub fn set_cache_control<Ctx: ResolverContextLike>(
     }
 }
 
-pub fn set_experimental_headers<Ctx: ResolverContextLike>(
+fn set_experimental_headers<Ctx: ResolverContextLike>(
     ctx: &EvaluationContext<'_, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
     ctx.request_ctx.add_x_headers(&res.headers);
 }
 
-pub fn set_cookie_headers<Ctx: ResolverContextLike>(
+fn set_cookie_headers<Ctx: ResolverContextLike>(
     ctx: &EvaluationContext<'_, Ctx>,
     res: &Response<async_graphql::Value>,
 ) {
