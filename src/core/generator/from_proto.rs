@@ -375,8 +375,9 @@ mod test {
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
 
-    use crate::core::config::transformer::{AmbiguousType, Transform};
+    use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::Config;
+    use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     fn from_proto_resolved(files: &[FileDescriptorSet], query: &str) -> Result<Config> {
