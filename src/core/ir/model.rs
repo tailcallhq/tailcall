@@ -30,16 +30,6 @@ pub enum Context {
     PushValue { expr: Box<IR>, and_then: Box<IR> },
 }
 
-impl IR {
-    pub fn and_then(self, next: Self) -> Self {
-        IR::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
-    }
-
-    pub fn with_args(self, args: IR) -> Self {
-        IR::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct Map {
     pub input: Box<IR>,
@@ -118,6 +108,14 @@ impl Cache {
 }
 
 impl IR {
+    pub fn and_then(self, next: Self) -> Self {
+        IR::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
+    }
+
+    pub fn with_args(self, args: IR) -> Self {
+        IR::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
+    }
+
     pub fn modify(self, mut f: impl FnMut(&IR) -> Option<IR>) -> IR {
         self.modify_inner(&mut f)
     }
