@@ -9,4 +9,3 @@ pub use consolidate_url::ConsolidateURL;
 pub use remove_unused::RemoveUnused;
 pub use type_merger::TypeMerger;
 pub use type_name_generator::TypeNameGenerator;
-

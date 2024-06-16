@@ -39,9 +39,9 @@ where
 }
 
 /// Represents an empty transformer.
-pub struct Empty<A, E>(std::marker::PhantomData<(A, E)>);
+pub struct Default<A, E>(std::marker::PhantomData<(A, E)>);
 
-impl<A, E> Transform for Empty<A, E> {
+impl<A, E> Transform for Default<A, E> {
     type Value = A;
     type Error = E;
     fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
