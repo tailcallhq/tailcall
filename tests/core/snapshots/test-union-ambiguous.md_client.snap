@@ -6,6 +6,11 @@ type Bar {
   bar: String
 }
 
+type Baz {
+  bar: String
+  baz: String
+}
+
 scalar Bytes
 
 scalar Date
@@ -18,7 +23,7 @@ type Foo {
   foo: String
 }
 
-union FooBar = Bar | Foo
+union FooBarBaz = Bar | Baz | Foo
 
 scalar Int128
 
@@ -33,18 +38,20 @@ scalar Int8
 scalar JSON
 
 type Nested {
-  bar: FooBar
-  foo: FooBar
+  bar: FooBarBaz
+  foo: FooBarBaz
 }
 
 scalar PhoneNumber
 
 type Query {
-  arr: [FooBar]
-  bar: FooBar
-  foo: FooBar
+  arr: [FooBarBaz]
+  bar: FooBarBaz
+  foo: FooBarBaz
   nested: Nested
-  unknown: FooBar
+  string: FooBarBaz
+  unknown: FooBarBaz
+  wrong: FooBarBaz
 }
 
 scalar UInt128

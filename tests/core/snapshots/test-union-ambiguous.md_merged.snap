@@ -6,10 +6,15 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-union FooBar = Bar | Foo
+union FooBarBaz = Bar | Baz | Foo
 
 type Bar {
   bar: String
+}
+
+type Baz {
+  bar: String
+  baz: String
 }
 
 type Foo {
@@ -17,14 +22,16 @@ type Foo {
 }
 
 type Nested {
-  bar: FooBar
-  foo: FooBar
+  bar: FooBarBaz
+  foo: FooBarBaz
 }
 
 type Query {
-  arr: [FooBar] @http(path: "/arr")
-  bar: FooBar @http(path: "/bar")
-  foo: FooBar @http(path: "/foo")
+  arr: [FooBarBaz] @http(path: "/arr")
+  bar: FooBarBaz @http(path: "/bar")
+  foo: FooBarBaz @http(path: "/foo")
   nested: Nested @http(path: "/nested")
-  unknown: FooBar @http(path: "/unknown")
+  string: FooBarBaz @http(path: "/string")
+  unknown: FooBarBaz @http(path: "/unknown")
+  wrong: FooBarBaz @http(path: "/wrong")
 }
