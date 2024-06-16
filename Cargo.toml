@@ -216,7 +216,6 @@ members = [
     "tailcall-cloudflare",
     "tailcall-macros",
     "tailcall-prettier",
-    "tailcall-query-plan",
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",

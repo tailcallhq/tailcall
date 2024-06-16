@@ -1215,19 +1215,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7762d17f1241643615821a8455a0b2c3e803784b058693d990b11f2dce25a0ca"
 
 [[package]]
-name = "dashmap"
-version = "5.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "978747c1d849a7d2ee5e8adc0159961c48fb7e5db2f06af6723b80123bb53856"
-dependencies = [
- "cfg-if",
- "hashbrown 0.14.5",
- "lock_api",
- "once_cell",
- "parking_lot_core",
-]
-
-[[package]]
 name = "datatest-stable"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5464,23 +5451,6 @@ dependencies = [
 [[package]]
 name = "tailcall-version"
 version = "0.1.0"
-
-[[package]]
-name = "tailcall_query_plan"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-graphql",
- "async-recursion",
- "dashmap",
- "futures-util",
- "indenter",
- "indexmap 2.2.6",
- "insta",
- "tailcall",
- "tailcall-fixtures",
- "tokio",
-]
 
 [[package]]
 name = "task-local-extensions"
