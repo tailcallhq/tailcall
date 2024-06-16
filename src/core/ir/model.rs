@@ -4,6 +4,7 @@ use std::num::NonZeroU64;
 
 use strum_macros::Display;
 
+use super::{EvalContext, ResolverContextLike};
 use crate::core::blueprint::DynamicValue;
 use crate::core::config::group_by::GroupBy;
 use crate::core::graphql::{self};
@@ -158,6 +159,17 @@ impl IR {
                     }
                 }
             }
+        }
+    }
+}
+
+impl<'a, Ctx: ResolverContextLike + Sync> CacheKey<EvalContext<'a, Ctx>> for IO {
+    fn cache_key(&self, ctx: &EvalContext<'a, Ctx>) -> Option<IoId> {
+        match self {
+            IO::Http { req_template, .. } => req_template.cache_key(ctx),
+            IO::Grpc { req_template, .. } => req_template.cache_key(ctx),
+            IO::GraphQL { req_template, .. } => req_template.cache_key(ctx),
+            IO::Js { .. } => None,
         }
     }
 }

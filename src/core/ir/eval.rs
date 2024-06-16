@@ -4,6 +4,7 @@ use std::pin::Pin;
 
 use async_graphql_value::ConstValue;
 
+use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Context, Map, IR};
 use super::{EvalContext, EvaluationError, ResolverContextLike};
 use crate::core::json::JsonLike;
@@ -55,7 +56,7 @@ impl IR {
                         .to_result()?;
                     expr.eval(ctx).await
                 }
-                IR::IO(operation) => operation.execute(ctx).await,
+                IR::IO(io) => eval_io(io, ctx).await,
                 IR::Cache(Cache { max_age, io }) => {
                     let io = io.deref();
                     let key = io.cache_key(ctx);
@@ -63,7 +64,7 @@ impl IR {
                         if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
                             Ok(val)
                         } else {
-                            let val = io.execute(ctx).await?;
+                            let val = eval_io(io, ctx).await?;
                             ctx.request_ctx
                                 .runtime
                                 .cache
@@ -72,7 +73,7 @@ impl IR {
                             Ok(val)
                         }
                     } else {
-                        io.execute(ctx).await
+                        eval_io(io, ctx).await
                     }
                 }
                 IR::Map(Map { input, map }) => {

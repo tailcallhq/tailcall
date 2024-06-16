@@ -3,7 +3,7 @@ mod eval;
 mod eval_context;
 mod eval_http;
 
-mod io;
+mod eval_io;
 mod resolver_context_like;
 
 pub mod model;
