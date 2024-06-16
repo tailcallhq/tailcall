@@ -10,6 +10,7 @@ mod resolver_context_like;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::future::Future;
+use std::ops::Deref;
 
 use async_graphql_value::ConstValue;
 pub use cache::*;
@@ -62,32 +63,6 @@ pub struct Map {
     pub map: HashMap<String, String>,
 }
 
-impl Eval for Map {
-    async fn eval<Ctx>(
-        &self,
-        ctx: &mut EvaluationContext<'_, Ctx>,
-    ) -> Result<ConstValue, EvaluationError>
-    where
-        Ctx: ResolverContextLike + Sync,
-    {
-        let value = self.input.eval(ctx).await?;
-        if let ConstValue::String(key) = value {
-            if let Some(value) = self.map.get(&key) {
-                Ok(ConstValue::String(value.to_owned()))
-            } else {
-                Err(EvaluationError::ExprEvalError(format!(
-                    "Can't find mapped key: {}.",
-                    key
-                )))
-            }
-        } else {
-            Err(EvaluationError::ExprEvalError(
-                "Mapped key must be string value.".to_owned(),
-            ))
-        }
-    }
-}
-
 impl Eval for IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
     fn eval<Ctx>(
@@ -135,8 +110,46 @@ impl Eval for IR {
                     expr.eval(ctx).await
                 }
                 IR::IO(operation) => operation.eval(ctx).await,
-                IR::Cache(cached) => cached.eval(ctx).await,
-                IR::Map(map) => map.eval(ctx).await,
+                IR::Cache(Cache { max_age, expr }) => {
+                    let expr = expr.deref();
+                    if let IR::IO(io) = expr {
+                        let key = io.cache_key(ctx);
+                        if let Some(key) = key {
+                            if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
+                                Ok(val)
+                            } else {
+                                let val = expr.eval(ctx).await?;
+                                ctx.request_ctx
+                                    .runtime
+                                    .cache
+                                    .set(key, val.clone(), max_age.to_owned())
+                                    .await?;
+                                Ok(val)
+                            }
+                        } else {
+                            expr.eval(ctx).await
+                        }
+                    } else {
+                        Ok(expr.eval(ctx).await?)
+                    }
+                }
+                IR::Map(Map { input, map }) => {
+                    let value = input.eval(ctx).await?;
+                    if let ConstValue::String(key) = value {
+                        if let Some(value) = map.get(&key) {
+                            Ok(ConstValue::String(value.to_owned()))
+                        } else {
+                            Err(EvaluationError::ExprEvalError(format!(
+                                "Can't find mapped key: {}.",
+                                key
+                            )))
+                        }
+                    } else {
+                        Err(EvaluationError::ExprEvalError(
+                            "Mapped key must be string value.".to_owned(),
+                        ))
+                    }
+                }
             }
         })
     }

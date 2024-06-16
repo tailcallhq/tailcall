@@ -1,9 +1,7 @@
 use std::num::NonZeroU64;
-use std::ops::Deref;
 
-use async_graphql_value::ConstValue;
 
-use super::{Eval, EvaluationContext, EvaluationError, ResolverContextLike, IR};
+use super::{IR};
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub struct IoId(u64);
@@ -36,36 +34,5 @@ impl Cache {
             IR::IO(_) => Some(IR::Cache(Cache { max_age, expr: Box::new(expr.clone()) })),
             _ => None,
         })
-    }
-}
-
-impl Eval for Cache {
-    async fn eval<Ctx>(
-        &self,
-        ctx: &mut EvaluationContext<'_, Ctx>,
-    ) -> Result<ConstValue, EvaluationError>
-    where
-        Ctx: ResolverContextLike + Sync,
-    {
-        if let IR::IO(io) = self.expr.deref() {
-            let key = io.cache_key(ctx);
-            if let Some(key) = key {
-                if let Some(val) = ctx.request_ctx.runtime.cache.get(&key).await? {
-                    Ok(val)
-                } else {
-                    let val = self.expr.eval(ctx).await?;
-                    ctx.request_ctx
-                        .runtime
-                        .cache
-                        .set(key, val.clone(), self.max_age)
-                        .await?;
-                    Ok(val)
-                }
-            } else {
-                self.expr.eval(ctx).await
-            }
-        } else {
-            Ok(self.expr.eval(ctx).await?)
-        }
     }
 }
