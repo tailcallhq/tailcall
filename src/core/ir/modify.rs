@@ -1,4 +1,4 @@
-use super::{Cache, Map, IR};
+use super::model::{Cache, Context, Map, IR};
 
 impl IR {
     pub fn modify(self, mut f: impl FnMut(&IR) -> Option<IR>) -> IR {
@@ -17,19 +17,15 @@ impl IR {
                 let expr = self;
                 match expr {
                     IR::Context(ctx) => match ctx {
-                        super::Context::Value | super::Context::Path(_) => IR::Context(ctx),
-                        super::Context::PushArgs { expr, and_then } => {
-                            IR::Context(super::Context::PushArgs {
-                                expr: expr.modify_box(modifier),
-                                and_then: and_then.modify_box(modifier),
-                            })
-                        }
-                        super::Context::PushValue { expr, and_then } => {
-                            IR::Context(super::Context::PushValue {
-                                expr: expr.modify_box(modifier),
-                                and_then: and_then.modify_box(modifier),
-                            })
-                        }
+                        Context::Value | Context::Path(_) => IR::Context(ctx),
+                        Context::PushArgs { expr, and_then } => IR::Context(Context::PushArgs {
+                            expr: expr.modify_box(modifier),
+                            and_then: and_then.modify_box(modifier),
+                        }),
+                        Context::PushValue { expr, and_then } => IR::Context(Context::PushValue {
+                            expr: expr.modify_box(modifier),
+                            and_then: and_then.modify_box(modifier),
+                        }),
                     },
                     IR::Dynamic(_) => expr,
                     IR::IO(_) => expr,

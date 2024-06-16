@@ -4,52 +4,15 @@ use super::http_executor::{
     execute_grpc_request_with_dl, execute_raw_grpc_request, execute_raw_request,
     execute_request_with_dl, parse_graphql_response, set_headers, HttpRequestExecutor,
 };
-use super::{CacheKey, EvaluationContext, IoId, ResolverContextLike};
-use crate::core::config::group_by::GroupBy;
+use super::model::{CacheKey, IoId, IO};
+use super::{EvaluationContext, ResolverContextLike};
 use crate::core::config::GraphQLOperationType;
 use crate::core::data_loader::DataLoader;
-use crate::core::graphql::{self, GraphqlDataLoader};
+use crate::core::graphql::GraphqlDataLoader;
+use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
-use crate::core::http::{DataLoaderRequest, HttpFilter};
+use crate::core::http::DataLoaderRequest;
 use crate::core::ir::EvaluationError;
-use crate::core::{grpc, http};
-
-#[derive(Clone, Debug, strum_macros::Display)]
-pub enum IO {
-    Http {
-        req_template: http::RequestTemplate,
-        group_by: Option<GroupBy>,
-        dl_id: Option<DataLoaderId>,
-        http_filter: Option<HttpFilter>,
-    },
-    GraphQL {
-        req_template: graphql::RequestTemplate,
-        field_name: String,
-        batch: bool,
-        dl_id: Option<DataLoaderId>,
-    },
-    Grpc {
-        req_template: grpc::RequestTemplate,
-        group_by: Option<GroupBy>,
-        dl_id: Option<DataLoaderId>,
-    },
-    Js {
-        name: String,
-    },
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct DataLoaderId(usize);
-impl DataLoaderId {
-    pub fn new(id: usize) -> Self {
-        Self(id)
-    }
-
-    pub fn as_usize(&self) -> usize {
-        self.0
-    }
-}
-
 
 /// FIXME: Rename IO to IOExecutor
 impl IO {
@@ -110,7 +73,7 @@ impl IO {
                     && matches!(req_template.operation_type, GraphQLOperationType::Query)
                 {
                     let data_loader: Option<&DataLoader<DataLoaderRequest, GraphqlDataLoader>> =
-                        dl_id.and_then(|index| ctx.request_ctx.gql_data_loaders.get(index.0));
+                        dl_id.and_then(|dl| ctx.request_ctx.gql_data_loaders.get(dl.as_usize()));
                     execute_request_with_dl(ctx, req, data_loader).await?
                 } else {
                     execute_raw_request(ctx, req).await?
@@ -127,7 +90,9 @@ impl IO {
                     matches!(req_template.operation_type, GraphQLOperationType::Query)
                 {
                     let data_loader: Option<&DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>> =
-                        dl_id.and_then(|index| ctx.request_ctx.grpc_data_loaders.get(index.0));
+                        dl_id.and_then(|index| {
+                            ctx.request_ctx.grpc_data_loaders.get(index.as_usize())
+                        });
                     execute_grpc_request_with_dl(ctx, rendered, data_loader).await?
                 } else {
                     let req = rendered.to_request()?;

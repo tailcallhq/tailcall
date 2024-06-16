@@ -1,12 +1,12 @@
-use super::{CacheKey, Map};
-use crate::core::json::JsonLike;
-use crate::core::serde_value_ext::ValueExt;
 use std::future::Future;
 use std::ops::Deref;
 
 use async_graphql_value::ConstValue;
 
-use super::{Cache, Context, EvaluationContext, EvaluationError, ResolverContextLike, IR};
+use super::model::{Cache, CacheKey, Context, Map, IR};
+use super::{EvaluationContext, EvaluationError, ResolverContextLike};
+use crate::core::json::JsonLike;
+use crate::core::serde_value_ext::ValueExt;
 
 pub trait Eval<Output = async_graphql::Value> {
     fn eval<Ctx>(

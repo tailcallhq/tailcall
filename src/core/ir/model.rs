@@ -1,0 +1,118 @@
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::num::NonZeroU64;
+
+use strum_macros::Display;
+
+use crate::core::blueprint::DynamicValue;
+use crate::core::config::group_by::GroupBy;
+use crate::core::graphql::{self};
+use crate::core::http::HttpFilter;
+use crate::core::{grpc, http};
+
+#[derive(Clone, Debug, Display)]
+pub enum IR {
+    Context(Context),
+    Dynamic(DynamicValue),
+    #[strum(to_string = "{0}")]
+    IO(IO),
+    Cache(Cache),
+    Path(Box<IR>, Vec<String>),
+    Protect(Box<IR>),
+    Map(Map),
+}
+
+#[derive(Clone, Debug)]
+pub enum Context {
+    Value,
+    Path(Vec<String>),
+    PushArgs { expr: Box<IR>, and_then: Box<IR> },
+    PushValue { expr: Box<IR>, and_then: Box<IR> },
+}
+
+impl IR {
+    pub fn and_then(self, next: Self) -> Self {
+        IR::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
+    }
+
+    pub fn with_args(self, args: IR) -> Self {
+        IR::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Map {
+    pub input: Box<IR>,
+    // accept key return value instead of
+    pub map: HashMap<String, String>,
+}
+
+#[derive(Clone, Debug, strum_macros::Display)]
+pub enum IO {
+    Http {
+        req_template: http::RequestTemplate,
+        group_by: Option<GroupBy>,
+        dl_id: Option<DataLoaderId>,
+        http_filter: Option<HttpFilter>,
+    },
+    GraphQL {
+        req_template: graphql::RequestTemplate,
+        field_name: String,
+        batch: bool,
+        dl_id: Option<DataLoaderId>,
+    },
+    Grpc {
+        req_template: grpc::RequestTemplate,
+        group_by: Option<GroupBy>,
+        dl_id: Option<DataLoaderId>,
+    },
+    Js {
+        name: String,
+    },
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct DataLoaderId(usize);
+impl DataLoaderId {
+    pub fn new(id: usize) -> Self {
+        Self(id)
+    }
+
+    pub fn as_usize(&self) -> usize {
+        self.0
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Hash, Debug)]
+pub struct IoId(u64);
+impl IoId {
+    pub fn new(id: u64) -> Self {
+        Self(id)
+    }
+
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+}
+pub trait CacheKey<Ctx> {
+    fn cache_key(&self, ctx: &Ctx) -> Option<IoId>;
+}
+
+#[derive(Clone, Debug)]
+pub struct Cache {
+    pub max_age: NonZeroU64,
+    pub io: Box<IO>,
+}
+
+impl Cache {
+    ///
+    /// Wraps an expression with the cache primitive.
+    /// Performance DFS on the cache on the expression and identifies all the IO
+    /// nodes. Then wraps each IO node with the cache primitive.
+    pub fn wrap(max_age: NonZeroU64, expr: IR) -> IR {
+        expr.modify(move |expr| match expr {
+            IR::IO(io) => Some(IR::Cache(Cache { max_age, io: Box::new(io.to_owned()) })),
+            _ => None,
+        })
+    }
+}

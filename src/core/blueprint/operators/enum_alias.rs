@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::Field;
-use crate::core::ir::{Map, IR};
+use crate::core::ir::model::{Map, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
 

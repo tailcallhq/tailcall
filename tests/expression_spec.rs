@@ -5,7 +5,8 @@ mod tests {
     use serde_json::json;
     use tailcall::core::blueprint::{Blueprint, DynamicValue};
     use tailcall::core::http::RequestContext;
-    use tailcall::core::ir::{EmptyResolverContext, Eval, EvaluationContext, EvaluationError, IR};
+    use tailcall::core::ir::model::IR;
+    use tailcall::core::ir::{EmptyResolverContext, Eval, EvaluationContext, EvaluationError};
     use tailcall::core::mustache::Mustache;
 
     async fn eval(expr: &IR) -> Result<Value, EvaluationError> {

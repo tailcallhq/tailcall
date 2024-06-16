@@ -3,7 +3,8 @@ use std::sync::Arc;
 use async_graphql::from_value;
 use reqwest::Request;
 
-use super::{DataLoaderId, EvaluationContext, ResolverContextLike};
+use super::model::DataLoaderId;
+use super::{EvaluationContext, ResolverContextLike};
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
