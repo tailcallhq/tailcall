@@ -5370,9 +5370,10 @@ dependencies = [
 name = "tailcall-prettier"
 version = "0.1.0"
 dependencies = [
- "anyhow",
+ "derive_more",
  "lazy_static",
  "strum_macros",
+ "thiserror",
  "tokio",
 ]
 
