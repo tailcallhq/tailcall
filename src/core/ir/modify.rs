@@ -33,8 +33,12 @@ impl IR {
                     },
                     IR::Dynamic(_) => expr,
                     IR::IO(_) => expr,
-                    IR::Cache(Cache { expr, max_age }) => {
-                        IR::Cache(Cache { expr: expr.modify_box(modifier), max_age })
+                    IR::Cache(Cache { io, max_age }) => {
+                        let expr = *IR::IO(*io).modify_box(modifier);
+                        match expr {
+                            IR::IO(io) => IR::Cache(Cache { io: Box::new(io), max_age }),
+                            expr => expr,
+                        }
                     }
                     IR::Path(expr, path) => IR::Path(expr.modify_box(modifier), path),
                     IR::Protect(expr) => IR::Protect(expr.modify_box(modifier)),
