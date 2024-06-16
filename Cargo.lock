@@ -5306,7 +5306,6 @@ dependencies = [
 name = "tailcall-cloudflare"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-graphql-value",
  "async-std",
  "async-trait",
@@ -5447,7 +5446,6 @@ version = "0.1.0"
 name = "tailcall_query_plan"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-graphql",
  "async-recursion",
  "dashmap",

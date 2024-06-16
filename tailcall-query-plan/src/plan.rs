@@ -1,11 +1,11 @@
 use std::fmt::{Display, Write};
 
-use anyhow::{anyhow, Result};
 use async_graphql::parser::types::{Selection, SelectionSet};
 use async_graphql::{Name, Value};
 use indenter::indented;
 use indexmap::IndexMap;
 use tailcall::core::blueprint::{Definition, Type};
+use tailcall::core::error::Error;
 use tailcall::core::scalar::is_predefined_scalar;
 
 use super::execution::executor::{ExecutionResult, ResolvedEntry};
@@ -199,7 +199,7 @@ impl FieldTree {
         execution_result: &ExecutionResult,
         current_value: Option<&Value>,
         parent_list_index: Option<usize>,
-    ) -> Result<Value> {
+    ) -> Result<Value, Error> {
         let current_map = if let Some(Value::Object(current_map)) = current_value {
             Some(current_map)
         } else {
@@ -225,7 +225,7 @@ impl FieldTree {
         execution_result: &ExecutionResult,
         current_value: Option<&Value>,
         parent_list_index: Option<usize>,
-    ) -> Result<Value> {
+    ) -> Result<Value, Error> {
         let value = if let Some(id) = &self.field_plan_id {
             let value = execution_result.resolved(id);
 
@@ -235,7 +235,7 @@ impl FieldTree {
                     if let Some(index) = parent_list_index {
                         list.get(index)
                     } else {
-                        return Err(anyhow!("Expected parent list index"));
+                        return Err(Error::ExpectedParentListIndex);
                     }
                 }
                 _ => None,
@@ -248,7 +248,7 @@ impl FieldTree {
             FieldTreeEntry::Scalar | FieldTreeEntry::ScalarList => value
                 .cloned()
                 .or(Some(Value::default()))
-                .ok_or(anyhow!("Can't resolve value for field")),
+                .ok_or(Error::FieldValueNotResolved),
             FieldTreeEntry::Compound(children) => {
                 Self::collect_value_object(children, execution_result, value, parent_list_index)
             }
@@ -265,11 +265,11 @@ impl FieldTree {
                                 Some(index),
                             )
                         })
-                        .collect::<Result<Vec<_>>>()?;
+                        .collect::<Result<Vec<_>, Error>>()?;
 
                     Ok(Value::List(result))
                 } else {
-                    Err(anyhow!("Expected list value"))
+                    Err(Error::ExpectedListValue)
                 }
             }
         }
@@ -348,7 +348,7 @@ impl OperationPlan {
         Self { field_tree: fields, selections, arguments_map }
     }
 
-    pub fn collect_value(&self, execution_result: ExecutionResult) -> Result<Value> {
+    pub fn collect_value(&self, execution_result: ExecutionResult) -> Result<Value, Error> {
         self.field_tree.collect_value(&execution_result, None, None)
     }
 }

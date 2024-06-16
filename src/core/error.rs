@@ -151,6 +151,18 @@ pub enum Error {
 
     #[error("Schema mismatch Error")]
     SchemaMismatch,
+
+    #[error("Failed to resolve parent value")]
+    ParentValueNotResolved,
+
+    #[error("Expected parent list index")]
+    ExpectedParentListIndex,
+
+    #[error("Can't resolve value for field")]
+    FieldValueNotResolved,
+
+    #[error("Expected list value")]
+    ExpectedListValue,
 }
 
 pub mod file {

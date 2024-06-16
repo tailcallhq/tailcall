@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 use std::fmt::Display;
 
-use anyhow::{anyhow, Result};
 use async_graphql::{Name, Value};
 use dashmap::DashMap;
 use futures_util::future::{join_all, try_join_all};
 use indexmap::IndexMap;
+use tailcall::core::error::Error;
 use tailcall::core::http::RequestContext;
 use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
 
@@ -20,8 +20,8 @@ pub struct Executor<'a> {
 
 #[derive(Debug)]
 pub enum ResolvedEntry {
-    Single(Result<Value>),
-    List(Result<Vec<Value>>),
+    Single(Result<Value, Error>),
+    List(Result<Vec<Value>, Error>),
 }
 
 pub struct ExecutionResult {
@@ -67,7 +67,7 @@ impl<'a> Executor<'a> {
 }
 
 impl<'a> ExecutorContext<'a> {
-    async fn eval(&self, field_plan: &FieldPlan, value: Option<&Value>) -> Result<Value> {
+    async fn eval(&self, field_plan: &FieldPlan, value: Option<&Value>) -> Result<Value, Error> {
         let arguments = self.operation_plan.arguments_map.get(&field_plan.id);
         let graphql_ctx = GraphqlContext { arguments, value };
         let eval_ctx = EvaluationContext::new(self.req_ctx, &graphql_ctx);
@@ -100,7 +100,7 @@ impl<'a> ExecutorContext<'a> {
                         ResolvedEntry::List(try_join_all(execution).await)
                     }
                     Some(ResolvedEntry::List(Err(_err))) => {
-                        ResolvedEntry::List(Err(anyhow!("Failed to resolve parent value")))
+                        ResolvedEntry::List(Err(Error::ParentValueNotResolved))
                     }
                     Some(ResolvedEntry::Single(value)) => {
                         ResolvedEntry::Single(self.eval(field_plan, value.as_ref().ok()).await)

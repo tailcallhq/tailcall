@@ -1,10 +1,10 @@
 use std::fmt::{Display, Write};
 use std::ops::Deref;
 
-use anyhow::Result;
 use async_graphql::parser::types::{Field, Selection, SelectionSet};
 use async_graphql::{Positioned, Value};
 use indenter::indented;
+use tailcall::core::error::Error;
 use tailcall::core::ir::{Eval, EvaluationContext, ResolverContextLike, IR};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -58,7 +58,7 @@ impl FieldPlan {
     pub async fn eval<Ctx: ResolverContextLike + Sync + Send>(
         &self,
         mut ctx: EvaluationContext<'_, Ctx>,
-    ) -> Result<Value> {
+    ) -> Result<Value, Error> {
         Ok(self.resolver.eval(&mut ctx).await?)
     }
 }
