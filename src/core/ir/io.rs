@@ -1,8 +1,8 @@
 use async_graphql_value::ConstValue;
 
-use super::http_executor::{
+use super::execute_http::{
     execute_grpc_request_with_dl, execute_raw_grpc_request, execute_raw_request,
-    execute_request_with_dl, parse_graphql_response, set_headers, HttpRequestExecutor,
+    execute_request_with_dl, parse_graphql_response, set_headers, ExecuteHttp,
 };
 use super::model::{CacheKey, IoId, IO};
 use super::{EvaluationContext, ResolverContextLike};
@@ -53,7 +53,7 @@ impl IO {
         match self {
             IO::Http { req_template, dl_id, http_filter, .. } => {
                 let worker = &ctx.request_ctx.runtime.cmd_worker;
-                let executor = HttpRequestExecutor::new(ctx, req_template, dl_id);
+                let executor = ExecuteHttp::new(ctx, req_template, dl_id);
                 let request = executor.init_request()?;
                 let response = match (&worker, http_filter) {
                     (Some(worker), Some(http_filter)) => {

@@ -23,13 +23,13 @@ use crate::core::{grpc, http, WorkerIO};
 /// and getting a response. There are optimizations and customizations that the
 /// user might have configured. HttpRequestExecutor is responsible for handling
 /// all of that.
-pub struct HttpRequestExecutor<'a, 'ctx, Context: ResolverContextLike + Sync> {
+pub struct ExecuteHttp<'a, 'ctx, Context: ResolverContextLike + Sync> {
     evaluation_ctx: &'ctx EvaluationContext<'a, Context>,
     data_loader: Option<&'a DataLoader<DataLoaderRequest, HttpDataLoader>>,
     request_template: &'a http::RequestTemplate,
 }
 
-impl<'a, 'ctx, Context: ResolverContextLike + Sync> HttpRequestExecutor<'a, 'ctx, Context> {
+impl<'a, 'ctx, Context: ResolverContextLike + Sync> ExecuteHttp<'a, 'ctx, Context> {
     pub fn new(
         evaluation_ctx: &'ctx EvaluationContext<'a, Context>,
         request_template: &'a RequestTemplate,
