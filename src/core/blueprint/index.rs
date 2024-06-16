@@ -8,7 +8,7 @@ use crate::core::blueprint::{
 /// A read optimized index of all the fields in the Blueprint. Provide O(1)
 /// access to getting any field information.
 #[allow(unused)]
-pub struct BlueprintIndex {
+pub struct Index {
     map: HashMap<String, (Definition, HashMap<String, QueryField>)>,
     schema: SchemaDefinition,
 }
@@ -30,7 +30,7 @@ impl QueryField {
     }
 }
 
-impl BlueprintIndex {
+impl Index {
     pub fn init(blueprint: &Blueprint) -> Self {
         let mut map = HashMap::new();
 
