@@ -11,44 +11,34 @@ pub trait Transform {
 
 /// A suite of common operators that are available for all transformers.
 pub trait TransformerOps: Sized + Transform {
-    fn pipe<B: Transform>(self, other: B) -> Pipe<Self, B>;
-    fn when<B: Transform>(
-        self,
-        other: B,
-        f: impl FnOnce() -> bool,
-    ) -> Pipe<Self, ConditionalTransform<B>>;
-    fn generate(&self) -> Valid<Self::Value, Self::Error>
-    where
-        Self::Value: std::default::Default;
-}
-
-impl<A> TransformerOps for A
-where
-    A: Transform,
-{
-    fn pipe<B: Transform>(self, other: B) -> Pipe<A, B> {
+    fn pipe<Other: Transform>(self, other: Other) -> Pipe<Self, Other> {
         Pipe(self, other)
     }
-
-    fn when<B>(self, other: B, f: impl FnOnce() -> bool) -> Pipe<Self, ConditionalTransform<B>>
-    where
-        B: Transform,
-    {
-        if f() {
-            Pipe(self, ConditionalTransform::Actual(other))
-        } else {
-            Pipe(
-                self,
-                ConditionalTransform::NoOp(Default(std::marker::PhantomData)),
-            )
-        }
-    }
-
     fn generate(&self) -> Valid<Self::Value, Self::Error>
     where
-        A::Value: std::default::Default,
+        Self::Value: std::default::Default,
     {
-        self.transform(A::Value::default())
+        self.transform(Self::Value::default())
+    }
+
+    fn when(self, cond: bool) -> When<Self> {
+        When(self, cond)
+    }
+}
+
+impl<T: Transform> TransformerOps for T {}
+
+pub struct When<A>(A, bool);
+impl<A: Transform> Transform for When<A> {
+    type Value = A::Value;
+    type Error = A::Error;
+
+    fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
+        if self.1 {
+            self.0.transform(value)
+        } else {
+            Valid::succeed(value)
+        }
     }
 }
 
