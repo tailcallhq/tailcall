@@ -9,7 +9,6 @@ use super::{FromJsonGenerator, Generate, NameGenerator, RequestSample};
 use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
-use crate::core::valid::Validator;
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work
@@ -125,14 +124,13 @@ impl Generator {
             .map(|sample| RequestSample::new(sample.url.to_owned(), sample.data.to_owned()))
             .collect();
 
-        Ok(FromJsonGenerator::new(
+        FromJsonGenerator::new(
             request_samples,
             &NameGenerator::new(&type_name_prefix),
             &NameGenerator::new(&field_name_prefix),
             operation_name,
         )
         .generate()
-        .to_result()?)
     }
 
     /// Generates the configuration from the provided protobuf.

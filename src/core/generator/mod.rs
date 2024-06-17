@@ -13,9 +13,7 @@ pub use generator::{ConfigInput, Generator, JsonInput, ProtoInput};
 pub use json::NameGenerator;
 
 use super::config::Config;
-use super::valid::Valid;
 
 pub trait Generate {
-    type Error;
-    fn generate(&self) -> Valid<Config, Self::Error>;
+    fn generate(&self) -> anyhow::Result<Config>;
 }

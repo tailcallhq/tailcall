@@ -10,7 +10,7 @@ use crate::core::config::transformer::{
 };
 use crate::core::config::Config;
 use crate::core::merge_right::MergeRight;
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::Validator;
 
 pub struct RequestSample {
     url: Url,
@@ -47,9 +47,7 @@ impl<'a> FromJsonGenerator<'a> {
 }
 
 impl Generate for FromJsonGenerator<'_> {
-    type Error = String;
-
-    fn generate(&self) -> Valid<Config, Self::Error> {
+    fn generate(&self) -> anyhow::Result<Config> {
         let config_gen_req = &self.request_samples;
         let field_name_gen = self.field_name_generator;
         let type_name_gen = self.type_name_generator;
@@ -71,12 +69,13 @@ impl Generate for FromJsonGenerator<'_> {
                     .pipe(TypeMerger::default())
                     .pipe(TypeNameGenerator);
 
-            if let Ok(generated_config) = transform_pipeline.transform(config.clone()).to_result() {
-                config = config.merge_right(generated_config);
-            }
+            let transformed_config = transform_pipeline.transform(config.clone()).to_result()?;
+            config = config.merge_right(transformed_config);
         }
 
-        ConsolidateURL::new(0.5).transform(config)
+        let config = ConsolidateURL::new(0.5).transform(config).to_result()?;
+
+        Ok(config)
     }
 }
 
@@ -85,7 +84,6 @@ mod tests {
     use serde::Deserialize;
 
     use crate::core::generator::{FromJsonGenerator, Generate, NameGenerator, RequestSample};
-    use crate::core::valid::Validator;
 
     #[derive(Deserialize)]
     struct JsonFixture {
@@ -122,8 +120,7 @@ mod tests {
             &NameGenerator::new("f"),
             "Query",
         )
-        .generate()
-        .to_result()?;
+        .generate()?;
 
         insta::assert_snapshot!(config.to_sdl());
         Ok(())
