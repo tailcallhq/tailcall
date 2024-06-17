@@ -17,6 +17,7 @@ pub struct NameGenerator {
     prefix: String,
 }
 
+// FIXME: move to `core::generator`
 impl NameGenerator {
     pub fn new(prefix: &str) -> Self {
         Self { counter: Counter::new(1), prefix: prefix.to_string() }

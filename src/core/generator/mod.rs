@@ -9,9 +9,3 @@ pub mod source;
 pub use from_json::{FromJsonGenerator, RequestSample};
 pub use generator::{Generator, Input};
 pub use json::NameGenerator;
-
-use super::config::Config;
-
-pub trait Generate {
-    fn generate(&self) -> anyhow::Result<Config>;
-}

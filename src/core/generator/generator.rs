@@ -5,10 +5,12 @@ use serde_json::Value;
 use url::Url;
 
 use super::from_proto::from_proto;
-use super::{FromJsonGenerator, Generate, NameGenerator, RequestSample};
-use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
+use super::{FromJsonGenerator, NameGenerator, RequestSample};
+use crate::core::config::{self, transformer, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
+use crate::core::transform::{Transform, TransformerOps};
+use crate::core::valid::Validator;
 
 /// Generator offers an abstraction over the actual config generators and allows
 /// to generate the single config from multiple sources. i.e (Protobuf and Json)
@@ -58,13 +60,14 @@ impl Generator {
         field_name_generator: &NameGenerator,
         json_samples: &[RequestSample],
     ) -> anyhow::Result<Config> {
-        FromJsonGenerator::new(
+        Ok(FromJsonGenerator::new(
             json_samples,
             type_name_generator,
             field_name_generator,
             &self.operation_name,
         )
         .generate()
+        .to_result()?)
     }
 
     /// Generates the configuration from the provided protobuf.
@@ -109,7 +112,12 @@ impl Generator {
             }
         }
 
-        Ok(ConfigModule::from(config))
+        Ok(ConfigModule::from(
+            // FIXME: Preset should be configurable
+            transformer::Preset::default()
+                .transform(config)
+                .to_result()?,
+        ))
     }
 }
 
