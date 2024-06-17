@@ -5,9 +5,9 @@ use inquire::Confirm;
 use pathdiff::diff_paths;
 
 use super::input::{Config, Resolved, Source};
+use super::source::ConfigSource;
 use crate::cli::generator::input::Transformer;
 use crate::core::config::{self, ConfigModule};
-use crate::core::generator::source::ConfigSource;
 use crate::core::generator::{Generator as ConfigGenerator, Input, TransformOptions};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
