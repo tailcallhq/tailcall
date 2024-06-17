@@ -10,22 +10,14 @@ use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 
-// this function resolves all the names to fully-qualified syntax in descriptors
-// that is important for generation to work
-// TODO: probably we can drop this in case the config_reader will use
-// protox::compile instead of more low-level protox_parse::parse
-fn resolve_file_descriptor_set(
-    descriptor_set: FileDescriptorSet,
-) -> anyhow::Result<FileDescriptorSet> {
-    let descriptor_set = DescriptorPool::from_file_descriptor_set(descriptor_set)?;
-    let descriptor_set = FileDescriptorSet {
-        file: descriptor_set
-            .files()
-            .map(|file| file.file_descriptor_proto().clone())
-            .collect(),
-    };
-
-    Ok(descriptor_set)
+/// Generator offers an abstraction over the actual config generators and allows
+/// to generate the single config from multiple sources. i.e (Protobuf and Json)
+pub struct Generator {
+    operation_name: String,
+    inputs: Vec<Input>,
+    is_mutation: bool,
+    type_name_prefix: String,
+    field_name_prefix: String,
 }
 
 pub enum Input {
@@ -40,9 +32,7 @@ pub enum Input {
     },
 }
 
-/// Generator offers an abstraction over the actual config generators and allows
-/// to generate the single config from multiple sources. i.e (Protobuf and Json)
-pub struct Generator {
+pub struct GeneratorBuilder {
     operation_name: Option<String>,
     inputs: Option<Vec<Input>>,
     is_mutation: Option<bool>,
@@ -50,13 +40,7 @@ pub struct Generator {
     field_name_prefix: Option<String>,
 }
 
-impl Default for Generator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Generator {
+impl GeneratorBuilder {
     pub fn new() -> Self {
         Self {
             operation_name: None,
@@ -67,46 +51,64 @@ impl Generator {
         }
     }
 
+    pub fn with_operation_name(mut self, operation_name: &str) -> Self {
+        self.operation_name = Some(operation_name.to_string());
+        self
+    }
+
     pub fn with_inputs(mut self, inputs: Vec<Input>) -> Self {
         self.inputs = Some(inputs);
         self
     }
 
-    pub fn with_operation_name(mut self, query: &str) -> Self {
-        self.operation_name = Some(query.to_owned());
+    pub fn is_mutation(mut self, is_mutation: bool) -> Self {
+        self.is_mutation = Some(is_mutation);
         self
     }
 
-    pub fn with_is_mutation(mut self, mutation: bool) -> Self {
-        self.is_mutation = Some(mutation);
+    pub fn with_type_name_prefix(mut self, type_name_prefix: &str) -> Self {
+        self.type_name_prefix = Some(type_name_prefix.to_string());
         self
     }
 
-    /// type name prefix will be used in generation of type names.
-    pub fn with_type_name_prefix(mut self, prefix: &str) -> Self {
-        self.type_name_prefix = Some(prefix.to_owned());
+    pub fn with_field_name_prefix(mut self, field_name_prefix: &str) -> Self {
+        self.field_name_prefix = Some(field_name_prefix.to_string());
         self
     }
 
-    /// field name prefix will be used in generation of field names.
-    pub fn with_field_name_prefix(mut self, prefix: &str) -> Self {
-        self.field_name_prefix = Some(prefix.to_owned());
-        self
+    pub fn generate(self) -> anyhow::Result<ConfigModule> {
+        let config_generator = Generator {
+            operation_name: self.operation_name.context("operation_name is required")?,
+            inputs: self.inputs.context("inputs are required")?,
+            is_mutation: self.is_mutation.context("is_mutation is required")?,
+            type_name_prefix: self
+                .type_name_prefix
+                .context("type_name_prefix is required")?,
+            field_name_prefix: self
+                .field_name_prefix
+                .context("field_name_prefix is required")?,
+        };
+        config_generator.generate()
+    }
+}
+
+impl Generator {
+    pub fn new() -> GeneratorBuilder {
+        GeneratorBuilder::new()
     }
 
     /// Generates configuration from the provided json samples.
     fn generate_from_json(
         &self,
         operation_name: &str,
+        type_name_generator: &NameGenerator,
+        field_name_generator: &NameGenerator,
         json_samples: &[RequestSample],
     ) -> anyhow::Result<Config> {
-        let type_name_prefix = self.type_name_prefix.clone().unwrap_or("T".to_string());
-        let field_name_prefix = self.field_name_prefix.clone().unwrap_or("f".to_string());
-
         FromJsonGenerator::new(
             json_samples,
-            &NameGenerator::new(&type_name_prefix),
-            &NameGenerator::new(&field_name_prefix),
+            type_name_generator,
+            field_name_generator,
             operation_name,
         )
         .generate()
@@ -129,37 +131,52 @@ impl Generator {
     }
 
     /// Generated the actual configuratio from provided samples.
-    pub fn generate(&self) -> anyhow::Result<ConfigModule> {
-        let operation_name = self
-            .operation_name
-            .clone()
-            .context("Operation name is required to generate the configuration.")?;
+    fn generate(&self) -> anyhow::Result<ConfigModule> {
+        let mut config: Config = Config::default();
+        let field_name_generator = NameGenerator::new(&self.field_name_prefix);
+        let type_name_generator = NameGenerator::new(&self.type_name_prefix);
 
-        let mut config = Config::default();
-
-        if let Some(input_inner) = &self.inputs {
-            for input in input_inner {
-                match input {
-                    Input::Config { source, schema } => {
-                        config = config.merge_right(Config::from_source(source.clone(), schema)?);
-                    }
-                    Input::Json { url, response } => {
-                        let request_sample =
-                            RequestSample::new(url.to_owned(), response.to_owned());
-                        config = config.merge_right(
-                            self.generate_from_json(&operation_name, &[request_sample])?,
-                        );
-                    }
-                    Input::Proto(proto_input) => {
-                        config = config
-                            .merge_right(self.generate_from_proto(proto_input, &operation_name)?);
-                    }
+        for input in self.inputs.iter() {
+            match input {
+                Input::Config { source, schema } => {
+                    config = config.merge_right(Config::from_source(source.clone(), schema)?);
+                }
+                Input::Json { url, response } => {
+                    let request_sample = RequestSample::new(url.to_owned(), response.to_owned());
+                    config = config.merge_right(self.generate_from_json(
+                        &self.operation_name,
+                        &type_name_generator,
+                        &field_name_generator,
+                        &[request_sample],
+                    )?);
+                }
+                Input::Proto(proto_input) => {
+                    config = config
+                        .merge_right(self.generate_from_proto(proto_input, &self.operation_name)?);
                 }
             }
         }
 
         Ok(ConfigModule::from(config))
     }
+}
+
+// this function resolves all the names to fully-qualified syntax in descriptors
+// that is important for generation to work
+// TODO: probably we can drop this in case the config_reader will use
+// protox::compile instead of more low-level protox_parse::parse
+fn resolve_file_descriptor_set(
+    descriptor_set: FileDescriptorSet,
+) -> anyhow::Result<FileDescriptorSet> {
+    let descriptor_set = DescriptorPool::from_file_descriptor_set(descriptor_set)?;
+    let descriptor_set = FileDescriptorSet {
+        file: descriptor_set
+            .files()
+            .map(|file| file.file_descriptor_proto().clone())
+            .collect(),
+    };
+
+    Ok(descriptor_set)
 }
 
 #[cfg(test)]
