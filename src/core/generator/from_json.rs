@@ -1,10 +1,10 @@
 use serde_json::Value;
 use url::Url;
 
-use super::json::{self, NameGenerator, TypesGenerator};
+use super::json::{self, TypesGenerator};
+use super::NameGenerator;
 use crate::core::config::Config;
 use crate::core::merge_right::MergeRight;
-
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::{Valid, Validator};
 
@@ -52,7 +52,7 @@ impl Transform for FromJsonGenerator<'_> {
         let query = &self.operation_name;
 
         Valid::from_iter(config_gen_req, |sample| {
-            let field_name = field_name_gen.generate_name();
+            let field_name = field_name_gen.next();
             let query_generator = json::QueryGenerator::new(
                 sample.response.is_array(),
                 &sample.url,

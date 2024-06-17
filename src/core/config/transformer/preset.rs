@@ -1,7 +1,8 @@
 use crate::core::config::Config;
 use crate::core::transform::{self, Transform, TransformerOps};
 
-/// Defines a set of default transformers that can be applied to any configuration to make it more maintainable.
+/// Defines a set of default transformers that can be applied to any
+/// configuration to make it more maintainable.
 pub struct Preset {
     merge_type: f32,
     consolidate_url: f32,
