@@ -206,6 +206,8 @@ mod test {
                 path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
             })])
             .with_operation_name("Query")
+            .with_field_name_prefix("f")
+            .with_type_name_prefix("T")
             .generate()?;
 
         insta::assert_snapshot!(cfg_module.config.to_sdl());
@@ -220,6 +222,8 @@ mod test {
                 source: crate::core::config::Source::GraphQL,
             }])
             .with_operation_name("Query")
+            .with_field_name_prefix("f")
+            .with_type_name_prefix("T")
             .generate()?;
 
         insta::assert_snapshot!(cfg_module.config.to_sdl());
@@ -236,6 +240,8 @@ mod test {
                 response: parsed_content.body,
             }])
             .with_operation_name("Query")
+            .with_field_name_prefix("f")
+            .with_type_name_prefix("T")
             .generate()?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
@@ -269,9 +275,38 @@ mod test {
         let cfg_module = Generator::new()
             .with_inputs(vec![proto_input, json_input, config_input])
             .with_operation_name("Query")
+            .with_field_name_prefix("f")
+            .with_type_name_prefix("T")
             .generate()?;
 
         // Assert the combined output
+        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        Ok(())
+    }
+
+    #[test]
+    fn generate_from_config_from_multiple_jsons() -> anyhow::Result<()> {
+        let mut inputs = vec![];
+        let json_fixtures = [
+            "src/core/generator/tests/fixtures/json/incompatible_properties.json",
+            "src/core/generator/tests/fixtures/json/list_incompatible_object.json",
+            "src/core/generator/tests/fixtures/json/list.json",
+        ];
+
+        for json_path in json_fixtures {
+            let parsed_content = parse_json(json_path);
+            inputs.push(Input::Json {
+                url: parsed_content.url.parse()?,
+                response: parsed_content.body,
+            });
+        }
+
+        let cfg_module = Generator::new()
+            .with_inputs(inputs)
+            .with_operation_name("Query")
+            .with_field_name_prefix("f")
+            .with_type_name_prefix("T")
+            .generate()?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }
@@ -285,12 +320,14 @@ mod test {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
             }])
+            .with_field_name_prefix("f")
+            .with_type_name_prefix("T")
             .generate();
 
         assert!(cfg_module.is_err());
         assert_eq!(
             cfg_module.unwrap_err().to_string(),
-            "Operation name is required to generate the configuration."
+            "operation_name is required"
         );
         Ok(())
     }
