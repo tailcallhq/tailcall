@@ -31,18 +31,6 @@ pub struct Input<Status = UnResolved> {
     _marker: PhantomData<Status>,
 }
 
-impl Input<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Input<Resolved>> {
-        let resolved_source = self.source.resolve(parent_dir)?;
-        Ok(Input {
-            source: resolved_source,
-            field_name: self.field_name,
-            operation: self.operation,
-            _marker: PhantomData,
-        })
-    }
-}
-
 #[derive(Deserialize, Debug)]
 pub enum Source<Status = UnResolved> {
     URL {
@@ -71,41 +59,6 @@ pub struct Output<Status = UnResolved> {
     pub format: Option<config::Source>,
     #[serde(skip)]
     _marker: PhantomData<Status>,
-}
-
-impl Output<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
-        Ok(Output {
-            format: self.format,
-            path: resolve(&self.path, parent_dir)?,
-            _marker: PhantomData,
-        })
-    }
-}
-
-impl Source<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
-        match self {
-            Source::URL { url, headers, method, body, _marker } => {
-                let resolved_url = resolve(url.as_str(), parent_dir)?;
-                Ok(Source::URL {
-                    url: resolved_url,
-                    headers,
-                    method,
-                    body,
-                    _marker: PhantomData,
-                })
-            }
-            Source::Proto { path, .. } => {
-                let resolved_path = resolve(path.as_str(), parent_dir)?;
-                Ok(Source::Proto { path: resolved_path, _marker: PhantomData })
-            }
-            Source::Config { url, .. } => {
-                let resolved_url = resolve(url.as_str(), parent_dir)?;
-                Ok(Source::Config { url: resolved_url, _marker: PhantomData })
-            }
-        }
-    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -151,6 +104,53 @@ pub struct Name {
 pub struct Schema {
     pub query: Option<String>,
     pub mutation: Option<String>,
+}
+
+impl Output<UnResolved> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
+        Ok(Output {
+            format: self.format,
+            path: resolve(&self.path, parent_dir)?,
+            _marker: PhantomData,
+        })
+    }
+}
+
+impl Source<UnResolved> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
+        match self {
+            Source::URL { url, headers, method, body, _marker } => {
+                let resolved_url = resolve(url.as_str(), parent_dir)?;
+                Ok(Source::URL {
+                    url: resolved_url,
+                    headers,
+                    method,
+                    body,
+                    _marker: PhantomData,
+                })
+            }
+            Source::Proto { path, .. } => {
+                let resolved_path = resolve(path.as_str(), parent_dir)?;
+                Ok(Source::Proto { path: resolved_path, _marker: PhantomData })
+            }
+            Source::Config { url, .. } => {
+                let resolved_url = resolve(url.as_str(), parent_dir)?;
+                Ok(Source::Config { url: resolved_url, _marker: PhantomData })
+            }
+        }
+    }
+}
+
+impl Input<UnResolved> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Input<Resolved>> {
+        let resolved_source = self.source.resolve(parent_dir)?;
+        Ok(Input {
+            source: resolved_source,
+            field_name: self.field_name,
+            operation: self.operation,
+            _marker: PhantomData,
+        })
+    }
 }
 
 impl Config {
