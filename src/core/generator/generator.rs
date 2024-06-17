@@ -111,7 +111,7 @@ impl Generator {
     }
 
     /// Generates configuration from the provided json samples.
-    fn generate_json_config(
+    fn generate_from_json(
         &self,
         operation_name: &str,
         json_samples: &[JsonInput],
@@ -135,20 +135,20 @@ impl Generator {
     }
 
     /// Generates the configuration from the provided protobuf metadata.
-    fn generate_proto_config(
+    fn generate_from_proto(
         &self,
         proto_input: &ProtoInput,
         operation_name: &str,
     ) -> anyhow::Result<Config> {
         let metadata = &proto_input.data;
         let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
-        let mut proto_config = from_proto::from_proto(&[descriptor_set], operation_name)?;
-        proto_config.links.push(Link {
+        let mut config = from_proto::from_proto(&[descriptor_set], operation_name)?;
+        config.links.push(Link {
             id: None,
             src: metadata.path.to_owned(),
             type_of: LinkType::Protobuf,
         });
-        Ok(proto_config)
+        Ok(config)
     }
 
     /// Generated the actual configuratio from provided samples.
@@ -161,13 +161,13 @@ impl Generator {
         let mut config = Config::default();
 
         if let Some(json_samples) = &self.json_samples {
-            let json_config = self.generate_json_config(&operation_name, json_samples)?;
+            let json_config = self.generate_from_json(&operation_name, json_samples)?;
             config = config.merge_right(json_config);
         }
 
         if let Some(proto_samples) = &self.proto_samples {
             for proto_input in proto_samples {
-                let proto_config = self.generate_proto_config(proto_input, &operation_name)?;
+                let proto_config = self.generate_from_proto(proto_input, &operation_name)?;
 
                 config = config.merge_right(proto_config);
             }
