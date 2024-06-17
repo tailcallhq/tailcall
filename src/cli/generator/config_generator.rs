@@ -4,14 +4,13 @@ use std::path::Path;
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
+use super::config::{GeneratorConfig, InputSource, Resolved};
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::{ConfigSource, ImportSource};
 use crate::core::generator::{ConfigInput, Generator, JsonInput, ProtoInput};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
-
-use super::config::{GeneratorConfig, InputSource, Resolved};
 
 /// Checks if file or folder already exists or not.
 fn is_exists(path: &str) -> bool {
