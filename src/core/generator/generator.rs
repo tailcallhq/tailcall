@@ -12,10 +12,10 @@ use crate::core::proto_reader::ProtoMetadata;
 
 /// Generator offers an abstraction over the actual config generators and allows
 /// to generate the single config from multiple sources. i.e (Protobuf and Json)
+/// TODO: add support for is_mutation.
 pub struct Generator {
     operation_name: String,
     inputs: Vec<Input>,
-    is_mutation: bool,
     type_name_prefix: String,
     field_name_prefix: String,
 }
@@ -35,7 +35,6 @@ pub enum Input {
 pub struct GeneratorBuilder {
     operation_name: Option<String>,
     inputs: Option<Vec<Input>>,
-    is_mutation: Option<bool>,
     type_name_prefix: Option<String>,
     field_name_prefix: Option<String>,
 }
@@ -45,7 +44,6 @@ impl GeneratorBuilder {
         Self {
             operation_name: None,
             inputs: None,
-            is_mutation: None,
             type_name_prefix: None,
             field_name_prefix: None,
         }
@@ -58,11 +56,6 @@ impl GeneratorBuilder {
 
     pub fn with_inputs(mut self, inputs: Vec<Input>) -> Self {
         self.inputs = Some(inputs);
-        self
-    }
-
-    pub fn is_mutation(mut self, is_mutation: bool) -> Self {
-        self.is_mutation = Some(is_mutation);
         self
     }
 
@@ -80,7 +73,6 @@ impl GeneratorBuilder {
         let config_generator = Generator {
             operation_name: self.operation_name.context("operation_name is required")?,
             inputs: self.inputs.context("inputs are required")?,
-            is_mutation: self.is_mutation.context("is_mutation is required")?,
             type_name_prefix: self
                 .type_name_prefix
                 .context("type_name_prefix is required")?,
