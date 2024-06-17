@@ -28,8 +28,8 @@ fn to_relative_path(from: &Path, to: &str) -> Option<String> {
     diff_paths(to_path, from_path).map(|p| p.to_string_lossy().to_string())
 }
 
-
-/// it reads the the config file and generates the required tailcall configuration.
+/// it reads the the config file and generates the required tailcall
+/// configuration.
 pub struct ConfigConsoleGenerator {
     /// path of config file.
     config_path: String,
