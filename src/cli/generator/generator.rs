@@ -139,11 +139,15 @@ impl Generator {
                             transform_options.consolidate_base_url_threshold(thresh.to_owned());
                     }
                 }
-                Transformer::BetterTypeName => {
-                    transform_options = transform_options.use_better_names(true);
+                Transformer::BetterTypeName(allowed) => {
+                    if let Some(flag) = allowed {
+                        transform_options = transform_options.use_better_names(flag.to_owned());
+                    }
                 }
-                Transformer::TreeShake => {
-                    transform_options = transform_options.tree_shake(true);
+                Transformer::TreeShake(allowed) => {
+                    if let Some(flag) = allowed {
+                        transform_options = transform_options.tree_shake(flag.to_owned());
+                    }
                 }
             }
         }

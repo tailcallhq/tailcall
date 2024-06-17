@@ -90,8 +90,8 @@ pub enum Transformer {
     ConsolidateBaseURL {
         threshold: Option<f32>,
     },
-    BetterTypeName,
-    TreeShake,
+    BetterTypeName(Option<bool>),
+    TreeShake(Option<bool>),
 }
 
 #[derive(Deserialize, Debug)]
