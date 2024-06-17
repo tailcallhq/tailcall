@@ -134,7 +134,7 @@ impl Generator {
         .to_result()?)
     }
 
-    /// Generates the configuration from the provided protobuf metadata.
+    /// Generates the configuration from the provided protobuf.
     fn generate_from_proto(
         &self,
         proto_input: &ProtoInput,
