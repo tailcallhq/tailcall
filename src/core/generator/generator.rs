@@ -98,11 +98,13 @@ impl Generator {
         self
     }
 
+    /// type name prefix will be used in generation of type names.
     pub fn with_type_name_prefix(mut self, prefix: &str) -> Self {
         self.type_name_prefix = Some(prefix.to_owned());
         self
     }
 
+    /// field name prefix will be used in generation of field names.
     pub fn with_field_name_prefix(mut self, prefix: &str) -> Self {
         self.field_name_prefix = Some(prefix.to_owned());
         self

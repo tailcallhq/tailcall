@@ -10,7 +10,7 @@ use crate::core::config::transformer::{
     TypeNameGenerator,
 };
 use crate::core::config::Config;
-use crate::core::valid::{Valid};
+use crate::core::valid::Valid;
 
 pub struct RequestSample {
     url: Url,
