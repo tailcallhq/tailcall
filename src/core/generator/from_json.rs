@@ -1,4 +1,3 @@
-use anyhow::Context;
 use serde_json::Value;
 use url::Url;
 
@@ -11,7 +10,7 @@ use crate::core::config::transformer::{
     TypeNameGenerator,
 };
 use crate::core::config::Config;
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::{Valid};
 
 pub struct RequestSample {
     url: Url,
@@ -24,68 +23,27 @@ impl RequestSample {
     }
 }
 
-pub struct FromJson<'a> {
-    request_samples: Option<Vec<RequestSample>>,
-    type_name_generator: &'a NameGenerator,
-    field_name_generator: &'a NameGenerator,
-    operation_name: Option<String>,
-    is_mutation: Option<bool>,
-}
-
-impl<'a> FromJson<'a> {
-    pub fn new(
-        type_name_generator: &'a NameGenerator,
-        field_name_generator: &'a NameGenerator,
-    ) -> Self {
-        FromJson {
-            request_samples: None,
-            type_name_generator,
-            field_name_generator,
-            operation_name: None,
-            is_mutation: None,
-        }
-    }
-
-    pub fn with_samples(mut self, request_samples: Vec<RequestSample>) -> Self {
-        self.request_samples = Some(request_samples);
-        self
-    }
-
-    pub fn with_operation(mut self, operation_name: String) -> Self {
-        self.operation_name = Some(operation_name);
-        self
-    }
-
-    pub fn with_mutation(mut self, is_mutation: bool) -> Self {
-        self.is_mutation = Some(is_mutation);
-        self
-    }
-
-    pub fn generate(self) -> anyhow::Result<Config> {
-        let request_samples = self
-            .request_samples
-            .context("request samples are required in order to generate the config.")?;
-        let operation_name = self
-            .operation_name
-            .context("operation name is required to generate the config.")?;
-
-        let config_generator = FromJsonGenerator {
-            request_samples,
-            type_name_generator: self.type_name_generator,
-            field_name_generator: self.field_name_generator,
-            operation_name,
-        };
-
-        let config = config_generator.generate().to_result()?;
-        Ok(config)
-    }
-}
-
-struct FromJsonGenerator<'a> {
+pub struct FromJsonGenerator<'a> {
     request_samples: Vec<RequestSample>,
     type_name_generator: &'a NameGenerator,
     field_name_generator: &'a NameGenerator,
     operation_name: String,
+}
+
+impl<'a> FromJsonGenerator<'a> {
+    pub fn new(
+        request_samples: Vec<RequestSample>,
+        type_name_generator: &'a NameGenerator,
+        field_name_generator: &'a NameGenerator,
+        operation_name: &str,
+    ) -> Self {
+        Self {
+            request_samples,
+            type_name_generator,
+            field_name_generator,
+            operation_name: operation_name.to_string(),
+        }
+    }
 }
 
 impl Generate for FromJsonGenerator<'_> {

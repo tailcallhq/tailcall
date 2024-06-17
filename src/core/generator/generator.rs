@@ -4,10 +4,11 @@ use prost_reflect::DescriptorPool;
 use serde_json::Value;
 use url::Url;
 
-use super::{from_proto, FromJson, NameGenerator, RequestSample};
+use super::{from_proto, FromJsonGenerator, Generate, NameGenerator, RequestSample};
 use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
+use crate::core::valid::Validator;
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work
@@ -51,6 +52,12 @@ pub struct Generator {
     is_mutation: Option<bool>,
     type_name_prefix: Option<String>,
     field_name_prefix: Option<String>,
+}
+
+impl Default for Generator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Generator {
@@ -105,25 +112,24 @@ impl Generator {
     fn generate_json_config(
         &self,
         operation_name: &str,
-        is_mutation: bool,
         json_samples: &[JsonInput],
     ) -> anyhow::Result<Config> {
         let type_name_prefix = self.type_name_prefix.clone().unwrap_or("T".to_string());
         let field_name_prefix = self.field_name_prefix.clone().unwrap_or("f".to_string());
 
-        FromJson::new(
+        let request_samples = json_samples
+            .iter()
+            .map(|sample| RequestSample::new(sample.url.to_owned(), sample.data.to_owned()))
+            .collect();
+
+        Ok(FromJsonGenerator::new(
+            request_samples,
             &NameGenerator::new(&type_name_prefix),
             &NameGenerator::new(&field_name_prefix),
-        )
-        .with_mutation(is_mutation)
-        .with_operation(operation_name.to_string())
-        .with_samples(
-            json_samples
-                .iter()
-                .map(|sample| RequestSample::new(sample.url.to_owned(), sample.data.to_owned()))
-                .collect(),
+            operation_name,
         )
         .generate()
+        .to_result()?)
     }
 
     /// Generates the configuration from the provided protobuf metadata.
@@ -150,13 +156,10 @@ impl Generator {
             .clone()
             .context("Operation name is required to generate the configuration.")?;
 
-        let is_mutation = self.is_mutation.is_some();
-
         let mut config = Config::default();
 
         if let Some(json_samples) = &self.json_samples {
-            let json_config =
-                self.generate_json_config(&operation_name, is_mutation, json_samples)?;
+            let json_config = self.generate_json_config(&operation_name, json_samples)?;
             config = config.merge_right(json_config);
         }
 
