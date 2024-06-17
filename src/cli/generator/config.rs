@@ -86,7 +86,7 @@ pub struct Output<Status = UnResolved> {
     /// Specifies the output file name
     pub file: String,
     #[serde(skip_serializing, skip_deserializing)]
-    _markder: PhantomData<Status>,
+    phantom: PhantomData<Status>,
 }
 
 impl Output<UnResolved> {
@@ -94,7 +94,7 @@ impl Output<UnResolved> {
         Ok(Output {
             format: self.format,
             file: resolve(&self.file, parent_dir)?,
-            _markder: PhantomData,
+            phantom: PhantomData,
         })
     }
 }
@@ -135,7 +135,7 @@ pub struct Transform {
 
 #[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct GeneratorConfig<Status = UnResolved> {
+pub struct Config<Status = UnResolved> {
     pub input: Vec<Input<Status>>,
     pub output: Output<Status>,
     #[serde(default)]
@@ -146,9 +146,9 @@ pub struct GeneratorConfig<Status = UnResolved> {
     _marker: PhantomData<Status>,
 }
 
-impl GeneratorConfig {
+impl Config {
     /// Resolves all the paths present inside the GeneratorConfig.
-    pub fn resolve_paths(self, config_path: &str) -> anyhow::Result<GeneratorConfig<Resolved>> {
+    pub fn resolve_paths(self, config_path: &str) -> anyhow::Result<Config<Resolved>> {
         let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
 
         let resolved_inputs = self
@@ -157,7 +157,7 @@ impl GeneratorConfig {
             .map(|input| input.resolve(parent_dir))
             .collect::<anyhow::Result<Vec<Input<_>>>>()?;
 
-        Ok(GeneratorConfig {
+        Ok(Config {
             input: resolved_inputs,
             output: self.output.resolve(parent_dir)?,
             generate: self.generate,
@@ -183,12 +183,12 @@ mod defaults {
 mod tests {
     use insta::assert_debug_snapshot;
 
-    use super::GeneratorConfig;
+    use super::Config;
 
     #[test]
     fn test_from_json() {
         let content = std::fs::read_to_string(tailcall_fixtures::generator::SIMPLE_JSON).unwrap();
-        let config: GeneratorConfig = serde_json::from_str(&content).unwrap();
+        let config: Config = serde_json::from_str(&content).unwrap();
 
         assert_debug_snapshot!(&config);
     }
@@ -197,7 +197,7 @@ mod tests {
     fn test_resolve_paths() {
         let file_path = tailcall_fixtures::generator::SIMPLE_JSON;
         let content = std::fs::read_to_string(tailcall_fixtures::generator::SIMPLE_JSON).unwrap();
-        let config: GeneratorConfig = serde_json::from_str(&content).unwrap();
+        let config: Config = serde_json::from_str(&content).unwrap();
         let config = config.resolve_paths(file_path);
         assert!(config.is_ok());
     }

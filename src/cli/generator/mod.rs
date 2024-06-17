@@ -1,4 +1,4 @@
 mod config;
-mod config_generator;
+mod generator;
 
-pub use config_generator::ConfigConsoleGenerator;
+pub use generator::Generator;

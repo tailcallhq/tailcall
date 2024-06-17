@@ -4,38 +4,23 @@ use std::path::Path;
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
-use super::config::{GeneratorConfig, InputSource, Resolved};
+use super::config::{Config, InputSource, Resolved};
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::{ConfigSource, ImportSource};
-use crate::core::generator::{Generator, Input};
+use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
 
-/// Checks if file or folder already exists or not.
-fn is_exists(path: &str) -> bool {
-    fs::metadata(path).is_ok()
-}
-
-/// Expects both paths to be absolute and returns a relative path from `from` to
-/// `to`. expects `from`` to be directory.
-fn to_relative_path(from: &Path, to: &str) -> Option<String> {
-    let from_path = Path::new(from).to_path_buf();
-    let to_path = Path::new(to).to_path_buf();
-
-    // Calculate the relative path from `from_path` to `to_path`
-    diff_paths(to_path, from_path).map(|p| p.to_string_lossy().to_string())
-}
-
-/// it reads the the config file and generates the required tailcall
+/// CLI that reads the the config file and generates the required tailcall
 /// configuration.
-pub struct ConfigConsoleGenerator {
+pub struct Generator {
     /// path of config file.
     config_path: String,
     runtime: TargetRuntime,
 }
 
-impl ConfigConsoleGenerator {
+impl Generator {
     pub fn new(config_path: &str, runtime: TargetRuntime) -> Self {
         Self { config_path: config_path.to_string(), runtime }
     }
@@ -81,12 +66,12 @@ impl ConfigConsoleGenerator {
         Ok(true)
     }
 
-    async fn read(&self) -> anyhow::Result<GeneratorConfig<Resolved>> {
+    async fn read(&self) -> anyhow::Result<Config<Resolved>> {
         let config_path = &self.config_path;
         let source = ConfigSource::detect(config_path)?;
         let config_content = self.runtime.file.read(config_path).await?;
 
-        let config: GeneratorConfig = match source {
+        let config: Config = match source {
             ConfigSource::Json => serde_json::from_str(&config_content)?,
             ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
         };
@@ -97,7 +82,7 @@ impl ConfigConsoleGenerator {
 
     /// performs all the i/o's required in the config file and generates
     /// concrete vec containing data for generator.
-    async fn resolve_io(&self, config: GeneratorConfig<Resolved>) -> anyhow::Result<Vec<Input>> {
+    async fn resolve_io(&self, config: Config<Resolved>) -> anyhow::Result<Vec<Input>> {
         let mut input_samples = vec![];
 
         let reader = ResourceReader::cached(self.runtime.clone());
@@ -145,7 +130,7 @@ impl ConfigConsoleGenerator {
         let path = config.output.file.to_owned();
         let input_samples = self.resolve_io(config).await?;
 
-        let config = Generator::new()
+        let config = ConfigGenerator::new()
             .with_inputs(input_samples)
             .with_operation_name("Query")
             .generate()?;
@@ -153,4 +138,19 @@ impl ConfigConsoleGenerator {
         self.write(&config, &path).await?;
         Ok(config)
     }
+}
+
+/// Checks if file or folder already exists or not.
+fn is_exists(path: &str) -> bool {
+    fs::metadata(path).is_ok()
+}
+
+/// Expects both paths to be absolute and returns a relative path from `from` to
+/// `to`. expects `from`` to be directory.
+fn to_relative_path(from: &Path, to: &str) -> Option<String> {
+    let from_path = Path::new(from).to_path_buf();
+    let to_path = Path::new(to).to_path_buf();
+
+    // Calculate the relative path from `from_path` to `to_path`
+    diff_paths(to_path, from_path).map(|p| p.to_string_lossy().to_string())
 }
