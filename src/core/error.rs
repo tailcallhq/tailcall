@@ -104,7 +104,7 @@ pub enum Error {
     #[error("Failed to execute request")]
     RequestExecutionFailed,
 
-    #[error("File Error")]
+    #[error("File Error: {0}")]
     File(file::Error),
 
     #[error("Http Error")]

@@ -33,11 +33,11 @@ pub enum Error {
     #[error("Unable to find list field on type")]
     MissingListField,
 
-    #[error("Field not found {0}")]
+    #[error("Field not found : {0}")]
     #[from(ignore)]
     MissingField(String),
 
-    #[error("Service not found {0}")]
+    #[error("Service not found : {0}")]
     #[from(ignore)]
     MissingService(String),
 }
