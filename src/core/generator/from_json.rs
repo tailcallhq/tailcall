@@ -33,11 +33,14 @@ pub struct FromJson<'a> {
 }
 
 impl<'a> FromJson<'a> {
-    pub fn new(type_name_generator: &'a NameGenerator, field_name_gen: &'a NameGenerator) -> Self {
+    pub fn new(
+        type_name_generator: &'a NameGenerator,
+        field_name_generator: &'a NameGenerator,
+    ) -> Self {
         FromJson {
             request_samples: None,
-            type_name_generator: &type_name_generator,
-            field_name_generator: &field_name_gen,
+            type_name_generator,
+            field_name_generator,
             operation_name: None,
             is_mutation: None,
         }

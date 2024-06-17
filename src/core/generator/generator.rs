@@ -162,7 +162,7 @@ impl Generator {
 
         if let Some(proto_samples) = &self.proto_samples {
             for proto_input in proto_samples {
-                let proto_config = self.generate_proto_config(&proto_input, &operation_name)?;
+                let proto_config = self.generate_proto_config(proto_input, &operation_name)?;
 
                 config = config.merge_right(proto_config);
             }
@@ -187,10 +187,8 @@ mod test {
     use serde::Deserialize;
 
     use super::Generator;
-    use crate::core::{
-        generator::{ConfigInput, JsonInput, ProtoInput},
-        proto_reader::ProtoMetadata,
-    };
+    use crate::core::generator::{ConfigInput, JsonInput, ProtoInput};
+    use crate::core::proto_reader::ProtoMetadata;
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
         Ok(protox::compile(files, [tailcall_fixtures::protobuf::SELF])?)
