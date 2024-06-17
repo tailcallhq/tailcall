@@ -68,8 +68,8 @@ impl Generator {
 
     async fn read(&self) -> anyhow::Result<Config<Resolved>> {
         let config_path = &self.config_path;
-        let config_content = self.runtime.file.read(config_path).await?;
         let source = ConfigSource::detect(config_path)?;
+        let config_content = self.runtime.file.read(config_path).await?;
 
         let config: Config = match source {
             ConfigSource::Json => serde_json::from_str(&config_content)?,

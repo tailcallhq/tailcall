@@ -262,10 +262,16 @@ pub struct Field {
     ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
+
     ///
     /// Marks field as protected by auth provider
     #[serde(default)]
     pub protected: Option<Protected>,
+
+    ///
+    /// Stores the default value for the field
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub default_value: Option<Value>,
 }
 
 // It's a terminal implementation of MergeRight
@@ -397,8 +403,44 @@ pub struct Union {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 /// Definition of GraphQL enum type
 pub struct Enum {
-    pub variants: BTreeSet<String>,
+    pub variants: BTreeSet<Variant>,
     pub doc: Option<String>,
+}
+
+/// Definition of GraphQL value
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
+pub struct Variant {
+    pub name: String,
+    // directive: alias
+    pub alias: Option<Alias>,
+}
+
+/// The @alias directive indicates that aliases of one enum value.
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
+pub struct Alias {
+    pub options: BTreeSet<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]

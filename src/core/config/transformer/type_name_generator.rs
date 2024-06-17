@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, HashSet};
 
 use inflector::Inflector;
 
-use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
+use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 #[derive(Debug, Default)]
@@ -40,14 +40,16 @@ impl<'a> CandidateConvergence<'a> {
             if let Some((candidate_name, _)) = candidate_list
                 .iter()
                 .filter(|(candidate_name, _)| {
-                    !converged_candidate_set.contains(candidate_name)
-                        && !self.config.types.contains_key(*candidate_name)
+                    let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
+                    !converged_candidate_set.contains(&singularized_candidate_name)
+                        && !self.config.types.contains_key(&singularized_candidate_name)
                 })
                 .max_by_key(|&(_, candidate)| (candidate.frequency, candidate.priority))
             {
                 let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
-                finalized_candidates.insert(type_name.to_owned(), singularized_candidate_name);
-                converged_candidate_set.insert(candidate_name);
+                finalized_candidates
+                    .insert(type_name.to_owned(), singularized_candidate_name.clone());
+                converged_candidate_set.insert(singularized_candidate_name);
             }
         }
 
@@ -134,6 +136,8 @@ impl TypeNameGenerator {
 }
 
 impl Transform for TypeNameGenerator {
+    type Value = Config;
+    type Error = String;
     fn transform(&self, config: Config) -> Valid<Config, String> {
         let config = self.generate_type_names(config);
 
@@ -149,8 +153,8 @@ mod test {
     use tailcall_fixtures::configs;
 
     use super::TypeNameGenerator;
-    use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
+    use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     fn read_fixture(path: &str) -> String {
@@ -170,6 +174,18 @@ mod test {
     #[test]
     fn test_type_name_generator_with_cyclic_types() -> anyhow::Result<()> {
         let config = Config::from_sdl(read_fixture(configs::CYCLIC_CONFIG).as_str())
+            .to_result()
+            .unwrap();
+
+        let transformed_config = TypeNameGenerator.transform(config).to_result().unwrap();
+        insta::assert_snapshot!(transformed_config.to_sdl());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_type_name_generator() -> anyhow::Result<()> {
+        let config = Config::from_sdl(read_fixture(configs::NAME_GENERATION).as_str())
             .to_result()
             .unwrap();
 

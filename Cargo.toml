@@ -104,7 +104,6 @@ update-informer = { version = "1.1.0", default-features = false, features = [
 lazy_static = { workspace = true }
 which = { version = "6.0.1", optional = true }
 async-recursion = "1.1.1"
-tempfile = "3.10.1"
 rquickjs = { "version" = "0.5.1", optional = true, features = ["macro"] }
 strum_macros = "0.26.4"
 # TODO: disable some levels with features?
@@ -161,7 +160,7 @@ serde_json_borrow = "0.3.0"
 Inflector = "0.11.4"
 path-clean = "=1.0.1"
 pathdiff = "0.2.1"
-
+num = "0.4.3"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
@@ -219,7 +218,6 @@ members = [
     "tailcall-cloudflare",
     "tailcall-macros",
     "tailcall-prettier",
-    "tailcall-query-plan",
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
