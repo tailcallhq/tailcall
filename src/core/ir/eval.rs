@@ -6,7 +6,7 @@ use async_graphql_value::ConstValue;
 
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Context, Map, IR};
-use super::{EvalContext, EvaluationError, ResolverContextLike};
+use super::{Error, EvalContext, ResolverContextLike};
 use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
 
@@ -15,7 +15,7 @@ impl IR {
     pub fn eval<'a, 'b, Ctx>(
         &'a self,
         ctx: &'b mut EvalContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, EvaluationError>> + Send + 'b>>
+    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, Error>> + Send + 'b>>
     where
         Ctx: ResolverContextLike + Sync,
     {
@@ -82,13 +82,13 @@ impl IR {
                         if let Some(value) = map.get(&key) {
                             Ok(ConstValue::String(value.to_owned()))
                         } else {
-                            Err(EvaluationError::ExprEvalError(format!(
+                            Err(Error::ExprEvalError(format!(
                                 "Can't find mapped key: {}.",
                                 key
                             )))
                         }
                     } else {
-                        Err(EvaluationError::ExprEvalError(
+                        Err(Error::ExprEvalError(
                             "Mapped key must be string value.".to_owned(),
                         ))
                     }

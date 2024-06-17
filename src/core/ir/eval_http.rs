@@ -12,7 +12,7 @@ use crate::core::grpc::request_template::RenderedRequestTemplate;
 use crate::core::http::{
     cache_policy, DataLoaderRequest, HttpDataLoader, HttpFilter, RequestTemplate, Response,
 };
-use crate::core::ir::EvaluationError;
+use crate::core::ir::Error;
 use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
 use crate::core::worker::*;
@@ -49,14 +49,11 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         Self { evaluation_ctx, data_loader, request_template }
     }
 
-    pub fn init_request(&self) -> Result<Request, EvaluationError> {
+    pub fn init_request(&self) -> Result<Request, Error> {
         Ok(self.request_template.to_request(self.evaluation_ctx)?)
     }
 
-    pub async fn execute(
-        &self,
-        req: Request,
-    ) -> Result<Response<async_graphql::Value>, EvaluationError> {
+    pub async fn execute(&self, req: Request) -> Result<Response<async_graphql::Value>, Error> {
         let ctx = &self.evaluation_ctx;
         let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
@@ -72,7 +69,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                 .output
                 .validate(&response.body)
                 .to_result()
-                .map_err(EvaluationError::from)?;
+                .map_err(Error::from)?;
         }
 
         set_headers(ctx, &response);
@@ -86,7 +83,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         mut request: reqwest::Request,
         worker: &Arc<dyn WorkerIO<Event, Command>>,
         http_filter: &HttpFilter,
-    ) -> Result<Response<async_graphql::Value>, EvaluationError> {
+    ) -> Result<Response<async_graphql::Value>, Error> {
         let js_request = WorkerRequest::try_from(&request)?;
         let event = Event::Request(js_request);
 
@@ -125,7 +122,7 @@ pub async fn execute_request_with_dl<
     ctx: &EvalContext<'ctx, Ctx>,
     req: Request,
     data_loader: Option<&DataLoader<DataLoaderRequest, Dl>>,
-) -> Result<Response<async_graphql::Value>, EvaluationError> {
+) -> Result<Response<async_graphql::Value>, Error> {
     let headers = ctx
         .request_ctx
         .upstream
@@ -139,7 +136,7 @@ pub async fn execute_request_with_dl<
         .unwrap()
         .load_one(endpoint_key)
         .await
-        .map_err(EvaluationError::from)?
+        .map_err(Error::from)?
         .unwrap_or_default())
 }
 
@@ -182,14 +179,14 @@ fn set_cookie_headers<Ctx: ResolverContextLike>(
 pub async fn execute_raw_request<Ctx: ResolverContextLike>(
     ctx: &EvalContext<'_, Ctx>,
     req: Request,
-) -> Result<Response<async_graphql::Value>, EvaluationError> {
+) -> Result<Response<async_graphql::Value>, Error> {
     let response = ctx
         .request_ctx
         .runtime
         .http
         .execute(req)
         .await
-        .map_err(EvaluationError::from)?
+        .map_err(Error::from)?
         .to_json()?;
 
     Ok(response)
@@ -199,10 +196,10 @@ pub async fn execute_raw_grpc_request<Ctx: ResolverContextLike>(
     ctx: &EvalContext<'_, Ctx>,
     req: Request,
     operation: &ProtobufOperation,
-) -> Result<Response<async_graphql::Value>, EvaluationError> {
+) -> Result<Response<async_graphql::Value>, Error> {
     execute_grpc_request(&ctx.request_ctx.runtime, operation, req)
         .await
-        .map_err(EvaluationError::from)
+        .map_err(Error::from)
 }
 
 pub async fn execute_grpc_request_with_dl<
@@ -216,7 +213,7 @@ pub async fn execute_grpc_request_with_dl<
     ctx: &EvalContext<'_, Ctx>,
     rendered: RenderedRequestTemplate,
     data_loader: Option<&DataLoader<grpc::DataLoaderRequest, Dl>>,
-) -> Result<Response<async_graphql::Value>, EvaluationError> {
+) -> Result<Response<async_graphql::Value>, Error> {
     let headers = ctx
         .request_ctx
         .upstream
@@ -230,7 +227,7 @@ pub async fn execute_grpc_request_with_dl<
         .unwrap()
         .load_one(endpoint_key)
         .await
-        .map_err(EvaluationError::from)?
+        .map_err(Error::from)?
         .unwrap_or_default())
 }
 
@@ -238,9 +235,9 @@ pub fn parse_graphql_response<Ctx: ResolverContextLike>(
     ctx: &EvalContext<'_, Ctx>,
     res: Response<async_graphql::Value>,
     field_name: &str,
-) -> Result<async_graphql::Value, EvaluationError> {
+) -> Result<async_graphql::Value, Error> {
     let res: async_graphql::Response =
-        from_value(res.body).map_err(|err| EvaluationError::DeserializeError(err.to_string()))?;
+        from_value(res.body).map_err(|err| Error::DeserializeError(err.to_string()))?;
 
     for error in res.errors {
         ctx.add_error(error);

@@ -12,12 +12,9 @@ use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::DataLoaderRequest;
-use crate::core::ir::EvaluationError;
+use crate::core::ir::Error;
 
-pub async fn eval_io<Ctx>(
-    io: &IO,
-    ctx: &mut EvalContext<'_, Ctx>,
-) -> Result<ConstValue, EvaluationError>
+pub async fn eval_io<Ctx>(io: &IO, ctx: &mut EvalContext<'_, Ctx>) -> Result<ConstValue, Error>
 where
     Ctx: ResolverContextLike + Sync,
 {
@@ -41,10 +38,7 @@ where
     }
 }
 
-async fn eval_io_inner<Ctx>(
-    io: &IO,
-    ctx: &mut EvalContext<'_, Ctx>,
-) -> Result<ConstValue, EvaluationError>
+async fn eval_io_inner<Ctx>(io: &IO, ctx: &mut EvalContext<'_, Ctx>) -> Result<ConstValue, Error>
 where
     Ctx: ResolverContextLike + Sync,
 {
