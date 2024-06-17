@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use super::Transform;
 use crate::core::config::Config;
+use crate::core::transform::Transform;
 use crate::core::valid::{Valid, Validator};
 
 /// Resolves the ambiguous types by renaming the input and
@@ -56,7 +56,9 @@ fn insert_resolution(
 }
 
 impl Transform for AmbiguousType {
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    type Value = Config;
+    type Error = String;
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let mut input_types = config.input_types();
         let mut output_types = config.output_types();
         Valid::from_iter(input_types.intersection(&output_types), |current_name| {

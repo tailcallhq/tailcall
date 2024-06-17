@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 use futures_util::Future;
@@ -34,11 +33,11 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         Self { cache: Arc::new(Mutex::new(HashMap::new())), size, persist }
     }
 
-    pub async fn dedupe<'a>(
-        &'a self,
-        key: &'a K,
-        or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = V> + 'a + Send>> + Send,
-    ) -> V {
+    pub async fn dedupe<'a, Fn, Fut>(&'a self, key: &'a K, or_else: Fn) -> V
+    where
+        Fn: FnOnce() -> Fut,
+        Fut: Future<Output = V>,
+    {
         match self.step(key) {
             Step::Value(value) => value,
             Step::Recv(mut rx) => rx.recv().await.unwrap(),
@@ -81,11 +80,11 @@ impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
 }
 
 impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
-    pub async fn dedupe<'a>(
-        &'a self,
-        key: &'a K,
-        or_else: impl FnOnce() -> Pin<Box<dyn Future<Output = Result<V, E>> + 'a + Send>> + Send,
-    ) -> Result<V, E> {
+    pub async fn dedupe<'a, Fn, Fut>(&'a self, key: &'a K, or_else: Fn) -> Result<V, E>
+    where
+        Fn: FnOnce() -> Fut,
+        Fut: Future<Output = Result<V, E>>,
+    {
         self.0.dedupe(key, or_else).await
     }
 }

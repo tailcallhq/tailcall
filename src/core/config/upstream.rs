@@ -140,17 +140,6 @@ pub struct Upstream {
     /// The User-Agent header value to be used in HTTP requests. @default
     /// `Tailcall/1.0`
     pub user_agent: Option<String>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
-    /// is made more than once within the context of a single GraphQL request.
-    pub dedupe: Option<bool>,
-
-    #[serde(default, skip_serializing_if = "is_default")]
-    /// When set to `true`, it will ensure no HTTP, GRPC, or any other IO call
-    /// is made more than once if similar request is inflight across the
-    /// server's lifetime.
-    pub dedupe_in_flight: Option<bool>,
 }
 
 impl Upstream {
@@ -201,14 +190,6 @@ impl Upstream {
 
     pub fn get_http_2_only(&self) -> bool {
         self.http2_only.unwrap_or(false)
-    }
-
-    pub fn get_dedupe(&self) -> bool {
-        self.dedupe.unwrap_or(false)
-    }
-
-    pub fn get_dedupe_in_flight(&self) -> bool {
-        self.dedupe_in_flight.unwrap_or(false)
     }
 
     pub fn get_on_request(&self) -> Option<String> {

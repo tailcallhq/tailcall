@@ -6,9 +6,10 @@ use super::json::{
 };
 use super::Generate;
 use crate::core::config::transformer::{
-    ConsolidateURL, RemoveUnused, Transform, TransformerOps, TypeMerger, TypeNameGenerator,
+    ConsolidateURL, RemoveUnused, TypeMerger, TypeNameGenerator,
 };
 use crate::core::config::Config;
+use crate::core::transform::{Transform, TransformerOps};
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::Validator;
 
