@@ -9,12 +9,12 @@ pub struct QueryGenerator<'a> {
     is_json_list: bool,
     url: &'a Url,
     query: &'a str,
-    field_name: String,
+    field_name: &'a str,
 }
 
 impl<'a> QueryGenerator<'a> {
-    pub fn new(is_json_list: bool, url: &'a Url, query: &'a str, field_name: &str) -> Self {
-        Self { is_json_list, url, query, field_name: field_name.to_string() }
+    pub fn new(is_json_list: bool, url: &'a Url, query: &'a str, field_name: &'a str) -> Self {
+        Self { is_json_list, url, query, field_name }
     }
 }
 
