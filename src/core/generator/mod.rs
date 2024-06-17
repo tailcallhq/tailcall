@@ -7,7 +7,7 @@ mod proto;
 pub mod source;
 
 pub use from_json::{FromJsonGenerator, RequestSample};
-pub use generator::{ConfigInput, Generator, JsonInput, ProtoInput};
+pub use generator::{Generator, Input};
 pub use json::NameGenerator;
 
 use super::config::Config;

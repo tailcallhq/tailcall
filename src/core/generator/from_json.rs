@@ -24,7 +24,7 @@ impl RequestSample {
 }
 
 pub struct FromJsonGenerator<'a> {
-    request_samples: Vec<RequestSample>,
+    request_samples: &'a [RequestSample],
     type_name_generator: &'a NameGenerator,
     field_name_generator: &'a NameGenerator,
     operation_name: String,
@@ -32,7 +32,7 @@ pub struct FromJsonGenerator<'a> {
 
 impl<'a> FromJsonGenerator<'a> {
     pub fn new(
-        request_samples: Vec<RequestSample>,
+        request_samples: &'a [RequestSample],
         type_name_generator: &'a NameGenerator,
         field_name_generator: &'a NameGenerator,
         operation_name: &str,
@@ -48,7 +48,7 @@ impl<'a> FromJsonGenerator<'a> {
 
 impl Generate for FromJsonGenerator<'_> {
     fn generate(&self) -> anyhow::Result<Config> {
-        let config_gen_req = &self.request_samples;
+        let config_gen_req = self.request_samples;
         let field_name_gen = self.field_name_generator;
         let type_name_gen = self.type_name_generator;
         let query = &self.operation_name;
@@ -115,7 +115,7 @@ mod tests {
         }
 
         let config = FromJsonGenerator::new(
-            request_samples,
+            &request_samples,
             &NameGenerator::new("T"),
             &NameGenerator::new("f"),
             "Query",

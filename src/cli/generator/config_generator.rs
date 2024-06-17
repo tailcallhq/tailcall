@@ -7,7 +7,7 @@ use pathdiff::diff_paths;
 use super::config::{GeneratorConfig, InputSource, Resolved};
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::{ConfigSource, ImportSource};
-use crate::core::generator::{ConfigInput, Generator, JsonInput, ProtoInput};
+use crate::core::generator::{Generator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
@@ -97,13 +97,8 @@ impl ConfigConsoleGenerator {
 
     /// performs all the i/o's required in the config file and generates
     /// concrete vec containing data for generator.
-    async fn resolve_io(
-        &self,
-        config: GeneratorConfig<Resolved>,
-    ) -> anyhow::Result<(Vec<JsonInput>, Vec<ConfigInput>, Vec<ProtoInput>)> {
-        let mut json_samples = vec![];
-        let mut proto_samples = vec![];
-        let mut config_samples = vec![];
+    async fn resolve_io(&self, config: GeneratorConfig<Resolved>) -> anyhow::Result<Vec<Input>> {
+        let mut input_samples = vec![];
 
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
@@ -118,9 +113,9 @@ impl ConfigConsoleGenerator {
                     match source {
                         ImportSource::Url => {
                             let contents = reader.read_file(&src).await?.content;
-                            json_samples.push(JsonInput {
+                            input_samples.push(Input::Json {
                                 url: src.parse()?,
-                                data: serde_json::from_str(&contents)?,
+                                response: serde_json::from_str(&contents)?,
                             });
                         }
                         ImportSource::Proto => {
@@ -129,31 +124,29 @@ impl ConfigConsoleGenerator {
                             {
                                 metadata.path = relative_path_to_proto;
                             }
-                            proto_samples.push(ProtoInput { data: metadata });
+                            input_samples.push(Input::Proto(metadata));
                         }
                     }
                 }
                 InputSource::Config { src, .. } => {
                     let source = config::Source::detect(&src)?;
                     let schema = reader.read_file(&src).await?.content;
-                    config_samples.push(ConfigInput { schema, source });
+                    input_samples.push(Input::Config { schema, source });
                 }
             }
         }
 
-        Ok((json_samples, config_samples, proto_samples))
+        Ok(input_samples)
     }
 
     /// generates the final configuration.
     pub async fn generate(self) -> anyhow::Result<ConfigModule> {
         let config = self.read().await?;
         let path = config.output.file.to_owned();
-        let (json_samples, config_samples, proto_samples) = self.resolve_io(config).await?;
+        let input_samples = self.resolve_io(config).await?;
 
         let config = Generator::new()
-            .with_json_samples(json_samples)
-            .with_proto_samples(proto_samples)
-            .with_config_samples(config_samples)
+            .with_inputs(input_samples)
             .with_operation_name("Query")
             .generate()?;
 
