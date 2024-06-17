@@ -37,7 +37,7 @@ pub enum Error {
     #[from(ignore)]
     MissingField(String),
 
-    #[error("Service not found : {0}")]
+    #[error("Couldn't find definitions for service {0}")]
     #[from(ignore)]
     MissingService(String),
 }
