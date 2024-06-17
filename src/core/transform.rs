@@ -12,6 +12,11 @@ pub trait Transform {
 /// A suite of common operators that are available for all transformers.
 pub trait TransformerOps: Sized + Transform {
     fn pipe<B: Transform>(self, other: B) -> Pipe<Self, B>;
+    fn when<B: Transform>(
+        self,
+        other: B,
+        f: impl FnOnce() -> bool,
+    ) -> Pipe<Self, ConditionalTransform<B>>;
     fn generate(&self) -> Valid<Self::Value, Self::Error>
     where
         Self::Value: std::default::Default;
@@ -25,11 +30,46 @@ where
         Pipe(self, other)
     }
 
+    fn when<B>(self, other: B, f: impl FnOnce() -> bool) -> Pipe<Self, ConditionalTransform<B>>
+    where
+        B: Transform,
+    {
+        if f() {
+            Pipe(self, ConditionalTransform::Actual(other))
+        } else {
+            Pipe(
+                self,
+                ConditionalTransform::NoOp(Default(std::marker::PhantomData)),
+            )
+        }
+    }
+
     fn generate(&self) -> Valid<Self::Value, Self::Error>
     where
         A::Value: std::default::Default,
     {
         self.transform(A::Value::default())
+    }
+}
+
+/// helper struct for conditional pipe.
+pub enum ConditionalTransform<B: Transform> {
+    Actual(B),
+    NoOp(Default<B::Value, B::Error>),
+}
+
+impl<B> Transform for ConditionalTransform<B>
+where
+    B: Transform,
+{
+    type Value = B::Value;
+    type Error = B::Error;
+
+    fn transform(&self, input: Self::Value) -> Valid<Self::Value, Self::Error> {
+        match self {
+            ConditionalTransform::Actual(b) => b.transform(input),
+            ConditionalTransform::NoOp(no_op) => no_op.transform(input),
+        }
     }
 }
 
