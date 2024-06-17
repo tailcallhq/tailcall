@@ -10,7 +10,7 @@ use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, Type};
 use crate::core::http::RequestContext;
-use crate::core::ir::{Eval, EvaluationContext, ResolverContext, TypeName};
+use crate::core::ir::{EvalContext, ResolverContext, TypeName};
 use crate::core::scalar::CUSTOM_SCALARS;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
@@ -59,7 +59,7 @@ fn set_default_value(
 }
 
 fn to_field_value<'a>(
-    ctx: &mut EvaluationContext<'a, ResolverContext<'a>>,
+    ctx: &mut EvalContext<'a, ResolverContext<'a>>,
     value: async_graphql::Value,
 ) -> Result<FieldValue<'static>> {
     let type_name = ctx.type_name.take();
@@ -105,7 +105,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                         match &field.resolver {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
-                                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                let ctx = EvalContext::new(req_ctx, &ctx);
 
                                 FieldFuture::from_value(
                                     ctx.path_value(&[field_name]).map(|a| a.into_owned()),
@@ -121,7 +121,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();
-                                        let ctx = &mut EvaluationContext::new(req_ctx, &ctx);
+                                        let ctx = &mut EvalContext::new(req_ctx, &ctx);
 
                                         let value =
                                             expr.eval(ctx).await.map_err(|err| err.extend())?;

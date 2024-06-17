@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, HashSet};
 
 use inflector::Inflector;
 
-use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
+use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 #[derive(Debug, Default)]
@@ -136,6 +136,8 @@ impl TypeNameGenerator {
 }
 
 impl Transform for TypeNameGenerator {
+    type Value = Config;
+    type Error = String;
     fn transform(&self, config: Config) -> Valid<Config, String> {
         let config = self.generate_type_names(config);
 
@@ -151,8 +153,8 @@ mod test {
     use tailcall_fixtures::configs;
 
     use super::TypeNameGenerator;
-    use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
+    use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     fn read_fixture(path: &str) -> String {

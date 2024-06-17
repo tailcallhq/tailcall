@@ -158,6 +158,7 @@ base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
 serde_json_borrow = "0.3.0"
 Inflector = "0.11.4"
+num = "0.4.3"
 indenter = "0.3.3"
 derive_more = "0.99.18"
 
@@ -218,7 +219,6 @@ members = [
     "tailcall-cloudflare",
     "tailcall-macros",
     "tailcall-prettier",
-    "tailcall-query-plan",
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",

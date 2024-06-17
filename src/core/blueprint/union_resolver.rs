@@ -1,7 +1,8 @@
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
 use crate::core::config::{ConfigModule, Field};
-use crate::core::ir::{Context, Discriminator, IR};
+use crate::core::ir::model::{Context, IR};
+use crate::core::ir::Discriminator;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 
