@@ -132,7 +132,7 @@ impl Generator {
 
         let config = ConfigGenerator::default()
             .inputs(input_samples)
-            .generate()?;
+            .generate(true)?;
 
         self.write(&config, &path).await?;
         Ok(config)

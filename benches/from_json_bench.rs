@@ -26,7 +26,7 @@ pub fn benchmark_from_json_method(c: &mut Criterion) {
 
     c.bench_function("from_json_bench", |b| {
         b.iter(|| {
-            let _ = config_generator.generate();
+            let _ = config_generator.generate(false);
         });
     });
 }

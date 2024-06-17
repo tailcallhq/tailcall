@@ -155,6 +155,7 @@ mod tests {
     use crate::core::generator::{Generator, Input};
     use crate::core::proto_reader::ProtoMetadata;
     use crate::core::valid::Validator;
+    use pretty_assertions::assert_eq;
 
     fn build_qry(mut config: Config) -> Config {
         let mut query = Type::default();
@@ -253,7 +254,7 @@ mod tests {
                 descriptor_set: set,
                 path: news_proto.to_string(),
             })])
-            .generate()?;
+            .generate(false)?;
 
         let cfg_module = cfg_module.transform(AmbiguousType::default()).to_result()?;
 
