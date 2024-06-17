@@ -2,5 +2,6 @@
 
 mod config;
 mod generator;
+pub mod input;
 
 pub use generator::Generator;
