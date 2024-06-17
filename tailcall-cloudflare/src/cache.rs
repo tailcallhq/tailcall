@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use async_graphql_value::ConstValue;
 use serde_json::Value;
-use tailcall::core::ir::IoId;
+use tailcall::core::ir::model::IoId;
 use tailcall::core::{error, Cache};
 use worker::kv::KvStore;
 

@@ -5,10 +5,11 @@ use super::json::{
     FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
 };
 use crate::core::config::transformer::{
-    ConsolidateURL, RemoveUnused, Transform, TransformerOps, TypeMerger, TypeNameGenerator,
+    ConsolidateURL, RemoveUnused, TypeMerger, TypeNameGenerator,
 };
 use crate::core::config::Config;
 use crate::core::error::Error;
+use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
 
 pub struct ConfigGenerationRequest {

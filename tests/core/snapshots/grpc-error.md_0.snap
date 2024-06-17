@@ -11,23 +11,13 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "GRPC Error: {code: 3, message: \"error message\", details: []}\nCaused by:\n  • code: 3, message: grpc message",
+        "message": "Worker Error: GRPC Error: {code: 3, message: \"error message\", details: []}\nCaused by:\n  • code: 3, message: grpc message",
         "locations": [
           {
             "line": 1,
             "column": 9
           }
-        ],
-        "extensions": {
-          "grpcCode": 3,
-          "grpcDescription": "Client specified an invalid argument",
-          "grpcStatusDetails": {
-            "code": 3,
-            "message": "error message",
-            "details": []
-          },
-          "grpcStatusMessage": "grpc message"
-        }
+        ]
       }
     ]
   }

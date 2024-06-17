@@ -13,7 +13,8 @@ use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::core::ir::{Error, IoId};
+use crate::core::ir::model::IoId;
+use crate::core::ir::Error;
 use crate::core::runtime::TargetRuntime;
 use crate::core::{error, grpc};
 
