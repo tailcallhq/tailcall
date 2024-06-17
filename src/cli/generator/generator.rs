@@ -94,7 +94,7 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::URL { url, headers: _, method: _, body: _, _marker: _ } => {
+                Source::URL { url, headers: _, method: _, body: _, .. } => {
                     let contents = reader.read_file(&url).await?.content;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
