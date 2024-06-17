@@ -2,7 +2,7 @@
 source: src/cli/generator/config.rs
 expression: "&config"
 ---
-GeneratorConfig {
+Config {
     input: [
         Input {
             source: Import {
@@ -26,7 +26,7 @@ GeneratorConfig {
     output: Output {
         format: GraphQL,
         file: "./output.graphql",
-        _markder: PhantomData<tailcall::cli::generator::config::UnResolved>,
+        phantom: PhantomData<tailcall::cli::generator::config::UnResolved>,
     },
     generate: GenerateOptions {
         schema: Schema {
