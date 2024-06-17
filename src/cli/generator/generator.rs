@@ -93,11 +93,12 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::URL { url, headers, method, body, _marker } => {
+                Source::URL { url, headers: _, method: _, body: _, _marker: _ } => {
                     let contents = reader.read_file(&url).await?.content;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
                         response: serde_json::from_str(&contents)?,
+                        field_name: input.field_name,
                     });
                 }
                 Source::Proto { path, _marker } => {

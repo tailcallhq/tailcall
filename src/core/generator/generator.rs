@@ -21,7 +21,6 @@ pub struct Generator {
     operation_name: String,
     inputs: Vec<Input>,
     type_name_prefix: String,
-    field_name_prefix: String,
 }
 
 #[derive(Clone)]
@@ -29,6 +28,7 @@ pub enum Input {
     Json {
         url: Url,
         response: Value,
+        field_name: String,
     },
     Proto(ProtoMetadata),
     Config {
@@ -49,7 +49,6 @@ impl Generator {
             operation_name: "Query".to_string(),
             inputs: Vec::new(),
             type_name_prefix: "T".to_string(),
-            field_name_prefix: "f".to_owned(),
         }
     }
 
@@ -57,17 +56,13 @@ impl Generator {
     fn generate_from_json(
         &self,
         type_name_generator: &NameGenerator,
-        field_name_generator: &NameGenerator,
         json_samples: &[RequestSample],
     ) -> anyhow::Result<Config> {
-        Ok(FromJsonGenerator::new(
-            json_samples,
-            type_name_generator,
-            field_name_generator,
-            &self.operation_name,
+        Ok(
+            FromJsonGenerator::new(json_samples, type_name_generator, &self.operation_name)
+                .generate()
+                .to_result()?,
         )
-        .generate()
-        .to_result()?)
     }
 
     /// Generates the configuration from the provided protobuf.
@@ -89,7 +84,6 @@ impl Generator {
     /// Generated the actual configuratio from provided samples.
     pub fn generate(&self, use_preset: bool) -> anyhow::Result<ConfigModule> {
         let mut config: Config = Config::default();
-        let field_name_generator = NameGenerator::new(&self.field_name_prefix);
         let type_name_generator = NameGenerator::new(&self.type_name_prefix);
 
         for input in self.inputs.iter() {
@@ -97,13 +91,12 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                Input::Json { url, response } => {
-                    let request_sample = RequestSample::new(url.to_owned(), response.to_owned());
-                    config = config.merge_right(self.generate_from_json(
-                        &type_name_generator,
-                        &field_name_generator,
-                        &[request_sample],
-                    )?);
+                Input::Json { url, response, field_name } => {
+                    let request_sample =
+                        RequestSample::new(url.to_owned(), response.to_owned(), field_name);
+                    config = config.merge_right(
+                        self.generate_from_json(&type_name_generator, &[request_sample])?,
+                    );
                 }
                 Input::Proto(proto_input) => {
                     config = config
@@ -148,6 +141,7 @@ mod test {
 
     use super::Generator;
     use crate::core::generator::generator::Input;
+    use crate::core::generator::NameGenerator;
     use crate::core::proto_reader::ProtoMetadata;
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
@@ -202,6 +196,7 @@ mod test {
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
+                field_name: "f1".to_string(),
             }])
             .generate(true)?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
@@ -230,6 +225,7 @@ mod test {
         let json_input = Input::Json {
             url: parsed_content.url.parse()?,
             response: parsed_content.body,
+            field_name: "f1".to_string(),
         };
 
         // Combine inputs
@@ -250,12 +246,13 @@ mod test {
             "src/core/generator/tests/fixtures/json/list_incompatible_object.json",
             "src/core/generator/tests/fixtures/json/list.json",
         ];
-
+        let filed_name_generator = NameGenerator::new("f");
         for json_path in json_fixtures {
             let parsed_content = parse_json(json_path);
             inputs.push(Input::Json {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
+                field_name: filed_name_generator.next(),
             });
         }
 
