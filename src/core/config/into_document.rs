@@ -2,7 +2,7 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::{Config, ConfigModule};
+use super::ConfigModule;
 use crate::core::blueprint::TypeLike;
 use crate::core::directive::DirectiveCodec;
 
@@ -135,7 +135,6 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     .collect(),
                 fields: type_def
                     .fields
-                    .clone()
                     .iter()
                     .map(|(name, field)| {
                         let directives = get_directives(field);
@@ -220,19 +219,22 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
         })));
     }
     for (name, union) in config.unions.iter() {
-        definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
-            extend: false,
-            description: None,
-            name: pos(Name::new(name)),
-            directives: Vec::new(),
-            kind: TypeKind::Union(UnionType {
-                members: union
-                    .types
-                    .iter()
-                    .map(|name| pos(Name::new(name.clone())))
-                    .collect(),
-            }),
-        })));
+        // unions are only supported as the output types
+        if !config.input_types.contains(name) {
+            definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
+                extend: false,
+                description: None,
+                name: pos(Name::new(name)),
+                directives: Vec::new(),
+                kind: TypeKind::Union(UnionType {
+                    members: union
+                        .types
+                        .iter()
+                        .map(|name| pos(Name::new(name.clone())))
+                        .collect(),
+                }),
+            })));
+        }
     }
 
     for (name, values) in config.enums.iter() {
@@ -280,8 +282,8 @@ fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDir
     directives.into_iter().flatten().collect()
 }
 
-impl From<Config> for ServiceDocument {
-    fn from(value: Config) -> Self {
-        config_document(&value.into())
+impl From<ConfigModule> for ServiceDocument {
+    fn from(value: ConfigModule) -> Self {
+        config_document(&value)
     }
 }
