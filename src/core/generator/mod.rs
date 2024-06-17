@@ -8,10 +8,21 @@ pub mod source;
 
 pub use from_json::{FromJsonGenerator, RequestSample};
 pub use generator::{Generator, Input};
-pub use json::NameGenerator;
 
-use super::config::Config;
+use crate::core::counter::{Count, Counter};
 
-pub trait Generate {
-    fn generate(&self) -> anyhow::Result<Config>;
+pub struct NameGenerator {
+    counter: Counter<u64>,
+    prefix: String,
+}
+
+impl NameGenerator {
+    pub fn new(prefix: &str) -> Self {
+        Self { counter: Counter::new(1), prefix: prefix.to_string() }
+    }
+
+    pub fn next(&self) -> String {
+        let id = self.counter.next();
+        format!("{}{}", self.prefix, id)
+    }
 }

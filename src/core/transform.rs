@@ -12,6 +12,9 @@ pub trait Transform {
 /// A suite of common operators that are available for all transformers.
 pub trait TransformerOps: Sized + Transform {
     fn pipe<B: Transform>(self, other: B) -> Pipe<Self, B>;
+    fn generate(&self) -> Valid<Self::Value, Self::Error>
+    where
+        Self::Value: std::default::Default;
 }
 
 impl<A> TransformerOps for A
@@ -20,6 +23,13 @@ where
 {
     fn pipe<B: Transform>(self, other: B) -> Pipe<A, B> {
         Pipe(self, other)
+    }
+
+    fn generate(&self) -> Valid<Self::Value, Self::Error>
+    where
+        A::Value: std::default::Default,
+    {
+        self.transform(A::Value::default())
     }
 }
 
@@ -47,4 +57,8 @@ impl<A, E> Transform for Default<A, E> {
     fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
         Valid::succeed(value)
     }
+}
+
+pub fn default<A, E>() -> Default<A, E> {
+    Default(std::marker::PhantomData)
 }

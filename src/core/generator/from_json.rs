@@ -1,17 +1,12 @@
 use serde_json::Value;
 use url::Url;
 
-use super::json::{
-    FieldBaseUrlGenerator, NameGenerator, QueryGenerator, SchemaGenerator, TypesGenerator,
-};
-use super::Generate;
-use crate::core::config::transformer::{
-    ConsolidateURL, RemoveUnused, TypeMerger, TypeNameGenerator,
-};
+use super::json::{self, TypesGenerator};
+use super::NameGenerator;
 use crate::core::config::Config;
-use crate::core::transform::{Transform, TransformerOps};
 use crate::core::merge_right::MergeRight;
-use crate::core::valid::Validator;
+use crate::core::transform::{Transform, TransformerOps};
+use crate::core::valid::{Valid, Validator};
 
 pub struct RequestSample {
     url: Url,
@@ -47,36 +42,35 @@ impl<'a> FromJsonGenerator<'a> {
     }
 }
 
-impl Generate for FromJsonGenerator<'_> {
-    fn generate(&self) -> anyhow::Result<Config> {
+impl Transform for FromJsonGenerator<'_> {
+    type Value = Config;
+    type Error = String;
+    fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let config_gen_req = self.request_samples;
         let field_name_gen = self.field_name_generator;
         let type_name_gen = self.type_name_generator;
         let query = &self.operation_name;
 
-        let mut config = Config::default();
-
-        for sample in config_gen_req {
-            let field_name = field_name_gen.generate_name();
-            let query_generator =
-                QueryGenerator::new(sample.response.is_array(), &sample.url, query, &field_name);
+        Valid::from_iter(config_gen_req, |sample| {
+            let field_name = field_name_gen.next();
+            let query_generator = json::QueryGenerator::new(
+                sample.response.is_array(),
+                &sample.url,
+                query,
+                &field_name,
+            );
 
             // these transformations are required in order to generate a base config.
-            let transform_pipeline =
-                TypesGenerator::new(&sample.response, query_generator, type_name_gen)
-                    .pipe(SchemaGenerator::new(query.to_owned()))
-                    .pipe(FieldBaseUrlGenerator::new(&sample.url, query))
-                    .pipe(RemoveUnused)
-                    .pipe(TypeMerger::default())
-                    .pipe(TypeNameGenerator);
-
-            let transformed_config = transform_pipeline.transform(config.clone()).to_result()?;
-            config = config.merge_right(transformed_config);
-        }
-
-        let config = ConsolidateURL::new(0.5).transform(config).to_result()?;
-
-        Ok(config)
+            TypesGenerator::new(&sample.response, query_generator, type_name_gen)
+                .pipe(json::SchemaGenerator::new(query.to_owned()))
+                .pipe(json::FieldBaseUrlGenerator::new(&sample.url, query))
+                .transform(config.clone())
+        })
+        .map(|configs| {
+            configs
+                .iter()
+                .fold(config, |acc, c| acc.merge_right(c.clone()))
+        })
     }
 }
 
@@ -84,7 +78,10 @@ impl Generate for FromJsonGenerator<'_> {
 mod tests {
     use serde::Deserialize;
 
-    use crate::core::generator::{FromJsonGenerator, Generate, NameGenerator, RequestSample};
+    use crate::core::config::transformer::Preset;
+    use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
+    use crate::core::transform::TransformerOps;
+    use crate::core::valid::Validator;
 
     #[derive(Deserialize)]
     struct JsonFixture {
@@ -121,7 +118,9 @@ mod tests {
             &NameGenerator::new("f"),
             "Query",
         )
-        .generate()?;
+        .pipe(Preset::default())
+        .generate()
+        .to_result()?;
 
         insta::assert_snapshot!(config.to_sdl());
         Ok(())
