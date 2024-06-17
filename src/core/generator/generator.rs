@@ -87,7 +87,7 @@ impl Generator {
     }
 
     /// Generated the actual configuratio from provided samples.
-    pub fn generate(&self) -> anyhow::Result<ConfigModule> {
+    pub fn generate(&self, use_preset: bool) -> anyhow::Result<ConfigModule> {
         let mut config: Config = Config::default();
         let field_name_generator = NameGenerator::new(&self.field_name_prefix);
         let type_name_generator = NameGenerator::new(&self.type_name_prefix);
@@ -112,12 +112,14 @@ impl Generator {
             }
         }
 
-        Ok(ConfigModule::from(
+        if use_preset {
             // FIXME: Preset should be configurable
-            transformer::Preset::default()
+            config = transformer::Preset::default()
                 .transform(config)
-                .to_result()?,
-        ))
+                .to_result()?;
+        }
+
+        Ok(ConfigModule::from(config))
     }
 }
 
@@ -173,7 +175,7 @@ mod test {
                 descriptor_set: set,
                 path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
             })])
-            .generate()?;
+            .generate(false)?;
 
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
@@ -186,7 +188,7 @@ mod test {
                 schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
                 source: crate::core::config::Source::GraphQL,
             }])
-            .generate()?;
+            .generate(true)?;
 
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
@@ -201,7 +203,7 @@ mod test {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
             }])
-            .generate()?;
+            .generate(true)?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }
@@ -233,7 +235,7 @@ mod test {
         // Combine inputs
         let cfg_module = Generator::default()
             .inputs(vec![proto_input, json_input, config_input])
-            .generate()?;
+            .generate(true)?;
 
         // Assert the combined output
         insta::assert_snapshot!(cfg_module.config.to_sdl());
@@ -257,7 +259,7 @@ mod test {
             });
         }
 
-        let cfg_module = Generator::default().inputs(inputs).generate()?;
+        let cfg_module = Generator::default().inputs(inputs).generate(true)?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }
