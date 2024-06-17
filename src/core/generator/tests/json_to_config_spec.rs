@@ -3,7 +3,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::core::generator::{from_json, RequestSample, NameGenerator};
+use tailcall::core::generator::{Generator, Input};
 use url::Url;
 
 #[derive(Serialize, Deserialize)]
@@ -37,16 +37,11 @@ fn load_json(path: &Path) -> anyhow::Result<(String, Value)> {
 }
 
 fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {
-    let field_name_gen = NameGenerator::new("f");
-    let type_name_gen = NameGenerator::new("T");
+    let cfg_module = Generator::default()
+        .inputs(vec![Input::Json { url, response: body }])
+        .generate()?;
 
-    let config = from_json(
-        &[RequestSample::new(url, body)],
-        "Query",
-        &field_name_gen,
-        &type_name_gen,
-    )?;
     let snapshot_name = path.file_name().unwrap().to_str().unwrap();
-    insta::assert_snapshot!(snapshot_name, config.to_sdl());
+    insta::assert_snapshot!(snapshot_name, cfg_module.config.to_sdl());
     Ok(())
 }

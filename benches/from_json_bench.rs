@@ -2,7 +2,7 @@ use criterion::Criterion;
 use hyper::Method;
 use serde_json::Value;
 use tailcall::cli::runtime::NativeHttp;
-use tailcall::core::generator::{from_json, RequestSample, NameGenerator};
+use tailcall::core::generator::{Generator, Input};
 use tailcall::core::HttpIO;
 
 pub fn benchmark_from_json_method(c: &mut Criterion) {
@@ -19,16 +19,14 @@ pub fn benchmark_from_json_method(c: &mut Criterion) {
         reqs.push(body);
     });
 
-    let cfg_gen_reqs = [RequestSample::new(
-        request_url.parse().unwrap(),
-        reqs[0].clone(),
-    )];
-    let field_name_gen = NameGenerator::new("f");
-    let type_name_gen = NameGenerator::new("T");
+    let cfg_gen_reqs =
+        vec![Input::Json { url: request_url.parse().unwrap(), response: reqs[0].clone() }];
+
+    let config_generator = Generator::default().inputs(cfg_gen_reqs);
 
     c.bench_function("from_json_bench", |b| {
         b.iter(|| {
-            let _ = from_json(&cfg_gen_reqs, "Query", &field_name_gen, &type_name_gen);
+            let _ = config_generator.generate();
         });
     });
 }

@@ -10,18 +10,16 @@ use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
+use super::generator::Generator;
 use super::update_checker;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
-use crate::core::generator::config::{GeneratorConfig, UnResolved};
-use crate::core::generator::source::ConfigSource;
-use crate::core::generator::Generator;
 use crate::core::http::API_URL_PREFIX;
+use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::core::{config, print_schema};
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
@@ -84,48 +82,9 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Gen { file_path } => {
-            let source = ConfigSource::detect(&file_path)?;
-            let config = runtime.file.read(&file_path).await?;
-
-            let gen_config: GeneratorConfig<UnResolved> = match source {
-                ConfigSource::Json => serde_json::from_str(&config)?,
-                ConfigSource::Yml => serde_yaml::from_str(&config)?,
-            };
-
-            // resolves the relative paths present inside config.
-            let gen_config = gen_config.resolve_paths(&file_path)?;
-
-            let generator = Generator::new(runtime.clone());
-
-            let output_path = gen_config.output.file.clone();
-            let config = generator.run(gen_config).await?;
-
-            let output_source = config::Source::detect(&output_path)?;
-
-            let config = match output_source {
-                config::Source::Json => config.to_json(true)?,
-                config::Source::Yml => config.to_yaml()?,
-                config::Source::GraphQL => config.to_sdl(),
-            };
-
-            // if output file already exists, ask user if we can overwrite it or not.
-            if is_exists(&output_path) {
-                let should_overwrite = Confirm::new(
-                    format!(
-                        "The output file '{}' already exists. Do you want to overwrite it?",
-                        output_path
-                    )
-                    .as_str(),
-                )
-                .with_default(false)
-                .prompt()?;
-                if !should_overwrite {
-                    return Ok(());
-                }
-            }
-            runtime.file.write(&output_path, config.as_bytes()).await?;
-
-            tracing::info!("Config successfully generated at {output_path}");
+            Generator::new(&file_path, runtime.clone())
+                .generate()
+                .await?;
 
             Ok(())
         }

@@ -1,4 +1,3 @@
-pub mod config;
 mod from_json;
 mod from_proto;
 mod generator;
@@ -7,6 +6,12 @@ mod json;
 mod proto;
 pub mod source;
 
-pub use from_json::{from_json, RequestSample};
-pub use generator::Generator;
+pub use from_json::{FromJsonGenerator, RequestSample};
+pub use generator::{Generator, Input};
 pub use json::NameGenerator;
+
+use super::config::Config;
+
+pub trait Generate {
+    fn generate(&self) -> anyhow::Result<Config>;
+}

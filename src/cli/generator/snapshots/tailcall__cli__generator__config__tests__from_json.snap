@@ -1,32 +1,32 @@
 ---
-source: src/core/generator/config.rs
+source: src/cli/generator/config.rs
 expression: "&config"
 ---
-GeneratorConfig {
+Config {
     input: [
         Input {
             source: Import {
                 src: "../protobuf/news.proto",
-                _marker: PhantomData<tailcall::core::generator::config::UnResolved>,
+                _marker: PhantomData<tailcall::cli::generator::config::UnResolved>,
             },
         },
         Input {
             source: Config {
                 src: "../configs/user-posts.graphql",
-                _marker: PhantomData<tailcall::core::generator::config::UnResolved>,
+                _marker: PhantomData<tailcall::cli::generator::config::UnResolved>,
             },
         },
         Input {
             source: Import {
                 src: "https://jsonplaceholder.typicode.com/posts",
-                _marker: PhantomData<tailcall::core::generator::config::UnResolved>,
+                _marker: PhantomData<tailcall::cli::generator::config::UnResolved>,
             },
         },
     ],
     output: Output {
         format: GraphQL,
         file: "./output.graphql",
-        _markder: PhantomData<tailcall::core::generator::config::UnResolved>,
+        phantom: PhantomData<tailcall::cli::generator::config::UnResolved>,
     },
     generate: GenerateOptions {
         schema: Schema {
@@ -55,5 +55,5 @@ GeneratorConfig {
             },
         ),
     },
-    _marker: PhantomData<tailcall::core::generator::config::UnResolved>,
+    _marker: PhantomData<tailcall::cli::generator::config::UnResolved>,
 }

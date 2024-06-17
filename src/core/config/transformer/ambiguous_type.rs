@@ -145,11 +145,13 @@ impl Transform for AmbiguousType {
 mod tests {
     use std::collections::HashSet;
 
-    use maplit::hashset;
+    use prost_reflect::prost_types::FileDescriptorSet;
+    use tailcall_fixtures::protobuf;
 
     use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{Config, ConfigModule, Type};
-    use crate::core::generator::source::ImportSource;
+    use crate::core::generator::{Generator, Input};
+    use crate::core::proto_reader::ProtoMetadata;
     use crate::core::valid::Validator;
 
     fn build_qry(mut config: Config) -> Config {
@@ -234,23 +236,33 @@ mod tests {
 
         assert_eq!(actual, expected);
     }
+
+    fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
+        Ok(protox::compile(files, [protobuf::SELF])?)
+    }
+
     #[tokio::test]
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
-        let gen = crate::core::generator::Generator::new(crate::core::runtime::test::init(None));
-        let news = tailcall_fixtures::protobuf::NEWS;
-        let config_module = gen
-            .read_all(ImportSource::Proto, &[news], "Query")
-            .await?
-            .transform(AmbiguousType::default())
-            .to_result()?;
-        let actual = config_module
+        let news_proto = tailcall_fixtures::protobuf::NEWS;
+        let set = compile_protobuf(&[protobuf::NEWS])?;
+
+        let cfg_module = Generator::default()
+            .inputs(vec![Input::Proto(ProtoMetadata {
+                descriptor_set: set,
+                path: news_proto.to_string(),
+            })])
+            .generate()?;
+
+        let cfg_module = cfg_module.transform(AmbiguousType::default()).to_result()?;
+
+        let actual = cfg_module
             .config
             .types
             .keys()
             .map(|s| s.as_str())
             .collect::<HashSet<_>>();
 
-        let expected = hashset![
+        let expected = maplit::hashset![
             "Query",
             "news__News",
             "news__NewsList",
