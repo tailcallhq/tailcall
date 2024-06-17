@@ -130,7 +130,7 @@ impl Generator {
                             transform_options.type_merger_threshold(thresh.to_owned());
                     }
                 }
-                Transformer::AmbiguousType { input, output } => {
+                Transformer::AmbiguousType { input: _, output: _ } => {
                     // TODO: add AmbiguousType transform.
                 }
                 Transformer::ConsolidateBaseURL { threshold } => {
