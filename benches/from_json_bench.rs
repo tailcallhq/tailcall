@@ -22,11 +22,7 @@ pub fn benchmark_from_json_method(c: &mut Criterion) {
     let cfg_gen_reqs =
         vec![Input::Json { url: request_url.parse().unwrap(), response: reqs[0].clone() }];
 
-    let config_generator = Generator::builder()
-        .with_inputs(cfg_gen_reqs)
-        .with_type_name_prefix("T")
-        .with_field_name_prefix("f")
-        .with_operation_name("Query");
+    let config_generator = Generator::default().inputs(cfg_gen_reqs);
 
     c.bench_function("from_json_bench", |b| {
         b.iter(|| {

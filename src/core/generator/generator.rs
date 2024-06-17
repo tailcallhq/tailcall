@@ -1,4 +1,4 @@
-use anyhow::Context;
+use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 use serde_json::Value;
@@ -13,6 +13,8 @@ use crate::core::proto_reader::ProtoMetadata;
 /// Generator offers an abstraction over the actual config generators and allows
 /// to generate the single config from multiple sources. i.e (Protobuf and Json)
 /// TODO: add support for is_mutation.
+
+#[derive(Setters)]
 pub struct Generator {
     operation_name: String,
     inputs: Vec<Input>,
@@ -33,73 +35,20 @@ pub enum Input {
     },
 }
 
-pub struct GeneratorBuilder {
-    operation_name: Option<String>,
-    inputs: Option<Vec<Input>>,
-    type_name_prefix: Option<String>,
-    field_name_prefix: Option<String>,
-}
-
-impl Default for GeneratorBuilder {
+impl Default for Generator {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl GeneratorBuilder {
-    pub fn new() -> Self {
-        Self {
-            operation_name: None,
-            inputs: None,
-            type_name_prefix: None,
-            field_name_prefix: None,
-        }
-    }
-
-    pub fn with_operation_name(mut self, operation_name: &str) -> Self {
-        self.operation_name = Some(operation_name.to_string());
-        self
-    }
-
-    pub fn with_inputs(mut self, inputs: Vec<Input>) -> Self {
-        self.inputs = Some(inputs);
-        self
-    }
-
-    pub fn with_type_name_prefix(mut self, type_name_prefix: &str) -> Self {
-        self.type_name_prefix = Some(type_name_prefix.to_string());
-        self
-    }
-
-    pub fn with_field_name_prefix(mut self, field_name_prefix: &str) -> Self {
-        self.field_name_prefix = Some(field_name_prefix.to_string());
-        self
-    }
-
-    pub fn generate(&self) -> anyhow::Result<ConfigModule> {
-        let operation_name = self
-            .operation_name
-            .clone()
-            .context("operation_name is required")?;
-        let inputs = self.inputs.clone().context("inputs are required")?;
-        let type_name_prefix = self
-            .type_name_prefix
-            .clone()
-            .context("type_name_prefix is required")?;
-        let field_name_prefix = self
-            .field_name_prefix
-            .clone()
-            .context("field_name_prefix is required")?;
-
-        let config_generator =
-            Generator { operation_name, inputs, type_name_prefix, field_name_prefix };
-        config_generator.generate()
-    }
-}
-
 impl Generator {
-    pub fn builder() -> GeneratorBuilder {
-        GeneratorBuilder::new()
+    pub fn new() -> Generator {
+        Generator {
+            operation_name: "Query".to_string(),
+            inputs: Vec::new(),
+            type_name_prefix: "T".to_string(),
+            field_name_prefix: "f".to_owned(),
+        }
     }
 
     /// Generates configuration from the provided json samples.
@@ -135,7 +84,7 @@ impl Generator {
     }
 
     /// Generated the actual configuratio from provided samples.
-    fn generate(&self) -> anyhow::Result<ConfigModule> {
+    pub fn generate(&self) -> anyhow::Result<ConfigModule> {
         let mut config: Config = Config::default();
         let field_name_generator = NameGenerator::new(&self.field_name_prefix);
         let type_name_generator = NameGenerator::new(&self.type_name_prefix);
@@ -211,14 +160,11 @@ mod test {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[news_proto])?;
 
-        let cfg_module = Generator::builder()
-            .with_inputs(vec![Input::Proto(ProtoMetadata {
+        let cfg_module = Generator::default()
+            .inputs(vec![Input::Proto(ProtoMetadata {
                 descriptor_set: set,
                 path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
             })])
-            .with_operation_name("Query")
-            .with_field_name_prefix("f")
-            .with_type_name_prefix("T")
             .generate()?;
 
         insta::assert_snapshot!(cfg_module.config.to_sdl());
@@ -227,14 +173,11 @@ mod test {
 
     #[test]
     fn should_generate_config_from_configs() -> anyhow::Result<()> {
-        let cfg_module = Generator::builder()
-            .with_inputs(vec![Input::Config {
+        let cfg_module = Generator::default()
+            .inputs(vec![Input::Config {
                 schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
                 source: crate::core::config::Source::GraphQL,
             }])
-            .with_operation_name("Query")
-            .with_field_name_prefix("f")
-            .with_type_name_prefix("T")
             .generate()?;
 
         insta::assert_snapshot!(cfg_module.config.to_sdl());
@@ -245,14 +188,11 @@ mod test {
     fn should_generate_config_from_json() -> anyhow::Result<()> {
         let parsed_content =
             parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
-        let cfg_module = Generator::builder()
-            .with_inputs(vec![Input::Json {
+        let cfg_module = Generator::default()
+            .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
             }])
-            .with_operation_name("Query")
-            .with_field_name_prefix("f")
-            .with_type_name_prefix("T")
             .generate()?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
@@ -283,11 +223,8 @@ mod test {
         };
 
         // Combine inputs
-        let cfg_module = Generator::builder()
-            .with_inputs(vec![proto_input, json_input, config_input])
-            .with_operation_name("Query")
-            .with_field_name_prefix("f")
-            .with_type_name_prefix("T")
+        let cfg_module = Generator::default()
+            .inputs(vec![proto_input, json_input, config_input])
             .generate()?;
 
         // Assert the combined output
@@ -312,34 +249,8 @@ mod test {
             });
         }
 
-        let cfg_module = Generator::builder()
-            .with_inputs(inputs)
-            .with_operation_name("Query")
-            .with_field_name_prefix("f")
-            .with_type_name_prefix("T")
-            .generate()?;
+        let cfg_module = Generator::default().inputs(inputs).generate()?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
-        Ok(())
-    }
-
-    #[test]
-    fn should_generate_error_if_operation_name_not_provided() -> anyhow::Result<()> {
-        let parsed_content =
-            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
-        let cfg_module = Generator::builder()
-            .with_inputs(vec![Input::Json {
-                url: parsed_content.url.parse()?,
-                response: parsed_content.body,
-            }])
-            .with_field_name_prefix("f")
-            .with_type_name_prefix("T")
-            .generate();
-
-        assert!(cfg_module.is_err());
-        assert_eq!(
-            cfg_module.unwrap_err().to_string(),
-            "operation_name is required"
-        );
         Ok(())
     }
 }

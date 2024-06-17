@@ -246,14 +246,11 @@ mod tests {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[protobuf::NEWS])?;
 
-        let cfg_module = Generator::builder()
-            .with_inputs(vec![Input::Proto(ProtoMetadata {
+        let cfg_module = Generator::default()
+            .inputs(vec![Input::Proto(ProtoMetadata {
                 descriptor_set: set,
                 path: news_proto.to_string(),
             })])
-            .with_type_name_prefix("T")
-            .with_field_name_prefix("f")
-            .with_operation_name("Query")
             .generate()?;
 
         let cfg_module = cfg_module.transform(AmbiguousType::default()).to_result()?;
