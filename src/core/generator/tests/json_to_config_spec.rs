@@ -37,7 +37,7 @@ fn load_json(path: &Path) -> anyhow::Result<(String, Value)> {
 }
 
 fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {
-    let cfg_module = Generator::new()
+    let cfg_module = Generator::builder()
         .with_inputs(vec![Input::Json { url, response: body }])
         .with_operation_name("Query")
         .with_type_name_prefix("T")

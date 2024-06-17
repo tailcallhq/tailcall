@@ -130,7 +130,7 @@ impl Generator {
         let path = config.output.file.to_owned();
         let input_samples = self.resolve_io(config).await?;
 
-        let config = ConfigGenerator::new()
+        let config = ConfigGenerator::builder()
             .with_inputs(input_samples)
             .with_operation_name("Query")
             .with_field_name_prefix("f")

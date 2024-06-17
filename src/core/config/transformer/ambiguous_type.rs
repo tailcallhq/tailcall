@@ -246,7 +246,7 @@ mod tests {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[protobuf::NEWS])?;
 
-        let cfg_module = Generator::new()
+        let cfg_module = Generator::builder()
             .with_inputs(vec![Input::Proto(ProtoMetadata {
                 descriptor_set: set,
                 path: news_proto.to_string(),

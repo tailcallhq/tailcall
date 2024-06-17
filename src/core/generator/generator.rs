@@ -40,6 +40,12 @@ pub struct GeneratorBuilder {
     field_name_prefix: Option<String>,
 }
 
+impl Default for GeneratorBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GeneratorBuilder {
     pub fn new() -> Self {
         Self {
@@ -71,31 +77,34 @@ impl GeneratorBuilder {
     }
 
     pub fn generate(&self) -> anyhow::Result<ConfigModule> {
-        let operation_name = self.operation_name.clone().context("operation_name is required")?;
+        let operation_name = self
+            .operation_name
+            .clone()
+            .context("operation_name is required")?;
         let inputs = self.inputs.clone().context("inputs are required")?;
-        let type_name_prefix = self.type_name_prefix.clone().context("type_name_prefix is required")?;
-        let field_name_prefix = self.field_name_prefix.clone().context("field_name_prefix is required")?;
+        let type_name_prefix = self
+            .type_name_prefix
+            .clone()
+            .context("type_name_prefix is required")?;
+        let field_name_prefix = self
+            .field_name_prefix
+            .clone()
+            .context("field_name_prefix is required")?;
 
-
-        let config_generator = Generator {
-            operation_name,
-            inputs,
-            type_name_prefix,
-            field_name_prefix,
-        };
+        let config_generator =
+            Generator { operation_name, inputs, type_name_prefix, field_name_prefix };
         config_generator.generate()
     }
 }
 
 impl Generator {
-    pub fn new() -> GeneratorBuilder {
+    pub fn builder() -> GeneratorBuilder {
         GeneratorBuilder::new()
     }
 
     /// Generates configuration from the provided json samples.
     fn generate_from_json(
         &self,
-        operation_name: &str,
         type_name_generator: &NameGenerator,
         field_name_generator: &NameGenerator,
         json_samples: &[RequestSample],
@@ -104,7 +113,7 @@ impl Generator {
             json_samples,
             type_name_generator,
             field_name_generator,
-            operation_name,
+            &self.operation_name,
         )
         .generate()
     }
@@ -139,7 +148,6 @@ impl Generator {
                 Input::Json { url, response } => {
                     let request_sample = RequestSample::new(url.to_owned(), response.to_owned());
                     config = config.merge_right(self.generate_from_json(
-                        &self.operation_name,
                         &type_name_generator,
                         &field_name_generator,
                         &[request_sample],
@@ -203,7 +211,7 @@ mod test {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[news_proto])?;
 
-        let cfg_module = Generator::new()
+        let cfg_module = Generator::builder()
             .with_inputs(vec![Input::Proto(ProtoMetadata {
                 descriptor_set: set,
                 path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
@@ -219,7 +227,7 @@ mod test {
 
     #[test]
     fn should_generate_config_from_configs() -> anyhow::Result<()> {
-        let cfg_module = Generator::new()
+        let cfg_module = Generator::builder()
             .with_inputs(vec![Input::Config {
                 schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
                 source: crate::core::config::Source::GraphQL,
@@ -237,7 +245,7 @@ mod test {
     fn should_generate_config_from_json() -> anyhow::Result<()> {
         let parsed_content =
             parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
-        let cfg_module = Generator::new()
+        let cfg_module = Generator::builder()
             .with_inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
@@ -275,7 +283,7 @@ mod test {
         };
 
         // Combine inputs
-        let cfg_module = Generator::new()
+        let cfg_module = Generator::builder()
             .with_inputs(vec![proto_input, json_input, config_input])
             .with_operation_name("Query")
             .with_field_name_prefix("f")
@@ -304,7 +312,7 @@ mod test {
             });
         }
 
-        let cfg_module = Generator::new()
+        let cfg_module = Generator::builder()
             .with_inputs(inputs)
             .with_operation_name("Query")
             .with_field_name_prefix("f")
@@ -318,7 +326,7 @@ mod test {
     fn should_generate_error_if_operation_name_not_provided() -> anyhow::Result<()> {
         let parsed_content =
             parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
-        let cfg_module = Generator::new()
+        let cfg_module = Generator::builder()
             .with_inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
