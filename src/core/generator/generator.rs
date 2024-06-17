@@ -20,6 +20,7 @@ pub struct Generator {
     field_name_prefix: String,
 }
 
+#[derive(Clone)]
 pub enum Input {
     Json {
         url: Url,
@@ -69,16 +70,18 @@ impl GeneratorBuilder {
         self
     }
 
-    pub fn generate(self) -> anyhow::Result<ConfigModule> {
+    pub fn generate(&self) -> anyhow::Result<ConfigModule> {
+        let operation_name = self.operation_name.clone().context("operation_name is required")?;
+        let inputs = self.inputs.clone().context("inputs are required")?;
+        let type_name_prefix = self.type_name_prefix.clone().context("type_name_prefix is required")?;
+        let field_name_prefix = self.field_name_prefix.clone().context("field_name_prefix is required")?;
+
+
         let config_generator = Generator {
-            operation_name: self.operation_name.context("operation_name is required")?,
-            inputs: self.inputs.context("inputs are required")?,
-            type_name_prefix: self
-                .type_name_prefix
-                .context("type_name_prefix is required")?,
-            field_name_prefix: self
-                .field_name_prefix
-                .context("field_name_prefix is required")?,
+            operation_name,
+            inputs,
+            type_name_prefix,
+            field_name_prefix,
         };
         config_generator.generate()
     }

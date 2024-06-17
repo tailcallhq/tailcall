@@ -40,6 +40,8 @@ fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {
     let cfg_module = Generator::new()
         .with_inputs(vec![Input::Json { url, response: body }])
         .with_operation_name("Query")
+        .with_type_name_prefix("T")
+        .with_field_name_prefix("f")
         .generate()?;
 
     let snapshot_name = path.file_name().unwrap().to_str().unwrap();

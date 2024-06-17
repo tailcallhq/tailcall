@@ -133,6 +133,8 @@ impl Generator {
         let config = ConfigGenerator::new()
             .with_inputs(input_samples)
             .with_operation_name("Query")
+            .with_field_name_prefix("f")
+            .with_type_name_prefix("T")
             .generate()?;
 
         self.write(&config, &path).await?;

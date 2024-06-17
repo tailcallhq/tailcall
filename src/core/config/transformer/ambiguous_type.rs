@@ -251,6 +251,8 @@ mod tests {
                 descriptor_set: set,
                 path: news_proto.to_string(),
             })])
+            .with_type_name_prefix("T")
+            .with_field_name_prefix("f")
             .with_operation_name("Query")
             .generate()?;
 
