@@ -44,7 +44,6 @@ pub async fn execute_grpc_request(
 mod tests {
     use std::sync::Arc;
 
-    use anyhow::Result;
     use async_trait::async_trait;
     use hyper::body::Bytes;
     use reqwest::header::HeaderMap;
@@ -60,7 +59,7 @@ mod tests {
     use crate::core::http::Response;
     use crate::core::ir::Error;
     use crate::core::runtime::TargetRuntime;
-    use crate::core::HttpIO;
+    use crate::core::{error, HttpIO};
 
     enum TestScenario {
         SuccessWithoutGrpcStatus,
@@ -108,7 +107,7 @@ mod tests {
     }
     async fn prepare_args(
         test_http: TestHttp,
-    ) -> Result<(TargetRuntime, ProtobufOperation, Request)> {
+    ) -> Result<(TargetRuntime, ProtobufOperation, Request), error::Error> {
         let mut runtime = crate::core::runtime::test::init(None);
         runtime.http2_only = Arc::new(test_http);
 
@@ -124,7 +123,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_grpc_request_success_without_grpc_status() -> Result<()> {
+    async fn test_grpc_request_success_without_grpc_status() -> Result<(), Error> {
         let test_http = TestHttp { scenario: TestScenario::SuccessWithoutGrpcStatus };
         let (runtime, operation, request) = prepare_args(test_http).await?;
 
@@ -138,7 +137,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_grpc_request_success_with_ok_grpc_status() -> Result<()> {
+    async fn test_grpc_request_success_with_ok_grpc_status() -> Result<(), Error> {
         let test_http = TestHttp { scenario: TestScenario::SuccessWithOkGrpcStatus };
         let (runtime, operation, request) = prepare_args(test_http).await?;
 
@@ -152,7 +151,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_grpc_request_success_with_error_grpc_status() -> Result<()> {
+    async fn test_grpc_request_success_with_error_grpc_status() -> Result<(), error::Error> {
         let test_http = TestHttp { scenario: TestScenario::SuccessWithErrorGrpcStatus };
         let (runtime, operation, request) = prepare_args(test_http).await?;
 
@@ -193,7 +192,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_grpc_request_error() -> Result<()> {
+    async fn test_grpc_request_error() -> Result<(), Error> {
         let test_http = TestHttp { scenario: TestScenario::Error };
         let (runtime, operation, request) = prepare_args(test_http).await?;
 

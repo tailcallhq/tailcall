@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
 
-use anyhow::Result;
 use tailcall_hasher::TailcallHasher;
 
 use super::request_template::RenderedRequestTemplate;

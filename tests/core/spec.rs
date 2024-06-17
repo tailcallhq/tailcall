@@ -5,7 +5,6 @@ use std::path::Path;
 use std::sync::Arc;
 use std::{fs, panic};
 
-use anyhow::Context;
 use colored::Colorize;
 use futures_util::future::join_all;
 use hyper::{Body, Request};
@@ -130,12 +129,12 @@ async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
 
                 let actual = tailcall_prettier::format(actual, &tailcall_prettier::Parser::Gql)
                     .await
-                    .context(context.clone())
+                    .map_err(|_| super::Error::TailcallPrettier(context.clone()))
                     .unwrap();
 
                 let expected = tailcall_prettier::format(content, &tailcall_prettier::Parser::Gql)
                     .await
-                    .context(context)
+                    .map_err(|_| super::Error::TailcallPrettier(context.clone()))
                     .unwrap();
 
                 pretty_assertions::assert_eq!(
@@ -176,7 +175,7 @@ async fn run_query_tests_on_spec(
         for (i, test) in tests.iter().enumerate() {
             let response = run_test(app_ctx.clone(), test)
                 .await
-                .context(spec.path.to_str().unwrap().to_string())
+                .map_err(|_| super::Error::Execution(spec.path.to_str().unwrap().to_string()))
                 .unwrap();
 
             let mut headers: BTreeMap<String, String> = BTreeMap::new();
@@ -266,7 +265,9 @@ async fn test_spec(spec: ExecutionSpec) {
 
         let client = print_schema(
             (Blueprint::try_from(config)
-                .context(format!("file: {}", spec.path.to_str().unwrap()))
+                .map_err(|_| {
+                    super::Error::Validation(format!("file: {}", spec.path.to_str().unwrap()))
+                })
                 .unwrap())
             .to_schema(),
         );
@@ -283,11 +284,11 @@ async fn test_spec(spec: ExecutionSpec) {
     run_query_tests_on_spec(spec, server, mock_http_client).await;
 }
 
-pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
+pub async fn load_and_test_execution_spec(path: &Path) -> Result<(), super::Error> {
     let contents = fs::read_to_string(path)?;
     let spec: ExecutionSpec = ExecutionSpec::from_source(path, contents)
         .await
-        .with_context(|| path.display().to_string())?;
+        .map_err(|_| super::Error::Execution(path.display().to_string()))?;
 
     match spec.runner {
         Some(Annotation::Skip) => {

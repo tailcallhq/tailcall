@@ -73,14 +73,13 @@ impl CacheManager for HttpCacheManager {
 mod tests {
     use std::collections::HashMap;
 
-    use anyhow::Ok;
     use http_cache::HttpVersion;
     use reqwest::{Method, Response, ResponseBuilderExt};
     use url::Url;
 
     use super::*;
 
-    fn convert_response(response: HttpResponse) -> anyhow::Result<Response> {
+    fn convert_response(response: HttpResponse) -> Result<Response> {
         let ret_res = http::Response::builder()
             .status(response.status)
             .url(response.url)
