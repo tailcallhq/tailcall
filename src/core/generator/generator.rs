@@ -51,8 +51,8 @@ impl Default for TransformOptions {
         Self {
             type_merger_threshold: 1.0,
             consolidate_base_url_threshold: 0.5,
-            use_better_names: false,
-            ..Default::default()
+            use_better_names: true,
+            tree_shake: true,
         }
     }
 }
