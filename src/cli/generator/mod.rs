@@ -1,8 +1,7 @@
 #![allow(clippy::module_inception)]
 
 mod generator;
-mod source;
 pub mod input;
-
+mod source;
 
 pub use generator::Generator;
