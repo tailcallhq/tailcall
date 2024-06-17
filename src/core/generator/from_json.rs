@@ -6,11 +6,11 @@ use super::json::{
 };
 use super::Generate;
 use crate::core::config::transformer::{
-    ConsolidateURL, Pipe, RemoveUnused, Transform, Transformer, TransformerOps, TypeMerger,
-    TypeNameGenerator,
+    ConsolidateURL, RemoveUnused, Transform, TransformerOps, TypeMerger, TypeNameGenerator,
 };
 use crate::core::config::Config;
-use crate::core::valid::Valid;
+use crate::core::merge_right::MergeRight;
+use crate::core::valid::{Valid, Validator};
 
 pub struct RequestSample {
     url: Url,
@@ -55,29 +55,77 @@ impl Generate for FromJsonGenerator<'_> {
         let type_name_gen = self.type_name_generator;
         let query = &self.operation_name;
 
-        let mut config_pipeline: Option<Pipe<_, _>> = None;
+        let mut config = Config::default();
+
         for sample in config_gen_req {
             let field_name = field_name_gen.generate_name();
             let query_generator =
                 QueryGenerator::new(sample.response.is_array(), &sample.url, query, &field_name);
 
             // these transformations are required in order to generate a base config.
-            let transforms = TypesGenerator::new(&sample.response, query_generator, type_name_gen)
-                .pipe(SchemaGenerator::new(query.to_owned()))
-                .pipe(FieldBaseUrlGenerator::new(&sample.url, query))
-                .pipe(RemoveUnused)
-                .pipe(TypeMerger::default())
-                .pipe(TypeNameGenerator);
+            let transform_pipeline =
+                TypesGenerator::new(&sample.response, query_generator, type_name_gen)
+                    .pipe(SchemaGenerator::new(query.to_owned()))
+                    .pipe(FieldBaseUrlGenerator::new(&sample.url, query))
+                    .pipe(RemoveUnused)
+                    .pipe(TypeMerger::default())
+                    .pipe(TypeNameGenerator);
 
-            config_pipeline = Some(Transformer::pipe(transforms, Transformer::empty()));
+            if let Ok(generated_config) = transform_pipeline.transform(config.clone()).to_result() {
+                config = config.merge_right(generated_config);
+            }
         }
 
-        if let Some(pipe_line) = config_pipeline {
-            return pipe_line
-                .pipe(ConsolidateURL::new(0.5))
-                .transform(Default::default());
+        ConsolidateURL::new(0.5).transform(config)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::Deserialize;
+
+    use crate::core::generator::{FromJsonGenerator, Generate, NameGenerator, RequestSample};
+    use crate::core::valid::Validator;
+
+    #[derive(Deserialize)]
+    struct JsonFixture {
+        url: String,
+        body: serde_json::Value,
+    }
+
+    fn parse_json(path: &str) -> JsonFixture {
+        let content = std::fs::read_to_string(path).unwrap();
+        serde_json::from_str(&content).unwrap()
+    }
+
+    #[test]
+    fn generate_config_from_json() -> anyhow::Result<()> {
+        let mut request_samples = vec![];
+        let fixtures = [
+            "src/core/generator/tests/fixtures/json/incompatible_properties.json",
+            "src/core/generator/tests/fixtures/json/list_incompatible_object.json",
+            "src/core/generator/tests/fixtures/json/nested_list.json",
+            "src/core/generator/tests/fixtures/json/nested_same_properties.json",
+            "src/core/generator/tests/fixtures/json/incompatible_root_object.json",
+        ];
+        for fixture in fixtures {
+            let parsed_content = parse_json(fixture);
+            request_samples.push(RequestSample {
+                url: parsed_content.url.parse()?,
+                response: parsed_content.body,
+            });
         }
 
-        Valid::fail("config generation pipeline failed".to_string())
+        let config = FromJsonGenerator::new(
+            request_samples,
+            &NameGenerator::new("T"),
+            &NameGenerator::new("f"),
+            "Query",
+        )
+        .generate()
+        .to_result()?;
+
+        insta::assert_snapshot!(config.to_sdl());
+        Ok(())
     }
 }
