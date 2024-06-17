@@ -1,44 +1,44 @@
 {
-  "input": [
+  "inputs": [
     {
-      "import": {
-        "src": "../protobuf/news.proto"
+      "URL": {
+        "url": "https://jsonplaceholder.typicode.com/posts/1"
+      },
+      "fieldName": "post",
+      "operation": "Query"
+    },
+    {
+      "URL": {
+        "url": "https://jsonplaceholder.typicode.com/posts"
+      },
+      "fieldName": "posts",
+      "operation": "Query"
+    }
+  ],
+  "transformers": [
+    {
+      "TypeMerger": {
+        "threshold": 0.5
       }
     },
     {
-      "config": {
-        "src": "../configs/user-posts.graphql"
-      }
-    },
-    {
-      "import": {
-        "src": "https://jsonplaceholder.typicode.com/posts"
+      "AmbiguousType": {
+        "input": {
+          "prefix": "Input",
+          "postfix": null
+        },
+        "output": {
+          "prefix": null,
+          "postfix": "Output"
+        }
       }
     }
   ],
-  "generate": {
-    "schema": {
-      "query": "Query"
-    }
-  },
   "output": {
-    "useLinks": true,
-    "format": "graphQL",
-    "file": "./output.graphql"
+    "path": "./output.graphql",
+    "format": "graphQL"
   },
-  "transform": {
-    "ambiguousNameResolver": {
-      "inputPrefix": "IN",
-      "outputPrefix": "OUT",
-      "inputPostFix": "IN",
-      "outputPostFix": "OUT"
-    },
-    "mergeTypes": {
-      "threshold": 0.9
-    },
-    "js": {
-      "source": "transformer.js",
-      "functionName": "transform"
-    }
+  "schema": {
+    "query": "Query"
   }
 }
