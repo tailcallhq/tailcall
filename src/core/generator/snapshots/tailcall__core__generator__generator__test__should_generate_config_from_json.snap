@@ -8,14 +8,9 @@ schema @server @upstream(baseURL: "https://example.com") {
 
 scalar Any
 
-type Body {
+type F1 {
   campaignTemplates: Any
   colors: [Any]
-}
-
-type F1 {
-  body: Body
-  url: String
 }
 
 type Query {
