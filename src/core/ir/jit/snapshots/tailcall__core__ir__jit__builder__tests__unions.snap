@@ -45,4 +45,9 @@ ExecutionPlan {
             ],
         },
     ],
+    value: None,
+    dedupe: false,
+    authenticate: false,
+    has_io: false,
+    id: 4945709407666910909,
 }

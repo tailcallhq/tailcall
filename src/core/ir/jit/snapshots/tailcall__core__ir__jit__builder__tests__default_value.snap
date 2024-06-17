@@ -96,4 +96,9 @@ ExecutionPlan {
             ),
         },
     ],
+    value: None,
+    dedupe: false,
+    authenticate: false,
+    has_io: false,
+    id: 10157572271594708730,
 }
