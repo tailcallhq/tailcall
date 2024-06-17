@@ -3,7 +3,7 @@ use crate::core::config::position::Pos;
 use crate::core::config::{self, ConfigModule, Field, GraphQLOperationType};
 use crate::core::graphql::RequestTemplate;
 use crate::core::helpers;
-use crate::core::ir::{IO, IR};
+use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 

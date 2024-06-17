@@ -1,6 +1,6 @@
 use crate::core::config::position::Pos;
-use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
+use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 pub struct SchemaGenerator {
@@ -19,7 +19,9 @@ impl SchemaGenerator {
 }
 
 impl Transform for SchemaGenerator {
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    type Value = Config;
+    type Error = String;
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         self.generate_schema(&mut config);
         Valid::succeed(config)
     }
@@ -30,7 +32,7 @@ mod test {
     use anyhow::Ok;
 
     use super::SchemaGenerator;
-    use crate::core::config::transformer::Transform;
+    use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     #[test]

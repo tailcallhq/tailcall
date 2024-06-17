@@ -4,7 +4,7 @@ use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::position::Pos;
 use crate::core::config::{Field, GraphQLOperationType};
-use crate::core::ir::IR;
+use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 

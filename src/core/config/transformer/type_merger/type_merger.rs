@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use super::similarity::Similarity;
 use crate::core::config::position::Pos;
-use crate::core::config::transformer::Transform;
 use crate::core::config::{Config, Type};
+use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 pub struct TypeMerger {
@@ -135,6 +135,8 @@ fn merge_type(type_: &Type, mut merge_into: Pos<Type>) -> Pos<Type> {
 }
 
 impl Transform for TypeMerger {
+    type Value = Config;
+    type Error = String;
     fn transform(&self, config: Config) -> Valid<Config, String> {
         let config = self.merger(1, config);
         Valid::succeed(config)
@@ -145,8 +147,8 @@ impl Transform for TypeMerger {
 mod test {
     use super::TypeMerger;
     use crate::core::config::position::Pos;
-    use crate::core::config::transformer::Transform;
     use crate::core::config::{Config, Field, Type};
+    use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     #[test]

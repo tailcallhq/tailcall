@@ -1,5 +1,5 @@
-use super::Transform;
 use crate::core::config::Config;
+use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 /// `RemoveUnused` is responsible for removing unused types from a
@@ -10,7 +10,9 @@ use crate::core::valid::Valid;
 pub struct RemoveUnused;
 
 impl Transform for RemoveUnused {
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    type Value = Config;
+    type Error = String;
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let unused_types = config.unused_types();
         config = config.remove_types(unused_types);
         Valid::succeed(config)

@@ -2,8 +2,8 @@ use url::Url;
 
 use super::url_utils::extract_base_url;
 use crate::core::config::position::Pos;
-use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
+use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 pub struct FieldBaseUrlGenerator<'a> {
@@ -18,7 +18,9 @@ impl<'a> FieldBaseUrlGenerator<'a> {
 }
 
 impl Transform for FieldBaseUrlGenerator<'_> {
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    type Value = Config;
+    type Error = String;
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let base_url = match extract_base_url(self.url) {
             Some(base_url) => base_url,
             None => {
@@ -51,8 +53,8 @@ mod test {
 
     use super::FieldBaseUrlGenerator;
     use crate::core::config::position::Pos;
-    use crate::core::config::transformer::Transform;
     use crate::core::config::{Config, Field, Http, Type};
+    use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     #[test]

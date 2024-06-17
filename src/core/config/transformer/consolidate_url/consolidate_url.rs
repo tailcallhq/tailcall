@@ -2,8 +2,8 @@ use std::collections::HashSet;
 
 use super::max_value_map::MaxValueMap;
 use crate::core::config::position::Pos;
-use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
+use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 struct UrlTypeMapping {
@@ -97,6 +97,8 @@ impl ConsolidateURL {
 }
 
 impl Transform for ConsolidateURL {
+    type Value = Config;
+    type Error = String;
     fn transform(&self, config: Config) -> Valid<Config, String> {
         let config = self.generate_base_url(config);
         Valid::succeed(config)
@@ -110,8 +112,8 @@ mod test {
     use tailcall_fixtures::configs;
 
     use super::*;
-    use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
+    use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     fn read_fixture(path: &str) -> String {

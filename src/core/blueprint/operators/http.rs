@@ -4,7 +4,7 @@ use crate::core::config::position::Pos;
 use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
-use crate::core::ir::{IO, IR};
+use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};

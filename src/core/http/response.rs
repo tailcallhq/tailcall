@@ -9,7 +9,7 @@ use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
 use crate::core::grpc::protobuf::ProtobufOperation;
-use crate::core::ir::EvaluationError;
+use crate::core::ir::Error;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
@@ -102,10 +102,7 @@ impl Response<Bytes> {
         let grpc_status = match Status::from_header_map(&self.headers) {
             Some(status) => status,
             None => {
-                return EvaluationError::IOException(
-                    "Error while parsing upstream headers".to_owned(),
-                )
-                .into()
+                return Error::IOException("Error while parsing upstream headers".to_owned()).into()
             }
         };
 
@@ -138,7 +135,7 @@ impl Response<Bytes> {
         }
         obj.insert(Name::new("details"), ConstValue::List(status_details));
 
-        let error = EvaluationError::GRPCError {
+        let error = Error::GRPCError {
             grpc_code: grpc_status.code() as i32,
             grpc_description: grpc_status.code().description().to_owned(),
             grpc_status_message: grpc_status.message().to_owned(),
