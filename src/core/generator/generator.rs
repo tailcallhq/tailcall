@@ -288,4 +288,23 @@ mod test {
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }
+
+    #[test]
+    fn should_generate_error_if_operation_name_not_provided() -> anyhow::Result<()> {
+        let parsed_content =
+            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
+        let cfg_module = Generator::new()
+            .with_json_samples(vec![JsonInput {
+                url: parsed_content.url.parse()?,
+                data: parsed_content.body,
+            }])
+            .generate();
+
+        assert!(cfg_module.is_err());
+        assert_eq!(
+            cfg_module.unwrap_err().to_string(),
+            "Operation name is required to generate the configuration."
+        );
+        Ok(())
+    }
 }
