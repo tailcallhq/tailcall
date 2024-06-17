@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "IO Error: Status code error",
+        "message": "HTTP Error: Status Code error",
         "locations": [
           {
             "line": 1,

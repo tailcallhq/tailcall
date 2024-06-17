@@ -14,7 +14,7 @@ use crate::core::error::Error;
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
-use crate::core::ir::{CacheKey, IoId};
+use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
 
@@ -135,7 +135,7 @@ mod tests {
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-    use crate::core::ir::CacheKey;
+    use crate::core::ir::model::CacheKey;
     use crate::core::mustache::Mustache;
 
     async fn get_protobuf_op() -> ProtobufOperation {

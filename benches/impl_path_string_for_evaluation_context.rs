@@ -19,7 +19,7 @@ use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::error::{file, http};
 use tailcall::core::http::{RequestContext, Response};
-use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
+use tailcall::core::ir::{EvalContext, ResolverContextLike};
 use tailcall::core::path::PathString;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
@@ -196,7 +196,7 @@ impl ResolverContextLike for MockGraphqlContext {
 }
 
 // assert that everything was set up correctly for the benchmark
-fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
+fn assert_test(eval_ctx: &EvalContext<'_, MockGraphqlContext>) {
     // value
     assert_eq!(
         eval_ctx.path_string(&["value", "root"]),
@@ -263,7 +263,7 @@ pub fn bench_main(c: &mut Criterion) {
     let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
 
     req_ctx.server.vars = TEST_VARS.clone();
-    let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
+    let eval_ctx = EvalContext::new(&req_ctx, &MockGraphqlContext);
 
     assert_test(&eval_ctx);
 
