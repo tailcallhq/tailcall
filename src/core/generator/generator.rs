@@ -101,7 +101,7 @@ impl Generator {
         self
     }
 
-    /// Generates the JSON configuration from the provided samples.
+    /// Generates configuration from the provided json samples.
     fn generate_json_config(
         &self,
         operation_name: &str,
@@ -126,7 +126,7 @@ impl Generator {
         .generate()
     }
 
-    /// Generates the Protobuf configuration from the provided metadata.
+    /// Generates the configuration from the provided protobuf metadata.
     fn generate_proto_config(
         &self,
         proto_input: &ProtoInput,
