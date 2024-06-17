@@ -1,13 +1,14 @@
-use crate::core::config::{self};
-use path_clean::PathClean;
-use schemars::JsonSchema;
-use serde::Deserialize;
-use serde::Serialize;
 use std::collections::BTreeMap;
 use std::env;
 use std::marker::PhantomData;
 use std::path::Path;
+
+use path_clean::PathClean;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use url::Url;
+
+use crate::core::config::{self};
 
 #[derive(Deserialize, Debug)]
 pub struct Config<Status = UnResolved> {
@@ -45,10 +46,10 @@ impl Input<UnResolved> {
 #[derive(Deserialize, Debug)]
 pub enum Source<Status = UnResolved> {
     URL {
-         url: String,
-         headers: Option<BTreeMap<String, String>>,
-         method: Option<Method>,
-         body: Option<serde_json::Value>,
+        url: String,
+        headers: Option<BTreeMap<String, String>>,
+        method: Option<Method>,
+        body: Option<serde_json::Value>,
         #[serde(skip)]
         _marker: PhantomData<Status>,
     },
@@ -149,7 +150,7 @@ pub struct Name {
 #[derive(Deserialize, Debug)]
 pub struct Schema {
     pub query: Option<String>,
-    pub  mutation: Option<String>,
+    pub mutation: Option<String>,
 }
 
 impl Config {

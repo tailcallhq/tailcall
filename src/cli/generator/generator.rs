@@ -4,14 +4,13 @@ use std::path::Path;
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
+use super::input::{Config, Resolved, Source};
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::ConfigSource;
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
-
-use super::input::{Config, Resolved, Source};
 
 /// CLI that reads the the config file and generates the required tailcall
 /// configuration.
