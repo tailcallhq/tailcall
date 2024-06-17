@@ -7,7 +7,7 @@ use crate::core::valid::Valid;
 
 pub struct TypeMerger {
     /// thresh required for the merging process.
-    thresh: f32,
+    threshold: f32,
 }
 
 impl TypeMerger {
@@ -21,13 +21,13 @@ impl TypeMerger {
                 validated_thresh
             );
         }
-        Self { thresh: validated_thresh }
+        Self { threshold: validated_thresh }
     }
 }
 
 impl Default for TypeMerger {
     fn default() -> Self {
-        Self { thresh: 1.0 }
+        Self { threshold: 1.0 }
     }
 }
 
@@ -37,7 +37,7 @@ impl TypeMerger {
         let mut similar_type_group_list: Vec<HashSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
-        let mut stat_gen = Similarity::new(&config, self.thresh);
+        let mut stat_gen = Similarity::new(&config, self.threshold);
 
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
@@ -152,19 +152,19 @@ mod test {
     #[test]
     fn test_validate_thresh() {
         let ty_merger = TypeMerger::default();
-        assert_eq!(ty_merger.thresh, 1.0);
+        assert_eq!(ty_merger.threshold, 1.0);
 
         let ty_merger = TypeMerger::new(0.0);
-        assert_eq!(ty_merger.thresh, 0.0);
+        assert_eq!(ty_merger.threshold, 0.0);
 
         let ty_merger = TypeMerger::new(1.2);
-        assert_eq!(ty_merger.thresh, 1.0);
+        assert_eq!(ty_merger.threshold, 1.0);
 
         let ty_merger = TypeMerger::new(-0.5);
-        assert_eq!(ty_merger.thresh, 1.0);
+        assert_eq!(ty_merger.threshold, 1.0);
 
         let ty_merger = TypeMerger::new(0.5);
-        assert_eq!(ty_merger.thresh, 0.5);
+        assert_eq!(ty_merger.threshold, 0.5);
     }
 
     #[test]
