@@ -150,7 +150,7 @@ mod tests {
 
     use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{Config, ConfigModule, Type};
-    use crate::core::generator::{Generator, GeneratorInput};
+    use crate::core::generator::{Generator, ProtoInput};
     use crate::core::proto_reader::ProtoMetadata;
     use crate::core::valid::Validator;
 
@@ -246,13 +246,12 @@ mod tests {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[protobuf::NEWS])?;
 
-        let gen = Generator::default();
-        let cfg_module = gen.run(
-            "Query",
-            &[GeneratorInput::Proto {
-                metadata: ProtoMetadata { descriptor_set: set, path: news_proto.to_string() },
-            }],
-        )?;
+        let cfg_module = Generator::new()
+            .with_proto_samples(vec![ProtoInput {
+                data: ProtoMetadata { descriptor_set: set, path: news_proto.to_string() },
+            }])
+            .with_operation_name("Query")
+            .generate()?;
 
         let cfg_module = cfg_module.transform(AmbiguousType::default()).to_result()?;
 

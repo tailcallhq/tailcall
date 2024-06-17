@@ -8,6 +8,14 @@ mod proto;
 pub mod source;
 
 pub use config::*;
-pub use from_json::{from_json, RequestSample};
-pub use generator::{Generator, GeneratorInput};
+pub use from_json::{from_json, FromJson, RequestSample};
+pub use generator::{ConfigInput, Generator, JsonInput, ProtoInput};
 pub use json::NameGenerator;
+
+use super::config::Config;
+use super::valid::Valid;
+
+pub trait Generate {
+    type Error;
+    fn generate(&self) -> Valid<Config, Self::Error>;
+}

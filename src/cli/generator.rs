@@ -6,7 +6,9 @@ use pathdiff::diff_paths;
 
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::{ConfigSource, ImportSource};
-use crate::core::generator::{Generator, GeneratorConfig, GeneratorInput, InputSource, Resolved};
+use crate::core::generator::{
+    ConfigInput, Generator, GeneratorConfig, InputSource, JsonInput, ProtoInput, Resolved,
+};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
@@ -29,16 +31,11 @@ fn to_relative_path(from: &Path, to: &str) -> Option<String> {
 pub struct ConfigConsoleGenerator {
     config_path: String,
     runtime: TargetRuntime,
-    generator: Generator,
 }
 
 impl ConfigConsoleGenerator {
     pub fn new(config_path: &str, runtime: TargetRuntime) -> Self {
-        Self {
-            config_path: config_path.to_string(),
-            generator: Generator::default(),
-            runtime,
-        }
+        Self { config_path: config_path.to_string(), runtime }
     }
 
     /// Writes the configuration to the output file if allowed.
@@ -101,8 +98,10 @@ impl ConfigConsoleGenerator {
     async fn resolve_io(
         &self,
         config: GeneratorConfig<Resolved>,
-    ) -> anyhow::Result<Vec<GeneratorInput>> {
-        let mut generator_type_inputs = vec![];
+    ) -> anyhow::Result<(Vec<JsonInput>, Vec<ConfigInput>, Vec<ProtoInput>)> {
+        let mut json_samples = vec![];
+        let mut proto_samples = vec![];
+        let mut config_samples = vec![];
 
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
@@ -117,7 +116,7 @@ impl ConfigConsoleGenerator {
                     match source {
                         ImportSource::Url => {
                             let contents = reader.read_file(&src).await?.content;
-                            generator_type_inputs.push(GeneratorInput::Json {
+                            json_samples.push(JsonInput {
                                 url: src.parse()?,
                                 data: serde_json::from_str(&contents)?,
                             });
@@ -128,28 +127,33 @@ impl ConfigConsoleGenerator {
                             {
                                 metadata.path = relative_path_to_proto;
                             }
-                            generator_type_inputs.push(GeneratorInput::Proto { metadata });
+                            proto_samples.push(ProtoInput { data: metadata });
                         }
                     }
                 }
                 InputSource::Config { src, .. } => {
                     let source = config::Source::detect(&src)?;
                     let schema = reader.read_file(&src).await?.content;
-                    generator_type_inputs.push(GeneratorInput::Config { schema, source });
+                    config_samples.push(ConfigInput { schema, source });
                 }
             }
         }
 
-        Ok(generator_type_inputs)
+        Ok((json_samples, config_samples, proto_samples))
     }
 
     /// generates the final configuration.
     pub async fn generate(self) -> anyhow::Result<ConfigModule> {
         let config = self.read().await?;
         let path = config.output.file.to_owned();
-        let generator_input = self.resolve_io(config).await?;
+        let (json_samples, config_samples, proto_samples) = self.resolve_io(config).await?;
 
-        let config = self.generator.run("Query", &generator_input)?;
+        let config = Generator::new()
+            .with_json_samples(json_samples)
+            .with_proto_samples(proto_samples)
+            .with_config_samples(config_samples)
+            .with_operation_name("Query")
+            .generate()?;
 
         self.write(&config, &path).await?;
         Ok(config)

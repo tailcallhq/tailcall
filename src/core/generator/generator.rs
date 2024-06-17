@@ -1,11 +1,11 @@
+use anyhow::Context;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 use serde_json::Value;
 use url::Url;
 
-use super::from_proto::from_proto;
-use super::{from_json, RequestSample, NameGenerator};
-use crate::core::config::{Config, ConfigModule, Link, LinkType, Source};
+use super::{from_proto, FromJson, NameGenerator, RequestSample};
+use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 
@@ -27,71 +27,154 @@ fn resolve_file_descriptor_set(
     Ok(descriptor_set)
 }
 
-pub enum GeneratorInput {
-    Config { schema: String, source: Source },
-    Proto { metadata: ProtoMetadata },
-    Json { url: Url, data: Value },
+pub struct ConfigInput {
+    pub schema: String,
+    pub source: config::Source,
 }
 
+pub struct JsonInput {
+    pub url: Url,
+    pub data: Value,
+}
+
+pub struct ProtoInput {
+    pub data: ProtoMetadata,
+}
+
+/// Generator offers an abstraction over the actual config generators and allows
+/// to generate the single config from multiple sources. i.e (Protobuf and Json)
 pub struct Generator {
-    field_name_gen: NameGenerator,
-    type_name_gen: NameGenerator,
-}
-
-impl Default for Generator {
-    fn default() -> Self {
-        Self {
-            field_name_gen: NameGenerator::new("f"),
-            type_name_gen: NameGenerator::new("T"),
-        }
-    }
+    operation_name: Option<String>,
+    proto_samples: Option<Vec<ProtoInput>>,
+    json_samples: Option<Vec<JsonInput>>,
+    config_samples: Option<Vec<ConfigInput>>,
+    is_mutation: Option<bool>,
+    type_name_prefix: Option<String>,
+    field_name_prefix: Option<String>,
 }
 
 impl Generator {
-    pub fn new(field_prefix: &str, type_prefix: &str) -> Self {
+    pub fn new() -> Self {
         Self {
-            field_name_gen: NameGenerator::new(field_prefix),
-            type_name_gen: NameGenerator::new(type_prefix),
+            operation_name: None,
+            proto_samples: None,
+            json_samples: None,
+            config_samples: None,
+            is_mutation: None,
+            type_name_prefix: None,
+            field_name_prefix: None,
         }
     }
-    pub fn run(
+
+    pub fn with_proto_samples(mut self, samples: Vec<ProtoInput>) -> Self {
+        self.proto_samples = Some(samples);
+        self
+    }
+
+    pub fn with_json_samples(mut self, samples: Vec<JsonInput>) -> Self {
+        self.json_samples = Some(samples);
+        self
+    }
+
+    pub fn with_config_samples(mut self, samples: Vec<ConfigInput>) -> Self {
+        self.config_samples = Some(samples);
+        self
+    }
+
+    pub fn with_operation_name(mut self, query: &str) -> Self {
+        self.operation_name = Some(query.to_owned());
+        self
+    }
+
+    pub fn with_is_mutation(mut self, mutation: bool) -> Self {
+        self.is_mutation = Some(mutation);
+        self
+    }
+
+    pub fn with_type_name_prefix(mut self, prefix: &str) -> Self {
+        self.type_name_prefix = Some(prefix.to_owned());
+        self
+    }
+
+    pub fn with_field_name_prefix(mut self, prefix: &str) -> Self {
+        self.field_name_prefix = Some(prefix.to_owned());
+        self
+    }
+
+    /// Generates the JSON configuration from the provided samples.
+    fn generate_json_config(
         &self,
-        query: &str,
-        config_generation_req: &[GeneratorInput],
-    ) -> anyhow::Result<ConfigModule> {
+        operation_name: &str,
+        is_mutation: bool,
+        json_samples: &[JsonInput],
+    ) -> anyhow::Result<Config> {
+        let type_name_prefix = self.type_name_prefix.clone().unwrap_or("T".to_string());
+        let field_name_prefix = self.field_name_prefix.clone().unwrap_or("f".to_string());
+
+        FromJson::new(
+            &NameGenerator::new(&type_name_prefix),
+            &NameGenerator::new(&field_name_prefix),
+        )
+        .with_mutation(is_mutation)
+        .with_operation(operation_name.to_string())
+        .with_samples(
+            json_samples
+                .iter()
+                .map(|sample| RequestSample::new(sample.url.to_owned(), sample.data.to_owned()))
+                .collect(),
+        )
+        .generate()
+    }
+
+    /// Generates the Protobuf configuration from the provided metadata.
+    fn generate_proto_config(
+        &self,
+        proto_input: &ProtoInput,
+        operation_name: &str,
+    ) -> anyhow::Result<Config> {
+        let metadata = &proto_input.data;
+        let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
+        let mut proto_config = from_proto::from_proto(&[descriptor_set], operation_name)?;
+        proto_config.links.push(Link {
+            id: None,
+            src: metadata.path.to_owned(),
+            type_of: LinkType::Protobuf,
+        });
+        Ok(proto_config)
+    }
+
+    pub fn generate(self) -> anyhow::Result<ConfigModule> {
+        let operation_name = self
+            .operation_name
+            .clone()
+            .context("Operation name is required to generate the configuration.")?;
+
+        let is_mutation = self.is_mutation.is_some();
+
         let mut config = Config::default();
 
-        for req in config_generation_req {
-            match req {
-                GeneratorInput::Config { schema, source } => {
-                    config = config.merge_right(Config::from_source(source.to_owned(), schema)?)
-                }
-                GeneratorInput::Json { url, data } => {
-                    let req = RequestSample::new(url.to_owned(), data.to_owned());
-                    config = config.merge_right(from_json(
-                        &[req],
-                        query,
-                        &self.field_name_gen,
-                        &self.type_name_gen,
-                    )?);
-                }
-                GeneratorInput::Proto { metadata } => {
-                    let descriptor_set =
-                        resolve_file_descriptor_set(metadata.descriptor_set.to_owned())?;
-                    config = config.merge_right(from_proto(&[descriptor_set], query)?);
+        if let Some(json_samples) = &self.json_samples {
+            let json_config =
+                self.generate_json_config(&operation_name, is_mutation, json_samples)?;
+            config = config.merge_right(json_config);
+        }
 
-                    config.links.push(Link {
-                        id: None,
-                        src: metadata.path.to_owned(),
-                        type_of: LinkType::Protobuf,
-                    });
-                }
+        if let Some(proto_samples) = &self.proto_samples {
+            for proto_input in proto_samples {
+                let proto_config = self.generate_proto_config(&proto_input, &operation_name)?;
+
+                config = config.merge_right(proto_config);
             }
         }
-        // TODO: add more transformers here and fix the bug present in AmbiguousType.
-        // let config = ConfigModule::from(config)
-        //     .transform(AmbiguousType::default())
-        //     .to_result()?;
+
+        if let Some(config_samples) = self.config_samples {
+            for config_input in config_samples {
+                config = config.merge_right(Config::from_source(
+                    config_input.source.clone(),
+                    &config_input.schema,
+                )?);
+            }
+        }
 
         Ok(ConfigModule::from(config))
     }
@@ -100,12 +183,27 @@ impl Generator {
 #[cfg(test)]
 mod test {
     use prost_reflect::prost_types::FileDescriptorSet;
+    use serde::Deserialize;
 
-    use super::{Generator, GeneratorInput};
-    use crate::core::proto_reader::ProtoMetadata;
+    use super::Generator;
+    use crate::core::{
+        generator::{ConfigInput, JsonInput, ProtoInput},
+        proto_reader::ProtoMetadata,
+    };
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
         Ok(protox::compile(files, [tailcall_fixtures::protobuf::SELF])?)
+    }
+
+    #[derive(Deserialize)]
+    struct JsonFixture {
+        url: String,
+        body: serde_json::Value,
+    }
+
+    fn parse_json(path: &str) -> JsonFixture {
+        let content = std::fs::read_to_string(path).unwrap();
+        serde_json::from_str(&content).unwrap()
     }
 
     #[test]
@@ -113,51 +211,81 @@ mod test {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[news_proto])?;
 
-        let gen = Generator::default();
-        let cfg_module = gen.run(
-            "Query",
-            &[GeneratorInput::Proto {
-                metadata: ProtoMetadata {
+        let cfg_module = Generator::new()
+            .with_proto_samples(vec![ProtoInput {
+                data: ProtoMetadata {
                     descriptor_set: set,
                     path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
                 },
-            }],
-        )?;
+            }])
+            .with_operation_name("Query")
+            .generate()?;
+
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }
 
     #[test]
     fn should_generate_config_from_configs() -> anyhow::Result<()> {
-        let gen = Generator::default();
-        let cfg_module = gen.run(
-            "Query",
-            &[GeneratorInput::Config {
+        let cfg_module = Generator::new()
+            .with_config_samples(vec![ConfigInput {
                 schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
                 source: crate::core::config::Source::GraphQL,
-            }],
-        )?;
+            }])
+            .with_operation_name("Query")
+            .generate()?;
+
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }
 
-    fn parse_json(path: &str) -> serde_json::Value {
-        let content = std::fs::read_to_string(path).unwrap();
-        serde_json::from_str(&content).unwrap()
+    #[test]
+    fn should_generate_config_from_json() -> anyhow::Result<()> {
+        let parsed_content =
+            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
+        let cfg_module = Generator::new()
+            .with_json_samples(vec![JsonInput {
+                url: parsed_content.url.parse()?,
+                data: parsed_content.body,
+            }])
+            .with_operation_name("Query")
+            .generate()?;
+        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        Ok(())
     }
 
     #[test]
-    fn should_generate_config_from_json() -> anyhow::Result<()> {
-        let gen = Generator::default();
-        let cfg_module = gen.run(
-            "Query",
-            &[GeneratorInput::Json {
-                url: "https://example.com".parse()?,
-                data: parse_json(
-                    "src/core/generator/tests/fixtures/json/incompatible_properties.json",
-                ),
-            }],
-        )?;
+    fn should_generate_combined_config() -> anyhow::Result<()> {
+        // Proto input
+        let news_proto = tailcall_fixtures::protobuf::NEWS;
+        let proto_set = compile_protobuf(&[news_proto])?;
+        let proto_input = ProtoInput {
+            data: ProtoMetadata {
+                descriptor_set: proto_set,
+                path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
+            },
+        };
+
+        // Config input
+        let config_input = ConfigInput {
+            schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
+            source: crate::core::config::Source::GraphQL,
+        };
+
+        // Json Input
+        let parsed_content =
+            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
+        let json_input = JsonInput { url: parsed_content.url.parse()?, data: parsed_content.body };
+
+        // Combine inputs
+        let cfg_module = Generator::new()
+            .with_proto_samples(vec![proto_input])
+            .with_config_samples(vec![config_input])
+            .with_json_samples(vec![json_input])
+            .with_operation_name("Query")
+            .generate()?;
+
+        // Assert the combined output
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }
