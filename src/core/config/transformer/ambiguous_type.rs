@@ -147,6 +147,7 @@ impl Transform for AmbiguousType {
 mod tests {
     use std::collections::HashSet;
 
+    use pretty_assertions::assert_eq;
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
 
@@ -155,7 +156,6 @@ mod tests {
     use crate::core::generator::{Generator, Input};
     use crate::core::proto_reader::ProtoMetadata;
     use crate::core::valid::Validator;
-    use pretty_assertions::assert_eq;
 
     fn build_qry(mut config: Config) -> Config {
         let mut query = Type::default();

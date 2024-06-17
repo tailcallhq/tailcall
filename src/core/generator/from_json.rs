@@ -54,7 +54,7 @@ impl Transform for FromJsonGenerator<'_> {
                 sample.response.is_array(),
                 &sample.url,
                 query,
-                &field_name,
+                field_name,
             );
 
             // these transformations are required in order to generate a base config.
