@@ -22,9 +22,9 @@ impl Transform for Preset {
         config: Self::Value,
     ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
         transform::default()
-            .when(super::RemoveUnused, || self.tree_shake)
+            .pipe(super::RemoveUnused.when(self.tree_shake))
             .pipe(super::TypeMerger::new(self.merge_type))
-            .when(super::TypeNameGenerator, || self.use_better_names)
+            .pipe(super::TypeNameGenerator.when(self.use_better_names))
             .pipe(super::ConsolidateURL::new(self.consolidate_url))
             .transform(config)
     }

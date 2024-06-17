@@ -42,27 +42,6 @@ impl<A: Transform> Transform for When<A> {
     }
 }
 
-/// helper struct for conditional pipe.
-pub enum ConditionalTransform<B: Transform> {
-    Actual(B),
-    NoOp(Default<B::Value, B::Error>),
-}
-
-impl<B> Transform for ConditionalTransform<B>
-where
-    B: Transform,
-{
-    type Value = B::Value;
-    type Error = B::Error;
-
-    fn transform(&self, input: Self::Value) -> Valid<Self::Value, Self::Error> {
-        match self {
-            ConditionalTransform::Actual(b) => b.transform(input),
-            ConditionalTransform::NoOp(no_op) => no_op.transform(input),
-        }
-    }
-}
-
 /// Represents a composition of two transformers.
 pub struct Pipe<A, B>(A, B);
 

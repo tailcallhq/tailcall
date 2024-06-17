@@ -128,12 +128,12 @@ impl Generator {
 
         if use_preset {
             config = transformer::Preset::default()
-            .consolidate_url(self.transform_options.consolidate_base_url_threshold)
-            .merge_type(self.transform_options.type_merger_threshold)
-            .use_better_names(self.transform_options.use_better_names)
-            .tree_shake(self.transform_options.tree_shake)
-            .transform(config)
-            .to_result()?
+                .consolidate_url(self.transform_options.consolidate_base_url_threshold)
+                .merge_type(self.transform_options.type_merger_threshold)
+                .use_better_names(self.transform_options.use_better_names)
+                .tree_shake(self.transform_options.tree_shake)
+                .transform(config)
+                .to_result()?
         }
 
         Ok(ConfigModule::from(config))
