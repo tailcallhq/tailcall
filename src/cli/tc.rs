@@ -10,7 +10,7 @@ use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
-use super::generator::ConfigConsoleGenerator;
+use super::generator::Generator;
 use super::update_checker;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
@@ -82,7 +82,7 @@ pub async fn run() -> Result<()> {
         }
         Command::Init { folder_path } => init(&folder_path).await,
         Command::Gen { file_path } => {
-            ConfigConsoleGenerator::new(&file_path, runtime.clone())
+            Generator::new(&file_path, runtime.clone())
                 .generate()
                 .await?;
 

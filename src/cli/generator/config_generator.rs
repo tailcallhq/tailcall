@@ -7,7 +7,7 @@ use pathdiff::diff_paths;
 use super::config::{GeneratorConfig, InputSource, Resolved};
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::{ConfigSource, ImportSource};
-use crate::core::generator::{ConfigInput, Generator, JsonInput, ProtoInput};
+use crate::core::generator::{ConfigInput, Generator as ConfigGenerator, JsonInput, ProtoInput};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
@@ -29,13 +29,13 @@ fn to_relative_path(from: &Path, to: &str) -> Option<String> {
 
 /// it reads the the config file and generates the required tailcall
 /// configuration.
-pub struct ConfigConsoleGenerator {
+pub struct Generator {
     /// path of config file.
     config_path: String,
     runtime: TargetRuntime,
 }
 
-impl ConfigConsoleGenerator {
+impl Generator {
     pub fn new(config_path: &str, runtime: TargetRuntime) -> Self {
         Self { config_path: config_path.to_string(), runtime }
     }
@@ -150,7 +150,7 @@ impl ConfigConsoleGenerator {
         let path = config.output.file.to_owned();
         let (json_samples, config_samples, proto_samples) = self.resolve_io(config).await?;
 
-        let config = Generator::new()
+        let config = ConfigGenerator::new()
             .with_json_samples(json_samples)
             .with_proto_samples(proto_samples)
             .with_config_samples(config_samples)
