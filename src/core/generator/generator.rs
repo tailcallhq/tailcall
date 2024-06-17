@@ -4,7 +4,8 @@ use prost_reflect::DescriptorPool;
 use serde_json::Value;
 use url::Url;
 
-use super::{from_proto, FromJsonGenerator, Generate, NameGenerator, RequestSample};
+use super::from_proto::from_proto;
+use super::{FromJsonGenerator, Generate, NameGenerator, RequestSample};
 use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
@@ -142,7 +143,7 @@ impl Generator {
     ) -> anyhow::Result<Config> {
         let metadata = &proto_input.data;
         let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
-        let mut config = from_proto::from_proto(&[descriptor_set], operation_name)?;
+        let mut config = from_proto(&[descriptor_set], operation_name)?;
         config.links.push(Link {
             id: None,
             src: metadata.path.to_owned(),
