@@ -4,9 +4,8 @@ use std::path::Path;
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
-use super::config::{Config, InputSource, Resolved};
 use crate::core::config::{self, ConfigModule};
-use crate::core::generator::source::{ConfigSource, ImportSource};
+use crate::core::generator::source::ConfigSource;
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
@@ -66,12 +65,12 @@ impl Generator {
         Ok(true)
     }
 
-    async fn read(&self) -> anyhow::Result<Config<Resolved>> {
+    async fn read(&self) -> anyhow::Result<super::input::Config<super::input::Resolved>> {
         let config_path = &self.config_path;
-        let source = ConfigSource::detect(config_path)?;
         let config_content = self.runtime.file.read(config_path).await?;
+        let source = ConfigSource::detect(config_path)?;
 
-        let config: Config = match source {
+        let config: super::input::Config = match source {
             ConfigSource::Json => serde_json::from_str(&config_content)?,
             ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
         };
@@ -82,40 +81,37 @@ impl Generator {
 
     /// performs all the i/o's required in the config file and generates
     /// concrete vec containing data for generator.
-    async fn resolve_io(&self, config: Config<Resolved>) -> anyhow::Result<Vec<Input>> {
+    async fn resolve_io(
+        &self,
+        config: super::input::Config<super::input::Resolved>,
+    ) -> anyhow::Result<Vec<Input>> {
         let mut input_samples = vec![];
 
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
-        let output_dir = Path::new(&config.output.file)
+        let output_dir = Path::new(&config.output.path)
             .parent()
             .unwrap_or(Path::new(""));
 
-        for input in config.input {
+        for input in config.inputs {
             match input.source {
-                InputSource::Import { src, .. } => {
-                    let source = ImportSource::detect(&src)?;
-                    match source {
-                        ImportSource::Url => {
-                            let contents = reader.read_file(&src).await?.content;
-                            input_samples.push(Input::Json {
-                                url: src.parse()?,
-                                response: serde_json::from_str(&contents)?,
-                            });
-                        }
-                        ImportSource::Proto => {
-                            let mut metadata = proto_reader.read(&src).await?;
-                            if let Some(relative_path_to_proto) = to_relative_path(output_dir, &src)
-                            {
-                                metadata.path = relative_path_to_proto;
-                            }
-                            input_samples.push(Input::Proto(metadata));
-                        }
-                    }
+                super::input::Source::URL { url, headers, method, body, _marker } => {
+                    let contents = reader.read_file(&url).await?.content;
+                    input_samples.push(Input::Json {
+                        url: url.parse()?,
+                        response: serde_json::from_str(&contents)?,
+                    });
                 }
-                InputSource::Config { src, .. } => {
-                    let source = config::Source::detect(&src)?;
-                    let schema = reader.read_file(&src).await?.content;
+                super::input::Source::Proto { path, _marker } => {
+                    let mut metadata = proto_reader.read(&path).await?;
+                    if let Some(relative_path_to_proto) = to_relative_path(output_dir, &path) {
+                        metadata.path = relative_path_to_proto;
+                    }
+                    input_samples.push(Input::Proto(metadata));
+                }
+                super::input::Source::Config { url, _marker } => {
+                    let source = config::Source::detect(&url)?;
+                    let schema = reader.read_file(&url).await?.content;
                     input_samples.push(Input::Config { schema, source });
                 }
             }
@@ -127,7 +123,7 @@ impl Generator {
     /// generates the final configuration.
     pub async fn generate(self) -> anyhow::Result<ConfigModule> {
         let config = self.read().await?;
-        let path = config.output.file.to_owned();
+        let path = config.output.path.to_owned();
         let input_samples = self.resolve_io(config).await?;
 
         let config = ConfigGenerator::default()
