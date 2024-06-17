@@ -4,7 +4,7 @@ use std::path::Path;
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
-use super::config::{GeneratorConfig, InputSource, Resolved};
+use super::config::{Config, InputSource, Resolved};
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::source::{ConfigSource, ImportSource};
 use crate::core::generator::{ConfigInput, Generator as ConfigGenerator, JsonInput, ProtoInput};
@@ -81,12 +81,12 @@ impl Generator {
         Ok(true)
     }
 
-    async fn read(&self) -> anyhow::Result<GeneratorConfig<Resolved>> {
+    async fn read(&self) -> anyhow::Result<Config<Resolved>> {
         let config_path = &self.config_path;
         let source = ConfigSource::detect(config_path)?;
         let config_content = self.runtime.file.read(config_path).await?;
 
-        let config: GeneratorConfig = match source {
+        let config: Config = match source {
             ConfigSource::Json => serde_json::from_str(&config_content)?,
             ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
         };
@@ -99,7 +99,7 @@ impl Generator {
     /// concrete vec containing data for generator.
     async fn resolve_io(
         &self,
-        config: GeneratorConfig<Resolved>,
+        config: Config<Resolved>,
     ) -> anyhow::Result<(Vec<JsonInput>, Vec<ConfigInput>, Vec<ProtoInput>)> {
         let mut json_samples = vec![];
         let mut proto_samples = vec![];
