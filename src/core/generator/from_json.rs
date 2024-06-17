@@ -112,7 +112,9 @@ impl Generate for FromJsonGenerator<'_> {
         }
 
         if let Some(pipe_line) = config_pipeline {
-            return pipe_line.transform(Default::default());
+            return pipe_line
+                .pipe(ConsolidateURL::new(0.5))
+                .transform(Default::default());
         }
 
         Valid::fail("config generation pipeline failed".to_string())

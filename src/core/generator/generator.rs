@@ -143,7 +143,8 @@ impl Generator {
         Ok(proto_config)
     }
 
-    pub fn generate(self) -> anyhow::Result<ConfigModule> {
+    /// Generated the actual configuratio from provided samples.
+    pub fn generate(&self) -> anyhow::Result<ConfigModule> {
         let operation_name = self
             .operation_name
             .clone()
@@ -167,7 +168,7 @@ impl Generator {
             }
         }
 
-        if let Some(config_samples) = self.config_samples {
+        if let Some(config_samples) = &self.config_samples {
             for config_input in config_samples {
                 config = config.merge_right(Config::from_source(
                     config_input.source.clone(),
