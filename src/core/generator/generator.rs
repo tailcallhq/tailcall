@@ -21,6 +21,7 @@ pub struct Generator {
     operation_name: String,
     inputs: Vec<Input>,
     type_name_prefix: String,
+    transform_options: TransformOptions,
 }
 
 #[derive(Clone)]
@@ -37,6 +38,25 @@ pub enum Input {
     },
 }
 
+#[derive(Setters)]
+pub struct TransformOptions {
+    type_merger_threshold: f32,
+    consolidate_base_url_threshold: f32,
+    use_better_names: bool,
+    tree_shake: bool,
+}
+
+impl Default for TransformOptions {
+    fn default() -> Self {
+        Self {
+            type_merger_threshold: 1.0,
+            consolidate_base_url_threshold: 0.5,
+            use_better_names: false,
+            ..Default::default()
+        }
+    }
+}
+
 impl Default for Generator {
     fn default() -> Self {
         Self::new()
@@ -49,6 +69,7 @@ impl Generator {
             operation_name: "Query".to_string(),
             inputs: Vec::new(),
             type_name_prefix: "T".to_string(),
+            transform_options: TransformOptions::default(),
         }
     }
 
@@ -106,10 +127,13 @@ impl Generator {
         }
 
         if use_preset {
-            // FIXME: Preset should be configurable
             config = transformer::Preset::default()
-                .transform(config)
-                .to_result()?;
+            .consolidate_url(self.transform_options.consolidate_base_url_threshold)
+            .merge_type(self.transform_options.type_merger_threshold)
+            .use_better_names(self.transform_options.use_better_names)
+            .tree_shake(self.transform_options.tree_shake)
+            .transform(config)
+            .to_result()?
         }
 
         Ok(ConfigModule::from(config))
