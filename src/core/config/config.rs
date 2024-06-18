@@ -787,7 +787,7 @@ impl Config {
             })
     }
 
-    /// find the all types which are present in union.
+    /// finds the all types which are present in union.
     pub fn union_types(&self) -> HashSet<String> {
         self.unions
             .values()
