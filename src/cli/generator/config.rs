@@ -16,8 +16,6 @@ pub struct Config<Status = UnResolved> {
     pub output: Output<Status>,
     pub preset: Option<Preset>,
     pub schema: Schema,
-    #[serde(skip)]
-    _marker: PhantomData<Status>,
 }
 
 #[derive(Clone, Deserialize, Debug, Default)]
@@ -43,43 +41,53 @@ impl From<Preset> for config::transformer::Preset {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(transparent)]
+pub struct Location<A>(pub String, #[serde(skip)] PhantomData<A>);
+
+impl Location<UnResolved> {
+    fn into_resolved(self, parent_dir: Option<&Path>) -> Location<Resolved> {
+        let path = {
+            let path = self.0.as_str();
+            if Url::parse(path).is_ok() || Path::new(path).is_absolute() {
+                path.to_string()
+            } else {
+                let parent_dir = parent_dir.unwrap_or(Path::new(""));
+                let joined_path = parent_dir.join(path);
+                if let Ok(abs_path) = std::fs::canonicalize(&joined_path) {
+                    abs_path.to_string_lossy().to_string()
+                } else if let Ok(cwd) = env::current_dir() {
+                    cwd.join(joined_path).clean().to_string_lossy().to_string()
+                } else {
+                    joined_path.clean().to_string_lossy().to_string()
+                }
+            }
+        };
+        Location(path, PhantomData::default())
+    }
+}
+
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Input<Status = UnResolved> {
     #[serde(flatten)]
     pub source: Source<Status>,
     pub field_name: String,
     pub operation: Option<Operation>,
-    #[serde(skip)]
-    _marker: PhantomData<Status>,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum Source<Status = UnResolved> {
-    Curl {
-        src: String,
-        #[serde(skip)]
-        _marker: PhantomData<Status>,
-    },
-    Proto {
-        src: String,
-        #[serde(skip)]
-        _marker: PhantomData<Status>,
-    },
-    Config {
-        src: String,
-        #[serde(skip)]
-        _marker: PhantomData<Status>,
-    },
+    Curl { src: Location<Status> },
+    Proto { src: Location<Status> },
+    Config { src: Location<Status> },
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Output<Status = UnResolved> {
-    pub path: String,
+    pub path: Location<Status>,
     pub format: Option<config::Source>,
-    #[serde(skip)]
-    _marker: PhantomData<Status>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -128,8 +136,7 @@ impl Output<UnResolved> {
     pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
         Ok(Output {
             format: self.format,
-            path: resolve(&self.path, parent_dir)?,
-            _marker: PhantomData,
+            path: self.path.into_resolved(parent_dir),
         })
     }
 }
@@ -137,17 +144,17 @@ impl Output<UnResolved> {
 impl Source<UnResolved> {
     pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src: url, _marker } => {
-                let resolved_url = resolve(url.as_str(), parent_dir)?;
-                Ok(Source::Curl { src: resolved_url, _marker: PhantomData })
+            Source::Curl { src } => {
+                let resolved_path = src.into_resolved(parent_dir);
+                Ok(Source::Curl { src: resolved_path })
             }
-            Source::Proto { src: path, .. } => {
-                let resolved_path = resolve(path.as_str(), parent_dir)?;
-                Ok(Source::Proto { src: resolved_path, _marker: PhantomData })
+            Source::Proto { src, .. } => {
+                let resolved_path = src.into_resolved(parent_dir);
+                Ok(Source::Proto { src: resolved_path })
             }
-            Source::Config { src: url, .. } => {
-                let resolved_url = resolve(url.as_str(), parent_dir)?;
-                Ok(Source::Config { src: resolved_url, _marker: PhantomData })
+            Source::Config { src, .. } => {
+                let resolved_path = src.into_resolved(parent_dir);
+                Ok(Source::Config { src: resolved_path })
             }
         }
     }
@@ -160,7 +167,6 @@ impl Input<UnResolved> {
             source: resolved_source,
             field_name: self.field_name,
             operation: self.operation,
-            _marker: PhantomData,
         })
     }
 }
@@ -178,31 +184,6 @@ impl Config {
 
         let output = self.output.resolve(parent_dir)?;
 
-        Ok(Config {
-            inputs,
-            output,
-            schema: self.schema,
-            _marker: PhantomData,
-            preset: self.preset,
-        })
+        Ok(Config { inputs, output, schema: self.schema, preset: self.preset })
     }
-}
-
-// TODO: In our codebase we've similar functions like below, create a separate
-// module for helpers functions like these.
-fn resolve(path: &str, parent_dir: Option<&Path>) -> anyhow::Result<String> {
-    if Url::parse(path).is_ok() || Path::new(path).is_absolute() {
-        return Ok(path.to_string());
-    }
-
-    let parent_dir = parent_dir.unwrap_or(Path::new(""));
-    let joined_path = parent_dir.join(path);
-    if let Ok(abs_path) = std::fs::canonicalize(&joined_path) {
-        return Ok(abs_path.to_string_lossy().to_string());
-    }
-    if let Ok(cwd) = env::current_dir() {
-        return Ok(cwd.join(joined_path).clean().to_string_lossy().to_string());
-    }
-
-    Ok(joined_path.clean().to_string_lossy().to_string())
 }

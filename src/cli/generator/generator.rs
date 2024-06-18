@@ -87,13 +87,14 @@ impl Generator {
 
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
-        let output_dir = Path::new(&config.output.path)
+        let output_dir = Path::new(&config.output.path.0)
             .parent()
             .unwrap_or(Path::new(""));
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src: url, .. } => {
+                Source::Curl { src , .. } => {
+                    let url = src.0;
                     let contents = reader.read_file(&url).await?.content;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
@@ -101,16 +102,18 @@ impl Generator {
                         field_name: input.field_name,
                     });
                 }
-                Source::Proto { src: path, _marker } => {
+                Source::Proto { src } => {
+                    let path = src.0;
                     let mut metadata = proto_reader.read(&path).await?;
                     if let Some(relative_path_to_proto) = to_relative_path(output_dir, &path) {
                         metadata.path = relative_path_to_proto;
                     }
                     input_samples.push(Input::Proto(metadata));
                 }
-                Source::Config { src: url, _marker } => {
-                    let source = config::Source::detect(&url)?;
-                    let schema = reader.read_file(&url).await?.content;
+                Source::Config { src } => {
+                    let path = src.0;
+                    let source = config::Source::detect(&path)?;
+                    let schema = reader.read_file(&path).await?.content;
                     input_samples.push(Input::Config { schema, source });
                 }
             }
@@ -122,7 +125,7 @@ impl Generator {
     /// generates the final configuration.
     pub async fn generate(self) -> anyhow::Result<ConfigModule> {
         let config = self.read().await?;
-        let path = config.output.path.to_owned();
+        let path = config.output.path.0.to_owned();
         let preset: config::transformer::Preset = config.preset.clone().unwrap_or_default().into();
         let input_samples = self.resolve_io(config).await?;
         let config = ConfigGenerator::default()
