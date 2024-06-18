@@ -24,7 +24,7 @@ impl<'a> Similarity<'a> {
             (type_1_name, type_1),
             (type_2_name, type_2),
             &mut PairSet::default(),
-            threshold
+            threshold,
         )
     }
 
@@ -66,7 +66,7 @@ impl<'a> Similarity<'a> {
                                 (&field_1_type_of, type_1),
                                 (&field_2_type_of, type_2),
                                 visited_type,
-                                threshold
+                                threshold,
                             );
 
                             same_field_count += if is_nested_type_similar { 1 } else { 0 };

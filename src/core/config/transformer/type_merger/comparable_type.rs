@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
-/// a utility module that facilitates the comparison of two types. It determines whether two types are comparable
-/// and checks if they belong to certain categories.
+/// a utility module that facilitates the comparison of two types. It determines
+/// whether two types are comparable and checks if they belong to certain
+/// categories.
 pub struct ComparableTypes {
     input_types: HashSet<String>,
     union_types: HashSet<String>,
@@ -14,7 +15,7 @@ impl ComparableTypes {
 
     /// checks if the given type is an object type.
     fn is_object_type(&self, type_: &str) -> bool {
-        self.is_input_type(type_) == false && self.is_union_type(type_) == false
+        !self.is_input_type(type_) && !self.is_union_type(type_)
     }
 
     /// checks if the given type is an input type.
@@ -37,14 +38,16 @@ impl ComparableTypes {
         self.is_union_type(type_1) && self.is_union_type(type_2)
     }
 
-    /// returns the threshold required to calculate the similarity between two types.
+    /// returns the threshold required to calculate the similarity between two
+    /// types.
     ///
-    /// If both types are input types or union types, the threshold is set to 1.0,
-    /// indicating that they must match completely. Otherwise, the provided `threshold`
-    /// value is returned.
+    /// If both types are input types or union types, the threshold is set to
+    /// 1.0, indicating that they must match completely. Otherwise, the
+    /// provided `threshold` value is returned.
     pub fn get_threshold(&self, type_1: &str, type_2: &str, threshold: f32) -> f32 {
         if self.are_input_type(type_1, type_2) || self.are_union_type(type_1, type_2) {
-            // if the type is input or union then they're similar only when they've exact same fields.
+            // if the type is input or union then they're similar only when they've exact
+            // same fields.
             1.0
         } else {
             threshold
@@ -53,9 +56,9 @@ impl ComparableTypes {
 
     /// determines whether two type names are comparable.
     ///
-    /// types are comparable if they are both input types, both union types, or neither.
-    /// input types can only be compared with input types, union types with union types,
-    /// and object type with object type.
+    /// types are comparable if they are both input types, both union types, or
+    /// neither. input types can only be compared with input types, union
+    /// types with union types, and object type with object type.
     pub fn comparable(&self, type_1: &str, type_2: &str) -> bool {
         if self.are_input_type(type_1, type_2) || self.are_union_type(type_1, type_2) {
             true
@@ -178,6 +181,5 @@ mod tests {
         assert!(!comparable_types.comparable("InputType1", "UnionType1"));
         assert!(!comparable_types.comparable("InputType1", "ObjectType1"));
         assert!(!comparable_types.comparable("ObjectType1", "UnionType1"));
-
     }
 }

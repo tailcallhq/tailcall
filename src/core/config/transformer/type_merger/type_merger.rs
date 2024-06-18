@@ -55,7 +55,7 @@ impl TypeMerger {
             for (type_name_2, type_info_2) in config.types.iter().skip(i + 1) {
                 if visited_types.contains(type_name_2)
                     || config.is_root_operation_type(type_name_2)
-                    || !comparable_types.comparable(&type_name_1, &type_name_2)
+                    || !comparable_types.comparable(type_name_1, type_name_2)
                 {
                     continue;
                 }
