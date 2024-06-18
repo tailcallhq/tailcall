@@ -60,11 +60,9 @@ impl ComparableTypes {
     /// neither. input types can only be compared with input types, union
     /// types with union types, and object type with object type.
     pub fn comparable(&self, type_1: &str, type_2: &str) -> bool {
-        if self.are_input_type(type_1, type_2) || self.are_union_type(type_1, type_2) {
-            true
-        } else {
-            self.is_object_type(type_1) && self.is_object_type(type_2)
-        }
+        self.are_input_type(type_1, type_2)
+            || self.are_union_type(type_1, type_2)
+            || self.is_object_type(type_1) && self.is_object_type(type_2)
     }
 }
 
