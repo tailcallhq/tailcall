@@ -6,28 +6,28 @@ use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 pub struct TypeMerger {
-    /// thresh required for the merging process.
-    thresh: f32,
+    /// threshold required for the merging process.
+    threshold: f32,
 }
 
 impl TypeMerger {
-    pub fn new(thresh: f32) -> Self {
-        let mut validated_thresh = thresh;
-        if !(0.0..=1.0).contains(&thresh) {
+    pub fn new(threshold: f32) -> Self {
+        let mut validated_thresh = threshold;
+        if !(0.0..=1.0).contains(&threshold) {
             validated_thresh = 1.0;
             tracing::warn!(
                 "Invalid threshold value ({:.2}), reverting to default threshold ({:.2}). allowed range is [0.0 - 1.0] inclusive",
-                thresh,
+                threshold,
                 validated_thresh
             );
         }
-        Self { thresh: validated_thresh }
+        Self { threshold: validated_thresh }
     }
 }
 
 impl Default for TypeMerger {
     fn default() -> Self {
-        Self { thresh: 1.0 }
+        Self { threshold: 1.0 }
     }
 }
 
@@ -37,7 +37,9 @@ impl TypeMerger {
         let mut similar_type_group_list: Vec<HashSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
-        let mut stat_gen = Similarity::new(&config, self.thresh);
+        let mut stat_gen = Similarity::new(&config, self.threshold);
+
+        let input_types = config.input_types();
 
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
@@ -50,10 +52,18 @@ impl TypeMerger {
             let mut type_1_sim = HashSet::new();
             type_1_sim.insert(type_name_1.to_string());
 
+            let is_type_1_input_type = input_types.contains(type_name_1);
+            let is_type_1_union_type = config.unions.contains_key(type_name_1);
+
             for (type_name_2, type_info_2) in config.types.iter().skip(i + 1) {
+                let is_type_2_input_type = input_types.contains(type_name_2);
+                let is_type_2_union_type = config.unions.contains_key(type_name_2);
+
                 if visited_types.contains(type_name_2)
                     || type_name_1 == type_name_2
                     || type_name_2 == query_name.as_str()
+                    || is_type_1_input_type != is_type_2_input_type
+                    || is_type_1_union_type != is_type_2_union_type
                 {
                     continue;
                 }
@@ -106,6 +116,35 @@ impl TypeMerger {
                 {
                     actual_field.type_of = merged_into_type_name.to_string();
                 }
+
+                for arg_ in actual_field.args.values_mut() {
+                    if let Some(merge_into_type_name) =
+                        type_to_merge_type_mapping.get(arg_.type_of.as_str())
+                    {
+                        arg_.type_of = merge_into_type_name.to_string();
+                    }
+                }
+            }
+        }
+
+        for union_type_ in config.unions.values_mut() {
+            // Collect changes to be made
+            let mut types_to_remove = HashSet::new();
+            let mut types_to_add = HashSet::new();
+
+            for type_name in union_type_.types.iter() {
+                if let Some(merge_into_type_name) = type_to_merge_type_mapping.get(type_name) {
+                    types_to_remove.insert(type_name.clone());
+                    types_to_add.insert(merge_into_type_name.clone());
+                }
+            }
+            // Apply changes
+            for type_name in types_to_remove {
+                union_type_.types.remove(&type_name);
+            }
+
+            for type_name in types_to_add {
+                union_type_.types.insert(type_name);
             }
         }
 
@@ -152,19 +191,19 @@ mod test {
     #[test]
     fn test_validate_thresh() {
         let ty_merger = TypeMerger::default();
-        assert_eq!(ty_merger.thresh, 1.0);
+        assert_eq!(ty_merger.threshold, 1.0);
 
         let ty_merger = TypeMerger::new(0.0);
-        assert_eq!(ty_merger.thresh, 0.0);
+        assert_eq!(ty_merger.threshold, 0.0);
 
         let ty_merger = TypeMerger::new(1.2);
-        assert_eq!(ty_merger.thresh, 1.0);
+        assert_eq!(ty_merger.threshold, 1.0);
 
         let ty_merger = TypeMerger::new(-0.5);
-        assert_eq!(ty_merger.thresh, 1.0);
+        assert_eq!(ty_merger.threshold, 1.0);
 
         let ty_merger = TypeMerger::new(0.5);
-        assert_eq!(ty_merger.thresh, 0.5);
+        assert_eq!(ty_merger.threshold, 0.5);
     }
 
     #[test]
@@ -264,5 +303,63 @@ mod test {
         assert_eq!(config.types.len(), 2);
         insta::assert_snapshot!(config.to_sdl());
         Ok(())
+    }
+
+    #[test]
+    fn test_input_types() {
+        let sdl = r#"
+        schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+            query: Query
+          }
+          
+          input Foo {
+            tar: String
+          }
+
+          input Bar {
+            tar: String
+          }
+          
+          type Query {
+            foo(input: Foo): String @http(path: "/foo")
+            bar(input: Bar): String @http(path: "/bar")
+          }
+        "#;
+
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+        let config = TypeMerger::default().transform(config).to_result().unwrap();
+        insta::assert_snapshot!(config.to_sdl());
+    }
+
+    #[test]
+    fn test_union_types() {
+        let sdl = r#"
+        schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+            query: Query
+          }
+          
+          union FooBar = Bar | Baz | Foo
+          
+          type Bar {
+            bar: String
+          }
+          
+          type Baz {
+            bar: String
+          }
+          
+          type Foo {
+            a: String
+            foo: String
+          }
+          
+          type Query {
+            foo: FooBar @http(path: "/foo")
+          }
+        "#;
+
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+        let config = TypeMerger::default().transform(config).to_result().unwrap();
+        insta::assert_snapshot!(config.to_sdl());
     }
 }
