@@ -15,6 +15,7 @@ type Baz {
 type Foo {
   a: String
   foo: String
+  bar: String
 }
 
 type Query {
