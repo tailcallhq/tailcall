@@ -1,7 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
+use super::comparable_type::ComparableTypes;
 use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
+use crate::core::merge_right::MergeRight;
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
@@ -37,44 +39,37 @@ impl TypeMerger {
         let mut similar_type_group_list: Vec<HashSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
-        let mut stat_gen = Similarity::new(&config, self.threshold);
-
-        let input_types = config.input_types();
-        let union_types = config.union_types();
-        let mut similar_union_type_found = false;
-        let mut similar_input_type_found = false;
+        let mut stat_gen = Similarity::new(&config);
+        let comparable_types = ComparableTypes::new(config.input_types(), config.union_types());
 
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
-        let query_name = config.schema.query.clone().unwrap_or_default();
         for (type_name_1, type_info_1) in config.types.iter() {
-            if visited_types.contains(type_name_1) || type_name_1 == query_name.as_str() {
+            if visited_types.contains(type_name_1) || config.is_root_operation_type(type_name_1) {
                 continue;
             }
 
             let mut type_1_sim = HashSet::new();
             type_1_sim.insert(type_name_1.to_string());
 
-            let is_type_1_input_type = input_types.contains(type_name_1);
-            let is_type_1_union_type = union_types.contains(type_name_1);
-
             for (type_name_2, type_info_2) in config.types.iter().skip(i + 1) {
-                let is_type_2_input_type = input_types.contains(type_name_2);
-                let is_type_2_union_type = union_types.contains(type_name_2);
-
                 if visited_types.contains(type_name_2)
-                    || type_name_1 == type_name_2
-                    || type_name_2 == query_name.as_str()
-                    || is_type_1_input_type != is_type_2_input_type
-                    || is_type_1_union_type != is_type_2_union_type
+                    || config.is_root_operation_type(type_name_2)
+                    || !comparable_types.comparable(&type_name_1, &type_name_2)
                 {
                     continue;
                 }
-                let is_similar =
-                    stat_gen.similarity((type_name_1, type_info_1), (type_name_2, type_info_2));
+
+                let threshold =
+                    comparable_types.get_threshold(type_name_1, type_name_2, self.threshold);
+
+                visited_types.insert(type_name_1.clone());
+                let is_similar = stat_gen.similarity(
+                    (type_name_1, type_info_1),
+                    (type_name_2, type_info_2),
+                    threshold,
+                );
                 if is_similar {
-                    similar_input_type_found = is_type_1_input_type && is_type_2_input_type;
-                    similar_union_type_found = is_type_1_union_type && is_type_2_union_type;
                     visited_types.insert(type_name_2.clone());
                     type_1_sim.insert(type_name_2.clone());
                 }
@@ -123,39 +118,35 @@ impl TypeMerger {
                 }
 
                 // make the changes in the input arguments as well.
-                if similar_input_type_found {
-                    for arg_ in actual_field.args.values_mut() {
-                        if let Some(merge_into_type_name) =
-                            type_to_merge_type_mapping.get(arg_.type_of.as_str())
-                        {
-                            arg_.type_of = merge_into_type_name.to_string();
-                        }
+                for arg_ in actual_field.args.values_mut() {
+                    if let Some(merge_into_type_name) =
+                        type_to_merge_type_mapping.get(arg_.type_of.as_str())
+                    {
+                        arg_.type_of = merge_into_type_name.to_string();
                     }
                 }
             }
         }
 
         // replace the merged types in union as well.
-        if similar_union_type_found {
-            for union_type_ in config.unions.values_mut() {
-                // Collect changes to be made
-                let mut types_to_remove = HashSet::new();
-                let mut types_to_add = HashSet::new();
+        for union_type_ in config.unions.values_mut() {
+            // Collect changes to be made
+            let mut types_to_remove = HashSet::new();
+            let mut types_to_add = HashSet::new();
 
-                for type_name in union_type_.types.iter() {
-                    if let Some(merge_into_type_name) = type_to_merge_type_mapping.get(type_name) {
-                        types_to_remove.insert(type_name.clone());
-                        types_to_add.insert(merge_into_type_name.clone());
-                    }
+            for type_name in union_type_.types.iter() {
+                if let Some(merge_into_type_name) = type_to_merge_type_mapping.get(type_name) {
+                    types_to_remove.insert(type_name.clone());
+                    types_to_add.insert(merge_into_type_name.clone());
                 }
-                // Apply changes
-                for type_name in types_to_remove {
-                    union_type_.types.remove(&type_name);
-                }
+            }
+            // Apply changes
+            for type_name in types_to_remove {
+                union_type_.types.remove(&type_name);
+            }
 
-                for type_name in types_to_add {
-                    union_type_.types.insert(type_name);
-                }
+            for type_name in types_to_add {
+                union_type_.types.insert(type_name);
             }
         }
 
@@ -171,16 +162,8 @@ impl TypeMerger {
     }
 }
 
-fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
-    merge_into.fields.extend(type_.fields.clone());
-    merge_into
-        .added_fields
-        .extend(type_.added_fields.iter().cloned());
-    merge_into
-        .implements
-        .extend(type_.implements.iter().cloned());
-
-    merge_into
+fn merge_type(type_: &Type, merge_into: Type) -> Type {
+    merge_into.merge_right(type_.clone())
 }
 
 impl Transform for TypeMerger {
