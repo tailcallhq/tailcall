@@ -62,7 +62,7 @@ impl Location<UnResolved> {
                 }
             }
         };
-        Location(path, PhantomData::default())
+        Location(path, PhantomData)
     }
 }
 

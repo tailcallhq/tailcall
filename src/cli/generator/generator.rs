@@ -93,7 +93,7 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src , .. } => {
+                Source::Curl { src, .. } => {
                     let url = src.0;
                     let contents = reader.read_file(&url).await?.content;
                     input_samples.push(Input::Json {

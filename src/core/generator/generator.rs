@@ -261,9 +261,9 @@ mod test {
         }
 
         let cfg_module = Generator::default()
-        .inputs(inputs)
-        .transformers(vec![Box::new(Preset::default())])
-        .generate(true)?;
+            .inputs(inputs)
+            .transformers(vec![Box::new(Preset::default())])
+            .generate(true)?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }
