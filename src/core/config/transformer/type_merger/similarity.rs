@@ -6,28 +6,25 @@ use crate::core::config::{Config, Type};
 /// threshold.
 pub struct Similarity<'a> {
     config: &'a Config,
-    threshold: f32,
     type_similarity_cache: PairMap<String, bool>,
 }
 
 impl<'a> Similarity<'a> {
-    pub fn new(config: &'a Config, thresh: f32) -> Similarity {
-        Similarity {
-            config,
-            threshold: thresh,
-            type_similarity_cache: PairMap::default(),
-        }
+    pub fn new(config: &'a Config) -> Similarity {
+        Similarity { config, type_similarity_cache: PairMap::default() }
     }
 
     pub fn similarity(
         &mut self,
         (type_1_name, type_1): (&str, &Type),
         (type_2_name, type_2): (&str, &Type),
+        threshold: f32,
     ) -> bool {
         self.similarity_inner(
             (type_1_name, type_1),
             (type_2_name, type_2),
             &mut PairSet::default(),
+            threshold
         )
     }
 
@@ -36,6 +33,7 @@ impl<'a> Similarity<'a> {
         (type_1_name, type_1): (&str, &Type),
         (type_2_name, type_2): (&str, &Type),
         visited_type: &mut PairSet<String>,
+        threshold: f32,
     ) -> bool {
         if let Some(type_similarity_result) = self
             .type_similarity_cache
@@ -68,6 +66,7 @@ impl<'a> Similarity<'a> {
                                 (&field_1_type_of, type_1),
                                 (&field_2_type_of, type_2),
                                 visited_type,
+                                threshold
                             );
 
                             same_field_count += if is_nested_type_similar { 1 } else { 0 };
@@ -79,7 +78,7 @@ impl<'a> Similarity<'a> {
             let total_field_count =
                 (type_1.fields.len() + type_2.fields.len()) as u32 - same_field_count;
 
-            let is_similar = (same_field_count as f32 / total_field_count as f32) >= self.threshold;
+            let is_similar = (same_field_count as f32 / total_field_count as f32) >= threshold;
 
             self.type_similarity_cache.add(
                 type_1_name.to_owned(),
@@ -153,8 +152,8 @@ mod test {
         cfg.types.insert("Bar1".to_owned(), bar1);
         cfg.types.insert("Bar2".to_owned(), bar2);
 
-        let mut gen = Similarity::new(&cfg, 0.5);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2));
+        let mut gen = Similarity::new(&cfg);
+        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5);
 
         assert!(!is_similar)
     }
@@ -219,8 +218,8 @@ mod test {
         cfg.types.insert("Bar1".to_owned(), bar1);
         cfg.types.insert("Bar2".to_owned(), bar2);
 
-        let mut gen = Similarity::new(&cfg, 0.5);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2));
+        let mut gen = Similarity::new(&cfg);
+        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5);
 
         assert!(is_similar)
     }
@@ -257,8 +256,8 @@ mod test {
         cfg.types.insert("Bar1".to_owned(), bar1);
         cfg.types.insert("Bar2".to_owned(), bar2);
 
-        let mut gen = Similarity::new(&cfg, 0.8);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2));
+        let mut gen = Similarity::new(&cfg);
+        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8);
 
         assert!(is_similar)
     }
@@ -308,8 +307,8 @@ mod test {
         cfg.types.insert("Far1".to_owned(), far1);
         cfg.types.insert("Far2".to_owned(), far2);
 
-        let mut gen = Similarity::new(&cfg, 0.8);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2));
+        let mut gen = Similarity::new(&cfg);
+        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8);
 
         assert!(is_similar)
     }
