@@ -40,6 +40,9 @@ impl TypeMerger {
         let mut stat_gen = Similarity::new(&config, self.threshold);
 
         let input_types = config.input_types();
+        let union_types = config.union_types();
+        let mut similar_union_type_found = false;
+        let mut similar_input_type_found = false;
 
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
@@ -53,11 +56,11 @@ impl TypeMerger {
             type_1_sim.insert(type_name_1.to_string());
 
             let is_type_1_input_type = input_types.contains(type_name_1);
-            let is_type_1_union_type = config.unions.contains_key(type_name_1);
+            let is_type_1_union_type = union_types.contains(type_name_1);
 
             for (type_name_2, type_info_2) in config.types.iter().skip(i + 1) {
                 let is_type_2_input_type = input_types.contains(type_name_2);
-                let is_type_2_union_type = config.unions.contains_key(type_name_2);
+                let is_type_2_union_type = union_types.contains(type_name_2);
 
                 if visited_types.contains(type_name_2)
                     || type_name_1 == type_name_2
@@ -70,6 +73,8 @@ impl TypeMerger {
                 let is_similar =
                     stat_gen.similarity((type_name_1, type_info_1), (type_name_2, type_info_2));
                 if is_similar {
+                    similar_input_type_found = is_type_1_input_type && is_type_2_input_type;
+                    similar_union_type_found = is_type_1_union_type && is_type_2_union_type;
                     visited_types.insert(type_name_2.clone());
                     type_1_sim.insert(type_name_2.clone());
                 }
@@ -117,34 +122,40 @@ impl TypeMerger {
                     actual_field.type_of = merged_into_type_name.to_string();
                 }
 
-                for arg_ in actual_field.args.values_mut() {
-                    if let Some(merge_into_type_name) =
-                        type_to_merge_type_mapping.get(arg_.type_of.as_str())
-                    {
-                        arg_.type_of = merge_into_type_name.to_string();
+                // make the changes in the input arguments as well.
+                if similar_input_type_found {
+                    for arg_ in actual_field.args.values_mut() {
+                        if let Some(merge_into_type_name) =
+                            type_to_merge_type_mapping.get(arg_.type_of.as_str())
+                        {
+                            arg_.type_of = merge_into_type_name.to_string();
+                        }
                     }
                 }
             }
         }
 
-        for union_type_ in config.unions.values_mut() {
-            // Collect changes to be made
-            let mut types_to_remove = HashSet::new();
-            let mut types_to_add = HashSet::new();
+        // replace the merged types in union as well.
+        if similar_union_type_found {
+            for union_type_ in config.unions.values_mut() {
+                // Collect changes to be made
+                let mut types_to_remove = HashSet::new();
+                let mut types_to_add = HashSet::new();
 
-            for type_name in union_type_.types.iter() {
-                if let Some(merge_into_type_name) = type_to_merge_type_mapping.get(type_name) {
-                    types_to_remove.insert(type_name.clone());
-                    types_to_add.insert(merge_into_type_name.clone());
+                for type_name in union_type_.types.iter() {
+                    if let Some(merge_into_type_name) = type_to_merge_type_mapping.get(type_name) {
+                        types_to_remove.insert(type_name.clone());
+                        types_to_add.insert(merge_into_type_name.clone());
+                    }
                 }
-            }
-            // Apply changes
-            for type_name in types_to_remove {
-                union_type_.types.remove(&type_name);
-            }
+                // Apply changes
+                for type_name in types_to_remove {
+                    union_type_.types.remove(&type_name);
+                }
 
-            for type_name in types_to_add {
-                union_type_.types.insert(type_name);
+                for type_name in types_to_add {
+                    union_type_.types.insert(type_name);
+                }
             }
         }
 
