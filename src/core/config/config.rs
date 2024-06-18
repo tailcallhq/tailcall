@@ -789,7 +789,8 @@ impl Config {
 
     /// find the all types which are present in union.
     pub fn union_types(&self) -> HashSet<String> {
-        self.unions.values()
+        self.unions
+            .values()
             .flat_map(|union| union.types.iter().cloned())
             .collect()
     }
