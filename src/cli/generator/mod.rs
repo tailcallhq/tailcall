@@ -1,6 +1,7 @@
 #![allow(clippy::module_inception)]
 
-mod config;
+pub mod config;
 mod generator;
+mod source;
 
 pub use generator::Generator;

@@ -11,18 +11,18 @@ use crate::core::valid::{Valid, Validator};
 pub struct RequestSample {
     url: Url,
     response: Value,
+    field_name: String,
 }
 
 impl RequestSample {
-    pub fn new(url: Url, resp: Value) -> Self {
-        Self { url, response: resp }
+    pub fn new(url: Url, resp: Value, field_name: &str) -> Self {
+        Self { url, response: resp, field_name: field_name.to_string() }
     }
 }
 
 pub struct FromJsonGenerator<'a> {
     request_samples: &'a [RequestSample],
     type_name_generator: &'a NameGenerator,
-    field_name_generator: &'a NameGenerator,
     operation_name: String,
 }
 
@@ -30,13 +30,11 @@ impl<'a> FromJsonGenerator<'a> {
     pub fn new(
         request_samples: &'a [RequestSample],
         type_name_generator: &'a NameGenerator,
-        field_name_generator: &'a NameGenerator,
         operation_name: &str,
     ) -> Self {
         Self {
             request_samples,
             type_name_generator,
-            field_name_generator,
             operation_name: operation_name.to_string(),
         }
     }
@@ -47,17 +45,16 @@ impl Transform for FromJsonGenerator<'_> {
     type Error = String;
     fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let config_gen_req = self.request_samples;
-        let field_name_gen = self.field_name_generator;
         let type_name_gen = self.type_name_generator;
         let query = &self.operation_name;
 
         Valid::from_iter(config_gen_req, |sample| {
-            let field_name = field_name_gen.next();
+            let field_name = &sample.field_name;
             let query_generator = json::QueryGenerator::new(
                 sample.response.is_array(),
                 &sample.url,
                 query,
-                &field_name,
+                field_name,
             );
 
             // these transformations are required in order to generate a base config.
@@ -104,23 +101,20 @@ mod tests {
             "src/core/generator/tests/fixtures/json/nested_same_properties.json",
             "src/core/generator/tests/fixtures/json/incompatible_root_object.json",
         ];
+        let field_name_generator = NameGenerator::new("f");
         for fixture in fixtures {
             let parsed_content = parse_json(fixture);
-            request_samples.push(RequestSample {
-                url: parsed_content.url.parse()?,
-                response: parsed_content.body,
-            });
+            request_samples.push(RequestSample::new(
+                parsed_content.url.parse()?,
+                parsed_content.body,
+                &field_name_generator.next(),
+            ));
         }
 
-        let config = FromJsonGenerator::new(
-            &request_samples,
-            &NameGenerator::new("T"),
-            &NameGenerator::new("f"),
-            "Query",
-        )
-        .pipe(Preset::default())
-        .generate()
-        .to_result()?;
+        let config = FromJsonGenerator::new(&request_samples, &NameGenerator::new("T"), "Query")
+            .pipe(Preset::default())
+            .generate()
+            .to_result()?;
 
         insta::assert_snapshot!(config.to_sdl());
         Ok(())

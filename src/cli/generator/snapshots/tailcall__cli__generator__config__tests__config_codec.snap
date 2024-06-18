@@ -1,0 +1,17 @@
+---
+source: src/cli/generator/config.rs
+expression: actual
+---
+{
+  "inputs": [
+    {
+      "curl": {
+        "src": "https://example.com"
+      },
+      "fieldName": "test",
+      "operation": "query"
+    }
+  ],
+  "output": {},
+  "schema": {}
+}

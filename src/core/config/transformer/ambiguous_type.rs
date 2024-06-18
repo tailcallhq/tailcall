@@ -147,15 +147,16 @@ impl Transform for AmbiguousType {
 mod tests {
     use std::collections::HashSet;
 
+    use pretty_assertions::assert_eq;
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
 
     use crate::core::config::transformer::AmbiguousType;
-    use crate::core::config::{Config, ConfigModule, Type};
+    use crate::core::config::{Config, Type};
     use crate::core::generator::{Generator, Input};
     use crate::core::proto_reader::ProtoMetadata;
+    use crate::core::transform::Transform;
     use crate::core::valid::Validator;
-    use pretty_assertions::assert_eq;
 
     fn build_qry(mut config: Config) -> Config {
         let mut query = Type::default();
@@ -216,13 +217,12 @@ mod tests {
 
         config = build_qry(config);
 
-        let config_module = ConfigModule::from(config)
-            .transform(AmbiguousType::default())
+        let config = AmbiguousType::default()
+            .transform(config)
             .to_result()
             .unwrap();
 
-        let actual = config_module
-            .config
+        let actual = config
             .types
             .keys()
             .map(|s| s.as_str())
@@ -256,10 +256,11 @@ mod tests {
             })])
             .generate(false)?;
 
-        let cfg_module = cfg_module.transform(AmbiguousType::default()).to_result()?;
+        let config = AmbiguousType::default()
+            .transform(cfg_module.config)
+            .to_result()?;
 
-        let actual = cfg_module
-            .config
+        let actual = config
             .types
             .keys()
             .map(|s| s.as_str())

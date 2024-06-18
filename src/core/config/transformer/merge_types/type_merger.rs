@@ -5,12 +5,12 @@ use crate::core::config::{Config, Type};
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
-pub struct TypeMerger {
+pub struct MergeTypes {
     /// thresh required for the merging process.
     threshold: f32,
 }
 
-impl TypeMerger {
+impl MergeTypes {
     pub fn new(thresh: f32) -> Self {
         let mut validated_thresh = thresh;
         if !(0.0..=1.0).contains(&thresh) {
@@ -25,13 +25,13 @@ impl TypeMerger {
     }
 }
 
-impl Default for TypeMerger {
+impl Default for MergeTypes {
     fn default() -> Self {
         Self { threshold: 1.0 }
     }
 }
 
-impl TypeMerger {
+impl MergeTypes {
     fn merger(&self, mut merge_counter: u32, mut config: Config) -> Config {
         let mut type_to_merge_type_mapping = HashMap::new();
         let mut similar_type_group_list: Vec<HashSet<String>> = vec![];
@@ -133,7 +133,7 @@ fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
     merge_into
 }
 
-impl Transform for TypeMerger {
+impl Transform for MergeTypes {
     type Value = Config;
     type Error = String;
     fn transform(&self, config: Config) -> Valid<Config, String> {
@@ -144,26 +144,26 @@ impl Transform for TypeMerger {
 
 #[cfg(test)]
 mod test {
-    use super::TypeMerger;
+    use super::MergeTypes;
     use crate::core::config::{Config, Field, Type};
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     #[test]
     fn test_validate_thresh() {
-        let ty_merger = TypeMerger::default();
+        let ty_merger = MergeTypes::default();
         assert_eq!(ty_merger.threshold, 1.0);
 
-        let ty_merger = TypeMerger::new(0.0);
+        let ty_merger = MergeTypes::new(0.0);
         assert_eq!(ty_merger.threshold, 0.0);
 
-        let ty_merger = TypeMerger::new(1.2);
+        let ty_merger = MergeTypes::new(1.2);
         assert_eq!(ty_merger.threshold, 1.0);
 
-        let ty_merger = TypeMerger::new(-0.5);
+        let ty_merger = MergeTypes::new(-0.5);
         assert_eq!(ty_merger.threshold, 1.0);
 
-        let ty_merger = TypeMerger::new(0.5);
+        let ty_merger = MergeTypes::new(0.5);
         assert_eq!(ty_merger.threshold, 0.5);
     }
 
@@ -208,7 +208,7 @@ mod test {
         config.types.insert("Query".to_owned(), q_type);
         config = config.query("Query");
 
-        config = TypeMerger::new(0.5).transform(config).to_result()?;
+        config = MergeTypes::new(0.5).transform(config).to_result()?;
 
         insta::assert_snapshot!(config.to_sdl());
 
@@ -259,7 +259,7 @@ mod test {
 
         assert_eq!(config.types.len(), 5);
 
-        config = TypeMerger::new(1.0).transform(config).to_result()?;
+        config = MergeTypes::new(1.0).transform(config).to_result()?;
 
         assert_eq!(config.types.len(), 2);
         insta::assert_snapshot!(config.to_sdl());

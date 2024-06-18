@@ -4,7 +4,6 @@ mod generator;
 mod graphql_type;
 mod json;
 mod proto;
-pub mod source;
 
 pub use from_json::{FromJsonGenerator, RequestSample};
 pub use generator::{Generator, Input};

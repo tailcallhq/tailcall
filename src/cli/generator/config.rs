@@ -2,6 +2,7 @@ use std::env;
 use std::marker::PhantomData;
 use std::path::Path;
 
+use derive_setters::Setters;
 use path_clean::PathClean;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -9,94 +10,147 @@ use url::Url;
 
 use crate::core::config::{self};
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
+#[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
 pub struct Config<Status = UnResolved> {
-    pub input: Vec<Input<Status>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub inputs: Vec<Input<Status>>,
     pub output: Output<Status>,
-    #[serde(default)]
-    pub generate: GenerateOptions,
-    #[serde(default)]
-    pub transform: Transform,
-    #[serde(skip_serializing, skip_deserializing)]
-    _marker: PhantomData<Status>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preset: Option<Preset>,
+    pub schema: Schema,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Preset {
+    merge_type: Option<f32>,
+    consolidate_url: Option<f32>,
+}
+
+impl From<Preset> for config::transformer::Preset {
+    fn from(val: Preset) -> Self {
+        let mut preset = config::transformer::Preset::default();
+        if let Some(merge_type) = val.merge_type {
+            preset = preset.merge_type(merge_type);
+        }
+
+        if let Some(consolidate_url) = val.consolidate_url {
+            preset = preset.consolidate_url(consolidate_url);
+        }
+
+        preset
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Default)]
+#[serde(transparent)]
+pub struct Location<A>(
+    #[serde(skip_serializing_if = "Location::is_empty")] pub String,
+    #[serde(skip)] PhantomData<A>,
+);
+
+impl<A> Location<A> {
+    fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl Location<UnResolved> {
+    fn into_resolved(self, parent_dir: Option<&Path>) -> Location<Resolved> {
+        let path = {
+            let path = self.0.as_str();
+            if Url::parse(path).is_ok() || Path::new(path).is_absolute() {
+                path.to_string()
+            } else {
+                let parent_dir = parent_dir.unwrap_or(Path::new(""));
+                let joined_path = parent_dir.join(path);
+                if let Ok(abs_path) = std::fs::canonicalize(&joined_path) {
+                    abs_path.to_string_lossy().to_string()
+                } else if let Ok(cwd) = env::current_dir() {
+                    cwd.join(joined_path).clean().to_string_lossy().to_string()
+                } else {
+                    joined_path.clean().to_string_lossy().to_string()
+                }
+            }
+        };
+        Location(path, PhantomData)
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Input<Status = UnResolved> {
+    #[serde(flatten)]
+    pub source: Source<Status>,
+    pub field_name: String,
+    pub operation: Operation,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub enum Source<Status = UnResolved> {
+    Curl { src: Location<Status> },
+    Proto { src: Location<Status> },
+    Config { src: Location<Status> },
+}
+
+#[derive(Deserialize, Serialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Output<Status = UnResolved> {
+    #[serde(skip_serializing_if = "Location::is_empty")]
+    pub path: Location<Status>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<config::Source>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum Operation {
+    #[default]
+    Query,
+    Mutation,
 }
 
 #[derive(Debug)]
 pub enum Resolved {}
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
-pub enum UnResolved {}
-
-#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
+#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone, Default)]
 #[serde(rename_all = "camelCase")]
-pub enum InputSource<Status = UnResolved> {
-    Config {
-        src: String,
-        #[serde(skip_serializing, skip_deserializing)]
-        _marker: PhantomData<Status>,
-    },
-    Import {
-        src: String,
-        #[serde(skip_serializing, skip_deserializing)]
-        _marker: PhantomData<Status>,
-    },
-}
+pub struct UnResolved {}
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Input<Status = UnResolved> {
-    #[serde(flatten)]
-    pub source: InputSource<Status>,
-}
-
-#[derive(Serialize, Deserialize, Debug, JsonSchema, Default, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Output<Status = UnResolved> {
-    /// Controls the output format (graphql, json, yaml)
-    pub format: config::Source,
-    /// Specifies the output file name
-    pub file: String,
-    #[serde(skip_serializing, skip_deserializing)]
-    phantom: PhantomData<Status>,
-}
-
-#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Deserialize, Serialize, Debug, Default)]
 pub struct Schema {
-    #[serde(default = "defaults::schema::query")]
-    pub query: String,
-    #[serde(default = "defaults::schema::mutation")]
-    pub mutation: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub query: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mutation: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct GenerateOptions {
-    #[serde(default)]
-    pub schema: Schema,
+impl Output<UnResolved> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
+        Ok(Output {
+            format: self.format,
+            path: self.path.into_resolved(parent_dir),
+        })
+    }
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, JsonSchema, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Transform {
-    // TODO: change types
-    pub ambiguous_name_resolver: Option<serde_json::Value>,
-    pub merge_types: Option<serde_json::Value>,
-    pub js: Option<serde_json::Value>,
-}
-
-impl InputSource<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<InputSource<Resolved>> {
+impl Source<UnResolved> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
         match self {
-            InputSource::Config { src, _marker } => Ok(InputSource::Config {
-                src: resolve(src.as_str(), parent_dir)?,
-                _marker: PhantomData,
-            }),
-            InputSource::Import { src, _marker } => Ok(InputSource::Import {
-                src: resolve(src.as_str(), parent_dir)?,
-                _marker: PhantomData,
-            }),
+            Source::Curl { src } => {
+                let resolved_path = src.into_resolved(parent_dir);
+                Ok(Source::Curl { src: resolved_path })
+            }
+            Source::Proto { src, .. } => {
+                let resolved_path = src.into_resolved(parent_dir);
+                Ok(Source::Proto { src: resolved_path })
+            }
+            Source::Config { src, .. } => {
+                let resolved_path = src.into_resolved(parent_dir);
+                Ok(Source::Config { src: resolved_path })
+            }
         }
     }
 }
@@ -104,101 +158,50 @@ impl InputSource<UnResolved> {
 impl Input<UnResolved> {
     pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Input<Resolved>> {
         let resolved_source = self.source.resolve(parent_dir)?;
-        Ok(Input { source: resolved_source })
-    }
-}
-
-impl Output<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
-        Ok(Output {
-            format: self.format,
-            file: resolve(&self.file, parent_dir)?,
-            phantom: PhantomData,
+        Ok(Input {
+            source: resolved_source,
+            field_name: self.field_name,
+            operation: self.operation,
         })
-    }
-}
-
-impl Default for Schema {
-    fn default() -> Self {
-        Self {
-            query: defaults::schema::query(),
-            mutation: defaults::schema::mutation(),
-        }
     }
 }
 
 impl Config {
-    /// Resolves all the paths present inside the GeneratorConfig.
-    pub fn resolve_paths(self, config_path: &str) -> anyhow::Result<Config<Resolved>> {
+    /// Resolves all the relative paths present inside the GeneratorConfig.
+    pub fn into_resolved(self, config_path: &str) -> anyhow::Result<Config<Resolved>> {
         let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
 
-        let resolved_inputs = self
-            .input
+        let inputs = self
+            .inputs
             .into_iter()
             .map(|input| input.resolve(parent_dir))
-            .collect::<anyhow::Result<Vec<Input<_>>>>()?;
+            .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
-        Ok(Config {
-            input: resolved_inputs,
-            output: self.output.resolve(parent_dir)?,
-            generate: self.generate,
-            transform: self.transform,
-            _marker: PhantomData,
-        })
+        let output = self.output.resolve(parent_dir)?;
+
+        Ok(Config { inputs, output, schema: self.schema, preset: self.preset })
     }
-}
-
-mod defaults {
-    pub mod schema {
-        pub fn query() -> String {
-            "Query".to_string()
-        }
-
-        pub fn mutation() -> String {
-            "Mutation".to_string()
-        }
-    }
-}
-
-// TODO: In our codebase we've similar functions like below, create a separate
-// module for helpers functions like these.
-fn resolve(path: &str, parent_dir: Option<&Path>) -> anyhow::Result<String> {
-    if Url::parse(path).is_ok() || Path::new(path).is_absolute() {
-        return Ok(path.to_string());
-    }
-
-    let parent_dir = parent_dir.unwrap_or(Path::new(""));
-    let joined_path = parent_dir.join(path);
-    if let Ok(abs_path) = std::fs::canonicalize(&joined_path) {
-        return Ok(abs_path.to_string_lossy().to_string());
-    }
-    if let Ok(cwd) = env::current_dir() {
-        return Ok(cwd.join(joined_path).clean().to_string_lossy().to_string());
-    }
-
-    Ok(joined_path.clean().to_string_lossy().to_string())
 }
 
 #[cfg(test)]
 mod tests {
-    use insta::assert_debug_snapshot;
+    use super::*;
 
-    use super::Config;
-
-    #[test]
-    fn test_from_json() {
-        let content = std::fs::read_to_string(tailcall_fixtures::generator::SIMPLE_JSON).unwrap();
-        let config: Config = serde_json::from_str(&content).unwrap();
-
-        assert_debug_snapshot!(&config);
+    fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
+        Location(s.as_ref().to_string(), PhantomData)
     }
 
     #[test]
-    fn test_resolve_paths() {
-        let file_path = tailcall_fixtures::generator::SIMPLE_JSON;
-        let content = std::fs::read_to_string(tailcall_fixtures::generator::SIMPLE_JSON).unwrap();
-        let config: Config = serde_json::from_str(&content).unwrap();
-        let config = config.resolve_paths(file_path);
-        assert!(config.is_ok());
+    fn test_config_codec() {
+        let config = Config::default().inputs(vec![
+            //
+            Input {
+                field_name: "test".to_string(),
+                operation: Operation::Query,
+                source: Source::Curl { src: location("https://example.com") },
+            },
+        ]);
+        let actual = serde_json::to_string_pretty(&config).unwrap();
+        insta::assert_snapshot!(actual)
     }
 }

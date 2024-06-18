@@ -1,44 +1,30 @@
 {
-  "input": [
+  "inputs": [
     {
-      "import": {
-        "src": "../protobuf/news.proto"
-      }
+      "URL": {
+        "url": "https://jsonplaceholder.typicode.com/posts/1"
+      },
+      "fieldName": "post",
+      "operation": "Query"
     },
     {
-      "config": {
-        "src": "../configs/user-posts.graphql"
-      }
-    },
-    {
-      "import": {
-        "src": "https://jsonplaceholder.typicode.com/posts"
-      }
+      "URL": {
+        "url": "https://jsonplaceholder.typicode.com/posts"
+      },
+      "fieldName": "posts",
+      "operation": "Query"
     }
   ],
-  "generate": {
-    "schema": {
-      "query": "Query"
-    }
+
+  "preset": {
+    "mergeType": 1,
+    "consolidateURL": 0.5
   },
   "output": {
-    "useLinks": true,
-    "format": "graphQL",
-    "file": "./output.graphql"
+    "path": "./output.graphql",
+    "format": "graphQL"
   },
-  "transform": {
-    "ambiguousNameResolver": {
-      "inputPrefix": "IN",
-      "outputPrefix": "OUT",
-      "inputPostFix": "IN",
-      "outputPostFix": "OUT"
-    },
-    "mergeTypes": {
-      "threshold": 0.9
-    },
-    "js": {
-      "source": "transformer.js",
-      "functionName": "transform"
-    }
+  "schema": {
+    "query": "Query"
   }
 }

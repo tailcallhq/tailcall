@@ -4,9 +4,9 @@ use std::path::Path;
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
-use super::config::{Config, InputSource, Resolved};
+use super::config::{Config, Resolved, Source};
+use super::source::ConfigSource;
 use crate::core::config::{self, ConfigModule};
-use crate::core::generator::source::{ConfigSource, ImportSource};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
@@ -77,7 +77,7 @@ impl Generator {
         };
 
         // While reading resolve the internal paths of generalized config.
-        config.resolve_paths(config_path)
+        config.into_resolved(config_path)
     }
 
     /// performs all the i/o's required in the config file and generates
@@ -87,35 +87,33 @@ impl Generator {
 
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
-        let output_dir = Path::new(&config.output.file)
+        let output_dir = Path::new(&config.output.path.0)
             .parent()
             .unwrap_or(Path::new(""));
 
-        for input in config.input {
+        for input in config.inputs {
             match input.source {
-                InputSource::Import { src, .. } => {
-                    let source = ImportSource::detect(&src)?;
-                    match source {
-                        ImportSource::Url => {
-                            let contents = reader.read_file(&src).await?.content;
-                            input_samples.push(Input::Json {
-                                url: src.parse()?,
-                                response: serde_json::from_str(&contents)?,
-                            });
-                        }
-                        ImportSource::Proto => {
-                            let mut metadata = proto_reader.read(&src).await?;
-                            if let Some(relative_path_to_proto) = to_relative_path(output_dir, &src)
-                            {
-                                metadata.path = relative_path_to_proto;
-                            }
-                            input_samples.push(Input::Proto(metadata));
-                        }
-                    }
+                Source::Curl { src, .. } => {
+                    let url = src.0;
+                    let contents = reader.read_file(&url).await?.content;
+                    input_samples.push(Input::Json {
+                        url: url.parse()?,
+                        response: serde_json::from_str(&contents)?,
+                        field_name: input.field_name,
+                    });
                 }
-                InputSource::Config { src, .. } => {
-                    let source = config::Source::detect(&src)?;
-                    let schema = reader.read_file(&src).await?.content;
+                Source::Proto { src } => {
+                    let path = src.0;
+                    let mut metadata = proto_reader.read(&path).await?;
+                    if let Some(relative_path_to_proto) = to_relative_path(output_dir, &path) {
+                        metadata.path = relative_path_to_proto;
+                    }
+                    input_samples.push(Input::Proto(metadata));
+                }
+                Source::Config { src } => {
+                    let path = src.0;
+                    let source = config::Source::detect(&path)?;
+                    let schema = reader.read_file(&path).await?.content;
                     input_samples.push(Input::Config { schema, source });
                 }
             }
@@ -127,11 +125,12 @@ impl Generator {
     /// generates the final configuration.
     pub async fn generate(self) -> anyhow::Result<ConfigModule> {
         let config = self.read().await?;
-        let path = config.output.file.to_owned();
+        let path = config.output.path.0.to_owned();
+        let preset: config::transformer::Preset = config.preset.clone().unwrap_or_default().into();
         let input_samples = self.resolve_io(config).await?;
-
         let config = ConfigGenerator::default()
             .inputs(input_samples)
+            .transformers(vec![Box::new(preset)])
             .generate(true)?;
 
         self.write(&config, &path).await?;

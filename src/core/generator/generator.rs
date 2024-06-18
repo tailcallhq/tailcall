@@ -6,7 +6,7 @@ use url::Url;
 
 use super::from_proto::from_proto;
 use super::{FromJsonGenerator, NameGenerator, RequestSample};
-use crate::core::config::{self, transformer, Config, ConfigModule, Link, LinkType};
+use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::transform::{Transform, TransformerOps};
@@ -21,7 +21,7 @@ pub struct Generator {
     operation_name: String,
     inputs: Vec<Input>,
     type_name_prefix: String,
-    field_name_prefix: String,
+    transformers: Vec<Box<dyn Transform<Value = Config, Error = String>>>,
 }
 
 #[derive(Clone)]
@@ -29,6 +29,7 @@ pub enum Input {
     Json {
         url: Url,
         response: Value,
+        field_name: String,
     },
     Proto(ProtoMetadata),
     Config {
@@ -49,7 +50,7 @@ impl Generator {
             operation_name: "Query".to_string(),
             inputs: Vec::new(),
             type_name_prefix: "T".to_string(),
-            field_name_prefix: "f".to_owned(),
+            transformers: Default::default(),
         }
     }
 
@@ -57,17 +58,13 @@ impl Generator {
     fn generate_from_json(
         &self,
         type_name_generator: &NameGenerator,
-        field_name_generator: &NameGenerator,
         json_samples: &[RequestSample],
     ) -> anyhow::Result<Config> {
-        Ok(FromJsonGenerator::new(
-            json_samples,
-            type_name_generator,
-            field_name_generator,
-            &self.operation_name,
+        Ok(
+            FromJsonGenerator::new(json_samples, type_name_generator, &self.operation_name)
+                .generate()
+                .to_result()?,
         )
-        .generate()
-        .to_result()?)
     }
 
     /// Generates the configuration from the provided protobuf.
@@ -87,9 +84,8 @@ impl Generator {
     }
 
     /// Generated the actual configuratio from provided samples.
-    pub fn generate(&self, use_preset: bool) -> anyhow::Result<ConfigModule> {
+    pub fn generate(&self, use_transformers: bool) -> anyhow::Result<ConfigModule> {
         let mut config: Config = Config::default();
-        let field_name_generator = NameGenerator::new(&self.field_name_prefix);
         let type_name_generator = NameGenerator::new(&self.type_name_prefix);
 
         for input in self.inputs.iter() {
@@ -97,13 +93,12 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                Input::Json { url, response } => {
-                    let request_sample = RequestSample::new(url.to_owned(), response.to_owned());
-                    config = config.merge_right(self.generate_from_json(
-                        &type_name_generator,
-                        &field_name_generator,
-                        &[request_sample],
-                    )?);
+                Input::Json { url, response, field_name } => {
+                    let request_sample =
+                        RequestSample::new(url.to_owned(), response.to_owned(), field_name);
+                    config = config.merge_right(
+                        self.generate_from_json(&type_name_generator, &[request_sample])?,
+                    );
                 }
                 Input::Proto(proto_input) => {
                     config = config
@@ -112,11 +107,10 @@ impl Generator {
             }
         }
 
-        if use_preset {
-            // FIXME: Preset should be configurable
-            config = transformer::Preset::default()
-                .transform(config)
-                .to_result()?;
+        if use_transformers {
+            for t in &self.transformers {
+                config = t.transform(config).to_result()?;
+            }
         }
 
         Ok(ConfigModule::from(config))
@@ -147,7 +141,9 @@ mod test {
     use serde::Deserialize;
 
     use super::Generator;
+    use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::Input;
+    use crate::core::generator::NameGenerator;
     use crate::core::proto_reader::ProtoMetadata;
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
@@ -202,7 +198,9 @@ mod test {
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
+                field_name: "f1".to_string(),
             }])
+            .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
@@ -230,11 +228,13 @@ mod test {
         let json_input = Input::Json {
             url: parsed_content.url.parse()?,
             response: parsed_content.body,
+            field_name: "f1".to_string(),
         };
 
         // Combine inputs
         let cfg_module = Generator::default()
             .inputs(vec![proto_input, json_input, config_input])
+            .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
 
         // Assert the combined output
@@ -250,16 +250,20 @@ mod test {
             "src/core/generator/tests/fixtures/json/list_incompatible_object.json",
             "src/core/generator/tests/fixtures/json/list.json",
         ];
-
+        let field_name_generator = NameGenerator::new("f");
         for json_path in json_fixtures {
             let parsed_content = parse_json(json_path);
             inputs.push(Input::Json {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
+                field_name: field_name_generator.next(),
             });
         }
 
-        let cfg_module = Generator::default().inputs(inputs).generate(true)?;
+        let cfg_module = Generator::default()
+            .inputs(inputs)
+            .transformers(vec![Box::new(Preset::default())])
+            .generate(true)?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }

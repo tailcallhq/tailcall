@@ -43,7 +43,7 @@ pub enum Command {
         #[arg(short, long)]
         schema: bool,
 
-        /// Prints the input config in the provided format.
+        /// Prints the input config in the provided format
         #[clap(short, long)]
         format: Option<config::Source>,
     },
