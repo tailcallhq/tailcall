@@ -125,28 +125,28 @@ impl Generator {
         for tranform_config in config.transformers.iter() {
             match tranform_config {
                 Transformer::TypeMerger { threshold } => {
-                    if let Some(thresh) = threshold {
+                    if let Some(threshold_value) = threshold {
                         transform_options =
-                            transform_options.type_merger_threshold(thresh.to_owned());
+                            transform_options.type_merger_threshold(threshold_value.to_owned());
                     }
                 }
                 Transformer::AmbiguousType { input: _, output: _ } => {
                     // TODO: add AmbiguousType transform.
                 }
                 Transformer::ConsolidateBaseURL { threshold } => {
-                    if let Some(thresh) = threshold {
+                    if let Some(threshold_value) = threshold {
                         transform_options =
-                            transform_options.consolidate_base_url_threshold(thresh.to_owned());
+                            transform_options.consolidate_base_url_threshold(threshold_value.to_owned());
                     }
                 }
-                Transformer::BetterTypeName(allowed) => {
-                    if let Some(flag) = allowed {
-                        transform_options = transform_options.use_better_names(flag.to_owned());
+                Transformer::BetterTypeName(enable_better_names) => {
+                    if let Some(enable_better_names_flag) = enable_better_names {
+                        transform_options = transform_options.use_better_names(enable_better_names_flag.to_owned());
                     }
                 }
-                Transformer::TreeShake(allowed) => {
-                    if let Some(flag) = allowed {
-                        transform_options = transform_options.tree_shake(flag.to_owned());
+                Transformer::TreeShake(enable_tree_shake) => {
+                    if let Some(enable_tree_shake_flag) = enable_tree_shake {
+                        transform_options = transform_options.tree_shake(enable_tree_shake_flag.to_owned());
                     }
                 }
             }
