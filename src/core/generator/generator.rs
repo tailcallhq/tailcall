@@ -270,13 +270,13 @@ mod test {
             "src/core/generator/tests/fixtures/json/list_incompatible_object.json",
             "src/core/generator/tests/fixtures/json/list.json",
         ];
-        let filed_name_generator = NameGenerator::new("f");
+        let field_name_generator = NameGenerator::new("f");
         for json_path in json_fixtures {
             let parsed_content = parse_json(json_path);
             inputs.push(Input::Json {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
-                field_name: filed_name_generator.next(),
+                field_name: field_name_generator.next(),
             });
         }
 
