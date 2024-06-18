@@ -7,7 +7,7 @@ use super::{Server, TypeLike};
 use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::{Arg, Batch, Config, ConfigModule, Field};
-use crate::core::ir::{IO, IR};
+use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
