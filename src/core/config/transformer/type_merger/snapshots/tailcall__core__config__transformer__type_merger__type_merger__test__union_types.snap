@@ -1,0 +1,22 @@
+---
+source: src/core/config/transformer/type_merger/type_merger.rs
+expression: config.to_sdl()
+---
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+union FooBar = Foo | M1
+
+type Foo {
+  a: String
+  foo: String
+}
+
+type M1 {
+  bar: String
+}
+
+type Query {
+  foo: FooBar @http(path: "/foo")
+}
