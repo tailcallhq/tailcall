@@ -1,0 +1,5 @@
+---
+source: src/core/ir/jit/value.rs
+expression: "value().path(&[\"a\", \"b\", \"c\", \"0\"]).unwrap_or(Value::Null).to_string()"
+---
+1
