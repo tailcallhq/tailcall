@@ -1,0 +1,16 @@
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+input Foo {
+  tar: String
+}
+
+input Bar {
+  tar: String
+}
+
+type Query {
+  foo(input: Foo): String @http(path: "/foo")
+  bar(input: Bar): String @http(path: "/bar")
+}

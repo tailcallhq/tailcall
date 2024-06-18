@@ -181,6 +181,7 @@ mod test {
     use crate::core::config::{Config, Field, Type};
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
+    use tailcall_fixtures;
 
     #[test]
     fn test_validate_thresh() {
@@ -301,58 +302,16 @@ mod test {
 
     #[test]
     fn test_input_types() {
-        let sdl = r#"
-        schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
-            query: Query
-          }
-          
-          input Foo {
-            tar: String
-          }
-
-          input Bar {
-            tar: String
-          }
-          
-          type Query {
-            foo(input: Foo): String @http(path: "/foo")
-            bar(input: Bar): String @http(path: "/bar")
-          }
-        "#;
-
-        let config = Config::from_sdl(sdl).to_result().unwrap();
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::INPUT_TYPE_CONFIG).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
 
     #[test]
     fn test_union_types() {
-        let sdl = r#"
-        schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
-            query: Query
-          }
-          
-          union FooBar = Bar | Baz | Foo
-          
-          type Bar {
-            bar: String
-          }
-          
-          type Baz {
-            bar: String
-          }
-          
-          type Foo {
-            a: String
-            foo: String
-          }
-          
-          type Query {
-            foo: FooBar @http(path: "/foo")
-          }
-        "#;
-
-        let config = Config::from_sdl(sdl).to_result().unwrap();
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::UNION_CONFIG).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
