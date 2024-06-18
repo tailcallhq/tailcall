@@ -1,21 +1,27 @@
 {
   "inputs": [
     {
-      "URL": {
-        "url": "https://jsonplaceholder.typicode.com/posts/1"
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/posts/1"
       },
       "fieldName": "post",
-      "operation": "Query"
+      "operation": "query"
     },
     {
-      "URL": {
-        "url": "https://jsonplaceholder.typicode.com/posts"
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/posts"
       },
       "fieldName": "posts",
-      "operation": "Query"
+      "operation": "query"
+    },
+    {
+      "proto": {
+        "src": "../protobuf/news.proto"
+      },
+      "fieldName": "posts",
+      "operation": "query"
     }
   ],
-
   "preset": {
     "mergeType": 1,
     "consolidateURL": 0.5
@@ -25,6 +31,6 @@
     "format": "graphQL"
   },
   "schema": {
-    "query": "Query"
+    "query": "query"
   }
 }
