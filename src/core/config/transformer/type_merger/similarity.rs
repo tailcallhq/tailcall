@@ -9,6 +9,15 @@ pub struct Similarity<'a> {
     type_similarity_cache: PairMap<String, bool>,
 }
 
+/// holds the necessary information for comparing the similarity between two
+/// types.
+struct SimilarityTypeInfo<'a> {
+    type_1_name: &'a str,
+    type_1: &'a Type,
+    type_2_name: &'a str,
+    type_2: &'a Type,
+}
+
 impl<'a> Similarity<'a> {
     pub fn new(config: &'a Config) -> Similarity {
         Similarity { config, type_similarity_cache: PairMap::default() }
@@ -20,21 +29,22 @@ impl<'a> Similarity<'a> {
         (type_2_name, type_2): (&str, &Type),
         threshold: f32,
     ) -> bool {
-        self.similarity_inner(
-            (type_1_name, type_1),
-            (type_2_name, type_2),
-            &mut PairSet::default(),
-            threshold,
-        )
+        let type_info = SimilarityTypeInfo { type_1_name, type_1, type_2, type_2_name };
+
+        self.similarity_inner(type_info, &mut PairSet::default(), threshold)
     }
 
     fn similarity_inner(
         &mut self,
-        (type_1_name, type_1): (&str, &Type),
-        (type_2_name, type_2): (&str, &Type),
+        type_info: SimilarityTypeInfo,
         visited_type: &mut PairSet<String>,
         threshold: f32,
     ) -> bool {
+        let type_1_name = type_info.type_1_name;
+        let type_2_name = type_info.type_2_name;
+        let type_1 = type_info.type_1;
+        let type_2 = type_info.type_2;
+
         if let Some(type_similarity_result) = self
             .type_similarity_cache
             .get(&type_1_name.to_string(), &type_2_name.to_string())
@@ -62,12 +72,15 @@ impl<'a> Similarity<'a> {
                             visited_type
                                 .insert(field_1_type_of.to_owned(), field_2_type_of.to_owned());
 
-                            let is_nested_type_similar = self.similarity_inner(
-                                (&field_1_type_of, type_1),
-                                (&field_2_type_of, type_2),
-                                visited_type,
-                                threshold,
-                            );
+                            let type_info = SimilarityTypeInfo {
+                                type_1,
+                                type_2,
+                                type_1_name: field_1_type_of.as_str(),
+                                type_2_name: field_2_type_of.as_str(),
+                            };
+
+                            let is_nested_type_similar =
+                                self.similarity_inner(type_info, visited_type, threshold);
 
                             same_field_count += if is_nested_type_similar { 1 } else { 0 };
                         }

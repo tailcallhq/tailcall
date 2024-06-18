@@ -177,11 +177,12 @@ impl Transform for TypeMerger {
 
 #[cfg(test)]
 mod test {
+    use tailcall_fixtures;
+
     use super::TypeMerger;
     use crate::core::config::{Config, Field, Type};
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
-    use tailcall_fixtures;
 
     #[test]
     fn test_validate_thresh() {
