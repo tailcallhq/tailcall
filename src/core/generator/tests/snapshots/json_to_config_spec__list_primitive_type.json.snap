@@ -1,11 +1,11 @@
 ---
 source: src/core/generator/tests/json_to_config_spec.rs
-expression: config.to_sdl()
+expression: cfg_module.config.to_sdl()
 ---
-schema @server @upstream(baseURL: "https://example.com") {
+schema @server @upstream {
   query: Query
 }
 
 type Query {
-  f1: [String] @http(path: "/users")
+  f1: [String] @http(baseURL: "https://example.com", path: "/users")
 }

@@ -2,6 +2,7 @@ use std::env;
 use std::marker::PhantomData;
 use std::path::Path;
 
+use derive_setters::Setters;
 use path_clean::PathClean;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -9,16 +10,18 @@ use url::Url;
 
 use crate::core::config::{self};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
 pub struct Config<Status = UnResolved> {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub inputs: Vec<Input<Status>>,
     pub output: Output<Status>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<Preset>,
     pub schema: Schema,
 }
 
-#[derive(Clone, Deserialize, Debug, Default)]
+#[derive(Clone, Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Preset {
     merge_type: Option<f32>,
@@ -40,9 +43,18 @@ impl From<Preset> for config::transformer::Preset {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(transparent)]
-pub struct Location<A>(pub String, #[serde(skip)] PhantomData<A>);
+pub struct Location<A>(
+    #[serde(skip_serializing_if = "Location::is_empty")] pub String,
+    #[serde(skip)] PhantomData<A>,
+);
+
+impl<A> Location<A> {
+    fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
 
 impl Location<UnResolved> {
     fn into_resolved(self, parent_dir: Option<&Path>) -> Location<Resolved> {
@@ -66,16 +78,16 @@ impl Location<UnResolved> {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Input<Status = UnResolved> {
     #[serde(flatten)]
     pub source: Source<Status>,
     pub field_name: String,
-    pub operation: Option<Operation>,
+    pub operation: Operation,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum Source<Status = UnResolved> {
     Curl { src: Location<Status> },
@@ -83,16 +95,19 @@ pub enum Source<Status = UnResolved> {
     Config { src: Location<Status> },
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Output<Status = UnResolved> {
+    #[serde(skip_serializing_if = "Location::is_empty")]
     pub path: Location<Status>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub format: Option<config::Source>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum Operation {
+    #[default]
     Query,
     Mutation,
 }
@@ -100,35 +115,15 @@ pub enum Operation {
 #[derive(Debug)]
 pub enum Resolved {}
 
-#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
+#[derive(Serialize, Deserialize, Debug, JsonSchema, Clone, Default)]
 #[serde(rename_all = "camelCase")]
-pub enum UnResolved {}
+pub struct UnResolved {}
 
-#[derive(Deserialize, Debug)]
-pub enum Transformer {
-    TypeMerger {
-        threshold: Option<f32>,
-    },
-    AmbiguousType {
-        input: Option<Name>,
-        output: Option<Name>,
-    },
-    ConsolidateBaseURL {
-        threshold: Option<f32>,
-    },
-    BetterTypeName(Option<bool>),
-    TreeShake(Option<bool>),
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Name {
-    pub prefix: Option<String>,
-    pub postfix: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 pub struct Schema {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mutation: Option<String>,
 }
 
@@ -185,5 +180,28 @@ impl Config {
         let output = self.output.resolve(parent_dir)?;
 
         Ok(Config { inputs, output, schema: self.schema, preset: self.preset })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
+        Location(s.as_ref().to_string(), PhantomData)
+    }
+
+    #[test]
+    fn test_config_codec() {
+        let config = Config::default().inputs(vec![
+            //
+            Input {
+                field_name: "test".to_string(),
+                operation: Operation::Query,
+                source: Source::Curl { src: location("https://example.com") },
+            },
+        ]);
+        let actual = serde_json::to_string_pretty(&config).unwrap();
+        insta::assert_snapshot!(actual)
     }
 }
