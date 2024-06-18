@@ -23,10 +23,10 @@ pub enum Error {
     #[error("{msg}: {directive:?}")]
     Missing { msg: String, directive: Directive },
 
-    #[error("Method not found")]
+    #[error("Method not provided in the directive")]
     MissingMethod,
 
-    #[error("Path not found")]
+    #[error("Path not provided in the directive")]
     MissingPath,
 
     #[error("Undefined query param: {0}")]

@@ -574,7 +574,7 @@ pub mod tests {
 
         assert_eq!(
             input.to_string(),
-            "Failed to parse input according to type scalars.Item"
+            "Serde Json Error : number out of range at line 2 column 36"
         );
 
         Ok(())

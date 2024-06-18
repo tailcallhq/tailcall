@@ -6,7 +6,7 @@ use crate::core::blueprint::GrpcMethod;
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Serde Json Error")]
+    #[error("Serde Json Error : {0}")]
     SerdeJsonError(serde_json::Error),
 
     #[error("Prost Encode Error")]

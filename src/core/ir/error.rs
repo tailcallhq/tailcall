@@ -74,7 +74,7 @@ impl From<Error> for crate::core::Errata {
 
             Error::CacheError(message) => CoreError::new("Cache Error").description(message),
 
-            Error::CoreError(message) => CoreError::new("Core Error").description(message),
+            Error::CoreError(message) => CoreError::new(message.as_str()),
         }
     }
 }
