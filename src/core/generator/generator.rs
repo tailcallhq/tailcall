@@ -141,6 +141,7 @@ mod test {
     use serde::Deserialize;
 
     use super::Generator;
+    use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::Input;
     use crate::core::generator::NameGenerator;
     use crate::core::proto_reader::ProtoMetadata;
@@ -199,6 +200,7 @@ mod test {
                 response: parsed_content.body,
                 field_name: "f1".to_string(),
             }])
+            .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
@@ -232,6 +234,7 @@ mod test {
         // Combine inputs
         let cfg_module = Generator::default()
             .inputs(vec![proto_input, json_input, config_input])
+            .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
 
         // Assert the combined output
@@ -257,7 +260,10 @@ mod test {
             });
         }
 
-        let cfg_module = Generator::default().inputs(inputs).generate(true)?;
+        let cfg_module = Generator::default()
+        .inputs(inputs)
+        .transformers(vec![Box::new(Preset::default())])
+        .generate(true)?;
         insta::assert_snapshot!(cfg_module.config.to_sdl());
         Ok(())
     }
