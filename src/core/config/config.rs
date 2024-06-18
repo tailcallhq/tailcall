@@ -787,6 +787,13 @@ impl Config {
             })
     }
 
+    /// find the all types which are present in union.
+    pub fn union_types(&self) -> HashSet<String> {
+        self.unions.values()
+            .flat_map(|union| union.types.iter().cloned())
+            .collect()
+    }
+
     /// Returns a list of all the types that are used as output types
     pub fn output_types(&self) -> HashSet<String> {
         let mut types = HashSet::new();
