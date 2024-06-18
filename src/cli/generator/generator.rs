@@ -4,9 +4,9 @@ use std::path::Path;
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
-use super::input::{Config, Resolved, Source};
+use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
-use crate::cli::generator::input::Transformer;
+use crate::cli::generator::config::Transformer;
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::{Generator as ConfigGenerator, Input, TransformOptions};
 use crate::core::proto_reader::ProtoReader;
@@ -135,18 +135,20 @@ impl Generator {
                 }
                 Transformer::ConsolidateBaseURL { threshold } => {
                     if let Some(threshold_value) = threshold {
-                        transform_options =
-                            transform_options.consolidate_base_url_threshold(threshold_value.to_owned());
+                        transform_options = transform_options
+                            .consolidate_base_url_threshold(threshold_value.to_owned());
                     }
                 }
                 Transformer::BetterTypeName(enable_better_names) => {
                     if let Some(enable_better_names_flag) = enable_better_names {
-                        transform_options = transform_options.use_better_names(enable_better_names_flag.to_owned());
+                        transform_options =
+                            transform_options.use_better_names(enable_better_names_flag.to_owned());
                     }
                 }
                 Transformer::TreeShake(enable_tree_shake) => {
                     if let Some(enable_tree_shake_flag) = enable_tree_shake {
-                        transform_options = transform_options.tree_shake(enable_tree_shake_flag.to_owned());
+                        transform_options =
+                            transform_options.tree_shake(enable_tree_shake_flag.to_owned());
                     }
                 }
             }
