@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::env;
 use std::marker::PhantomData;
 use std::path::Path;
@@ -11,13 +10,36 @@ use url::Url;
 use crate::core::config::{self};
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Config<Status = UnResolved> {
     pub inputs: Vec<Input<Status>>,
     pub output: Output<Status>,
-    pub transformers: Vec<Transformer>,
+    pub preset: Option<Preset>,
     pub schema: Schema,
     #[serde(skip)]
     _marker: PhantomData<Status>,
+}
+
+#[derive(Clone, Deserialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Preset {
+    merge_type: Option<f32>,
+    consolidate_url: Option<f32>,
+}
+
+impl From<Preset> for config::transformer::Preset {
+    fn from(val: Preset) -> Self {
+        let mut preset = config::transformer::Preset::default();
+        if let Some(merge_type) = val.merge_type {
+            preset = preset.merge_type(merge_type);
+        }
+
+        if let Some(consolidate_url) = val.consolidate_url {
+            preset = preset.consolidate_url(consolidate_url);
+        }
+
+        preset
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -32,28 +54,27 @@ pub struct Input<Status = UnResolved> {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub enum Source<Status = UnResolved> {
-    URL {
-        url: String,
-        headers: Option<BTreeMap<String, String>>,
-        method: Option<Method>,
-        body: Option<serde_json::Value>,
+    Curl {
+        src: String,
         #[serde(skip)]
         _marker: PhantomData<Status>,
     },
     Proto {
-        path: String,
+        src: String,
         #[serde(skip)]
         _marker: PhantomData<Status>,
     },
     Config {
-        url: String,
+        src: String,
         #[serde(skip)]
         _marker: PhantomData<Status>,
     },
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Output<Status = UnResolved> {
     pub path: String,
     pub format: Option<config::Source>,
@@ -62,6 +83,7 @@ pub struct Output<Status = UnResolved> {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub enum Operation {
     Query,
     Mutation,
@@ -71,12 +93,8 @@ pub enum Operation {
 pub enum Resolved {}
 
 #[derive(Serialize, Deserialize, Debug, JsonSchema, Clone)]
+#[serde(rename_all = "camelCase")]
 pub enum UnResolved {}
-
-#[derive(Deserialize, Debug)]
-pub enum Method {
-    GET,
-}
 
 #[derive(Deserialize, Debug)]
 pub enum Transformer {
@@ -119,23 +137,17 @@ impl Output<UnResolved> {
 impl Source<UnResolved> {
     pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::URL { url, headers, method, body, _marker } => {
+            Source::Curl { src: url, _marker } => {
                 let resolved_url = resolve(url.as_str(), parent_dir)?;
-                Ok(Source::URL {
-                    url: resolved_url,
-                    headers,
-                    method,
-                    body,
-                    _marker: PhantomData,
-                })
+                Ok(Source::Curl { src: resolved_url, _marker: PhantomData })
             }
-            Source::Proto { path, .. } => {
+            Source::Proto { src: path, .. } => {
                 let resolved_path = resolve(path.as_str(), parent_dir)?;
-                Ok(Source::Proto { path: resolved_path, _marker: PhantomData })
+                Ok(Source::Proto { src: resolved_path, _marker: PhantomData })
             }
-            Source::Config { url, .. } => {
+            Source::Config { src: url, .. } => {
                 let resolved_url = resolve(url.as_str(), parent_dir)?;
-                Ok(Source::Config { url: resolved_url, _marker: PhantomData })
+                Ok(Source::Config { src: resolved_url, _marker: PhantomData })
             }
         }
     }
@@ -155,21 +167,23 @@ impl Input<UnResolved> {
 
 impl Config {
     /// Resolves all the relative paths present inside the GeneratorConfig.
-    pub fn resolve_paths(self, config_path: &str) -> anyhow::Result<Config<Resolved>> {
+    pub fn into_resolved(self, config_path: &str) -> anyhow::Result<Config<Resolved>> {
         let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
 
-        let resolved_inputs = self
+        let inputs = self
             .inputs
             .into_iter()
             .map(|input| input.resolve(parent_dir))
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
+        let output = self.output.resolve(parent_dir)?;
+
         Ok(Config {
-            inputs: resolved_inputs,
-            output: self.output.resolve(parent_dir)?,
-            transformers: self.transformers,
+            inputs,
+            output,
             schema: self.schema,
             _marker: PhantomData,
+            preset: self.preset,
         })
     }
 }

@@ -15,25 +15,11 @@
       "operation": "Query"
     }
   ],
-  "transformers": [
-    {
-      "TypeMerger": {
-        "threshold": 0.5
-      }
-    },
-    {
-      "AmbiguousType": {
-        "input": {
-          "prefix": "Input",
-          "postfix": null
-        },
-        "output": {
-          "prefix": null,
-          "postfix": "Output"
-        }
-      }
-    }
-  ],
+
+  "preset": {
+    "mergeType": 1,
+    "consolidateURL": 0.5
+  },
   "output": {
     "path": "./output.graphql",
     "format": "graphQL"

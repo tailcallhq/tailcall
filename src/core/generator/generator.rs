@@ -6,7 +6,7 @@ use url::Url;
 
 use super::from_proto::from_proto;
 use super::{FromJsonGenerator, NameGenerator, RequestSample};
-use crate::core::config::{self, transformer, Config, ConfigModule, Link, LinkType};
+use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::transform::{Transform, TransformerOps};
@@ -21,7 +21,7 @@ pub struct Generator {
     operation_name: String,
     inputs: Vec<Input>,
     type_name_prefix: String,
-    transform_options: TransformOptions,
+    transformers: Vec<Box<dyn Transform<Value = Config, Error = String>>>,
 }
 
 #[derive(Clone)]
@@ -38,25 +38,6 @@ pub enum Input {
     },
 }
 
-#[derive(Setters)]
-pub struct TransformOptions {
-    type_merger_threshold: f32,
-    consolidate_base_url_threshold: f32,
-    use_better_names: bool,
-    tree_shake: bool,
-}
-
-impl Default for TransformOptions {
-    fn default() -> Self {
-        Self {
-            type_merger_threshold: 1.0,
-            consolidate_base_url_threshold: 0.5,
-            use_better_names: true,
-            tree_shake: true,
-        }
-    }
-}
-
 impl Default for Generator {
     fn default() -> Self {
         Self::new()
@@ -69,7 +50,7 @@ impl Generator {
             operation_name: "Query".to_string(),
             inputs: Vec::new(),
             type_name_prefix: "T".to_string(),
-            transform_options: TransformOptions::default(),
+            transformers: Default::default(),
         }
     }
 
@@ -103,7 +84,7 @@ impl Generator {
     }
 
     /// Generated the actual configuratio from provided samples.
-    pub fn generate(&self, use_preset: bool) -> anyhow::Result<ConfigModule> {
+    pub fn generate(&self, use_transformers: bool) -> anyhow::Result<ConfigModule> {
         let mut config: Config = Config::default();
         let type_name_generator = NameGenerator::new(&self.type_name_prefix);
 
@@ -126,14 +107,10 @@ impl Generator {
             }
         }
 
-        if use_preset {
-            config = transformer::Preset::default()
-                .consolidate_url(self.transform_options.consolidate_base_url_threshold)
-                .merge_type(self.transform_options.type_merger_threshold)
-                .use_better_names(self.transform_options.use_better_names)
-                .tree_shake(self.transform_options.tree_shake)
-                .transform(config)
-                .to_result()?
+        if use_transformers {
+            for t in &self.transformers {
+                config = t.transform(config).to_result()?;
+            }
         }
 
         Ok(ConfigModule::from(config))

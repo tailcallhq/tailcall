@@ -6,9 +6,8 @@ use pathdiff::diff_paths;
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
-use crate::cli::generator::config::Transformer;
 use crate::core::config::{self, ConfigModule};
-use crate::core::generator::{Generator as ConfigGenerator, Input, TransformOptions};
+use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
@@ -78,7 +77,7 @@ impl Generator {
         };
 
         // While reading resolve the internal paths of generalized config.
-        config.resolve_paths(config_path)
+        config.into_resolved(config_path)
     }
 
     /// performs all the i/o's required in the config file and generates
@@ -94,7 +93,7 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::URL { url, headers: _, method: _, body: _, .. } => {
+                Source::Curl { src: url, .. } => {
                     let contents = reader.read_file(&url).await?.content;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
@@ -102,14 +101,14 @@ impl Generator {
                         field_name: input.field_name,
                     });
                 }
-                Source::Proto { path, _marker } => {
+                Source::Proto { src: path, _marker } => {
                     let mut metadata = proto_reader.read(&path).await?;
                     if let Some(relative_path_to_proto) = to_relative_path(output_dir, &path) {
                         metadata.path = relative_path_to_proto;
                     }
                     input_samples.push(Input::Proto(metadata));
                 }
-                Source::Config { url, _marker } => {
+                Source::Config { src: url, _marker } => {
                     let source = config::Source::detect(&url)?;
                     let schema = reader.read_file(&url).await?.content;
                     input_samples.push(Input::Config { schema, source });
@@ -120,52 +119,15 @@ impl Generator {
         Ok(input_samples)
     }
 
-    fn resolve_transformers(&self, config: &Config<Resolved>) -> TransformOptions {
-        let mut transform_options = TransformOptions::default();
-        for tranform_config in config.transformers.iter() {
-            match tranform_config {
-                Transformer::TypeMerger { threshold } => {
-                    if let Some(threshold_value) = threshold {
-                        transform_options =
-                            transform_options.type_merger_threshold(threshold_value.to_owned());
-                    }
-                }
-                Transformer::AmbiguousType { input: _, output: _ } => {
-                    // TODO: add AmbiguousType transform.
-                }
-                Transformer::ConsolidateBaseURL { threshold } => {
-                    if let Some(threshold_value) = threshold {
-                        transform_options = transform_options
-                            .consolidate_base_url_threshold(threshold_value.to_owned());
-                    }
-                }
-                Transformer::BetterTypeName(enable_better_names) => {
-                    if let Some(enable_better_names_flag) = enable_better_names {
-                        transform_options =
-                            transform_options.use_better_names(enable_better_names_flag.to_owned());
-                    }
-                }
-                Transformer::TreeShake(enable_tree_shake) => {
-                    if let Some(enable_tree_shake_flag) = enable_tree_shake {
-                        transform_options =
-                            transform_options.tree_shake(enable_tree_shake_flag.to_owned());
-                    }
-                }
-            }
-        }
-        transform_options
-    }
-
     /// generates the final configuration.
     pub async fn generate(self) -> anyhow::Result<ConfigModule> {
         let config = self.read().await?;
-        let transformer_options = self.resolve_transformers(&config);
         let path = config.output.path.to_owned();
+        let preset: config::transformer::Preset = config.preset.clone().unwrap_or_default().into();
         let input_samples = self.resolve_io(config).await?;
-
         let config = ConfigGenerator::default()
             .inputs(input_samples)
-            .transform_options(transformer_options)
+            .transformers(vec![Box::new(preset)])
             .generate(true)?;
 
         self.write(&config, &path).await?;
