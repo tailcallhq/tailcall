@@ -45,8 +45,8 @@ impl TypeMerger {
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
         for type_name_1 in comparable_types.iter() {
-            if let Some(type_info_1) = config.types.get(type_name_1.as_str()) {
-                if visited_types.contains(type_name_1.as_str()) {
+            if let Some(type_info_1) = config.types.get(type_name_1) {
+                if visited_types.contains(type_name_1) {
                     continue;
                 }
 
@@ -54,23 +54,23 @@ impl TypeMerger {
                 similar_type_set.insert(type_name_1.to_string());
 
                 for type_name_2 in comparable_types.iter().skip(i + 1) {
-                    if visited_types.contains(type_name_2.as_str())
-                        || !comparable_types.comparable(type_name_1.as_str(), type_name_2.as_str())
+                    if visited_types.contains(type_name_2)
+                        || !comparable_types.comparable(type_name_1, type_name_2)
                     {
                         continue;
                     }
 
-                    if let Some(type_info_2) = config.types.get(type_name_2.as_str()) {
+                    if let Some(type_info_2) = config.types.get(type_name_2) {
                         let threshold = comparable_types.get_threshold(
-                            type_name_1.as_str(),
-                            type_name_2.as_str(),
+                            type_name_1,
+                            type_name_2,
                             self.threshold,
                         );
 
                         visited_types.insert(type_name_1.clone());
                         let is_similar = stat_gen.similarity(
-                            (type_name_1.as_str(), type_info_1),
-                            (type_name_2.as_str(), type_info_2),
+                            (type_name_1, type_info_1),
+                            (type_name_2, type_info_2),
                             threshold,
                         );
                         if is_similar {
