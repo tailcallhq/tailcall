@@ -1,6 +1,6 @@
 use super::pair_map::PairMap;
 use super::pair_set::PairSet;
-use crate::core::config::{Config, Field, Type};
+use crate::core::config::{Config, Type};
 
 /// Given Two types,it tells similarity between two types based on a specified
 /// threshold.
@@ -34,11 +34,6 @@ impl<'a> Similarity<'a> {
         self.similarity_inner(type_info, &mut PairSet::default(), threshold)
     }
 
-    /// checks if two fields are similar or not.
-    fn are_fields_similar(&self, field_1: &Field, field_2: &Field) -> bool {
-        field_1.type_of == field_2.type_of && field_1.list == field_2.list
-    }
-
     fn similarity_inner(
         &mut self,
         type_info: SimilarityTypeInfo,
@@ -64,10 +59,12 @@ impl<'a> Similarity<'a> {
                     let field_1_type_of = field_1.type_of.to_owned();
                     let field_2_type_of = field_2.type_of.to_owned();
 
-                    if self.are_fields_similar(field_1, field_2) {
-                        same_field_count += 1; // 1 from field_1 +
-                                               // 1 from
-                                               // field_2
+                    if field_1_type_of == field_2_type_of {
+                        // if the field types are same, then check on the list setting.
+                        // eg. type Post and [Post] are not equal.
+                        if field_1.list == field_2.list {
+                            same_field_count += 1;
+                        }
                     } else if let Some(type_1) = config.types.get(field_1_type_of.as_str()) {
                         if let Some(type_2) = config.types.get(field_2_type_of.as_str()) {
                             if visited_type.contains(&field_1_type_of, &field_2_type_of) {
