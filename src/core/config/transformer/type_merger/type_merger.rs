@@ -316,4 +316,12 @@ mod test {
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
+
+    #[test]
+    fn test_list_field_types() {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::USER_LIST).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let config = TypeMerger::default().transform(config).to_result().unwrap();
+        insta::assert_snapshot!(config.to_sdl());
+    }
 }
