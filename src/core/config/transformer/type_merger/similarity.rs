@@ -60,9 +60,12 @@ impl<'a> Similarity<'a> {
                     let field_2_type_of = field_2.type_of.to_owned();
 
                     if field_1_type_of == field_2_type_of {
-                        // if the field types are same, then check on the list setting.
-                        // eg. type Post and [Post] are not equal.
-                        if field_1.list == field_2.list {
+                        // in order to consider the field to be exctly same.
+                        // it's output type must match (required bounds should match too).
+                        if field_1.list == field_2.list
+                            && field_1.required == field_2.required
+                            && field_1.list_type_required == field_2.list_type_required
+                        {
                             same_field_count += 1;
                         }
                     } else if let Some(type_1) = config.types.get(field_1_type_of.as_str()) {
@@ -326,5 +329,197 @@ mod test {
         let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8);
 
         assert!(is_similar)
+    }
+
+    #[test]
+    fn test_required_and_optional_fields() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            required: true,
+            ..Default::default()
+        };
+
+        let optional_int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+        ty1.fields
+            .insert("b".to_string(), required_int_field.clone());
+        ty1.fields
+            .insert("c".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), optional_int_field.clone());
+        ty2.fields
+            .insert("b".to_string(), optional_int_field.clone());
+        ty2.fields
+            .insert("c".to_string(), optional_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        assert!(!types_equal)
+    }
+
+    #[test]
+    fn test_required_list_of_optional_int_vs_optional_list() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            required: true,
+            ..Default::default()
+        };
+
+        let optional_int_field =
+            Field { type_of: "Int".to_owned(), list: true, ..Default::default() };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), optional_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        assert!(!types_equal)
+    }
+
+    #[test]
+    fn test_list_of_required_int_vs_required_list() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            list_type_required: true,
+            ..Default::default()
+        };
+
+        let optional_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            required: true,
+            ..Default::default()
+        };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), optional_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        assert!(!types_equal)
+    }
+
+    #[test]
+    fn test_list_of_required_int_vs_list_of_required_int() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            list_type_required: true,
+            ..Default::default()
+        };
+
+        let optional_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            list_type_required: true,
+            ..Default::default()
+        };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), optional_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        assert!(types_equal)
+    }
+
+    #[test]
+    fn test_required_list_vs_required_list() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            required: true,
+            ..Default::default()
+        };
+
+        let optional_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            required: true,
+            ..Default::default()
+        };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), optional_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        assert!(types_equal)
+    }
+
+    #[test]
+    fn test_required_list_of_required_int_vs_required_list_of_required_int() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            required: true,
+            list_type_required: true,
+            ..Default::default()
+        };
+
+        let optional_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            required: true,
+            list_type_required: true,
+            ..Default::default()
+        };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), optional_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        assert!(types_equal)
     }
 }
