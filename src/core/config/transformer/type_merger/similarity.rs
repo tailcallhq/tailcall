@@ -60,7 +60,7 @@ impl<'a> Similarity<'a> {
                     let field_2_type_of = field_2.type_of.to_owned();
 
                     if field_1_type_of == field_2_type_of {
-                        // in order to consider the field to be exctly same.
+                        // in order to consider the fields to be exactly same.
                         // it's output type must match (required bounds should match too).
                         if field_1.list == field_2.list
                             && field_1.required == field_2.required
