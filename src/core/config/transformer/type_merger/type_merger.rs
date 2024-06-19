@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use super::comparable_type::ComparableTypes;
+use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
 use crate::core::merge_right::MergeRight;
@@ -40,44 +40,49 @@ impl TypeMerger {
         let mut visited_types = HashSet::new();
         let mut i = 0;
         let mut stat_gen = Similarity::new(&config);
-        let comparable_types = ComparableTypes::new(config.input_types(), config.union_types());
+        let comparable_types = MergeableTypes::new(&config);
 
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
-        for (type_name_1, type_info_1) in config.types.iter() {
-            if visited_types.contains(type_name_1) || config.is_root_operation_type(type_name_1) {
-                continue;
-            }
-
-            let mut type_1_sim = HashSet::new();
-            type_1_sim.insert(type_name_1.to_string());
-
-            for (type_name_2, type_info_2) in config.types.iter().skip(i + 1) {
-                if visited_types.contains(type_name_2)
-                    || config.is_root_operation_type(type_name_2)
-                    || !comparable_types.comparable(type_name_1, type_name_2)
-                {
+        for type_name_1 in comparable_types.iter() {
+            if let Some(type_info_1) = config.types.get(type_name_1.as_str()) {
+                if visited_types.contains(type_name_1.as_str()) {
                     continue;
                 }
 
-                let threshold =
-                    comparable_types.get_threshold(type_name_1, type_name_2, self.threshold);
+                let mut similar_type_set = HashSet::new();
+                similar_type_set.insert(type_name_1.to_string());
 
-                visited_types.insert(type_name_1.clone());
-                let is_similar = stat_gen.similarity(
-                    (type_name_1, type_info_1),
-                    (type_name_2, type_info_2),
-                    threshold,
-                );
-                if is_similar {
-                    visited_types.insert(type_name_2.clone());
-                    type_1_sim.insert(type_name_2.clone());
+                for type_name_2 in comparable_types.iter().skip(i + 1) {
+                    if visited_types.contains(type_name_2.as_str())
+                        || !comparable_types.comparable(type_name_1.as_str(), type_name_2.as_str())
+                    {
+                        continue;
+                    }
+
+                    if let Some(type_info_2) = config.types.get(type_name_2.as_str()) {
+                        let threshold = comparable_types.get_threshold(
+                            type_name_1.as_str(),
+                            type_name_2.as_str(),
+                            self.threshold,
+                        );
+
+                        visited_types.insert(type_name_1.clone());
+                        let is_similar = stat_gen.similarity(
+                            (type_name_1.as_str(), type_info_1),
+                            (type_name_2.as_str(), type_info_2),
+                            threshold,
+                        );
+                        if is_similar {
+                            visited_types.insert(type_name_2.clone());
+                            similar_type_set.insert(type_name_2.to_owned());
+                        }
+                    }
+                }
+                if similar_type_set.len() > 1 {
+                    similar_type_group_list.push(similar_type_set);
                 }
             }
-            if type_1_sim.len() > 1 {
-                similar_type_group_list.push(type_1_sim);
-            }
-
             i += 1;
         }
 
@@ -126,28 +131,32 @@ impl TypeMerger {
                     }
                 }
             }
+
+            // replace the merged type names in interface.
+            type_info.implements = type_info
+                .implements
+                .iter()
+                .filter_map(|interface_type_name| {
+                    type_to_merge_type_mapping
+                        .get(interface_type_name)
+                        .cloned()
+                        .or(Some(interface_type_name.clone()))
+                })
+                .collect();
         }
 
         // replace the merged types in union as well.
         for union_type_ in config.unions.values_mut() {
-            // Collect changes to be made
-            let mut types_to_remove = HashSet::new();
-            let mut types_to_add = HashSet::new();
-
-            for type_name in union_type_.types.iter() {
-                if let Some(merge_into_type_name) = type_to_merge_type_mapping.get(type_name) {
-                    types_to_remove.insert(type_name.clone());
-                    types_to_add.insert(merge_into_type_name.clone());
-                }
-            }
-            // Apply changes
-            for type_name in types_to_remove {
-                union_type_.types.remove(&type_name);
-            }
-
-            for type_name in types_to_add {
-                union_type_.types.insert(type_name);
-            }
+            union_type_.types = union_type_
+                .types
+                .iter()
+                .filter_map(|type_name| {
+                    type_to_merge_type_mapping
+                        .get(type_name)
+                        .cloned()
+                        .or(Some(type_name.clone()))
+                })
+                .collect();
         }
 
         // step 4: remove all merged types.
@@ -321,6 +330,31 @@ mod test {
     fn test_list_field_types() {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::USER_LIST).unwrap();
         let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let config = TypeMerger::default().transform(config).to_result().unwrap();
+        insta::assert_snapshot!(config.to_sdl());
+    }
+
+    #[test]
+    fn test_interface_types() {
+        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+
+        let mut ty1 = Type::default();
+        ty1.fields.insert("a".to_string(), int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields.insert("a".to_string(), int_field.clone());
+
+        let mut ty3 = Type::default();
+        ty3.fields.insert("a".to_string(), int_field.clone());
+
+        ty3.implements.insert("A".to_string());
+        ty3.implements.insert("B".to_string());
+
+        let mut config = Config::default();
+        config.types.insert("A".to_string(), ty1);
+        config.types.insert("B".to_string(), ty2);
+        config.types.insert("C".to_string(), ty3);
+
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
