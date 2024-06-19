@@ -11,15 +11,17 @@ pub struct MergeableTypes {
     union_types: HashSet<String>,
     output_types: HashSet<String>,
     interface_types: HashSet<String>,
+    threshold: f32,
 }
 
 impl MergeableTypes {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config, threshold: f32) -> Self {
         Self {
             input_types: config.input_types(),
             union_types: config.union_types(),
             output_types: config.output_types(),
             interface_types: config.interface_types(),
+            threshold,
         }
     }
 
@@ -78,7 +80,7 @@ impl MergeableTypes {
     /// If both types are input types or union types and interface then the
     /// threshold is set to 1.0, indicating that they must match completely.
     /// Otherwise, the provided `threshold` value is returned.
-    pub fn get_threshold(&self, type_1: &str, type_2: &str, threshold: f32) -> f32 {
+    pub fn get_threshold(&self, type_1: &str, type_2: &str) -> f32 {
         if self.are_input_type(type_1, type_2)
             || self.are_union_type(type_1, type_2)
             || self.are_interface_type(type_1, type_2)
@@ -87,16 +89,15 @@ impl MergeableTypes {
             // same fields.
             1.0
         } else {
-            threshold
+            self.threshold
         }
     }
 
-    /// determines whether two type names are comparable.
+    /// determines whether two type names are mergeable.
     ///
-    /// types are comparable if they are both input types, both union types, or
-    /// neither. input types can only be compared with input types, union
-    /// types with union types, and output type with output type.
-    pub fn comparable(&self, type_1: &str, type_2: &str) -> bool {
+    /// types are mergeable if they are both input types, both union types, both
+    /// output types and interface types
+    pub fn mergeable(&self, type_1: &str, type_2: &str) -> bool {
         self.are_input_type(type_1, type_2)
             || self.are_union_type(type_1, type_2)
             || self.are_output_type(type_1, type_2)
@@ -127,6 +128,7 @@ mod tests {
                     .iter()
                     .map(|s| s.to_string())
                     .collect(),
+                threshold: 0.5,
             }
         }
     }
@@ -200,23 +202,23 @@ mod tests {
         let comparable_types = MergeableTypes::default();
 
         assert_eq!(
-            comparable_types.get_threshold("InputType1", "InputType2", 0.5),
+            comparable_types.get_threshold("InputType1", "InputType2"),
             1.0
         );
         assert_eq!(
-            comparable_types.get_threshold("OutputType1", "OutputType2", 0.5),
+            comparable_types.get_threshold("OutputType1", "OutputType2"),
             0.5
         );
         assert_eq!(
-            comparable_types.get_threshold("UnionType1", "UnionType2", 0.5),
+            comparable_types.get_threshold("UnionType1", "UnionType2"),
             1.0
         );
         assert_eq!(
-            comparable_types.get_threshold("InterfaceType1", "InterfaceType1", 0.5),
+            comparable_types.get_threshold("InterfaceType1", "InterfaceType1"),
             1.0
         );
         assert_eq!(
-            comparable_types.get_threshold("InputType1", "UnionType1", 0.5),
+            comparable_types.get_threshold("InputType1", "UnionType1"),
             0.5
         );
     }
@@ -225,14 +227,14 @@ mod tests {
     fn test_comparable() {
         let comparable_types = MergeableTypes::default();
 
-        assert!(comparable_types.comparable("InputType1", "InputType2"));
-        assert!(comparable_types.comparable("UnionType1", "UnionType2"));
-        assert!(comparable_types.comparable("OutputType1", "OutputType2"));
-        assert!(comparable_types.comparable("InterfaceType1", "InterfaceType2"));
+        assert!(comparable_types.mergeable("InputType1", "InputType2"));
+        assert!(comparable_types.mergeable("UnionType1", "UnionType2"));
+        assert!(comparable_types.mergeable("OutputType1", "OutputType2"));
+        assert!(comparable_types.mergeable("InterfaceType1", "InterfaceType2"));
 
-        assert!(!comparable_types.comparable("InputType1", "UnionType1"));
-        assert!(!comparable_types.comparable("InputType1", "OutputType1"));
-        assert!(!comparable_types.comparable("OutputType1", "UnionType1"));
-        assert!(!comparable_types.comparable("InterfaceType1", "OutputType1"));
+        assert!(!comparable_types.mergeable("InputType1", "UnionType1"));
+        assert!(!comparable_types.mergeable("InputType1", "OutputType1"));
+        assert!(!comparable_types.mergeable("OutputType1", "UnionType1"));
+        assert!(!comparable_types.mergeable("InterfaceType1", "OutputType1"));
     }
 }
