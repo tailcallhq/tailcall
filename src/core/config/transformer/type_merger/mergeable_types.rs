@@ -2,9 +2,10 @@ use std::collections::HashSet;
 
 use crate::core::config::Config;
 
-/// a utility module that facilitates the comparison of two types. It provides methods to determine
-/// whether two types are comparable and checks if they belong to certain categories. Additionally,
-/// it identifies type names that are eligible for the merging process.
+/// a utility module that facilitates the comparison of two types. It provides
+/// methods to determine whether two types are comparable and checks if they
+/// belong to certain categories. Additionally, it identifies type names that
+/// are eligible for the merging process.
 pub struct MergeableTypes {
     input_types: HashSet<String>,
     union_types: HashSet<String>,
@@ -74,9 +75,9 @@ impl MergeableTypes {
     /// returns the threshold required to calculate the similarity between two
     /// types.
     ///
-    /// If both types are input types or union types and interface then the threshold is set to
-    /// 1.0, indicating that they must match completely. Otherwise, the
-    /// provided `threshold` value is returned.
+    /// If both types are input types or union types and interface then the
+    /// threshold is set to 1.0, indicating that they must match completely.
+    /// Otherwise, the provided `threshold` value is returned.
     pub fn get_threshold(&self, type_1: &str, type_2: &str, threshold: f32) -> f32 {
         if self.are_input_type(type_1, type_2)
             || self.are_union_type(type_1, type_2)
