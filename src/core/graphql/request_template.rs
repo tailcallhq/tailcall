@@ -11,7 +11,8 @@ use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::http::Method::POST;
-use crate::core::ir::{CacheKey, GraphQLOperationContext, IoId};
+use crate::core::ir::model::{CacheKey, IoId};
+use crate::core::ir::GraphQLOperationContext;
 use crate::core::mustache::Mustache;
 use crate::core::path::PathGraphql;
 
@@ -89,11 +90,24 @@ impl RequestTemplate {
             .as_ref()
             .map(|args| {
                 args.iter()
-                    .map(|(k, v)| format!(r#"{}: {}"#, k, v.render_graphql(ctx).escape_default()))
+                    .filter_map(|(k, v)| {
+                        let value = v.render_graphql(ctx);
+                        if value.is_empty() {
+                            None
+                        } else {
+                            Some(format!(r#"{}: {}"#, k, value.escape_default()))
+                        }
+                    })
                     .collect::<Vec<_>>()
                     .join(", ")
             })
-            .map(|args| format!("{}({})", self.operation_name, args))
+            .map(|args| {
+                if args.is_empty() {
+                    self.operation_name.clone()
+                } else {
+                    format!("{}({})", self.operation_name, args)
+                }
+            })
             .unwrap_or(self.operation_name.clone());
 
         format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#)
@@ -147,7 +161,8 @@ mod tests {
     use crate::core::config::GraphQLOperationType;
     use crate::core::graphql::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
-    use crate::core::ir::{CacheKey, GraphQLOperationContext};
+    use crate::core::ir::model::CacheKey;
+    use crate::core::ir::GraphQLOperationContext;
     use crate::core::json::JsonLike;
     use crate::core::path::PathGraphql;
 

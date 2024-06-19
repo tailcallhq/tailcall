@@ -1,9 +1,9 @@
 use serde_json::{Map, Value};
 
 use super::NameGenerator;
-use crate::core::config::transformer::Transform;
 use crate::core::config::{Config, Field, Type};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
+use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 struct JSONValidator;
@@ -165,7 +165,10 @@ impl<T1> Transform for TypesGenerator<'_, T1>
 where
     T1: OperationGenerator,
 {
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    type Value = Config;
+    type Error = String;
+
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let root_type_name = self.generate_types(self.json_value, &mut config);
         self.operation_generator
             .generate(root_type_name.as_str(), config)

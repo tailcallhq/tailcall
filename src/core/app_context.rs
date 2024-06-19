@@ -13,7 +13,8 @@ use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{DataLoaderRequest, HttpDataLoader, Response};
-use crate::core::ir::{DataLoaderId, EvaluationError, IoId, IO, IR};
+use crate::core::ir::model::{DataLoaderId, IoId, IO, IR};
+use crate::core::ir::Error;
 use crate::core::rest::{Checked, EndpointSet};
 use crate::core::runtime::TargetRuntime;
 
@@ -26,8 +27,8 @@ pub struct AppContext {
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
-    pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, EvaluationError>>,
-    pub dedupe_operation_handler: DedupeResult<OperationId, Response<Bytes>, EvaluationError>,
+    pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
+    pub dedupe_operation_handler: DedupeResult<OperationId, Response<Bytes>, Error>,
 }
 
 impl AppContext {

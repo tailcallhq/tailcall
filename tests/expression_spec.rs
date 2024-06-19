@@ -5,15 +5,16 @@ mod tests {
     use serde_json::json;
     use tailcall::core::blueprint::{Blueprint, DynamicValue};
     use tailcall::core::http::RequestContext;
-    use tailcall::core::ir::{EmptyResolverContext, Eval, EvaluationContext, EvaluationError, IR};
+    use tailcall::core::ir::model::IR;
+    use tailcall::core::ir::{EmptyResolverContext, Error, EvalContext};
     use tailcall::core::mustache::Mustache;
 
-    async fn eval(expr: &IR) -> Result<Value, EvaluationError> {
+    async fn eval(expr: &IR) -> Result<Value, Error> {
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
         let res_ctx = EmptyResolverContext {};
-        let eval_ctx = EvaluationContext::new(&req_ctx, &res_ctx);
-        expr.eval(eval_ctx).await
+        let mut eval_ctx = EvalContext::new(&req_ctx, &res_ctx);
+        expr.eval(&mut eval_ctx).await
     }
 
     #[tokio::test]

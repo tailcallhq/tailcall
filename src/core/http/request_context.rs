@@ -14,7 +14,8 @@ use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
 use crate::core::http::{AppContext, DataLoaderRequest, HttpDataLoader};
-use crate::core::ir::{EvaluationError, IoId};
+use crate::core::ir::model::IoId;
+use crate::core::ir::Error;
 use crate::core::runtime::TargetRuntime;
 
 #[derive(Setters)]
@@ -33,8 +34,8 @@ pub struct RequestContext {
     pub min_max_age: Arc<Mutex<Option<i32>>>,
     pub cache_public: Arc<Mutex<Option<bool>>>,
     pub runtime: TargetRuntime,
-    pub cache: DedupeResult<IoId, ConstValue, EvaluationError>,
-    pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, EvaluationError>>,
+    pub cache: DedupeResult<IoId, ConstValue, Error>,
+    pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
 }
 
 impl RequestContext {
