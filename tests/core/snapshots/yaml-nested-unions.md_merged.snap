@@ -27,7 +27,7 @@ input T5Input {
   t5: Boolean
 }
 
-union U = T5 | U1 | U2
+union U = T1 | T2 | T3 | T4 | T5
 
 union U1 = T1 | T2 | T3
 

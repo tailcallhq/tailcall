@@ -7,7 +7,7 @@ use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use super::transformer::{AmbiguousType, UnionInputType};
+use super::transformer::{AmbiguousType, NestedUnions, UnionInputType};
 use crate::core::config::Config;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
@@ -105,7 +105,11 @@ impl ConfigModule {
 
     /// Normalizes current config with default settings
     pub fn normalize_default(self) -> Valid<Self, String> {
-        self.transform(UnionInputType.pipe(AmbiguousType::default()))
+        self.transform(
+            NestedUnions
+                .pipe(UnionInputType)
+                .pipe(AmbiguousType::default()),
+        )
     }
 }
 
