@@ -163,6 +163,9 @@ pub enum Error {
 
     #[error("Expected list value")]
     ExpectedListValue,
+
+    #[error("Headers Error")]
+    Headers(headers::Error),
 }
 
 pub mod file {
