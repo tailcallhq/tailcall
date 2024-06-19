@@ -23,12 +23,12 @@ types:
       test:
         type: U
         args:
-          input:
+          u:
             type: U
             required: true
         http:
           baseURL: http://localhost
-          path: /users/{{args.input}}
+          path: /users/{{args.u}}
 
 unions:
   U:

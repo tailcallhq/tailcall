@@ -21,10 +21,18 @@ input T3Input {
 
 union U = T1 | T2 | T3
 
+type NNU {
+  nu: NU
+}
+
+type NU {
+  u: U
+}
+
 type Query {
-  testVar0(input: T1Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.input}}")
-  testVar1(input: T2Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.input}}")
-  testVar2(input: T3Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.input}}")
+  testVar0(u: T1Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}/")
+  testVar1(u: T2Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}/")
+  testVar2(u: T3Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}/")
 }
 
 type T1 {

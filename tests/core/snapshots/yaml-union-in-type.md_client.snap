@@ -1,0 +1,114 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Bytes
+
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
+scalar JSON
+
+input NNU__nu0 {
+  new: Boolean
+  nu: NU__u0
+  other: Int
+}
+
+input NNU__nu1 {
+  new: Boolean
+  nu: NU__u1
+  other: Int
+}
+
+input NNU__nu2 {
+  new: Boolean
+  nu: NU__u2
+  other: Int
+}
+
+input NU__u0 {
+  test: String
+  u: T1Input
+}
+
+input NU__u1 {
+  test: String
+  u: T2Input
+}
+
+input NU__u2 {
+  test: String
+  u: T3Input
+}
+
+scalar PhoneNumber
+
+type Query {
+  testVar0Var0(nnu: NNU__nu0, nu: NU__u0!): U
+  testVar0Var1(nnu: NNU__nu0, nu: NU__u1!): U
+  testVar0Var2(nnu: NNU__nu0, nu: NU__u2!): U
+  testVar1Var0(nnu: NNU__nu1, nu: NU__u0!): U
+  testVar1Var1(nnu: NNU__nu1, nu: NU__u1!): U
+  testVar1Var2(nnu: NNU__nu1, nu: NU__u2!): U
+  testVar2Var0(nnu: NNU__nu2, nu: NU__u0!): U
+  testVar2Var1(nnu: NNU__nu2, nu: NU__u1!): U
+  testVar2Var2(nnu: NNU__nu2, nu: NU__u2!): U
+}
+
+type T1 {
+  t1: String
+}
+
+input T1Input {
+  t1: String
+}
+
+type T2 {
+  t2: Int
+}
+
+input T2Input {
+  t2: Int
+}
+
+type T3 {
+  t3: Boolean
+  t33: Float!
+}
+
+input T3Input {
+  t3: Boolean
+  t33: Float!
+}
+
+union U = T1 | T2 | T3
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
+
+scalar Url
+
+schema {
+  query: Query
+}

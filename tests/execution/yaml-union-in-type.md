@@ -1,4 +1,4 @@
-# Using Union types in yaml config
+# Using Union types inside usual type
 
 ```yml @config
 schema:
@@ -23,11 +23,17 @@ types:
 
   NU:
     fields:
+      test:
+        type: String
       u:
         type: U
 
   NNU:
     fields:
+      other:
+        type: Int
+      new:
+        type: Boolean
       nu:
         type: NU
 
@@ -36,12 +42,14 @@ types:
       test:
         type: U
         args:
-          u:
-            type: U
+          nu:
+            type: NU
             required: true
+          nnu:
+            type: NNU
         http:
           baseURL: http://localhost
-          path: /users/{{args.u}}/
+          path: /users/{{args.nu.u}}
 
 unions:
   U:

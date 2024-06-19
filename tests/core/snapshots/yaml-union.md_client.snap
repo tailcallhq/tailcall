@@ -25,9 +25,9 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
-  testVar0(input: T1Input!): U
-  testVar1(input: T2Input!): U
-  testVar2(input: T3Input!): U
+  testVar0(u: T1Input!): U
+  testVar1(u: T2Input!): U
+  testVar2(u: T3Input!): U
 }
 
 type T1 {

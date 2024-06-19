@@ -1,4 +1,10 @@
-# Using Union types in yaml config
+---
+skip: true
+---
+
+# Using union types inside other union types
+
+TODO: doesn't work yet with union of unions
 
 ```yml @config
 schema:
@@ -21,15 +27,15 @@ types:
         type: Float
         required: true
 
-  NU:
+  T4:
     fields:
-      u:
-        type: U
+      t4:
+        type: String
 
-  NNU:
+  T5:
     fields:
-      nu:
-        type: NU
+      t5:
+        type: Boolean
 
   Query:
     fields:
@@ -41,9 +47,13 @@ types:
             required: true
         http:
           baseURL: http://localhost
-          path: /users/{{args.u}}/
+          path: /users/{{args.u}}
 
 unions:
-  U:
+  U1:
     types: ["T1", "T2", "T3"]
+  U2:
+    types: ["T3", "T4"]
+  U:
+    types: ["U1", "U2", "T5"]
 ```
