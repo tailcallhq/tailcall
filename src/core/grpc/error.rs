@@ -40,6 +40,10 @@ pub enum Error {
     #[error("Couldn't find definitions for service {0}")]
     #[from(ignore)]
     MissingService(String),
+
+    #[error("Failed to parse input according to type {0}")]
+    #[from(ignore)]
+    InputParsingFailed(String),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

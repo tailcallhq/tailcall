@@ -15,7 +15,8 @@ use crate::core::blueprint::GrpcMethod;
 
 fn to_message(descriptor: &MessageDescriptor, input: &str) -> Result<DynamicMessage> {
     let mut deserializer = Deserializer::from_str(input);
-    let message = DynamicMessage::deserialize(descriptor.clone(), &mut deserializer)?;
+    let message = DynamicMessage::deserialize(descriptor.clone(), &mut deserializer)
+        .map_err(|_| Error::InputParsingFailed(descriptor.full_name().to_string()))?;
     deserializer.end()?;
     Ok(message)
 }
@@ -574,7 +575,7 @@ pub mod tests {
 
         assert_eq!(
             input.to_string(),
-            "Serde Json Error : number out of range at line 2 column 36"
+            "Failed to parse input according to type scalars.Item"
         );
 
         Ok(())
