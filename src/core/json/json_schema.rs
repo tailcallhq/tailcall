@@ -111,6 +111,10 @@ impl JsonSchema {
 
     // TODO: add unit tests
     pub fn compare(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
+        if let JsonSchema::Any = other {
+            return Valid::succeed(());
+        }
+
         match self {
             JsonSchema::Str => {
                 if other != self {
@@ -132,11 +136,7 @@ impl JsonSchema {
                     return Valid::fail(format!("expected Empty, got {:?}", other)).trace(name);
                 }
             }
-            JsonSchema::Any => {
-                if other != self {
-                    return Valid::fail(format!("expected Any, got {:?}", other)).trace(name);
-                }
-            }
+            JsonSchema::Any => {}
             JsonSchema::Obj(a) => {
                 if let JsonSchema::Obj(b) = other {
                     return Valid::from_iter(b.iter(), |(key, b)| {

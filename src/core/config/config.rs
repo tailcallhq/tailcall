@@ -394,7 +394,9 @@ pub struct Arg {
     pub default_value: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
@@ -754,11 +756,16 @@ impl Config {
     /// Given a starting type, this function searches for all the unique types
     /// that this type can be connected to via it's fields
     fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
-        if let Some(type_) = self.find_type(type_of) {
+        if let Some(union_) = self.find_union(type_of) {
+            types.insert(type_of.into());
+
+            for type_ in union_.types.iter() {
+                types = self.find_connections(type_, types);
+            }
+        } else if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
-                    types.insert(field.type_of.clone());
                     types = self.find_connections(&field.type_of, types);
                 }
             }
@@ -827,6 +834,7 @@ impl Config {
     pub fn remove_types(mut self, types: HashSet<String>) -> Self {
         for unused_type in types {
             self.types.remove(&unused_type);
+            self.unions.remove(&unused_type);
         }
 
         self
@@ -834,7 +842,12 @@ impl Config {
 
     pub fn unused_types(&self) -> HashSet<String> {
         let used_types = self.get_all_used_type_names();
-        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        let all_types: HashSet<String> = self
+            .types
+            .keys()
+            .chain(self.unions.keys())
+            .cloned()
+            .collect();
         all_types.difference(&used_types).cloned().collect()
     }
 
@@ -849,11 +862,15 @@ impl Config {
             stack.push(mutation.clone());
         }
         while let Some(type_name) = stack.pop() {
-            if let Some(typ) = self.types.get(&type_name) {
-                if set.contains(&type_name) {
-                    continue;
+            if set.contains(&type_name) {
+                continue;
+            }
+            if let Some(union_) = self.unions.get(&type_name) {
+                set.insert(type_name);
+                for type_ in &union_.types {
+                    stack.push(type_.clone());
                 }
-
+            } else if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
