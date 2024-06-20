@@ -9,6 +9,7 @@ pub struct Store {
     map: HashMap<FieldId, Data<'static>>,
 }
 #[allow(unused)]
+#[derive(Clone)]
 pub enum Data<'a> {
     Value(Value<'a>),
     List(Vec<Value<'a>>),
@@ -31,6 +32,12 @@ impl Data<'_> {
 }
 
 #[allow(unused)]
+impl Default for Store {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Store {
     pub fn new() -> Self {
         Store { map: HashMap::new() }

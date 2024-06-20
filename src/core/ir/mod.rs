@@ -9,6 +9,7 @@ mod resolver_context_like;
 pub mod model;
 pub use error::*;
 pub use eval_context::EvalContext;
+pub use jit::*;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};
 
 pub trait GraphQLOperationContext {

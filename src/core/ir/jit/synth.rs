@@ -95,36 +95,6 @@ impl Synth {
                 }
             }
         }
-        /*        match self.store.get(&node.id) {
-            Some(data) => {
-                // if index is given, then the data should be a list
-                // if index is not given, then the data should be a value
-                // must return Null in all other cases.
-                match data {
-                    Data::Value(val) => {
-                        if index.is_some() {
-                            return Value::Null;
-                        }
-                        todo!()
-                    }
-                    Data::List(list) => {
-                        if index.is_none() {
-                            return Value::Null;
-                        }
-                        todo!()
-                    }
-                }
-            }
-            None => {
-                if let Some(val) = parent {
-                    if !Self::is_array(&node.type_of, val) {
-                        return Value::Null;
-                    }
-                }
-
-                self.iter_inner(node, parent)
-            }
-        }*/
     }
     #[inline]
     fn iter_inner<'a>(
@@ -215,9 +185,22 @@ mod tests {
                 "name": "bar"
         }
     "#;
+    const USERS: &str = r#"
+        [
+          {
+            "id": 1,
+            "name": "Leanne Graham"
+          },
+          {
+            "id": 2,
+            "name": "Ervin Howell"
+          }
+        ]
+    "#;
 
     enum TestData {
         Posts,
+        UsersData,
         Users,
         User1,
     }
@@ -227,10 +210,11 @@ mod tests {
             match self {
                 Self::Posts => Data::Value(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Value(serde_json::from_str(USER1).unwrap()),
-                TestData::Users => Data::List(vec![
+                TestData::UsersData => Data::List(vec![
                     serde_json::from_str(USER1).unwrap(),
                     serde_json::from_str(USER2).unwrap(),
                 ]),
+                TestData::Users => Data::Value(serde_json::from_str(USERS).unwrap()),
             }
         }
     }
@@ -292,7 +276,7 @@ mod tests {
     fn test_nested() {
         let store = vec![
             (FieldId::new(0), TestData::Posts.into_value()),
-            (FieldId::new(3), TestData::Users.into_value()),
+            (FieldId::new(3), TestData::UsersData.into_value()),
         ];
 
         let val = foo(
@@ -304,5 +288,25 @@ mod tests {
             store,
         );
         insta::assert_snapshot!(val);
+    }
+
+    #[test]
+    fn test_multiple_nested() {
+        let store = vec![
+            (FieldId::new(0), TestData::Posts.into_value()),
+            (FieldId::new(3), TestData::UsersData.into_value()),
+            (FieldId::new(6), TestData::Users.into_value()),
+        ];
+
+        let val = foo(
+            r#"
+            query {
+                posts { id title user { id name } }
+                users { id name }
+            }
+        "#,
+            store,
+        );
+        println!("{}", val);
     }
 }
