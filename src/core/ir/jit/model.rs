@@ -155,6 +155,11 @@ impl ExecutionPlan {
     }
 
     #[allow(unused)]
+    pub fn into_children(self) -> Vec<Field<Children>> {
+        self.children
+    }
+
+    #[allow(unused)]
     pub fn as_parent(&self) -> &[Field<Parent>] {
         &self.parent
     }
