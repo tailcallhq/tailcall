@@ -5,7 +5,7 @@ use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
 use crate::core::merge_right::MergeRight;
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use crate::core::valid::{Valid, Validator};
 
 pub struct TypeMerger {
     /// threshold required for the merging process.
@@ -64,14 +64,25 @@ impl TypeMerger {
                     comparable_types.get_threshold(type_name_1, type_name_2, self.threshold);
 
                 visited_types.insert(type_name_1.clone());
-                let is_similar = stat_gen.similarity(
-                    (type_name_1, type_info_1),
-                    (type_name_2, type_info_2),
-                    threshold,
-                );
-                if is_similar {
-                    visited_types.insert(type_name_2.clone());
-                    type_1_sim.insert(type_name_2.clone());
+                let is_similar = stat_gen
+                    .similarity(
+                        (type_name_1, type_info_1),
+                        (type_name_2, type_info_2),
+                        threshold,
+                    )
+                    .to_result();
+                if let Ok(result) = is_similar {
+                    if result {
+                        visited_types.insert(type_name_2.clone());
+                        type_1_sim.insert(type_name_2.clone());
+                    }
+                } else if let Err(e) = is_similar {
+                    tracing::debug!(
+                        "Failed to merge types {} and {}: {:?}",
+                        type_name_1,
+                        type_name_2,
+                        e
+                    );
                 }
             }
             if type_1_sim.len() > 1 {
@@ -322,6 +333,26 @@ mod test {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::USER_LIST).unwrap();
         let config = Config::from_sdl(&sdl).to_result().unwrap();
         let config = TypeMerger::default().transform(config).to_result().unwrap();
+        insta::assert_snapshot!(config.to_sdl());
+    }
+
+    #[test]
+    fn test_incompatible_list_and_non_list_field_types_merge() {
+        let sdl = r#"
+            type Foo {
+                a: Int
+                b: Int
+                c: [Int]
+            }
+
+            type Bar {
+                a: Int
+                b: Int
+                c: Int
+            }
+        "#;
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let config = TypeMerger::new(0.5).transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
 }
