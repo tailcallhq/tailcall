@@ -335,4 +335,27 @@ mod test {
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
+
+    #[test]
+    fn test_fail_when_scalar_field_not_match() {
+        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
+        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+
+        let mut ty1 = Type::default();
+        ty1.fields.insert("a".to_string(), int_field.clone());
+        ty1.fields.insert("b".to_string(), int_field.clone());
+        ty1.fields.insert("c".to_string(), int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields.insert("a".to_string(), int_field.clone());
+        ty2.fields.insert("b".to_string(), int_field.clone());
+        ty2.fields.insert("c".to_string(), str_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("T1".to_string(), ty1);
+        config.types.insert("T2".to_string(), ty2);
+
+        let config = TypeMerger::new(0.5).transform(config).to_result().unwrap();
+        insta::assert_snapshot!(config.to_sdl());
+    }
 }
