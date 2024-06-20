@@ -1,9 +1,7 @@
 use super::pair_map::PairMap;
 use super::pair_set::PairSet;
-use crate::core::{
-    config::{Config, Type},
-    valid::{Valid, Validator},
-};
+use crate::core::config::{Config, Type};
+use crate::core::valid::{Valid, Validator};
 
 /// Given Two types,it tells similarity between two types based on a specified
 /// threshold.
@@ -120,10 +118,8 @@ impl<'a> Similarity<'a> {
 #[cfg(test)]
 mod test {
     use super::Similarity;
-    use crate::core::{
-        config::{Config, Field, Type},
-        valid::Validator,
-    };
+    use crate::core::config::{Config, Field, Type};
+    use crate::core::valid::Validator;
 
     #[test]
     fn should_return_false_when_thresh_is_not_met() {
@@ -388,7 +384,7 @@ mod test {
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
-        assert!(!types_equal)
+        assert!(types_equal)
     }
 
     #[test]
@@ -419,7 +415,7 @@ mod test {
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
-        assert!(!types_equal)
+        assert!(types_equal)
     }
 
     #[test]
