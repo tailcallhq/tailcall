@@ -12,13 +12,13 @@ type Query {
 
 ```graphql @file:types.graphql
 input Input {
-    id: Int
-    name: String
+  id: Int
+  name: String
 }
 
 type Output {
-    id: Int
-    name: String
+  id: Int
+  name: String
 }
 ```
 
@@ -26,5 +26,5 @@ type Output {
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: "query { bar(input: {id: 1, name: \"name\"}) { name id } }"
+    query: 'query { bar(input: {id: 1, name: "name"}) { name id } }'
 ```
