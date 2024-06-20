@@ -454,19 +454,12 @@ mod test {
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
-        assert!(!types_equal)
+        assert!(types_equal)
     }
 
     #[test]
     fn test_list_of_required_int_vs_list_of_required_int() {
         let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            list_type_required: true,
-            ..Default::default()
-        };
-
-        let optional_int_field = Field {
             type_of: "Int".to_owned(),
             list: true,
             list_type_required: true,
@@ -479,7 +472,7 @@ mod test {
 
         let mut ty2 = Type::default();
         ty2.fields
-            .insert("a".to_string(), optional_int_field.clone());
+            .insert("a".to_string(), required_int_field.clone());
 
         let mut config = Config::default();
         config.types.insert("Foo".to_string(), ty1.clone());
@@ -501,20 +494,13 @@ mod test {
             ..Default::default()
         };
 
-        let optional_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            required: true,
-            ..Default::default()
-        };
-
         let mut ty1 = Type::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
         let mut ty2 = Type::default();
         ty2.fields
-            .insert("a".to_string(), optional_int_field.clone());
+            .insert("a".to_string(), required_int_field.clone());
 
         let mut config = Config::default();
         config.types.insert("Foo".to_string(), ty1.clone());
@@ -537,21 +523,13 @@ mod test {
             ..Default::default()
         };
 
-        let optional_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            required: true,
-            list_type_required: true,
-            ..Default::default()
-        };
-
         let mut ty1 = Type::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
         let mut ty2 = Type::default();
         ty2.fields
-            .insert("a".to_string(), optional_int_field.clone());
+            .insert("a".to_string(), required_int_field.clone());
 
         let mut config = Config::default();
         config.types.insert("Foo".to_string(), ty1.clone());
@@ -562,5 +540,36 @@ mod test {
             .to_result()
             .unwrap();
         assert!(types_equal)
+    }
+
+    #[test]
+    fn test_merge_incompatible_list_and_non_list_fields() {
+        // Define fields
+        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+        let list_int_field = Field { type_of: "Int".to_owned(), list: true, ..Default::default() };
+
+        // Define types Foo and Bar
+        let mut foo = Type::default();
+        foo.fields.insert("a".to_string(), int_field.clone());
+        foo.fields.insert("b".to_string(), int_field.clone());
+        foo.fields.insert("c".to_string(), list_int_field.clone());
+
+        let mut bar = Type::default();
+        bar.fields.insert("a".to_string(), int_field.clone());
+        bar.fields.insert("b".to_string(), int_field.clone());
+        bar.fields.insert("c".to_string(), int_field.clone());
+
+        // Create configuration with Foo and Bar types
+        let mut config = Config::default();
+        config.types.insert("Foo".to_owned(), foo.clone());
+        config.types.insert("Bar".to_owned(), bar.clone());
+
+        // Calculate similarity between Foo and Bar
+        let result = Similarity::new(&config)
+            .similarity(("Foo", &foo), ("Bar", &bar), 0.5)
+            .to_result();
+
+        // Assert that merging incompatible list and non-list fields fails
+        assert!(result.is_err())
     }
 }
