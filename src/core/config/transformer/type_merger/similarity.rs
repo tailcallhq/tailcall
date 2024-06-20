@@ -1,6 +1,9 @@
 use super::pair_map::PairMap;
 use super::pair_set::PairSet;
-use crate::core::config::{Config, Type};
+use crate::core::{
+    config::{Config, Type},
+    valid::{Valid, Validator},
+};
 
 /// Given Two types,it tells similarity between two types based on a specified
 /// threshold.
@@ -28,7 +31,7 @@ impl<'a> Similarity<'a> {
         (type_1_name, type_1): (&str, &Type),
         (type_2_name, type_2): (&str, &Type),
         threshold: f32,
-    ) -> bool {
+    ) -> Valid<bool, String> {
         let type_info = SimilarityTypeInfo { type_1_name, type_1, type_2, type_2_name };
 
         self.similarity_inner(type_info, &mut PairSet::default(), threshold)
@@ -39,7 +42,7 @@ impl<'a> Similarity<'a> {
         type_info: SimilarityTypeInfo,
         visited_type: &mut PairSet<String>,
         threshold: f32,
-    ) -> bool {
+    ) -> Valid<bool, String> {
         let type_1_name = type_info.type_1_name;
         let type_2_name = type_info.type_2_name;
         let type_1 = type_info.type_1;
@@ -49,7 +52,7 @@ impl<'a> Similarity<'a> {
             .type_similarity_cache
             .get(&type_1_name.to_string(), &type_2_name.to_string())
         {
-            *type_similarity_result
+            Valid::succeed(*type_similarity_result)
         } else {
             let config = self.config;
             let mut same_field_count = 0;
@@ -61,18 +64,19 @@ impl<'a> Similarity<'a> {
 
                     if field_1_type_of == field_2_type_of {
                         // in order to consider the fields to be exactly same.
-                        // it's output type must match (required bounds should match too).
-                        if field_1.list == field_2.list
-                            && field_1.required == field_2.required
-                            && field_1.list_type_required == field_2.list_type_required
-                        {
+                        // it's output type must match (we can ignore the required bounds).
+                        if field_1.list == field_2.list {
+                            // if they're of both of list type then they're probably of same type.
                             same_field_count += 1;
+                        } else {
+                            // If the list properties don't match, we cannot merge these types.
+                            return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
                         }
                     } else if let Some(type_1) = config.types.get(field_1_type_of.as_str()) {
                         if let Some(type_2) = config.types.get(field_2_type_of.as_str()) {
                             if visited_type.contains(&field_1_type_of, &field_2_type_of) {
                                 // it's cyclic type, return true as they're the same.
-                                return true;
+                                return Valid::succeed(true);
                             }
                             visited_type
                                 .insert(field_1_type_of.to_owned(), field_2_type_of.to_owned());
@@ -87,7 +91,11 @@ impl<'a> Similarity<'a> {
                             let is_nested_type_similar =
                                 self.similarity_inner(type_info, visited_type, threshold);
 
-                            same_field_count += if is_nested_type_similar { 1 } else { 0 };
+                            if let Ok(result) = is_nested_type_similar.clone().to_result() {
+                                same_field_count += if result { 1 } else { 0 };
+                            } else {
+                                return is_nested_type_similar;
+                            }
                         }
                     }
                 }
@@ -104,7 +112,7 @@ impl<'a> Similarity<'a> {
                 is_similar,
             );
 
-            is_similar
+            Valid::succeed(is_similar)
         }
     }
 }
@@ -112,7 +120,10 @@ impl<'a> Similarity<'a> {
 #[cfg(test)]
 mod test {
     use super::Similarity;
-    use crate::core::config::{Config, Field, Type};
+    use crate::core::{
+        config::{Config, Field, Type},
+        valid::Validator,
+    };
 
     #[test]
     fn should_return_false_when_thresh_is_not_met() {
@@ -171,7 +182,10 @@ mod test {
         cfg.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5);
+        let is_similar = gen
+            .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5)
+            .to_result()
+            .unwrap();
 
         assert!(!is_similar)
     }
@@ -237,7 +251,10 @@ mod test {
         cfg.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5);
+        let is_similar = gen
+            .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5)
+            .to_result()
+            .unwrap();
 
         assert!(is_similar)
     }
@@ -275,7 +292,10 @@ mod test {
         cfg.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8);
+        let is_similar = gen
+            .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8)
+            .to_result()
+            .unwrap();
 
         assert!(is_similar)
     }
@@ -326,7 +346,10 @@ mod test {
         cfg.types.insert("Far2".to_owned(), far2);
 
         let mut gen = Similarity::new(&cfg);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8);
+        let is_similar = gen
+            .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8)
+            .to_result()
+            .unwrap();
 
         assert!(is_similar)
     }
@@ -361,7 +384,10 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
         assert!(!types_equal)
     }
 
@@ -389,7 +415,10 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
         assert!(!types_equal)
     }
 
@@ -421,7 +450,10 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
         assert!(!types_equal)
     }
 
@@ -453,7 +485,10 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
         assert!(types_equal)
     }
 
@@ -485,7 +520,10 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
         assert!(types_equal)
     }
 
@@ -519,7 +557,10 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config).similarity(("Foo", &ty1), ("Bar", &ty2), 1.0);
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
         assert!(types_equal)
     }
 }
