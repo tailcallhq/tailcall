@@ -149,7 +149,6 @@ impl Synth {
                 } else {
                     for child in children {
                         let val = obj.get(child.name.as_str());
-                        // let val = self.iter(child, obj.get(child.name.as_str()), index);
                         if let Some(val) = val {
                             ans.insert(
                                 child.name.as_str(),
