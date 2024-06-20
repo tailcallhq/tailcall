@@ -51,7 +51,6 @@ impl Synth {
         match parent {
             Some(parent) => {
                 if !Self::is_array(&node.type_of, parent) {
-                    dbg!("arr null");
                     return Value::Null;
                 }
                 self.iter_inner(node, Some(parent), index)
@@ -67,7 +66,6 @@ impl Synth {
                                 // must return Null in all other cases.
                                 Data::Value(val) => {
                                     if index.is_some() {
-                                        dbg!("index is some");
                                         return Value::Null;
                                     }
                                     self.iter(node, Some(val), None)
@@ -76,13 +74,9 @@ impl Synth {
                                     if let Some(i) = index {
                                         match list.get(i) {
                                             Some(val) => self.iter(node, Some(val), None),
-                                            None => {
-                                                dbg!("list index not found");
-                                                Value::Null
-                                            }
+                                            None => Value::Null,
                                         }
                                     } else {
-                                        dbg!("index is none");
                                         Value::Null
                                     }
                                 }
@@ -91,14 +85,12 @@ impl Synth {
                         None => {
                             // IR exists, so there must be a value.
                             // if there is no value then we must return Null
-                            dbg!("no value found");
                             Value::Null
                         }
                     }
                 } else {
                     // either of parent value or IR must exist
                     // if none exist, then we must return Null
-                    dbg!("no parent value", &node.name);
                     Value::Null
                 }
             }
@@ -152,9 +144,7 @@ impl Synth {
                     if let Some(val) = val {
                         ans.insert(node.name.as_str(), val.to_owned());
                     } else {
-                        dbg!("no value found", node.name.as_str());
                         return Value::Null;
-                        // ans.insert(node.name.as_str(), Value::Null);
                     }
                 } else {
                     for child in children {
