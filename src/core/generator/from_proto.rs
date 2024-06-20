@@ -11,10 +11,9 @@ use super::graphql_type::{GraphQLType, Unparsed};
 use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
-use crate::core::{config::transformer::{
-    AmbiguousType, RemoveUnused,
-}, transform::{Transform, TransformerOps}};
-use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type, Variant, Union};
+use crate::core::config::transformer::{AmbiguousType, RemoveUnused};
+use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type, Union, Variant};
+use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
