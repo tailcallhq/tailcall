@@ -61,7 +61,8 @@ impl<'a> Similarity<'a> {
                     let field_2_type_of = field_2.type_of.to_owned();
 
                     if config.is_scalar(&field_1_type_of) && config.is_scalar(&field_2_type_of) {
-                        // if field type_of is scalar and they don't match then we can't merge types.
+                        // if field type_of is scalar and they don't match then we can't merge
+                        // types.
                         if field_1_type_of == field_2_type_of {
                             if field_1.list == field_2.list {
                                 same_field_count += 1;
