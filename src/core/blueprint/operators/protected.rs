@@ -17,7 +17,7 @@ pub fn update_protected<'a>(
                     .and_then(|type_| type_.protected.as_ref())
                     .is_some()
             {
-                if config.input_types.contains(type_name) {
+                if config.input_types().contains(type_name) {
                     return Valid::fail("Input types can not be protected".to_owned());
                 }
 
