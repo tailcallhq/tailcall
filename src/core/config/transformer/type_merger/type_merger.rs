@@ -76,13 +76,6 @@ impl TypeMerger {
                         visited_types.insert(type_name_2.clone());
                         type_1_sim.insert(type_name_2.clone());
                     }
-                } else if let Err(e) = is_similar {
-                    tracing::debug!(
-                        "Failed to merge types {} and {}: {:?}",
-                        type_name_1,
-                        type_name_2,
-                        e
-                    );
                 }
             }
             if type_1_sim.len() > 1 {
