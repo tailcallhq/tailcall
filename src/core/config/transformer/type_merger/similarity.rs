@@ -60,7 +60,21 @@ impl<'a> Similarity<'a> {
                     let field_1_type_of = field_1.type_of.to_owned();
                     let field_2_type_of = field_2.type_of.to_owned();
 
-                    if field_1_type_of == field_2_type_of {
+                    if config.is_scalar(&field_1_type_of) && config.is_scalar(&field_2_type_of) {
+                        // if field type_of is scalar and they don't match then we can't merge types.
+                        if field_1_type_of == field_2_type_of {
+                            if field_1.list == field_2.list {
+                                same_field_count += 1;
+                            } else {
+                                return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
+                            }
+                        } else {
+                            return Valid::fail(
+                                "Type merge failed: same field names but different scalar types."
+                                    .to_string(),
+                            );
+                        }
+                    } else if field_1_type_of == field_2_type_of {
                         // in order to consider the fields to be exactly same.
                         // it's output type must match (we can ignore the required bounds).
                         if field_1.list == field_2.list {
