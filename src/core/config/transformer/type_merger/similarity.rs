@@ -137,7 +137,7 @@ mod test {
     use crate::core::valid::Validator;
 
     #[test]
-    fn should_return_false_when_thresh_is_not_met() {
+    fn should_return_error_when_same_field_has_different_scalar_type() {
         let mut foo1 = Type::default();
         foo1.fields.insert(
             "a".to_owned(),
@@ -195,79 +195,9 @@ mod test {
         let mut gen = Similarity::new(&cfg);
         let is_similar = gen
             .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5)
-            .to_result()
-            .unwrap();
+            .to_result();
 
-        assert!(!is_similar)
-    }
-
-    #[test]
-    fn should_return_true_when_thresh_is_met() {
-        let mut foo1 = Type::default();
-        foo1.fields.insert(
-            "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
-        );
-        foo1.fields.insert(
-            "b".to_owned(),
-            Field { type_of: "String".to_owned(), ..Default::default() },
-        );
-        foo1.fields.insert(
-            "c".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
-        );
-
-        let mut foo2 = Type::default();
-        foo2.fields.insert(
-            "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
-        );
-        foo2.fields.insert(
-            "b".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
-        );
-        foo2.fields.insert(
-            "c".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
-        );
-
-        let mut bar1 = Type::default();
-        bar1.fields.insert(
-            "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
-        );
-        bar1.fields.insert(
-            "c".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
-        );
-
-        let mut bar2 = Type::default();
-        bar2.fields.insert(
-            "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
-        );
-        bar2.fields.insert(
-            "c".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
-        );
-        bar2.fields.insert(
-            "k".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
-        );
-
-        let mut cfg: Config = Config::default();
-        cfg.types.insert("Foo1".to_owned(), foo1.to_owned());
-        cfg.types.insert("Foo2".to_owned(), foo2.to_owned());
-        cfg.types.insert("Bar1".to_owned(), bar1);
-        cfg.types.insert("Bar2".to_owned(), bar2);
-
-        let mut gen = Similarity::new(&cfg);
-        let is_similar = gen
-            .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5)
-            .to_result()
-            .unwrap();
-
-        assert!(is_similar)
+        assert!(is_similar.is_err())
     }
 
     #[test]
