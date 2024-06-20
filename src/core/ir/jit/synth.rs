@@ -3,20 +3,16 @@ use serde_json_borrow::{ObjectAsVec, Value};
 use crate::core::ir::jit::model::{Children, Field};
 use crate::core::ir::jit::store::{Data, Store};
 
+#[allow(unused)]
 pub struct Synth {
     operations: Vec<Field<Children>>,
     store: Store,
 }
 
+#[allow(unused)]
 impl Synth {
-    pub fn new(
-        operations: Vec<Field<Children>>,
-        store: Store,
-    ) -> Self {
-        Self {
-            operations,
-            store,
-        }
+    pub fn new(operations: Vec<Field<Children>>, store: Store) -> Self {
+        Self { operations, store }
     }
     pub fn synthesize(&self) -> Value {
         let mut vals = ObjectAsVec::default();
@@ -26,13 +22,13 @@ impl Synth {
             if let Some(data) = vals.get_mut("data") {
                 match data {
                     Value::Object(obj) => {
-                        obj.insert(child.name.as_str(), val.clone());
+                        obj.insert(child.name.as_str(), val);
                     }
                     _ => {
-                        todo!()
+                        unimplemented!("this should never happen")
                     }
                 }
-            }else {
+            } else {
                 vals.insert("data", val);
             }
         }
@@ -55,9 +51,10 @@ impl Synth {
         match parent {
             Some(parent) => {
                 if !Self::is_array(&node.type_of, parent) {
+                    dbg!("arr null");
                     return Value::Null;
                 }
-                self.iter_inner(node, Some(parent))
+                self.iter_inner(node, Some(parent), index)
             }
             None => {
                 // we perform this check to avoid unnecessary hashing
@@ -70,17 +67,22 @@ impl Synth {
                                 // must return Null in all other cases.
                                 Data::Value(val) => {
                                     if index.is_some() {
+                                        dbg!("index is some");
                                         return Value::Null;
                                     }
-                                    self.iter_inner(node, Some(val))
+                                    self.iter(node, Some(val), None)
                                 }
                                 Data::List(list) => {
                                     if let Some(i) = index {
                                         match list.get(i) {
-                                            Some(val) => self.iter_inner(node, Some(val)),
-                                            None => Value::Null
+                                            Some(val) => self.iter(node, Some(val), None),
+                                            None => {
+                                                dbg!("list index not found");
+                                                Value::Null
+                                            }
                                         }
                                     } else {
+                                        dbg!("index is none");
                                         Value::Null
                                     }
                                 }
@@ -89,100 +91,105 @@ impl Synth {
                         None => {
                             // IR exists, so there must be a value.
                             // if there is no value then we must return Null
+                            dbg!("no value found");
                             Value::Null
                         }
                     }
-                }else {
+                } else {
                     // either of parent value or IR must exist
                     // if none exist, then we must return Null
+                    dbg!("no parent value", &node.name);
                     Value::Null
                 }
             }
         }
         /*        match self.store.get(&node.id) {
-                    Some(data) => {
-                        // if index is given, then the data should be a list
-                        // if index is not given, then the data should be a value
-                        // must return Null in all other cases.
-                        match data {
-                            Data::Value(val) => {
-                                if index.is_some() {
-                                    return Value::Null;
-                                }
-                                todo!()
-                            }
-                            Data::List(list) => {
-                                if index.is_none() {
-                                    return Value::Null;
-                                }
-                                todo!()
-                            }
+            Some(data) => {
+                // if index is given, then the data should be a list
+                // if index is not given, then the data should be a value
+                // must return Null in all other cases.
+                match data {
+                    Data::Value(val) => {
+                        if index.is_some() {
+                            return Value::Null;
                         }
+                        todo!()
                     }
-                    None => {
-                        if let Some(val) = parent {
-                            if !Self::is_array(&node.type_of, val) {
-                                return Value::Null;
-                            }
+                    Data::List(list) => {
+                        if index.is_none() {
+                            return Value::Null;
                         }
+                        todo!()
+                    }
+                }
+            }
+            None => {
+                if let Some(val) = parent {
+                    if !Self::is_array(&node.type_of, val) {
+                        return Value::Null;
+                    }
+                }
 
-                        self.iter_inner(node, parent)
-                    }
-                }*/
+                self.iter_inner(node, parent)
+            }
+        }*/
     }
     #[inline]
     fn iter_inner<'a>(
         &'a self,
         node: &'a Field<Children>,
         parent: Option<&'a Value>,
+        index: Option<usize>,
     ) -> Value {
         match parent {
             Some(Value::Object(obj)) => {
                 let mut ans = ObjectAsVec::default();
                 let children = node.children();
 
-                let val = obj.get(node.name.as_str());
-
                 if children.is_empty() {
+                    let val = obj.get(node.name.as_str());
                     // if it's a leaf node, then push the value
                     if let Some(val) = val {
                         ans.insert(node.name.as_str(), val.to_owned());
-                    }else {
-                        todo!("idk")
+                    } else {
+                        dbg!("no value found", node.name.as_str());
+                        return Value::Null;
+                        // ans.insert(node.name.as_str(), Value::Null);
                     }
-                }else {
+                } else {
                     for child in children {
-                        let val = self.iter(child, obj.get(child.name.as_str()), None);
-                        ans.insert(child.name.as_str(), val);
+                        let val = obj.get(child.name.as_str());
+                        // let val = self.iter(child, obj.get(child.name.as_str()), index);
+                        if let Some(val) = val {
+                            ans.insert(
+                                child.name.as_str(),
+                                self.iter_inner(child, Some(val), index),
+                            );
+                        } else {
+                            ans.insert(child.name.as_str(), self.iter(child, None, index));
+                        }
                     }
                 }
-                /*for (key, val) in obj.iter() {
-                    ans.insert(
-                        key, self.iter(node, Some(val), None),
-                    );
-                }*/
                 Value::Object(ans)
             }
             Some(Value::Array(arr)) => {
                 let mut ans = vec![];
                 for (i, val) in arr.iter().enumerate() {
-                    ans.push(
-                        self.iter(node, Some(val), Some(i))
-                    )
+                    let val = self.iter_inner(node, Some(val), Some(i));
+                    ans.push(val)
                 }
                 let mut object = ObjectAsVec::default();
                 object.insert(node.name.as_str(), Value::Array(ans));
                 Value::Object(object)
             }
             Some(val) => val.clone(), // cloning here would be cheaper than cloning whole value
-            None => Value::Null,
+            None => Value::Null,      // TODO: we can just pass parent value instead of an option
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use serde_json_borrow::Value;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::jit::builder::Builder;
@@ -203,24 +210,20 @@ mod tests {
                     "userId": 1,
                     "title": "Not Some Title"
                 }
-            ]
+        ]
     "#;
 
     const USER1: &str = r#"
         {
-            "user": {
                 "id": 1,
                 "name": "foo"
-            }
         }
     "#;
 
     const USER2: &str = r#"
         {
-            "user": {
                 "id": 2,
                 "name": "bar"
-            }
         }
     "#;
 
@@ -228,7 +231,6 @@ mod tests {
         Posts,
         Users,
         User1,
-        User2,
     }
 
     impl TestData {
@@ -236,13 +238,10 @@ mod tests {
             match self {
                 Self::Posts => Data::Value(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Value(serde_json::from_str(USER1).unwrap()),
-                Self::User2 => Data::Value(serde_json::from_str(USER2).unwrap()),
-                TestData::Users => {
-                    Data::List(vec![
-                        serde_json::from_str(USER1).unwrap(),
-                        serde_json::from_str(USER2).unwrap(),
-                    ])
-                }
+                TestData::Users => Data::List(vec![
+                    serde_json::from_str(USER1).unwrap(),
+                    serde_json::from_str(USER2).unwrap(),
+                ]),
             }
         }
     }
@@ -257,10 +256,12 @@ mod tests {
         let builder = Builder::new(Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build().unwrap();
 
-        let store = store.into_iter().fold(Store::new(), |mut store, (id, data)| {
-            store.insert(id, data);
-            store
-        });
+        let store = store
+            .into_iter()
+            .fold(Store::new(), |mut store, (id, data)| {
+                store.insert(id, data);
+                store
+            });
 
         let synth = Synth::new(plan.into_children(), store);
         let val = synth.synthesize();
@@ -269,28 +270,50 @@ mod tests {
     }
 
     #[test]
-    fn test_single() {
-        let store = vec![
-            (FieldId::new(0), TestData::Posts.into_value()),
-            (FieldId::new(1), TestData::Users.into_value()),
-        ];
-        /*let mut store = Store::new();
-        store.insert(FieldId::new(0), Data::Value(TestData::Posts.into_value()));
-        store.insert(FieldId::new(1), Data::List(
-            vec![
-                TestData::User1.into_value(),
-                TestData::User2.into_value(),
-            ]
-        ));*/
+    fn test_posts() {
+        let store = vec![(FieldId::new(0), TestData::Posts.into_value())];
 
         let val = foo(
             r#"
             query {
-                posts { user { id } }
+                posts { id }
             }
         "#,
             store,
         );
-        println!("{}", val);
+        insta::assert_snapshot!(val);
+    }
+
+    #[test]
+    fn test_user() {
+        let store = vec![(FieldId::new(0), TestData::User1.into_value())];
+
+        let val = foo(
+            r#"
+            query {
+                user(id: 1) { id }
+            }
+        "#,
+            store,
+        );
+        insta::assert_snapshot!(val);
+    }
+
+    #[test]
+    fn test_nested() {
+        let store = vec![
+            (FieldId::new(0), TestData::Posts.into_value()),
+            (FieldId::new(3), TestData::Users.into_value()),
+        ];
+
+        let val = foo(
+            r#"
+            query {
+                posts { id title user { id name } }
+            }
+        "#,
+            store,
+        );
+        insta::assert_snapshot!(val);
     }
 }
