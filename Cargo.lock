@@ -785,6 +785,8 @@ dependencies = [
  "ssri",
  "tempfile",
  "thiserror",
+ "tokio",
+ "tokio-stream",
  "walkdir",
 ]
 

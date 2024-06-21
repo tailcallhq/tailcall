@@ -66,7 +66,7 @@ impl Generator {
         Ok(true)
     }
 
-    async fn read(&self) -> anyhow::Result<Config<Resolved>> {
+    pub async fn read(&self) -> anyhow::Result<Config<Resolved>> {
         let config_path = &self.config_path;
         let source = ConfigSource::detect(config_path)?;
         let config_content = self.runtime.file.read(config_path).await?;
@@ -82,7 +82,7 @@ impl Generator {
 
     /// performs all the i/o's required in the config file and generates
     /// concrete vec containing data for generator.
-    async fn resolve_io(&self, config: Config<Resolved>) -> anyhow::Result<Vec<Input>> {
+    pub async fn resolve_io(&self, config: Config<Resolved>) -> anyhow::Result<Vec<Input>> {
         let mut input_samples = vec![];
 
         let reader = ResourceReader::cached(self.runtime.clone());

@@ -1,0 +1,46 @@
+use std::{path::Path, sync::Arc};
+
+use http::NativeHttpTest;
+use tailcall::{
+    cli::generator::Generator,
+    core::{blueprint::Blueprint, config, generator::Generator as ConfigGenerator},
+};
+use tokio::runtime::Runtime;
+
+mod http;
+
+datatest_stable::harness!(
+    run_config_generator_spec,
+    "src/core/generator/tests/fixtures/generator",
+    r"^.*\.json"
+);
+
+pub fn run_config_generator_spec(path: &Path) -> datatest_stable::Result<()> {
+    let path = path.to_path_buf();
+    let runtime = Runtime::new().unwrap();
+    runtime.block_on(async move {
+        run_test(&path.to_string_lossy()).await?;
+        Ok(())
+    })
+}
+
+async fn run_test(path: &str) -> anyhow::Result<()> {
+    let mut runtime = tailcall::cli::runtime::init(&Blueprint::default());
+    runtime.http = Arc::new(NativeHttpTest::default());
+
+    let generator = Generator::new(path, runtime);
+    let config = generator.read().await?;
+    let path = config.output.path.0.to_owned();
+    let preset: config::transformer::Preset = config.preset.clone().unwrap_or_default().into();
+
+    // resolve i/o's
+    let input_samples = generator.resolve_io(config).await?;
+
+    let config = ConfigGenerator::default()
+        .inputs(input_samples)
+        .transformers(vec![Box::new(preset)])
+        .generate(true)?;
+
+    insta::assert_snapshot!(path, config.to_sdl());
+    Ok(())
+}
