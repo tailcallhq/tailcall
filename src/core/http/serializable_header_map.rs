@@ -4,7 +4,7 @@ use std::str::FromStr;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct SerializableHeaderMap(HeaderMap);
 
 impl SerializableHeaderMap {
@@ -24,16 +24,8 @@ impl<'de> Deserialize<'de> for SerializableHeaderMap {
     {
         // Deserialize a HashMap<String, String>
         let map: HashMap<String, String> = Deserialize::deserialize(deserializer)?;
-
         // Convert the HashMap<String, String> to a HeaderMap
-        let mut header_map = HeaderMap::new();
-        for (key, value) in map {
-            header_map.insert(
-                HeaderName::from_str(&key).map_err(serde::de::Error::custom)?,
-                HeaderValue::from_str(&value).map_err(serde::de::Error::custom)?,
-            );
-        }
-
+        let header_map: HeaderMap = (&map).try_into().map_err(serde::de::Error::custom)?;
         Ok(SerializableHeaderMap::new(header_map))
     }
 }
