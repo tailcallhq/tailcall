@@ -1,6 +1,6 @@
-use std::env;
 use std::marker::PhantomData;
 use std::path::Path;
+use std::{collections::HashMap, env};
 
 use derive_setters::Setters;
 use path_clean::PathClean;
@@ -90,9 +90,16 @@ pub struct Input<Status = UnResolved> {
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum Source<Status = UnResolved> {
-    Curl { src: Location<Status> },
-    Proto { src: Location<Status> },
-    Config { src: Location<Status> },
+    Curl {
+        src: Location<Status>,
+        headers: Option<HashMap<String, String>>,
+    },
+    Proto {
+        src: Location<Status>,
+    },
+    Config {
+        src: Location<Status>,
+    },
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -139,9 +146,9 @@ impl Output<UnResolved> {
 impl Source<UnResolved> {
     pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src } => {
+            Source::Curl { src, headers } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                Ok(Source::Curl { src: resolved_path })
+                Ok(Source::Curl { src: resolved_path, headers })
             }
             Source::Proto { src, .. } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -193,14 +200,13 @@ mod tests {
 
     #[test]
     fn test_config_codec() {
-        let config = Config::default().inputs(vec![
-            //
-            Input {
-                field_name: "test".to_string(),
-                operation: Operation::Query,
-                source: Source::Curl { src: location("https://example.com") },
-            },
-        ]);
+        let mut headers = HashMap::new();
+        headers.insert("user-agent".to_owned(), "tailcall-v1".to_owned());
+        let config = Config::default().inputs(vec![Input {
+            field_name: "test".to_string(),
+            operation: Operation::Query,
+            source: Source::Curl { src: location("https://example.com"), headers: Some(headers) },
+        }]);
         let actual = serde_json::to_string_pretty(&config).unwrap();
         insta::assert_snapshot!(actual)
     }
