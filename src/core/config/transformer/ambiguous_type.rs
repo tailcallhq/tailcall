@@ -147,7 +147,7 @@ impl Transform for AmbiguousType {
 mod tests {
     use insta::assert_snapshot;
 
-    use crate::core::config::transformer::AmbiguousType;
+    use crate::core::config::{transformer::AmbiguousType, Extensions};
     use crate::core::config::{Config, ConfigModule, Type};
     use crate::core::generator::Source;
     use crate::core::valid::Validator;
@@ -222,11 +222,14 @@ mod tests {
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
         let gen = crate::core::generator::Generator::init(crate::core::runtime::test::init(None));
         let news = tailcall_fixtures::protobuf::NEWS;
-        let config_module = gen
+        let mut config_module = gen
             .read_all(Source::Proto, &[news], "Query")
             .await?
             .transform(AmbiguousType::default())
             .to_result()?;
+
+        // remove links since they break snapshot tests
+        config_module.config.links = Default::default();
 
         assert_snapshot!(config_module.to_sdl());
         Ok(())
