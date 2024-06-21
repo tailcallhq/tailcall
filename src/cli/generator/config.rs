@@ -151,7 +151,7 @@ impl Source<UnResolved> {
     pub fn resolve(
         self,
         parent_dir: Option<&Path>,
-        config_reader: &ConfigReaderContext,
+        reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
             Source::Curl { src, mut headers } => {
@@ -160,7 +160,7 @@ impl Source<UnResolved> {
                     let mut cloned_headers = original_headers.headers().clone();
                     for header_value in cloned_headers.values_mut() {
                         *header_value = reqwest::header::HeaderValue::from_str(
-                            &Mustache::parse(header_value.to_str()?)?.render(config_reader),
+                            &Mustache::parse(header_value.to_str()?)?.render(reader_context),
                         )?;
                     }
                     Some(SerializableHeaderMap::new(cloned_headers))
@@ -187,9 +187,9 @@ impl Input<UnResolved> {
     pub fn resolve(
         self,
         parent_dir: Option<&Path>,
-        config_reader: &ConfigReaderContext,
+        reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Input<Resolved>> {
-        let resolved_source = self.source.resolve(parent_dir, config_reader)?;
+        let resolved_source = self.source.resolve(parent_dir, reader_context)?;
         Ok(Input {
             source: resolved_source,
             field_name: self.field_name,
@@ -203,14 +203,14 @@ impl Config {
     pub fn into_resolved(
         self,
         config_path: &str,
-        config_reader: ConfigReaderContext,
+        reader_context: ConfigReaderContext,
     ) -> anyhow::Result<Config<Resolved>> {
         let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
 
         let inputs = self
             .inputs
             .into_iter()
-            .map(|input| input.resolve(parent_dir, &config_reader))
+            .map(|input| input.resolve(parent_dir, &reader_context))
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;
