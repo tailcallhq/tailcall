@@ -30,6 +30,6 @@
     "format": "graphQL"
   },
   "schema": {
-    "query": "query"
+    "query": "Query"
   }
 }
