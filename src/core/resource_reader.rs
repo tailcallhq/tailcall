@@ -5,7 +5,7 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use url::Url;
 
-use crate::cli::generator::SerializableHeaderMap;
+use crate::core::http::SerializableHeaderMap;
 use crate::core::runtime::TargetRuntime;
 
 /// Response of a file read operation

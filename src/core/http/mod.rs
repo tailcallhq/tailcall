@@ -7,11 +7,12 @@ pub use request_context::RequestContext;
 pub use request_handler::{handle_request, API_URL_PREFIX};
 pub use request_template::RequestTemplate;
 pub use response::*;
+pub use serializable_header_map::SerializableHeaderMap;
 
 pub use crate::core::app_context::AppContext;
 
 mod data_loader;
-
+mod serializable_header_map;
 mod cache;
 mod data_loader_request;
 mod method;

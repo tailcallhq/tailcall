@@ -8,7 +8,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use super::SerializableHeaderMap;
+use crate::core::http::SerializableHeaderMap;
 use crate::core::config::{self};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
