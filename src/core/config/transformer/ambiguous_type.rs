@@ -145,9 +145,7 @@ impl Transform for AmbiguousType {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
-    use maplit::hashset;
+    use insta::assert_snapshot;
 
     use crate::core::config::position::Pos;
     use crate::core::config::transformer::AmbiguousType;
@@ -243,49 +241,22 @@ mod tests {
             .to_result()
             .unwrap();
 
-        let actual = config_module
-            .config
-            .types
-            .keys()
-            .map(|s| s.as_str())
-            .collect::<HashSet<_>>();
-
-        let expected = maplit::hashset![
-            "Query",
-            "Type1Input",
-            "Type1",
-            "Type2Input",
-            "Type2",
-            "Type3"
-        ];
-
-        assert_eq!(actual, expected);
+        assert_snapshot!(config_module.to_sdl());
     }
     #[tokio::test]
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
         let gen = crate::core::generator::Generator::init(crate::core::runtime::test::init(None));
         let news = tailcall_fixtures::protobuf::NEWS;
-        let config_module = gen
+        let mut config_module = gen
             .read_all(Source::Proto, &[news], "Query")
             .await?
             .transform(AmbiguousType::default())
             .to_result()?;
-        let actual = config_module
-            .config
-            .types
-            .keys()
-            .map(|s| s.as_str())
-            .collect::<HashSet<_>>();
 
-        let expected = hashset![
-            "Query",
-            "news__News",
-            "news__NewsList",
-            "news__NewsInput",
-            "news__NewsId",
-            "news__MultipleNewsId"
-        ];
-        assert_eq!(actual, expected);
+        // remove links since they break snapshot tests
+        config_module.config.links = Default::default();
+
+        assert_snapshot!(config_module.to_sdl());
         Ok(())
     }
 }

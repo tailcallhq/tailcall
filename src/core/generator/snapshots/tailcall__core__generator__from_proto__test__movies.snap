@@ -186,7 +186,7 @@ input movies__MovieInput @tag(id: "movies.Movie") {
   """
   cast: [String]
   duration: google__protobuf__DurationInput
-  genre: movies__GenreInput
+  genre: movies__Genre
   name: String
   rating: Float
   """
@@ -208,7 +208,7 @@ input movies__Movie__SubMovieInput @tag(id: "movies.Movie.SubMovie") {
   """
   This is a comment for movie format in submovie
   """
-  format: movies__Movie__MovieFormatInput
+  format: movies__Movie__MovieFormat
   """
   This is a comment for sub_rating
   """
