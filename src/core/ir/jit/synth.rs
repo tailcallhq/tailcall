@@ -15,11 +15,11 @@ impl Synth {
         Self { operations, store }
     }
     pub fn synthesize(&self) -> Value {
-        let mut vals = ObjectAsVec::default();
+        let mut object_data = ObjectAsVec::default();
 
         for child in self.operations.iter() {
             let val = self.iter(child, None, None);
-            if let Some(data) = vals.get_mut("data") {
+            if let Some(data) = object_data.get_mut("data") {
                 match data {
                     Value::Object(obj) => {
                         obj.insert(child.name.as_str(), val);
@@ -29,11 +29,11 @@ impl Synth {
                     }
                 }
             } else {
-                vals.insert("data", val);
+                object_data.insert("data", val);
             }
         }
 
-        Value::Object(vals)
+        Value::Object(object_data)
     }
 
     /// checks if type_of is an array and value is an array
@@ -221,7 +221,7 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn foo(query: &str, store: Vec<(FieldId, Data<'static>)>) -> String {
+    fn init(query: &str, store: Vec<(FieldId, Data<'static>)>) -> String {
         let doc = async_graphql::parser::parse_query(query).unwrap();
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
@@ -231,7 +231,7 @@ mod tests {
 
         let store = store
             .into_iter()
-            .fold(Store::new(), |mut store, (id, data)| {
+            .fold(Store::new(plan.size()), |mut store, (id, data)| {
                 store.insert(id, data);
                 store
             });
@@ -246,7 +246,7 @@ mod tests {
     fn test_posts() {
         let store = vec![(FieldId::new(0), TestData::Posts.into_value())];
 
-        let val = foo(
+        let val = init(
             r#"
             query {
                 posts { id }
@@ -261,7 +261,7 @@ mod tests {
     fn test_user() {
         let store = vec![(FieldId::new(0), TestData::User1.into_value())];
 
-        let val = foo(
+        let val = init(
             r#"
             query {
                 user(id: 1) { id }
@@ -279,7 +279,7 @@ mod tests {
             (FieldId::new(3), TestData::UsersData.into_value()),
         ];
 
-        let val = foo(
+        let val = init(
             r#"
             query {
                 posts { id title user { id name } }
@@ -298,7 +298,7 @@ mod tests {
             (FieldId::new(6), TestData::Users.into_value()),
         ];
 
-        let val = foo(
+        let val = init(
             r#"
             query {
                 posts { id title user { id name } }

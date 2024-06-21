@@ -133,6 +133,7 @@ mod tests {
     use crate::core::config::Config;
     use crate::core::ir::jit::builder::Builder;
     use crate::core::valid::Validator;
+    use pretty_assertions::assert_eq;
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
@@ -154,6 +155,19 @@ mod tests {
         "#,
         );
         insta::assert_debug_snapshot!(plan);
+    }
+
+    #[tokio::test]
+    async fn test_size() {
+        let plan = plan(
+            r#"
+            query {
+                posts { user { id name } }
+            }
+        "#,
+        );
+
+        assert_eq!(plan.size(), 4)
     }
 
     #[test]

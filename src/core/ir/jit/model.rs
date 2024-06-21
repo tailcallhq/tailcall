@@ -40,6 +40,9 @@ impl FieldId {
     pub fn new(id: usize) -> Self {
         FieldId(id)
     }
+    pub fn as_usize(&self) -> usize {
+        self.0
+    }
 }
 
 #[derive(Clone)]
@@ -167,5 +170,9 @@ impl ExecutionPlan {
     #[allow(unused)]
     pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
         self.parent.iter().find(|field| field.id == id)
+    }
+
+    pub fn size(&self) -> usize {
+        self.parent.len()
     }
 }

@@ -1,12 +1,10 @@
-use std::collections::HashMap;
-
 use serde_json_borrow::Value;
 
 use crate::core::ir::jit::model::FieldId;
 
 #[allow(unused)]
 pub struct Store {
-    map: HashMap<FieldId, Data<'static>>,
+    map: Vec<Data<'static>>,
 }
 #[allow(unused)]
 #[derive(Clone)]
@@ -31,23 +29,20 @@ impl Data<'_> {
     }
 }
 
-#[allow(unused)]
-impl Default for Store {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Store {
-    pub fn new() -> Self {
-        Store { map: HashMap::new() }
+    pub fn new(size: usize) -> Self {
+        let map = (0..size)
+            .into_iter()
+            .map(|_| Data::Value(Value::Null))
+            .collect();
+        Store { map }
     }
 
     pub fn insert(&mut self, field_id: FieldId, data: Data<'static>) {
-        self.map.insert(field_id, data);
+        self.map.insert(field_id.as_usize(), data);
     }
 
     pub fn get(&self, field_id: &FieldId) -> Option<&Data> {
-        self.map.get(field_id)
+        self.map.get(field_id.as_usize())
     }
 }
