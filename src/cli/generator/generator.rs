@@ -76,7 +76,8 @@ impl Generator {
             ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
         };
 
-        // While reading resolve the internal paths and mustache headers of generalized config.
+        // While reading resolve the internal paths and mustache headers of generalized
+        // config.
         let reader_context = ConfigReaderContext {
             runtime: &self.runtime,
             vars: &Default::default(),
