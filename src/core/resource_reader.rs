@@ -172,7 +172,7 @@ impl Http {
 
         if let Some(serializable_headers_inner) = serializable_headers {
             let req_headers = request.headers_mut();
-            req_headers.extend(serializable_headers_inner.headers());
+            req_headers.extend(serializable_headers_inner.headers().clone());
         }
 
         let response = self.runtime.http.execute(request).await?;
