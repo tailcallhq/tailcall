@@ -5,7 +5,7 @@ use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
 use crate::core::merge_right::MergeRight;
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use crate::core::valid::{Valid, Validator};
 
 pub struct TypeMerger {
     /// threshold required for the merging process.
@@ -64,14 +64,18 @@ impl TypeMerger {
                         let threshold = mergeable_types.get_threshold(type_name_1, type_name_2);
 
                         visited_types.insert(type_name_1.clone());
-                        let is_similar = stat_gen.similarity(
-                            (type_name_1, type_info_1),
-                            (type_name_2, type_info_2),
-                            threshold,
-                        );
-                        if is_similar {
-                            visited_types.insert(type_name_2.clone());
-                            similar_type_set.insert(type_name_2.to_owned());
+                        let is_similar = stat_gen
+                            .similarity(
+                                (type_name_1, type_info_1),
+                                (type_name_2, type_info_2),
+                                threshold,
+                            )
+                            .to_result();
+                        if let Ok(similar) = is_similar {
+                            if similar {
+                                visited_types.insert(type_name_2.clone());
+                                similar_type_set.insert(type_name_2.to_owned());
+                            }
                         }
                     }
                 }
@@ -127,7 +131,6 @@ impl TypeMerger {
                     }
                 }
             }
-
             // replace the merged type names in interface.
             type_info.implements = type_info
                 .implements
@@ -139,6 +142,28 @@ impl TypeMerger {
                         .or(Some(interface_type_name.clone()))
                 })
                 .collect();
+        }
+
+        // replace the merged types in union as well.
+        for union_type_ in config.unions.values_mut() {
+            // Collect changes to be made
+            let mut types_to_remove = HashSet::new();
+            let mut types_to_add = HashSet::new();
+
+            for type_name in union_type_.types.iter() {
+                if let Some(merge_into_type_name) = type_to_merge_type_mapping.get(type_name) {
+                    types_to_remove.insert(type_name.clone());
+                    types_to_add.insert(merge_into_type_name.clone());
+                }
+            }
+            // Apply changes
+            for type_name in types_to_remove {
+                union_type_.types.remove(&type_name);
+            }
+
+            for type_name in types_to_add {
+                union_type_.types.insert(type_name);
+            }
         }
 
         // replace the merged types in union as well.
@@ -327,6 +352,29 @@ mod test {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::USER_LIST).unwrap();
         let config = Config::from_sdl(&sdl).to_result().unwrap();
         let config = TypeMerger::default().transform(config).to_result().unwrap();
+        insta::assert_snapshot!(config.to_sdl());
+    }
+
+    #[test]
+    fn test_fail_when_scalar_field_not_match() {
+        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
+        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+
+        let mut ty1 = Type::default();
+        ty1.fields.insert("a".to_string(), int_field.clone());
+        ty1.fields.insert("b".to_string(), int_field.clone());
+        ty1.fields.insert("c".to_string(), int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields.insert("a".to_string(), int_field.clone());
+        ty2.fields.insert("b".to_string(), int_field.clone());
+        ty2.fields.insert("c".to_string(), str_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("T1".to_string(), ty1);
+        config.types.insert("T2".to_string(), ty2);
+
+        let config = TypeMerger::new(0.5).transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
 
