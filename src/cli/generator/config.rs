@@ -208,7 +208,7 @@ mod tests {
             HeaderName::from_static("user-agent"),
             HeaderValue::from_static("tailcall-v1"),
         );
-        let headers = SerializableHeaderMap(headers);
+        let headers = SerializableHeaderMap::new(headers);
         let config = Config::default().inputs(vec![Input {
             field_name: "test".to_string(),
             operation: Operation::Query,

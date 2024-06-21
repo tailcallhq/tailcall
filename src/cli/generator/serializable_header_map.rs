@@ -5,7 +5,13 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug)]
-pub struct SerializableHeaderMap(pub HeaderMap);
+pub struct SerializableHeaderMap(HeaderMap);
+
+impl SerializableHeaderMap {
+    pub fn new(headers: HeaderMap) -> Self {
+        Self(headers)
+    }
+}
 
 impl<'de> Deserialize<'de> for SerializableHeaderMap {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -24,7 +30,7 @@ impl<'de> Deserialize<'de> for SerializableHeaderMap {
             );
         }
 
-        Ok(SerializableHeaderMap(header_map))
+        Ok(SerializableHeaderMap::new(header_map))
     }
 }
 
@@ -60,7 +66,7 @@ mod tests {
             HeaderValue::from_str("Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJ1c2VybmFtZSI6ImV4YW1wbGVfdXNlciJ9LCJpYXQiOjE3MTg5NTk1MTIsImV4cCI6MTcxODk2MzExMn0.UC9n2yn7XJYp9CGCRKgg3dm31Ax2lhwba5BupxVx-1").unwrap(),
         );
 
-        let serializable_headers = SerializableHeaderMap(headers.clone());
+        let serializable_headers = SerializableHeaderMap::new(headers.clone());
         // Serialize it
         let serialized = serde_json::to_string(&serializable_headers).unwrap();
         // Deserialize it back
