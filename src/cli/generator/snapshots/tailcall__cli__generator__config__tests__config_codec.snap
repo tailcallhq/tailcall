@@ -6,7 +6,10 @@ expression: actual
   "inputs": [
     {
       "curl": {
-        "src": "https://example.com"
+        "src": "https://example.com",
+        "headers": {
+          "user-agent": "tailcall-v1"
+        }
       },
       "fieldName": "test",
       "operation": "query"
