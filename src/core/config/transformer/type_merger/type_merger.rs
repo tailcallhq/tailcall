@@ -5,7 +5,7 @@ use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
 use crate::core::merge_right::MergeRight;
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
+use crate::core::valid::{Valid, Validator};
 
 pub struct TypeMerger {
     /// threshold required for the merging process.
@@ -64,14 +64,18 @@ impl TypeMerger {
                     comparable_types.get_threshold(type_name_1, type_name_2, self.threshold);
 
                 visited_types.insert(type_name_1.clone());
-                let is_similar = stat_gen.similarity(
-                    (type_name_1, type_info_1),
-                    (type_name_2, type_info_2),
-                    threshold,
-                );
-                if is_similar {
-                    visited_types.insert(type_name_2.clone());
-                    type_1_sim.insert(type_name_2.clone());
+                let is_similar = stat_gen
+                    .similarity(
+                        (type_name_1, type_info_1),
+                        (type_name_2, type_info_2),
+                        threshold,
+                    )
+                    .to_result();
+                if let Ok(result) = is_similar {
+                    if result {
+                        visited_types.insert(type_name_2.clone());
+                        type_1_sim.insert(type_name_2.clone());
+                    }
                 }
             }
             if type_1_sim.len() > 1 {
@@ -322,6 +326,29 @@ mod test {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::USER_LIST).unwrap();
         let config = Config::from_sdl(&sdl).to_result().unwrap();
         let config = TypeMerger::default().transform(config).to_result().unwrap();
+        insta::assert_snapshot!(config.to_sdl());
+    }
+
+    #[test]
+    fn test_fail_when_scalar_field_not_match() {
+        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
+        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+
+        let mut ty1 = Type::default();
+        ty1.fields.insert("a".to_string(), int_field.clone());
+        ty1.fields.insert("b".to_string(), int_field.clone());
+        ty1.fields.insert("c".to_string(), int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields.insert("a".to_string(), int_field.clone());
+        ty2.fields.insert("b".to_string(), int_field.clone());
+        ty2.fields.insert("c".to_string(), str_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("T1".to_string(), ty1);
+        config.types.insert("T2".to_string(), ty2);
+
+        let config = TypeMerger::new(0.5).transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
 }

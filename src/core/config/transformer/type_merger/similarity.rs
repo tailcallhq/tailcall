@@ -1,6 +1,7 @@
 use super::pair_map::PairMap;
 use super::pair_set::PairSet;
 use crate::core::config::{Config, Type};
+use crate::core::valid::{Valid, Validator};
 
 /// Given Two types,it tells similarity between two types based on a specified
 /// threshold.
@@ -28,7 +29,7 @@ impl<'a> Similarity<'a> {
         (type_1_name, type_1): (&str, &Type),
         (type_2_name, type_2): (&str, &Type),
         threshold: f32,
-    ) -> bool {
+    ) -> Valid<bool, String> {
         let type_info = SimilarityTypeInfo { type_1_name, type_1, type_2, type_2_name };
 
         self.similarity_inner(type_info, &mut PairSet::default(), threshold)
@@ -39,7 +40,7 @@ impl<'a> Similarity<'a> {
         type_info: SimilarityTypeInfo,
         visited_type: &mut PairSet<String>,
         threshold: f32,
-    ) -> bool {
+    ) -> Valid<bool, String> {
         let type_1_name = type_info.type_1_name;
         let type_2_name = type_info.type_2_name;
         let type_1 = type_info.type_1;
@@ -49,7 +50,7 @@ impl<'a> Similarity<'a> {
             .type_similarity_cache
             .get(&type_1_name.to_string(), &type_2_name.to_string())
         {
-            *type_similarity_result
+            Valid::succeed(*type_similarity_result)
         } else {
             let config = self.config;
             let mut same_field_count = 0;
@@ -59,17 +60,36 @@ impl<'a> Similarity<'a> {
                     let field_1_type_of = field_1.type_of.to_owned();
                     let field_2_type_of = field_2.type_of.to_owned();
 
-                    if field_1_type_of == field_2_type_of {
-                        // if the field types are same, then check on the list setting.
-                        // eg. type Post and [Post] are not equal.
+                    if config.is_scalar(&field_1_type_of) && config.is_scalar(&field_2_type_of) {
+                        // if field type_of is scalar and they don't match then we can't merge
+                        // types.
+                        if field_1_type_of == field_2_type_of {
+                            if field_1.list == field_2.list {
+                                same_field_count += 1;
+                            } else {
+                                return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
+                            }
+                        } else {
+                            return Valid::fail(
+                                "Type merge failed: same field names but different scalar types."
+                                    .to_string(),
+                            );
+                        }
+                    } else if field_1_type_of == field_2_type_of {
+                        // in order to consider the fields to be exactly same.
+                        // it's output type must match (we can ignore the required bounds).
                         if field_1.list == field_2.list {
+                            // if they're of both of list type then they're probably of same type.
                             same_field_count += 1;
+                        } else {
+                            // If the list properties don't match, we cannot merge these types.
+                            return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
                         }
                     } else if let Some(type_1) = config.types.get(field_1_type_of.as_str()) {
                         if let Some(type_2) = config.types.get(field_2_type_of.as_str()) {
                             if visited_type.contains(&field_1_type_of, &field_2_type_of) {
                                 // it's cyclic type, return true as they're the same.
-                                return true;
+                                return Valid::succeed(true);
                             }
                             visited_type
                                 .insert(field_1_type_of.to_owned(), field_2_type_of.to_owned());
@@ -84,7 +104,11 @@ impl<'a> Similarity<'a> {
                             let is_nested_type_similar =
                                 self.similarity_inner(type_info, visited_type, threshold);
 
-                            same_field_count += if is_nested_type_similar { 1 } else { 0 };
+                            if let Ok(result) = is_nested_type_similar.clone().to_result() {
+                                same_field_count += if result { 1 } else { 0 };
+                            } else {
+                                return is_nested_type_similar;
+                            }
                         }
                     }
                 }
@@ -101,7 +125,7 @@ impl<'a> Similarity<'a> {
                 is_similar,
             );
 
-            is_similar
+            Valid::succeed(is_similar)
         }
     }
 }
@@ -110,9 +134,10 @@ impl<'a> Similarity<'a> {
 mod test {
     use super::Similarity;
     use crate::core::config::{Config, Field, Type};
+    use crate::core::valid::Validator;
 
     #[test]
-    fn should_return_false_when_thresh_is_not_met() {
+    fn should_return_error_when_same_field_has_different_scalar_type() {
         let mut foo1 = Type::default();
         foo1.fields.insert(
             "a".to_owned(),
@@ -168,75 +193,11 @@ mod test {
         cfg.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5);
+        let is_similar = gen
+            .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5)
+            .to_result();
 
-        assert!(!is_similar)
-    }
-
-    #[test]
-    fn should_return_true_when_thresh_is_met() {
-        let mut foo1 = Type::default();
-        foo1.fields.insert(
-            "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
-        );
-        foo1.fields.insert(
-            "b".to_owned(),
-            Field { type_of: "String".to_owned(), ..Default::default() },
-        );
-        foo1.fields.insert(
-            "c".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
-        );
-
-        let mut foo2 = Type::default();
-        foo2.fields.insert(
-            "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
-        );
-        foo2.fields.insert(
-            "b".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
-        );
-        foo2.fields.insert(
-            "c".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
-        );
-
-        let mut bar1 = Type::default();
-        bar1.fields.insert(
-            "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
-        );
-        bar1.fields.insert(
-            "c".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
-        );
-
-        let mut bar2 = Type::default();
-        bar2.fields.insert(
-            "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
-        );
-        bar2.fields.insert(
-            "c".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
-        );
-        bar2.fields.insert(
-            "k".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
-        );
-
-        let mut cfg: Config = Config::default();
-        cfg.types.insert("Foo1".to_owned(), foo1.to_owned());
-        cfg.types.insert("Foo2".to_owned(), foo2.to_owned());
-        cfg.types.insert("Bar1".to_owned(), bar1);
-        cfg.types.insert("Bar2".to_owned(), bar2);
-
-        let mut gen = Similarity::new(&cfg);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5);
-
-        assert!(is_similar)
+        assert!(is_similar.is_err())
     }
 
     #[test]
@@ -272,7 +233,10 @@ mod test {
         cfg.types.insert("Bar2".to_owned(), bar2);
 
         let mut gen = Similarity::new(&cfg);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8);
+        let is_similar = gen
+            .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8)
+            .to_result()
+            .unwrap();
 
         assert!(is_similar)
     }
@@ -323,8 +287,230 @@ mod test {
         cfg.types.insert("Far2".to_owned(), far2);
 
         let mut gen = Similarity::new(&cfg);
-        let is_similar = gen.similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8);
+        let is_similar = gen
+            .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8)
+            .to_result()
+            .unwrap();
 
         assert!(is_similar)
+    }
+
+    #[test]
+    fn test_required_and_optional_fields() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            required: true,
+            ..Default::default()
+        };
+
+        let optional_int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+        ty1.fields
+            .insert("b".to_string(), required_int_field.clone());
+        ty1.fields
+            .insert("c".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), optional_int_field.clone());
+        ty2.fields
+            .insert("b".to_string(), optional_int_field.clone());
+        ty2.fields
+            .insert("c".to_string(), optional_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
+        assert!(types_equal)
+    }
+
+    #[test]
+    fn test_required_list_of_optional_int_vs_optional_list() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            required: true,
+            ..Default::default()
+        };
+
+        let optional_int_field =
+            Field { type_of: "Int".to_owned(), list: true, ..Default::default() };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), optional_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
+        assert!(types_equal)
+    }
+
+    #[test]
+    fn test_list_of_required_int_vs_required_list() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            list_type_required: true,
+            ..Default::default()
+        };
+
+        let optional_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            required: true,
+            ..Default::default()
+        };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), optional_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
+        assert!(types_equal)
+    }
+
+    #[test]
+    fn test_list_of_required_int_vs_list_of_required_int() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            list_type_required: true,
+            ..Default::default()
+        };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
+        assert!(types_equal)
+    }
+
+    #[test]
+    fn test_required_list_vs_required_list() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            required: true,
+            ..Default::default()
+        };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
+        assert!(types_equal)
+    }
+
+    #[test]
+    fn test_required_list_of_required_int_vs_required_list_of_required_int() {
+        let required_int_field = Field {
+            type_of: "Int".to_owned(),
+            list: true,
+            required: true,
+            list_type_required: true,
+            ..Default::default()
+        };
+
+        let mut ty1 = Type::default();
+        ty1.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut ty2 = Type::default();
+        ty2.fields
+            .insert("a".to_string(), required_int_field.clone());
+
+        let mut config = Config::default();
+        config.types.insert("Foo".to_string(), ty1.clone());
+        config.types.insert("Bar".to_string(), ty2.clone());
+
+        let types_equal = Similarity::new(&config)
+            .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
+            .to_result()
+            .unwrap();
+        assert!(types_equal)
+    }
+
+    #[test]
+    fn test_merge_incompatible_list_and_non_list_fields() {
+        // Define fields
+        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+        let list_int_field = Field { type_of: "Int".to_owned(), list: true, ..Default::default() };
+
+        // Define types Foo and Bar
+        let mut foo = Type::default();
+        foo.fields.insert("a".to_string(), int_field.clone());
+        foo.fields.insert("b".to_string(), int_field.clone());
+        foo.fields.insert("c".to_string(), list_int_field.clone());
+
+        let mut bar = Type::default();
+        bar.fields.insert("a".to_string(), int_field.clone());
+        bar.fields.insert("b".to_string(), int_field.clone());
+        bar.fields.insert("c".to_string(), int_field.clone());
+
+        // Create configuration with Foo and Bar types
+        let mut config = Config::default();
+        config.types.insert("Foo".to_owned(), foo.clone());
+        config.types.insert("Bar".to_owned(), bar.clone());
+
+        // Calculate similarity between Foo and Bar
+        let result = Similarity::new(&config)
+            .similarity(("Foo", &foo), ("Bar", &bar), 0.5)
+            .to_result();
+
+        // Assert that merging incompatible list and non-list fields fails
+        assert!(result.is_err())
     }
 }
