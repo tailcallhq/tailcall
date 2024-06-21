@@ -124,15 +124,22 @@ impl Generator {
     }
 
     /// generates the final configuration.
-    pub async fn generate(self) -> anyhow::Result<ConfigModule> {
+      pub async fn generate(self) -> anyhow::Result<ConfigModule> {
         let config = self.read().await?;
         let path = config.output.path.0.to_owned();
+        let query_operation_name = config.schema.query.clone();
         let preset: config::transformer::Preset = config.preset.clone().unwrap_or_default().into();
         let input_samples = self.resolve_io(config).await?;
-        let config = ConfigGenerator::default()
+
+        let mut config_gen = ConfigGenerator::default()
             .inputs(input_samples)
-            .transformers(vec![Box::new(preset)])
-            .generate(true)?;
+            .transformers(vec![Box::new(preset)]);
+        if let Some(query_operation_name_value) = query_operation_name {
+            // presently only query opeartion is supported.
+            config_gen = config_gen.operation_name(query_operation_name_value);
+        }
+
+        let config = config_gen.generate(true)?;
 
         self.write(&config, &path).await?;
         Ok(config)
