@@ -11,15 +11,15 @@ pub use serializable_header_map::SerializableHeaderMap;
 
 pub use crate::core::app_context::AppContext;
 
-mod data_loader;
-mod serializable_header_map;
 mod cache;
+mod data_loader;
 mod data_loader_request;
 mod method;
 mod request_context;
 mod request_handler;
 mod request_template;
 mod response;
+mod serializable_header_map;
 pub mod showcase;
 mod telemetry;
 
