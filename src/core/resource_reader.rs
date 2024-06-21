@@ -38,6 +38,21 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
         self.0.read(file).await
     }
 }
+/// resource reader responsible for reading the data 
+/// from remote source.
+impl ResourceReader<Http> {
+    pub fn http(runtime: TargetRuntime) -> Self {
+        ResourceReader(Http::init(runtime))
+    }
+
+    pub async fn read<T: ToString + Send + Sync>(
+        &self,
+        path: T,
+        headers: Option<reqwest::header::HeaderMap>,
+    ) -> anyhow::Result<serde_json::Value> {
+        self.0.get(path, headers).await
+    }
+}
 
 impl ResourceReader<Cached> {
     pub fn cached(runtime: TargetRuntime) -> Self {
@@ -130,5 +145,37 @@ impl Reader for Cached {
         };
 
         Ok(FileRead { content, path: file_path })
+    }
+}
+
+// TODO: allow support for caching.
+pub struct Http {
+    runtime: TargetRuntime,
+}
+
+impl Http {
+    pub fn init(runtime: TargetRuntime) -> Self {
+        Self { runtime }
+    }
+}
+
+impl Http {
+    /// fetches the response from remote.
+    async fn get<T: ToString + Send>(
+        &self,
+        path: T,
+        headers: Option<reqwest::header::HeaderMap>,
+    ) -> anyhow::Result<serde_json::Value> {
+        let url = Url::parse(&path.to_string())?;
+        let mut request = reqwest::Request::new(reqwest::Method::GET, url);
+
+        if let Some(headers) = headers {
+            let req_headers = request.headers_mut();
+            req_headers.extend(headers);
+        }
+
+        let response = self.runtime.http.execute(request).await?;
+        let response: serde_json::Value = serde_json::from_slice(&response.body)?;
+        Ok(response)
     }
 }
