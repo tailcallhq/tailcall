@@ -8,9 +8,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::core::config::{self};
+use crate::core::config::{self, ConfigReaderContext};
 use crate::core::http::SerializableHeaderMap;
 use crate::core::is_default;
+use crate::core::mustache::Mustache;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -147,11 +148,28 @@ impl Output<UnResolved> {
 }
 
 impl Source<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
+    pub fn resolve(
+        self,
+        parent_dir: Option<&Path>,
+        config_reader: &ConfigReaderContext,
+    ) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, headers } => {
+            Source::Curl { src, mut headers } => {
+                // Resolve the header values with mustache template.
+                let resolved_headers = if let Some(original_headers) = &mut headers {
+                    let mut cloned_headers = original_headers.headers().clone();
+                    for header_value in cloned_headers.values_mut() {
+                        *header_value = reqwest::header::HeaderValue::from_str(
+                            &Mustache::parse(header_value.to_str()?)?.render(config_reader),
+                        )?;
+                    }
+                    Some(SerializableHeaderMap::new(cloned_headers))
+                } else {
+                    None
+                };
+
                 let resolved_path = src.into_resolved(parent_dir);
-                Ok(Source::Curl { src: resolved_path, headers })
+                Ok(Source::Curl { src: resolved_path, headers: resolved_headers })
             }
             Source::Proto { src, .. } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -166,8 +184,12 @@ impl Source<UnResolved> {
 }
 
 impl Input<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Input<Resolved>> {
-        let resolved_source = self.source.resolve(parent_dir)?;
+    pub fn resolve(
+        self,
+        parent_dir: Option<&Path>,
+        config_reader: &ConfigReaderContext,
+    ) -> anyhow::Result<Input<Resolved>> {
+        let resolved_source = self.source.resolve(parent_dir, config_reader)?;
         Ok(Input {
             source: resolved_source,
             field_name: self.field_name,
@@ -178,13 +200,17 @@ impl Input<UnResolved> {
 
 impl Config {
     /// Resolves all the relative paths present inside the GeneratorConfig.
-    pub fn into_resolved(self, config_path: &str) -> anyhow::Result<Config<Resolved>> {
+    pub fn into_resolved(
+        self,
+        config_path: &str,
+        config_reader: ConfigReaderContext,
+    ) -> anyhow::Result<Config<Resolved>> {
         let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
 
         let inputs = self
             .inputs
             .into_iter()
-            .map(|input| input.resolve(parent_dir))
+            .map(|input| input.resolve(parent_dir, &config_reader))
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;

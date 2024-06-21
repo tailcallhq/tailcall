@@ -6,7 +6,7 @@ use pathdiff::diff_paths;
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
-use crate::core::config::{self, ConfigModule};
+use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::ResourceReader;
@@ -76,8 +76,13 @@ impl Generator {
             ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
         };
 
-        // While reading resolve the internal paths of generalized config.
-        config.into_resolved(config_path)
+        // While reading resolve the internal paths and mustache headers of generalized config.
+        let reader_context = ConfigReaderContext {
+            runtime: &self.runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
+        config.into_resolved(config_path, reader_context)
     }
 
     /// performs all the i/o's required in the config file and generates
