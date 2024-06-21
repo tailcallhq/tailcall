@@ -145,9 +145,7 @@ impl Transform for AmbiguousType {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
-    use maplit::hashset;
+    use insta::assert_snapshot;
 
     use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{Config, ConfigModule, Type};
@@ -218,23 +216,7 @@ mod tests {
             .to_result()
             .unwrap();
 
-        let actual = config_module
-            .config
-            .types
-            .keys()
-            .map(|s| s.as_str())
-            .collect::<HashSet<_>>();
-
-        let expected = maplit::hashset![
-            "Query",
-            "Type1Input",
-            "Type1",
-            "Type2Input",
-            "Type2",
-            "Type3"
-        ];
-
-        assert_eq!(actual, expected);
+        assert_snapshot!(config_module.to_sdl());
     }
     #[tokio::test]
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
@@ -245,22 +227,8 @@ mod tests {
             .await?
             .transform(AmbiguousType::default())
             .to_result()?;
-        let actual = config_module
-            .config
-            .types
-            .keys()
-            .map(|s| s.as_str())
-            .collect::<HashSet<_>>();
 
-        let expected = hashset![
-            "Query",
-            "news__News",
-            "news__NewsList",
-            "news__NewsInput",
-            "news__NewsId",
-            "news__MultipleNewsId"
-        ];
-        assert_eq!(actual, expected);
+        assert_snapshot!(config_module.to_sdl());
         Ok(())
     }
 }
