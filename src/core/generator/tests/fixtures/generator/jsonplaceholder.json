@@ -87,6 +87,6 @@
     "format": "graphQL"
   },
   "schema": {
-    "query": "RootType"
+    "query": "Query"
   }
 }
