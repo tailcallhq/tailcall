@@ -147,7 +147,7 @@ impl Transform for AmbiguousType {
 mod tests {
     use insta::assert_snapshot;
 
-    use crate::core::config::{transformer::AmbiguousType, Extensions};
+    use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{Config, ConfigModule, Type};
     use crate::core::generator::Source;
     use crate::core::valid::Validator;
