@@ -12,7 +12,7 @@ impl SerializableHeaderMap {
         Self(headers)
     }
 
-    pub fn headers(self) -> HeaderMap {
+    pub fn headers(&self) -> HeaderMap {
         self.0.clone()
     }
 }
