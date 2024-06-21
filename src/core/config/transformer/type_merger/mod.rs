@@ -1,4 +1,4 @@
-mod comparable_type;
+mod mergeable_types;
 mod pair_map;
 mod pair_set;
 mod similarity;
