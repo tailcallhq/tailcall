@@ -38,7 +38,7 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
         self.0.read(file).await
     }
 }
-/// resource reader responsible for reading the data 
+/// resource reader responsible for reading the data
 /// from remote source.
 impl ResourceReader<Http> {
     pub fn http(runtime: TargetRuntime) -> Self {

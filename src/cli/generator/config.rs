@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+use std::env;
 use std::marker::PhantomData;
 use std::path::Path;
-use std::{collections::HashMap, env};
 
 use derive_setters::Setters;
 use path_clean::PathClean;
