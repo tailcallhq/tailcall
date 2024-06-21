@@ -4,7 +4,7 @@ use std::str::FromStr;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug)]
+#[derive(Debug, Eq)]
 pub struct SerializableHeaderMap(HeaderMap);
 
 impl SerializableHeaderMap {

@@ -10,6 +10,7 @@ use url::Url;
 
 use crate::core::config::{self};
 use crate::core::http::SerializableHeaderMap;
+use crate::core::is_default;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -93,7 +94,7 @@ pub struct Input<Status = UnResolved> {
 pub enum Source<Status = UnResolved> {
     Curl {
         src: Location<Status>,
-        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(default, skip_serializing_if = "is_default")]
         headers: Option<SerializableHeaderMap>,
     },
     Proto {
