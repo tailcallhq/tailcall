@@ -43,3 +43,29 @@ impl Serialize for SerializableHeaderMap {
         headers_map.serialize(serializer)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_serialization_deserialization() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            HeaderName::from_str("Content-Type").unwrap(),
+            HeaderValue::from_str("application/json").unwrap(),
+        );
+        headers.insert(
+            HeaderName::from_str("Authorization").unwrap(),
+            HeaderValue::from_str("Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJ1c2VybmFtZSI6ImV4YW1wbGVfdXNlciJ9LCJpYXQiOjE3MTg5NTk1MTIsImV4cCI6MTcxODk2MzExMn0.UC9n2yn7XJYp9CGCRKgg3dm31Ax2lhwba5BupxVx-1").unwrap(),
+        );
+
+        let serializable_headers = SerializableHeaderMap(headers.clone());
+        // Serialize it
+        let serialized = serde_json::to_string(&serializable_headers).unwrap();
+        // Deserialize it back
+        let deserialized: SerializableHeaderMap = serde_json::from_str(&serialized).unwrap();
+        // Check if the deserialized HeaderMap is equal to the original one
+        assert_eq!(deserialized.0, headers);
+    }
+}
