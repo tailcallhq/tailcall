@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::Path;
+use std::str::FromStr;
 
 use inquire::Confirm;
 use pathdiff::diff_paths;
@@ -86,6 +87,7 @@ impl Generator {
         let mut input_samples = vec![];
 
         let reader = ResourceReader::cached(self.runtime.clone());
+        let http_reader = ResourceReader::http(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
         let output_dir = Path::new(&config.output.path.0)
             .parent()
@@ -93,13 +95,22 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src, .. } => {
+                Source::Curl { src, headers } => {
                     let url = src.0;
-                    let contents = reader.read_file(&url).await?.content;
+                    let mut header_map = reqwest::header::HeaderMap::new();
+                    // build the header_map.
+                    if let Some(req_headers) = headers {
+                        for (key, value) in req_headers {
+                            let header_name = reqwest::header::HeaderName::from_str(key.as_str())?;
+                            let header_value = reqwest::header::HeaderValue::from_str(&value)?;
+                            header_map.insert(header_name, header_value);
+                        }
+                    }
+                    let response = http_reader.read(url.clone(), Some(header_map)).await?;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
-                        response: serde_json::from_str(&contents)?,
                         field_name: input.field_name,
+                        response,
                     });
                 }
                 Source::Proto { src } => {
