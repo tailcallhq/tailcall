@@ -109,7 +109,6 @@ pub struct Output<Status = UnResolved> {
 pub enum Operation {
     #[default]
     Query,
-    Mutation,
 }
 
 #[derive(Debug)]
@@ -123,8 +122,6 @@ pub struct UnResolved {}
 pub struct Schema {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub mutation: Option<String>,
 }
 
 impl Output<UnResolved> {
