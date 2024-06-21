@@ -137,7 +137,7 @@ impl ConfigReader {
             }
         }
 
-        // Recreating the ConfigModule in order to get recompute the values of
+        // Recreating the ConfigModule in order to recompute the values of
         // `input_types`, `output_types` and `interface_types`
         let mut final_config_module = ConfigModule::from(config_module.config);
         final_config_module.extensions = config_module.extensions;
