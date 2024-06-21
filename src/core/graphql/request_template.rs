@@ -90,11 +90,24 @@ impl RequestTemplate {
             .as_ref()
             .map(|args| {
                 args.iter()
-                    .map(|(k, v)| format!(r#"{}: {}"#, k, v.render_graphql(ctx).escape_default()))
+                    .filter_map(|(k, v)| {
+                        let value = v.render_graphql(ctx);
+                        if value.is_empty() {
+                            None
+                        } else {
+                            Some(format!(r#"{}: {}"#, k, value.escape_default()))
+                        }
+                    })
                     .collect::<Vec<_>>()
                     .join(", ")
             })
-            .map(|args| format!("{}({})", self.operation_name, args))
+            .map(|args| {
+                if args.is_empty() {
+                    self.operation_name.clone()
+                } else {
+                    format!("{}({})", self.operation_name, args)
+                }
+            })
             .unwrap_or(self.operation_name.clone());
 
         format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#)
