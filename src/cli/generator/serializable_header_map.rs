@@ -11,6 +11,10 @@ impl SerializableHeaderMap {
     pub fn new(headers: HeaderMap) -> Self {
         Self(headers)
     }
+
+    pub fn headers(self) -> HeaderMap {
+        self.0.clone()
+    }
 }
 
 impl<'de> Deserialize<'de> for SerializableHeaderMap {

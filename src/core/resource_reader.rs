@@ -5,6 +5,7 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use url::Url;
 
+use crate::cli::generator::SerializableHeaderMap;
 use crate::core::runtime::TargetRuntime;
 
 /// Response of a file read operation
@@ -48,7 +49,7 @@ impl ResourceReader<Http> {
     pub async fn read<T: ToString + Send + Sync>(
         &self,
         path: T,
-        headers: Option<reqwest::header::HeaderMap>,
+        headers: Option<SerializableHeaderMap>,
     ) -> anyhow::Result<serde_json::Value> {
         self.0.get(path, headers).await
     }
@@ -164,14 +165,14 @@ impl Http {
     async fn get<T: ToString + Send>(
         &self,
         path: T,
-        headers: Option<reqwest::header::HeaderMap>,
+        serializable_headers: Option<SerializableHeaderMap>,
     ) -> anyhow::Result<serde_json::Value> {
         let url = Url::parse(&path.to_string())?;
         let mut request = reqwest::Request::new(reqwest::Method::GET, url);
 
-        if let Some(headers) = headers {
+        if let Some(serializable_headers_inner) = serializable_headers {
             let req_headers = request.headers_mut();
-            req_headers.extend(headers);
+            req_headers.extend(serializable_headers_inner.headers());
         }
 
         let response = self.runtime.http.execute(request).await?;

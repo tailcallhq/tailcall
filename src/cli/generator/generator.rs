@@ -95,9 +95,8 @@ impl Generator {
         for input in config.inputs {
             match input.source {
                 Source::Curl { src, headers } => {
-                    let header_map = headers.map(|inner_header_map| inner_header_map.0);
                     let url = src.0;
-                    let response = http_reader.read(url.clone(), header_map).await?;
+                    let response = http_reader.read(url.clone(), headers).await?;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
                         field_name: input.field_name,

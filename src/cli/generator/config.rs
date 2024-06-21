@@ -8,7 +8,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use super::serializable_header_map::SerializableHeaderMap;
+use super::SerializableHeaderMap;
 use crate::core::config::{self};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
@@ -93,6 +93,7 @@ pub struct Input<Status = UnResolved> {
 pub enum Source<Status = UnResolved> {
     Curl {
         src: Location<Status>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         headers: Option<SerializableHeaderMap>,
     },
     Proto {

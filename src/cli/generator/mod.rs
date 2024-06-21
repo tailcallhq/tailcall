@@ -6,3 +6,4 @@ mod serializable_header_map;
 mod source;
 
 pub use generator::Generator;
+pub use serializable_header_map::SerializableHeaderMap;
