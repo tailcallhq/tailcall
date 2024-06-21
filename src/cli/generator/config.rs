@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::env;
 use std::marker::PhantomData;
 use std::path::Path;
@@ -9,6 +8,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use super::serializable_header_map::SerializableHeaderMap;
 use crate::core::config::{self};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
@@ -93,7 +93,7 @@ pub struct Input<Status = UnResolved> {
 pub enum Source<Status = UnResolved> {
     Curl {
         src: Location<Status>,
-        headers: Option<HashMap<String, String>>,
+        headers: Option<SerializableHeaderMap>,
     },
     Proto {
         src: Location<Status>,
@@ -193,6 +193,8 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
+    use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+
     use super::*;
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
@@ -201,8 +203,12 @@ mod tests {
 
     #[test]
     fn test_config_codec() {
-        let mut headers = HashMap::new();
-        headers.insert("user-agent".to_owned(), "tailcall-v1".to_owned());
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            HeaderName::from_static("user-agent"),
+            HeaderValue::from_static("tailcall-v1"),
+        );
+        let headers = SerializableHeaderMap(headers);
         let config = Config::default().inputs(vec![Input {
             field_name: "test".to_string(),
             operation: Operation::Query,
