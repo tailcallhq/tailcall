@@ -124,7 +124,7 @@ impl Generator {
     }
 
     /// generates the final configuration.
-      pub async fn generate(self) -> anyhow::Result<ConfigModule> {
+    pub async fn generate(self) -> anyhow::Result<ConfigModule> {
         let config = self.read().await?;
         let path = config.output.path.0.to_owned();
         let query_operation_name = config.schema.query.clone();
