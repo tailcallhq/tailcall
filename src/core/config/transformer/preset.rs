@@ -23,7 +23,7 @@ impl Transform for Preset {
     ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
         transform::default()
             .pipe(super::TreeShake.when(self.tree_shake))
-            .pipe(super::MergeTypes::new(self.merge_type))
+            .pipe(super::TypeMerger::new(self.merge_type))
             .pipe(super::ImproveTypeNames.when(self.use_better_names))
             .pipe(super::AmbiguousType::default())
             .pipe(super::ConsolidateURL::new(self.consolidate_url))
