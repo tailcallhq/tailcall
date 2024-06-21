@@ -30,7 +30,6 @@ async fn run_test(path: &str) -> anyhow::Result<()> {
 
     let generator = Generator::new(path, runtime);
     let config = generator.read().await?;
-    let path = config.output.path.0.to_owned();
     let preset: config::transformer::Preset = config.preset.clone().unwrap_or_default().into();
 
     // resolve i/o's
