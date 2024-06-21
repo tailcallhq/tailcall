@@ -1,7 +1,6 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use reqwest::header::HeaderMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -48,6 +47,10 @@ impl Serialize for SerializableHeaderMap {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
+    use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+
     use super::*;
 
     #[test]
