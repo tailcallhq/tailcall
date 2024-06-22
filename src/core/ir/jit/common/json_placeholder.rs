@@ -5,7 +5,7 @@ use serde_json_borrow::Value;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::ir::jit::builder::Builder;
-use crate::core::ir::jit::model::FieldId;
+
 use crate::core::ir::jit::store::{Data, Store};
 use crate::core::ir::jit::synth::Synth;
 use crate::core::valid::Validator;
@@ -60,9 +60,23 @@ impl JsonPlaceholder {
             async_graphql::parser::parse_query(query).unwrap(),
         );
         let plan = builder.build().unwrap();
+        let posts_id = plan
+            .as_parent()
+            .iter()
+            .find(|a| a.name == "posts")
+            .unwrap()
+            .id
+            .clone();
+        let users_id = plan
+            .as_parent()
+            .iter()
+            .find(|a| a.name == "user")
+            .unwrap()
+            .id
+            .clone();
         let store = [
-            (FieldId::new(0), Data::Value(Value::Array(posts))),
-            (FieldId::new(3), Data::List(users)),
+            (posts_id, Data::Value(Value::Array(posts))),
+            (users_id, Data::List(users)),
         ]
         .into_iter()
         .fold(Store::new(plan.size()), |mut store, (id, data)| {

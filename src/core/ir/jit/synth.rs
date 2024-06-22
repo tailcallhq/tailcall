@@ -315,7 +315,7 @@ mod tests {
     #[test]
     fn test_json_placeholder() {
         // FIXME: doesn't work when userId is queried
-        let synth = JsonPlaceholder::init("{ posts { id title user { id name } } }");
+        let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
         let val = synth.synthesize();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
