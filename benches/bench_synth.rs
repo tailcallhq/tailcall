@@ -9,12 +9,12 @@ use tailcall::core::valid::Validator;
 
 const CONFIG: &str = include_str!("../src/core/ir/jit/fixtures/jsonplaceholder-mutation.graphql");
 
-pub struct JsonPlaceholder {
+struct JsonPlaceholder {
     // List of 100 posts
-    pub posts: Vec<Value<'static>>,
+    posts: Vec<Value<'static>>,
 
     // A duplicated List of 100 users one for each post
-    pub users: Vec<Value<'static>>,
+    users: Vec<Value<'static>>,
 }
 
 impl Default for JsonPlaceholder {
@@ -27,9 +27,10 @@ impl JsonPlaceholder {
     const POSTS: &'static str = tailcall_fixtures::json::POSTS;
     const USERS: &'static str = tailcall_fixtures::json::USERS;
 
-    pub fn new() -> Self {
+    fn new() -> Self {
         let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
+
         let user_map = users.iter().fold(HashMap::new(), |mut map, user| {
             let id = user
                 .as_object()
@@ -42,7 +43,7 @@ impl JsonPlaceholder {
             map
         });
 
-        let users: Vec<Value> = posts
+        let users: Vec<Value<'static>> = posts
             .iter()
             .map(|post| {
                 let user_id = post
@@ -51,7 +52,7 @@ impl JsonPlaceholder {
 
                 if let Some(user_id) = user_id {
                     if let Some(user) = user_map.get(&user_id) {
-                        user.to_owned().to_owned()
+                        user.to_owned().to_owned().to_owned()
                     } else {
                         Value::Null
                     }
@@ -59,17 +60,14 @@ impl JsonPlaceholder {
                     Value::Null
                 }
             })
-            .collect::<Vec<_>>();
+            .collect::<Vec<Value<'static>>>();
 
         Self { posts, users }
     }
 }
-fn create_synthesizer(query: &str) -> Synth {
+
+fn init(query: &str) -> Synth {
     let jp = JsonPlaceholder::new();
-    let store = vec![
-        (FieldId::new(0), Data::Value(Value::Array(jp.posts))),
-        (FieldId::new(3), Data::List(jp.users)),
-    ];
     let doc = async_graphql::parser::parse_query(query).unwrap();
     let config = Config::from_sdl(CONFIG).to_result().unwrap();
     let config = ConfigModule::from(config);
@@ -78,19 +76,22 @@ fn create_synthesizer(query: &str) -> Synth {
     let plan = builder.build().unwrap();
     let size = plan.size();
 
-    let store = store
-        .into_iter()
-        .fold(Store::new(size), |mut store, (id, data)| {
-            store.insert(id, data);
-            store
-        });
+    let store = [
+        (FieldId::new(0), Data::Value(Value::Array(jp.posts))),
+        (FieldId::new(3), Data::List(jp.users)),
+    ]
+    .into_iter()
+    .fold(Store::new(size), |mut store, (id, data)| {
+        store.set(id, data);
+        store
+    });
 
     Synth::new(plan.into_children(), store)
 }
 
 pub fn bench_synth_nested(c: &mut Criterion) {
     c.bench_function("synth_nested", |b| {
-        let synth = create_synthesizer("{ posts { id title user { id name } } }");
+        let synth = init("{ posts { id title user { id name } } }");
         b.iter(|| {
             let a = synth.synthesize();
             drop(a);

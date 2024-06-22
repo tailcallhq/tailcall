@@ -37,7 +37,7 @@ impl Store {
         Store { map }
     }
 
-    pub fn insert(&mut self, field_id: FieldId, data: Data<'static>) {
+    pub fn set(&mut self, field_id: FieldId, data: Data<'static>) {
         self.map.insert(field_id.as_usize(), data);
     }
 
