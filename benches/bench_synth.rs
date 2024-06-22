@@ -9,25 +9,14 @@ use tailcall::core::valid::Validator;
 
 const CONFIG: &str = include_str!("../src/core/ir/jit/fixtures/jsonplaceholder-mutation.graphql");
 
-struct JsonPlaceholder {
-    // List of 100 posts
-    posts: Vec<Value<'static>>,
-
-    // A duplicated List of 100 users one for each post
-    users: Vec<Value<'static>>,
-}
-
-impl Default for JsonPlaceholder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// TODO: code is duplicated in synth.rs
+struct JsonPlaceholder;
 
 impl JsonPlaceholder {
-    const POSTS: &'static str = tailcall_fixtures::json::POSTS;
-    const USERS: &'static str = tailcall_fixtures::json::USERS;
+    const POSTS: &'static str = include_str!("../tailcall-fixtures/fixtures/json/posts.json");
+    const USERS: &'static str = include_str!("../tailcall-fixtures/fixtures/json/users.json");
 
-    fn new() -> Self {
+    fn init(query: &str) -> Synth {
         let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
 
@@ -62,36 +51,30 @@ impl JsonPlaceholder {
             })
             .collect::<Vec<Value<'static>>>();
 
-        Self { posts, users }
+        let config = ConfigModule::from(Config::from_sdl(CONFIG).to_result().unwrap());
+        let builder = Builder::new(
+            Blueprint::try_from(&config).unwrap(),
+            async_graphql::parser::parse_query(query).unwrap(),
+        );
+        let plan = builder.build().unwrap();
+        let store = [
+            (FieldId::new(0), Data::Value(Value::Array(posts))),
+            (FieldId::new(3), Data::List(users)),
+        ]
+        .into_iter()
+        .fold(Store::new(plan.size()), |mut store, (id, data)| {
+            store.set(id, data);
+            store
+        });
+
+        Synth::new(plan.into_children(), store)
     }
-}
-
-fn init(query: &str) -> Synth {
-    let jp = JsonPlaceholder::new();
-    let doc = async_graphql::parser::parse_query(query).unwrap();
-    let config = Config::from_sdl(CONFIG).to_result().unwrap();
-    let config = ConfigModule::from(config);
-
-    let builder = Builder::new(Blueprint::try_from(&config).unwrap(), doc);
-    let plan = builder.build().unwrap();
-    let size = plan.size();
-
-    let store = [
-        (FieldId::new(0), Data::Value(Value::Array(jp.posts))),
-        (FieldId::new(3), Data::List(jp.users)),
-    ]
-    .into_iter()
-    .fold(Store::new(size), |mut store, (id, data)| {
-        store.set(id, data);
-        store
-    });
-
-    Synth::new(plan.into_children(), store)
 }
 
 pub fn bench_synth_nested(c: &mut Criterion) {
     c.bench_function("synth_nested", |b| {
-        let synth = init("{ posts { id title user { id name } } }");
+        let synth = JsonPlaceholder::init("{ posts { id title user { id name } } }");
+        insta::assert_snapshot!(synth.synthesize());
         b.iter(|| {
             let a = synth.synthesize();
             drop(a);

@@ -149,6 +149,10 @@ impl Synth {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
+    use serde_json_borrow::Value;
+
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::jit::builder::Builder;
@@ -242,6 +246,67 @@ mod tests {
         serde_json::to_string_pretty(&val).unwrap()
     }
 
+    struct JsonPlaceholder;
+
+    impl JsonPlaceholder {
+        const POSTS: &'static str = include_str!("../../../../tailcall-fixtures/fixtures/json/posts.json");
+        const USERS: &'static str = include_str!("../../../../tailcall-fixtures/fixtures/json/users.json");
+
+        fn init(query: &str) -> Synth {
+            let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
+            let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
+
+            let user_map = users.iter().fold(HashMap::new(), |mut map, user| {
+                let id = user
+                    .as_object()
+                    .and_then(|user| user.get("id"))
+                    .and_then(|u| u.as_u64());
+
+                if let Some(id) = id {
+                    map.insert(id, user);
+                }
+                map
+            });
+
+            let users: Vec<Value<'static>> = posts
+                .iter()
+                .map(|post| {
+                    let user_id = post
+                        .as_object()
+                        .and_then(|post| post.get("userId").and_then(|u| u.as_u64()));
+
+                    if let Some(user_id) = user_id {
+                        if let Some(user) = user_map.get(&user_id) {
+                            user.to_owned().to_owned().to_owned()
+                        } else {
+                            Value::Null
+                        }
+                    } else {
+                        Value::Null
+                    }
+                })
+                .collect::<Vec<Value<'static>>>();
+
+            let config = ConfigModule::from(Config::from_sdl(CONFIG).to_result().unwrap());
+            let builder = Builder::new(
+                Blueprint::try_from(&config).unwrap(),
+                async_graphql::parser::parse_query(query).unwrap(),
+            );
+            let plan = builder.build().unwrap();
+            let store = [
+                (FieldId::new(0), Data::Value(Value::Array(posts))),
+                (FieldId::new(3), Data::List(users)),
+            ]
+            .into_iter()
+            .fold(Store::new(plan.size()), |mut store, (id, data)| {
+                store.set(id, data);
+                store
+            });
+
+            Synth::new(plan.into_children(), store)
+        }
+    }
+
     #[test]
     fn test_posts() {
         let store = vec![(FieldId::new(0), TestData::Posts.into_value())];
@@ -308,5 +373,13 @@ mod tests {
             store,
         );
         insta::assert_snapshot!(val)
+    }
+
+    #[test]
+    fn test_json_placeholder() {
+        // FIXME: doesn't work when userId is queried
+        let synth = JsonPlaceholder::init("{ posts { id title user { id name } } }");
+        let val = synth.synthesize();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }
