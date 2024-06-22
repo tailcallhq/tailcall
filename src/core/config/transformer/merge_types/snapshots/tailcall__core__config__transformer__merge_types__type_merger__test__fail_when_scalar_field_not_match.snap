@@ -1,5 +1,5 @@
 ---
-source: src/core/config/transformer/type_merger/type_merger.rs
+source: src/core/config/transformer/merge_types/type_merger.rs
 expression: config.to_sdl()
 ---
 type T1 {

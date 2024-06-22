@@ -70,7 +70,6 @@ impl ConsolidateURL {
         url_type_mapping.populate_url_frequency_map(&config);
 
         if let Some(common_url) = url_type_mapping.find_common_url(self.threshold) {
-            // @TODO this needs to be positioned correctly
             config.upstream.base_url = Some(Pos::new(0, 0, None, common_url.to_owned()));
 
             for type_name in url_type_mapping.visited_type_set {

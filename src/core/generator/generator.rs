@@ -1,24 +1,135 @@
-use anyhow::Result;
-use futures_util::future::join_all;
+use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
-use reqwest::Method;
+use serde_json::Value;
 use url::Url;
 
+use super::from_proto::from_proto;
+use super::{FromJsonGenerator, NameGenerator, RequestSample};
 use crate::core::config::position::Pos;
-use crate::core::config::{Config, ConfigModule, Link, LinkType};
-use crate::core::generator::from_proto::from_proto;
-use crate::core::generator::{from_json, ConfigGenerationRequest, Source};
+use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
-use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::ResourceReader;
-use crate::core::runtime::TargetRuntime;
+use crate::core::proto_reader::ProtoMetadata;
+use crate::core::transform::{Transform, TransformerOps};
+use crate::core::valid::Validator;
+
+/// Generator offers an abstraction over the actual config generators and allows
+/// to generate the single config from multiple sources. i.e (Protobuf and Json)
+/// TODO: add support for is_mutation.
+
+#[derive(Setters)]
+pub struct Generator {
+    operation_name: String,
+    inputs: Vec<Input>,
+    type_name_prefix: String,
+    transformers: Vec<Box<dyn Transform<Value = Config, Error = String>>>,
+}
+
+#[derive(Clone)]
+pub enum Input {
+    Json {
+        url: Url,
+        response: Value,
+        field_name: String,
+    },
+    Proto(ProtoMetadata),
+    Config {
+        schema: String,
+        source: config::Source,
+    },
+}
+
+impl Default for Generator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Generator {
+    pub fn new() -> Generator {
+        Generator {
+            operation_name: "Query".to_string(),
+            inputs: Vec::new(),
+            type_name_prefix: "T".to_string(),
+            transformers: Default::default(),
+        }
+    }
+
+    /// Generates configuration from the provided json samples.
+    fn generate_from_json(
+        &self,
+        type_name_generator: &NameGenerator,
+        json_samples: &[RequestSample],
+    ) -> anyhow::Result<Config> {
+        Ok(
+            FromJsonGenerator::new(json_samples, type_name_generator, &self.operation_name)
+                .generate()
+                .to_result()?,
+        )
+    }
+
+    /// Generates the configuration from the provided protobuf.
+    fn generate_from_proto(
+        &self,
+        metadata: &ProtoMetadata,
+        operation_name: &str,
+    ) -> anyhow::Result<Config> {
+        let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
+        let mut config = from_proto(&[descriptor_set], operation_name)?;
+        config.links.push(Pos::new(
+            0,
+            0,
+            None,
+            Link {
+                id: None,
+                src: metadata.path.to_owned(),
+                type_of: LinkType::Protobuf,
+            },
+        ));
+        Ok(config)
+    }
+
+    /// Generated the actual configuratio from provided samples.
+    pub fn generate(&self, use_transformers: bool) -> anyhow::Result<ConfigModule> {
+        let mut config: Config = Config::default();
+        let type_name_generator = NameGenerator::new(&self.type_name_prefix);
+
+        for input in self.inputs.iter() {
+            match input {
+                Input::Config { source, schema } => {
+                    config = config.merge_right(Config::from_source(source.clone(), schema)?);
+                }
+                Input::Json { url, response, field_name } => {
+                    let request_sample =
+                        RequestSample::new(url.to_owned(), response.to_owned(), field_name);
+                    config = config.merge_right(
+                        self.generate_from_json(&type_name_generator, &[request_sample])?,
+                    );
+                }
+                Input::Proto(proto_input) => {
+                    config = config
+                        .merge_right(self.generate_from_proto(proto_input, &self.operation_name)?);
+                }
+            }
+        }
+
+        if use_transformers {
+            for t in &self.transformers {
+                config = t.transform(config).to_result()?;
+            }
+        }
+
+        Ok(ConfigModule::from(config))
+    }
+}
 
 // this function resolves all the names to fully-qualified syntax in descriptors
 // that is important for generation to work
 // TODO: probably we can drop this in case the config_reader will use
 // protox::compile instead of more low-level protox_parse::parse
-fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<FileDescriptorSet> {
+fn resolve_file_descriptor_set(
+    descriptor_set: FileDescriptorSet,
+) -> anyhow::Result<FileDescriptorSet> {
     let descriptor_set = DescriptorPool::from_file_descriptor_set(descriptor_set)?;
     let descriptor_set = FileDescriptorSet {
         file: descriptor_set
@@ -30,158 +141,143 @@ fn resolve_file_descriptor_set(descriptor_set: FileDescriptorSet) -> Result<File
     Ok(descriptor_set)
 }
 
-// TODO: move this logic to ResourceReader.
-async fn fetch_response(
-    url: &str,
-    runtime: &TargetRuntime,
-) -> anyhow::Result<ConfigGenerationRequest> {
-    let parsed_url = Url::parse(url)?;
-    let request = reqwest::Request::new(Method::GET, parsed_url.clone());
-    let resp = runtime.http.execute(request).await?;
-    let body = serde_json::from_slice(&resp.body)?;
-    Ok(ConfigGenerationRequest::new(parsed_url, body))
-}
-
-pub struct Generator {
-    proto_reader: ProtoReader,
-    runtime: TargetRuntime,
-}
-impl Generator {
-    pub fn init(runtime: TargetRuntime) -> Self {
-        Self {
-            runtime: runtime.clone(),
-            proto_reader: ProtoReader::init(ResourceReader::cached(runtime.clone()), runtime),
-        }
-    }
-
-    pub async fn read_all<T: AsRef<str>>(
-        &self,
-        input_source: Source,
-        paths: &[T],
-        query: &str,
-    ) -> Result<ConfigModule> {
-        match input_source {
-            Source::Proto => {
-                let mut links = vec![];
-                let proto_metadata = self.proto_reader.read_all(paths).await?;
-
-                let mut config = Config::default();
-                for metadata in proto_metadata {
-                    links.push(Pos::new(
-                        0,
-                        0,
-                        None,
-                        Link { id: None, src: metadata.path, type_of: LinkType::Protobuf },
-                    ));
-                    let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set)?;
-                    config = config.merge_right(from_proto(&[descriptor_set], query)?);
-                }
-
-                config.links = links;
-                Ok(ConfigModule::from(config))
-            }
-            Source::Url => {
-                let results = join_all(
-                    paths
-                        .iter()
-                        .map(|url| fetch_response(url.as_ref(), &self.runtime)),
-                )
-                .await
-                .into_iter()
-                .collect::<anyhow::Result<Vec<_>>>()?;
-
-                let config = from_json(&results, query)?;
-                Ok(ConfigModule::from(config))
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
+    use prost_reflect::prost_types::FileDescriptorSet;
+    use serde::Deserialize;
 
-    use tailcall_fixtures::protobuf;
+    use super::Generator;
+    use crate::core::config;
+    use crate::core::config::transformer::Preset;
+    use crate::core::generator::generator::Input;
+    use crate::core::generator::NameGenerator;
+    use crate::core::proto_reader::ProtoMetadata;
 
-    use super::*;
-
-    fn start_mock_server() -> httpmock::MockServer {
-        httpmock::MockServer::start()
+    fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
+        Ok(protox::compile(files, [tailcall_fixtures::protobuf::SELF])?)
     }
 
-    #[tokio::test]
-    async fn test_read_all_with_grpc_gen() {
-        let server = start_mock_server();
-        let runtime = crate::core::runtime::test::init(None);
-        let test_dir = PathBuf::from(tailcall_fixtures::protobuf::SELF);
+    #[derive(Deserialize)]
+    struct JsonFixture {
+        url: String,
+        body: serde_json::Value,
+    }
 
-        let news_content = runtime.file.read(protobuf::NEWS).await.unwrap();
-        let greetings_a = runtime.file.read(protobuf::GREETINGS_A).await.unwrap();
+    fn parse_json(path: &str) -> JsonFixture {
+        let content = std::fs::read_to_string(path).unwrap();
+        serde_json::from_str(&content).unwrap()
+    }
 
-        server.mock(|when, then| {
-            when.method(httpmock::Method::GET).path("/news.proto");
-            then.status(200)
-                .header("Content-Type", "application/vnd.google.protobuf")
-                .body(&news_content);
+    #[test]
+    fn should_generate_config_from_proto() -> anyhow::Result<()> {
+        let news_proto = tailcall_fixtures::protobuf::NEWS;
+        let set = compile_protobuf(&[news_proto])?;
+
+        let cfg_module = Generator::default()
+            .inputs(vec![Input::Proto(ProtoMetadata {
+                descriptor_set: set,
+                path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
+            })])
+            .generate(false)?;
+
+        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        Ok(())
+    }
+
+    #[test]
+    fn should_generate_config_from_configs() -> anyhow::Result<()> {
+        let cfg_module = Generator::default()
+            .inputs(vec![Input::Config {
+                schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
+                source: config::Source::new(
+                    tailcall_fixtures::configs::USER_POSTS.to_string(),
+                    config::SourceType::GraphQL,
+                ),
+            }])
+            .generate(true)?;
+
+        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        Ok(())
+    }
+
+    #[test]
+    fn should_generate_config_from_json() -> anyhow::Result<()> {
+        let parsed_content =
+            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
+        let cfg_module = Generator::default()
+            .inputs(vec![Input::Json {
+                url: parsed_content.url.parse()?,
+                response: parsed_content.body,
+                field_name: "f1".to_string(),
+            }])
+            .transformers(vec![Box::new(Preset::default())])
+            .generate(true)?;
+        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        Ok(())
+    }
+
+    #[test]
+    fn should_generate_combined_config() -> anyhow::Result<()> {
+        // Proto input
+        let news_proto = tailcall_fixtures::protobuf::NEWS;
+        let proto_set = compile_protobuf(&[news_proto])?;
+        let proto_input = Input::Proto(ProtoMetadata {
+            descriptor_set: proto_set,
+            path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
         });
 
-        server.mock(|when, then| {
-            when.method(httpmock::Method::GET)
-                .path("/greetings_a.proto");
-            then.status(200)
-                .header("Content-Type", "application/protobuf")
-                .body(&greetings_a);
-        });
+        // Config input
+        let config_input = Input::Config {
+            schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
+            source: config::Source::new(
+                tailcall_fixtures::configs::USER_POSTS.to_string(),
+                config::SourceType::GraphQL,
+            ),
+        };
 
-        let generator = Generator::init(runtime);
-        let news = format!("http://localhost:{}/news.proto", server.port());
-        let greetings_a = format!("http://localhost:{}/greetings_a.proto", server.port());
-        let greetings_b = test_dir
-            .join("greetings_b.proto")
-            .to_str()
-            .unwrap()
-            .to_string();
+        // Json Input
+        let parsed_content =
+            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
+        let json_input = Input::Json {
+            url: parsed_content.url.parse()?,
+            response: parsed_content.body,
+            field_name: "f1".to_string(),
+        };
 
-        let config = generator
-            .read_all(Source::Proto, &[news, greetings_a, greetings_b], "Query")
-            .await
-            .unwrap();
+        // Combine inputs
+        let cfg_module = Generator::default()
+            .inputs(vec![proto_input, json_input, config_input])
+            .transformers(vec![Box::new(Preset::default())])
+            .generate(true)?;
 
-        assert_eq!(config.links.len(), 3);
-        assert_eq!(config.types.get("Query").unwrap().fields.len(), 8);
+        // Assert the combined output
+        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        Ok(())
     }
 
-    #[tokio::test]
-    async fn test_read_all_with_rest_api_gen() {
-        let runtime = crate::core::runtime::test::init(None);
-        let generator = Generator::init(runtime);
+    #[test]
+    fn generate_from_config_from_multiple_jsons() -> anyhow::Result<()> {
+        let mut inputs = vec![];
+        let json_fixtures = [
+            "src/core/generator/tests/fixtures/json/incompatible_properties.json",
+            "src/core/generator/tests/fixtures/json/list_incompatible_object.json",
+            "src/core/generator/tests/fixtures/json/list.json",
+        ];
+        let field_name_generator = NameGenerator::new("f");
+        for json_path in json_fixtures {
+            let parsed_content = parse_json(json_path);
+            inputs.push(Input::Json {
+                url: parsed_content.url.parse()?,
+                response: parsed_content.body,
+                field_name: field_name_generator.next(),
+            });
+        }
 
-        let users = "http://jsonplaceholder.typicode.com/users".to_string();
-        let user = "http://jsonplaceholder.typicode.com/users/1".to_string();
-
-        let config = generator
-            .read_all(Source::Url, &[users, user], "Query")
-            .await
-            .unwrap();
-
-        insta::assert_snapshot!(config.to_sdl());
-    }
-
-    #[tokio::test]
-    async fn test_read_all_with_different_domain_rest_api_gen() {
-        let runtime = crate::core::runtime::test::init(None);
-
-        let generator = Generator::init(runtime);
-
-        let user_comments = "https://jsonplaceholder.typicode.com/posts/1/comments".to_string();
-        let post = "https://jsonplaceholder.typicode.com/posts/1".to_string();
-        let laptops = "https://dummyjson.com/products/search?q=Laptop".to_string();
-
-        let config = generator
-            .read_all(Source::Url, &[user_comments, post, laptops], "Query")
-            .await
-            .unwrap();
-
-        insta::assert_snapshot!(config.to_sdl());
+        let cfg_module = Generator::default()
+            .inputs(inputs)
+            .transformers(vec![Box::new(Preset::default())])
+            .generate(true)?;
+        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        Ok(())
     }
 }

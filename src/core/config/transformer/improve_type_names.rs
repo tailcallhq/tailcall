@@ -107,9 +107,10 @@ impl<'a> CandidateGeneration<'a> {
     }
 }
 
-pub struct TypeNameGenerator;
+#[derive(Default)]
+pub struct ImproveTypeNames;
 
-impl TypeNameGenerator {
+impl ImproveTypeNames {
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
     fn generate_type_names(&self, mut config: Config) -> Config {
@@ -135,7 +136,7 @@ impl TypeNameGenerator {
     }
 }
 
-impl Transform for TypeNameGenerator {
+impl Transform for ImproveTypeNames {
     type Value = Config;
     type Error = String;
     fn transform(&self, config: Config) -> Valid<Config, String> {
@@ -152,7 +153,7 @@ mod test {
     use anyhow::Ok;
     use tailcall_fixtures::configs;
 
-    use super::TypeNameGenerator;
+    use super::ImproveTypeNames;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
@@ -170,7 +171,7 @@ mod test {
         .to_result()
         .unwrap();
 
-        let transformed_config = TypeNameGenerator.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
     }
 
@@ -183,7 +184,7 @@ mod test {
         .to_result()
         .unwrap();
 
-        let transformed_config = TypeNameGenerator.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
@@ -198,7 +199,7 @@ mod test {
         .to_result()
         .unwrap();
 
-        let transformed_config = TypeNameGenerator.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
