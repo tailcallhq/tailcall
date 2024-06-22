@@ -1,37 +1,12 @@
 use criterion::Criterion;
+use serde_json_borrow::Value;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::{Config, ConfigModule};
 use tailcall::core::ir::{Builder, Data, FieldId, Store, Synth};
 use tailcall::core::valid::Validator;
 
-const POSTS: &str = r#"
-        [
-                {
-                    "id": 1,
-                    "userId": 1,
-                    "title": "Some Title"
-                },
-                {
-                    "id": 2,
-                    "userId": 1,
-                    "title": "Not Some Title"
-                }
-        ]
-    "#;
-
-const USER1: &str = r#"
-        {
-                "id": 1,
-                "name": "foo"
-        }
-    "#;
-
-const USER2: &str = r#"
-        {
-                "id": 2,
-                "name": "bar"
-        }
-    "#;
+const POSTS: &str = include_str!("./fixtures/posts.json");
+const USERS: &str = include_str!("./fixtures/users.json");
 
 pub(crate) enum TestData {
     Posts,
@@ -40,19 +15,21 @@ pub(crate) enum TestData {
 
 impl TestData {
     pub(crate) fn into_value(self) -> Data<'static> {
+        let posts = serde_json::from_str(POSTS).unwrap();
+        let users = serde_json::from_str::<Vec<Value>>(USERS).unwrap();
+        let user_0 = &users[0];
+        let user_1 = &users[1];
+
         match self {
-            Self::Posts => Data::Value(serde_json::from_str(POSTS).unwrap()),
-            TestData::UsersData => Data::List(vec![
-                serde_json::from_str(USER1).unwrap(),
-                serde_json::from_str(USER2).unwrap(),
-            ]),
+            Self::Posts => Data::Value(posts),
+            TestData::UsersData => Data::List(vec![user_0.to_owned(), user_1.to_owned()]),
         }
     }
 }
 
 const CONFIG: &str = include_str!("../src/core/ir/jit/fixtures/jsonplaceholder-mutation.graphql");
 
-pub(crate) fn create_synthesizer(query: &str) -> Synth {
+fn create_synthesizer(query: &str) -> Synth {
     let store = vec![
         (FieldId::new(0), TestData::Posts.into_value()),
         (FieldId::new(3), TestData::UsersData.into_value()),
