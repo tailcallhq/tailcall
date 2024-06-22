@@ -15,5 +15,5 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(PositionedConfig, attributes(positioned_field))]
 pub fn positioned_config(input: TokenStream) -> TokenStream {
-    expand_positoned_config(input)
+    expand_positioned_config(input)
 }
