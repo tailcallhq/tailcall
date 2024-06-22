@@ -307,6 +307,6 @@ mod tests {
         "#,
             store,
         );
-        println!("{}", val);
+        insta::assert_snapshot!(val)
     }
 }
