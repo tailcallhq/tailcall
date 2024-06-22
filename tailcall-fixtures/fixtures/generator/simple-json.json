@@ -1,0 +1,30 @@
+{
+  "inputs": [
+    {
+      "URL": {
+        "url": "https://jsonplaceholder.typicode.com/posts/1"
+      },
+      "fieldName": "post",
+      "operation": "Query"
+    },
+    {
+      "URL": {
+        "url": "https://jsonplaceholder.typicode.com/posts"
+      },
+      "fieldName": "posts",
+      "operation": "Query"
+    }
+  ],
+
+  "preset": {
+    "mergeType": 1,
+    "consolidateURL": 0.5
+  },
+  "output": {
+    "path": "./output.graphql",
+    "format": "graphQL"
+  },
+  "schema": {
+    "query": "Query"
+  }
+}

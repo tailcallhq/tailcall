@@ -15,6 +15,7 @@ pub struct ProtoReader {
     runtime: TargetRuntime,
 }
 
+#[derive(Clone)]
 pub struct ProtoMetadata {
     pub descriptor_set: FileDescriptorSet,
     pub path: String,

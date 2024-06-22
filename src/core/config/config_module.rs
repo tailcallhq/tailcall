@@ -12,8 +12,6 @@ use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::core::transform::Transform;
-use crate::core::valid::{Valid, Validator};
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
@@ -109,14 +107,5 @@ impl From<Config> for ConfigModule {
             interface_types,
             ..Default::default()
         }
-    }
-}
-
-impl ConfigModule {
-    pub fn transform<T: Transform<Value = Config, Error = String>>(
-        self,
-        transformer: T,
-    ) -> Valid<Self, String> {
-        transformer.transform(self.config).map(ConfigModule::from)
     }
 }

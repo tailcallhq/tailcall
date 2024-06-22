@@ -158,6 +158,8 @@ base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
 serde_json_borrow = "0.3.0"
 Inflector = "0.11.4"
+path-clean = "=1.0.1"
+pathdiff = "0.2.1"
 num = "0.4.3"
 
 [dev-dependencies]
