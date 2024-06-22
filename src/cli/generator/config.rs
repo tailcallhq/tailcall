@@ -110,14 +110,6 @@ pub struct Output<Status = UnResolved> {
     pub format: Option<config::Source>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Default)]
-#[serde(rename_all = "camelCase")]
-pub enum Operation {
-    #[default]
-    Query,
-    Mutation,
-}
-
 #[derive(Debug)]
 pub enum Resolved {}
 
