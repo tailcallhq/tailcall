@@ -5,6 +5,7 @@
     "port": 8000
   },
   "upstream": {
+    "baseURL": "http://jsonplaceholder.typicode.com",
     "httpCache": 42
   },
   "schema": {
