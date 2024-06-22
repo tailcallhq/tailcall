@@ -9,21 +9,26 @@ pub struct Store {
 #[allow(unused)]
 #[derive(Clone)]
 pub enum Data<'a> {
-    Value(Value<'a>),
-    List(Vec<Value<'a>>),
+    /// Represents that the value was computed only once for the associated
+    /// field
+    Single(Value<'a>),
+    /// Represents that the value was computed multiple times for the associated
+    /// field. The order is guaranteed by the executor to be the same as the
+    /// other of invocation and not the other of completion.
+    Multiple(Vec<Value<'a>>),
 }
 #[allow(unused)]
 impl Data<'_> {
     pub fn as_value(&self) -> Option<&Value> {
         match self {
-            Data::Value(value) => Some(value),
+            Data::Single(value) => Some(value),
             _ => None,
         }
     }
 
     pub fn as_list(&self) -> Option<&Vec<Value>> {
         match self {
-            Data::List(list) => Some(list),
+            Data::Multiple(list) => Some(list),
             _ => None,
         }
     }
@@ -31,7 +36,7 @@ impl Data<'_> {
 
 impl Store {
     pub fn new(size: usize) -> Self {
-        let map = (0..size).map(|_| Data::Value(Value::Null)).collect();
+        let map = (0..size).map(|_| Data::Single(Value::Null)).collect();
         Store { map }
     }
 

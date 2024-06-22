@@ -48,41 +48,36 @@ impl Synth {
             }
             None => {
                 // we perform this check to avoid unnecessary hashing
-                if node.ir.is_some() {
-                    match self.store.get(&node.id) {
-                        Some(val) => {
-                            match val {
-                                // if index is given, then the data should be a list
-                                // if index is not given, then the data should be a value
-                                // must return Null in all other cases.
-                                Data::Value(val) => {
-                                    if index.is_some() {
-                                        return Value::Null;
-                                    }
-                                    self.iter(node, Some(val), None)
+
+                match self.store.get(&node.id) {
+                    Some(val) => {
+                        match val {
+                            // if index is given, then the data should be a list
+                            // if index is not given, then the data should be a value
+                            // must return Null in all other cases.
+                            Data::Single(val) => {
+                                if index.is_some() {
+                                    return Value::Null;
                                 }
-                                Data::List(list) => {
-                                    if let Some(i) = index {
-                                        match list.get(i) {
-                                            Some(val) => self.iter(node, Some(val), None),
-                                            None => Value::Null,
-                                        }
-                                    } else {
-                                        Value::Null
+                                self.iter(node, Some(val), None)
+                            }
+                            Data::Multiple(list) => {
+                                if let Some(i) = index {
+                                    match list.get(i) {
+                                        Some(val) => self.iter(node, Some(val), None),
+                                        None => Value::Null,
                                     }
+                                } else {
+                                    Value::Null
                                 }
                             }
                         }
-                        None => {
-                            // IR exists, so there must be a value.
-                            // if there is no value then we must return Null
-                            Value::Null
-                        }
                     }
-                } else {
-                    // either of parent value or IR must exist
-                    // if none exist, then we must return Null
-                    Value::Null
+                    None => {
+                        // IR exists, so there must be a value.
+                        // if there is no value then we must return Null
+                        Value::Null
+                    }
                 }
             }
         }
@@ -199,13 +194,13 @@ mod tests {
     impl TestData {
         fn into_value(self) -> Data<'static> {
             match self {
-                Self::Posts => Data::Value(serde_json::from_str(POSTS).unwrap()),
-                Self::User1 => Data::Value(serde_json::from_str(USER1).unwrap()),
-                TestData::UsersData => Data::List(vec![
+                Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
+                Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
+                TestData::UsersData => Data::Multiple(vec![
                     serde_json::from_str(USER1).unwrap(),
                     serde_json::from_str(USER2).unwrap(),
                 ]),
-                TestData::Users => Data::Value(serde_json::from_str(USERS).unwrap()),
+                TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
             }
         }
     }

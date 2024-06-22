@@ -5,7 +5,6 @@ use serde_json_borrow::Value;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::ir::jit::builder::Builder;
-
 use crate::core::ir::jit::store::{Data, Store};
 use crate::core::ir::jit::synth::Synth;
 use crate::core::valid::Validator;
@@ -75,8 +74,8 @@ impl JsonPlaceholder {
             .id
             .clone();
         let store = [
-            (posts_id, Data::Value(Value::Array(posts))),
-            (users_id, Data::List(users)),
+            (posts_id, Data::Single(Value::Array(posts))),
+            (users_id, Data::Multiple(users)),
         ]
         .into_iter()
         .fold(Store::new(plan.size()), |mut store, (id, data)| {
