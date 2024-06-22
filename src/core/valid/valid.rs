@@ -46,7 +46,7 @@ pub trait Validator<A, E>: Sized {
         Fusion(self.zip(other))
     }
 
-    fn trace(self, message: &str) -> Valid<A, E> {
+    fn trace(self, message: Option<&str>) -> Valid<A, E> {
         let valid = self.to_result();
         if let Err(error) = valid {
             return Valid(Err(error.trace(message)));
@@ -282,7 +282,10 @@ mod tests {
 
     #[test]
     fn test_trace() {
-        let result = Valid::<(), i32>::fail(1).trace("A").trace("B").trace("C");
+        let result = Valid::<(), i32>::fail(1)
+            .trace(Some("A"))
+            .trace(Some("B"))
+            .trace(Some("C"));
         let expected = Valid::from_vec_cause(vec![Cause {
             message: 1,
             description: None,

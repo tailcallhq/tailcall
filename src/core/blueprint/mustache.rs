@@ -106,6 +106,7 @@ impl FieldDefinition {
     pub fn validate_field(
         &self,
         type_of: &Pos<config::Type>,
+        pos_field: &Pos<config::Field>,
         config: &Config,
     ) -> Valid<(), String> {
         // XXX we could use `Mustache`'s `render` method with a mock
@@ -118,13 +119,25 @@ impl FieldDefinition {
         match &self.resolver {
             Some(IR::IO(IO::Http { req_template, .. })) => {
                 Valid::from_iter(req_template.root_url.expression_segments(), |parts| {
-                    parts_validator.validate(parts, false)
+                    parts_validator.validate(parts, false).trace(
+                        pos_field
+                            .http
+                            .as_ref()
+                            .and_then(|http| http.path.to_pos_trace_err(String::from("path")))
+                            .as_deref(),
+                    )
                 })
                 .and(Valid::from_iter(req_template.query.clone(), |query| {
                     let (_, mustache) = query;
 
                     Valid::from_iter(mustache.expression_segments(), |parts| {
-                        parts_validator.validate(parts, true)
+                        parts_validator.validate(parts, true).trace(
+                            pos_field
+                                .http
+                                .as_ref()
+                                .and_then(|http| http.query.to_pos_trace_err(String::from("query")))
+                                .as_deref(),
+                        )
                     })
                 }))
                 .unit()
@@ -132,14 +145,32 @@ impl FieldDefinition {
             Some(IR::IO(IO::GraphQL { req_template, .. })) => {
                 Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
                     Valid::from_iter(mustache.expression_segments(), |parts| {
-                        parts_validator.validate(parts, true)
+                        parts_validator.validate(parts, true).trace(
+                            pos_field
+                                .graphql
+                                .as_ref()
+                                .and_then(|graphql| {
+                                    graphql.headers.to_pos_trace_err(String::from("headers"))
+                                })
+                                .as_deref(),
+                        )
                     })
                 })
                 .and_then(|_| {
                     if let Some(args) = &req_template.operation_arguments {
                         Valid::from_iter(args, |(_, mustache)| {
                             Valid::from_iter(mustache.expression_segments(), |parts| {
-                                parts_validator.validate(parts, true)
+                                parts_validator.validate(parts, true).trace(
+                                    pos_field
+                                        .graphql
+                                        .as_ref()
+                                        .and_then(|graphql| {
+                                            graphql.args.as_ref().and_then(|args| {
+                                                args.to_pos_trace_err(String::from("args"))
+                                            })
+                                        })
+                                        .as_deref(),
+                                )
                             })
                         })
                     } else {
@@ -150,12 +181,30 @@ impl FieldDefinition {
             }
             Some(IR::IO(IO::Grpc { req_template, .. })) => {
                 Valid::from_iter(req_template.url.expression_segments(), |parts| {
-                    parts_validator.validate(parts, false)
+                    parts_validator.validate(parts, false).trace(
+                        pos_field
+                            .grpc
+                            .as_ref()
+                            .and_then(|grpc| {
+                                grpc.base_url.as_ref().and_then(|base_url| {
+                                    base_url.to_pos_trace_err(String::from("base_url"))
+                                })
+                            })
+                            .as_deref(),
+                    )
                 })
                 .and(
                     Valid::from_iter(req_template.headers.clone(), |(_, mustache)| {
                         Valid::from_iter(mustache.expression_segments(), |parts| {
-                            parts_validator.validate(parts, true)
+                            parts_validator.validate(parts, true).trace(
+                                pos_field
+                                    .grpc
+                                    .as_ref()
+                                    .and_then(|grpc| {
+                                        grpc.headers.to_pos_trace_err(String::from("headers"))
+                                    })
+                                    .as_deref(),
+                            )
                         })
                     })
                     .unit(),
@@ -163,7 +212,17 @@ impl FieldDefinition {
                 .and_then(|_| {
                     if let Some(body) = &req_template.body {
                         Valid::from_iter(body.expression_segments(), |parts| {
-                            parts_validator.validate(parts, true)
+                            parts_validator.validate(parts, true).trace(
+                                pos_field
+                                    .grpc
+                                    .as_ref()
+                                    .and_then(|grpc| {
+                                        grpc.body.as_ref().and_then(|body| {
+                                            body.to_pos_trace_err(String::from("body"))
+                                        })
+                                    })
+                                    .as_deref(),
+                            )
                         })
                     } else {
                         Valid::succeed(Default::default())

@@ -6,7 +6,7 @@ expression: errors
   {
     "message": "no argument 'input' found",
     "trace": [
-      "tests/execution/test-field-already-implemented-from-Interface.md 15#14"
+      "tests/execution/test-field-already-implemented-from-Interface.md 15#20"
     ],
     "description": null
   },

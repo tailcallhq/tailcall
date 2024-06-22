@@ -178,10 +178,10 @@ fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<
 
 fn validate_cors(cors: Option<config::cors::Cors>) -> Valid<Option<Cors>, String> {
     Valid::from(cors.map(|cors| cors.try_into()).transpose())
-        .trace("cors")
-        .trace("headers")
-        .trace("@server")
-        .trace("schema")
+        .trace(Some("cors"))
+        .trace(Some("headers"))
+        .trace(Some("@server"))
+        .trace(Some("schema"))
 }
 
 fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
@@ -191,9 +191,9 @@ fn validate_hostname(hostname: String) -> Valid<IpAddr, String> {
         Valid::from(hostname.parse().map_err(|e: AddrParseError| {
             ValidationError::new(format!("Parsing failed because of {}", e))
         }))
-        .trace("hostname")
-        .trace("@server")
-        .trace("schema")
+        .trace(Some("hostname"))
+        .trace(Some("@server"))
+        .trace(Some("schema"))
     }
 }
 
@@ -210,10 +210,10 @@ fn handle_response_headers(resp_headers: Vec<(String, String)>) -> Valid<HeaderM
         name.zip(value)
     })
     .map(|headers| headers.into_iter().collect::<HeaderMap>())
-    .trace("custom")
-    .trace("headers")
-    .trace("@server")
-    .trace("schema")
+    .trace(Some("custom"))
+    .trace(Some("headers"))
+    .trace(Some("@server"))
+    .trace(Some("schema"))
 }
 
 fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<HashSet<HeaderName>, String> {
@@ -231,10 +231,10 @@ fn handle_experimental_headers(headers: BTreeSet<String>) -> Valid<HashSet<Heade
         }
     })
     .map(HashSet::from_iter)
-    .trace("experimental")
-    .trace("headers")
-    .trace("@server")
-    .trace("schema")
+    .trace(Some("experimental"))
+    .trace(Some("headers"))
+    .trace(Some("@server"))
+    .trace(Some("schema"))
 }
 
 #[cfg(test)]

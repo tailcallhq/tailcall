@@ -137,7 +137,9 @@ mod tests {
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
     fn plan(query: impl AsRef<str>) -> ExecutionPlan {
-        let config = Config::from_sdl("./fixtures/jsonplaceholder-mutation.graphql", CONFIG).to_result().unwrap();
+        let config = Config::from_sdl("./fixtures/jsonplaceholder-mutation.graphql", CONFIG)
+            .to_result()
+            .unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 

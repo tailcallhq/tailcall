@@ -55,10 +55,12 @@ impl<E> ValidationError<E> {
         self.0.is_empty()
     }
 
-    pub fn trace(self, message: &str) -> Self {
+    pub fn trace(self, message: Option<&str>) -> Self {
         let mut errors = self.0;
         for cause in errors.iter_mut() {
-            cause.trace.insert(0, message.to_owned());
+            if let Some(message) = message {
+                cause.trace.insert(0, message.to_owned());
+            }
         }
         Self(errors)
     }
@@ -168,7 +170,7 @@ mod tests {
         let expected = ValidationError::new(
             "Parsing failed because of invalid type: boolean `true`, expected i32".to_string(),
         )
-        .trace("a");
+        .trace(Some("a"));
         assert_eq!(actual, expected);
     }
 }

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::position::Pos;
 use crate::core::config::{Config, ConfigModule, Field, GraphQL, GraphQLOperationType, Type};
+use crate::core::directive::DirectiveCodec;
 use crate::core::graphql::RequestTemplate;
 use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
@@ -42,12 +43,9 @@ pub fn compile_graphql(
             .or(config.upstream.base_url.as_ref()),
         "No base URL defined".to_string(),
     )
+    .trace(graphql.to_pos_trace_err(GraphQL::trace_name()).as_deref())
     .zip(helpers::headers::to_mustache_headers(
-        &graphql
-            .headers
-            .iter()
-            .map(|header| header.inner.clone())
-            .collect::<Vec<_>>(),
+        graphql.headers.as_ref(),
     ))
     .and_then(|(base_url, headers)| {
         Valid::from(
@@ -55,11 +53,14 @@ pub fn compile_graphql(
                 base_url.inner.to_owned(),
                 operation_type,
                 &graphql.name,
-                args,
+                args.map(|args| args.inner.as_ref()),
                 headers,
                 create_related_fields(config, type_name),
             )
-            .map_err(|e| ValidationError::new(e.to_string())),
+            .map_err(|e| {
+                ValidationError::new(e.to_string())
+                    .trace(graphql.to_pos_trace_err(GraphQL::trace_name()).as_deref())
+            }),
         )
     })
     .map(|req_template| {
@@ -80,12 +81,10 @@ pub fn update_graphql<'a>(
             };
 
             compile_graphql(config, operation_type, &field.type_of, graphql)
-                .trace(graphql.to_trace_err().as_str())
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field
-                        .validate_field(type_of, config)
-                        .trace(graphql.to_trace_err().as_str())
+                        .validate_field(type_of, field, config)
                         .map_to(b_field)
                 })
         },

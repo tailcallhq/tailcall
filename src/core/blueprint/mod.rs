@@ -31,6 +31,7 @@ pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
 use super::config::position::Pos;
+use super::json::SourcePos;
 use crate::core::config::{Arg, ConfigModule, Field};
 use crate::core::try_fold::TryFold;
 
@@ -41,6 +42,7 @@ pub(crate) trait TypeLike {
     fn list(&self) -> bool;
     fn non_null(&self) -> bool;
     fn list_type_required(&self) -> bool;
+    fn position(&self) -> SourcePos;
 }
 
 impl TypeLike for Pos<Field> {
@@ -59,6 +61,10 @@ impl TypeLike for Pos<Field> {
     fn list_type_required(&self) -> bool {
         self.list_type_required
     }
+
+    fn position(&self) -> SourcePos {
+        SourcePos::from(self)
+    }
 }
 
 impl TypeLike for Arg {
@@ -76,6 +82,10 @@ impl TypeLike for Arg {
 
     fn list_type_required(&self) -> bool {
         false
+    }
+
+    fn position(&self) -> SourcePos {
+        SourcePos(0, 0, None)
     }
 }
 

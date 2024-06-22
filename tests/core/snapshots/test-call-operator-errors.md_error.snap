@@ -6,29 +6,28 @@ expression: errors
   {
     "message": "No resolver has been found in the schema",
     "trace": [
-      "Query",
-      "userWithoutResolver"
+      "tests/execution/test-call-operator-errors.md 7#3"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-call-operator-errors.md 22#33"
+      "tests/execution/test-call-operator-errors.md 22#39"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-call-operator-errors.md 23#32"
+      "tests/execution/test-call-operator-errors.md 23#38"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-call-operator-errors.md 21#25"
+      "tests/execution/test-call-operator-errors.md 21#31"
     ],
     "description": null
   },
@@ -42,7 +41,7 @@ expression: errors
   {
     "message": "userWithoutResolver field has no resolver",
     "trace": [
-      "tests/execution/test-call-operator-errors.md 19#25"
+      "tests/execution/test-call-operator-errors.md 7#3"
     ],
     "description": null
   }

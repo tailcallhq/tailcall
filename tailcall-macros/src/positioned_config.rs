@@ -59,7 +59,7 @@ fn parse_attrs(attrs: &[syn::Attribute]) -> syn::Result<PositionedAttr> {
     Ok(parsed_attr)
 }
 
-pub fn expand_positoned_config(item: TokenStream) -> TokenStream {
+pub fn expand_positioned_config(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as syn::DeriveInput);
 
     let struct_identifier = &input.ident;

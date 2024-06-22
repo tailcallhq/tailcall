@@ -384,11 +384,11 @@ pub fn update_cache_resolvers<'a>() -> TryFold<
     )
 }
 
-fn validate_field_type_exist(config: &Config, field: &Pos<Field>) -> Valid<(), String> {
+fn validate_field_type_exist(config: &Config, field: &Pos<Field>, name: &str) -> Valid<(), String> {
     let field_type = &field.type_of;
     if !scalar::is_predefined_scalar(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
-            .trace(field.to_trace_err().as_str())
+            .trace(field.to_pos_trace_err(name.to_owned()).as_deref())
     } else {
         Valid::succeed(())
     }
@@ -418,14 +418,16 @@ fn to_fields(
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
         |(name, field)| {
-            validate_field_type_exist(config_module, field).and(to_field_definition(
-                field,
-                &operation_type,
-                object_name,
-                config_module,
-                type_of,
-                name,
-            ))
+            validate_field_type_exist(config_module, field, name)
+                .and(to_field_definition(
+                    field,
+                    &operation_type,
+                    object_name,
+                    config_module,
+                    type_of,
+                    name,
+                ))
+                .trace(field.to_trace_err(name))
         },
     );
 
@@ -491,7 +493,8 @@ fn to_fields(
                     },
                     field_definition,
                 )
-            }),
+            })
+            .trace(source_field.to_trace_err(&config::AddField::trace_name())),
             None => Valid::fail(format!(
                 "Could not find field {} in path {}",
                 add_field.path[0],
@@ -501,7 +504,11 @@ fn to_fields(
     };
 
     let added_fields = Valid::from_iter(type_of.added_fields.iter(), |added_field| {
-        to_added_field(added_field, type_of).trace(added_field.to_trace_err().as_str())
+        to_added_field(added_field, type_of).trace(
+            added_field
+                .to_pos_trace_err(added_field.name.inner.to_owned())
+                .as_deref(),
+        )
     });
     fields.zip(added_fields).map(|(mut fields, added_fields)| {
         fields.extend(added_fields);
@@ -525,14 +532,14 @@ pub fn to_field_definition(
             "Multiple resolvers detected [{}]",
             directives.join(", ")
         ))
-        .trace(field.to_trace_err().as_str());
+        .trace(field.to_pos_trace_err(name.to_owned()).as_deref());
     }
 
     update_args()
         .and(update_http())
         .and(update_grpc(operation_type))
-        .and(update_const_field())
-        .and(update_js_field().trace(config::JS::trace_name().as_str()))
+        .and(update_const_field().trace(config::Expr::trace_name().as_str()))
+        .and(update_js_field())
         .and(update_graphql(operation_type))
         .and(update_modify())
         .and(update_call(operation_type, object_name))
@@ -554,24 +561,27 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
             let dbl_usage = input_types.contains(name) && output_types.contains(name);
             if type_.scalar() {
-                to_scalar_type_definition(name).trace(name)
+                to_scalar_type_definition(name).trace(type_.to_trace_err(name))
             } else if dbl_usage {
-                Valid::fail("type is used in input and output".to_string()).trace(name)
+                Valid::fail("type is used in input and output".to_string())
+                    .trace(type_.to_pos_trace_err(name.to_owned()).as_deref())
             } else {
-                to_object_type_definition(name, type_, config_module).and_then(|definition| {
-                    match definition.clone() {
+                to_object_type_definition(name, type_, config_module)
+                    .trace(type_.to_trace_err(name))
+                    .and_then(|definition| match definition.clone() {
                         Definition::Object(object_type_definition) => {
                             if config_module.input_types.contains(name) {
                                 to_input_object_type_definition(object_type_definition)
+                                    .trace(type_.to_trace_err(name))
                             } else if config_module.interface_types.contains(name) {
                                 to_interface_type_definition(object_type_definition)
+                                    .trace(type_.to_trace_err(name))
                             } else {
                                 Valid::succeed(definition)
                             }
                         }
                         _ => Valid::succeed(definition),
-                    }
-                })
+                    })
             }
         })
         .map(|mut types| {

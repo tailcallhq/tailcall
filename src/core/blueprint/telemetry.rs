@@ -33,7 +33,7 @@ pub struct Telemetry {
 }
 
 fn to_url(url: &str) -> Valid<Url, String> {
-    Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).trace("url")
+    Valid::from(Url::parse(url).map_err(|e| ValidationError::new(e.to_string()))).trace(Some("url"))
 }
 
 fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, String> {
@@ -48,7 +48,7 @@ fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, String> {
         ))
     })
     .map(HeaderMap::from_iter)
-    .trace("headers")
+    .trace(Some("headers"))
 }
 
 pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
@@ -61,7 +61,7 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
                 config::TelemetryExporter::Otlp(config) => to_url(&config.url)
                     .zip(to_headers(config.headers.clone()))
                     .map(|(url, headers)| TelemetryExporter::Otlp(OtlpExporter { url, headers }))
-                    .trace("otlp"),
+                    .trace(Some("otlp")),
                 config::TelemetryExporter::Prometheus(config) => {
                     Valid::succeed(TelemetryExporter::Prometheus(config.clone()))
                 }
@@ -74,7 +74,7 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
                     export: Some(export),
                     request_headers: config.telemetry.request_headers.clone(),
                 })
-                .trace(config::Telemetry::trace_name().as_str())
+                .trace(Some(config::Telemetry::trace_name().as_str()))
         } else {
             Valid::succeed(up)
         }
@@ -84,7 +84,7 @@ pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
 fn validate_apollo(apollo: Apollo) -> Valid<Apollo, String> {
     validate_graph_ref(&apollo.graph_ref)
         .map(|_| apollo)
-        .trace("apollo.graph_ref")
+        .trace(Some("apollo.graph_ref"))
 }
 
 fn validate_graph_ref(graph_ref: &str) -> Valid<(), String> {

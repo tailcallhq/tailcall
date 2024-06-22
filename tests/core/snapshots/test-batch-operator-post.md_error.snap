@@ -6,7 +6,7 @@ expression: errors
   {
     "message": "GroupBy is only supported for GET requests",
     "trace": [
-      "tests/execution/test-batch-operator-post.md 11#14"
+      "tests/execution/test-batch-operator-post.md 11#38"
     ],
     "description": null
   }

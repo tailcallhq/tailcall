@@ -26,7 +26,7 @@ impl TryFrom<Vec<Pos<Link>>> for Links {
                     }
                     Valid::succeed(link)
                 })
-                .trace(&pos.to_string())
+                .trace(Some(&pos.to_string()))
         })
         .and_then(|links| {
             let script_links = links
@@ -52,8 +52,8 @@ impl TryFrom<Vec<Pos<Link>>> for Links {
                 Valid::succeed(links)
             }
         })
-        .trace(Link::trace_name().as_str())
-        .trace("schema")
+        .trace(Some(Link::trace_name().as_str()))
+        .trace(Some("schema"))
         .map_to(Links)
         .to_result()
     }

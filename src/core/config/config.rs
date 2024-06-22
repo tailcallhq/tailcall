@@ -556,11 +556,11 @@ pub struct Http {
     pub group_by: Pos<Vec<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    #[positioned_field(list_field)]
+    #[positioned_field(field)]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@http` operator. It is used by specifying a
     /// key-value map of header names and their values.
-    pub headers: Vec<Pos<KeyValue>>,
+    pub headers: Pos<Vec<KeyValue>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// Schema of the input of the API call. It is automatically inferred in
@@ -568,6 +568,7 @@ pub struct Http {
     pub input: Option<JsonSchema>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(field)]
     /// This refers to the HTTP method of the API call. Commonly used methods
     /// include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.
     pub method: Pos<Method>,
@@ -585,12 +586,12 @@ pub struct Http {
     /// most cases.
     pub output: Option<JsonSchema>,
 
-    #[positioned_field(list_field)]
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(field)]
     /// This represents the query parameters of your API call. You can pass it
     /// as a static object or use Mustache template for dynamic parameters.
     /// These parameters will be added to the URL.
-    pub query: Vec<Pos<KeyValue>>,
+    pub query: Pos<Vec<KeyValue>>,
 }
 
 ///
@@ -684,12 +685,12 @@ pub struct Grpc {
     pub group_by: Pos<Vec<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    #[positioned_field(list_field)]
+    #[positioned_field(field)]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@grpc` operator. It is used by specifying a
     /// key-value map of header names and their values. Note: content-type is
     /// automatically set to application/grpc
-    pub headers: Vec<Pos<KeyValue>>,
+    pub headers: Pos<Vec<KeyValue>>,
 
     #[positioned_field(field)]
     /// This refers to the gRPC method you're going to call. For instance
@@ -713,8 +714,9 @@ pub struct Grpc {
 /// data from.
 pub struct GraphQL {
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
-    pub args: Option<Vec<KeyValue>>,
+    pub args: Option<Pos<Vec<KeyValue>>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     #[positioned_field(option_field, input_source_name = "baseURL")]
@@ -733,11 +735,11 @@ pub struct GraphQL {
     pub batch: Pos<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
-    #[positioned_field(list_field)]
+    #[positioned_field(field)]
     /// The headers parameter allows you to customize the headers of the GraphQL
     /// request made by the `@graphQL` operator. It is used by specifying a
     /// key-value map of header names and their values.
-    pub headers: Vec<Pos<KeyValue>>,
+    pub headers: Pos<Vec<KeyValue>>,
 
     #[positioned_field(field)]
     /// Specifies the root field on the upstream to request data from. This maps

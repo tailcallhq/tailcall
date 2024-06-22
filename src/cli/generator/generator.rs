@@ -113,7 +113,8 @@ impl Generator {
                 Source::Config { src } => {
                     let path = src.0;
                     let schema = reader.read_file(&path).await?.content;
-                    let source = config::Source::new(path.clone(), config::SourceType::detect(&path)?);
+                    let source =
+                        config::Source::new(path.clone(), config::SourceType::detect(&path)?);
                     input_samples.push(Input::Config { schema, source });
                 }
             }

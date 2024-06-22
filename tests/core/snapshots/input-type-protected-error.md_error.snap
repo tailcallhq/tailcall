@@ -6,14 +6,14 @@ expression: errors
   {
     "message": "Input types can not be protected",
     "trace": [
-      "tests/execution/input-type-protected-error.md 16#3"
+      "tests/execution/input-type-protected-error.md 15#13"
     ],
     "description": null
   },
   {
     "message": "Input types can not be protected",
     "trace": [
-      "tests/execution/input-type-protected-error.md 20#3"
+      "tests/execution/input-type-protected-error.md 20#19"
     ],
     "description": null
   }

@@ -4,6 +4,7 @@ use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::position::Pos;
 use crate::core::config::{Field, GraphQLOperationType};
+use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -86,7 +87,7 @@ fn compile_call(
                         .collect::<Vec<String>>()
                         .join(", ")
                 ))
-                .trace(call.to_trace_err().as_str());
+                .trace(step.to_pos_trace_err(field_name).as_deref());
             }
 
             to_field_definition(
@@ -99,8 +100,11 @@ fn compile_call(
             )
             .and_then(|b_field| {
                 if b_field.resolver.is_none() {
-                    Valid::fail(format!("{} field has no resolver", field_name))
-                        .trace(call.to_trace_err().as_str())
+                    Valid::fail(format!("{} field has no resolver", field_name)).trace(
+                        field
+                            .to_pos_trace_err(config::Call::trace_name())
+                            .as_deref(),
+                    )
                 } else {
                     Valid::succeed(b_field)
                 }
@@ -139,7 +143,7 @@ fn compile_call(
             }),
             "Steps can't be empty".to_string(),
         )
-        .trace(call.to_trace_err().as_str())
+        .trace(call.to_pos_trace_err(config::Call::trace_name()).as_deref())
     })
 }
 
@@ -161,22 +165,20 @@ fn get_field_and_field_name<'a>(
         get_type_and_field(call),
         "call must have query or mutation".to_string(),
     )
-    .trace(call.to_trace_err().as_str())
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
             config_module.config.find_type(&type_name),
             format!("{} type not found on config", type_name),
         )
-        .trace(call.to_trace_err().as_str())
         .and_then(|query_type| {
             Valid::from_option(
                 query_type.fields.get(&field_name),
                 format!("{} field not found", field_name),
             )
-            .trace(call.to_trace_err().as_str())
             .fuse(Valid::succeed(field_name))
             .fuse(Valid::succeed(query_type))
             .into()
         })
     })
+    .trace(call.to_pos_trace_err(config::Call::trace_name()).as_deref())
 }

@@ -5,9 +5,7 @@ expression: errors
 [
   {
     "message": "field id not found",
-    "trace": [
-      "tests/execution/test-grpc-group-by.md 10#5"
-    ],
+    "trace": [],
     "description": null
   }
 ]

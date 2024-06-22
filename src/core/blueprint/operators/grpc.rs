@@ -7,16 +7,17 @@ use crate::core::blueprint::{FieldDefinition, TypeLike};
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::position::Pos;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
+use crate::core::directive::DirectiveCodec;
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
 use crate::core::ir::model::{IO, IR};
-use crate::core::json::JsonSchema;
+use crate::core::json::{JsonScheamWithSourcePosition, PositionedJsonSchema, SourcePos};
 use crate::core::mustache::Mustache;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};
 
-fn to_url(grpc: &Grpc, method: &GrpcMethod, config: &Config) -> Valid<Mustache, String> {
+fn to_url(grpc: &Pos<Grpc>, method: &GrpcMethod, config: &Config) -> Valid<Mustache, String> {
     Valid::from_option(
         grpc.base_url.as_ref().or(config.upstream.base_url.as_ref()),
         "No base URL defined".to_string(),
@@ -60,29 +61,30 @@ fn json_schema_from_field(config: &Config, field: &Pos<Field>) -> FieldSchema {
     let args_schema = crate::core::blueprint::to_json_schema_for_args(&field.args, config);
     FieldSchema { args: args_schema, field: field_schema }
 }
+
 pub struct FieldSchema {
-    pub args: JsonSchema,
-    pub field: JsonSchema,
+    pub args: PositionedJsonSchema,
+    pub field: PositionedJsonSchema,
 }
+
 fn validate_schema(
     field_schema: FieldSchema,
     operation: &ProtobufOperation,
-    name: &str,
+    pos_field: &Pos<Field>,
 ) -> Valid<(), String> {
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
 
-    Valid::from(JsonSchema::try_from(input_type))
-        .zip(Valid::from(JsonSchema::try_from(output_type)))
+    Valid::from(PositionedJsonSchema::try_from(input_type))
+        .zip(Valid::from(PositionedJsonSchema::try_from(output_type)))
         .and_then(|(_input_schema, output_schema)| {
             // TODO: add validation for input schema - should compare result grpc.body to
             // schema
             let fields = field_schema.field;
-            let _args = field_schema.args;
             // TODO: all of the fields in protobuf are optional actually
             // and if we want to mark some fields as required in GraphQL
             // JsonSchema won't match and the validation will fail
-            fields.compare(&output_schema, name)
+            fields.compare(&output_schema, pos_field.name())
         })
 }
 
@@ -90,6 +92,7 @@ fn validate_group_by(
     field_schema: &FieldSchema,
     operation: &ProtobufOperation,
     group_by: Pos<Vec<String>>,
+    pos_field: &Pos<Field>,
 ) -> Valid<(), String> {
     let input_type = &operation.input_type;
     let output_type = &operation.output_type;
@@ -101,17 +104,18 @@ fn validate_group_by(
             .get_field_by_json_name(item.as_str())
             .ok_or(ValidationError::new(format!("field {} not found", item)));
     }
-    let output_type = field_descriptor.and_then(|f| JsonSchema::try_from(&f));
+    let output_type = field_descriptor.and_then(|f| PositionedJsonSchema::try_from(&f));
 
-    Valid::from(JsonSchema::try_from(input_type))
+    Valid::from(JsonScheamWithSourcePosition::try_from(input_type))
         .zip(Valid::from(output_type))
         .and_then(|(_input_schema, output_schema)| {
             // TODO: add validation for input schema - should compare result grpc.body to
             // schema considering repeated message type
             let fields = &field_schema.field;
-            let args = &field_schema.args;
-            let fields = JsonSchema::Arr(Box::new(fields.to_owned()));
-            let _args = JsonSchema::Arr(Box::new(args.to_owned()));
+            let fields = PositionedJsonSchema::new(
+                JsonScheamWithSourcePosition::Arr(Box::new(fields.to_owned())),
+                SourcePos::from(pos_field),
+            );
             fields.compare(&output_schema, group_by[0].as_str())
         })
 }
@@ -165,34 +169,38 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
     let validate_with_schema = inputs.validate_with_schema;
 
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
+        .trace(
+            grpc.method
+                .to_pos_trace_err(config::Grpc::trace_name())
+                .as_deref(),
+        )
         .and_then(|method| {
             let file_descriptor_set = config_module.extensions.get_file_descriptor_set();
 
             if file_descriptor_set.file.is_empty() {
-                return Valid::fail("Protobuf files were not specified in the config".to_string());
+                return Valid::fail("Protobuf files were not specified in the config".to_string())
+                    .trace(grpc.to_pos_trace_err(config::Grpc::trace_name()).as_deref());
             }
 
             to_operation(&method, file_descriptor_set)
                 .fuse(to_url(grpc, &method, config_module))
-                .fuse(helpers::headers::to_mustache_headers(
-                    &grpc
-                        .headers
-                        .iter()
-                        .map(|header| header.inner.to_owned())
-                        .collect::<Vec<_>>(),
-                ))
+                .fuse(helpers::headers::to_mustache_headers(grpc.headers.as_ref()))
                 .fuse(helpers::body::to_body(
                     grpc.body.as_deref().map(|body| body.as_str()),
                 ))
-                .into()
+                .trace(grpc.to_pos_trace_err(config::Grpc::trace_name()).as_deref())
         })
         .and_then(|(operation, url, headers, body)| {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
                 if grpc.group_by.is_empty() {
-                    validate_schema(field_schema, &operation, field.name()).unit()
+                    validate_schema(field_schema, &operation, field)
+                        .trace(field.to_trace_err(&config::Grpc::trace_name()))
+                        .unit()
                 } else {
-                    validate_group_by(&field_schema, &operation, grpc.group_by.clone()).unit()
+                    validate_group_by(&field_schema, &operation, grpc.group_by.clone(), field)
+                        .trace(field.to_trace_err(&config::Grpc::trace_name()))
+                        .unit()
                 }
             } else {
                 Valid::succeed(())
@@ -244,11 +252,11 @@ pub fn update_grpc<'a>(
                 field,
                 grpc,
                 validate_with_schema: true,
-            }).trace(grpc.to_trace_err().as_str())
+            })
             .map(|resolver| b_field.resolver(Some(resolver)))
             .and_then(|b_field| {
                 b_field
-                    .validate_field(type_of, config_module).trace(grpc.to_trace_err().as_str())
+                    .validate_field(type_of, field, config_module).trace(grpc.to_trace_err(config::Grpc::trace_name().as_str()))
                     .map_to(b_field)
             })
         },

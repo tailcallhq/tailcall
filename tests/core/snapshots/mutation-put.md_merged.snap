@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
@@ -26,7 +26,7 @@ type Post {
 }
 
 type Query {
-  firstUser: User @http(path: "/users/1")
+  firstUser: User @http(method: "GET", path: "/users/1")
 }
 
 type User {

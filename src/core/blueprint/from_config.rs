@@ -8,7 +8,7 @@ use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::{Arg, Batch, Config, ConfigModule, Field};
 use crate::core::ir::model::{IO, IR};
-use crate::core::json::JsonSchema;
+use crate::core::json::{JsonScheamWithSourcePosition, PositionedJsonSchema};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
@@ -66,17 +66,25 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
     blueprint
 }
 
-pub fn to_json_schema_for_field(field: &Pos<Field>, config: &Config) -> JsonSchema {
+pub fn to_json_schema_for_field(field: &Pos<Field>, config: &Config) -> PositionedJsonSchema {
     to_json_schema(field, config)
 }
-pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
+
+pub fn to_json_schema_for_args(
+    args: &BTreeMap<String, Arg>,
+    config: &Config,
+) -> PositionedJsonSchema {
     let mut schema_fields = HashMap::new();
     for (name, arg) in args.iter() {
         schema_fields.insert(name.clone(), to_json_schema(arg, config));
     }
-    JsonSchema::Obj(schema_fields)
+    PositionedJsonSchema::new(
+        JsonScheamWithSourcePosition::Obj(schema_fields),
+        Default::default(),
+    )
 }
-fn to_json_schema<T>(field: &T, config: &Config) -> JsonSchema
+
+fn to_json_schema<T>(field: &T, config: &Config) -> PositionedJsonSchema
 where
     T: TypeLike,
 {
@@ -92,34 +100,56 @@ where
                 schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
             }
         }
-        JsonSchema::Obj(schema_fields)
+        PositionedJsonSchema::new(
+            JsonScheamWithSourcePosition::Obj(schema_fields),
+            field.position(),
+        )
     } else if let Some(type_enum_) = type_enum_ {
-        JsonSchema::Enum(
-            type_enum_
-                .variants
-                .iter()
-                .map(|variant| variant.name.clone())
-                .collect::<BTreeSet<String>>(),
+        PositionedJsonSchema::new(
+            JsonScheamWithSourcePosition::Enum(
+                type_enum_
+                    .variants
+                    .iter()
+                    .map(|variant| variant.name.clone())
+                    .collect::<BTreeSet<String>>(),
+            ),
+            field.position(),
         )
     } else {
-        match type_of {
-            "String" => JsonSchema::Str,
-            "Int" => JsonSchema::Num,
-            "Boolean" => JsonSchema::Bool,
-            "Empty" => JsonSchema::Empty,
-            "JSON" => JsonSchema::Any,
-            _ => JsonSchema::Any,
-        }
+        let schema = match type_of {
+            "String" => JsonScheamWithSourcePosition::Str,
+            "Int" => JsonScheamWithSourcePosition::Num,
+            "Boolean" => JsonScheamWithSourcePosition::Bool,
+            "Empty" => JsonScheamWithSourcePosition::Empty,
+            "JSON" => JsonScheamWithSourcePosition::Any,
+            _ => JsonScheamWithSourcePosition::Any,
+        };
+
+        PositionedJsonSchema::new(schema, field.position())
     };
 
     if !required {
         if list {
-            JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(schema))))
+            let list_with_position = PositionedJsonSchema::new(
+                JsonScheamWithSourcePosition::Arr(Box::new(schema)),
+                field.position(),
+            );
+
+            PositionedJsonSchema::new(
+                JsonScheamWithSourcePosition::Opt(Box::new(list_with_position)),
+                field.position(),
+            )
         } else {
-            JsonSchema::Opt(Box::new(schema))
+            PositionedJsonSchema::new(
+                JsonScheamWithSourcePosition::Opt(Box::new(schema)),
+                field.position(),
+            )
         }
     } else if list {
-        JsonSchema::Arr(Box::new(schema))
+        PositionedJsonSchema::new(
+            JsonScheamWithSourcePosition::Arr(Box::new(schema)),
+            field.position(),
+        )
     } else {
         schema
     }

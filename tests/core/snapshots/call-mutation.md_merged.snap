@@ -41,7 +41,7 @@ type Post {
 }
 
 type Query {
-  firstUser: User @http(path: "/users/1")
+  firstUser: User @http(method: "GET", path: "/users/1")
   postFromUser(userId: Int!): Post @http(path: "/posts?userId={{.args.userId}}")
 }
 

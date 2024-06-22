@@ -119,7 +119,7 @@ impl<'a, I, O: Clone + 'a, E> TryFold<'a, I, O, E> {
     ///
     /// Returns a new `TryFold` with trace logging added.
     pub fn trace(self, msg: &'a str) -> Self {
-        TryFold::new(move |i, o| self.try_fold(i, o).trace(msg))
+        TryFold::new(move |i, o| self.try_fold(i, o).trace(Some(msg)))
     }
 }
 

@@ -274,7 +274,7 @@ impl Context {
                         base_url: None,
                         body,
                         group_by: Pos::new(0, 0, None, vec![]),
-                        headers: vec![],
+                        headers: Pos::new(0, 0, None, vec![]),
                         method: Pos::new(0, 0, None, field_name.id()),
                     },
                 ));
