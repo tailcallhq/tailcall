@@ -32,7 +32,6 @@ impl Data<'_> {
 impl Store {
     pub fn new(size: usize) -> Self {
         let map = (0..size)
-            .into_iter()
             .map(|_| Data::Value(Value::Null))
             .collect();
         Store { map }

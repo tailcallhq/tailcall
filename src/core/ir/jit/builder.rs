@@ -128,12 +128,13 @@ impl Builder {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::Config;
     use crate::core::ir::jit::builder::Builder;
     use crate::core::valid::Validator;
-    use pretty_assertions::assert_eq;
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
