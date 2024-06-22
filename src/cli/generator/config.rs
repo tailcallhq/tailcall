@@ -83,16 +83,23 @@ impl Location<UnResolved> {
 pub struct Input<Status = UnResolved> {
     #[serde(flatten)]
     pub source: Source<Status>,
-    pub field_name: String,
-    pub operation: Operation,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum Source<Status = UnResolved> {
-    Curl { src: Location<Status> },
-    Proto { src: Location<Status> },
-    Config { src: Location<Status> },
+    #[serde(rename_all = "camelCase")]
+    Curl {
+        src: Location<Status>,
+        field_name: String,
+        operation: Operation,
+    },
+    Proto {
+        src: Location<Status>,
+    },
+    Config {
+        src: Location<Status>,
+    },
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -139,9 +146,9 @@ impl Output<UnResolved> {
 impl Source<UnResolved> {
     pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src } => {
+            Source::Curl { src, field_name, operation } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                Ok(Source::Curl { src: resolved_path })
+                Ok(Source::Curl { src: resolved_path, field_name, operation })
             }
             Source::Proto { src, .. } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -158,11 +165,7 @@ impl Source<UnResolved> {
 impl Input<UnResolved> {
     pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Input<Resolved>> {
         let resolved_source = self.source.resolve(parent_dir)?;
-        Ok(Input {
-            source: resolved_source,
-            field_name: self.field_name,
-            operation: self.operation,
-        })
+        Ok(Input { source: resolved_source })
     }
 }
 
@@ -194,11 +197,12 @@ mod tests {
     #[test]
     fn test_config_codec() {
         let config = Config::default().inputs(vec![
-            //
             Input {
-                field_name: "test".to_string(),
-                operation: Operation::Query,
-                source: Source::Curl { src: location("https://example.com") },
+                source: Source::Curl {
+                    src: location("https://example.com"),
+                    field_name: "test".to_string(),
+                    operation: Operation::Query,
+                },
             },
         ]);
         let actual = serde_json::to_string_pretty(&config).unwrap();
