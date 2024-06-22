@@ -15,25 +15,16 @@ impl Synth {
         Self { operations, store }
     }
     pub fn synthesize(&self) -> Value {
-        let mut object_data = ObjectAsVec::default();
+        let mut data = ObjectAsVec::default();
 
         for child in self.operations.iter() {
             let val = self.iter(child, None, None);
-            if let Some(data) = object_data.get_mut("data") {
-                match data {
-                    Value::Object(obj) => {
-                        obj.insert(child.name.as_str(), val);
-                    }
-                    _ => {
-                        unimplemented!("this should never happen")
-                    }
-                }
-            } else {
-                object_data.insert("data", val);
-            }
+            data.insert(child.name.as_str(), val);
         }
 
-        Value::Object(object_data)
+        let mut output = ObjectAsVec::default();
+        output.insert("data", Value::Object(data));
+        Value::Object(output)
     }
 
     /// checks if type_of is an array and value is an array
@@ -137,9 +128,7 @@ impl Synth {
                     let val = self.iter_inner(node, Some(val), Some(i));
                     ans.push(val)
                 }
-                let mut object = ObjectAsVec::default();
-                object.insert(node.name.as_str(), Value::Array(ans));
-                Value::Object(object)
+                Value::Array(ans)
             }
             Some(val) => val.clone(), // cloning here would be cheaper than cloning whole value
             None => Value::Null,      // TODO: we can just pass parent value instead of an option
