@@ -232,7 +232,7 @@ mod tests {
         let store = store
             .into_iter()
             .fold(Store::new(plan.size()), |mut store, (id, data)| {
-                store.insert(id, data);
+                store.set(id, data);
                 store
             });
 
