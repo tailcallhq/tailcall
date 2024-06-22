@@ -30,11 +30,14 @@ impl JsonPlaceholder {
     pub fn new() -> Self {
         let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
-        let user_map = users.iter().fold(HashMap::new(), |mut map, n_user| {
-            if let Some(user) = n_user.as_object() {
-                if let Some(id) = user.get("id").and_then(|u| u.as_u64()) {
-                    map.insert(id, n_user);
-                }
+        let user_map = users.iter().fold(HashMap::new(), |mut map, user| {
+            let id = user
+                .as_object()
+                .and_then(|user| user.get("id"))
+                .and_then(|u| u.as_u64());
+
+            if let Some(id) = id {
+                map.insert(id, user);
             }
             map
         });
@@ -42,16 +45,19 @@ impl JsonPlaceholder {
         let users: Vec<Value> = posts
             .iter()
             .map(|post| {
-                if let Some(user_id) = post
+                let user_id = post
                     .as_object()
-                    .and_then(|post| post.get("userId").and_then(|u| u.as_u64()))
-                {
-                    if let Some(user) = user_map.get(&user_id) {
-                        return user.to_owned().to_owned();
-                    }
-                }
+                    .and_then(|post| post.get("userId").and_then(|u| u.as_u64()));
 
-                Value::Null
+                if let Some(user_id) = user_id {
+                    if let Some(user) = user_map.get(&user_id) {
+                        user.to_owned().to_owned()
+                    } else {
+                        Value::Null
+                    }
+                } else {
+                    Value::Null
+                }
             })
             .collect::<Vec<_>>();
 
