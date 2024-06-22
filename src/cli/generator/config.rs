@@ -92,7 +92,6 @@ pub enum Source<Status = UnResolved> {
     Curl {
         src: Location<Status>,
         field_name: String,
-        operation: Operation,
     },
     Proto {
         src: Location<Status>,
@@ -146,9 +145,9 @@ impl Output<UnResolved> {
 impl Source<UnResolved> {
     pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, field_name, operation } => {
+            Source::Curl { src, field_name } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                Ok(Source::Curl { src: resolved_path, field_name, operation })
+                Ok(Source::Curl { src: resolved_path, field_name })
             }
             Source::Proto { src, .. } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -196,15 +195,12 @@ mod tests {
 
     #[test]
     fn test_config_codec() {
-        let config = Config::default().inputs(vec![
-            Input {
-                source: Source::Curl {
-                    src: location("https://example.com"),
-                    field_name: "test".to_string(),
-                    operation: Operation::Query,
-                },
+        let config = Config::default().inputs(vec![Input {
+            source: Source::Curl {
+                src: location("https://example.com"),
+                field_name: "test".to_string(),
             },
-        ]);
+        }]);
         let actual = serde_json::to_string_pretty(&config).unwrap();
         insta::assert_snapshot!(actual)
     }

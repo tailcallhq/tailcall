@@ -99,7 +99,7 @@ impl Generator {
                     input_samples.push(Input::Json {
                         url: url.parse()?,
                         response: serde_json::from_str(&contents)?,
-                        field_name: field_name,
+                        field_name,
                     });
                 }
                 Source::Proto { src } => {
