@@ -25,34 +25,10 @@ pub struct ConfigModule {
 }
 
 impl ConfigModule {
-    // recompute the values of `input_types`, `output_types` and `interface_types`
-    pub fn recompute_types(self) -> Self {
-        let input_types = self.config().input_types();
-        let output_types = self.config().output_types();
-        let interface_types = self.config().interface_types();
-        Self {
-            config: self.config,
-            extensions: self.extensions,
-            input_types,
-            output_types,
-            interface_types,
-        }
-    }
-
-    pub fn get_config_mut(&mut self) -> &mut Config {
-        &mut self.config
-    }
-
-    pub fn get_extensions_mut(&mut self) -> &mut Extensions {
-        &mut self.extensions
-    }
-
-    pub fn into_extensions(self) -> Extensions {
-        self.extensions
-    }
-
-    pub fn into_config(self) -> Config {
-        self.config
+    pub fn reset_config_module(self) -> ConfigModule {
+        let mut config_module = Self::from(self.config);
+        config_module.extensions = self.extensions;
+        config_module
     }
 }
 

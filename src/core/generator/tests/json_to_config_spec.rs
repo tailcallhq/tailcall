@@ -37,16 +37,15 @@ fn load_json(path: &Path) -> anyhow::Result<(String, Value)> {
 }
 
 fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {
-    let config = Generator::default()
+    let config_module = Generator::default()
         .inputs(vec![Input::Json {
             url,
             response: body,
             field_name: "f1".to_string(),
         }])
-        .generate(true)?
-        .into_config();
+        .generate(true)?;
 
     let snapshot_name = path.file_name().unwrap().to_str().unwrap();
-    insta::assert_snapshot!(snapshot_name, config.to_sdl());
+    insta::assert_snapshot!(snapshot_name, config_module.config().to_sdl());
     Ok(())
 }

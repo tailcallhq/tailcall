@@ -68,8 +68,9 @@ pub async fn run() -> Result<()> {
                     Fmt::log_n_plus_one(n_plus_one_queries, config_module.config());
                     // Check the endpoints' schema
                     let _ = config_module
-                        .into_extensions()
+                        .extensions()
                         .endpoint_set
+                        .clone()
                         .into_checked(&blueprint, runtime)
                         .await?;
                     if schema {
