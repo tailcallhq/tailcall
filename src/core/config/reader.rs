@@ -99,13 +99,15 @@ impl ConfigReader {
                 LinkType::Key => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
-                    config_module.get_extensions_mut().keys = Arc::new(self.load_private_key(content).await?)
+                    config_module.get_extensions_mut().keys =
+                        Arc::new(self.load_private_key(content).await?)
                 }
                 LinkType::Operation => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
 
-                    config_module.get_extensions_mut().endpoint_set = EndpointSet::try_new(&content)?;
+                    config_module.get_extensions_mut().endpoint_set =
+                        EndpointSet::try_new(&content)?;
                 }
                 LinkType::Htpasswd => {
                     let source = self.resource_reader.read_file(&path).await?;
