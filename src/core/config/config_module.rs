@@ -28,7 +28,7 @@ impl ConfigModule {
     pub fn config_mut(&mut self) -> &mut Config {
         &mut self.config
     }
-    pub fn set_extensions(&mut self, extensions: Extensions) {
+    pub fn with_extensions(&mut self, extensions: Extensions) {
         self.extensions = extensions;
     }
 }
