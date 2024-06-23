@@ -22,7 +22,7 @@ ExecutionPlan {
         Field {
             id: 2,
             name: "id",
-            type_of: Int!,
+            type_of: ID!,
             refs: Some(
                 Parent(1),
             ),
@@ -56,7 +56,7 @@ ExecutionPlan {
                                         Field {
                                             id: 2,
                                             name: "id",
-                                            type_of: Int!,
+                                            type_of: ID!,
                                         },
                                         Field {
                                             id: 3,
