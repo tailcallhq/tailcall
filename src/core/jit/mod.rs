@@ -1,5 +1,6 @@
 mod builder;
 mod exec_ir;
+mod exec_ir;
 mod model;
 mod store;
 mod synth;
@@ -10,4 +11,4 @@ pub use synth::*;
 
 // NOTE: Only used in tests and benchmarks
 pub mod common;
-mod ir;
+pub mod ir;
