@@ -230,7 +230,7 @@ impl ConfigReader {
 
         let mut config = config_module.config().clone();
         config.telemetry.render_mustache(&reader_ctx)?;
-        config_module.set_config(config);
+        config_module.with_config(config);
 
         Ok(config_module)
     }
