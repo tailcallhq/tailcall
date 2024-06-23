@@ -1,5 +1,5 @@
 ---
-source: src/core/config/transformer/type_name_generator.rs
+source: src/core/config/transformer/improve_type_names.rs
 expression: transformed_config.to_sdl()
 ---
 schema @server @upstream {
