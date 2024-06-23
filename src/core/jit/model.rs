@@ -2,7 +2,6 @@ use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::model::IR;
 
-#[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct Arg {
     pub id: ArgId,
@@ -57,7 +56,6 @@ pub struct Field<A: Clone> {
 
 const EMPTY_VEC: &Vec<Field<Children>> = &Vec::new();
 impl Field<Children> {
-    #[allow(unused)]
     pub fn children(&self) -> &Vec<Field<Children>> {
         match &self.refs {
             Some(Children(children)) => children,
@@ -120,7 +118,6 @@ impl<A: Debug + Clone> Debug for Field<A> {
 #[derive(Clone)]
 pub struct Parent(FieldId);
 
-#[allow(unused)]
 impl Parent {
     pub fn new(id: FieldId) -> Self {
         Parent(id)
@@ -156,22 +153,18 @@ impl ExecutionPlan {
         Self { parent: fields, children: field_children }
     }
 
-    #[allow(unused)]
     pub fn as_children(&self) -> &[Field<Children>] {
         &self.children
     }
 
-    #[allow(unused)]
     pub fn into_children(self) -> Vec<Field<Children>> {
         self.children
     }
 
-    #[allow(unused)]
     pub fn as_parent(&self) -> &[Field<Parent>] {
         &self.parent
     }
 
-    #[allow(unused)]
     pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
         self.parent.iter().find(|field| field.id == id)
     }
