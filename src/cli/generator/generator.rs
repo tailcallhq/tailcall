@@ -94,14 +94,10 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src,field_name, headers } => {
+                Source::Curl { src, field_name, headers } => {
                     let url = src.0;
                     let response = http_reader.read(url.clone(), headers).await?;
-                    input_samples.push(Input::Json {
-                        url: url.parse()?,
-                        response,
-                        field_name,
-                    });
+                    input_samples.push(Input::Json { url: url.parse()?, response, field_name });
                 }
                 Source::Proto { src } => {
                     let path = src.0;
