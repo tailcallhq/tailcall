@@ -22,17 +22,15 @@ expression: val
         }
       }
     ],
-    "users": {
-      "users": [
-        {
-          "id": 1,
-          "name": "Leanne Graham"
-        },
-        {
-          "id": 2,
-          "name": "Ervin Howell"
-        }
-      ]
-    }
+    "users": [
+      {
+        "id": 1,
+        "name": "Leanne Graham"
+      },
+      {
+        "id": 2,
+        "name": "Ervin Howell"
+      }
+    ]
   }
 }

@@ -4,6 +4,8 @@ expression: val
 ---
 {
   "data": {
-    "id": 1
+    "user": {
+      "id": 1
+    }
   }
 }
