@@ -16,6 +16,7 @@ impl Exec {
     }
 
     #[async_recursion::async_recursion]
+    #[allow(clippy::only_used_in_recursion)]
     pub async fn execute<'a>(
         &'a self,
         ir: &'a IR,
@@ -62,6 +63,7 @@ mod tests {
     use serde_json_borrow::ObjectAsVec;
 
     use super::*;
+
     #[test]
     fn test_resolve_path_obj() {
         let mut obj = ObjectAsVec::default();
@@ -76,10 +78,11 @@ mod tests {
 
     #[test]
     fn test_resolve_path_arr() {
-        let mut arr = vec![];
-        arr.push(Value::Str("a".into()));
-        arr.push(Value::Str("b".into()));
-        arr.push(Value::Str("c".into()));
+        let arr = vec![
+            Value::Str("a".into()),
+            Value::Str("b".into()),
+            Value::Str("c".into()),
+        ];
 
         let json = Value::Array(arr);
         let path = vec!["2"];
@@ -94,10 +97,7 @@ mod tests {
         obj.insert("a", Value::Str("b".into()));
         let json = Value::Object(obj);
 
-        let mut arr = vec![];
-        arr.push(Value::Str("a".into()));
-        arr.push(json);
-        arr.push(Value::Str("c".into()));
+        let arr = vec![Value::Str("a".into()), json, Value::Str("c".into())];
 
         let json = Value::Array(arr);
         let path = vec!["1", "a"];
