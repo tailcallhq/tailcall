@@ -35,7 +35,7 @@ async fn main() -> Result<(), Error> {
         .await?;
     let blueprint = Blueprint::try_from(&config)?;
     let endpoints = config
-        .extensions
+        .extensions()
         .endpoint_set
         .into_checked(&blueprint, runtime.clone())
         .await?;
