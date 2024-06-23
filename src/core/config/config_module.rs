@@ -30,8 +30,9 @@ impl ConfigModule {
         config_module
     }
 
-    pub fn add_extensions(&mut self, extensions: Extensions) {
+    pub fn add_extensions(mut self, extensions: Extensions) -> Self {
         self.extensions = extensions;
+        self
     }
 }
 
