@@ -4,14 +4,14 @@ use crate::core::ir::jit::model::{Children, Field};
 use crate::core::ir::jit::store::{Data, Store};
 
 #[allow(unused)]
-pub struct Synth {
+pub struct Synth<'a> {
     operations: Vec<Field<Children>>,
-    store: Store,
+    store: Store<Value<'a>>,
 }
 
 #[allow(unused)]
-impl Synth {
-    pub fn new(operations: Vec<Field<Children>>, store: Store) -> Self {
+impl<'a> Synth<'a> {
+    pub fn new(operations: Vec<Field<Children>>, store: Store<Value<'a>>) -> Self {
         Self { operations, store }
     }
     pub fn synthesize(&self) -> Value {
@@ -33,10 +33,10 @@ impl Synth {
     }
 
     #[inline]
-    fn iter<'a>(
-        &'a self,
-        node: &'a Field<Children>,
-        parent: Option<&'a Value>,
+    fn iter<'b>(
+        &'b self,
+        node: &'b Field<Children>,
+        parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Value {
         match parent {
@@ -71,6 +71,10 @@ impl Synth {
                                     Value::Null
                                 }
                             }
+                            Data::Pending => {
+                                // TODO: should bailout instead of returning Null
+                                Value::Null
+                            }
                         }
                     }
                     None => {
@@ -83,10 +87,10 @@ impl Synth {
         }
     }
     #[inline]
-    fn iter_inner<'a>(
-        &'a self,
-        node: &'a Field<Children>,
-        parent: Option<&'a Value>,
+    fn iter_inner<'b>(
+        &'b self,
+        node: &'b Field<Children>,
+        parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Value {
         match parent {
@@ -133,6 +137,8 @@ impl Synth {
 
 #[cfg(test)]
 mod tests {
+
+    use serde_json_borrow::Value;
 
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
@@ -192,7 +198,7 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value(self) -> Data<'static> {
+        fn into_value(self) -> Data<Value<'static>> {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
@@ -207,7 +213,7 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn init(query: &str, store: Vec<(FieldId, Data<'static>)>) -> String {
+    fn init(query: &str, store: Vec<(FieldId, Data<Value<'static>>)>) -> String {
         let doc = async_graphql::parser::parse_query(query).unwrap();
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
