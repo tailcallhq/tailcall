@@ -145,9 +145,8 @@ impl Transform for AmbiguousType {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
 
-    use pretty_assertions::assert_eq;
+    use insta::assert_snapshot;
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
 
@@ -222,22 +221,7 @@ mod tests {
             .to_result()
             .unwrap();
 
-        let actual = config
-            .types
-            .keys()
-            .map(|s| s.as_str())
-            .collect::<HashSet<_>>();
-
-        let expected = maplit::hashset![
-            "Query",
-            "Type1Input",
-            "Type1",
-            "Type2Input",
-            "Type2",
-            "Type3"
-        ];
-
-        assert_eq!(actual, expected);
+        assert_snapshot!(config.to_sdl());
     }
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
@@ -256,25 +240,14 @@ mod tests {
             })])
             .generate(false)?;
 
-        let config = AmbiguousType::default()
+        let mut config = AmbiguousType::default()
             .transform(cfg_module.config)
             .to_result()?;
 
-        let actual = config
-            .types
-            .keys()
-            .map(|s| s.as_str())
-            .collect::<HashSet<_>>();
+        // remove links since they break snapshot tests
+        config.links = Default::default();
 
-        let expected = maplit::hashset![
-            "Query",
-            "news__News",
-            "news__NewsList",
-            "news__NewsInput",
-            "news__NewsId",
-            "news__MultipleNewsId"
-        ];
-        assert_eq!(actual, expected);
+        assert_snapshot!(config.to_sdl());
         Ok(())
     }
 }

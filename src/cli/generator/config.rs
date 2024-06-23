@@ -86,17 +86,17 @@ impl Location<UnResolved> {
 pub struct Input<Status = UnResolved> {
     #[serde(flatten)]
     pub source: Source<Status>,
-    pub field_name: String,
-    pub operation: Operation,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum Source<Status = UnResolved> {
+    #[serde(rename_all = "camelCase")]
     Curl {
         src: Location<Status>,
         #[serde(default, skip_serializing_if = "is_default")]
         headers: Option<SerializableHeaderMap>,
+        field_name: String,
     },
     Proto {
         src: Location<Status>,
@@ -113,14 +113,6 @@ pub struct Output<Status = UnResolved> {
     pub path: Location<Status>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub format: Option<config::Source>,
-}
-
-#[derive(Deserialize, Serialize, Debug, Default)]
-#[serde(rename_all = "camelCase")]
-pub enum Operation {
-    #[default]
-    Query,
-    Mutation,
 }
 
 #[derive(Debug)]
@@ -154,7 +146,7 @@ impl Source<UnResolved> {
         reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, mut headers } => {
+            Source::Curl { src, field_name, mut headers } => {
                 // Resolve the header values with mustache template.
                 let resolved_headers = if let Some(original_headers) = &mut headers {
                     let mut cloned_headers = original_headers.headers().clone();
@@ -169,13 +161,13 @@ impl Source<UnResolved> {
                 };
 
                 let resolved_path = src.into_resolved(parent_dir);
-                Ok(Source::Curl { src: resolved_path, headers: resolved_headers })
+                Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
             }
-            Source::Proto { src, .. } => {
+            Source::Proto { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 Ok(Source::Proto { src: resolved_path })
             }
-            Source::Config { src, .. } => {
+            Source::Config { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 Ok(Source::Config { src: resolved_path })
             }
@@ -190,11 +182,7 @@ impl Input<UnResolved> {
         reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Input<Resolved>> {
         let resolved_source = self.source.resolve(parent_dir, reader_context)?;
-        Ok(Input {
-            source: resolved_source,
-            field_name: self.field_name,
-            operation: self.operation,
-        })
+        Ok(Input { source: resolved_source })
     }
 }
 
@@ -238,9 +226,11 @@ mod tests {
         );
         let headers = SerializableHeaderMap::new(headers);
         let config = Config::default().inputs(vec![Input {
-            field_name: "test".to_string(),
-            operation: Operation::Query,
-            source: Source::Curl { src: location("https://example.com"), headers: Some(headers) },
+            source: Source::Curl {
+                src: location("https://example.com"),
+                headers: Some(headers),
+                field_name: "test".to_string(),
+            },
         }]);
         let actual = serde_json::to_string_pretty(&config).unwrap();
         insta::assert_snapshot!(actual)
