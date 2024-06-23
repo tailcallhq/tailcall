@@ -93,26 +93,24 @@ impl ConfigReader {
                 LinkType::Cert => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
-                    extensions
-                        .cert
-                        .extend(self.load_cert(content).await?);
+                    extensions.cert.extend(self.load_cert(content).await?);
                 }
                 LinkType::Key => {
                     let source = self.resource_reader.read_file(&path).await?;
-                    let content = source.content;  
-                    extensions.keys =
-                        Arc::new(self.load_private_key(content).await?)
+                    let content = source.content;
+                    extensions.keys = Arc::new(self.load_private_key(content).await?)
                 }
                 LinkType::Operation => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
-                    extensions.endpoint_set =
-                        EndpointSet::try_new(&content)?;
+                    extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
                 LinkType::Htpasswd => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
-                    extensions.htpasswd.push(Content { id: link.id.clone(), content });
+                    extensions
+                        .htpasswd
+                        .push(Content { id: link.id.clone(), content });
                 }
                 LinkType::Jwks => {
                     let source = self.resource_reader.read_file(&path).await?;
@@ -354,7 +352,10 @@ mod reader_tests {
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
         let content = file_rt.read(&path).await;
 
-        assert_eq!(content.unwrap(), config.extensions().script.clone().unwrap());
+        assert_eq!(
+            content.unwrap(),
+            config.extensions().script.clone().unwrap()
+        );
     }
 
     #[test]
