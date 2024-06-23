@@ -8,17 +8,20 @@
           "Authorization": "Bearer your_access_token_here",
           "Accept": "application/json",
           "User-Agent": "My App/1.0"
-        }
-      },
-      "fieldName": "post",
-      "operation": "query"
+        },
+        "fieldName": "post"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/posts"
-      },
-      "fieldName": "posts",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/posts",
+        "fieldName": "posts"
+      }
+    },
+    {
+      "proto": {
+        "src": "../protobuf/news.proto"
+      }
     }
   ],
   "preset": {
