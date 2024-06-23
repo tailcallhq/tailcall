@@ -2,80 +2,69 @@
   "inputs": [
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/posts/1"
-      },
-      "fieldName": "post",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/posts/1",
+        "fieldName": "post"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/users/1"
-      },
-      "fieldName": "user",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/users/1",
+        "fieldName": "user"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/users"
-      },
-      "fieldName": "users",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/users",
+        "fieldName": "users"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/posts"
-      },
-      "fieldName": "posts",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/posts",
+        "fieldName": "posts"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/comments"
-      },
-      "fieldName": "comments",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/comments",
+        "fieldName": "comments"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/comments/1"
-      },
-      "fieldName": "comment",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/comments/1",
+        "fieldName": "comment"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/photos"
-      },
-      "fieldName": "photos",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/photos",
+        "fieldName": "photos"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/photos/1"
-      },
-      "fieldName": "photo",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/photos/1",
+        "fieldName": "photo"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/todos"
-      },
-      "fieldName": "todos",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/todos",
+        "fieldName": "todos"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/todos/1"
-      },
-      "fieldName": "todo",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/todos/1",
+        "fieldName": "todo"
+      }
     },
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/comments?postId=1"
-      },
-      "fieldName": "postComments",
-      "operation": "query"
+        "src": "https://jsonplaceholder.typicode.com/comments?postId=1",
+        "fieldName": "postComments"
+      }
     }
   ],
   "preset": {
