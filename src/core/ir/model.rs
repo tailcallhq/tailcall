@@ -116,10 +116,6 @@ impl IR {
         IR::Pipe(Box::new(self), Box::new(next))
     }
 
-    pub fn compose(self, args: IR) -> Self {
-        args.pipe(self)
-    }
-
     pub fn modify(self, mut f: impl FnMut(&IR) -> Option<IR>) -> IR {
         self.modify_inner(&mut f)
     }
