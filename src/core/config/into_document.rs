@@ -219,22 +219,19 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
         })));
     }
     for (name, union) in config.unions.iter() {
-        // unions are only supported as the output types
-        if !config.input_types.contains(name) {
-            definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
-                extend: false,
-                description: None,
-                name: pos(Name::new(name)),
-                directives: Vec::new(),
-                kind: TypeKind::Union(UnionType {
-                    members: union
-                        .types
-                        .iter()
-                        .map(|name| pos(Name::new(name.clone())))
-                        .collect(),
-                }),
-            })));
-        }
+        definitions.push(TypeSystemDefinition::Type(pos(TypeDefinition {
+            extend: false,
+            description: None,
+            name: pos(Name::new(name)),
+            directives: Vec::new(),
+            kind: TypeKind::Union(UnionType {
+                members: union
+                    .types
+                    .iter()
+                    .map(|name| pos(Name::new(name.clone())))
+                    .collect(),
+            }),
+        })));
     }
 
     for (name, values) in config.enums.iter() {

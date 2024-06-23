@@ -1,6 +1,3 @@
-# Using union types inside other union types
-
-```yml @config
 schema:
   query: Query
 
@@ -45,9 +42,8 @@ types:
 
 unions:
   U1:
-    types: ["T1", "T2", "T3"]
+    types: ["T1", "T2", "T3", "U2"]
   U2:
-    types: ["T3", "T4"]
+    types: ["T3", "T4", "U1"]
   U:
     types: ["U1", "U2", "T5"]
-```
