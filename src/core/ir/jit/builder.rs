@@ -128,6 +128,8 @@ impl Builder {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::Config;
@@ -154,6 +156,19 @@ mod tests {
         "#,
         );
         insta::assert_debug_snapshot!(plan);
+    }
+
+    #[tokio::test]
+    async fn test_size() {
+        let plan = plan(
+            r#"
+            query {
+                posts { user { id name } }
+            }
+        "#,
+        );
+
+        assert_eq!(plan.size(), 4)
     }
 
     #[test]
