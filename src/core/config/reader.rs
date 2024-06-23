@@ -217,7 +217,7 @@ impl ConfigReader {
         // Extend it with the links
         let mut config_module = self.ext_links(config_module, parent_dir).await?;
 
-        let server = &mut config_module.config_mut().server;
+        let server = &config_module.config().server;
         let reader_ctx = ConfigReaderContext {
             runtime: &self.runtime,
             vars: &server
@@ -228,10 +228,9 @@ impl ConfigReader {
             headers: Default::default(),
         };
 
-        config_module
-            .config_mut()
-            .telemetry
-            .render_mustache(&reader_ctx)?;
+        let mut config = config_module.config().clone();
+        config.telemetry.render_mustache(&reader_ctx)?;
+        config_module.set_config(config);
 
         Ok(config_module)
     }

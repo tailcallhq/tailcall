@@ -25,9 +25,10 @@ pub struct ConfigModule {
 }
 
 impl ConfigModule {
-    pub fn config_mut(&mut self) -> &mut Config {
-        &mut self.config
+    pub fn with_config(&mut self, config: Config) {
+        self.config = config;
     }
+
     pub fn with_extensions(&mut self, extensions: Extensions) {
         self.extensions = extensions;
     }
