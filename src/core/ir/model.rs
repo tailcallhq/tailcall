@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::num::NonZeroU64;
 
+use async_graphql::Value;
 use strum_macros::Display;
 
 use super::{EvalContext, ResolverContextLike};
@@ -14,7 +15,7 @@ use crate::core::{grpc, http};
 #[derive(Clone, Debug, Display)]
 pub enum IR {
     Context(Context),
-    Dynamic(DynamicValue),
+    Dynamic(DynamicValue<Value>),
     #[strum(to_string = "{0}")]
     IO(IO),
     Cache(Cache),
