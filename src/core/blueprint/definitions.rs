@@ -7,7 +7,7 @@ use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
-use crate::core::ir::model::{Cache, Context, IR};
+use crate::core::ir::model::{Cache, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{config, scalar};
@@ -300,7 +300,7 @@ fn update_resolver_from_path(
 
     process_path(context.clone()).and_then(|of_type| {
         let mut updated_base_field = base_field;
-        let resolver = IR::Context(Context::Path(context.path.to_owned()));
+        let resolver = IR::ContextPath(context.path.to_owned());
         if has_index {
             updated_base_field.of_type =
                 Type::NamedType { name: of_type.name().to_string(), non_null: false }

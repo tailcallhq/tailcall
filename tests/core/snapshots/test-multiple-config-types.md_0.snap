@@ -9,13 +9,10 @@ expression: response
   },
   "body": {
     "data": {
-      "queryTest": [
-        {
-          "id": 1,
-          "name": "foo",
-          "num": 1
-        }
-      ]
+      "bar": {
+        "name": "name",
+        "id": 1
+      }
     }
   }
 }

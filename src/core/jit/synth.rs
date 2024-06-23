@@ -1,17 +1,15 @@
 use serde_json_borrow::{ObjectAsVec, Value};
 
-use crate::core::ir::jit::model::{Children, Field};
-use crate::core::ir::jit::store::{Data, Store};
+use crate::core::jit::model::{Children, Field};
+use crate::core::jit::store::{Data, Store};
 
-#[allow(unused)]
-pub struct Synth {
+pub struct Synth<'a> {
     operations: Vec<Field<Children>>,
-    store: Store,
+    store: Store<Value<'a>>,
 }
 
-#[allow(unused)]
-impl Synth {
-    pub fn new(operations: Vec<Field<Children>>, store: Store) -> Self {
+impl<'a> Synth<'a> {
+    pub fn new(operations: Vec<Field<Children>>, store: Store<Value<'a>>) -> Self {
         Self { operations, store }
     }
     pub fn synthesize(&self) -> Value {
@@ -33,10 +31,10 @@ impl Synth {
     }
 
     #[inline]
-    fn iter<'a>(
-        &'a self,
-        node: &'a Field<Children>,
-        parent: Option<&'a Value>,
+    fn iter<'b>(
+        &'b self,
+        node: &'b Field<Children>,
+        parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Value {
         match parent {
@@ -71,6 +69,10 @@ impl Synth {
                                     Value::Null
                                 }
                             }
+                            Data::Pending => {
+                                // TODO: should bailout instead of returning Null
+                                Value::Null
+                            }
                         }
                     }
                     None => {
@@ -83,10 +85,10 @@ impl Synth {
         }
     }
     #[inline]
-    fn iter_inner<'a>(
-        &'a self,
-        node: &'a Field<Children>,
-        parent: Option<&'a Value>,
+    fn iter_inner<'b>(
+        &'b self,
+        node: &'b Field<Children>,
+        parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Value {
         match parent {
@@ -134,13 +136,15 @@ impl Synth {
 #[cfg(test)]
 mod tests {
 
+    use serde_json_borrow::Value;
+
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
-    use crate::core::ir::common::JsonPlaceholder;
-    use crate::core::ir::jit::builder::Builder;
-    use crate::core::ir::jit::model::FieldId;
-    use crate::core::ir::jit::store::{Data, Store};
-    use crate::core::ir::jit::synth::Synth;
+    use crate::core::jit::builder::Builder;
+    use crate::core::jit::common::JsonPlaceholder;
+    use crate::core::jit::model::FieldId;
+    use crate::core::jit::store::{Data, Store};
+    use crate::core::jit::synth::Synth;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -192,7 +196,7 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value(self) -> Data<'static> {
+        fn into_value(self) -> Data<Value<'static>> {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
@@ -207,7 +211,7 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn init(query: &str, store: Vec<(FieldId, Data<'static>)>) -> String {
+    fn init(query: &str, store: Vec<(FieldId, Data<Value<'static>>)>) -> String {
         let doc = async_graphql::parser::parse_query(query).unwrap();
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
@@ -298,7 +302,6 @@ mod tests {
 
     #[test]
     fn test_json_placeholder() {
-        // FIXME: doesn't work when userId is queried
         let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
         let val = synth.synthesize();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())

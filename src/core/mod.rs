@@ -19,6 +19,7 @@ pub mod has_headers;
 pub mod helpers;
 pub mod http;
 pub mod ir;
+pub mod jit;
 pub mod json;
 pub mod merge_right;
 pub mod mustache;

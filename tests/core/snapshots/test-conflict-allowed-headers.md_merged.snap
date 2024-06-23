@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server @upstream(allowedHeaders: ["a", "b", "c", "d"]) {
   query: Query

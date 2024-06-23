@@ -10,7 +10,7 @@ pub trait ValueExt {
     fn render_value(&self, ctx: &impl PathString) -> GraphQLValue;
 }
 
-impl ValueExt for DynamicValue {
+impl ValueExt for DynamicValue<async_graphql::Value> {
     fn render_value<'a>(&self, ctx: &'a impl PathString) -> GraphQLValue {
         match self {
             DynamicValue::Value(value) => value.to_owned(),
