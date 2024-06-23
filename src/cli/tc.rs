@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
@@ -17,6 +18,7 @@ use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
+use crate::core::config::{Config, Expr, Field, RootSchema, Type};
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
@@ -29,47 +31,6 @@ const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 const GRAPHQL: &str = "GraphQL";
 const JSON: &str = "JSON";
 const YML: &str = "YML";
-
-const MAIN_GRAPHQL: &str = r#"
-schema {
-  query: Query
-}
-type Query {
-  greet: String @expr(body: "Hello World!")
-}
-"#;
-
-const MAIN_JSON: &str = r#"
-{
-  "schema": {
-    "query": "Query"
-  },
-  "types": {
-    "Query": {
-      "fields": {
-        "greet": {
-          "type": "String",
-          "expr": {
-            "body": "Hello World!"
-          }
-        }
-      }
-    }
-  }
-}
-"#;
-
-const MAIN_YML: &str = r#"
-schema:
-  query: Query
-types:
-  Query:
-    fields:
-      greet:
-        type: String
-        expr:
-          body: Hello World!
-"#;
 
 lazy_static! {
     static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();
@@ -261,16 +222,16 @@ pub async fn init(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     match selection {
         GRAPHQL => {
             confirm_overwrite(runtime.clone(), &file_path, tailcallrc.as_bytes()).await?;
-            create_main(runtime.clone(), folder_path, "graphql", MAIN_GRAPHQL).await?;
+            create_main(runtime.clone(), folder_path, "graphql").await?;
         }
         JSON => {
             confirm_overwrite(runtime.clone(), &json_file_path, tailcallrc_json.as_bytes()).await?;
-            create_main(runtime.clone(), folder_path, "json", MAIN_JSON).await?;
+            create_main(runtime.clone(), folder_path, "json").await?;
         }
         YML => {
             confirm_overwrite(runtime.clone(), &file_path, tailcallrc.as_bytes()).await?;
             confirm_overwrite_yml(runtime.clone(), &file_path, &yml_file_path).await?;
-            create_main(runtime.clone(), folder_path, "yml", MAIN_YML).await?;
+            create_main(runtime.clone(), folder_path, "yml").await?;
         }
         _ => {
             unreachable!()
@@ -280,12 +241,44 @@ pub async fn init(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     Ok(())
 }
 
+fn main_config() -> Config {
+    let field = Field {
+        type_of: "String".to_string(),
+        required: true,
+        const_field: Some(Expr { body: "Hello, World!".into() }),
+        ..Default::default()
+    };
+
+    let query_type = Type {
+        fields: BTreeMap::from([("greet".into(), field)]),
+        ..Default::default()
+    };
+
+    Config {
+        server: Default::default(),
+        upstream: Default::default(),
+        schema: RootSchema { query: Some("Query".to_string()), ..Default::default() },
+        types: BTreeMap::from([("Query".into(), query_type)]),
+        ..Default::default()
+    }
+}
+
 async fn create_main(
     runtime: TargetRuntime,
     folder_path: impl AsRef<Path>,
     extension: &str,
-    content: &str,
 ) -> Result<()> {
+    let config = main_config();
+
+    let content = match extension {
+        "graphql" => config.to_sdl(),
+        "json" => config.to_json(true)?,
+        "yml" => config.to_yaml()?,
+        _ => {
+            unreachable!()
+        }
+    };
+
     let path = folder_path
         .as_ref()
         .join(format!("main.{}", extension))
