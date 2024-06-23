@@ -1,5 +1,5 @@
 mod builder;
-mod exec;
+mod exec_ir;
 mod model;
 mod store;
 mod synth;
