@@ -28,8 +28,7 @@ pub enum IR {
 pub enum Context {
     Value,
     Path(Vec<String>),
-    PushArgs { expr: Box<IR>, and_then: Box<IR> },
-    PushValue { expr: Box<IR>, and_then: Box<IR> },
+    Pipe { expr: Box<IR>, and_then: Box<IR> },
 }
 
 #[derive(Clone, Debug)]
@@ -111,11 +110,11 @@ impl Cache {
 
 impl IR {
     pub fn and_then(self, next: Self) -> Self {
-        IR::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
+        IR::Context(Context::Pipe { expr: Box::new(self), and_then: Box::new(next) })
     }
 
     pub fn with_args(self, args: IR) -> Self {
-        IR::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
+        IR::Context(Context::Pipe { expr: Box::new(args), and_then: Box::new(self) })
     }
 
     pub fn modify(self, mut f: impl FnMut(&IR) -> Option<IR>) -> IR {
@@ -135,11 +134,7 @@ impl IR {
                 match expr {
                     IR::Context(ctx) => match ctx {
                         Context::Value | Context::Path(_) => IR::Context(ctx),
-                        Context::PushArgs { expr, and_then } => IR::Context(Context::PushArgs {
-                            expr: expr.modify_box(modifier),
-                            and_then: and_then.modify_box(modifier),
-                        }),
-                        Context::PushValue { expr, and_then } => IR::Context(Context::PushValue {
+                        Context::Pipe { expr, and_then } => IR::Context(Context::Pipe {
                             expr: expr.modify_box(modifier),
                             and_then: and_then.modify_box(modifier),
                         }),
