@@ -11,7 +11,6 @@ use url::Url;
 use crate::core::config::{self, ConfigReaderContext};
 use crate::core::http::SerializableHeaderMap;
 use crate::core::is_default;
-use crate::core::mustache::Mustache;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -146,20 +145,11 @@ impl Source<UnResolved> {
         reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, field_name, mut headers } => {
+            Source::Curl { src, field_name, headers } => {
                 // Resolve the header values with mustache template.
-                let resolved_headers = if let Some(original_headers) = &mut headers {
-                    let mut cloned_headers = original_headers.headers().clone();
-                    for header_value in cloned_headers.values_mut() {
-                        *header_value = reqwest::header::HeaderValue::from_str(
-                            &Mustache::parse(header_value.to_str()?)?.render(reader_context),
-                        )?;
-                    }
-                    Some(SerializableHeaderMap::new(cloned_headers))
-                } else {
-                    None
-                };
-
+                let resolved_headers = headers
+                    .map(|headers_inner| headers_inner.resolve(reader_context).ok())
+                    .flatten();
                 let resolved_path = src.into_resolved(parent_dir);
                 Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
             }

@@ -3,12 +3,25 @@ use std::collections::HashMap;
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use crate::core::mustache::Mustache;
+use crate::core::path::PathString;
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct SerializableHeaderMap(HeaderMap);
 
 impl SerializableHeaderMap {
     pub fn new(headers: HeaderMap) -> Self {
         Self(headers)
+    }
+
+    /// resolves the templates with context values.
+    pub fn resolve(mut self, context: &impl PathString) -> anyhow::Result<Self> {
+        for header_value in self.0.values_mut() {
+            *header_value = reqwest::header::HeaderValue::from_str(
+                &Mustache::parse(header_value.to_str()?)?.render(context),
+            )?;
+        }
+        Ok(self)
     }
 
     pub fn headers(&self) -> &HeaderMap {
