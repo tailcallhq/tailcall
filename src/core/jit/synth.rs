@@ -1,7 +1,7 @@
 use serde_json_borrow::{ObjectAsVec, Value};
 
-use crate::core::ir::jit::model::{Children, Field};
-use crate::core::ir::jit::store::{Data, Store};
+use crate::core::jit::model::{Children, Field};
+use crate::core::jit::store::{Data, Store};
 
 #[allow(unused)]
 pub struct Synth<'a> {
@@ -142,11 +142,11 @@ mod tests {
 
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
-    use crate::core::ir::common::JsonPlaceholder;
-    use crate::core::ir::jit::builder::Builder;
-    use crate::core::ir::jit::model::FieldId;
-    use crate::core::ir::jit::store::{Data, Store};
-    use crate::core::ir::jit::synth::Synth;
+    use crate::core::jit::builder::Builder;
+    use crate::core::jit::common::JsonPlaceholder;
+    use crate::core::jit::model::FieldId;
+    use crate::core::jit::store::{Data, Store};
+    use crate::core::jit::synth::Synth;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"

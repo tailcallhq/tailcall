@@ -4,9 +4,9 @@ use serde_json_borrow::Value;
 
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
-use crate::core::ir::jit::builder::Builder;
-use crate::core::ir::jit::store::{Data, Store};
-use crate::core::ir::jit::synth::Synth;
+use crate::core::jit::builder::Builder;
+use crate::core::jit::store::{Data, Store};
+use crate::core::jit::synth::Synth;
 use crate::core::valid::Validator;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests

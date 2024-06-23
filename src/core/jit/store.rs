@@ -1,4 +1,4 @@
-use crate::core::ir::jit::model::FieldId;
+use crate::core::jit::model::FieldId;
 
 #[allow(unused)]
 pub struct Store<A> {
