@@ -9,7 +9,6 @@ use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::merge_right::MergeRight;
 
-#[allow(unused)]
 pub struct Builder {
     pub index: Index,
     pub arg_id: Counter<usize>,
@@ -17,7 +16,6 @@ pub struct Builder {
     pub document: ExecutableDocument,
 }
 
-#[allow(unused)]
 impl Builder {
     pub fn new(blueprint: Blueprint, document: ExecutableDocument) -> Self {
         let index = blueprint.index();
@@ -94,7 +92,6 @@ impl Builder {
         }
     }
 
-    #[allow(unused)]
     pub fn build(&self) -> Result<ExecutionPlan, String> {
         let mut fields = Vec::new();
 
