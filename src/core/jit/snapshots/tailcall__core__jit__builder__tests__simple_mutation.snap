@@ -1,5 +1,5 @@
 ---
-source: src/core/ir/jit/builder.rs
+source: src/core/jit/builder.rs
 expression: plan
 ---
 ExecutionPlan {
@@ -57,7 +57,7 @@ ExecutionPlan {
         Field {
             id: 1,
             name: "id",
-            type_of: Int!,
+            type_of: ID!,
             refs: Some(
                 Parent(0),
             ),
@@ -159,7 +159,7 @@ ExecutionPlan {
                         Field {
                             id: 1,
                             name: "id",
-                            type_of: Int!,
+                            type_of: ID!,
                         },
                         Field {
                             id: 2,

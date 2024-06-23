@@ -1,5 +1,5 @@
 ---
-source: src/core/ir/jit/builder.rs
+source: src/core/jit/builder.rs
 expression: plan
 ---
 ExecutionPlan {
@@ -22,7 +22,15 @@ ExecutionPlan {
         Field {
             id: 2,
             name: "id",
-            type_of: Int!,
+            type_of: ID!,
+            refs: Some(
+                Parent(1),
+            ),
+        },
+        Field {
+            id: 3,
+            name: "name",
+            type_of: String!,
             refs: Some(
                 Parent(1),
             ),
@@ -48,7 +56,12 @@ ExecutionPlan {
                                         Field {
                                             id: 2,
                                             name: "id",
-                                            type_of: Int!,
+                                            type_of: ID!,
+                                        },
+                                        Field {
+                                            id: 3,
+                                            name: "name",
+                                            type_of: String!,
                                         },
                                     ],
                                 ),
