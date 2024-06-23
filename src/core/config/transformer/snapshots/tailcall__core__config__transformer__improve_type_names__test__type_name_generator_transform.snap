@@ -1,8 +1,8 @@
 ---
-source: src/core/generator/generator.rs
-expression: config.to_sdl()
+source: src/core/config/transformer/improve_type_names.rs
+expression: transformed_config.to_sdl()
 ---
-schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
@@ -20,7 +20,7 @@ type Company {
   name: String
 }
 
-type F2 {
+type F1 {
   address: Address
   company: Company
   email: String
@@ -37,6 +37,5 @@ type Geo {
 }
 
 type Query {
-  f1: [F2] @http(path: "/users")
-  f2(p1: Int!): F2 @http(path: "/users/{{.args.p1}}")
+  f1: [F1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
 }

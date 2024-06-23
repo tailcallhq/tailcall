@@ -7,9 +7,10 @@ use crate::core::valid::Valid;
 ///
 /// It scans the configuration and identifies types that are not referenced
 /// elsewhere, effectively cleaning up unused clutter from the configuration.
-pub struct RemoveUnused;
+#[derive(Default)]
+pub struct TreeShake;
 
-impl Transform for RemoveUnused {
+impl Transform for TreeShake {
     type Value = Config;
     type Error = String;
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {

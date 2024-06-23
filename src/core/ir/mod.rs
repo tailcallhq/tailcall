@@ -12,6 +12,7 @@ use std::ops::Deref;
 
 pub use error::*;
 pub use eval_context::EvalContext;
+pub use jit::*;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};
 
 /// Contains all the nested fields that are resolved with current parent
