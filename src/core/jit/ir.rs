@@ -1,30 +1,24 @@
 use std::collections::HashMap;
 use std::num::NonZeroU64;
-use serde_json_borrow::Value;
+
 use strum_macros::Display;
+
 use crate::core::blueprint::DynamicValue;
 use crate::core::config::group_by::GroupBy;
-use crate::core::{graphql, grpc, http};
 use crate::core::http::HttpFilter;
 use crate::core::ir::model::DataLoaderId;
+use crate::core::{graphql, grpc, http};
 
 #[derive(Clone, Debug, Display)]
 pub enum IR {
-    Context(Context),
-    Dynamic(DynamicValue<Value<'static>>),
+    Dynamic(DynamicValue<serde_json::Value>),
     #[strum(to_string = "{0}")]
     IO(IO),
     Cache(Cache),
-    Path(Box<IR>, Vec<String>),
+    Path(Vec<String>),
     Protect(Box<IR>),
     Map(Map),
     Pipe(Box<IR>, Box<IR>),
-}
-
-#[derive(Clone, Debug)]
-pub enum Context {
-    Value,
-    Path(Vec<String>),
 }
 
 #[derive(Clone, Debug)]

@@ -4,6 +4,7 @@ mod model;
 mod store;
 mod synth;
 pub use builder::*;
+pub use exec_ir::*;
 pub use model::*;
 pub use store::*;
 pub use synth::*;
