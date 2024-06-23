@@ -6,6 +6,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
 
+/// SerializableHeaderMap represents a wrapper around HeaderMap that supports serialization and deserialization,
+/// and allows embedding Mustache templates in headers.
 #[derive(Debug, PartialEq, Eq)]
 pub struct SerializableHeaderMap(HeaderMap);
 
@@ -14,7 +16,7 @@ impl SerializableHeaderMap {
         Self(headers)
     }
 
-    /// resolves the templates with context values.
+    /// Resolves Mustache templates within headers using the provided context values.
     pub fn resolve(mut self, context: &impl PathString) -> anyhow::Result<Self> {
         for header_value in self.0.values_mut() {
             *header_value = reqwest::header::HeaderValue::from_str(
@@ -60,8 +62,9 @@ impl Serialize for SerializableHeaderMap {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use std::{str::FromStr, sync::Arc};
 
+    use crate::core::{blueprint::Blueprint, config::ConfigReaderContext, EnvIO};
     use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
     use super::*;
@@ -75,7 +78,7 @@ mod tests {
         );
         headers.insert(
             HeaderName::from_str("Authorization").unwrap(),
-            HeaderValue::from_str("Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJ1c2VybmFtZSI6ImV4YW1wbGVfdXNlciJ9LCJpYXQiOjE3MTg5NTk1MTIsImV4cCI6MTcxODk2MzExMn0.UC9n2yn7XJYp9CGCRKgg3dm31Ax2lhwba5BupxVx-1").unwrap(),
+            HeaderValue::from_str("Bearer eyJhbGciOiJIUzI1N").unwrap(),
         );
 
         let serializable_headers = SerializableHeaderMap::new(headers.clone());
@@ -85,5 +88,48 @@ mod tests {
         let deserialized: SerializableHeaderMap = serde_json::from_str(&serialized).unwrap();
         // Check if the deserialized HeaderMap is equal to the original one
         assert_eq!(deserialized.0, headers);
+    }
+
+    struct EnvTest {
+        env_vars: HashMap<String, String>,
+    }
+
+    impl EnvTest {
+        fn init(env_vars: HashMap<String, String>) -> Self {
+            Self { env_vars }
+        }
+    }
+
+    impl EnvIO for EnvTest {
+        fn get(&self, key: &str) -> Option<std::borrow::Cow<'_, str>> {
+            self.env_vars.get(key).map(std::borrow::Cow::from)
+        }
+    }
+
+    #[test]
+    fn test_headers_with_mustache_template() -> anyhow::Result<()> {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            HeaderName::from_str("Authorization").unwrap(),
+            HeaderValue::from_str("Bearer {{env.TOKEN}}").unwrap(),
+        );
+        let headers = SerializableHeaderMap::new(headers);
+        let mut runtime = crate::cli::runtime::init(&Blueprint::default());
+        let mut env_vars = HashMap::new();
+        env_vars.insert("TOKEN".to_owned(), "eyJhbGciOiJIUzI1N".to_owned());
+        runtime.env = Arc::new(EnvTest::init(env_vars));
+
+        let reader_context = ConfigReaderContext {
+            runtime: &runtime,
+            vars: &Default::default(),
+            headers: HeaderMap::new(),
+        };
+        let resolved_headers = headers.resolve(&reader_context)?;
+        let expected_header_value = "Bearer eyJhbGciOiJIUzI1N";
+        assert_eq!(
+            resolved_headers.headers().get("Authorization").unwrap(),
+            expected_header_value
+        );
+        Ok(())
     }
 }
