@@ -49,7 +49,7 @@ pub async fn run() -> Result<()> {
         Command::Start { file_paths } => {
             let config_module = config_reader.read_all(&file_paths).await?;
             log_endpoint_set(&config_module.extensions().endpoint_set);
-            Fmt::log_n_plus_one(false, &config_module.config());
+            Fmt::log_n_plus_one(false, config_module.config());
             let server = Server::new(config_module);
             server.fork_start().await?;
             Ok(())
@@ -65,7 +65,7 @@ pub async fn run() -> Result<()> {
             match blueprint {
                 Ok(blueprint) => {
                     tracing::info!("Config {} ... ok", file_paths.join(", "));
-                    Fmt::log_n_plus_one(n_plus_one_queries, &config_module.config());
+                    Fmt::log_n_plus_one(n_plus_one_queries, config_module.config());
                     // Check the endpoints' schema
                     let _ = config_module
                         .extensions()

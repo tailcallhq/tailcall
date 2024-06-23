@@ -358,7 +358,10 @@ mod reader_tests {
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
         let content = file_rt.read(&path).await;
 
-        assert_eq!(content.unwrap(), config.extensions().script.clone().unwrap());
+        assert_eq!(
+            content.unwrap(),
+            config.extensions().script.clone().unwrap()
+        );
     }
 
     #[test]
