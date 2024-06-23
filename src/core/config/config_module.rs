@@ -26,9 +26,12 @@ pub struct ConfigModule {
 
 impl ConfigModule {
     pub fn reset_config_module(self) -> ConfigModule {
-        let mut config_module = Self::from(self.config);
-        config_module.extensions = self.extensions;
+        let config_module = Self::from(self.config);
         config_module
+    }
+
+    pub fn add_extensions(&mut self, extensions: Extensions) {
+        self.extensions = extensions;
     }
 }
 
