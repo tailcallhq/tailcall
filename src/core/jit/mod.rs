@@ -10,4 +10,4 @@ pub use synth::*;
 
 // NOTE: Only used in tests and benchmarks
 pub mod common;
-mod ir;
+pub mod ir;
