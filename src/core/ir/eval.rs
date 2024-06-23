@@ -29,16 +29,6 @@ impl IR {
                         .path_value(path)
                         .map(|a| a.into_owned())
                         .unwrap_or(async_graphql::Value::Null)),
-                    Context::PushArgs { expr, and_then } => {
-                        let args = expr.eval(&mut ctx.clone()).await?;
-                        let ctx = &mut ctx.with_args(args);
-                        and_then.eval(ctx).await
-                    }
-                    Context::PushValue { expr, and_then } => {
-                        let value = expr.eval(&mut ctx.clone()).await?;
-                        ctx.with_value(value);
-                        and_then.eval(ctx).await
-                    }
                 },
                 IR::Path(input, path) => {
                     let inp = &input.eval(ctx).await?;
@@ -92,6 +82,11 @@ impl IR {
                             "Mapped key must be string value.".to_owned(),
                         ))
                     }
+                }
+                IR::Pipe(first, second) => {
+                    let args = first.eval(&mut ctx.clone()).await?;
+                    let ctx = &mut ctx.with_args(args);
+                    second.eval(ctx).await
                 }
             }
         })
