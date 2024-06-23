@@ -148,8 +148,7 @@ impl Source<UnResolved> {
             Source::Curl { src, field_name, headers } => {
                 // Resolve the header values with mustache template.
                 let resolved_headers = headers
-                    .map(|headers_inner| headers_inner.resolve(reader_context).ok())
-                    .flatten();
+                    .and_then(|headers_inner| headers_inner.resolve(reader_context).ok());
                 let resolved_path = src.into_resolved(parent_dir);
                 Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
             }

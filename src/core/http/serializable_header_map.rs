@@ -6,8 +6,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
 
-/// SerializableHeaderMap represents a wrapper around HeaderMap that supports serialization and deserialization,
-/// and allows embedding Mustache templates in headers.
+/// SerializableHeaderMap represents a wrapper around HeaderMap that supports
+/// serialization and deserialization, and allows embedding Mustache templates
+/// in headers.
 #[derive(Debug, PartialEq, Eq)]
 pub struct SerializableHeaderMap(HeaderMap);
 
@@ -16,7 +17,8 @@ impl SerializableHeaderMap {
         Self(headers)
     }
 
-    /// Resolves Mustache templates within headers using the provided context values.
+    /// Resolves Mustache templates within headers using the provided context
+    /// values.
     pub fn resolve(mut self, context: &impl PathString) -> anyhow::Result<Self> {
         for header_value in self.0.values_mut() {
             *header_value = reqwest::header::HeaderValue::from_str(
@@ -62,12 +64,15 @@ impl Serialize for SerializableHeaderMap {
 
 #[cfg(test)]
 mod tests {
-    use std::{str::FromStr, sync::Arc};
+    use std::str::FromStr;
+    use std::sync::Arc;
 
-    use crate::core::{blueprint::Blueprint, config::ConfigReaderContext, EnvIO};
     use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
     use super::*;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::ConfigReaderContext;
+    use crate::core::EnvIO;
 
     #[test]
     fn test_serialization_deserialization() {
