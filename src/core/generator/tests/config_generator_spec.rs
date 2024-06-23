@@ -1,10 +1,11 @@
-use std::{path::Path, sync::Arc};
+use std::path::Path;
+use std::sync::Arc;
 
 use http::NativeHttpTest;
-use tailcall::{
-    cli::generator::Generator,
-    core::{blueprint::Blueprint, config, generator::Generator as ConfigGenerator},
-};
+use tailcall::cli::generator::Generator;
+use tailcall::core::blueprint::Blueprint;
+use tailcall::core::config;
+use tailcall::core::generator::Generator as ConfigGenerator;
 use tokio::runtime::Runtime;
 
 mod http;

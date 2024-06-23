@@ -5,7 +5,8 @@ use http_cache_reqwest::{CACacheManager, Cache, CacheMode, HttpCache, HttpCacheO
 use hyper::body::Bytes;
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall::core::{http::Response, HttpIO};
+use tailcall::core::http::Response;
+use tailcall::core::HttpIO;
 
 #[derive(Clone)]
 pub struct NativeHttpTest {
