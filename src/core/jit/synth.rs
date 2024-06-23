@@ -3,13 +3,11 @@ use serde_json_borrow::{ObjectAsVec, Value};
 use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
 
-#[allow(unused)]
 pub struct Synth<'a> {
     operations: Vec<Field<Children>>,
     store: Store<Value<'a>>,
 }
 
-#[allow(unused)]
 impl<'a> Synth<'a> {
     pub fn new(operations: Vec<Field<Children>>, store: Store<Value<'a>>) -> Self {
         Self { operations, store }
