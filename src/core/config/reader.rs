@@ -223,8 +223,8 @@ impl ConfigReader {
 
         config_module
             .config()
-            .clone()
             .telemetry
+            .clone()
             .render_mustache(&reader_ctx)?;
 
         Ok(config_module)
