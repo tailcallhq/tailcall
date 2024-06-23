@@ -22,10 +22,7 @@ pub enum IR {
     Path(Box<IR>, Vec<String>),
     Protect(Box<IR>),
     Map(Map),
-    Pipe {
-        expr: Box<IR>,
-        and_then: Box<IR>,
-    },
+    Pipe(Box<IR>, Box<IR>),
 }
 
 #[derive(Clone, Debug)]
@@ -115,12 +112,12 @@ impl Cache {
 }
 
 impl IR {
-    pub fn and_then(self, next: Self) -> Self {
-        IR::Pipe { expr: Box::new(self), and_then: Box::new(next) }
+    pub fn pipe(self, next: Self) -> Self {
+        IR::Pipe(Box::new(self), Box::new(next))
     }
 
-    pub fn with_args(self, args: IR) -> Self {
-        IR::Pipe { expr: Box::new(args), and_then: Box::new(self) }
+    pub fn compose(self, args: IR) -> Self {
+        args.pipe(self)
     }
 
     pub fn modify(self, mut f: impl FnMut(&IR) -> Option<IR>) -> IR {
@@ -138,10 +135,9 @@ impl IR {
             None => {
                 let expr = self;
                 match expr {
-                    IR::Pipe { expr, and_then } => IR::Pipe {
-                        expr: expr.modify_box(modifier),
-                        and_then: and_then.modify_box(modifier),
-                    },
+                    IR::Pipe(first, second) => {
+                        IR::Pipe(first.modify_box(modifier), second.modify_box(modifier))
+                    }
                     IR::Context(ctx) => match ctx {
                         Context::Value | Context::Path(_) => IR::Context(ctx),
                     },
