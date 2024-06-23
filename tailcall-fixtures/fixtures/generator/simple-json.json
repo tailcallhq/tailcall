@@ -5,9 +5,7 @@
         "src": "https://jsonplaceholder.typicode.com/posts/1",
         "headers": {
           "Content-Type": "application/json",
-          "Authorization": "Bearer your_access_token_here",
           "Accept": "application/json",
-          "User-Agent": "My App/1.0"
         },
         "fieldName": "post"
       }
