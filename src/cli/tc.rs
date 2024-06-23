@@ -5,7 +5,7 @@ use anyhow::Result;
 use clap::Parser;
 use convert_case::{Case, Casing};
 use dotenvy::dotenv;
-use inquire::Confirm;
+use inquire::{Confirm, Select};
 use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
@@ -20,9 +20,56 @@ use crate::core::config::reader::ConfigReader;
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
+use crate::core::runtime::TargetRuntime;
+
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
+
+const GRAPHQL: &str = "GraphQL";
+const JSON: &str = "JSON";
+const YML: &str = "YML";
+
+const MAIN_GRAPHQL: &str = r#"
+schema {
+  query: Query
+}
+type Query {
+  greet: String @expr(body: "Hello World!")
+}
+"#;
+
+const MAIN_JSON: &str = r#"
+{
+  "schema": {
+    "query": "Query"
+  },
+  "types": {
+    "Query": {
+      "fields": {
+        "greet": {
+          "type": "String",
+          "expr": {
+            "body": "Hello World!"
+          }
+        }
+      }
+    }
+  }
+}
+"#;
+
+const MAIN_YML: &str = r#"
+schema:
+  query: Query
+types:
+  Query:
+    fields:
+      greet:
+        type: String
+        expr:
+          body: Hello World!
+"#;
 
 lazy_static! {
     static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();
@@ -80,7 +127,7 @@ pub async fn run() -> Result<()> {
                 Err(e) => Err(e.into()),
             }
         }
-        Command::Init { folder_path } => init(&folder_path).await,
+        Command::Init { folder_path } => init(runtime, &folder_path).await,
         Command::Gen { file_path } => {
             Generator::new(&file_path, runtime.clone())
                 .generate()
@@ -91,69 +138,58 @@ pub async fn run() -> Result<()> {
     }
 }
 
-/// Checks if file or folder already exists or not.
-fn is_exists(path: &str) -> bool {
-    fs::metadata(path).is_ok()
-}
+async fn confirm_overwrite(
+    runtime: TargetRuntime,
+    file_path: impl AsRef<Path>,
+    content: &[u8],
+) -> Result<()> {
+    let file_exists = fs::metadata(file_path.as_ref()).is_ok();
 
-pub async fn init(folder_path: &str) -> Result<()> {
-    let folder_exists = is_exists(folder_path);
-
-    if !folder_exists {
+    if file_exists {
+        // confirm overwrite
         let confirm = Confirm::new(&format!(
-            "Do you want to create the folder {}?",
-            folder_path
+            "Do you want to overwrite the file {}?",
+            file_path.as_ref().display()
         ))
         .with_default(false)
         .prompt()?;
 
-        if confirm {
-            fs::create_dir_all(folder_path)?;
-        } else {
+        if !confirm {
             return Ok(());
-        };
-    }
-
-    let tailcallrc = include_str!("../../generated/.tailcallrc.graphql");
-    let tailcallrc_json: &str = include_str!("../../generated/.tailcallrc.schema.json");
-
-    let file_path = Path::new(folder_path).join(FILE_NAME);
-    let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
-    let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
-
-    let tailcall_exists = fs::metadata(&file_path).is_ok();
-
-    if tailcall_exists {
-        // confirm overwrite
-        let confirm = Confirm::new(&format!("Do you want to overwrite the file {}?", FILE_NAME))
-            .with_default(false)
-            .prompt()?;
-
-        if confirm {
-            fs::write(&file_path, tailcallrc.as_bytes())?;
-            fs::write(&json_file_path, tailcallrc_json.as_bytes())?;
         }
-    } else {
-        fs::write(&file_path, tailcallrc.as_bytes())?;
-        fs::write(&json_file_path, tailcallrc_json.as_bytes())?;
     }
 
+    runtime
+        .file
+        .write(&file_path.as_ref().display().to_string(), content)
+        .await?;
+
+    Ok(())
+}
+
+async fn confirm_overwrite_yml(
+    runtime: TargetRuntime,
+    file_path: impl AsRef<Path>,
+    yml_file_path: impl AsRef<Path>,
+) -> Result<()> {
     let yml_exists = fs::metadata(&yml_file_path).is_ok();
+    let yml_path_str = yml_file_path.as_ref().display().to_string();
 
     if !yml_exists {
-        fs::write(&yml_file_path, "")?;
-
         let graphqlrc = r"|schema:
          |- './.tailcallrc.graphql'
     "
         .strip_margin();
 
-        fs::write(&yml_file_path, graphqlrc)?;
+        runtime
+            .file
+            .write(yml_path_str.as_str(), graphqlrc.as_bytes())
+            .await?;
     }
 
     let graphqlrc = fs::read_to_string(&yml_file_path)?;
 
-    let file_path = file_path.to_str().unwrap();
+    let file_path = file_path.as_ref().to_str().unwrap();
 
     let mut yaml: serde_yaml::Value = serde_yaml::from_str(&graphqlrc)?;
 
@@ -174,12 +210,91 @@ pub async fn init(folder_path: &str) -> Result<()> {
                 if confirm {
                     schema.push(serde_yaml::Value::from("./.tailcallrc.graphql"));
                     let updated = serde_yaml::to_string(&yaml)?;
-                    fs::write(yml_file_path, updated)?;
+                    runtime
+                        .file
+                        .write(yml_path_str.as_str(), updated.as_bytes())
+                        .await?;
                 }
             }
         }
     }
 
+    Ok(())
+}
+
+/// Checks if file or folder already exists or not.
+fn is_exists(path: &str) -> bool {
+    fs::metadata(path).is_ok()
+}
+
+pub async fn init(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
+    let folder_exists = is_exists(folder_path);
+
+    if !folder_exists {
+        let confirm = Confirm::new(&format!(
+            "Do you want to create the folder {}?",
+            folder_path
+        ))
+        .with_default(false)
+        .prompt()?;
+
+        if confirm {
+            fs::create_dir_all(folder_path)?;
+        } else {
+            return Ok(());
+        };
+    }
+
+    let selection = Select::new(
+        "Please select the format in which you want to generate the config.",
+        vec![GRAPHQL, JSON, YML],
+    )
+    .prompt()?;
+
+    let tailcallrc = include_str!("../../generated/.tailcallrc.graphql");
+    let tailcallrc_json: &str = include_str!("../../generated/.tailcallrc.schema.json");
+
+    let file_path = Path::new(folder_path).join(FILE_NAME);
+    let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
+    let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
+
+    match selection {
+        GRAPHQL => {
+            confirm_overwrite(runtime.clone(), &file_path, tailcallrc.as_bytes()).await?;
+            create_main(runtime.clone(), folder_path, "graphql", MAIN_GRAPHQL).await?;
+        }
+        JSON => {
+            confirm_overwrite(runtime.clone(), &json_file_path, tailcallrc_json.as_bytes()).await?;
+            create_main(runtime.clone(), folder_path, "json", MAIN_JSON).await?;
+        }
+        YML => {
+            confirm_overwrite(runtime.clone(), &file_path, tailcallrc.as_bytes()).await?;
+            confirm_overwrite_yml(runtime.clone(), &file_path, &yml_file_path).await?;
+            create_main(runtime.clone(), folder_path, "yml", MAIN_YML).await?;
+        }
+        _ => {
+            unreachable!()
+        }
+    }
+
+    Ok(())
+}
+
+async fn create_main(
+    runtime: TargetRuntime,
+    folder_path: impl AsRef<Path>,
+    extension: &str,
+    content: &str,
+) -> Result<()> {
+    let path = folder_path
+        .as_ref()
+        .join(format!("main.{}", extension))
+        .display()
+        .to_string();
+    runtime
+        .file
+        .write(path.as_str(), content.as_bytes())
+        .await?;
     Ok(())
 }
 
