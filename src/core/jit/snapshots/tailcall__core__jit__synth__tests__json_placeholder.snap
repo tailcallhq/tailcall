@@ -1,5 +1,5 @@
 ---
-source: src/core/ir/jit/synth.rs
+source: src/core/jit/synth.rs
 expression: "serde_json::to_string_pretty(&val).unwrap()"
 ---
 {
