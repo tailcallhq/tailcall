@@ -1,5 +1,5 @@
 ---
-source: src/core/ir/jit/builder.rs
+source: src/core/jit/builder.rs
 expression: plan
 ---
 ExecutionPlan {

@@ -1,6 +1,6 @@
 ---
 source: src/core/generator/tests/json_to_config_spec.rs
-expression: cfg_module.config.to_sdl()
+expression: config.to_sdl()
 ---
 schema @server @upstream {
   query: Query
