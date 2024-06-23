@@ -14,21 +14,17 @@ use crate::core::{grpc, http};
 
 #[derive(Clone, Debug, Display)]
 pub enum IR {
-    Context(Context),
     Dynamic(DynamicValue<Value>),
     #[strum(to_string = "{0}")]
     IO(IO),
     Cache(Cache),
+
+    // TODO: Path can be implement using Pipe
     Path(Box<IR>, Vec<String>),
+    ContextPath(Vec<String>),
     Protect(Box<IR>),
     Map(Map),
     Pipe(Box<IR>, Box<IR>),
-}
-
-#[derive(Clone, Debug)]
-pub enum Context {
-    Value,
-    Path(Vec<String>),
 }
 
 #[derive(Clone, Debug)]
@@ -134,9 +130,7 @@ impl IR {
                     IR::Pipe(first, second) => {
                         IR::Pipe(first.modify_box(modifier), second.modify_box(modifier))
                     }
-                    IR::Context(ctx) => match ctx {
-                        Context::Value | Context::Path(_) => IR::Context(ctx),
-                    },
+                    IR::ContextPath(path) => IR::ContextPath(path),
                     IR::Dynamic(_) => expr,
                     IR::IO(_) => expr,
                     IR::Cache(Cache { io, max_age }) => {
