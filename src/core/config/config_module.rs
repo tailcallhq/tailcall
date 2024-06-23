@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
-use derive_setters::Setters;
+use derive_getters::Getters;
 use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
@@ -15,13 +15,22 @@ use crate::core::rest::{EndpointSet, Unchecked};
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
-#[derive(Clone, Debug, Default, Setters, MergeRight)]
+#[derive(Clone, Debug, Default, Getters, MergeRight)]
 pub struct ConfigModule {
-    pub config: Config,
-    pub extensions: Extensions,
-    pub input_types: HashSet<String>,
-    pub output_types: HashSet<String>,
-    pub interface_types: HashSet<String>,
+    config: Config,
+    extensions: Extensions,
+    input_types: HashSet<String>,
+    output_types: HashSet<String>,
+    interface_types: HashSet<String>,
+}
+
+impl ConfigModule {
+    pub fn config_mut(&mut self) -> &mut Config {
+        &mut self.config
+    }
+    pub fn set_extensions(&mut self, extensions: Extensions) {
+        self.extensions = extensions;
+    }
 }
 
 #[derive(Clone, Debug, Default)]

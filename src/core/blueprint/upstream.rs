@@ -57,7 +57,7 @@ impl TryFrom<&ConfigModule> for Upstream {
 
         let mut allowed_headers = config_upstream.get_allowed_headers();
 
-        if config_module.extensions.has_auth() {
+        if config_module.extensions().has_auth() {
             // force add auth specific headers to use it to make actual validation
             allowed_headers.insert(hyper::header::AUTHORIZATION.to_string());
         }

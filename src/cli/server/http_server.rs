@@ -36,7 +36,7 @@ impl Server {
         let server_config = Arc::new(
             ServerConfig::new(
                 blueprint.clone(),
-                self.config_module.extensions.endpoint_set,
+                self.config_module.extensions().endpoint_set.clone(),
             )
             .await?,
         );
