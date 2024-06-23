@@ -1,0 +1,22 @@
+---
+source: tests/core/spec.rs
+assertion_line: 200
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "queryTest": [
+        {
+          "id": 1,
+          "name": "foo",
+          "num": 1
+        }
+      ]
+    }
+  }
+}

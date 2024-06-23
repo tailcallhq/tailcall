@@ -13,7 +13,7 @@ ExecutionPlan {
                 Arg {
                     id: 0,
                     name: "id",
-                    type_of: Int!,
+                    type_of: ID!,
                     value: Some(
                         Variable(
                             Name(
@@ -28,7 +28,7 @@ ExecutionPlan {
         Field {
             id: 1,
             name: "id",
-            type_of: Int!,
+            type_of: ID!,
             refs: Some(
                 Parent(0),
             ),
@@ -52,7 +52,7 @@ ExecutionPlan {
                 Arg {
                     id: 0,
                     name: "id",
-                    type_of: Int!,
+                    type_of: ID!,
                     value: Some(
                         Variable(
                             Name(
@@ -69,7 +69,7 @@ ExecutionPlan {
                         Field {
                             id: 1,
                             name: "id",
-                            type_of: Int!,
+                            type_of: ID!,
                         },
                         Field {
                             id: 2,

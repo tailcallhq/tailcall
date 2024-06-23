@@ -28,7 +28,7 @@ ExecutionPlan {
                 Arg {
                     id: 0,
                     name: "id",
-                    type_of: Int!,
+                    type_of: ID!,
                     value: Some(
                         Number(
                             Number(1),
@@ -64,7 +64,7 @@ ExecutionPlan {
                 Arg {
                     id: 0,
                     name: "id",
-                    type_of: Int!,
+                    type_of: ID!,
                     value: Some(
                         Number(
                             Number(1),
