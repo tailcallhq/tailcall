@@ -1,10 +1,9 @@
 use crate::core::jit::model::FieldId;
 
-#[allow(unused)]
 pub struct Store<A> {
     map: Vec<Data<A>>,
 }
-#[allow(unused)]
+
 #[derive(Clone)]
 pub enum Data<A> {
     /// Represents that the value was computed only once for the associated
