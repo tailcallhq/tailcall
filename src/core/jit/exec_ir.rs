@@ -1,3 +1,4 @@
+
 use serde_json_borrow::Value;
 
 use crate::core::data_loader::DedupeResult;
@@ -25,6 +26,7 @@ impl<'a> Exec<'a> {
             IR::Path(_, _) => todo!(),
             IR::Protect(_) => todo!(),
             IR::Map(_) => todo!(),
+            IR::Pipe(_, _) => todo!()
         }
     }
 }
