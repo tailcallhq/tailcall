@@ -60,7 +60,11 @@ impl JsonPlaceholder {
         );
         let plan = builder.build().unwrap();
         let posts_id = plan.find_field_path(&["posts"]).unwrap().id.to_owned();
-        let users_id = plan.find_field_path(&["posts", "user"]).unwrap().id.to_owned();
+        let users_id = plan
+            .find_field_path(&["posts", "user"])
+            .unwrap()
+            .id
+            .to_owned();
         let store = [
             (posts_id, Data::Single(Value::Array(posts))),
             (users_id, Data::Multiple(users)),
