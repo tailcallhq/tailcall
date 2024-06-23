@@ -303,7 +303,7 @@ impl ExecutionSpec {
         };
 
         let endpoints = config
-            .extensions()
+            .extensions
             .endpoint_set
             .clone()
             .into_checked(&blueprint, runtime.clone())
