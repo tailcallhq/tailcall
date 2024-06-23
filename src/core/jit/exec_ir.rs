@@ -53,7 +53,15 @@ fn resolve_path<'a, T: AsRef<str>>(value: &'a Value<'a>, path: &'a [T]) -> Optio
                 resolve_path(value?, tail)
             }
         }
-
+        Value::Array(arr) => {
+            let index = head.as_ref().parse::<usize>().ok()?;
+            let value = arr.get(index);
+            if tail.is_empty() {
+                value
+            } else {
+                resolve_path(value?, tail)
+            }
+        }
         _ => None,
     }
 }
