@@ -151,7 +151,7 @@ fn get_field_and_field_name<'a>(
     )
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
-            config_module.config.find_type(&type_name),
+            config_module.config().find_type(&type_name),
             format!("{} type not found on config", type_name),
         )
         .and_then(|query_type| {
