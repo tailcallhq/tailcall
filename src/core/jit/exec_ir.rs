@@ -26,6 +26,7 @@ impl<'a> Exec<'a> {
             IR::Path(_, _) => todo!(),
             IR::Protect(_) => todo!(),
             IR::Map(_) => todo!(),
+            IR::Pipe(_, _) => todo!()
         }
     }
 }
