@@ -16,7 +16,7 @@ pub enum IR {
     IO(IO),
     Cache(Cache),
     Path(Vec<String>),
-    Protect(Box<IR>),
+    Protect,
     Map(Map),
     Pipe(Box<IR>, Box<IR>),
 }

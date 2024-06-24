@@ -31,7 +31,7 @@ impl Exec {
             IR::Dynamic(value) => Ok(Value::from(value)),
             IR::IO(_) => todo!(),
             IR::Cache(_) => todo!(),
-            IR::Protect(_) => todo!(),
+            IR::Protect => todo!(),
             IR::Map(_) => todo!(),
             IR::Pipe(first, second) => {
                 let first = self.execute(first, value).await?;
