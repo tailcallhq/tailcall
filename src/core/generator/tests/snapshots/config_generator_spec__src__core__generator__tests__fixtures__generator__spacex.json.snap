@@ -2,22 +2,381 @@
 source: src/core/generator/tests/config_generator_spec.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "https://api.spacexdata.com") {
+schema @server @upstream {
   query: Query
 }
 
 scalar Any
 
-type CompositeFairing {
-  diameter: Height
-  height: Height
+type Query {
+  crewMembers: [T80] @http(baseURL: "https://api.spacexdata.com", path: "/v4/crew")
+  latestLaunch: T6 @http(baseURL: "https://api.spacexdata.com", path: "/v4/launches/latest")
+  pastLaunches: [T1281] @http(baseURL: "https://api.spacexdata.com", path: "/v4/launches/past")
+  roadsterInfo: T1282 @http(baseURL: "https://api.spacexdata.com", path: "/v4/roadster")
+  rockets: [T79] @http(baseURL: "https://api.spacexdata.com", path: "/v4/rockets")
+  upcomingLaunches: [T188] @http(baseURL: "https://api.spacexdata.com", path: "/v4/launches/upcoming")
 }
 
-type Core {
+type T1 {
+  large: String
+  small: String
+}
+
+type T10 {
+  kN: Int
+  lbf: Int
+}
+
+type T100 {
+  large: Empty
+  small: Empty
+}
+
+type T1000 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T1001 {
+  original: [String]
+  small: [Any]
+}
+
+type T1002 {
+  article: Empty
+  flickr: T1001
+  patch: T999
+  presskit: Empty
+  reddit: T1000
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1003 {
   core: String
   flight: Int
   gridfins: Boolean
   landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1004 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T1005 {
+  large: String
+  small: String
+}
+
+type T1006 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1007 {
+  original: [String]
+  small: [Any]
+}
+
+type T1008 {
+  article: String
+  flickr: T1007
+  patch: T1005
+  presskit: Empty
+  reddit: T1006
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1009 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T101 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T1010 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T1011 {
+  large: String
+  small: String
+}
+
+type T1012 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1013 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1014 {
+  article: String
+  flickr: T1013
+  patch: T1011
+  presskit: Empty
+  reddit: T1012
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1015 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1016 {
+  large: String
+  small: String
+}
+
+type T1017 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1018 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1019 {
+  article: String
+  flickr: T1018
+  patch: T1016
+  presskit: Empty
+  reddit: T1017
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T102 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1020 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1021 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T1022 {
+  large: String
+  small: String
+}
+
+type T1023 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1024 {
+  original: [String]
+  small: [Any]
+}
+
+type T1025 {
+  article: String
+  flickr: T1024
+  patch: T1022
+  presskit: Empty
+  reddit: T1023
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1026 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1027 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1028 {
+  large: String
+  small: String
+}
+
+type T1029 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T103 {
+  article: Empty
+  flickr: T102
+  patch: T100
+  presskit: Empty
+  reddit: T101
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T1030 {
+  original: [String]
+  small: [Any]
+}
+
+type T1031 {
+  article: String
+  flickr: T1030
+  patch: T1028
+  presskit: Empty
+  reddit: T1029
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1032 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1033 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T1034 {
+  large: String
+  small: String
+}
+
+type T1035 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T1036 {
+  original: [String]
+  small: [Any]
+}
+
+type T1037 {
+  article: String
+  flickr: T1036
+  patch: T1034
+  presskit: Empty
+  reddit: T1035
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1038 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1039 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T104 {
+  core: Empty
+  flight: Empty
+  gridfins: Boolean
+  landing_attempt: Empty
   landing_success: Empty
   landing_type: Empty
   landpad: Empty
@@ -25,135 +384,2117 @@ type Core {
   reused: Boolean
 }
 
-type CrewMember {
-  agency: String
-  id: String
-  image: String
-  launches: [String]
-  name: String
-  status: String
-  wikipedia: String
+type T1040 {
+  large: String
+  small: String
 }
 
-type Engine {
-  engine_loss_max: Int
-  isp: Isp
-  layout: String
-  number: Int
-  propellant_1: String
-  propellant_2: String
-  thrust_sea_level: ThrustVacuum
-  thrust_to_weight: Int
-  thrust_vacuum: ThrustVacuum
-  type: String
-  version: String
+type T1041 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
 }
 
-type Failure {
-  altitude: Empty
-  reason: String
-  time: Int
-}
-
-type Fairing {
-  recovered: Boolean
-  recovery_attempt: Boolean
-  reused: Boolean
-  ships: [Any]
-}
-
-type FirstStage {
-  burn_time_sec: Int
-  engines: Int
-  fuel_amount_tons: Int
-  reusable: Boolean
-  thrust_sea_level: ThrustVacuum
-  thrust_vacuum: ThrustVacuum
-}
-
-type Flickr {
-  original: [Any]
+type T1042 {
+  original: [String]
   small: [Any]
 }
 
-type Height {
-  feet: Int
-  meters: Int
-}
-
-type Isp {
-  sea_level: Int
-  vacuum: Int
-}
-
-type LandingLeg {
-  material: Empty
-  number: Int
-}
-
-type LatestLaunch {
-  auto_update: Boolean
-  capsules: [String]
-  cores: [T5]
-  crew: [String]
-  date_local: String
-  date_precision: String
-  date_unix: Int
-  date_utc: String
-  details: Empty
-  failures: [Any]
-  fairings: Empty
-  flight_number: Int
-  id: String
-  launch_library_id: String
-  launchpad: String
-  links: T4
-  name: String
-  net: Boolean
-  payloads: [String]
-  rocket: String
-  ships: [Any]
-  static_fire_date_unix: Empty
-  static_fire_date_utc: Empty
-  success: Boolean
-  tbd: Boolean
-  upcoming: Boolean
-  window: Empty
-}
-
-type Link {
+type T1043 {
   article: String
-  flickr: Flickr
-  patch: Patch
+  flickr: T1042
+  patch: T1040
   presskit: Empty
-  reddit: Reddit
+  reddit: T1041
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1044 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1045 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1046 {
+  large: String
+  small: String
+}
+
+type T1047 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1048 {
+  original: [String]
+  small: [Any]
+}
+
+type T1049 {
+  article: String
+  flickr: T1048
+  patch: T1046
+  presskit: Empty
+  reddit: T1047
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T105 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1050 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1051 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1052 {
+  large: String
+  small: String
+}
+
+type T1053 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1054 {
+  original: [String]
+  small: [Any]
+}
+
+type T1055 {
+  article: String
+  flickr: T1054
+  patch: T1052
+  presskit: Empty
+  reddit: T1053
   webcast: String
   wikipedia: String
   youtube_id: String
 }
 
-type Mass {
-  kg: Int
-  lb: Int
+type T1056 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
 }
 
-type PastLaunch {
+type T1057 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1058 {
+  large: String
+  small: String
+}
+
+type T1059 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T106 {
+  large: Empty
+  small: Empty
+}
+
+type T1060 {
+  original: [String]
+  small: [Any]
+}
+
+type T1061 {
+  article: String
+  flickr: T1060
+  patch: T1058
+  presskit: Empty
+  reddit: T1059
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1062 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1063 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1064 {
+  large: String
+  small: String
+}
+
+type T1065 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1066 {
+  original: [String]
+  small: [Any]
+}
+
+type T1067 {
+  article: String
+  flickr: T1066
+  patch: T1064
+  presskit: Empty
+  reddit: T1065
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1068 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1069 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T107 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T1070 {
+  large: String
+  small: String
+}
+
+type T1071 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1072 {
+  original: [String]
+  small: [Any]
+}
+
+type T1073 {
+  article: String
+  flickr: T1072
+  patch: T1070
+  presskit: Empty
+  reddit: T1071
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1074 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1075 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1076 {
+  large: String
+  small: String
+}
+
+type T1077 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1078 {
+  original: [String]
+  small: [Any]
+}
+
+type T1079 {
+  article: String
+  flickr: T1078
+  patch: T1076
+  presskit: Empty
+  reddit: T1077
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T108 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1080 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1081 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1082 {
+  large: String
+  small: String
+}
+
+type T1083 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T1084 {
+  original: [String]
+  small: [Any]
+}
+
+type T1085 {
+  article: String
+  flickr: T1084
+  patch: T1082
+  presskit: Empty
+  reddit: T1083
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1086 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1087 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1088 {
+  large: String
+  small: String
+}
+
+type T1089 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T109 {
+  article: Empty
+  flickr: T108
+  patch: T106
+  presskit: Empty
+  reddit: T107
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T1090 {
+  original: [String]
+  small: [Any]
+}
+
+type T1091 {
+  article: String
+  flickr: T1090
+  patch: T1088
+  presskit: Empty
+  reddit: T1089
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1092 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1093 {
+  large: String
+  small: String
+}
+
+type T1094 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1095 {
+  original: [String]
+  small: [Any]
+}
+
+type T1096 {
+  article: Empty
+  flickr: T1095
+  patch: T1093
+  presskit: Empty
+  reddit: T1094
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1097 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1098 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1099 {
+  large: String
+  small: String
+}
+
+type T11 {
+  kN: Int
+  lbf: Int
+}
+
+type T110 {
+  core: Empty
+  flight: Empty
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1100 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T1101 {
+  original: [String]
+  small: [Any]
+}
+
+type T1102 {
+  article: String
+  flickr: T1101
+  patch: T1099
+  presskit: Empty
+  reddit: T1100
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1103 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1104 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1105 {
+  large: String
+  small: String
+}
+
+type T1106 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1107 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1108 {
+  article: Empty
+  flickr: T1107
+  patch: T1105
+  presskit: Empty
+  reddit: T1106
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1109 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T111 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1110 {
+  large: String
+  small: String
+}
+
+type T1111 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T1112 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1113 {
+  article: Empty
+  flickr: T1112
+  patch: T1110
+  presskit: Empty
+  reddit: T1111
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1114 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1115 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1116 {
+  large: String
+  small: String
+}
+
+type T1117 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T1118 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1119 {
+  article: Empty
+  flickr: T1118
+  patch: T1116
+  presskit: Empty
+  reddit: T1117
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T112 {
+  large: Empty
+  small: Empty
+}
+
+type T1120 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1121 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1122 {
+  large: String
+  small: String
+}
+
+type T1123 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1124 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1125 {
+  article: Empty
+  flickr: T1124
+  patch: T1122
+  presskit: Empty
+  reddit: T1123
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1126 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1127 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1128 {
+  large: String
+  small: String
+}
+
+type T1129 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T113 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T1130 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1131 {
+  article: Empty
+  flickr: T1130
+  patch: T1128
+  presskit: Empty
+  reddit: T1129
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1132 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1133 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1134 {
+  large: String
+  small: String
+}
+
+type T1135 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1136 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1137 {
+  article: Empty
+  flickr: T1136
+  patch: T1134
+  presskit: Empty
+  reddit: T1135
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1138 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1139 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T114 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1140 {
+  large: String
+  small: String
+}
+
+type T1141 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1142 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1143 {
+  article: Empty
+  flickr: T1142
+  patch: T1140
+  presskit: Empty
+  reddit: T1141
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1144 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1145 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1146 {
+  large: String
+  small: String
+}
+
+type T1147 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1148 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1149 {
+  article: Empty
+  flickr: T1148
+  patch: T1146
+  presskit: Empty
+  reddit: T1147
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T115 {
+  article: Empty
+  flickr: T114
+  patch: T112
+  presskit: Empty
+  reddit: T113
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T1150 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1151 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1152 {
+  large: String
+  small: String
+}
+
+type T1153 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1154 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1155 {
+  article: Empty
+  flickr: T1154
+  patch: T1152
+  presskit: Empty
+  reddit: T1153
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1156 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1157 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1158 {
+  large: String
+  small: String
+}
+
+type T1159 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T116 {
+  core: Empty
+  flight: Empty
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1160 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1161 {
+  article: Empty
+  flickr: T1160
+  patch: T1158
+  presskit: Empty
+  reddit: T1159
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1162 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1163 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1164 {
+  large: String
+  small: String
+}
+
+type T1165 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1166 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1167 {
+  article: Empty
+  flickr: T1166
+  patch: T1164
+  presskit: Empty
+  reddit: T1165
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1168 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1169 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T117 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1170 {
+  large: String
+  small: String
+}
+
+type T1171 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1172 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1173 {
+  article: Empty
+  flickr: T1172
+  patch: T1170
+  presskit: Empty
+  reddit: T1171
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T1174 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1175 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1176 {
+  large: String
+  small: String
+}
+
+type T1177 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1178 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1179 {
+  article: Empty
+  flickr: T1178
+  patch: T1176
+  presskit: Empty
+  reddit: T1177
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T118 {
+  large: Empty
+  small: Empty
+}
+
+type T1180 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1181 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1182 {
+  large: String
+  small: String
+}
+
+type T1183 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1184 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1185 {
+  article: Empty
+  flickr: T1184
+  patch: T1182
+  presskit: Empty
+  reddit: T1183
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1186 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1187 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1188 {
+  large: String
+  small: String
+}
+
+type T1189 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T119 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T1190 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1191 {
+  article: Empty
+  flickr: T1190
+  patch: T1188
+  presskit: Empty
+  reddit: T1189
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1192 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1193 {
+  large: String
+  small: String
+}
+
+type T1194 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1195 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1196 {
+  article: Empty
+  flickr: T1195
+  patch: T1193
+  presskit: Empty
+  reddit: T1194
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1197 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1198 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1199 {
+  large: String
+  small: String
+}
+
+type T12 {
+  burn_time_sec: Int
+  engines: Int
+  fuel_amount_tons: Int
+  reusable: Boolean
+  thrust_sea_level: T10
+  thrust_vacuum: T11
+}
+
+type T120 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1200 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T1201 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1202 {
+  article: Empty
+  flickr: T1201
+  patch: T1199
+  presskit: Empty
+  reddit: T1200
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1203 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1204 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1205 {
+  large: String
+  small: String
+}
+
+type T1206 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T1207 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1208 {
+  article: Empty
+  flickr: T1207
+  patch: T1205
+  presskit: Empty
+  reddit: T1206
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1209 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T121 {
+  article: Empty
+  flickr: T120
+  patch: T118
+  presskit: Empty
+  reddit: T119
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T1210 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1211 {
+  large: String
+  small: String
+}
+
+type T1212 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T1213 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1214 {
+  article: Empty
+  flickr: T1213
+  patch: T1211
+  presskit: Empty
+  reddit: T1212
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T1215 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1216 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1217 {
+  large: String
+  small: String
+}
+
+type T1218 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1219 {
+  original: [Any]
+  small: [Any]
+}
+
+type T122 {
+  core: Empty
+  flight: Empty
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1220 {
+  article: Empty
+  flickr: T1219
+  patch: T1217
+  presskit: Empty
+  reddit: T1218
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1221 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1222 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1223 {
+  large: String
+  small: String
+}
+
+type T1224 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1225 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1226 {
+  article: Empty
+  flickr: T1225
+  patch: T1223
+  presskit: Empty
+  reddit: T1224
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1227 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1228 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1229 {
+  large: String
+  small: String
+}
+
+type T123 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1230 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1231 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1232 {
+  article: Empty
+  flickr: T1231
+  patch: T1229
+  presskit: Empty
+  reddit: T1230
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1233 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1234 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1235 {
+  large: String
+  small: String
+}
+
+type T1236 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1237 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1238 {
+  article: Empty
+  flickr: T1237
+  patch: T1235
+  presskit: Empty
+  reddit: T1236
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1239 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T124 {
+  large: Empty
+  small: Empty
+}
+
+type T1240 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1241 {
+  large: String
+  small: String
+}
+
+type T1242 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T1243 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1244 {
+  article: Empty
+  flickr: T1243
+  patch: T1241
+  presskit: Empty
+  reddit: T1242
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1245 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1246 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1247 {
+  large: String
+  small: String
+}
+
+type T1248 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1249 {
+  original: [Any]
+  small: [Any]
+}
+
+type T125 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T1250 {
+  article: Empty
+  flickr: T1249
+  patch: T1247
+  presskit: Empty
+  reddit: T1248
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1251 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1252 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1253 {
+  large: String
+  small: String
+}
+
+type T1254 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T1255 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1256 {
+  article: Empty
+  flickr: T1255
+  patch: T1253
+  presskit: Empty
+  reddit: T1254
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1257 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1258 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1259 {
+  large: String
+  small: String
+}
+
+type T126 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1260 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T1261 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1262 {
+  article: Empty
+  flickr: T1261
+  patch: T1259
+  presskit: Empty
+  reddit: T1260
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T1263 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1264 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1265 {
+  large: String
+  small: String
+}
+
+type T1266 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1267 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1268 {
+  article: Empty
+  flickr: T1267
+  patch: T1265
+  presskit: Empty
+  reddit: T1266
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1269 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T127 {
+  article: Empty
+  flickr: T126
+  patch: T124
+  presskit: Empty
+  reddit: T125
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T1270 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T1271 {
+  large: String
+  small: String
+}
+
+type T1272 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T1273 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1274 {
+  article: Empty
+  flickr: T1273
+  patch: T1271
+  presskit: Empty
+  reddit: T1272
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T1275 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1276 {
+  large: String
+  small: String
+}
+
+type T1277 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T1278 {
+  original: [Any]
+  small: [Any]
+}
+
+type T1279 {
+  article: Empty
+  flickr: T1278
+  patch: T1276
+  presskit: Empty
+  reddit: T1277
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T128 {
+  core: Empty
+  flight: Empty
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1280 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T1281 {
   auto_update: Boolean
   capsules: [String]
-  cores: [Core]
+  cores: [T195]
   crew: [String]
   date_local: String
   date_precision: String
   date_unix: Int
   date_utc: String
   details: String
-  failures: [Failure]
-  fairings: Fairing
+  failures: [T194]
+  fairings: T189
   flight_number: Int
   id: String
   launch_library_id: String
   launchpad: String
-  links: Link
+  links: T193
   name: String
   net: Boolean
   payloads: [String]
@@ -167,40 +2508,7 @@ type PastLaunch {
   window: Int
 }
 
-type Patch {
-  large: String
-  small: String
-}
-
-type Payload {
-  composite_fairing: CompositeFairing
-  option_1: String
-}
-
-type PayloadWeight {
-  id: String
-  kg: Int
-  lb: Int
-  name: String
-}
-
-type Query {
-  crewMembers: [CrewMember] @http(path: "/v4/crew")
-  latestLaunch: LatestLaunch @http(path: "/v4/launches/latest")
-  pastLaunches: [PastLaunch] @http(path: "/v4/launches/past")
-  roadsterInfo: RoadsterInfo @http(path: "/v4/roadster")
-  rockets: [Rocket] @http(path: "/v4/rockets")
-  upcomingLaunches: [UpcomingLaunch] @http(path: "/v4/launches/upcoming")
-}
-
-type Reddit {
-  campaign: Empty
-  launch: Empty
-  media: Empty
-  recovery: Empty
-}
-
-type RoadsterInfo {
+type T1282 {
   apoapsis_au: Int
   details: String
   earth_distance_km: Int
@@ -230,96 +2538,42 @@ type RoadsterInfo {
   wikipedia: String
 }
 
-type Rocket {
-  active: Boolean
-  boosters: Int
-  company: String
-  cost_per_launch: Int
-  country: String
-  description: String
-  diameter: Height
-  engines: Engine
-  first_flight: String
-  first_stage: FirstStage
-  flickr_images: [String]
-  height: Height
-  id: String
-  landing_legs: LandingLeg
-  mass: Mass
-  name: String
-  payload_weights: [PayloadWeight]
-  second_stage: SecondStage
-  stages: Int
-  success_rate_pct: Int
-  type: String
-  wikipedia: String
-}
-
-type SecondStage {
-  burn_time_sec: Int
-  engines: Int
-  fuel_amount_tons: Int
-  payloads: Payload
-  reusable: Boolean
-  thrust: ThrustVacuum
-}
-
-type T2 {
-  campaign: Empty
-  launch: String
-  media: Empty
-  recovery: Empty
-}
-
-type T4 {
-  article: Empty
-  flickr: Flickr
-  patch: Patch
-  presskit: Empty
-  reddit: T2
-  webcast: String
-  wikipedia: String
-  youtube_id: String
-}
-
-type T5 {
-  core: String
-  flight: Int
-  gridfins: Boolean
-  landing_attempt: Boolean
-  landing_success: Boolean
-  landing_type: String
-  landpad: String
-  legs: Boolean
-  reused: Boolean
-}
-
-type T81 {
-  recovered: Empty
-  recovery_attempt: Empty
-  reused: Empty
-  ships: [Any]
-}
-
-type T82 {
+type T129 {
   large: Empty
   small: Empty
 }
 
-type T85 {
-  article: Empty
-  flickr: Flickr
-  patch: T82
-  presskit: Empty
-  reddit: Reddit
-  webcast: String
-  wikipedia: Empty
-  youtube_id: String
+type T13 {
+  kN: Int
+  lbf: Int
 }
 
-type T86 {
-  core: String
-  flight: Int
+type T130 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T131 {
+  original: [Any]
+  small: [Any]
+}
+
+type T132 {
+  article: Empty
+  flickr: T131
+  patch: T129
+  presskit: Empty
+  reddit: T130
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T133 {
+  core: Empty
+  flight: Empty
   gridfins: Boolean
   landing_attempt: Empty
   landing_success: Empty
@@ -329,12 +2583,459 @@ type T86 {
   reused: Boolean
 }
 
-type ThrustVacuum {
-  kN: Int
-  lbf: Int
+type T134 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
 }
 
-type UpcomingLaunch {
+type T135 {
+  large: String
+  small: String
+}
+
+type T136 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T137 {
+  original: [Any]
+  small: [Any]
+}
+
+type T138 {
+  article: Empty
+  flickr: T137
+  patch: T135
+  presskit: Empty
+  reddit: T136
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T139 {
+  core: Empty
+  flight: Empty
+  gridfins: Empty
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Empty
+  reused: Empty
+}
+
+type T14 {
+  feet: Int
+  meters: Int
+}
+
+type T140 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T141 {
+  large: Empty
+  small: Empty
+}
+
+type T142 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T143 {
+  original: [Any]
+  small: [Any]
+}
+
+type T144 {
+  article: Empty
+  flickr: T143
+  patch: T141
+  presskit: Empty
+  reddit: T142
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T145 {
+  core: Empty
+  flight: Empty
+  gridfins: Empty
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Empty
+  reused: Empty
+}
+
+type T146 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T147 {
+  large: Empty
+  small: Empty
+}
+
+type T148 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T149 {
+  original: [Any]
+  small: [Any]
+}
+
+type T15 {
+  feet: Int
+  meters: Int
+}
+
+type T150 {
+  article: Empty
+  flickr: T149
+  patch: T147
+  presskit: Empty
+  reddit: T148
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T151 {
+  core: Empty
+  flight: Empty
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T152 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T153 {
+  large: Empty
+  small: Empty
+}
+
+type T154 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T155 {
+  original: [Any]
+  small: [Any]
+}
+
+type T156 {
+  article: Empty
+  flickr: T155
+  patch: T153
+  presskit: Empty
+  reddit: T154
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T157 {
+  core: Empty
+  flight: Empty
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T158 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T159 {
+  large: Empty
+  small: Empty
+}
+
+type T16 {
+  diameter: T15
+  height: T14
+}
+
+type T160 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T161 {
+  original: [Any]
+  small: [Any]
+}
+
+type T162 {
+  article: Empty
+  flickr: T161
+  patch: T159
+  presskit: Empty
+  reddit: T160
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T163 {
+  core: Empty
+  flight: Empty
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T164 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T165 {
+  large: Empty
+  small: Empty
+}
+
+type T166 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T167 {
+  original: [Any]
+  small: [Any]
+}
+
+type T168 {
+  article: Empty
+  flickr: T167
+  patch: T165
+  presskit: Empty
+  reddit: T166
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T169 {
+  core: Empty
+  flight: Empty
+  gridfins: Empty
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Empty
+  reused: Empty
+}
+
+type T17 {
+  composite_fairing: T16
+  option_1: String
+}
+
+type T170 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T171 {
+  large: Empty
+  small: Empty
+}
+
+type T172 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T173 {
+  original: [Any]
+  small: [Any]
+}
+
+type T174 {
+  article: Empty
+  flickr: T173
+  patch: T171
+  presskit: Empty
+  reddit: T172
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T175 {
+  core: Empty
+  flight: Empty
+  gridfins: Empty
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Empty
+  reused: Empty
+}
+
+type T176 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T177 {
+  large: Empty
+  small: Empty
+}
+
+type T178 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T179 {
+  original: [Any]
+  small: [Any]
+}
+
+type T18 {
+  burn_time_sec: Int
+  engines: Int
+  fuel_amount_tons: Int
+  payloads: T17
+  reusable: Boolean
+  thrust: T13
+}
+
+type T180 {
+  article: Empty
+  flickr: T179
+  patch: T177
+  presskit: Empty
+  reddit: T178
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T181 {
+  core: Empty
+  flight: Empty
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T182 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T183 {
+  large: Empty
+  small: Empty
+}
+
+type T184 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T185 {
+  original: [Any]
+  small: [Any]
+}
+
+type T186 {
+  article: Empty
+  flickr: T185
+  patch: T183
+  presskit: Empty
+  reddit: T184
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T187 {
+  core: Empty
+  flight: Empty
+  gridfins: Empty
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Empty
+  reused: Empty
+}
+
+type T188 {
   auto_update: Boolean
   capsules: [Any]
   cores: [T86]
@@ -362,4 +3063,7000 @@ type UpcomingLaunch {
   tbd: Boolean
   upcoming: Boolean
   window: Empty
+}
+
+type T189 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T19 {
+  sea_level: Int
+  vacuum: Int
+}
+
+type T190 {
+  large: String
+  small: String
+}
+
+type T191 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T192 {
+  original: [Any]
+  small: [Any]
+}
+
+type T193 {
+  article: String
+  flickr: T192
+  patch: T190
+  presskit: Empty
+  reddit: T191
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T194 {
+  altitude: Empty
+  reason: String
+  time: Int
+}
+
+type T195 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T196 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T197 {
+  large: String
+  small: String
+}
+
+type T198 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T199 {
+  original: [Any]
+  small: [Any]
+}
+
+type T2 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T20 {
+  kN: Int
+  lbf: Int
+}
+
+type T200 {
+  article: String
+  flickr: T199
+  patch: T197
+  presskit: Empty
+  reddit: T198
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T201 {
+  altitude: Int
+  reason: String
+  time: Int
+}
+
+type T202 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T203 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T204 {
+  large: String
+  small: String
+}
+
+type T205 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T206 {
+  original: [Any]
+  small: [Any]
+}
+
+type T207 {
+  article: String
+  flickr: T206
+  patch: T204
+  presskit: Empty
+  reddit: T205
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T208 {
+  altitude: Int
+  reason: String
+  time: Int
+}
+
+type T209 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T21 {
+  kN: Int
+  lbf: Int
+}
+
+type T210 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T211 {
+  large: String
+  small: String
+}
+
+type T212 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T213 {
+  original: [Any]
+  small: [Any]
+}
+
+type T214 {
+  article: String
+  flickr: T213
+  patch: T211
+  presskit: Empty
+  reddit: T212
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T215 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T216 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T217 {
+  large: String
+  small: String
+}
+
+type T218 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T219 {
+  original: [Any]
+  small: [Any]
+}
+
+type T22 {
+  engine_loss_max: Int
+  isp: T19
+  layout: String
+  number: Int
+  propellant_1: String
+  propellant_2: String
+  thrust_sea_level: T20
+  thrust_to_weight: Int
+  thrust_vacuum: T21
+  type: String
+  version: String
+}
+
+type T220 {
+  article: String
+  flickr: T219
+  patch: T217
+  presskit: String
+  reddit: T218
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T221 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T222 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T223 {
+  large: String
+  small: String
+}
+
+type T224 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T225 {
+  original: [Any]
+  small: [Any]
+}
+
+type T226 {
+  article: String
+  flickr: T225
+  patch: T223
+  presskit: String
+  reddit: T224
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T227 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T228 {
+  large: String
+  small: String
+}
+
+type T229 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T23 {
+  material: Empty
+  number: Int
+}
+
+type T230 {
+  original: [Any]
+  small: [Any]
+}
+
+type T231 {
+  article: String
+  flickr: T230
+  patch: T228
+  presskit: String
+  reddit: T229
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T232 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T233 {
+  large: String
+  small: String
+}
+
+type T234 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T235 {
+  original: [Any]
+  small: [Any]
+}
+
+type T236 {
+  article: String
+  flickr: T235
+  patch: T233
+  presskit: String
+  reddit: T234
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T237 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T238 {
+  large: String
+  small: String
+}
+
+type T239 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T24 {
+  id: String
+  kg: Int
+  lb: Int
+  name: String
+}
+
+type T240 {
+  original: [Any]
+  small: [Any]
+}
+
+type T241 {
+  article: String
+  flickr: T240
+  patch: T238
+  presskit: String
+  reddit: T239
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T242 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T243 {
+  large: String
+  small: String
+}
+
+type T244 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T245 {
+  original: [Any]
+  small: [Any]
+}
+
+type T246 {
+  article: String
+  flickr: T245
+  patch: T243
+  presskit: String
+  reddit: T244
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T247 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T248 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T249 {
+  large: String
+  small: String
+}
+
+type T25 {
+  feet: Int
+  meters: Int
+}
+
+type T250 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T251 {
+  original: [Any]
+  small: [Any]
+}
+
+type T252 {
+  article: String
+  flickr: T251
+  patch: T249
+  presskit: String
+  reddit: T250
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T253 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T254 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T255 {
+  large: String
+  small: String
+}
+
+type T256 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T257 {
+  original: [Any]
+  small: [Any]
+}
+
+type T258 {
+  article: String
+  flickr: T257
+  patch: T255
+  presskit: String
+  reddit: T256
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T259 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T26 {
+  feet: Int
+  meters: Int
+}
+
+type T260 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T261 {
+  large: String
+  small: String
+}
+
+type T262 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T263 {
+  original: [String]
+  small: [Any]
+}
+
+type T264 {
+  article: String
+  flickr: T263
+  patch: T261
+  presskit: String
+  reddit: T262
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T265 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T266 {
+  large: String
+  small: String
+}
+
+type T267 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T268 {
+  original: [String]
+  small: [Any]
+}
+
+type T269 {
+  article: String
+  flickr: T268
+  patch: T266
+  presskit: String
+  reddit: T267
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T27 {
+  kg: Int
+  lb: Int
+}
+
+type T270 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T271 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T272 {
+  large: String
+  small: String
+}
+
+type T273 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T274 {
+  original: [String]
+  small: [Any]
+}
+
+type T275 {
+  article: String
+  flickr: T274
+  patch: T272
+  presskit: String
+  reddit: T273
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T276 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T277 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T278 {
+  large: String
+  small: String
+}
+
+type T279 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T28 {
+  kN: Int
+  lbf: Int
+}
+
+type T280 {
+  original: [String]
+  small: [Any]
+}
+
+type T281 {
+  article: String
+  flickr: T280
+  patch: T278
+  presskit: String
+  reddit: T279
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T282 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T283 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T284 {
+  large: String
+  small: String
+}
+
+type T285 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T286 {
+  original: [String]
+  small: [Any]
+}
+
+type T287 {
+  article: String
+  flickr: T286
+  patch: T284
+  presskit: String
+  reddit: T285
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T288 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T289 {
+  large: String
+  small: String
+}
+
+type T29 {
+  kN: Int
+  lbf: Int
+}
+
+type T290 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T291 {
+  original: [String]
+  small: [Any]
+}
+
+type T292 {
+  article: String
+  flickr: T291
+  patch: T289
+  presskit: String
+  reddit: T290
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T293 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T294 {
+  large: String
+  small: String
+}
+
+type T295 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T296 {
+  original: [String]
+  small: [Any]
+}
+
+type T297 {
+  article: String
+  flickr: T296
+  patch: T294
+  presskit: String
+  reddit: T295
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T298 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T299 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T3 {
+  original: [Any]
+  small: [Any]
+}
+
+type T30 {
+  burn_time_sec: Int
+  engines: Int
+  fuel_amount_tons: Int
+  reusable: Boolean
+  thrust_sea_level: T28
+  thrust_vacuum: T29
+}
+
+type T300 {
+  large: String
+  small: String
+}
+
+type T301 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T302 {
+  original: [String]
+  small: [Any]
+}
+
+type T303 {
+  article: String
+  flickr: T302
+  patch: T300
+  presskit: String
+  reddit: T301
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T304 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T305 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T306 {
+  large: String
+  small: String
+}
+
+type T307 {
+  campaign: Empty
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T308 {
+  original: [String]
+  small: [Any]
+}
+
+type T309 {
+  article: String
+  flickr: T308
+  patch: T306
+  presskit: String
+  reddit: T307
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T31 {
+  kN: Int
+  lbf: Int
+}
+
+type T310 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T311 {
+  large: String
+  small: String
+}
+
+type T312 {
+  campaign: Empty
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T313 {
+  original: [String]
+  small: [Any]
+}
+
+type T314 {
+  article: String
+  flickr: T313
+  patch: T311
+  presskit: String
+  reddit: T312
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T315 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T316 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T317 {
+  large: String
+  small: String
+}
+
+type T318 {
+  campaign: Empty
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T319 {
+  original: [String]
+  small: [Any]
+}
+
+type T32 {
+  feet: Int
+  meters: Int
+}
+
+type T320 {
+  article: String
+  flickr: T319
+  patch: T317
+  presskit: String
+  reddit: T318
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T321 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T322 {
+  large: String
+  small: String
+}
+
+type T323 {
+  campaign: Empty
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T324 {
+  original: [String]
+  small: [Any]
+}
+
+type T325 {
+  article: String
+  flickr: T324
+  patch: T322
+  presskit: String
+  reddit: T323
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T326 {
+  altitude: Int
+  reason: String
+  time: Int
+}
+
+type T327 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T328 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T329 {
+  large: String
+  small: String
+}
+
+type T33 {
+  feet: Int
+  meters: Int
+}
+
+type T330 {
+  campaign: Empty
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T331 {
+  original: [String]
+  small: [Any]
+}
+
+type T332 {
+  article: String
+  flickr: T331
+  patch: T329
+  presskit: String
+  reddit: T330
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T333 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T334 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T335 {
+  large: String
+  small: String
+}
+
+type T336 {
+  campaign: Empty
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T337 {
+  original: [String]
+  small: [Any]
+}
+
+type T338 {
+  article: String
+  flickr: T337
+  patch: T335
+  presskit: String
+  reddit: T336
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T339 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T34 {
+  diameter: T33
+  height: T32
+}
+
+type T340 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T341 {
+  large: String
+  small: String
+}
+
+type T342 {
+  campaign: Empty
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T343 {
+  original: [String]
+  small: [Any]
+}
+
+type T344 {
+  article: String
+  flickr: T343
+  patch: T341
+  presskit: String
+  reddit: T342
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T345 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T346 {
+  large: String
+  small: String
+}
+
+type T347 {
+  campaign: Empty
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T348 {
+  original: [String]
+  small: [Any]
+}
+
+type T349 {
+  article: String
+  flickr: T348
+  patch: T346
+  presskit: String
+  reddit: T347
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T35 {
+  composite_fairing: T34
+  option_1: String
+}
+
+type T350 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T351 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T352 {
+  large: String
+  small: String
+}
+
+type T353 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T354 {
+  original: [String]
+  small: [Any]
+}
+
+type T355 {
+  article: String
+  flickr: T354
+  patch: T352
+  presskit: String
+  reddit: T353
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T356 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T357 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T358 {
+  large: String
+  small: String
+}
+
+type T359 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T36 {
+  burn_time_sec: Int
+  engines: Int
+  fuel_amount_tons: Int
+  payloads: T35
+  reusable: Boolean
+  thrust: T31
+}
+
+type T360 {
+  original: [String]
+  small: [Any]
+}
+
+type T361 {
+  article: String
+  flickr: T360
+  patch: T358
+  presskit: String
+  reddit: T359
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T362 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T363 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T364 {
+  large: String
+  small: String
+}
+
+type T365 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T366 {
+  original: [String]
+  small: [Any]
+}
+
+type T367 {
+  article: String
+  flickr: T366
+  patch: T364
+  presskit: String
+  reddit: T365
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T368 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T369 {
+  large: String
+  small: String
+}
+
+type T37 {
+  sea_level: Int
+  vacuum: Int
+}
+
+type T370 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T371 {
+  original: [String]
+  small: [Any]
+}
+
+type T372 {
+  article: String
+  flickr: T371
+  patch: T369
+  presskit: String
+  reddit: T370
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T373 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T374 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T375 {
+  large: String
+  small: String
+}
+
+type T376 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T377 {
+  original: [String]
+  small: [Any]
+}
+
+type T378 {
+  article: String
+  flickr: T377
+  patch: T375
+  presskit: String
+  reddit: T376
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T379 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T38 {
+  kN: Int
+  lbf: Int
+}
+
+type T380 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T381 {
+  large: String
+  small: String
+}
+
+type T382 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T383 {
+  original: [Any]
+  small: [Any]
+}
+
+type T384 {
+  article: String
+  flickr: T383
+  patch: T381
+  presskit: Empty
+  reddit: T382
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T385 {
+  altitude: Int
+  reason: String
+  time: Int
+}
+
+type T386 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T387 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T388 {
+  large: String
+  small: String
+}
+
+type T389 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T39 {
+  kN: Int
+  lbf: Int
+}
+
+type T390 {
+  original: [String]
+  small: [Any]
+}
+
+type T391 {
+  article: String
+  flickr: T390
+  patch: T388
+  presskit: String
+  reddit: T389
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T392 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T393 {
+  large: String
+  small: String
+}
+
+type T394 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T395 {
+  original: [String]
+  small: [Any]
+}
+
+type T396 {
+  article: String
+  flickr: T395
+  patch: T393
+  presskit: String
+  reddit: T394
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T397 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T398 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T399 {
+  large: String
+  small: String
+}
+
+type T4 {
+  article: Empty
+  flickr: T3
+  patch: T1
+  presskit: Empty
+  reddit: T2
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T40 {
+  engine_loss_max: Int
+  isp: T37
+  layout: String
+  number: Int
+  propellant_1: String
+  propellant_2: String
+  thrust_sea_level: T38
+  thrust_to_weight: Int
+  thrust_vacuum: T39
+  type: String
+  version: String
+}
+
+type T400 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T401 {
+  original: [String]
+  small: [Any]
+}
+
+type T402 {
+  article: String
+  flickr: T401
+  patch: T399
+  presskit: String
+  reddit: T400
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T403 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T404 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T405 {
+  large: String
+  small: String
+}
+
+type T406 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T407 {
+  original: [String]
+  small: [Any]
+}
+
+type T408 {
+  article: String
+  flickr: T407
+  patch: T405
+  presskit: String
+  reddit: T406
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T409 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T41 {
+  material: String
+  number: Int
+}
+
+type T410 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T411 {
+  large: String
+  small: String
+}
+
+type T412 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T413 {
+  original: [String]
+  small: [Any]
+}
+
+type T414 {
+  article: String
+  flickr: T413
+  patch: T411
+  presskit: String
+  reddit: T412
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T415 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T416 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T417 {
+  large: String
+  small: String
+}
+
+type T418 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T419 {
+  original: [String]
+  small: [Any]
+}
+
+type T42 {
+  id: String
+  kg: Int
+  lb: Int
+  name: String
+}
+
+type T420 {
+  article: String
+  flickr: T419
+  patch: T417
+  presskit: String
+  reddit: T418
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T421 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T422 {
+  large: String
+  small: String
+}
+
+type T423 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T424 {
+  original: [String]
+  small: [Any]
+}
+
+type T425 {
+  article: String
+  flickr: T424
+  patch: T422
+  presskit: String
+  reddit: T423
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T426 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T427 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T428 {
+  large: String
+  small: String
+}
+
+type T429 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T43 {
+  feet: Int
+  meters: Int
+}
+
+type T430 {
+  original: [String]
+  small: [Any]
+}
+
+type T431 {
+  article: String
+  flickr: T430
+  patch: T428
+  presskit: String
+  reddit: T429
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T432 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T433 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T434 {
+  large: String
+  small: String
+}
+
+type T435 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T436 {
+  original: [String]
+  small: [Any]
+}
+
+type T437 {
+  article: String
+  flickr: T436
+  patch: T434
+  presskit: String
+  reddit: T435
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T438 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T439 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T44 {
+  feet: Int
+  meters: Int
+}
+
+type T440 {
+  large: String
+  small: String
+}
+
+type T441 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T442 {
+  original: [String]
+  small: [Any]
+}
+
+type T443 {
+  article: String
+  flickr: T442
+  patch: T440
+  presskit: String
+  reddit: T441
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T444 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T445 {
+  large: String
+  small: String
+}
+
+type T446 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T447 {
+  original: [String]
+  small: [Any]
+}
+
+type T448 {
+  article: String
+  flickr: T447
+  patch: T445
+  presskit: String
+  reddit: T446
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T449 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T45 {
+  kg: Int
+  lb: Int
+}
+
+type T450 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T451 {
+  large: String
+  small: String
+}
+
+type T452 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T453 {
+  original: [String]
+  small: [Any]
+}
+
+type T454 {
+  article: String
+  flickr: T453
+  patch: T451
+  presskit: String
+  reddit: T452
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T455 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T456 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T457 {
+  large: String
+  small: String
+}
+
+type T458 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T459 {
+  original: [String]
+  small: [Any]
+}
+
+type T46 {
+  kN: Int
+  lbf: Int
+}
+
+type T460 {
+  article: String
+  flickr: T459
+  patch: T457
+  presskit: String
+  reddit: T458
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T461 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T462 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T463 {
+  large: String
+  small: String
+}
+
+type T464 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T465 {
+  original: [String]
+  small: [Any]
+}
+
+type T466 {
+  article: String
+  flickr: T465
+  patch: T463
+  presskit: String
+  reddit: T464
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T467 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T468 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T469 {
+  large: String
+  small: String
+}
+
+type T47 {
+  kN: Int
+  lbf: Int
+}
+
+type T470 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T471 {
+  original: [String]
+  small: [Any]
+}
+
+type T472 {
+  article: String
+  flickr: T471
+  patch: T469
+  presskit: String
+  reddit: T470
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T473 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T474 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T475 {
+  large: String
+  small: String
+}
+
+type T476 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T477 {
+  original: [String]
+  small: [Any]
+}
+
+type T478 {
+  article: String
+  flickr: T477
+  patch: T475
+  presskit: String
+  reddit: T476
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T479 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T48 {
+  burn_time_sec: Int
+  engines: Int
+  fuel_amount_tons: Int
+  reusable: Boolean
+  thrust_sea_level: T46
+  thrust_vacuum: T47
+}
+
+type T480 {
+  large: String
+  small: String
+}
+
+type T481 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T482 {
+  original: [String]
+  small: [Any]
+}
+
+type T483 {
+  article: String
+  flickr: T482
+  patch: T480
+  presskit: String
+  reddit: T481
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T484 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T485 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T486 {
+  large: String
+  small: String
+}
+
+type T487 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T488 {
+  original: [String]
+  small: [Any]
+}
+
+type T489 {
+  article: String
+  flickr: T488
+  patch: T486
+  presskit: String
+  reddit: T487
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T49 {
+  kN: Int
+  lbf: Int
+}
+
+type T490 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T491 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T492 {
+  large: String
+  small: String
+}
+
+type T493 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T494 {
+  original: [String]
+  small: [Any]
+}
+
+type T495 {
+  article: String
+  flickr: T494
+  patch: T492
+  presskit: String
+  reddit: T493
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T496 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T497 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T498 {
+  large: String
+  small: String
+}
+
+type T499 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T5 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T50 {
+  feet: Int
+  meters: Int
+}
+
+type T500 {
+  original: [String]
+  small: [Any]
+}
+
+type T501 {
+  article: String
+  flickr: T500
+  patch: T498
+  presskit: String
+  reddit: T499
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T502 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T503 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T504 {
+  large: String
+  small: String
+}
+
+type T505 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T506 {
+  original: [String]
+  small: [Any]
+}
+
+type T507 {
+  article: String
+  flickr: T506
+  patch: T504
+  presskit: String
+  reddit: T505
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T508 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T509 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T51 {
+  feet: Int
+  meters: Int
+}
+
+type T510 {
+  large: String
+  small: String
+}
+
+type T511 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T512 {
+  original: [String]
+  small: [Any]
+}
+
+type T513 {
+  article: String
+  flickr: T512
+  patch: T510
+  presskit: String
+  reddit: T511
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T514 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T515 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T516 {
+  large: String
+  small: String
+}
+
+type T517 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T518 {
+  original: [String]
+  small: [Any]
+}
+
+type T519 {
+  article: String
+  flickr: T518
+  patch: T516
+  presskit: String
+  reddit: T517
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T52 {
+  diameter: T51
+  height: T50
+}
+
+type T520 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T521 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T522 {
+  large: String
+  small: String
+}
+
+type T523 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T524 {
+  original: [String]
+  small: [Any]
+}
+
+type T525 {
+  article: String
+  flickr: T524
+  patch: T522
+  presskit: String
+  reddit: T523
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T526 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T527 {
+  large: String
+  small: String
+}
+
+type T528 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T529 {
+  original: [String]
+  small: [Any]
+}
+
+type T53 {
+  composite_fairing: T52
+  option_1: String
+}
+
+type T530 {
+  article: String
+  flickr: T529
+  patch: T527
+  presskit: String
+  reddit: T528
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T531 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T532 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T533 {
+  large: String
+  small: String
+}
+
+type T534 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T535 {
+  original: [String]
+  small: [Any]
+}
+
+type T536 {
+  article: String
+  flickr: T535
+  patch: T533
+  presskit: String
+  reddit: T534
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T537 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T538 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T539 {
+  large: String
+  small: String
+}
+
+type T54 {
+  burn_time_sec: Int
+  engines: Int
+  fuel_amount_tons: Int
+  payloads: T53
+  reusable: Boolean
+  thrust: T49
+}
+
+type T540 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T541 {
+  original: [String]
+  small: [Any]
+}
+
+type T542 {
+  article: String
+  flickr: T541
+  patch: T539
+  presskit: String
+  reddit: T540
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T543 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T544 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T545 {
+  large: String
+  small: String
+}
+
+type T546 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T547 {
+  original: [String]
+  small: [Any]
+}
+
+type T548 {
+  article: String
+  flickr: T547
+  patch: T545
+  presskit: String
+  reddit: T546
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T549 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T55 {
+  sea_level: Int
+  vacuum: Int
+}
+
+type T550 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T551 {
+  large: String
+  small: String
+}
+
+type T552 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T553 {
+  original: [String]
+  small: [Any]
+}
+
+type T554 {
+  article: String
+  flickr: T553
+  patch: T551
+  presskit: String
+  reddit: T552
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T555 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T556 {
+  large: String
+  small: String
+}
+
+type T557 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T558 {
+  original: [String]
+  small: [Any]
+}
+
+type T559 {
+  article: String
+  flickr: T558
+  patch: T556
+  presskit: String
+  reddit: T557
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T56 {
+  kN: Int
+  lbf: Int
+}
+
+type T560 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T561 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T562 {
+  large: String
+  small: String
+}
+
+type T563 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T564 {
+  original: [String]
+  small: [Any]
+}
+
+type T565 {
+  article: String
+  flickr: T564
+  patch: T562
+  presskit: String
+  reddit: T563
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T566 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T567 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T568 {
+  large: String
+  small: String
+}
+
+type T569 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T57 {
+  kN: Int
+  lbf: Int
+}
+
+type T570 {
+  original: [String]
+  small: [Any]
+}
+
+type T571 {
+  article: String
+  flickr: T570
+  patch: T568
+  presskit: String
+  reddit: T569
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T572 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T573 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T574 {
+  large: String
+  small: String
+}
+
+type T575 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T576 {
+  original: [String]
+  small: [Any]
+}
+
+type T577 {
+  article: String
+  flickr: T576
+  patch: T574
+  presskit: String
+  reddit: T575
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T578 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T579 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T58 {
+  engine_loss_max: Int
+  isp: T55
+  layout: String
+  number: Int
+  propellant_1: String
+  propellant_2: String
+  thrust_sea_level: T56
+  thrust_to_weight: Int
+  thrust_vacuum: T57
+  type: String
+  version: String
+}
+
+type T580 {
+  large: String
+  small: String
+}
+
+type T581 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T582 {
+  original: [String]
+  small: [Any]
+}
+
+type T583 {
+  article: String
+  flickr: T582
+  patch: T580
+  presskit: String
+  reddit: T581
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T584 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T585 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T586 {
+  large: String
+  small: String
+}
+
+type T587 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T588 {
+  original: [String]
+  small: [Any]
+}
+
+type T589 {
+  article: String
+  flickr: T588
+  patch: T586
+  presskit: String
+  reddit: T587
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T59 {
+  material: String
+  number: Int
+}
+
+type T590 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T591 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T592 {
+  large: String
+  small: String
+}
+
+type T593 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T594 {
+  original: [String]
+  small: [Any]
+}
+
+type T595 {
+  article: String
+  flickr: T594
+  patch: T592
+  presskit: String
+  reddit: T593
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T596 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T597 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T598 {
+  large: String
+  small: String
+}
+
+type T599 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T6 {
+  auto_update: Boolean
+  capsules: [String]
+  cores: [T5]
+  crew: [String]
+  date_local: String
+  date_precision: String
+  date_unix: Int
+  date_utc: String
+  details: Empty
+  failures: [Any]
+  fairings: Empty
+  flight_number: Int
+  id: String
+  launch_library_id: String
+  launchpad: String
+  links: T4
+  name: String
+  net: Boolean
+  payloads: [String]
+  rocket: String
+  ships: [Any]
+  static_fire_date_unix: Empty
+  static_fire_date_utc: Empty
+  success: Boolean
+  tbd: Boolean
+  upcoming: Boolean
+  window: Empty
+}
+
+type T60 {
+  id: String
+  kg: Int
+  lb: Int
+  name: String
+}
+
+type T600 {
+  original: [String]
+  small: [Any]
+}
+
+type T601 {
+  article: String
+  flickr: T600
+  patch: T598
+  presskit: String
+  reddit: T599
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T602 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T603 {
+  large: String
+  small: String
+}
+
+type T604 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T605 {
+  original: [String]
+  small: [Any]
+}
+
+type T606 {
+  article: String
+  flickr: T605
+  patch: T603
+  presskit: String
+  reddit: T604
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T607 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T608 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T609 {
+  large: String
+  small: String
+}
+
+type T61 {
+  feet: Int
+  meters: Int
+}
+
+type T610 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T611 {
+  original: [String]
+  small: [Any]
+}
+
+type T612 {
+  article: String
+  flickr: T611
+  patch: T609
+  presskit: String
+  reddit: T610
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T613 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T614 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T615 {
+  large: String
+  small: String
+}
+
+type T616 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T617 {
+  original: [String]
+  small: [Any]
+}
+
+type T618 {
+  article: String
+  flickr: T617
+  patch: T615
+  presskit: String
+  reddit: T616
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T619 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T62 {
+  feet: Int
+  meters: Int
+}
+
+type T620 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T621 {
+  large: String
+  small: String
+}
+
+type T622 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T623 {
+  original: [String]
+  small: [Any]
+}
+
+type T624 {
+  article: String
+  flickr: T623
+  patch: T621
+  presskit: String
+  reddit: T622
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T625 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T626 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T627 {
+  large: String
+  small: String
+}
+
+type T628 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T629 {
+  original: [String]
+  small: [Any]
+}
+
+type T63 {
+  kg: Int
+  lb: Int
+}
+
+type T630 {
+  article: String
+  flickr: T629
+  patch: T627
+  presskit: String
+  reddit: T628
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T631 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T632 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T633 {
+  large: String
+  small: String
+}
+
+type T634 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T635 {
+  original: [String]
+  small: [Any]
+}
+
+type T636 {
+  article: String
+  flickr: T635
+  patch: T633
+  presskit: String
+  reddit: T634
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T637 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T638 {
+  large: String
+  small: String
+}
+
+type T639 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T64 {
+  kN: Int
+  lbf: Int
+}
+
+type T640 {
+  original: [String]
+  small: [Any]
+}
+
+type T641 {
+  article: String
+  flickr: T640
+  patch: T638
+  presskit: String
+  reddit: T639
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T642 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T643 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T644 {
+  large: String
+  small: String
+}
+
+type T645 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T646 {
+  original: [String]
+  small: [Any]
+}
+
+type T647 {
+  article: String
+  flickr: T646
+  patch: T644
+  presskit: String
+  reddit: T645
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T648 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T649 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T65 {
+  kN: Int
+  lbf: Int
+}
+
+type T650 {
+  large: String
+  small: String
+}
+
+type T651 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T652 {
+  original: [String]
+  small: [Any]
+}
+
+type T653 {
+  article: String
+  flickr: T652
+  patch: T650
+  presskit: String
+  reddit: T651
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T654 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T655 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T656 {
+  large: String
+  small: String
+}
+
+type T657 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T658 {
+  original: [String]
+  small: [Any]
+}
+
+type T659 {
+  article: String
+  flickr: T658
+  patch: T656
+  presskit: String
+  reddit: T657
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T66 {
+  burn_time_sec: Empty
+  engines: Int
+  fuel_amount_tons: Int
+  reusable: Boolean
+  thrust_sea_level: T64
+  thrust_vacuum: T65
+}
+
+type T660 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T661 {
+  large: String
+  small: String
+}
+
+type T662 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T663 {
+  original: [String]
+  small: [Any]
+}
+
+type T664 {
+  article: String
+  flickr: T663
+  patch: T661
+  presskit: String
+  reddit: T662
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T665 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T666 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T667 {
+  large: String
+  small: String
+}
+
+type T668 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T669 {
+  original: [String]
+  small: [Any]
+}
+
+type T67 {
+  kN: Int
+  lbf: Int
+}
+
+type T670 {
+  article: String
+  flickr: T669
+  patch: T667
+  presskit: String
+  reddit: T668
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T671 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T672 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T673 {
+  large: String
+  small: String
+}
+
+type T674 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T675 {
+  original: [String]
+  small: [Any]
+}
+
+type T676 {
+  article: String
+  flickr: T675
+  patch: T673
+  presskit: String
+  reddit: T674
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T677 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T678 {
+  large: String
+  small: String
+}
+
+type T679 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T68 {
+  feet: Empty
+  meters: Empty
+}
+
+type T680 {
+  original: [String]
+  small: [Any]
+}
+
+type T681 {
+  article: String
+  flickr: T680
+  patch: T678
+  presskit: String
+  reddit: T679
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T682 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T683 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T684 {
+  large: String
+  small: String
+}
+
+type T685 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T686 {
+  original: [String]
+  small: [Any]
+}
+
+type T687 {
+  article: String
+  flickr: T686
+  patch: T684
+  presskit: String
+  reddit: T685
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T688 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T689 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T69 {
+  feet: Empty
+  meters: Empty
+}
+
+type T690 {
+  large: String
+  small: String
+}
+
+type T691 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T692 {
+  original: [String]
+  small: [Any]
+}
+
+type T693 {
+  article: String
+  flickr: T692
+  patch: T690
+  presskit: String
+  reddit: T691
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T694 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T695 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T696 {
+  large: String
+  small: String
+}
+
+type T697 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T698 {
+  original: [String]
+  small: [Any]
+}
+
+type T699 {
+  article: String
+  flickr: T698
+  patch: T696
+  presskit: String
+  reddit: T697
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T7 {
+  feet: Int
+  meters: Int
+}
+
+type T70 {
+  diameter: T69
+  height: T68
+}
+
+type T700 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T701 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T702 {
+  large: String
+  small: String
+}
+
+type T703 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T704 {
+  original: [String]
+  small: [Any]
+}
+
+type T705 {
+  article: String
+  flickr: T704
+  patch: T702
+  presskit: String
+  reddit: T703
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T706 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T707 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T708 {
+  large: String
+  small: String
+}
+
+type T709 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T71 {
+  composite_fairing: T70
+  option_1: String
+}
+
+type T710 {
+  original: [String]
+  small: [Any]
+}
+
+type T711 {
+  article: String
+  flickr: T710
+  patch: T708
+  presskit: String
+  reddit: T709
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T712 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T713 {
+  large: String
+  small: String
+}
+
+type T714 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T715 {
+  original: [String]
+  small: [Any]
+}
+
+type T716 {
+  article: String
+  flickr: T715
+  patch: T713
+  presskit: String
+  reddit: T714
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T717 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T718 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T719 {
+  large: String
+  small: String
+}
+
+type T72 {
+  burn_time_sec: Empty
+  engines: Int
+  fuel_amount_tons: Int
+  payloads: T71
+  reusable: Boolean
+  thrust: T67
+}
+
+type T720 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T721 {
+  original: [String]
+  small: [Any]
+}
+
+type T722 {
+  article: String
+  flickr: T721
+  patch: T719
+  presskit: String
+  reddit: T720
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T723 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T724 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T725 {
+  large: String
+  small: String
+}
+
+type T726 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T727 {
+  original: [String]
+  small: [Any]
+}
+
+type T728 {
+  article: String
+  flickr: T727
+  patch: T725
+  presskit: String
+  reddit: T726
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T729 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T73 {
+  sea_level: Int
+  vacuum: Int
+}
+
+type T730 {
+  large: String
+  small: String
+}
+
+type T731 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T732 {
+  original: [String]
+  small: [Any]
+}
+
+type T733 {
+  article: String
+  flickr: T732
+  patch: T730
+  presskit: String
+  reddit: T731
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T734 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T735 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T736 {
+  large: String
+  small: String
+}
+
+type T737 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T738 {
+  original: [String]
+  small: [Any]
+}
+
+type T739 {
+  article: String
+  flickr: T738
+  patch: T736
+  presskit: String
+  reddit: T737
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T74 {
+  kN: Int
+  lbf: Int
+}
+
+type T740 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T741 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T742 {
+  large: String
+  small: String
+}
+
+type T743 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T744 {
+  original: [String]
+  small: [Any]
+}
+
+type T745 {
+  article: String
+  flickr: T744
+  patch: T742
+  presskit: Empty
+  reddit: T743
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T746 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T747 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [Any]
+}
+
+type T748 {
+  large: String
+  small: String
+}
+
+type T749 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T75 {
+  kN: Int
+  lbf: Int
+}
+
+type T750 {
+  original: [String]
+  small: [Any]
+}
+
+type T751 {
+  article: String
+  flickr: T750
+  patch: T748
+  presskit: Empty
+  reddit: T749
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T752 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T753 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T754 {
+  large: String
+  small: String
+}
+
+type T755 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T756 {
+  original: [String]
+  small: [Any]
+}
+
+type T757 {
+  article: String
+  flickr: T756
+  patch: T754
+  presskit: Empty
+  reddit: T755
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T758 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T759 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T76 {
+  engine_loss_max: Empty
+  isp: T73
+  layout: Empty
+  number: Int
+  propellant_1: String
+  propellant_2: String
+  thrust_sea_level: T74
+  thrust_to_weight: Int
+  thrust_vacuum: T75
+  type: String
+  version: String
+}
+
+type T760 {
+  large: String
+  small: String
+}
+
+type T761 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T762 {
+  original: [String]
+  small: [Any]
+}
+
+type T763 {
+  article: String
+  flickr: T762
+  patch: T760
+  presskit: Empty
+  reddit: T761
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T764 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T765 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T766 {
+  large: String
+  small: String
+}
+
+type T767 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T768 {
+  original: [String]
+  small: [Any]
+}
+
+type T769 {
+  article: String
+  flickr: T768
+  patch: T766
+  presskit: Empty
+  reddit: T767
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T77 {
+  material: String
+  number: Int
+}
+
+type T770 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T771 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T772 {
+  large: String
+  small: String
+}
+
+type T773 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T774 {
+  original: [String]
+  small: [Any]
+}
+
+type T775 {
+  article: String
+  flickr: T774
+  patch: T772
+  presskit: Empty
+  reddit: T773
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T776 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T777 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T778 {
+  large: String
+  small: String
+}
+
+type T779 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T78 {
+  id: String
+  kg: Int
+  lb: Int
+  name: String
+}
+
+type T780 {
+  original: [Any]
+  small: [Any]
+}
+
+type T781 {
+  article: Empty
+  flickr: T780
+  patch: T778
+  presskit: Empty
+  reddit: T779
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T782 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T783 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T784 {
+  large: String
+  small: String
+}
+
+type T785 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T786 {
+  original: [String]
+  small: [Any]
+}
+
+type T787 {
+  article: Empty
+  flickr: T786
+  patch: T784
+  presskit: Empty
+  reddit: T785
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T788 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T789 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T79 {
+  active: Boolean
+  boosters: Int
+  company: String
+  cost_per_launch: Int
+  country: String
+  description: String
+  diameter: T8
+  engines: T22
+  first_flight: String
+  first_stage: T12
+  flickr_images: [String]
+  height: T7
+  id: String
+  landing_legs: T23
+  mass: T9
+  name: String
+  payload_weights: [T24]
+  second_stage: T18
+  stages: Int
+  success_rate_pct: Int
+  type: String
+  wikipedia: String
+}
+
+type T790 {
+  large: String
+  small: String
+}
+
+type T791 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T792 {
+  original: [String]
+  small: [Any]
+}
+
+type T793 {
+  article: String
+  flickr: T792
+  patch: T790
+  presskit: Empty
+  reddit: T791
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T794 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T795 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T796 {
+  large: String
+  small: String
+}
+
+type T797 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T798 {
+  original: [Any]
+  small: [Any]
+}
+
+type T799 {
+  article: String
+  flickr: T798
+  patch: T796
+  presskit: Empty
+  reddit: T797
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T8 {
+  feet: Int
+  meters: Int
+}
+
+type T80 {
+  agency: String
+  id: String
+  image: String
+  launches: [String]
+  name: String
+  status: String
+  wikipedia: String
+}
+
+type T800 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T801 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T802 {
+  large: String
+  small: String
+}
+
+type T803 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T804 {
+  original: [String]
+  small: [Any]
+}
+
+type T805 {
+  article: String
+  flickr: T804
+  patch: T802
+  presskit: Empty
+  reddit: T803
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T806 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T807 {
+  large: String
+  small: String
+}
+
+type T808 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T809 {
+  original: [String]
+  small: [Any]
+}
+
+type T81 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T810 {
+  article: String
+  flickr: T809
+  patch: T807
+  presskit: Empty
+  reddit: T808
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T811 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T812 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T813 {
+  large: String
+  small: String
+}
+
+type T814 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T815 {
+  original: [String]
+  small: [Any]
+}
+
+type T816 {
+  article: String
+  flickr: T815
+  patch: T813
+  presskit: Empty
+  reddit: T814
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T817 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T818 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T819 {
+  large: String
+  small: String
+}
+
+type T82 {
+  large: Empty
+  small: Empty
+}
+
+type T820 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: Empty
+}
+
+type T821 {
+  original: [String]
+  small: [Any]
+}
+
+type T822 {
+  article: String
+  flickr: T821
+  patch: T819
+  presskit: Empty
+  reddit: T820
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T823 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T824 {
+  large: String
+  small: String
+}
+
+type T825 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T826 {
+  original: [String]
+  small: [Any]
+}
+
+type T827 {
+  article: String
+  flickr: T826
+  patch: T824
+  presskit: String
+  reddit: T825
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T828 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T829 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type T83 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T830 {
+  large: String
+  small: String
+}
+
+type T831 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T832 {
+  original: [String]
+  small: [Any]
+}
+
+type T833 {
+  article: String
+  flickr: T832
+  patch: T830
+  presskit: Empty
+  reddit: T831
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T834 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T835 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T836 {
+  large: String
+  small: String
+}
+
+type T837 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T838 {
+  original: [String]
+  small: [Any]
+}
+
+type T839 {
+  article: String
+  flickr: T838
+  patch: T836
+  presskit: Empty
+  reddit: T837
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T84 {
+  original: [Any]
+  small: [Any]
+}
+
+type T840 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T841 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T842 {
+  large: String
+  small: String
+}
+
+type T843 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T844 {
+  original: [String]
+  small: [Any]
+}
+
+type T845 {
+  article: String
+  flickr: T844
+  patch: T842
+  presskit: Empty
+  reddit: T843
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T846 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T847 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T848 {
+  large: String
+  small: String
+}
+
+type T849 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T85 {
+  article: Empty
+  flickr: T84
+  patch: T82
+  presskit: Empty
+  reddit: T83
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T850 {
+  original: [String]
+  small: [Any]
+}
+
+type T851 {
+  article: String
+  flickr: T850
+  patch: T848
+  presskit: Empty
+  reddit: T849
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T852 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T853 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T854 {
+  large: String
+  small: String
+}
+
+type T855 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T856 {
+  original: [String]
+  small: [Any]
+}
+
+type T857 {
+  article: String
+  flickr: T856
+  patch: T854
+  presskit: Empty
+  reddit: T855
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T858 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T859 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T86 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T860 {
+  large: String
+  small: String
+}
+
+type T861 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T862 {
+  original: [String]
+  small: [Any]
+}
+
+type T863 {
+  article: Empty
+  flickr: T862
+  patch: T860
+  presskit: Empty
+  reddit: T861
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T864 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T865 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T866 {
+  large: String
+  small: String
+}
+
+type T867 {
+  campaign: String
+  launch: String
+  media: String
+  recovery: String
+}
+
+type T868 {
+  original: [String]
+  small: [Any]
+}
+
+type T869 {
+  article: String
+  flickr: T868
+  patch: T866
+  presskit: Empty
+  reddit: T867
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T87 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T870 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T871 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T872 {
+  large: String
+  small: String
+}
+
+type T873 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T874 {
+  original: [String]
+  small: [Any]
+}
+
+type T875 {
+  article: String
+  flickr: T874
+  patch: T872
+  presskit: Empty
+  reddit: T873
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T876 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T877 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T878 {
+  large: String
+  small: String
+}
+
+type T879 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T88 {
+  large: String
+  small: String
+}
+
+type T880 {
+  original: [String]
+  small: [Any]
+}
+
+type T881 {
+  article: String
+  flickr: T880
+  patch: T878
+  presskit: Empty
+  reddit: T879
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T882 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T883 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T884 {
+  large: String
+  small: String
+}
+
+type T885 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T886 {
+  original: [String]
+  small: [Any]
+}
+
+type T887 {
+  article: String
+  flickr: T886
+  patch: T884
+  presskit: Empty
+  reddit: T885
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T888 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T889 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T89 {
+  campaign: String
+  launch: Empty
+  media: Empty
+  recovery: String
+}
+
+type T890 {
+  large: String
+  small: String
+}
+
+type T891 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T892 {
+  original: [Any]
+  small: [Any]
+}
+
+type T893 {
+  article: String
+  flickr: T892
+  patch: T890
+  presskit: Empty
+  reddit: T891
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T894 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T895 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T896 {
+  large: String
+  small: String
+}
+
+type T897 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T898 {
+  original: [String]
+  small: [Any]
+}
+
+type T899 {
+  article: String
+  flickr: T898
+  patch: T896
+  presskit: Empty
+  reddit: T897
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T9 {
+  kg: Int
+  lb: Int
+}
+
+type T90 {
+  original: [Any]
+  small: [Any]
+}
+
+type T900 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T901 {
+  large: String
+  small: String
+}
+
+type T902 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T903 {
+  original: [String]
+  small: [Any]
+}
+
+type T904 {
+  article: String
+  flickr: T903
+  patch: T901
+  presskit: Empty
+  reddit: T902
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T905 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T906 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T907 {
+  large: String
+  small: String
+}
+
+type T908 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T909 {
+  original: [String]
+  small: [Any]
+}
+
+type T91 {
+  article: Empty
+  flickr: T90
+  patch: T88
+  presskit: Empty
+  reddit: T89
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T910 {
+  article: String
+  flickr: T909
+  patch: T907
+  presskit: Empty
+  reddit: T908
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T911 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T912 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T913 {
+  large: String
+  small: String
+}
+
+type T914 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T915 {
+  original: [Any]
+  small: [Any]
+}
+
+type T916 {
+  article: Empty
+  flickr: T915
+  patch: T913
+  presskit: Empty
+  reddit: T914
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T917 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T918 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T919 {
+  large: String
+  small: String
+}
+
+type T92 {
+  core: Empty
+  flight: Empty
+  gridfins: Empty
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Empty
+  reused: Empty
+}
+
+type T920 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T921 {
+  original: [Any]
+  small: [Any]
+}
+
+type T922 {
+  article: Empty
+  flickr: T921
+  patch: T919
+  presskit: Empty
+  reddit: T920
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T923 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T924 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T925 {
+  large: String
+  small: String
+}
+
+type T926 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T927 {
+  original: [String]
+  small: [Any]
+}
+
+type T928 {
+  article: Empty
+  flickr: T927
+  patch: T925
+  presskit: Empty
+  reddit: T926
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T929 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T93 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T930 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T931 {
+  large: String
+  small: String
+}
+
+type T932 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T933 {
+  original: [String]
+  small: [Any]
+}
+
+type T934 {
+  article: String
+  flickr: T933
+  patch: T931
+  presskit: Empty
+  reddit: T932
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T935 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T936 {
+  large: String
+  small: String
+}
+
+type T937 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T938 {
+  original: [String]
+  small: [Any]
+}
+
+type T939 {
+  article: String
+  flickr: T938
+  patch: T936
+  presskit: Empty
+  reddit: T937
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T94 {
+  large: Empty
+  small: Empty
+}
+
+type T940 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T941 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T942 {
+  large: String
+  small: String
+}
+
+type T943 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T944 {
+  original: [Any]
+  small: [Any]
+}
+
+type T945 {
+  article: Empty
+  flickr: T944
+  patch: T942
+  presskit: Empty
+  reddit: T943
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T946 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T947 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T948 {
+  large: String
+  small: String
+}
+
+type T949 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T95 {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type T950 {
+  original: [String]
+  small: [Any]
+}
+
+type T951 {
+  article: Empty
+  flickr: T950
+  patch: T948
+  presskit: Empty
+  reddit: T949
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T952 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T953 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [String]
+}
+
+type T954 {
+  large: String
+  small: String
+}
+
+type T955 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T956 {
+  original: [String]
+  small: [Any]
+}
+
+type T957 {
+  article: Empty
+  flickr: T956
+  patch: T954
+  presskit: Empty
+  reddit: T955
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T958 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T959 {
+  large: String
+  small: String
+}
+
+type T96 {
+  original: [Any]
+  small: [Any]
+}
+
+type T960 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T961 {
+  original: [String]
+  small: [Any]
+}
+
+type T962 {
+  article: Empty
+  flickr: T961
+  patch: T959
+  presskit: Empty
+  reddit: T960
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T963 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T964 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Boolean
+  ships: [Any]
+}
+
+type T965 {
+  large: String
+  small: String
+}
+
+type T966 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T967 {
+  original: [String]
+  small: [Any]
+}
+
+type T968 {
+  article: String
+  flickr: T967
+  patch: T965
+  presskit: Empty
+  reddit: T966
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T969 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T97 {
+  article: Empty
+  flickr: T96
+  patch: T94
+  presskit: Empty
+  reddit: T95
+  webcast: Empty
+  wikipedia: Empty
+  youtube_id: Empty
+}
+
+type T970 {
+  large: String
+  small: String
+}
+
+type T971 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T972 {
+  original: [Any]
+  small: [Any]
+}
+
+type T973 {
+  article: Empty
+  flickr: T972
+  patch: T970
+  presskit: Empty
+  reddit: T971
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T974 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T975 {
+  large: String
+  small: String
+}
+
+type T976 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T977 {
+  original: [String]
+  small: [Any]
+}
+
+type T978 {
+  article: String
+  flickr: T977
+  patch: T975
+  presskit: Empty
+  reddit: T976
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T979 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T98 {
+  core: Empty
+  flight: Empty
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type T980 {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T981 {
+  large: String
+  small: String
+}
+
+type T982 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T983 {
+  original: [String]
+  small: [Any]
+}
+
+type T984 {
+  article: String
+  flickr: T983
+  patch: T981
+  presskit: Empty
+  reddit: T982
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T985 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T986 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T987 {
+  large: String
+  small: String
+}
+
+type T988 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T989 {
+  original: [String]
+  small: [Any]
+}
+
+type T99 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T990 {
+  article: Empty
+  flickr: T989
+  patch: T987
+  presskit: Empty
+  reddit: T988
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T991 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T992 {
+  recovered: Empty
+  recovery_attempt: Boolean
+  reused: Empty
+  ships: [String]
+}
+
+type T993 {
+  large: String
+  small: String
+}
+
+type T994 {
+  campaign: String
+  launch: String
+  media: Empty
+  recovery: String
+}
+
+type T995 {
+  original: [String]
+  small: [Any]
+}
+
+type T996 {
+  article: Empty
+  flickr: T995
+  patch: T993
+  presskit: Empty
+  reddit: T994
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T997 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T998 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T999 {
+  large: String
+  small: String
 }

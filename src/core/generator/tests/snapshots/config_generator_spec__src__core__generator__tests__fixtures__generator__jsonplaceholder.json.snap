@@ -2,45 +2,229 @@
 source: src/core/generator/tests/config_generator_spec.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+schema @server @upstream {
   query: Query
 }
 
-type Address {
-  city: String
-  geo: Geo
-  street: String
-  suite: String
-  zipcode: String
+type Query {
+  comment(p1: Int!): T39 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/comments/{{.args.p1}}")
+  comments: [T38] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/comments")
+  photo(p1: Int!): T41 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/photos/{{.args.p1}}")
+  photos: [T40] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/photos")
+  post(p1: Int!): T1 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts/{{.args.p1}}")
+  postComments(postId: Int): [T44] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
+  posts: [T37] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/posts")
+  todo(p1: Int!): T43 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/todos/{{.args.p1}}")
+  todos: [T42] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/todos")
+  user(p1: Int!): T5 @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users/{{.args.p1}}")
+  users: [T36] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
 }
 
-type Company {
-  bs: String
-  catchPhrase: String
-  name: String
-}
-
-type Geo {
-  lat: String
-  lng: String
-}
-
-type Photo {
-  albumId: Int
-  id: Int
-  thumbnailUrl: String
-  title: String
-  url: String
-}
-
-type Post {
+type T1 {
   body: String
   id: Int
   title: String
   userId: Int
 }
 
-type PostComment {
+type T10 {
+  city: String
+  geo: T9
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T11 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T12 {
+  lat: String
+  lng: String
+}
+
+type T13 {
+  city: String
+  geo: T12
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T14 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T15 {
+  lat: String
+  lng: String
+}
+
+type T16 {
+  city: String
+  geo: T15
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T17 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T18 {
+  lat: String
+  lng: String
+}
+
+type T19 {
+  city: String
+  geo: T18
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T2 {
+  lat: String
+  lng: String
+}
+
+type T20 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T21 {
+  lat: String
+  lng: String
+}
+
+type T22 {
+  city: String
+  geo: T21
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T23 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T24 {
+  lat: String
+  lng: String
+}
+
+type T25 {
+  city: String
+  geo: T24
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T26 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T27 {
+  lat: String
+  lng: String
+}
+
+type T28 {
+  city: String
+  geo: T27
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T29 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T3 {
+  city: String
+  geo: T2
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T30 {
+  lat: String
+  lng: String
+}
+
+type T31 {
+  city: String
+  geo: T30
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T32 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T33 {
+  lat: String
+  lng: String
+}
+
+type T34 {
+  city: String
+  geo: T33
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T35 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T36 {
+  address: T7
+  company: T8
+  email: String
+  id: Int
+  name: String
+  phone: String
+  username: String
+  website: String
+}
+
+type T37 {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
+type T38 {
   body: String
   email: String
   id: Int
@@ -48,34 +232,89 @@ type PostComment {
   postId: Int
 }
 
-type Query {
-  comment(p1: Int!): PostComment @http(path: "/comments/{{.args.p1}}")
-  comments: [PostComment] @http(path: "/comments")
-  photo(p1: Int!): Photo @http(path: "/photos/{{.args.p1}}")
-  photos: [Photo] @http(path: "/photos")
-  post(p1: Int!): Post @http(path: "/posts/{{.args.p1}}")
-  postComments(postId: Int): [PostComment] @http(path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
-  posts: [Post] @http(path: "/posts")
-  todo(p1: Int!): Todo @http(path: "/todos/{{.args.p1}}")
-  todos: [Todo] @http(path: "/todos")
-  user(p1: Int!): User @http(path: "/users/{{.args.p1}}")
-  users: [User] @http(path: "/users")
+type T39 {
+  body: String
+  email: String
+  id: Int
+  name: String
+  postId: Int
 }
 
-type Todo {
+type T4 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T40 {
+  albumId: Int
+  id: Int
+  thumbnailUrl: String
+  title: String
+  url: String
+}
+
+type T41 {
+  albumId: Int
+  id: Int
+  thumbnailUrl: String
+  title: String
+  url: String
+}
+
+type T42 {
   completed: Boolean
   id: Int
   title: String
   userId: Int
 }
 
-type User {
-  address: Address
-  company: Company
+type T43 {
+  completed: Boolean
+  id: Int
+  title: String
+  userId: Int
+}
+
+type T44 {
+  body: String
+  email: String
+  id: Int
+  name: String
+  postId: Int
+}
+
+type T5 {
+  address: T3
+  company: T4
   email: String
   id: Int
   name: String
   phone: String
   username: String
   website: String
+}
+
+type T6 {
+  lat: String
+  lng: String
+}
+
+type T7 {
+  city: String
+  geo: T6
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type T8 {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type T9 {
+  lat: String
+  lng: String
 }
