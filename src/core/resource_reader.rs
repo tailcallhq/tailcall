@@ -46,7 +46,11 @@ impl ResourceReader<Cached> {
         ResourceReader(Cached::init(runtime))
     }
 
-    pub async fn get(&self, path: &str, headers: Option<BTreeMap<String, String>>) -> anyhow::Result<serde_json::Value> {
+    pub async fn get(
+        &self,
+        path: &str,
+        headers: Option<BTreeMap<String, String>>,
+    ) -> anyhow::Result<serde_json::Value> {
         self.0.get(path, headers).await
     }
 }
