@@ -17,17 +17,17 @@ type Container {
   age: Int
 }
 
-type F1 {
+type F2 {
   campaignTemplates: Any
   colors: [Any]
 }
 
-type F3 {
+type F4 {
   people: [People]
 }
 
-type F4 {
-  container: T7
+type F5 {
+  container: T8
 }
 
 type People {
@@ -37,19 +37,19 @@ type People {
 }
 
 type Query {
-  f1: F1 @http(path: "/")
-  f2: [Any] @http(path: "/api/v2/users")
-  f3(children: Boolean): F3 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
-  f4: F4 @http(path: "/")
-  f5: Any @http(path: "/")
+  f2: F2 @http(path: "/")
+  f3: [Any] @http(path: "/api/v2/users")
+  f4(children: Boolean): F4 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
+  f5: F5 @http(path: "/")
+  f6: Any @http(path: "/")
 }
 
-type T6 {
+type T7 {
   container: Container
   name: String
 }
 
-type T7 {
-  container: T6
+type T8 {
+  container: T7
   name: String
 }
