@@ -228,7 +228,11 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+
     use super::*;
+    use crate::core::tests::TestEnvIO;
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
         Location(s.as_ref().to_string(), PhantomData)
@@ -236,6 +240,45 @@ mod tests {
 
     fn into_headers(raw_headers: BTreeMap<String, String>) -> Headers<UnResolved> {
         Headers(Some(raw_headers), PhantomData)
+    }
+
+    #[test]
+    fn test_headers_resolve() {
+        let mut headers = BTreeMap::new();
+        headers.insert(
+            "Authorization".to_owned(),
+            "Bearer {{.env.TOKEN}}".to_owned(),
+        );
+
+        let mut env_vars = HashMap::new();
+        let token = "eyJhbGciOiJIUzI1NiIsInR5";
+        env_vars.insert("TOKEN".to_owned(), token.to_owned());
+
+        let unresolved_headers = into_headers(headers);
+
+        let mut runtime = crate::core::runtime::test::init(None);
+        runtime.env = Arc::new(TestEnvIO::init(env_vars));
+
+        let reader_ctx = ConfigReaderContext {
+            runtime: &runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
+
+        let resolved_headers = unresolved_headers.resolve(&reader_ctx).unwrap();
+
+        let expected = format!("Bearer {token}");
+        let result = resolved_headers
+            .headers()
+            .to_owned()
+            .unwrap()
+            .get("Authorization")
+            .unwrap()
+            .to_owned();
+        assert_eq!(
+            result, expected,
+            "Authorization header should be resolved correctly"
+        );
     }
 
     #[test]
