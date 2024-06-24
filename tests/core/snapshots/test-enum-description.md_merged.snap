@@ -1,7 +1,6 @@
 ---
 source: tests/core/spec.rs
-assertion_line: 234
-expression: merged
+expression: formatter
 ---
 schema @server @upstream(baseURL: "http://localhost:8080") {
   query: Query

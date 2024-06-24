@@ -1,7 +1,7 @@
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
 use crate::core::config::{ConfigModule, Field};
-use crate::core::ir::model::{Context, IR};
+use crate::core::ir::model::IR;
 use crate::core::ir::Discriminator;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
@@ -39,7 +39,7 @@ pub fn update_union_resolver<'a>(
                 b_field.resolver = Some(
                     b_field
                         .resolver
-                        .unwrap_or(IR::Context(Context::Path(vec![b_field.name.clone()]))),
+                        .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
                 );
                 b_field.map_expr(move |expr| IR::Discriminate(discriminator, expr.into()));
                 b_field

@@ -1,0 +1,78 @@
+---
+source: src/core/jit/builder.rs
+expression: plan
+---
+ExecutionPlan {
+    parent: [
+        Field {
+            id: 0,
+            name: "name",
+            type_of: String!,
+        },
+        Field {
+            id: 1,
+            name: "email",
+            type_of: String!,
+        },
+        Field {
+            id: 2,
+            name: "phone",
+            type_of: String,
+        },
+        Field {
+            id: 3,
+            name: "user",
+            ir: "Some(..)",
+            type_of: User,
+            args: [
+                Arg {
+                    id: 0,
+                    name: "id",
+                    type_of: ID!,
+                    value: Some(
+                        Number(
+                            Number(1),
+                        ),
+                    ),
+                    default_value: None,
+                },
+            ],
+        },
+    ],
+    children: [
+        Field {
+            id: 0,
+            name: "name",
+            type_of: String!,
+        },
+        Field {
+            id: 1,
+            name: "email",
+            type_of: String!,
+        },
+        Field {
+            id: 2,
+            name: "phone",
+            type_of: String,
+        },
+        Field {
+            id: 3,
+            name: "user",
+            ir: "Some(..)",
+            type_of: User,
+            args: [
+                Arg {
+                    id: 0,
+                    name: "id",
+                    type_of: ID!,
+                    value: Some(
+                        Number(
+                            Number(1),
+                        ),
+                    ),
+                    default_value: None,
+                },
+            ],
+        },
+    ],
+}

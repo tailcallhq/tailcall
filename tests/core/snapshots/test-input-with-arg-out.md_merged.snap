@@ -1,0 +1,30 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+input IntFilter {
+  i: Int
+}
+
+input StringFilter {
+  s: String
+}
+
+type MyType {
+  id: String!
+  name(sf: StringFilter): String
+  num(if: IntFilter): Int
+}
+
+type Query {
+  queryTest(filter: StringFilter): [MyType]
+    @graphQL(
+      args: [{key: "filter", value: "{{.args.filter}}"}]
+      baseURL: "http://localhost:8083/mesh"
+      name: "getMyType"
+    )
+}
