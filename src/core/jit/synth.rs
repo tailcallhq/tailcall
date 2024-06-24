@@ -213,7 +213,9 @@ mod tests {
 
     fn init(query: &str, store: Vec<(FieldId, Data<Value<'static>>)>) -> String {
         let doc = async_graphql::parser::parse_query(query).unwrap();
-        let config = Config::from_sdl(CONFIG).to_result().unwrap();
+        let config = Config::from_sdl("./fixtures/jsonplaceholder-mutation.graphql", CONFIG)
+            .to_result()
+            .unwrap();
         let config = ConfigModule::from(config);
 
         let builder = Builder::new(Blueprint::try_from(&config).unwrap(), doc);
