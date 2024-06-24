@@ -22,7 +22,7 @@ pub struct Store {
 
 impl Default for FsCacheManager {
     fn default() -> Self {
-        Self { cache_dir: PathBuf::from("./cache") }
+        Self { cache_dir: PathBuf::from("./.cache") }
     }
 }
 
