@@ -122,6 +122,57 @@ impl Generator {
         Ok(input_samples)
     }
 
+    pub async fn resolve_io_test(&self, config: Config<Resolved>) -> anyhow::Result<Vec<Input>> {
+        let mut input_samples = vec![];
+        let mut curl_samples = vec![];
+
+        let reader = ResourceReader::cached(self.runtime.clone());
+        let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
+        let output_dir = Path::new(&config.output.path.0)
+            .parent()
+            .unwrap_or(Path::new(""));
+
+        for input in config.inputs {
+            match input.source {
+                Source::Curl { src, field_name } => {
+                    let url = src.0;
+                    let contents = reader.read_file(&url).await?.content;
+                    curl_samples.push(Input::Json {
+                        url: url.parse()?,
+                        response: serde_json::from_str(&contents)?,
+                        field_name,
+                    });
+                }
+                Source::Proto { src } => {
+                    let path = src.0;
+                    let mut metadata = proto_reader.read(&path).await?;
+                    if let Some(relative_path_to_proto) = to_relative_path(output_dir, &path) {
+                        metadata.path = relative_path_to_proto;
+                    }
+                    input_samples.push(Input::Proto(metadata));
+                }
+                Source::Config { src } => {
+                    let path = src.0;
+                    let source = config::Source::detect(&path)?;
+                    let schema = reader.read_file(&path).await?.content;
+                    input_samples.push(Input::Config { schema, source });
+                }
+            }
+        }
+
+        // TODO: FIX ME
+        curl_samples.sort_by_key(|item| {
+            if let Input::Json { url, response, field_name } = item {
+                return url.to_string();
+            }
+            return "12".to_string();
+        });
+
+        input_samples.extend(curl_samples);
+
+        Ok(input_samples)
+    }
+
     /// generates the final configuration.
     pub async fn generate(self) -> anyhow::Result<ConfigModule> {
         let config = self.read().await?;
