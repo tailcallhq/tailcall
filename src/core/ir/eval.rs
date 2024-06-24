@@ -5,7 +5,7 @@ use std::pin::Pin;
 use async_graphql_value::ConstValue;
 
 use super::eval_io::eval_io;
-use super::model::{Cache, CacheKey, Context, Map, IR};
+use super::model::{Cache, CacheKey, Map, IR};
 use super::{Error, EvalContext, ResolverContextLike};
 use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
@@ -21,25 +21,10 @@ impl IR {
     {
         Box::pin(async move {
             match self {
-                IR::Context(op) => match op {
-                    Context::Value => {
-                        Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null))
-                    }
-                    Context::Path(path) => Ok(ctx
-                        .path_value(path)
-                        .map(|a| a.into_owned())
-                        .unwrap_or(async_graphql::Value::Null)),
-                    Context::PushArgs { expr, and_then } => {
-                        let args = expr.eval(&mut ctx.clone()).await?;
-                        let ctx = &mut ctx.with_args(args);
-                        and_then.eval(ctx).await
-                    }
-                    Context::PushValue { expr, and_then } => {
-                        let value = expr.eval(&mut ctx.clone()).await?;
-                        ctx.with_value(value);
-                        and_then.eval(ctx).await
-                    }
-                },
+                IR::ContextPath(path) => Ok(ctx
+                    .path_value(path)
+                    .map(|a| a.into_owned())
+                    .unwrap_or(async_graphql::Value::Null)),
                 IR::Path(input, path) => {
                     let inp = &input.eval(ctx).await?;
                     Ok(inp
@@ -92,6 +77,11 @@ impl IR {
                             "Mapped key must be string value.".to_owned(),
                         ))
                     }
+                }
+                IR::Pipe(first, second) => {
+                    let args = first.eval(&mut ctx.clone()).await?;
+                    let ctx = &mut ctx.with_args(args);
+                    second.eval(ctx).await
                 }
             }
         })

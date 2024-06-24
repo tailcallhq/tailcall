@@ -10,9 +10,9 @@ scalar Email
 
 scalar Empty
 
-enum Foo {
-  BAR
-  BAZ
+input Input {
+  id: Int
+  name: String
 }
 
 scalar Int128
@@ -27,10 +27,15 @@ scalar Int8
 
 scalar JSON
 
+type Output {
+  id: Int
+  name: String
+}
+
 scalar PhoneNumber
 
 type Query {
-  foo: Foo
+  bar(input: Input): Output
 }
 
 scalar UInt128

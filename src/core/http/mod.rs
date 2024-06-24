@@ -7,7 +7,6 @@ pub use request_context::RequestContext;
 pub use request_handler::{handle_request, API_URL_PREFIX};
 pub use request_template::RequestTemplate;
 pub use response::*;
-pub use serializable_header_map::SerializableHeaderMap;
 
 pub use crate::core::app_context::AppContext;
 
@@ -19,7 +18,6 @@ mod request_context;
 mod request_handler;
 mod request_template;
 mod response;
-mod serializable_header_map;
 pub mod showcase;
 mod telemetry;
 
