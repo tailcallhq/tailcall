@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::env;
 use std::marker::PhantomData;
 use std::path::Path;
@@ -9,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::core::config::{self};
-use crate::core::http::SerializableHeaderMap;
 use crate::core::is_default;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
@@ -94,7 +94,7 @@ pub enum Source<Status = UnResolved> {
     Curl {
         src: Location<Status>,
         #[serde(default, skip_serializing_if = "is_default")]
-        headers: Option<SerializableHeaderMap>,
+        headers: Option<BTreeMap<String, String>>,
         field_name: String,
     },
     Proto {
@@ -181,8 +181,6 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
-    use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
-
     use super::*;
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
@@ -191,12 +189,8 @@ mod tests {
 
     #[test]
     fn test_config_codec() {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            HeaderName::from_static("user-agent"),
-            HeaderValue::from_static("tailcall-v1"),
-        );
-        let headers = SerializableHeaderMap::new(headers);
+        let mut headers = BTreeMap::new();
+        headers.insert("user-agent".to_owned(), "tailcall-v1".to_owned());
         let config = Config::default().inputs(vec![Input {
             source: Source::Curl {
                 src: location("https://example.com"),
