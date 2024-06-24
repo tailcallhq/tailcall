@@ -21,7 +21,7 @@ type Query {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: '{ "query": "query { user @cascade(fields: [\"id\"]) { id @options(paging: false) } }" }'
+    textBody: '{ "query": "query { user @cascade(fields: [\\\"id\\\"]) { id @options(paging: false) } }" }'
   response:
     status: 200
     body:
@@ -32,7 +32,7 @@ type Query {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: '{ "query": "query { user @cascade(fields: [\"id\"]) { id @options(paging: true) name } }" }'
+    textBody: '{ "query": "query { user @cascade(fields: [\\\"id\\\"]) { id @options(paging: true) name } }" }'
   response:
     status: 200
     body:
