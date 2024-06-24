@@ -238,7 +238,7 @@ mod tests {
         Location(s.as_ref().to_string(), PhantomData)
     }
 
-    fn into_headers(raw_headers: BTreeMap<String, String>) -> Headers<UnResolved> {
+    fn to_headers(raw_headers: BTreeMap<String, String>) -> Headers<UnResolved> {
         Headers(Some(raw_headers), PhantomData)
     }
 
@@ -254,7 +254,7 @@ mod tests {
         let token = "eyJhbGciOiJIUzI1NiIsInR5";
         env_vars.insert("TOKEN".to_owned(), token.to_owned());
 
-        let unresolved_headers = into_headers(headers);
+        let unresolved_headers = to_headers(headers);
 
         let mut runtime = crate::core::runtime::test::init(None);
         runtime.env = Arc::new(TestEnvIO::init(env_vars));
@@ -288,7 +288,7 @@ mod tests {
         let config = Config::default().inputs(vec![Input {
             source: Source::Curl {
                 src: location("https://example.com"),
-                headers: into_headers(headers),
+                headers: to_headers(headers),
                 field_name: "test".to_string(),
             },
         }]);
