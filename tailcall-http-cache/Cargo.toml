@@ -12,9 +12,12 @@ moka = { version = "0.12.7", default-features = false, features = [
 http-cache-semantics = { version = "1.0.1", default-features = false, features = ["with_serde", "reqwest"]}
 serde = "1.0.202"
 async-trait = "0.1.80"
+serde_json = { workspace = true }
+crypto-hash = "0.3.4"
+tokio = { workspace = true }
+
 
 [dev-dependencies]
-tokio = {version = "1.37.0", features = ["full"]}
 url = { version = "2.5.0", features = ["serde"] }
 reqwest = { workspace = true }
 http = "0.2.12"
