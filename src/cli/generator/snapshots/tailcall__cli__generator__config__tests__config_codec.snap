@@ -6,10 +6,9 @@ expression: actual
   "inputs": [
     {
       "curl": {
-        "src": "https://example.com"
-      },
-      "fieldName": "test",
-      "operation": "query"
+        "src": "https://example.com",
+        "fieldName": "test"
+      }
     }
   ],
   "output": {},

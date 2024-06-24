@@ -2,7 +2,6 @@ use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::model::IR;
 
-#[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct Arg {
     pub id: ArgId,
@@ -40,6 +39,9 @@ impl FieldId {
     pub fn new(id: usize) -> Self {
         FieldId(id)
     }
+    pub fn as_usize(&self) -> usize {
+        self.0
+    }
 }
 
 #[derive(Clone)]
@@ -54,7 +56,6 @@ pub struct Field<A: Clone> {
 
 const EMPTY_VEC: &Vec<Field<Children>> = &Vec::new();
 impl Field<Children> {
-    #[allow(unused)]
     pub fn children(&self) -> &Vec<Field<Children>> {
         match &self.refs {
             Some(Children(children)) => children,
@@ -116,10 +117,13 @@ impl<A: Debug + Clone> Debug for Field<A> {
 
 #[derive(Clone)]
 pub struct Parent(FieldId);
-#[allow(unused)]
+
 impl Parent {
     pub fn new(id: FieldId) -> Self {
         Parent(id)
+    }
+    pub fn as_id(&self) -> &FieldId {
+        &self.0
     }
 }
 impl Debug for Parent {
@@ -149,18 +153,40 @@ impl ExecutionPlan {
         Self { parent: fields, children: field_children }
     }
 
-    #[allow(unused)]
     pub fn as_children(&self) -> &[Field<Children>] {
         &self.children
     }
 
-    #[allow(unused)]
+    pub fn into_children(self) -> Vec<Field<Children>> {
+        self.children
+    }
+
     pub fn as_parent(&self) -> &[Field<Parent>] {
         &self.parent
     }
 
-    #[allow(unused)]
     pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
         self.parent.iter().find(|field| field.id == id)
+    }
+
+    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Parent>> {
+        match path.split_first() {
+            None => None,
+            Some((name, path)) => {
+                let field = self
+                    .parent
+                    .iter()
+                    .find(|field| field.name == name.as_ref())?;
+                if path.is_empty() {
+                    Some(field)
+                } else {
+                    self.find_field_path(path)
+                }
+            }
+        }
+    }
+
+    pub fn size(&self) -> usize {
+        self.parent.len()
     }
 }

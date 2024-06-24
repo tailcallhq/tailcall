@@ -1,6 +1,6 @@
 ---
 source: src/core/config/transformer/ambiguous_type.rs
-expression: config_module.to_sdl()
+expression: config.to_sdl()
 ---
 schema @server @upstream {
   query: Query

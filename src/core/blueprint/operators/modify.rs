@@ -3,7 +3,7 @@ use crate::core::config;
 use crate::core::config::position::Pos;
 use crate::core::config::Field;
 use crate::core::directive::DirectiveCodec;
-use crate::core::ir::model::{Context, IR};
+use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 
@@ -35,7 +35,7 @@ pub fn update_modify<'a>() -> TryFold<
                     b_field.resolver = Some(
                         b_field
                             .resolver
-                            .unwrap_or(IR::Context(Context::Path(vec![b_field.name.clone()]))),
+                            .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
                     );
                     b_field = b_field.name(new_name.clone());
                 }

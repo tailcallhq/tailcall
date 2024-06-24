@@ -2,7 +2,7 @@ use crate::core::blueprint::FieldDefinition;
 use crate::core::config::position::Pos;
 use crate::core::config::{self, ConfigModule, Field};
 use crate::core::directive::DirectiveCodec;
-use crate::core::ir::model::{Context, IR};
+use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 
@@ -45,10 +45,11 @@ pub fn update_protected<'a>(
                         .trace(protected.to_pos_trace_err(config::Protected::trace_name()).as_deref());
                 }
 
-                b_field.resolver =
-                    Some(IR::Protect(Box::new(b_field.resolver.unwrap_or(
-                                    IR::Context(Context::Path(vec![b_field.name.clone()])),
-                    ))));
+                b_field.resolver = Some(IR::Protect(Box::new(
+                    b_field
+                        .resolver
+                        .unwrap_or(IR::ContextPath(vec![b_field.name.clone()])),
+                )));
             }
 
             Valid::succeed(b_field)
