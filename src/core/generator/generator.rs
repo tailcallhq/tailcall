@@ -95,9 +95,7 @@ impl Generator {
                     .try_fold(ConfigModule::default(), |config_module, path| {
                         let content = std::fs::read_to_string(path.as_ref())?;
                         let converter = OpenApiToConfigConverter::new(query, content)?;
-                        let config = converter
-                            .convert()
-                            .ok_or(anyhow::anyhow!("Failed to convert"))?;
+                        let config = converter.convert();
                         Ok(config_module.merge_right(ConfigModule::from(config)))
                     })
             }
