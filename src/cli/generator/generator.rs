@@ -162,10 +162,10 @@ impl Generator {
 
         // TODO: FIX ME
         curl_samples.sort_by_key(|item| {
-            if let Input::Json { url, response, field_name } = item {
+            if let Input::Json { url, .. } = item {
                 return url.to_string();
             }
-            return "12".to_string();
+            "12".to_string()
         });
 
         input_samples.extend(curl_samples);
