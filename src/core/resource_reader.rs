@@ -45,6 +45,14 @@ impl ResourceReader<Cached> {
     pub fn cached(runtime: TargetRuntime) -> Self {
         ResourceReader(Cached::init(runtime))
     }
+
+    pub async fn get(
+        &self,
+        path: &str,
+        headers: Option<BTreeMap<String, String>>,
+    ) -> anyhow::Result<serde_json::Value> {
+        self.0.get(path, headers).await
+    }
 }
 
 #[async_trait::async_trait]
@@ -63,7 +71,7 @@ impl Direct {
         Self { runtime }
     }
 
-    /// fetches the response from remote.
+    // makes http request with passed headers.
     pub async fn get<T: ToString + Send>(
         &self,
         path: T,
@@ -95,13 +103,8 @@ impl Reader for Direct {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             if url.scheme().starts_with("http") {
-                let response = self
-                    .runtime
-                    .http
-                    .execute(reqwest::Request::new(reqwest::Method::GET, url))
-                    .await?;
-
-                String::from_utf8(response.body.to_vec())?
+                let response = self.get(&url, None).await?;
+                response.to_string()
             } else {
                 // Is a file path on Windows
 
@@ -127,6 +130,33 @@ pub struct Cached {
 impl Cached {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self { direct: Direct::init(runtime), cache: Default::default() }
+    }
+
+    pub async fn get<T: ToString + Send>(
+        &self,
+        path: T,
+        headers: Option<BTreeMap<String, String>>,
+    ) -> anyhow::Result<serde_json::Value> {
+        let content = self
+            .cache
+            .as_ref()
+            .lock()
+            .unwrap()
+            .get(&path.to_string())
+            .map(|v| v.to_owned());
+
+        let content = if let Some(content) = content {
+            serde_json::from_str(&content)?
+        } else {
+            let response = self.direct.get(path.to_string(), headers).await?;
+            self.cache
+                .as_ref()
+                .lock()
+                .unwrap()
+                .insert(path.to_string().to_owned(), response.to_string());
+            response
+        };
+        Ok(content)
     }
 }
 

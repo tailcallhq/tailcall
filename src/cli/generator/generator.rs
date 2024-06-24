@@ -9,7 +9,7 @@ use super::source::ConfigSource;
 use crate::core::config::{self, ConfigModule};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::{Direct, ResourceReader};
+use crate::core::resource_reader::ResourceReader;
 use crate::core::runtime::TargetRuntime;
 
 /// CLI that reads the the config file and generates the required tailcall
@@ -85,7 +85,6 @@ impl Generator {
     async fn resolve_io(&self, config: Config<Resolved>) -> anyhow::Result<Vec<Input>> {
         let mut input_samples = vec![];
 
-        let direct_reader = Direct::init(self.runtime.clone());
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
         let output_dir = Path::new(&config.output.path.0)
@@ -96,7 +95,7 @@ impl Generator {
             match input.source {
                 Source::Curl { src, field_name, headers } => {
                     let url = src.0;
-                    let response = direct_reader.get(url.clone(), headers).await?;
+                    let response = reader.get(&url, headers).await?;
                     input_samples.push(Input::Json { url: url.parse()?, response, field_name });
                 }
                 Source::Proto { src } => {
