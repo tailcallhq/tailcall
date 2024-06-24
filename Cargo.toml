@@ -174,7 +174,6 @@ tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
 tailcall-fixtures = { path = "./tailcall-fixtures" }
-http-cache-reqwest = { version = "0.13.0", features = ["manager-cacache"], default-features = false }
 
 [features]
 
