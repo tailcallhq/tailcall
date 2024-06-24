@@ -46,11 +46,7 @@ impl ResourceReader<Cached> {
         ResourceReader(Cached::init(runtime))
     }
 
-    pub async fn get(
-        &self,
-        path: &str,
-        headers: Option<BTreeMap<String, String>>,
-    ) -> anyhow::Result<serde_json::Value> {
+    pub async fn get(&self, path: &str, headers: Option<BTreeMap<String, String>>) -> anyhow::Result<serde_json::Value> {
         self.0.get(path, headers).await
     }
 }
@@ -103,8 +99,13 @@ impl Reader for Direct {
         // Is an HTTP URL
         let content = if let Ok(url) = Url::parse(&file.to_string()) {
             if url.scheme().starts_with("http") {
-                let response = self.get(&url, None).await?;
-                response.to_string()
+                let response = self
+                    .runtime
+                    .http
+                    .execute(reqwest::Request::new(reqwest::Method::GET, url))
+                    .await?;
+
+                String::from_utf8(response.body.to_vec())?
             } else {
                 // Is a file path on Windows
 
