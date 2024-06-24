@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use async_trait::async_trait;
 use crypto_hash::{hex_digest, Algorithm};
@@ -27,23 +27,12 @@ impl Default for FsCacheManager {
 }
 
 impl FsCacheManager {
-    pub fn new(cache_dir: impl AsRef<Path>) -> Self {
-        let cache_dir = PathBuf::from(cache_dir.as_ref());
-        Self { cache_dir }
-    }
-
     fn get_cache_file_path(&self, cache_key: &str) -> PathBuf {
         self.cache_dir.join(cache_key)
     }
 
     fn encode(&self, key: &str) -> String {
         hex_digest(Algorithm::SHA256, key.as_bytes())
-    }
-
-    pub async fn clear(&self) -> Result<()> {
-        fs::remove_dir_all(&self.cache_dir).await?;
-        fs::create_dir_all(&self.cache_dir).await?;
-        Ok(())
     }
 }
 

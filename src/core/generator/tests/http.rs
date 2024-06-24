@@ -5,7 +5,8 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
-use tailcall_http_cache::FsCacheManager;
+
+use crate::fs_cache::FsCacheManager;
 
 #[derive(Clone)]
 pub struct NativeHttpTest {
