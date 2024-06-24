@@ -27,6 +27,12 @@ impl<A: Copy + num::Num> Count for Counter<A> {
 #[derive(Default)]
 pub struct AtomicCounter<A>(Mutex<A>);
 
+impl<A> AtomicCounter<A> {
+    pub fn new(a: A) -> Self {
+        Self (Mutex::new(a))
+    }
+}
+
 impl<A: Copy + num::Num> Count for AtomicCounter<A> {
     type Item = A;
 

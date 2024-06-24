@@ -8,16 +8,18 @@ mod proto;
 pub use from_json::{FromJsonGenerator, RequestSample};
 pub use generator::{Generator, Input};
 
-use crate::core::counter::{Count, Counter};
+use crate::core::counter::Count;
+
+use super::counter::AtomicCounter;
 
 pub struct NameGenerator {
-    counter: Counter<u64>,
+    counter: AtomicCounter<u64>,
     prefix: String,
 }
 
 impl NameGenerator {
     pub fn new(prefix: &str) -> Self {
-        Self { counter: Counter::new(1), prefix: prefix.to_string() }
+        Self { counter: AtomicCounter::new(1), prefix: prefix.to_string() }
     }
 
     pub fn next(&self) -> String {
