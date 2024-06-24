@@ -99,9 +99,11 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src, field_name, headers } => {
+                Source::Curl { src, field_name, headers: resolved_headers } => {
                     let url = src.0;
-                    let response = reader.get(&url, headers).await?;
+                    let response = reader
+                        .get(&url, resolved_headers.headers().to_owned())
+                        .await?;
                     input_samples.push(Input::Json { url: url.parse()?, response, field_name });
                 }
                 Source::Proto { src } => {
