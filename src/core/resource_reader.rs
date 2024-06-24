@@ -1,11 +1,12 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
+use hyper::header::{HeaderName, HeaderValue};
+use hyper::HeaderMap;
 use url::Url;
 
-use crate::core::http::SerializableHeaderMap;
 use crate::core::runtime::TargetRuntime;
 
 /// Response of a file read operation
@@ -39,21 +40,6 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
         self.0.read(file).await
     }
 }
-/// resource reader responsible for reading the data
-/// from remote source.
-impl ResourceReader<Http> {
-    pub fn http(runtime: TargetRuntime) -> Self {
-        ResourceReader(Http::init(runtime))
-    }
-
-    pub async fn read<T: ToString + Send + Sync>(
-        &self,
-        path: T,
-        headers: Option<SerializableHeaderMap>,
-    ) -> anyhow::Result<serde_json::Value> {
-        self.0.get(path, headers).await
-    }
-}
 
 impl ResourceReader<Cached> {
     pub fn cached(runtime: TargetRuntime) -> Self {
@@ -75,6 +61,30 @@ pub struct Direct {
 impl Direct {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self { runtime }
+    }
+
+    /// fetches the response from remote.
+    pub async fn get<T: ToString + Send>(
+        &self,
+        path: T,
+        headers: Option<BTreeMap<String, String>>,
+    ) -> anyhow::Result<serde_json::Value> {
+        let url = Url::parse(&path.to_string())?;
+        let mut request = reqwest::Request::new(reqwest::Method::GET, url);
+
+        if let Some(headers_inner) = headers {
+            let mut header_map = HeaderMap::new();
+            for (key, value) in headers_inner {
+                let header_name = HeaderName::try_from(key)?;
+                let header_value = HeaderValue::try_from(value)?;
+                header_map.insert(header_name, header_value);
+            }
+            *request.headers_mut() = header_map;
+        }
+
+        let response = self.runtime.http.execute(request).await?;
+        let response: serde_json::Value = serde_json::from_slice(&response.body)?;
+        Ok(response)
     }
 }
 
@@ -146,37 +156,5 @@ impl Reader for Cached {
         };
 
         Ok(FileRead { content, path: file_path })
-    }
-}
-
-// TODO: allow support for caching.
-pub struct Http {
-    runtime: TargetRuntime,
-}
-
-impl Http {
-    pub fn init(runtime: TargetRuntime) -> Self {
-        Self { runtime }
-    }
-}
-
-impl Http {
-    /// fetches the response from remote.
-    async fn get<T: ToString + Send>(
-        &self,
-        path: T,
-        serializable_headers: Option<SerializableHeaderMap>,
-    ) -> anyhow::Result<serde_json::Value> {
-        let url = Url::parse(&path.to_string())?;
-        let mut request = reqwest::Request::new(reqwest::Method::GET, url);
-
-        if let Some(serializable_headers_inner) = serializable_headers {
-            let req_headers = request.headers_mut();
-            req_headers.extend(serializable_headers_inner.headers().clone());
-        }
-
-        let response = self.runtime.http.execute(request).await?;
-        let response: serde_json::Value = serde_json::from_slice(&response.body)?;
-        Ok(response)
     }
 }
