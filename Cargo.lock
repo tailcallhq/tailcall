@@ -232,8 +232,7 @@ dependencies = [
 [[package]]
 name = "async-graphql"
 version = "7.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf338d20ba5bab309f55ce8df95d65ee19446f7737f06f4a64593ab2c6b546ad"
+source = "git+https://github.com/meskill/async-graphql.git?branch=feat/selection-field-directives#8052848eaf3d46949ac811e4b9b8e532eaae2e48"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -270,8 +269,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-derive"
 version = "7.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc51fd6b7102acda72bc94e8ae1543844d5688ff394a6cf7c21f2a07fe2d64e4"
+source = "git+https://github.com/meskill/async-graphql.git?branch=feat/selection-field-directives#8052848eaf3d46949ac811e4b9b8e532eaae2e48"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -320,8 +318,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-parser"
 version = "7.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75361eefd64e39f89bead4cb45fddbaf60ddb0e7b15fb7c852b6088bcd63071f"
+source = "git+https://github.com/meskill/async-graphql.git?branch=feat/selection-field-directives#8052848eaf3d46949ac811e4b9b8e532eaae2e48"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -332,8 +329,7 @@ dependencies = [
 [[package]]
 name = "async-graphql-value"
 version = "7.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1f665d2d52b41c4ed1f01c43f3ef27a2fe0af2452ed5c8bc7ac9b1a8719afaa"
+source = "git+https://github.com/meskill/async-graphql.git?branch=feat/selection-field-directives#8052848eaf3d46949ac811e4b9b8e532eaae2e48"
 dependencies = [
  "bytes",
  "indexmap 2.2.6",

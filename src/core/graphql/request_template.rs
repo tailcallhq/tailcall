@@ -1,5 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
+use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
@@ -86,30 +87,40 @@ impl RequestTemplate {
     ) -> String {
         let operation_type = &self.operation_type;
         let selection_set = ctx.selection_set(&self.related_fields).unwrap_or_default();
-        let operation = self
-            .operation_arguments
-            .as_ref()
-            .map(|args| {
-                args.iter()
-                    .filter_map(|(k, v)| {
-                        let value = v.render_graphql(ctx);
-                        if value.is_empty() {
-                            None
-                        } else {
-                            Some(format!(r#"{}: {}"#, k, value.escape_default()))
-                        }
-                    })
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            })
-            .map(|args| {
-                if args.is_empty() {
-                    self.operation_name.clone()
-                } else {
-                    format!("{}({})", self.operation_name, args)
-                }
-            })
-            .unwrap_or(self.operation_name.clone());
+
+        let mut operation = Cow::Borrowed(&self.operation_name);
+
+        if let Some(args) = &self.operation_arguments {
+            let args = args
+                .iter()
+                .filter_map(|(k, v)| {
+                    let value = v.render_graphql(ctx);
+                    if value.is_empty() {
+                        None
+                    } else {
+                        Some(format!(r#"{}: {}"#, k, value.escape_default()))
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            if !args.is_empty() {
+                let operation = operation.to_mut();
+
+                operation.push('(');
+                operation.push_str(&args);
+                operation.push(')');
+            }
+        }
+
+        if let Some(directives) = ctx.directives() {
+            if !directives.is_empty() {
+                let operation = operation.to_mut();
+
+                operation.push(' ');
+                operation.push_str(&directives);
+            }
+        }
 
         format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#)
     }
@@ -190,6 +201,10 @@ mod tests {
     impl GraphQLOperationContext for Context {
         fn selection_set(&self, _: &RelatedFields) -> Option<String> {
             Some("{ a,b,c }".to_owned())
+        }
+
+        fn directives(&self) -> Option<String> {
+            None
         }
     }
 

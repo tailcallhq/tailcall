@@ -255,3 +255,7 @@ harness = false
 name = "json_to_config_spec"
 path = "src/core/generator/tests/json_to_config_spec.rs"
 harness = false
+
+[patch.crates-io]
+async-graphql = { git = "https://github.com/meskill/async-graphql.git", branch = "feat/selection-field-directives" }
+async-graphql-value = { git = "https://github.com/meskill/async-graphql.git", branch = "feat/selection-field-directives" }

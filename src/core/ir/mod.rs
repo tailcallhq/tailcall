@@ -29,5 +29,6 @@ impl Deref for RelatedFields {
 }
 
 pub trait GraphQLOperationContext {
+    fn directives(&self) -> Option<String>;
     fn selection_set(&self, related_fields: &RelatedFields) -> Option<String>;
 }
