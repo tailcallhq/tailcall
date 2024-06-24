@@ -8,9 +8,8 @@ mod proto;
 pub use from_json::{FromJsonGenerator, RequestSample};
 pub use generator::{Generator, Input};
 
-use crate::core::counter::Count;
-
 use super::counter::AtomicCounter;
+use crate::core::counter::Count;
 
 pub struct NameGenerator {
     counter: AtomicCounter<u64>,

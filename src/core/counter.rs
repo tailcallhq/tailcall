@@ -29,7 +29,7 @@ pub struct AtomicCounter<A>(Mutex<A>);
 
 impl<A> AtomicCounter<A> {
     pub fn new(a: A) -> Self {
-        Self (Mutex::new(a))
+        Self(Mutex::new(a))
     }
 }
 
