@@ -20,15 +20,15 @@ impl Exec {
     pub async fn execute<'a>(
         &'a self,
         ir: &'a IR,
-        value: Option<&'a Value<'a>>,
-    ) -> Result<&'a Value<'a>, Error> {
+        value: Option<Value<'a>>,
+    ) -> Result<Value<'a>, Error> {
         match ir {
             IR::Path(path) => {
-                let var_name = value.unwrap_or(&Value::Null);
-                let value = resolve_path(var_name, path).unwrap_or(&Value::Null);
+                let value = value.unwrap_or(Value::Null);
+                let value = get_path(value, path).unwrap_or(Value::Null);
                 Ok(value)
             }
-            IR::Dynamic(_) => todo!(),
+            IR::Dynamic(value) => Ok(Value::from(value)),
             IR::IO(_) => todo!(),
             IR::Cache(_) => todo!(),
             IR::Protect(_) => todo!(),
@@ -41,28 +41,25 @@ impl Exec {
     }
 }
 
-fn resolve_path<'a, T: AsRef<str>>(value: &'a Value<'a>, path: &'a [T]) -> Option<&'a Value<'a>> {
+fn get_path<'a, T: AsRef<str>>(value: Value<'a>, path: &'a [T]) -> Option<Value<'a>> {
     let (head, tail) = path.split_first()?;
-
-    match value {
-        Value::Object(map) => {
-            let value = map.get(head.as_ref());
-            if tail.is_empty() {
-                value
-            } else {
-                resolve_path(value?, tail)
-            }
-        }
+    let value = match value {
+        Value::Object(map) => map
+            .into_vec()
+            .into_iter()
+            .find(|(k, _)| k == head.as_ref())
+            .map(|(_, v)| v),
         Value::Array(arr) => {
             let index = head.as_ref().parse::<usize>().ok()?;
-            let value = arr.get(index);
-            if tail.is_empty() {
-                value
-            } else {
-                resolve_path(value?, tail)
-            }
+            arr.into_iter().nth(index)
         }
         _ => None,
+    };
+
+    if tail.is_empty() {
+        value
+    } else {
+        get_path(value?, tail)
     }
 }
 
@@ -79,9 +76,9 @@ mod tests {
         let json = Value::Object(obj);
 
         let path = vec!["a"];
-        let result = resolve_path(&json, &path);
+        let result = get_path(json, &path);
         assert!(result.is_some());
-        assert_eq!(result.unwrap(), &Value::Str("b".into()));
+        assert_eq!(result.unwrap(), Value::Str("b".into()));
     }
 
     #[test]
@@ -94,9 +91,9 @@ mod tests {
 
         let json = Value::Array(arr);
         let path = vec!["2"];
-        let result = resolve_path(&json, &path);
+        let result = get_path(json, &path);
         assert!(result.is_some());
-        assert_eq!(result.unwrap(), &Value::Str("c".into()));
+        assert_eq!(result.unwrap(), Value::Str("c".into()));
     }
 
     #[test]
@@ -109,8 +106,8 @@ mod tests {
 
         let json = Value::Array(arr);
         let path = vec!["1", "a"];
-        let result = resolve_path(&json, &path);
+        let result = get_path(json, &path);
         assert!(result.is_some());
-        assert_eq!(result.unwrap(), &Value::Str("b".into()));
+        assert_eq!(result.unwrap(), Value::Str("b".into()));
     }
 }
