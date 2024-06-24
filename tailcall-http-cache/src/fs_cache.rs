@@ -70,11 +70,14 @@ impl CacheManager for FsCacheManager {
         let cache_file_path = self.get_cache_file_path(&self.encode(&cache_key));
         let file_content = serde_json::to_vec(&store)?;
         if !self.cache_dir.exists() {
-            // if cache_dir not exists, then create it.
             fs::create_dir(&self.cache_dir).await?;
         }
 
-        fs::write(cache_file_path, file_content).await?;
+        if !cache_file_path.exists() {
+            // only write to the file if file path not exists.
+            fs::write(cache_file_path, file_content).await?;
+        }
+
         Ok(response)
     }
 
