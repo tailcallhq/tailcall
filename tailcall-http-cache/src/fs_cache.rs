@@ -69,6 +69,11 @@ impl CacheManager for FsCacheManager {
         let store = Store { response: response.clone(), policy };
         let cache_file_path = self.get_cache_file_path(&self.encode(&cache_key));
         let file_content = serde_json::to_vec(&store)?;
+        if !self.cache_dir.exists() {
+            // if cache_dir not exists, then create it.
+            fs::create_dir(&self.cache_dir).await?;
+        }
+
         fs::write(cache_file_path, file_content).await?;
         Ok(response)
     }
