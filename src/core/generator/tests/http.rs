@@ -1,7 +1,5 @@
-use std::path::PathBuf;
-
 use anyhow::Result;
-use http_cache_reqwest::{CACacheManager, Cache, CacheMode, HttpCache, HttpCacheOptions};
+use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions, MokaManager};
 use hyper::body::Bytes;
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
@@ -18,7 +16,7 @@ impl Default for NativeHttpTest {
         let mut client = ClientBuilder::new(Client::new());
         client = client.with(Cache(HttpCache {
             mode: CacheMode::Default,
-            manager: CACacheManager { path: PathBuf::from(".cache") },
+            manager: MokaManager::default(),
             options: HttpCacheOptions::default(),
         }));
         Self { client: client.build() }
