@@ -9,8 +9,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::core::config::{self};
+use crate::core::config::{self, ConfigReaderContext};
 use crate::core::is_default;
+use crate::core::mustache::Mustache;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -146,7 +147,13 @@ impl Source<UnResolved> {
             Source::Curl { src, field_name, headers } => {
                 // Resolve the header values with mustache template.
                 let resolved_headers = if let Some(headers_inner) = headers {
-                    Some(headers_inner.resolve(reader_context)?)
+                    let mut resolved_headers = BTreeMap::new();
+                    for (key, value) in headers_inner.into_iter() {
+                        let template = Mustache::parse(&value)?;
+                        let resolved_value = template.render(reader_context);
+                        resolved_headers.insert(key, resolved_value);
+                    }
+                    Some(resolved_headers)
                 } else {
                     None
                 };
