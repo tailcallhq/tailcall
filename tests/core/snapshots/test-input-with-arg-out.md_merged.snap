@@ -1,6 +1,5 @@
 ---
 source: tests/core/spec.rs
-assertion_line: 235
 expression: formatter
 ---
 schema @server @upstream {
