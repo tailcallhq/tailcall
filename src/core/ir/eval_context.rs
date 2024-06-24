@@ -190,7 +190,7 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
         .collect::<Vec<_>>()
         .join(",");
 
-    Cow::Owned(format!("({})", args))
+    Cow::Owned(format!("({})", args.escape_default()))
 }
 
 // TODO: this is the same code as src/json/json_like.rs::get_path
