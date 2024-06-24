@@ -13,8 +13,6 @@ http-cache-semantics = { version = "1.0.1", default-features = false, features =
 serde = "1.0.202"
 async-trait = "0.1.80"
 serde_json = { workspace = true }
-tokio = { workspace = true }
-crypto-hash = "0.3.4"
 
 
 [dev-dependencies]
@@ -23,3 +21,4 @@ reqwest = { workspace = true }
 http = "0.2.12"
 http-cache = "0.18.0"
 anyhow = { workspace = true }
+tokio = { workspace = true }
