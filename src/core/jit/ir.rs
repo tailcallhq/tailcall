@@ -1,15 +1,12 @@
 use std::collections::HashMap;
 use std::num::NonZeroU64;
 
-use strum_macros::Display;
-
 use crate::core::blueprint::DynamicValue;
 use crate::core::config::group_by::GroupBy;
 use crate::core::http::HttpFilter;
-use crate::core::ir::model::DataLoaderId;
 use crate::core::{graphql, grpc, http};
 
-#[derive(Clone, Debug, Display)]
+#[derive(Clone, Debug)]
 pub enum IR {
     Dynamic(DynamicValue<serde_json::Value>),
     #[strum(to_string = "{0}")]
@@ -31,35 +28,36 @@ pub struct Map {
 #[derive(Clone, Debug)]
 pub struct Cache {
     pub max_age: NonZeroU64,
-    pub io: Box<IO>,
+    pub io: IO,
 }
 
-#[derive(Clone, Debug, Display)]
-pub enum IO {
+#[derive(Clone, Debug)]
+pub struct IO {
+    group_by: Option<GroupBy>,
+    protocol: Protocol,
+}
+
+#[derive(Clone, Debug)]
+pub enum Protocol {
     Http {
-        req_template: http::RequestTemplate,
-        group_by: Option<GroupBy>,
-        dl_id: Option<DataLoaderId>,
+        template: http::RequestTemplate,
         http_filter: Option<HttpFilter>,
     },
     GraphQL {
-        req_template: graphql::RequestTemplate,
+        template: graphql::RequestTemplate,
         field_name: String,
         batch: bool,
-        dl_id: Option<DataLoaderId>,
     },
     Grpc {
         req_template: grpc::RequestTemplate,
-        group_by: Option<GroupBy>,
-        dl_id: Option<DataLoaderId>,
     },
-    Js {
+    Script {
         name: String,
     },
 }
 
 impl Cache {
-    pub fn new(max_age: NonZeroU64, io: Box<IO>) -> Self {
+    pub fn new(max_age: NonZeroU64, io: IO) -> Self {
         Self { max_age, io }
     }
 }
