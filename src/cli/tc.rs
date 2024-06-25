@@ -8,7 +8,7 @@ use convert_case::{Case, Casing};
 use dotenvy::dotenv;
 use inquire::{Confirm, Select};
 use lazy_static::lazy_static;
-use stripmargin::StripMargin;
+use serde::{Deserialize, Serialize};
 
 use super::command::{Cli, Command};
 use super::generator::Generator;
@@ -18,7 +18,7 @@ use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
-use crate::core::config::{Config, Expr, Field, RootSchema, Type};
+use crate::core::config::{Config, Expr, Field, RootSchema, Source, Type};
 use crate::core::http::API_URL_PREFIX;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
@@ -28,9 +28,10 @@ const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
-const GRAPHQL: &str = "GraphQL";
-const JSON: &str = "JSON";
-const YML: &str = "YML";
+#[derive(Serialize, Deserialize)]
+struct GraphQLRC {
+    schema: Vec<String>,
+}
 
 lazy_static! {
     static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();
@@ -137,10 +138,8 @@ async fn confirm_overwrite_yml(
     let yml_path_str = yml_file_path.as_ref().display().to_string();
 
     if !yml_exists {
-        let graphqlrc = r"|schema:
-         |- './.tailcallrc.graphql'
-    "
-        .strip_margin();
+        let graphqlrc = GraphQLRC { schema: vec!["./.tailcallrc.graphql".into()] };
+        let graphqlrc = serde_yaml::to_string(&graphqlrc)?;
 
         runtime
             .file
@@ -208,7 +207,7 @@ pub async fn init(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
 
     let selection = Select::new(
         "Please select the format in which you want to generate the config.",
-        vec![GRAPHQL, JSON, YML],
+        vec![Source::GraphQL, Source::Json, Source::Yml],
     )
     .prompt()?;
 
@@ -219,23 +218,17 @@ pub async fn init(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
     let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
 
-    match selection {
-        GRAPHQL => {
-            confirm_overwrite(runtime.clone(), &file_path, tailcallrc.as_bytes()).await?;
-            create_main(runtime.clone(), folder_path, "graphql").await?;
-        }
-        JSON => {
-            confirm_overwrite(runtime.clone(), &json_file_path, tailcallrc_json.as_bytes()).await?;
-            create_main(runtime.clone(), folder_path, "json").await?;
-        }
-        YML => {
-            confirm_overwrite(runtime.clone(), &file_path, tailcallrc.as_bytes()).await?;
-            confirm_overwrite_yml(runtime.clone(), &file_path, &yml_file_path).await?;
-            create_main(runtime.clone(), folder_path, "yml").await?;
-        }
-        _ => {
-            unreachable!()
-        }
+    let (file_path, content) = match selection {
+        Source::GraphQL => (file_path, tailcallrc.as_bytes()),
+        Source::Json => (json_file_path, tailcallrc_json.as_bytes()),
+        Source::Yml => (file_path, tailcallrc.as_bytes()),
+    };
+
+    confirm_overwrite(runtime.clone(), &file_path, content).await?;
+    create_main(runtime.clone(), folder_path, selection.ext()).await?;
+
+    if matches!(selection, Source::Yml) {
+        confirm_overwrite_yml(runtime.clone(), &file_path, &yml_file_path).await?;
     }
 
     Ok(())
