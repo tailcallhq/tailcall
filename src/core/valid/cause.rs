@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::core::config::position::Pos;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SourcePos {
     line: usize,
     column: usize,

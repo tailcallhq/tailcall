@@ -66,7 +66,7 @@ impl<E> ValidationError<E> {
     pub fn positioned_err(self, position: Option<SourcePos>) -> Self {
         let mut errors = self.0;
         for cause in errors.iter_mut() {
-            cause.source_position = position.to_owned();
+            cause.source_position = position.clone();
         }
         Self(errors)
     }

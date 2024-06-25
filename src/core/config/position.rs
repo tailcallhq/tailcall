@@ -30,7 +30,7 @@ impl<T> Pos<T> {
         self.file_path = Some(position.2.to_owned());
     }
 
-    pub fn to_positioned_err(&self) -> Option<SourcePos> {
+    pub fn to_source_pos(&self) -> Option<SourcePos> {
         if self.pos_trace_is_unsupported() {
             return None;
         }

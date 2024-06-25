@@ -10,7 +10,7 @@ use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grp
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
 use crate::core::ir::model::{IO, IR};
-use crate::core::json::{JsonScheamWithSourcePosition, PositionedJsonSchema, SourcePos};
+use crate::core::json::{JsonScheamWithSourcePosition, PositionedJsonSchema};
 use crate::core::mustache::Mustache;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -113,7 +113,7 @@ fn validate_group_by(
             let fields = &field_schema.field;
             let fields = PositionedJsonSchema::new(
                 JsonScheamWithSourcePosition::Arr(Box::new(fields.to_owned())),
-                SourcePos::from(pos_field),
+                pos_field.to_source_pos(),
             );
             fields.compare(&output_schema, group_by[0].as_str())
         })
