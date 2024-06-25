@@ -6,8 +6,6 @@ schema @server @upstream(baseURL: "https://api.deezer.com") {
   query: Query
 }
 
-scalar Any
-
 type Album {
   cover: String
   cover_big: String
@@ -15,7 +13,9 @@ type Album {
   cover_small: String
   cover_xl: String
   id: Int
+  link: String
   md5_image: String
+  release_date: String
   title: String
   tracklist: String
   type: String
@@ -31,16 +31,9 @@ type Artist {
   picture_small: String
   picture_xl: String
   radio: Boolean
+  share: String
   tracklist: String
   type: String
-}
-
-type Chart {
-  albums: T168
-  artists: T170
-  playlists: T182
-  podcasts: Podcast
-  tracks: T167
 }
 
 type Contributor {
@@ -59,304 +52,13 @@ type Contributor {
   type: String
 }
 
-type Daum {
-  album: Album
-  artist: T43
-  duration: Int
-  explicit_content_cover: Int
-  explicit_content_lyrics: Int
-  explicit_lyrics: Boolean
-  id: Int
-  link: String
-  md5_image: String
-  preview: String
-  rank: Int
-  readable: Boolean
-  time_add: Int
-  title: String
-  title_short: String
-  title_version: String
-  type: String
-}
-
-type Editorial {
-  data: [T186]
-  total: Int
-}
-
-type Genre {
-  data: [T6]
-}
-
-type Playlist {
-  checksum: String
-  collaborative: Boolean
-  creation_date: String
-  creator: User
-  description: String
-  duration: Int
-  fans: Int
-  id: Int
-  is_loved_track: Boolean
-  link: String
-  md5_image: String
-  nb_tracks: Int
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_type: String
-  picture_xl: String
-  public: Boolean
-  share: String
-  title: String
-  tracklist: String
-  tracks: Track
-  type: String
-}
-
-type Podcast {
-  data: [T183]
-  total: Int
-}
-
 type Query {
-  album(p1: Int!): T40 @http(path: "/album/{{.args.p1}}")
-  artist(p1: Int!): T41 @http(path: "/artist/{{.args.p1}}")
-  chart: Chart @http(path: "/chart")
-  editorial: Editorial @http(path: "/editorial")
-  playlist(p1: Int!): Playlist @http(path: "/playlist/{{.args.p1}}")
-  track(p1: Int!): T5 @http(path: "/track/{{.args.p1}}")
-  user(p1: Int!): T188 @http(path: "/user/{{.args.p1}}")
+  track(p1: Int!): Track @http(path: "/track/{{.args.p1}}")
 }
 
-type T166 {
+type Track {
   album: Album
   artist: Artist
-  duration: Int
-  explicit_content_cover: Int
-  explicit_content_lyrics: Int
-  explicit_lyrics: Boolean
-  id: Int
-  link: String
-  md5_image: String
-  position: Int
-  preview: String
-  rank: Int
-  title: String
-  title_short: String
-  title_version: String
-  type: String
-}
-
-type T167 {
-  data: [T166]
-  total: Int
-}
-
-type T168 {
-  data: [Any]
-  total: Int
-}
-
-type T169 {
-  id: Int
-  link: String
-  name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  position: Int
-  radio: Boolean
-  tracklist: String
-  type: String
-}
-
-type T170 {
-  data: [T169]
-  total: Int
-}
-
-type T181 {
-  checksum: String
-  creation_date: String
-  id: Int
-  link: String
-  md5_image: String
-  nb_tracks: Int
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_type: String
-  picture_xl: String
-  public: Boolean
-  title: String
-  tracklist: String
-  type: String
-  user: User
-}
-
-type T182 {
-  data: [T181]
-  total: Int
-}
-
-type T183 {
-  available: Boolean
-  description: String
-  fans: Int
-  id: Int
-  link: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  share: String
-  title: String
-  type: String
-}
-
-type T186 {
-  id: Int
-  name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  type: String
-}
-
-type T188 {
-  country: String
-  id: Int
-  link: String
-  name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  tracklist: String
-  type: String
-}
-
-type T3 {
-  id: Int
-  link: String
-  name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  radio: Boolean
-  share: String
-  tracklist: String
-  type: String
-}
-
-type T38 {
-  album: Album
-  artist: User
-  duration: Int
-  explicit_content_cover: Int
-  explicit_content_lyrics: Int
-  explicit_lyrics: Boolean
-  id: Int
-  link: String
-  md5_image: String
-  preview: String
-  rank: Int
-  readable: Boolean
-  title: String
-  title_short: String
-  title_version: String
-  type: String
-}
-
-type T39 {
-  data: [T38]
-}
-
-type T4 {
-  cover: String
-  cover_big: String
-  cover_medium: String
-  cover_small: String
-  cover_xl: String
-  id: Int
-  link: String
-  md5_image: String
-  release_date: String
-  title: String
-  tracklist: String
-  type: String
-}
-
-type T40 {
-  artist: T9
-  available: Boolean
-  contributors: [Contributor]
-  cover: String
-  cover_big: String
-  cover_medium: String
-  cover_small: String
-  cover_xl: String
-  duration: Int
-  explicit_content_cover: Int
-  explicit_content_lyrics: Int
-  explicit_lyrics: Boolean
-  fans: Int
-  genre_id: Int
-  genres: Genre
-  id: Int
-  label: String
-  link: String
-  md5_image: String
-  nb_tracks: Int
-  record_type: String
-  release_date: String
-  share: String
-  title: String
-  tracklist: String
-  tracks: T39
-  type: String
-  upc: String
-}
-
-type T41 {
-  id: Int
-  link: String
-  name: String
-  nb_album: Int
-  nb_fan: Int
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  radio: Boolean
-  share: String
-  tracklist: String
-  type: String
-}
-
-type T43 {
-  id: Int
-  link: String
-  name: String
-  tracklist: String
-  type: String
-}
-
-type T5 {
-  album: T4
-  artist: T3
   available_countries: [String]
   bpm: Int
   contributors: [Contributor]
@@ -379,36 +81,5 @@ type T5 {
   title_short: String
   title_version: String
   track_position: Int
-  type: String
-}
-
-type T6 {
-  id: Int
-  name: String
-  picture: String
-  type: String
-}
-
-type T9 {
-  id: Int
-  name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  tracklist: String
-  type: String
-}
-
-type Track {
-  checksum: String
-  data: [Daum]
-}
-
-type User {
-  id: Int
-  name: String
-  tracklist: String
   type: String
 }
