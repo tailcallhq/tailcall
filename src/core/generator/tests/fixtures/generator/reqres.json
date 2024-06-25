@@ -1,27 +1,27 @@
 {
-    "inputs": [
-      {
-        "curl": {
-          "src": "https://reqres.in/api/users?page=2",
-          "fieldName": "users"
-        }
-      },
-      {
-        "curl": {
-          "src": "https://reqres.in/api/users/2",
-          "fieldName": "user"
-        }
+  "inputs": [
+    {
+      "curl": {
+        "src": "https://reqres.in/api/users?page=2",
+        "fieldName": "users"
       }
-    ],
-    "preset": {
-      "mergeType": 1,
-      "consolidateURL": 0.5
     },
-    "output": {
-      "path": "./output.graphql",
-      "format": "graphQL"
-    },
-    "schema": {
-      "query": "Query"
+    {
+      "curl": {
+        "src": "https://reqres.in/api/users/2",
+        "fieldName": "user"
+      }
     }
+  ],
+  "preset": {
+    "mergeType": 1,
+    "consolidateURL": 0.5
+  },
+  "output": {
+    "path": "./output.graphql",
+    "format": "graphQL"
+  },
+  "schema": {
+    "query": "Query"
   }
+}

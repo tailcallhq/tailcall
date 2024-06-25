@@ -8,7 +8,6 @@ use tailcall::core::HttpIO;
 
 use crate::fs_cache::FileSystemCacheManager;
 
-
 #[derive(Clone)]
 pub struct NativeHttpTest {
     client: ClientWithMiddleware,
