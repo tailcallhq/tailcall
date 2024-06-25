@@ -6,6 +6,10 @@ schema @server @upstream(allowedHeaders: ["Authorization"]) @link(src: "stripe-t
   query: Query
 }
 
+type Foo {
+  bar: String
+}
+
 type Query {
   foo: Foo @expr(body: {bar: "foo"})
 }
