@@ -6,7 +6,7 @@ expression: errors
   {
     "message": "type is used in input and output",
     "trace": [
-      "tests/execution/test-dbl-usage.md 5#1"
+      "User"
     ],
     "description": null
   }

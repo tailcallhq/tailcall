@@ -6,7 +6,8 @@ expression: errors
   {
     "message": "No resolver has been found in the schema",
     "trace": [
-      "tests/execution/test-recursive-types.md 6#3"
+      "Query",
+      "foo"
     ],
     "description": null
   }

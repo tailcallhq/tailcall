@@ -6,7 +6,9 @@ expression: errors
   {
     "message": "No base URL defined",
     "trace": [
-      "tests/execution/test-no-base-url.md 10#14"
+      "Query",
+      "user",
+      "@http"
     ],
     "description": null
   }

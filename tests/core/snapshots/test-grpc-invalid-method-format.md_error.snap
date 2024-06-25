@@ -6,7 +6,9 @@ expression: errors
   {
     "message": "Invalid method format: abc.NewsService. Expected format is <package>.<service>.<method>",
     "trace": [
-      "tests/execution/test-grpc-invalid-method-format.md 6#24"
+      "Query",
+      "news",
+      "@grpc"
     ],
     "description": null
   }

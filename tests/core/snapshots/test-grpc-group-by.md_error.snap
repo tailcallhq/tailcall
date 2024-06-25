@@ -5,7 +5,11 @@ expression: errors
 [
   {
     "message": "field id not found",
-    "trace": [],
+    "trace": [
+      "Query",
+      "newsById",
+      "@grpc"
+    ],
     "description": null
   }
 ]

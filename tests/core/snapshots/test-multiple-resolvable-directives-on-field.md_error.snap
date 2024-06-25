@@ -6,14 +6,16 @@ expression: errors
   {
     "message": "Multiple resolvers detected [@http, @expr]",
     "trace": [
-      "tests/execution/test-multiple-resolvable-directives-on-field.md 11#3"
+      "Query",
+      "user1"
     ],
     "description": null
   },
   {
     "message": "Multiple resolvers detected [@http, @call]",
     "trace": [
-      "tests/execution/test-multiple-resolvable-directives-on-field.md 12#3"
+      "Query",
+      "user2"
     ],
     "description": null
   }

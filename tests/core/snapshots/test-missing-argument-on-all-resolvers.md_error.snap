@@ -6,42 +6,60 @@ expression: errors
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-missing-argument-on-all-resolvers.md 26#72"
+      "Query",
+      "newsGrpcBody",
+      "@grpc",
+      "body"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-missing-argument-on-all-resolvers.md 24#75"
+      "Query",
+      "newsGrpcHeaders",
+      "@grpc",
+      "headers"
     ],
     "description": null
   },
   {
     "message": "no argument 'url' found",
     "trace": [
-      "tests/execution/test-missing-argument-on-all-resolvers.md 25#71"
+      "Query",
+      "newsGrpcUrl",
+      "@grpc",
+      "path"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-missing-argument-on-all-resolvers.md 21#48"
+      "Query",
+      "postGraphQLArgs",
+      "@graphQL",
+      "args"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-missing-argument-on-all-resolvers.md 22#51"
+      "Query",
+      "postGraphQLHeaders",
+      "@graphQL",
+      "headers"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-missing-argument-on-all-resolvers.md 23#24"
+      "Query",
+      "postHttp",
+      "@http",
+      "path"
     ],
     "description": null
   }

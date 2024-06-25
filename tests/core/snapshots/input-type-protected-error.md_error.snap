@@ -6,14 +6,18 @@ expression: errors
   {
     "message": "Input types can not be protected",
     "trace": [
-      "tests/execution/input-type-protected-error.md 15#13"
+      "Input",
+      "value",
+      "@protected"
     ],
     "description": null
   },
   {
     "message": "Input types can not be protected",
     "trace": [
-      "tests/execution/input-type-protected-error.md 20#19"
+      "NewPost",
+      "content",
+      "@protected"
     ],
     "description": null
   }

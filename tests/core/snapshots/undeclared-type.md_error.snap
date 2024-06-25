@@ -6,7 +6,8 @@ expression: errors
   {
     "message": "Undeclared type 'User' was found",
     "trace": [
-      "tests/execution/undeclared-type.md 6#3"
+      "Query",
+      "users"
     ],
     "description": null
   }

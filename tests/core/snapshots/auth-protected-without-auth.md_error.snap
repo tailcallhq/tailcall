@@ -6,7 +6,9 @@ expression: errors
   {
     "message": "@protected operator is used but there is no @link definitions for auth providers",
     "trace": [
-      "tests/execution/auth-protected-without-auth.md 6#36"
+      "Query",
+      "data",
+      "@protected"
     ],
     "description": null
   }

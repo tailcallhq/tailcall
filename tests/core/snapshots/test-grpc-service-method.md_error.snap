@@ -6,7 +6,9 @@ expression: errors
   {
     "message": "Couldn't find method X",
     "trace": [
-      "tests/execution/test-grpc-service-method.md 6#18"
+      "Query",
+      "news",
+      "@grpc"
     ],
     "description": null
   }

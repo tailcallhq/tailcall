@@ -6,14 +6,16 @@ expression: errors
   {
     "message": "No resolver has been found in the schema",
     "trace": [
-      "tests/execution/test-missing-query-resolver.md 7#3"
+      "Query",
+      "posts"
     ],
     "description": null
   },
   {
     "message": "No resolver has been found in the schema",
     "trace": [
-      "tests/execution/test-missing-query-resolver.md 6#3"
+      "Query",
+      "user"
     ],
     "description": null
   }

@@ -6,7 +6,9 @@ expression: errors
   {
     "message": "GroupBy can only be applied if batching is enabled",
     "trace": [
-      "tests/execution/test-groupby-without-batching.md 11#91"
+      "Query",
+      "user",
+      "@http"
     ],
     "description": null
   }

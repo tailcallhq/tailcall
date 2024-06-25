@@ -6,27 +6,31 @@ expression: errors
   {
     "message": "No resolver has been found in the schema",
     "trace": [
-      "tests/execution/test-all-blueprint-errors.md 9#3"
+      "Query",
+      "foo"
     ],
     "description": null
   },
   {
     "message": "No resolver has been found in the schema",
     "trace": [
-      "tests/execution/test-all-blueprint-errors.md 6#3"
+      "Mutation",
+      "a"
     ],
     "description": null
   },
   {
     "message": "type is used in input and output",
     "trace": [
-      "tests/execution/test-all-blueprint-errors.md 16#1"
+      "B"
     ],
     "description": null
   },
   {
     "message": "expected string",
     "trace": [
+      "Query",
+      "bar",
       "@expr"
     ],
     "description": null

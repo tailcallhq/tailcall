@@ -6,42 +6,56 @@ expression: errors
   {
     "message": "No resolver has been found in the schema",
     "trace": [
-      "tests/execution/test-call-operator-errors.md 7#3"
+      "Query",
+      "userWithoutResolver"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-call-operator-errors.md 22#39"
+      "Post",
+      "argumentMismatchGraphQL",
+      "@call",
+      "userWithGraphQLResolver"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-call-operator-errors.md 23#38"
+      "Post",
+      "headersMismatchGraphQL",
+      "@call",
+      "userWithGraphQLResolver"
     ],
     "description": null
   },
   {
     "message": "no argument 'id' found",
     "trace": [
-      "tests/execution/test-call-operator-errors.md 21#31"
+      "Post",
+      "urlMismatchHttp",
+      "@call",
+      "user"
     ],
     "description": null
   },
   {
     "message": "call must have query or mutation",
     "trace": [
-      "tests/execution/test-call-operator-errors.md 20#31"
+      "Post",
+      "withoutOperator",
+      "@call"
     ],
     "description": null
   },
   {
     "message": "userWithoutResolver field has no resolver",
     "trace": [
-      "tests/execution/test-call-operator-errors.md 7#3"
+      "Post",
+      "withoutResolver",
+      "@call"
     ],
     "description": null
   }

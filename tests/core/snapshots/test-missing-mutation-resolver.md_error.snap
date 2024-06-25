@@ -6,7 +6,8 @@ expression: errors
   {
     "message": "No resolver has been found in the schema",
     "trace": [
-      "tests/execution/test-missing-mutation-resolver.md 19#3"
+      "Mutation",
+      "createUser"
     ],
     "description": null
   }
