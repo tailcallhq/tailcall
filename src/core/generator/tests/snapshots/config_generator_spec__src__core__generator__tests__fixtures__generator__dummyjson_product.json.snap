@@ -18,7 +18,14 @@ type Dimension {
   width: Int
 }
 
-type M3 {
+type Meum {
+  barcode: String
+  createdAt: String
+  qrCode: String
+  updatedAt: String
+}
+
+type Product {
   availabilityStatus: String
   brand: String
   category: String
@@ -43,16 +50,9 @@ type M3 {
   weight: Int
 }
 
-type Meum {
-  barcode: String
-  createdAt: String
-  qrCode: String
-  updatedAt: String
-}
-
-type Product {
+type ProductSearch {
   limit: Int
-  products: [M3]
+  products: [Product]
   skip: Int
   total: Int
 }
@@ -60,9 +60,9 @@ type Product {
 type Query {
   categories: [Category] @http(path: "/products/categories")
   categoryList: [String] @http(path: "/products/category-list")
-  product(p1: Int!): M3 @http(path: "/products/{{.args.p1}}")
-  productSearch(q: String): Product @http(path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
-  products(order: String, sortBy: String): Product @http(path: "/products", query: [{key: "sortBy", value: "{{.args.sortBy}}"}, {key: "order", value: "{{.args.order}}"}])
+  product(p1: Int!): Product @http(path: "/products/{{.args.p1}}")
+  productSearch(q: String): ProductSearch @http(path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
+  products(order: String, sortBy: String): ProductSearch @http(path: "/products", query: [{key: "sortBy", value: "{{.args.sortBy}}"}, {key: "order", value: "{{.args.order}}"}])
 }
 
 type Review {

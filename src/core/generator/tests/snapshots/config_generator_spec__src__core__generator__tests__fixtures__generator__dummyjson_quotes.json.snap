@@ -7,8 +7,8 @@ schema @server @upstream(baseURL: "https://dummyjson.com") {
 }
 
 type Query {
+  quote(p1: Int!): Quote @http(path: "/quotes/{{.args.p1}}")
   quoteList: QuoteList @http(path: "/quotes")
-  quotes(p1: Int!): Quote @http(path: "/quotes/{{.args.p1}}")
   randomQuotes(p1: Int!): [Quote] @http(path: "/quotes/random/{{.args.p1}}")
 }
 
