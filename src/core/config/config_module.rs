@@ -7,11 +7,14 @@ use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
+use super::transformer::{AmbiguousType, NestedUnions, UnionInputType};
 use crate::core::config::Config;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::rest::{EndpointSet, Unchecked};
+use crate::core::transform::{Transform, TransformerOps};
+use crate::core::valid::{Valid, Validator};
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
@@ -94,6 +97,23 @@ impl Deref for ConfigModule {
     }
 }
 
+impl ConfigModule {
+    /// Renders current config to graphQL string
+    pub fn to_sdl(&self) -> String {
+        crate::core::document::print(self.into())
+    }
+
+    /// Normalizes current config with default preset
+    pub fn normalize_default(self) -> Valid<Self, String> {
+        // TODO: migrate to preset. That will change many snapshots in repo
+        self.transform(
+            NestedUnions
+                .pipe(UnionInputType)
+                .pipe(AmbiguousType::default()),
+        )
+    }
+}
+
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
         let input_types = config.input_types();
@@ -107,5 +127,20 @@ impl From<Config> for ConfigModule {
             interface_types,
             ..Default::default()
         }
+    }
+}
+
+impl ConfigModule {
+    pub fn transform<T: Transform<Value = Config, Error = String>>(
+        self,
+        transformer: T,
+    ) -> Valid<Self, String> {
+        let ConfigModule { config, extensions, .. } = self;
+
+        transformer
+            .transform(config)
+            .map(ConfigModule::from)
+            // set extensions back to config_module since transform executes only of raw Config
+            .map(|config| config.extensions(extensions))
     }
 }
