@@ -8,12 +8,12 @@ use crate::core::config::reader::ConfigReader;
 use crate::core::config::Source;
 use crate::core::runtime::TargetRuntime;
 
-pub struct CheckParams {
-    pub file_paths: Vec<String>,
-    pub n_plus_one_queries: bool,
-    pub schema: bool,
-    pub format: Option<Source>,
-    pub runtime: TargetRuntime,
+pub(super) struct CheckParams {
+    pub(super) file_paths: Vec<String>,
+    pub(super) n_plus_one_queries: bool,
+    pub(super) schema: bool,
+    pub(super) format: Option<Source>,
+    pub(super) runtime: TargetRuntime,
 }
 
 pub(super) async fn check_command(params: CheckParams, config_reader: &ConfigReader) -> Result<()> {
