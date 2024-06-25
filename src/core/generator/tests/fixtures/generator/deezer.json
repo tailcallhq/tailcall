@@ -2,43 +2,13 @@
   "inputs": [
     {
       "curl": {
-        "src": "https://api.deezer.com/track/3135556",
-        "fieldName": "track"
-      }
-    },
-    {
-      "curl": {
-        "src": "https://api.deezer.com/album/302127",
-        "fieldName": "album"
-      }
-    },
-    {
-      "curl": {
-        "src": "https://api.deezer.com/artist/27",
-        "fieldName": "artist"
-      }
-    },
-    {
-      "curl": {
-        "src": "https://api.deezer.com/playlist/908622995",
-        "fieldName": "playlist"
-      }
-    },
-    {
-      "curl": {
         "src": "https://api.deezer.com/editorial",
         "fieldName": "editorial"
-      }
-    },
-    {
-      "curl": {
-        "src": "https://api.deezer.com/user/2529",
-        "fieldName": "user"
       }
     }
   ],
   "preset": {
-    "mergeType": 1,
+    "mergeType": 1.0,
     "consolidateURL": 0.5
   },
   "output": {
