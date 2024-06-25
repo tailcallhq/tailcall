@@ -86,8 +86,12 @@ where
         json_object: &'a Map<String, Value>,
         config: &mut Config,
     ) -> Type {
+        // normalize the objects by sorting them by object key property.
+        let mut vec_obj: Vec<_> = json_object.iter().collect();
+        vec_obj.sort_by(|(key1, _), (key2, _)| key1.cmp(&key2));
+
         let mut ty = Type::default();
-        for (json_property, json_val) in json_object {
+        for (json_property, json_val) in vec_obj {
             let field = if !JSONValidator::is_graphql_compatible(json_val) {
                 // if object, array is empty or object has in-compatible fields then
                 // generate scalar for it.
