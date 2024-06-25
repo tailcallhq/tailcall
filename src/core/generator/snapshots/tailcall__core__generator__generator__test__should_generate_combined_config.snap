@@ -27,16 +27,16 @@ type F1 {
   colors: [Any]
 }
 
-type News @tag(id: "news.News") {
+type NewsNewsServiceGetMultipleNew @tag(id: "news.NewsList") {
+  news: [NewsNewsServiceGetNew]
+}
+
+type NewsNewsServiceGetNew @tag(id: "news.News") {
   body: String
   id: Int
   postImage: String
   status: news__Status
   title: String
-}
-
-type NewsNewsServiceGetMultipleNew @tag(id: "news.NewsList") {
-  news: [News]
 }
 
 type Post {
@@ -49,12 +49,12 @@ type Post {
 
 type Query {
   f1: F1 @http(path: "/")
-  news__NewsService__AddNews(news: news__News!): News! @grpc(body: "{{.args.news}}", method: "news.NewsService.AddNews")
+  news__NewsService__AddNews(news: news__News!): NewsNewsServiceGetNew! @grpc(body: "{{.args.news}}", method: "news.NewsService.AddNews")
   news__NewsService__DeleteNews(newsId: news__NewsId!): Empty! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.DeleteNews")
-  news__NewsService__EditNews(news: news__News!): News! @grpc(body: "{{.args.news}}", method: "news.NewsService.EditNews")
+  news__NewsService__EditNews(news: news__News!): NewsNewsServiceGetNew! @grpc(body: "{{.args.news}}", method: "news.NewsService.EditNews")
   news__NewsService__GetAllNews: NewsNewsServiceGetMultipleNew! @grpc(method: "news.NewsService.GetAllNews")
   news__NewsService__GetMultipleNews(multipleNewsId: news__MultipleNewsId!): NewsNewsServiceGetMultipleNew! @grpc(body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
-  news__NewsService__GetNews(newsId: news__NewsId!): News! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
+  news__NewsService__GetNews(newsId: news__NewsId!): NewsNewsServiceGetNew! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
   post(id: Int!): Post @http(path: "/posts/{{.args.id}}")
   posts: [Post] @http(path: "/posts")
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
