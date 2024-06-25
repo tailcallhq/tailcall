@@ -1,6 +1,7 @@
 use anyhow::Result;
 
-use crate::{cli::generator::Generator, core::runtime::TargetRuntime};
+use crate::cli::generator::Generator;
+use crate::core::runtime::TargetRuntime;
 
 pub(super) async fn gen_command(file_path: &str, runtime: TargetRuntime) -> Result<()> {
     Generator::new(file_path, runtime.clone())
@@ -8,4 +9,3 @@ pub(super) async fn gen_command(file_path: &str, runtime: TargetRuntime) -> Resu
         .await?;
     Ok(())
 }
-

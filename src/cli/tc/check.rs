@@ -1,20 +1,24 @@
-use super::helpers::{log_endpoint_set, display_schema};
-use super::cli::fmt::Fmt;
-use crate::core::blueprint::Blueprint;
-use crate::core::config::reader::ConfigReader;
-use crate::cli::CLIError;
-use crate::core::config::Source;
-use crate::core::runtime::TargetRuntime;
 use anyhow::Result;
 
-pub(super) async fn check_command(
-    file_paths: Vec<String>,
-    n_plus_one_queries: bool,
-    schema: bool,
-    format: Option<Source>,
-    config_reader: &ConfigReader,
-    runtime: TargetRuntime,
-) -> Result<()> {
+use super::cli::fmt::Fmt;
+use super::helpers::{display_schema, log_endpoint_set};
+use crate::cli::CLIError;
+use crate::core::blueprint::Blueprint;
+use crate::core::config::reader::ConfigReader;
+use crate::core::config::Source;
+use crate::core::runtime::TargetRuntime;
+
+pub struct CheckParams {
+    pub file_paths: Vec<String>,
+    pub n_plus_one_queries: bool,
+    pub schema: bool,
+    pub format: Option<Source>,
+    pub runtime: TargetRuntime,
+}
+
+pub(super) async fn check_command(params: CheckParams, config_reader: &ConfigReader) -> Result<()> {
+    let CheckParams { file_paths, n_plus_one_queries, schema, format, runtime } = params;
+
     let config_module = (config_reader.read_all(&file_paths)).await?;
     log_endpoint_set(&config_module.extensions.endpoint_set);
     if let Some(format) = format {
@@ -40,6 +44,4 @@ pub(super) async fn check_command(
         }
         Err(e) => Err(e.into()),
     }
-
 }
-

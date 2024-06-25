@@ -1,9 +1,11 @@
-use super::helpers::{FILE_NAME, JSON_FILE_NAME, YML_FILE_NAME, is_exists};
-use anyhow::Result;
-use inquire::Confirm;
 use std::fs;
 use std::path::Path;
+
+use anyhow::Result;
+use inquire::Confirm;
 use stripmargin::StripMargin;
+
+use super::helpers::{is_exists, FILE_NAME, JSON_FILE_NAME, YML_FILE_NAME};
 
 pub(super) async fn init_command(folder_path: &str) -> Result<()> {
     let folder_exists = is_exists(folder_path);

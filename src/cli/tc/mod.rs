@@ -1,8 +1,8 @@
-mod helpers;
-mod start;
 mod check;
-mod init;
 mod gen;
+mod helpers;
+mod init;
+mod start;
 
 use anyhow::Result;
 use clap::Parser;
@@ -45,7 +45,11 @@ async fn run_command(cli: Cli, config_reader: ConfigReader, runtime: TargetRunti
             start::start_command(file_paths, &config_reader).await?;
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format } => {
-            check::check_command(file_paths, n_plus_one_queries, schema, format, &config_reader, runtime).await?;
+            check::check_command(
+                check::CheckParams { file_paths, n_plus_one_queries, schema, format, runtime },
+                &config_reader,
+            )
+            .await?;
         }
         Command::Init { folder_path } => {
             init::init_command(&folder_path).await?;

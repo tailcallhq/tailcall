@@ -1,10 +1,12 @@
 use std::fs;
+
+use lazy_static::lazy_static;
+
+use crate::cli::fmt::Fmt;
 use crate::core::blueprint::Blueprint;
 use crate::core::http::API_URL_PREFIX;
-use crate::core::rest::{EndpointSet, Unchecked};
 use crate::core::print_schema;
-use crate::cli::fmt::Fmt;
-use lazy_static::lazy_static;
+use crate::core::rest::{EndpointSet, Unchecked};
 
 pub const FILE_NAME: &str = ".tailcallrc.graphql";
 pub const YML_FILE_NAME: &str = ".graphqlrc.yml";
@@ -45,4 +47,3 @@ pub(super) fn display_schema(blueprint: &Blueprint) {
     let sdl = blueprint.to_schema();
     Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
 }
-
