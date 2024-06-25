@@ -37,6 +37,12 @@ impl<'a> CandidateConvergence<'a> {
         for (type_name, candidate_list) in self.candidates.iter() {
             // Find the most frequent candidate that hasn't been converged yet and it's not
             // already present in types.
+
+            // M5 = Product, Product
+            // M1 = Dimension,
+            // M2 = Meta
+            // M4 = Review
+            // M3 = (productSearch,1), (Product)
             if let Some((candidate_name, _)) = candidate_list
                 .iter()
                 .filter(|(candidate_name, _)| {
@@ -44,7 +50,15 @@ impl<'a> CandidateConvergence<'a> {
                     !converged_candidate_set.contains(&singularized_candidate_name)
                         && !self.config.types.contains_key(&singularized_candidate_name)
                 })
-                .max_by_key(|&(_, candidate)| (candidate.frequency, candidate.priority))
+                .max_by(|a, b| {
+                    a.1.frequency
+                        .cmp(&b.1.frequency)
+                        .then_with(|| {
+                            // If frequencies are equal, compare candidate names lexicographically
+                            a.0.cmp(&b.0)
+                        })
+                        .then_with(|| a.1.priority.cmp(&b.1.priority))
+                })
             {
                 let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
                 finalized_candidates
