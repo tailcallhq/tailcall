@@ -7,20 +7,20 @@ schema @server @upstream(baseURL: "https://dummyjson.com") {
 }
 
 type Query {
-  quote(p1: Int!): RandomQuote @http(path: "/quotes/{{.args.p1}}")
+  quote(p1: Int!): Quote @http(path: "/quotes/{{.args.p1}}")
   quoteList: QuoteList @http(path: "/quotes")
-  randomQuotes(p1: Int!): [RandomQuote] @http(path: "/quotes/random/{{.args.p1}}")
+  randomQuotes(p1: Int!): [Quote] @http(path: "/quotes/random/{{.args.p1}}")
+}
+
+type Quote {
+  author: String
+  id: Int
+  quote: String
 }
 
 type QuoteList {
   limit: Int
-  quotes: [RandomQuote]
+  quotes: [Quote]
   skip: Int
   total: Int
-}
-
-type RandomQuote {
-  author: String
-  id: Int
-  quote: String
 }
