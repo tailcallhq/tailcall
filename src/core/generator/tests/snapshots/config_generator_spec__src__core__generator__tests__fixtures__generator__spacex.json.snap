@@ -1,0 +1,365 @@
+---
+source: src/core/generator/tests/config_generator_spec.rs
+expression: config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://api.spacexdata.com") {
+  query: Query
+}
+
+scalar Any
+
+type CompositeFairing {
+  diameter: Height
+  height: Height
+}
+
+type Core {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type CrewMember {
+  agency: String
+  id: String
+  image: String
+  launches: [String]
+  name: String
+  status: String
+  wikipedia: String
+}
+
+type Engine {
+  engine_loss_max: Int
+  isp: Isp
+  layout: String
+  number: Int
+  propellant_1: String
+  propellant_2: String
+  thrust_sea_level: ThrustVacuum
+  thrust_to_weight: Int
+  thrust_vacuum: ThrustVacuum
+  type: String
+  version: String
+}
+
+type Failure {
+  altitude: Empty
+  reason: String
+  time: Int
+}
+
+type Fairing {
+  recovered: Boolean
+  recovery_attempt: Boolean
+  reused: Boolean
+  ships: [Any]
+}
+
+type FirstStage {
+  burn_time_sec: Int
+  engines: Int
+  fuel_amount_tons: Int
+  reusable: Boolean
+  thrust_sea_level: ThrustVacuum
+  thrust_vacuum: ThrustVacuum
+}
+
+type Flickr {
+  original: [Any]
+  small: [Any]
+}
+
+type Height {
+  feet: Int
+  meters: Int
+}
+
+type Isp {
+  sea_level: Int
+  vacuum: Int
+}
+
+type LandingLeg {
+  material: Empty
+  number: Int
+}
+
+type LatestLaunch {
+  auto_update: Boolean
+  capsules: [String]
+  cores: [T5]
+  crew: [String]
+  date_local: String
+  date_precision: String
+  date_unix: Int
+  date_utc: String
+  details: Empty
+  failures: [Any]
+  fairings: Empty
+  flight_number: Int
+  id: String
+  launch_library_id: String
+  launchpad: String
+  links: T4
+  name: String
+  net: Boolean
+  payloads: [String]
+  rocket: String
+  ships: [Any]
+  static_fire_date_unix: Empty
+  static_fire_date_utc: Empty
+  success: Boolean
+  tbd: Boolean
+  upcoming: Boolean
+  window: Empty
+}
+
+type Link {
+  article: String
+  flickr: Flickr
+  patch: Patch
+  presskit: Empty
+  reddit: Reddit
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type Mass {
+  kg: Int
+  lb: Int
+}
+
+type PastLaunch {
+  auto_update: Boolean
+  capsules: [String]
+  cores: [Core]
+  crew: [String]
+  date_local: String
+  date_precision: String
+  date_unix: Int
+  date_utc: String
+  details: String
+  failures: [Failure]
+  fairings: Fairing
+  flight_number: Int
+  id: String
+  launch_library_id: String
+  launchpad: String
+  links: Link
+  name: String
+  net: Boolean
+  payloads: [String]
+  rocket: String
+  ships: [String]
+  static_fire_date_unix: Int
+  static_fire_date_utc: String
+  success: Boolean
+  tbd: Boolean
+  upcoming: Boolean
+  window: Int
+}
+
+type Patch {
+  large: String
+  small: String
+}
+
+type Payload {
+  composite_fairing: CompositeFairing
+  option_1: String
+}
+
+type PayloadWeight {
+  id: String
+  kg: Int
+  lb: Int
+  name: String
+}
+
+type Query {
+  crewMembers: [CrewMember] @http(path: "/v4/crew")
+  latestLaunch: LatestLaunch @http(path: "/v4/launches/latest")
+  pastLaunches: [PastLaunch] @http(path: "/v4/launches/past")
+  roadsterInfo: RoadsterInfo @http(path: "/v4/roadster")
+  rockets: [Rocket] @http(path: "/v4/rockets")
+  upcomingLaunches: [UpcomingLaunch] @http(path: "/v4/launches/upcoming")
+}
+
+type Reddit {
+  campaign: Empty
+  launch: Empty
+  media: Empty
+  recovery: Empty
+}
+
+type RoadsterInfo {
+  apoapsis_au: Int
+  details: String
+  earth_distance_km: Int
+  earth_distance_mi: Int
+  eccentricity: Int
+  epoch_jd: Int
+  flickr_images: [String]
+  id: String
+  inclination: Int
+  launch_date_unix: Int
+  launch_date_utc: String
+  launch_mass_kg: Int
+  launch_mass_lbs: Int
+  longitude: Int
+  mars_distance_km: Int
+  mars_distance_mi: Int
+  name: String
+  norad_id: Int
+  orbit_type: String
+  periapsis_arg: Int
+  periapsis_au: Int
+  period_days: Int
+  semi_major_axis_au: Int
+  speed_kph: Int
+  speed_mph: Int
+  video: String
+  wikipedia: String
+}
+
+type Rocket {
+  active: Boolean
+  boosters: Int
+  company: String
+  cost_per_launch: Int
+  country: String
+  description: String
+  diameter: Height
+  engines: Engine
+  first_flight: String
+  first_stage: FirstStage
+  flickr_images: [String]
+  height: Height
+  id: String
+  landing_legs: LandingLeg
+  mass: Mass
+  name: String
+  payload_weights: [PayloadWeight]
+  second_stage: SecondStage
+  stages: Int
+  success_rate_pct: Int
+  type: String
+  wikipedia: String
+}
+
+type SecondStage {
+  burn_time_sec: Int
+  engines: Int
+  fuel_amount_tons: Int
+  payloads: Payload
+  reusable: Boolean
+  thrust: ThrustVacuum
+}
+
+type T2 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
+}
+
+type T4 {
+  article: Empty
+  flickr: Flickr
+  patch: Patch
+  presskit: Empty
+  reddit: T2
+  webcast: String
+  wikipedia: String
+  youtube_id: String
+}
+
+type T5 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Boolean
+  landing_success: Boolean
+  landing_type: String
+  landpad: String
+  legs: Boolean
+  reused: Boolean
+}
+
+type T81 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T82 {
+  large: Empty
+  small: Empty
+}
+
+type T85 {
+  article: Empty
+  flickr: Flickr
+  patch: T82
+  presskit: Empty
+  reddit: Reddit
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
+type T86 {
+  core: String
+  flight: Int
+  gridfins: Boolean
+  landing_attempt: Empty
+  landing_success: Empty
+  landing_type: Empty
+  landpad: Empty
+  legs: Boolean
+  reused: Boolean
+}
+
+type ThrustVacuum {
+  kN: Int
+  lbf: Int
+}
+
+type UpcomingLaunch {
+  auto_update: Boolean
+  capsules: [Any]
+  cores: [T86]
+  crew: [Any]
+  date_local: String
+  date_precision: String
+  date_unix: Int
+  date_utc: String
+  details: Empty
+  failures: [Any]
+  fairings: T81
+  flight_number: Int
+  id: String
+  launch_library_id: String
+  launchpad: String
+  links: T85
+  name: String
+  net: Boolean
+  payloads: [String]
+  rocket: String
+  ships: [Any]
+  static_fire_date_unix: Empty
+  static_fire_date_utc: Empty
+  success: Empty
+  tbd: Boolean
+  upcoming: Boolean
+  window: Empty
+}

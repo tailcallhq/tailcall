@@ -1,0 +1,51 @@
+{
+    "inputs": [
+      {
+        "curl": {
+          "src": "https://api.spacexdata.com/v4/launches/latest",
+          "fieldName": "latestLaunch"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://api.spacexdata.com/v4/rockets",
+          "fieldName": "rockets"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://api.spacexdata.com/v4/crew",
+          "fieldName": "crewMembers"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://api.spacexdata.com/v4/launches/upcoming",
+          "fieldName": "upcomingLaunches"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://api.spacexdata.com/v4/launches/past",
+          "fieldName": "pastLaunches"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://api.spacexdata.com/v4/roadster",
+          "fieldName": "roadsterInfo"
+        }
+      }
+    ],
+    "preset": {
+      "mergeType": 1,
+      "consolidateURL": 0.5
+    },
+    "output": {
+      "path": "./output.graphql",
+      "format": "graphQL"
+    },
+    "schema": {
+      "query": "Query"
+    }
+  }
