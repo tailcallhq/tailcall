@@ -2,7 +2,7 @@
 source: src/core/generator/tests/config_generator_spec.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(src: "../../../../../../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") @link(src: "../proto/news.proto", type: Protobuf) {
   query: Query
 }
 
