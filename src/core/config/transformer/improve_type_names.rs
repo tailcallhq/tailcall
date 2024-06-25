@@ -61,7 +61,6 @@ impl<'a> CandidateConvergence<'a> {
             }
         }
 
-        // Convert BTreeMap to Vec and sort by key to normalize the data.
         finalized_candidates
     }
 }
