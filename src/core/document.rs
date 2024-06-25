@@ -267,7 +267,7 @@ fn print_directive(directive: &DirectiveDefinition) -> String {
     if args.is_empty() {
         format!("@{}", directive.name.node)
     } else {
-        format!("@{}({})", directive.name.node, args)
+        format!("@{}({})", directive.name.node, args.escape_default())
     }
 }
 pub fn print(sd: ServiceDocument) -> String {
