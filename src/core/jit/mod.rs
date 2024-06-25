@@ -1,10 +1,10 @@
 mod builder;
-mod exec_ir;
+mod eval_ir;
 mod model;
 mod store;
 mod synth;
 pub use builder::*;
-pub use exec_ir::*;
+pub use eval_ir::*;
 pub use model::*;
 pub use store::*;
 pub use synth::*;

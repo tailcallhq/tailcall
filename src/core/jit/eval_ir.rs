@@ -5,19 +5,19 @@ use crate::core::jit::ir::IR;
 use crate::core::runtime::TargetRuntime;
 
 /// An async executor for the IR.
-pub struct Exec {
+pub struct Eval {
     #[allow(unused)]
     runtime: TargetRuntime,
 }
 
-impl Exec {
+impl Eval {
     pub fn new(runtime: TargetRuntime) -> Self {
         Self { runtime }
     }
 
     #[async_recursion::async_recursion]
     #[allow(clippy::only_used_in_recursion)]
-    pub async fn execute<'a>(
+    pub async fn eval<'a>(
         &'a self,
         ir: &'a IR,
         value: Option<Value<'a>>,
@@ -34,8 +34,8 @@ impl Exec {
             IR::Protect => todo!(),
             IR::Map(_) => todo!(),
             IR::Pipe(first, second) => {
-                let first = self.execute(first, value).await?;
-                self.execute(second, Some(first)).await
+                let first = self.eval(first, value).await?;
+                self.eval(second, Some(first)).await
             }
         }
     }
