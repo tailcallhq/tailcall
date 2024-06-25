@@ -1,0 +1,41 @@
+---
+source: src/core/config/transformer/improve_type_names.rs
+expression: transformed_config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Address {
+  city: String
+  geo: Geo
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type Company {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type F1 {
+  address: Address
+  company: Company
+  email: String
+  id: Int
+  name: String
+  phone: String
+  username: String
+  website: String
+}
+
+type Geo {
+  lat: String
+  lng: String
+}
+
+type Query {
+  f1: [F1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+}

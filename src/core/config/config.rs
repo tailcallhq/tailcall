@@ -788,6 +788,14 @@ impl Config {
             })
     }
 
+    /// finds the all types which are present in union.
+    pub fn union_types(&self) -> HashSet<String> {
+        self.unions
+            .values()
+            .flat_map(|union| union.types.iter().cloned())
+            .collect()
+    }
+
     /// Returns a list of all the types that are used as output types
     pub fn output_types(&self) -> HashSet<String> {
         let mut types = HashSet::new();
@@ -990,5 +998,18 @@ mod tests {
         assert!(!config.is_root_operation_type("Query"));
         assert!(!config.is_root_operation_type("Mutation"));
         assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_union_types() {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::UNION_CONFIG).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let union_types = config.union_types();
+        let expected_union_types: HashSet<String> = ["Bar", "Baz", "Foo"]
+            .iter()
+            .cloned()
+            .map(String::from)
+            .collect();
+        assert_eq!(union_types, expected_union_types);
     }
 }

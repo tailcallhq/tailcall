@@ -99,7 +99,7 @@ impl Deref for ConfigModule {
 
 impl ConfigModule {
     /// Renders current config to graphQL string
-    pub fn to_sdl(self) -> String {
+    pub fn to_sdl(&self) -> String {
         crate::core::document::print(self.into())
     }
 
