@@ -55,7 +55,7 @@ impl<'a> CandidateConvergence<'a> {
                         .cmp(&b.1.frequency)
                         .then_with(|| {
                             // If frequencies are equal, compare candidate names lexicographically
-                            a.0.cmp(&b.0)
+                            a.0.cmp(b.0)
                         })
                         .then_with(|| a.1.priority.cmp(&b.1.priority))
                 })
