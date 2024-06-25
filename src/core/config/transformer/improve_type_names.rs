@@ -30,7 +30,7 @@ impl<'a> CandidateConvergence<'a> {
     /// Converges on the most frequent candidate name for each type.
     /// This method selects the most frequent candidate name for each type,
     /// ensuring uniqueness.
-    fn converge(self) -> BTreeMap<String, String> {
+    fn converge(self) -> Vec<(String, String)> {
         let mut finalized_candidates = BTreeMap::new();
         let mut converged_candidate_set = HashSet::new();
 
@@ -53,7 +53,12 @@ impl<'a> CandidateConvergence<'a> {
             }
         }
 
-        finalized_candidates
+        // Convert BTreeMap to Vec and sort by key to normalize the data.
+        let mut normalize_candidates: Vec<(String, String)> =
+            finalized_candidates.into_iter().collect();
+        normalize_candidates.sort_by(|a, b| a.0.cmp(&b.0));
+
+        normalize_candidates
     }
 }
 
