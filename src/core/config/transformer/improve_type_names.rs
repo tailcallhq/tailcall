@@ -37,12 +37,6 @@ impl<'a> CandidateConvergence<'a> {
         for (type_name, candidate_list) in self.candidates.iter() {
             // Find the most frequent candidate that hasn't been converged yet and it's not
             // already present in types.
-
-            // M5 = Product, Product
-            // M1 = Dimension,
-            // M2 = Meta
-            // M4 = Review
-            // M3 = (productSearch,1), (Product)
             if let Some((candidate_name, _)) = candidate_list
                 .iter()
                 .filter(|(candidate_name, _)| {
