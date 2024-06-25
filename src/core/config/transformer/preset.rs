@@ -1,6 +1,5 @@
 use derive_setters::Setters;
 
-use super::{NestedUnions, UnionInputType};
 use crate::core::config::Config;
 use crate::core::transform::{self, Transform, TransformerOps};
 
@@ -23,8 +22,8 @@ impl Transform for Preset {
         config: Self::Value,
     ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
         transform::default()
-            .pipe(NestedUnions)
-            .pipe(UnionInputType)
+            .pipe(super::NestedUnions)
+            .pipe(super::UnionInputType)
             .pipe(super::TreeShake.when(self.tree_shake))
             .pipe(super::TypeMerger::new(self.merge_type))
             .pipe(super::ImproveTypeNames.when(self.use_better_names))
