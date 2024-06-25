@@ -2,10 +2,9 @@ use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::position::Pos;
 use crate::core::config::Field;
-use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::Valid;
 
 pub fn update_modify<'a>() -> TryFold<
     'a,
@@ -28,7 +27,7 @@ pub fn update_modify<'a>() -> TryFold<
                             if interface.fields.iter().any(|(name, _)| name == new_name) {
                                 return Valid::fail(
                                     "Field is already implemented from interface".to_string(),
-                                ).trace(modify.to_pos_trace_err(config::Modify::trace_name()).as_deref());
+                                );
                             }
                         }
                     }

@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use regex::Regex;
 
-use super::Cause;
+use super::{Cause, SourcePos};
 
 #[derive(Debug, PartialEq, Default, Clone)]
 pub struct ValidationError<E>(Vec<Cause<E>>);
@@ -55,12 +55,18 @@ impl<E> ValidationError<E> {
         self.0.is_empty()
     }
 
-    pub fn trace(self, message: Option<&str>) -> Self {
+    pub fn trace(self, message: &str) -> Self {
         let mut errors = self.0;
         for cause in errors.iter_mut() {
-            if let Some(message) = message {
-                cause.trace.insert(0, message.to_owned());
-            }
+            cause.trace.insert(0, message.to_owned());
+        }
+        Self(errors)
+    }
+
+    pub fn positioned_err(self, position: Option<SourcePos>) -> Self {
+        let mut errors = self.0;
+        for cause in errors.iter_mut() {
+            cause.source_position = position.to_owned();
         }
         Self(errors)
     }
@@ -170,7 +176,7 @@ mod tests {
         let expected = ValidationError::new(
             "Parsing failed because of invalid type: boolean `true`, expected i32".to_string(),
         )
-        .trace(Some("a"));
+        .trace("a");
         assert_eq!(actual, expected);
     }
 }

@@ -70,7 +70,7 @@ impl Transform for AmbiguousType {
                     "Unable to auto resolve Input: {} and Output: {} are same",
                     resolution.input, resolution.output,
                 ))
-                .trace(Some(current_name))
+                .trace(current_name)
             } else {
                 let mut resolution_map = HashMap::new();
                 resolution_map = insert_resolution(resolution_map, current_name, resolution);

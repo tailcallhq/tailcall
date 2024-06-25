@@ -4,7 +4,6 @@ use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::position::Pos;
 use crate::core::config::{Field, GraphQLOperationType};
-use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -87,7 +86,7 @@ fn compile_call(
                         .collect::<Vec<String>>()
                         .join(", ")
                 ))
-                .trace(step.to_pos_trace_err(field_name).as_deref());
+                .trace(field_name.as_str());
             }
 
             to_field_definition(
@@ -100,11 +99,7 @@ fn compile_call(
             )
             .and_then(|b_field| {
                 if b_field.resolver.is_none() {
-                    Valid::fail(format!("{} field has no resolver", field_name)).trace(
-                        field
-                            .to_pos_trace_err(config::Call::trace_name())
-                            .as_deref(),
-                    )
+                    Valid::fail(format!("{} field has no resolver", field_name))
                 } else {
                     Valid::succeed(b_field)
                 }
@@ -143,7 +138,6 @@ fn compile_call(
             }),
             "Steps can't be empty".to_string(),
         )
-        .trace(call.to_pos_trace_err(config::Call::trace_name()).as_deref())
     })
 }
 
@@ -180,5 +174,4 @@ fn get_field_and_field_name<'a>(
             .into()
         })
     })
-    .trace(call.to_pos_trace_err(config::Call::trace_name()).as_deref())
 }

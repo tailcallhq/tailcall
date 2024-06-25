@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::position::Pos;
 use crate::core::config::{Config, ConfigModule, Field, GraphQL, GraphQLOperationType, Type};
-use crate::core::directive::DirectiveCodec;
 use crate::core::graphql::RequestTemplate;
 use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
@@ -43,7 +42,6 @@ pub fn compile_graphql(
             .or(config.upstream.base_url.as_ref()),
         "No base URL defined".to_string(),
     )
-    .trace(graphql.to_pos_trace_err(GraphQL::trace_name()).as_deref())
     .zip(helpers::headers::to_mustache_headers(
         graphql.headers.as_ref(),
     ))
@@ -57,10 +55,7 @@ pub fn compile_graphql(
                 headers,
                 create_related_fields(config, type_name),
             )
-            .map_err(|e| {
-                ValidationError::new(e.to_string())
-                    .trace(graphql.to_pos_trace_err(GraphQL::trace_name()).as_deref())
-            }),
+            .map_err(|e| ValidationError::new(e.to_string())),
         )
     })
     .map(|req_template| {

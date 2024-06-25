@@ -4,11 +4,42 @@ use std::fmt::Display;
 use derive_setters::Setters;
 use thiserror::Error;
 
+use crate::core::config::position::Pos;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SourcePos {
+    line: usize,
+    column: usize,
+    file_path: String,
+}
+
+impl<T> From<&Pos<T>> for SourcePos {
+    fn from(value: &Pos<T>) -> Self {
+        let file_path = match &value.file_path {
+            Some(file_path) => file_path.to_owned(),
+            None => String::new(),
+        };
+
+        Self { line: value.line, column: value.column, file_path }
+    }
+}
+
+impl Display for SourcePos {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            format!("{} {}#{}", self.file_path, self.line, self.column)
+        )
+    }
+}
+
 #[derive(Clone, PartialEq, Debug, Setters, Error)]
 pub struct Cause<E> {
     pub message: E,
     #[setters(strip_option)]
     pub description: Option<E>,
+    pub source_position: Option<SourcePos>,
     #[setters(skip)]
     pub trace: VecDeque<String>,
 }
@@ -32,7 +63,12 @@ impl<E: Display> Display for Cause<E> {
 
 impl<E> Cause<E> {
     pub fn new(e: E) -> Self {
-        Cause { message: e, description: None, trace: VecDeque::new() }
+        Cause {
+            message: e,
+            description: None,
+            trace: VecDeque::new(),
+            source_position: None,
+        }
     }
 
     pub fn transform<E1>(self, e: impl Fn(E) -> E1) -> Cause<E1> {
@@ -40,6 +76,7 @@ impl<E> Cause<E> {
             message: e(self.message),
             description: self.description.map(e),
             trace: self.trace,
+            source_position: self.source_position,
         }
     }
 

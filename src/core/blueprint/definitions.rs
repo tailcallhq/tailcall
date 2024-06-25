@@ -6,7 +6,7 @@ use regex::Regex;
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
 use crate::core::config::position::Pos;
-use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Union};
+use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::{Cache, IR};
 use crate::core::try_fold::TryFold;
@@ -384,11 +384,10 @@ pub fn update_cache_resolvers<'a>() -> TryFold<
     )
 }
 
-fn validate_field_type_exist(config: &Config, field: &Pos<Field>, name: &str) -> Valid<(), String> {
+fn validate_field_type_exist(config: &Config, field: &Pos<Field>) -> Valid<(), String> {
     let field_type = &field.type_of;
     if !scalar::is_predefined_scalar(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
-            .trace(field.to_pos_trace_err(name.to_owned()).as_deref())
     } else {
         Valid::succeed(())
     }
@@ -418,7 +417,7 @@ fn to_fields(
             .iter()
             .filter(|(_, field)| !field.is_omitted()),
         |(name, field)| {
-            validate_field_type_exist(config_module, field, name)
+            validate_field_type_exist(config_module, field)
                 .and(to_field_definition(
                     field,
                     &operation_type,
@@ -427,7 +426,7 @@ fn to_fields(
                     type_of,
                     name,
                 ))
-                .trace(field.to_trace_err(name))
+                .trace(name)
         },
     );
 
@@ -479,6 +478,7 @@ fn to_fields(
                             field_name
                         ),
                     )
+                    .trace(field_name)
                 };
                 update_resolver_from_path(
                     &ProcessPathContext {
@@ -494,7 +494,7 @@ fn to_fields(
                     field_definition,
                 )
             })
-            .trace(source_field.to_trace_err(&config::AddField::trace_name())),
+            .trace(config::AddField::trace_name().as_str()),
             None => Valid::fail(format!(
                 "Could not find field {} in path {}",
                 add_field.path[0],
@@ -504,11 +504,7 @@ fn to_fields(
     };
 
     let added_fields = Valid::from_iter(type_of.added_fields.iter(), |added_field| {
-        to_added_field(added_field, type_of).trace(
-            added_field
-                .to_pos_trace_err(added_field.name.inner.to_owned())
-                .as_deref(),
-        )
+        to_added_field(added_field, type_of)
     });
     fields.zip(added_fields).map(|(mut fields, added_fields)| {
         fields.extend(added_fields);
@@ -531,21 +527,20 @@ pub fn to_field_definition(
         return Valid::fail(format!(
             "Multiple resolvers detected [{}]",
             directives.join(", ")
-        ))
-        .trace(field.to_pos_trace_err(name.to_owned()).as_deref());
+        ));
     }
 
     update_args()
-        .and(update_http())
-        .and(update_grpc(operation_type))
+        .and(update_http().trace(config::Http::trace_name().as_str()))
+        .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))
         .and(update_const_field().trace(config::Expr::trace_name().as_str()))
-        .and(update_js_field())
-        .and(update_graphql(operation_type))
-        .and(update_modify())
-        .and(update_call(operation_type, object_name))
+        .and(update_js_field().trace(config::JS::trace_name().as_str()))
+        .and(update_graphql(operation_type).trace(config::GraphQL::trace_name().as_str()))
+        .and(update_modify().trace(config::Modify::trace_name().as_str()))
+        .and(update_call(operation_type, object_name).trace(config::Call::trace_name().as_str()))
         .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
-        .and(update_protected(object_name))
+        .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
         .and(update_enum_alias())
         .try_fold(
             &(config_module, field, type_of, name),
@@ -561,21 +556,18 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
             let dbl_usage = input_types.contains(name) && output_types.contains(name);
             if type_.scalar() {
-                to_scalar_type_definition(name).trace(type_.to_trace_err(name))
+                to_scalar_type_definition(name).trace(name)
             } else if dbl_usage {
-                Valid::fail("type is used in input and output".to_string())
-                    .trace(type_.to_pos_trace_err(name.to_owned()).as_deref())
+                Valid::fail("type is used in input and output".to_string()).trace(name)
             } else {
                 to_object_type_definition(name, type_, config_module)
-                    .trace(type_.to_trace_err(name))
+                    .trace(name)
                     .and_then(|definition| match definition.clone() {
                         Definition::Object(object_type_definition) => {
                             if config_module.input_types.contains(name) {
-                                to_input_object_type_definition(object_type_definition)
-                                    .trace(type_.to_trace_err(name))
+                                to_input_object_type_definition(object_type_definition).trace(name)
                             } else if config_module.interface_types.contains(name) {
-                                to_interface_type_definition(object_type_definition)
-                                    .trace(type_.to_trace_err(name))
+                                to_interface_type_definition(object_type_definition).trace(name)
                             } else {
                                 Valid::succeed(definition)
                             }

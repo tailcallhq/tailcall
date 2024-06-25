@@ -61,7 +61,7 @@ impl JsonSchema {
                 async_graphql::Value::List(list) => {
                     // TODO: add unit tests
                     Valid::from_iter(list.iter().enumerate(), |(i, item)| {
-                        schema.validate(item).trace(Some(i.to_string().as_str()))
+                        schema.validate(item).trace(i.to_string().as_str())
                     })
                     .unit()
                 }
@@ -74,13 +74,12 @@ impl JsonSchema {
                         Valid::from_iter(field_schema_list, |(name, schema)| {
                             if schema.is_required() {
                                 if let Some(field_value) = map.get::<str>(name.as_ref()) {
-                                    schema.validate(field_value).trace(Some(name))
+                                    schema.validate(field_value).trace(name)
                                 } else {
-                                    Valid::fail("expected field to be non-nullable")
-                                        .trace(Some(name))
+                                    Valid::fail("expected field to be non-nullable").trace(name)
                                 }
                             } else if let Some(field_value) = map.get::<str>(name.as_ref()) {
-                                schema.validate(field_value).trace(Some(name))
+                                schema.validate(field_value).trace(name)
                             } else {
                                 Valid::succeed(())
                             }
@@ -185,7 +184,7 @@ mod tests {
             map
         });
         let result = schema.validate(&value);
-        assert_eq!(result, Valid::fail("expected number").trace(Some("age")));
+        assert_eq!(result, Valid::fail("expected number").trace("age"));
     }
 
     #[test]

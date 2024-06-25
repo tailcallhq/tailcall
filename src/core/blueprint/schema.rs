@@ -15,11 +15,7 @@ fn validate_query(config: &Config) -> Valid<(), String> {
     )
     .and_then(|ref query_type_name| {
         let Some(query) = config.find_type(query_type_name) else {
-            return Valid::fail("Query type is not defined".to_owned()).trace(
-                query_type_name
-                    .to_pos_trace_err(query_type_name.inner.to_owned())
-                    .as_deref(),
-            );
+            return Valid::fail("Query type is not defined".to_owned()).trace(query_type_name);
         };
         let mut set = HashSet::new();
         validate_type_has_resolvers(query_type_name, query, &config.types, &mut set)
@@ -44,7 +40,7 @@ fn validate_type_has_resolvers(
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
         validate_field_has_resolver(name, field, types, ty, visited)
     })
-    .trace(ty.to_trace_err(name))
+    .trace(name)
     .unit()
 }
 
@@ -57,7 +53,6 @@ pub fn validate_field_has_resolver(
     visited: &mut HashSet<String>,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
-        .trace(field.to_pos_trace_err(name.to_owned()).as_deref())
         .when(|| {
             if types.get(&field.type_of).eq(&Some(parent_ty)) {
                 return true;
@@ -77,6 +72,7 @@ pub fn validate_field_has_resolver(
             }
             false
         })
+        .trace(name)
 }
 
 pub fn to_directive(const_directive: ConstDirective) -> Valid<Directive, String> {
@@ -106,7 +102,7 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
     if let Some(mutation_type_name) = mutation_type_name {
         let Some(mutation) = config.find_type(mutation_type_name) else {
             return Valid::fail("Mutation type is not defined".to_owned())
-                .trace(Some(mutation_type_name));
+                .trace(mutation_type_name);
         };
         let mut set = HashSet::new();
         validate_type_has_resolvers(mutation_type_name, mutation, &config.types, &mut set)

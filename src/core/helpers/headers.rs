@@ -12,13 +12,13 @@ pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, Strin
             HeaderName::from_bytes(key_value.key.as_bytes())
                 .map_err(|e| ValidationError::new(e.to_string())),
         )
-        .trace(Some(&key_value.key));
+        .trace(&key_value.key);
 
         let value = Valid::from(
             Mustache::parse(key_value.value.as_str())
                 .map_err(|e| ValidationError::new(e.to_string())),
         )
-        .trace(Some(&key_value.value));
+        .trace(&key_value.value);
 
         name.zip(value).map(|(name, value)| (name, value))
     })

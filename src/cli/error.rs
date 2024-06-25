@@ -4,7 +4,7 @@ use colored::Colorize;
 use derive_setters::Setters;
 use thiserror::Error;
 
-use crate::core::valid::ValidationError;
+use crate::core::valid::{SourcePos, ValidationError};
 
 #[derive(Debug, Error, Setters, PartialEq, Clone)]
 pub struct CLIError {
@@ -14,6 +14,7 @@ pub struct CLIError {
     message: String,
     #[setters(strip_option)]
     description: Option<String>,
+    source_position: Option<SourcePos>,
     trace: Vec<String>,
 
     #[setters(skip)]
@@ -29,6 +30,7 @@ impl CLIError {
             description: Default::default(),
             trace: Default::default(),
             caused_by: Default::default(),
+            source_position: Default::default(),
         }
     }
 
@@ -99,18 +101,25 @@ impl Display for CLIError {
             f.write_str(&self.colored(description.to_string().as_str(), colored::Color::White))?;
         }
 
-        if !self.trace.is_empty() {
-            let mut buf = String::new();
-            buf.push_str(" [at ");
-            let len = self.trace.len();
-            for (i, trace) in self.trace.iter().enumerate() {
-                buf.push_str(&trace.to_string());
-                if i < len - 1 {
-                    buf.push('.');
+        if let Some(positioned_err) = &self.source_position {
+            f.write_str(&self.colored(
+                format!(" [at {}]", positioned_err).as_str(),
+                colored::Color::Cyan,
+            ))?;
+        } else {
+            if !self.trace.is_empty() {
+                let mut buf = String::new();
+                buf.push_str(" [at ");
+                let len = self.trace.len();
+                for (i, trace) in self.trace.iter().enumerate() {
+                    buf.push_str(&trace.to_string());
+                    if i < len - 1 {
+                        buf.push('.');
+                    }
                 }
+                buf.push(']');
+                f.write_str(&self.colored(&buf, colored::Color::Cyan))?;
             }
-            buf.push(']');
-            f.write_str(&self.colored(&buf, colored::Color::Cyan))?;
         }
 
         if !self.caused_by.is_empty() {
@@ -199,6 +208,9 @@ impl<'a> From<ValidationError<&'a str>> for CLIError {
                 .map(|cause| {
                     let mut err =
                         CLIError::new(cause.message).trace(Vec::from(cause.trace.clone()));
+                    if let Some(source_position) = cause.source_position.to_owned() {
+                        err = err.source_position(Some(source_position));
+                    }
                     if let Some(description) = cause.description {
                         err = err.description(description.to_owned());
                     }
@@ -216,7 +228,9 @@ impl From<ValidationError<String>> for CLIError {
                 .as_vec()
                 .iter()
                 .map(|cause| {
-                    CLIError::new(cause.message.as_str()).trace(Vec::from(cause.trace.clone()))
+                    CLIError::new(cause.message.as_str())
+                        .trace(Vec::from(cause.trace.clone()))
+                        .source_position(cause.source_position.to_owned())
                 })
                 .collect(),
         )

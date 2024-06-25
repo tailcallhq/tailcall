@@ -7,7 +7,6 @@ use crate::core::blueprint::{FieldDefinition, TypeLike};
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::position::Pos;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
-use crate::core::directive::DirectiveCodec;
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
 use crate::core::ir::model::{IO, IR};
@@ -169,17 +168,11 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
     let validate_with_schema = inputs.validate_with_schema;
 
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
-        .trace(
-            grpc.method
-                .to_pos_trace_err(config::Grpc::trace_name())
-                .as_deref(),
-        )
         .and_then(|method| {
             let file_descriptor_set = config_module.extensions.get_file_descriptor_set();
 
             if file_descriptor_set.file.is_empty() {
-                return Valid::fail("Protobuf files were not specified in the config".to_string())
-                    .trace(grpc.to_pos_trace_err(config::Grpc::trace_name()).as_deref());
+                return Valid::fail("Protobuf files were not specified in the config".to_string());
             }
 
             to_operation(&method, file_descriptor_set)
@@ -188,18 +181,15 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 .fuse(helpers::body::to_body(
                     grpc.body.as_deref().map(|body| body.as_str()),
                 ))
-                .trace(grpc.to_pos_trace_err(config::Grpc::trace_name()).as_deref())
+                .into()
         })
         .and_then(|(operation, url, headers, body)| {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
                 if grpc.group_by.is_empty() {
-                    validate_schema(field_schema, &operation, field)
-                        .trace(field.to_trace_err(&config::Grpc::trace_name()))
-                        .unit()
+                    validate_schema(field_schema, &operation, field).unit()
                 } else {
                     validate_group_by(&field_schema, &operation, grpc.group_by.clone(), field)
-                        .trace(field.to_trace_err(&config::Grpc::trace_name()))
                         .unit()
                 }
             } else {
@@ -256,7 +246,7 @@ pub fn update_grpc<'a>(
             .map(|resolver| b_field.resolver(Some(resolver)))
             .and_then(|b_field| {
                 b_field
-                    .validate_field(type_of, field, config_module).trace(grpc.to_trace_err(config::Grpc::trace_name().as_str()))
+                    .validate_field(type_of, field, config_module)
                     .map_to(b_field)
             })
         },

@@ -2,7 +2,6 @@ use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::position::Pos;
 use crate::core::config::Field;
-use crate::core::directive::DirectiveCodec;
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
@@ -15,20 +14,10 @@ pub fn compile_http(
     http: &Pos<config::Http>,
 ) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
-        .trace(
-            http.method
-                .to_pos_trace_err(config::Http::trace_name())
-                .as_deref(),
-        )
         .when(|| !http.group_by.is_empty() && http.method.inner != Method::GET)
         .and(
             Valid::<(), String>::fail(
                 "GroupBy can only be applied if batching is enabled".to_string(),
-            )
-            .trace(
-                http.group_by
-                    .to_pos_trace_err(config::Http::trace_name())
-                    .as_deref(),
             )
             .when(|| {
                 (config_module.upstream.get_delay() < 1
@@ -36,15 +25,13 @@ pub fn compile_http(
                     && !http.group_by.is_empty()
             }),
         )
-        .and(
-            Valid::from_option(
-                http.base_url
-                    .as_ref()
-                    .or(config_module.upstream.base_url.as_ref()),
-                "No base URL defined".to_string(),
-            )
-            .trace(http.to_pos_trace_err(config::Http::trace_name()).as_deref()),
-        )
+        .and(Valid::from_option(
+            http.base_url
+                .as_ref()
+                .or(config_module.upstream.base_url.as_ref()),
+            "No base URL defined".to_string(),
+        ))
+        .positioned_err(http.to_positioned_err())
         .zip(helpers::headers::to_mustache_headers(http.headers.as_ref()))
         .and_then(|(base_url, headers)| {
             let mut base_url = base_url.trim_end_matches('/').to_owned();
@@ -110,7 +97,7 @@ pub fn update_http<'a>() -> TryFold<
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field
-                        .validate_field(type_of, field, config_module).trace(http.to_trace_err(config::Http::trace_name().as_str()))
+                        .validate_field(type_of, field, config_module)
                         .map_to(b_field)
                 })
         },

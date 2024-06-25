@@ -2,7 +2,6 @@ use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
 use crate::core::config::position::Pos;
 use crate::core::config::{ConfigModule, Field};
-use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
@@ -36,7 +35,6 @@ pub fn update_js_field<'a>() -> TryFold<
             };
 
             compile_js(CompileJs { script: &module.extensions.script, name: &js.name })
-                .trace(js.to_pos_trace_err(config::JS::trace_name()).as_deref())
                 .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )

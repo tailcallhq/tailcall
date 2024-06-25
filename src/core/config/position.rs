@@ -3,6 +3,7 @@ use std::ops::{Deref, DerefMut};
 use serde::{Deserialize, Serialize};
 
 use crate::core::merge_right::MergeRight;
+use crate::core::valid::SourcePos;
 
 #[derive(
     Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, Ord, PartialOrd,
@@ -29,39 +30,15 @@ impl<T> Pos<T> {
         self.file_path = Some(position.2.to_owned());
     }
 
-    // This method can be called for trace errors that needs to be recorded for
-    // formats such as YAML and JSON only, becuase positional traces are not
-    // supported for those formats.
-    pub fn to_trace_err<'a>(&self, default: &'a str) -> Option<&'a str> {
-        if self.pos_trace_is_supported() {
+    pub fn to_positioned_err(&self) -> Option<SourcePos> {
+        if self.pos_trace_is_unsupported() {
             return None;
         }
 
-        Some(default)
+        Some(SourcePos::from(self))
     }
 
-    pub fn to_pos_trace_err(&self, default: String) -> Option<String> {
-        // in case positional tracing error messages are not supported for the source we
-        // record the trace with the default value provided
-        if self.pos_trace_is_unsupported() {
-            return Some(default);
-        }
-
-        Some(format!(
-            "{} {}#{}",
-            self.file_path.as_ref().unwrap().as_str(),
-            self.line,
-            self.column
-        ))
-    }
-
-    // if file path exist we know that we read the positional details from
-    // that source
-    pub fn pos_trace_is_supported(&self) -> bool {
-        self.file_path.is_some()
-    }
-
-    pub fn pos_trace_is_unsupported(&self) -> bool {
+    fn pos_trace_is_unsupported(&self) -> bool {
         self.file_path.is_none()
     }
 }

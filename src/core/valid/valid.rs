@@ -1,5 +1,5 @@
 use super::append::Append;
-use super::ValidationError;
+use super::{SourcePos, ValidationError};
 use crate::core::valid::Cause;
 
 #[derive(Debug, PartialEq)]
@@ -46,10 +46,19 @@ pub trait Validator<A, E>: Sized {
         Fusion(self.zip(other))
     }
 
-    fn trace(self, message: Option<&str>) -> Valid<A, E> {
+    fn trace(self, message: &str) -> Valid<A, E> {
         let valid = self.to_result();
         if let Err(error) = valid {
             return Valid(Err(error.trace(message)));
+        }
+
+        Valid(valid)
+    }
+
+    fn positioned_err(self, position: Option<SourcePos>) -> Valid<A, E> {
+        let valid = self.to_result();
+        if let Err(error) = valid {
+            return Valid(Err(error.positioned_err(position)));
         }
 
         Valid(valid)
@@ -282,14 +291,12 @@ mod tests {
 
     #[test]
     fn test_trace() {
-        let result = Valid::<(), i32>::fail(1)
-            .trace(Some("A"))
-            .trace(Some("B"))
-            .trace(Some("C"));
+        let result = Valid::<(), i32>::fail(1).trace("A").trace("B").trace("C");
         let expected = Valid::from_vec_cause(vec![Cause {
             message: 1,
             description: None,
             trace: vec!["C".to_string(), "B".to_string(), "A".to_string()].into(),
+            source_position: None,
         }]);
         assert_eq!(result, expected);
     }

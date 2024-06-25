@@ -77,50 +77,48 @@ impl PositionedJsonSchema {
     }
 
     pub fn compare(&self, other: &PositionedJsonSchema, name: &str) -> Valid<(), String> {
-        let trace_err = self.source_position.to_pos_trace_err();
-
         match &self.schema {
             JsonScheamWithSourcePosition::Str => {
                 if other.schema != self.schema {
                     return Valid::fail(format!("expected String, got {}", other.schema))
-                        .trace(trace_err.as_deref());
+                        .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Num => {
                 if other.schema != self.schema {
                     return Valid::fail(format!("expected Number, got {}", other.schema))
-                        .trace(trace_err.as_deref());
+                        .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Bool => {
                 if other.schema != self.schema {
                     return Valid::fail(format!("expected Boolean, got {}", other.schema))
-                        .trace(trace_err.as_deref());
+                        .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Empty => {
                 if other.schema != self.schema {
                     return Valid::fail(format!("expected Empty, got {}", other.schema))
-                        .trace(trace_err.as_deref());
+                        .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Any => {
                 if other.schema != self.schema {
                     return Valid::fail(format!("expected Any, got {}", other.schema))
-                        .trace(trace_err.as_deref());
+                        .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Obj(a) => {
                 if let JsonScheamWithSourcePosition::Obj(b) = &other.schema {
                     return Valid::from_iter(b.iter(), |(key, b)| {
                         Valid::from_option(a.get(key), format!("missing key: {}", key))
-                            .trace(trace_err.as_deref())
+                            .trace(name)
                             .and_then(|a| a.compare(b, key))
                     })
                     .unit();
                 } else {
                     return Valid::fail("expected Object type".to_string())
-                        .trace(trace_err.as_deref());
+                        .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Arr(a) => {
@@ -128,7 +126,7 @@ impl PositionedJsonSchema {
                     return a.compare(b, name);
                 } else {
                     return Valid::fail("expected Non repeatable type".to_string())
-                        .trace(trace_err.as_deref());
+                        .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Opt(a) => {
@@ -136,18 +134,18 @@ impl PositionedJsonSchema {
                     return a.compare(b, name);
                 } else {
                     return Valid::fail("expected type to be required".to_string())
-                        .trace(trace_err.as_deref());
+                        .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Enum(a) => {
                 if let JsonScheamWithSourcePosition::Enum(b) = &other.schema {
                     if a.ne(b) {
                         return Valid::fail(format!("expected {:?} but found {:?}", a, b))
-                            .trace(trace_err.as_deref());
+                            .trace(name);
                     }
                 } else {
                     return Valid::fail(format!("expected Enum got: {}", other.schema))
-                        .trace(trace_err.as_deref());
+                        .trace(name);
                 }
             }
         }
