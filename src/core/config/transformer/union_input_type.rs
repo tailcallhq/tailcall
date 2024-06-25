@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use crate::core::config::position::Pos;
 use crate::core::config::{Arg, Config, Field, Type};
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
@@ -51,7 +52,7 @@ struct Visitor<'cfg> {
     /// Original config
     config: &'cfg Config,
     /// Result types that will replace original config.types
-    new_types: BTreeMap<String, Type>,
+    new_types: BTreeMap<String, Pos<Type>>,
     // maps type name to UnionPresence
     union_presence: HashMap<&'cfg String, UnionPresence>,
 }
@@ -68,7 +69,7 @@ impl<'cfg> Visitor<'cfg> {
     /// Walks over all the types to see if we need to add new types
     /// or replace the field set for the type if any of the arguments use
     /// a union somewhere down the fields tree.
-    fn visit(mut self) -> BTreeMap<String, Type> {
+    fn visit(mut self) -> BTreeMap<String, Pos<Type>> {
         for (type_name, type_) in &self.config.types {
             let fields = type_
                 .fields
@@ -85,15 +86,22 @@ impl<'cfg> Visitor<'cfg> {
                 .collect();
 
             // new type will replace existing type in the config
-            self.new_types
-                .insert(type_name.clone(), Type { fields, ..type_.clone() });
+            self.new_types.insert(
+                type_name.clone(),
+                Pos::new(
+                    type_.line,
+                    type_.column,
+                    type_.file_path.clone(),
+                    Type { fields, ..type_.inner.clone() },
+                ),
+            );
         }
 
         self.new_types
     }
 
     /// Walks over the field's arguments and fills union_presence info
-    fn collect_nested_unions_for_args(&mut self, field: &'cfg Field) {
+    fn collect_nested_unions_for_args(&mut self, field: &'cfg Pos<Field>) {
         field
             .args
             .values()
@@ -174,7 +182,7 @@ impl<'cfg> Visitor<'cfg> {
     /// Converts single field with arguments to possibly multiple fields with
     /// arguments based on Union type members.
     /// If there is no Union arguments then it will return just the field itself
-    fn map_args_to_fields(&self, name: &str, field: &Field) -> Vec<(String, Field)> {
+    fn map_args_to_fields(&self, name: &str, field: &Pos<Field>) -> Vec<(String, Pos<Field>)> {
         let mut output = Vec::with_capacity(field.args.len());
         let args: Vec<_> = field.args.iter().collect();
 
@@ -189,8 +197,8 @@ impl<'cfg> Visitor<'cfg> {
     fn walk_arguments(
         &self,
         args: &[(&String, &Arg)], // arguments of currently processed field
-        (field_name, current_field): (Cow<'_, str>, &mut Field), // new field info
-        output: &mut Vec<(String, Field)>, // the result set of fields with their names
+        (field_name, current_field): (Cow<'_, str>, &mut Pos<Field>), // new field info
+        output: &mut Vec<(String, Pos<Field>)>, // the result set of fields with their names
     ) {
         let Some(&(arg_name, arg)) = args.first() else {
             output.push((field_name.into_owned(), current_field.clone()));
@@ -223,14 +231,14 @@ impl<'cfg> Visitor<'cfg> {
     fn create_types_from_union(
         &self,
         type_name: &str,
-        type_: &Type,
+        type_: &Pos<Type>,
         union_fields: Vec<(&String, &Vec<String>)>,
-    ) -> Vec<(String, Type)> {
+    ) -> Vec<(String, Pos<Type>)> {
         fn inner_create(
             type_name: String,                        // name of the new type to set
-            base_type: Type,                          // current representation of the type
+            base_type: Pos<Type>,                     // current representation of the type
             union_fields: &[(&String, &Vec<String>)], // list of fields that are union
-            result: &mut Vec<(String, Type)>,         /* the result list of new types with their
+            result: &mut Vec<(String, Pos<Type>)>,    /* the result list of new types with their
                                                        * names */
         ) {
             let Some((field_name, union_types)) = union_fields.first().as_ref() else {

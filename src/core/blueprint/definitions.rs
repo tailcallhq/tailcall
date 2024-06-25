@@ -454,7 +454,7 @@ fn to_fields(
                         .collect::<Vec<_>>(),
                     None => add_field.path.inner.clone(),
                 };
-                let invalid_path_handler = |_field_name: &str,
+                let invalid_path_handler = |field_name: &str,
                                             _added_field_path: &[String],
                                             original_path: &[String]|
                  -> Valid<Type, String> {
@@ -462,6 +462,7 @@ fn to_fields(
                         "Cannot add field".to_string(),
                         format!("Path [{}] does not exist", original_path.join(", ")),
                     )
+                    .trace(field_name)
                 };
                 let path_resolver_error_handler = |resolver_name: &str,
                                                    field_type: &str,
@@ -478,7 +479,6 @@ fn to_fields(
                             field_name
                         ),
                     )
-                    .trace(field_name)
                 };
                 update_resolver_from_path(
                     &ProcessPathContext {

@@ -7,8 +7,7 @@ expression: errors
     "message": "Cannot add field",
     "trace": [
       "Query",
-      "@addField",
-      "user"
+      "@addField"
     ],
     "description": "Path: [post, user, name] contains resolver http at [Post.user]"
   }

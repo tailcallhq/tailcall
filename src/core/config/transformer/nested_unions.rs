@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
+use crate::core::config::position::Pos;
 use crate::core::config::{Config, Union};
 use crate::core::transform::Transform;
 use crate::core::valid::{Valid, Validator};
@@ -24,11 +25,11 @@ impl Transform for NestedUnions {
 }
 
 struct Visitor<'cfg> {
-    unions: &'cfg BTreeMap<String, Union>,
+    unions: &'cfg BTreeMap<String, Pos<Union>>,
 }
 
 impl<'cfg> Visitor<'cfg> {
-    fn visit(self) -> Valid<BTreeMap<String, Union>, String> {
+    fn visit(self) -> Valid<BTreeMap<String, Pos<Union>>, String> {
         let mut result = BTreeMap::new();
 
         Valid::from_iter(self.unions.iter(), |(union_name, union_)| {
@@ -37,7 +38,12 @@ impl<'cfg> Visitor<'cfg> {
             self.walk_union(union_, &mut union_types, &mut HashSet::new())
                 .trace(union_name)
                 .map(|_| {
-                    let new_union = Union { types: union_types, ..union_.clone() };
+                    let new_union = Pos::new(
+                        union_.line,
+                        union_.column,
+                        union_.file_path.clone(),
+                        Union { types: union_types, ..union_.inner.clone() },
+                    );
 
                     result.insert(union_name.clone(), new_union);
                 })
