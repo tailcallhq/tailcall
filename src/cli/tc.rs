@@ -206,7 +206,7 @@ pub async fn init(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     confirm_overwrite(runtime.clone(), &file_path, tailcallrc.as_bytes()).await?;
     confirm_overwrite(runtime.clone(), &json_file_path, tailcallrc_json.as_bytes()).await?;
     confirm_overwrite_yml(runtime.clone(), &yml_file_path).await?;
-    create_main(runtime.clone(), folder_path, selection.ext()).await?;
+    create_main(runtime.clone(), folder_path, selection).await?;
 
     Ok(())
 }
@@ -236,22 +236,19 @@ fn main_config() -> Config {
 async fn create_main(
     runtime: TargetRuntime,
     folder_path: impl AsRef<Path>,
-    extension: &str,
+    source: Source,
 ) -> Result<()> {
     let config = main_config();
 
-    let content = match extension {
-        "graphql" => config.to_sdl(),
-        "json" => config.to_json(true)?,
-        "yml" => config.to_yaml()?,
-        _ => {
-            unreachable!()
-        }
+    let content = match source {
+        Source::GraphQL => config.to_sdl(),
+        Source::Json => config.to_json(true)?,
+        Source::Yml => config.to_yaml()?,
     };
 
     let path = folder_path
         .as_ref()
-        .join(format!("main.{}", extension))
+        .join(format!("main.{}", source.ext()))
         .display()
         .to_string();
     runtime
