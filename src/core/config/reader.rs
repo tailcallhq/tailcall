@@ -135,7 +135,9 @@ impl ConfigReader {
             }
         }
 
-        Ok(ConfigModule::from(config_module).with_extensions(extensions))
+        // Recreating the ConfigModule in order to recompute the values of
+        // `input_types`, `output_types` and `interface_types`
+        Ok(ConfigModule::from(config_module.config().clone()).with_extensions(extensions))
     }
 
     /// Reads the certificate from a given file
