@@ -1,4 +1,3 @@
-use std::fmt::Display;
 
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_until};
@@ -8,37 +7,10 @@ use nom::multi::many0;
 use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
+use super::*;
 use crate::core::path::{PathGraphql, PathString};
 
-#[derive(Debug, Clone, PartialEq, Hash)]
-pub struct Mustache(Vec<Segment>);
-
-#[derive(Debug, Clone, PartialEq, Hash)]
-pub enum Segment {
-    Literal(String),
-    Expression(Vec<String>),
-}
-
-impl From<Vec<Segment>> for Mustache {
-    fn from(segments: Vec<Segment>) -> Self {
-        Mustache(segments)
-    }
-}
-
 impl Mustache {
-    pub fn is_const(&self) -> bool {
-        match self {
-            Mustache(segments) => {
-                for s in segments {
-                    if let Segment::Expression(_) = s {
-                        return false;
-                    }
-                }
-                true
-            }
-        }
-    }
-
     // TODO: infallible function, no need to return Result
     pub fn parse(str: &str) -> anyhow::Result<Mustache> {
         let result = parse_mustache(str).finish();
@@ -49,64 +21,26 @@ impl Mustache {
     }
 
     pub fn render(&self, value: &impl PathString) -> String {
-        match self {
-            Mustache(segments) => segments
-                .iter()
-                .map(|segment| match segment {
-                    Segment::Literal(text) => text.clone(),
-                    Segment::Expression(parts) => value
-                        .path_string(parts)
-                        .map(|a| a.to_string())
-                        .unwrap_or_default(),
-                })
-                .collect(),
-        }
+        self.segments()
+            .iter()
+            .map(|segment| match segment {
+                Segment::Literal(text) => text.clone(),
+                Segment::Expression(parts) => value
+                    .path_string(parts)
+                    .map(|a| a.to_string())
+                    .unwrap_or_default(),
+            })
+            .collect()
     }
 
     pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
-        match self {
-            Mustache(segments) => segments
-                .iter()
-                .map(|segment| match segment {
-                    Segment::Literal(text) => text.to_string(),
-                    Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
-                })
-                .collect(),
-        }
-    }
-
-    pub fn get_segments(&self) -> Vec<&Segment> {
-        match self {
-            Mustache(segments) => segments.iter().collect(),
-        }
-    }
-
-    pub fn expression_segments(&self) -> Vec<&Vec<String>> {
-        match self {
-            Mustache(segments) => segments
-                .iter()
-                .filter_map(|seg| match seg {
-                    Segment::Expression(parts) => Some(parts),
-                    _ => None,
-                })
-                .collect(),
-        }
-    }
-}
-
-impl Display for Mustache {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
-            Mustache(segments) => segments
-                .iter()
-                .map(|segment| match segment {
-                    Segment::Literal(text) => text.clone(),
-                    Segment::Expression(parts) => format!("{{{{{}}}}}", parts.join(".")),
-                })
-                .collect::<Vec<String>>()
-                .join(""),
-        };
-        write!(f, "{}", str)
+        self.segments()
+            .iter()
+            .map(|segment| match segment {
+                Segment::Literal(text) => text.to_string(),
+                Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
+            })
+            .collect()
     }
 }
 
@@ -163,15 +97,10 @@ fn parse_segment(input: &str) -> IResult<&str, Vec<Segment>> {
 
 fn parse_mustache(input: &str) -> IResult<&str, Mustache> {
     map(parse_segment, |segments| {
-        Mustache(
-            segments
-                .into_iter()
-                .filter(|seg| match seg {
-                    Segment::Literal(s) => (!s.is_empty()) && s != "\"",
-                    _ => true,
-                })
-                .collect(),
-        )
+        Mustache::from(segments.into_iter().filter(|seg| match seg {
+            Segment::Literal(s) => (!s.is_empty()) && s != "\"",
+            _ => true,
+        }))
     })(input)
 }
 
@@ -288,14 +217,14 @@ mod tests {
         #[test]
         fn test_parse_segments_only_literal() {
             let result = Mustache::parse("just a string").unwrap();
-            let expected = Mustache(vec![Segment::Literal("just a string".to_string())]);
+            let expected = Mustache::from(vec![Segment::Literal("just a string".to_string())]);
             assert_eq!(result, expected);
         }
 
         #[test]
         fn test_parse_segments_only_expression() {
             let result = Mustache::parse("{{foo.bar}}").unwrap();
-            let expected = Mustache(vec![Segment::Expression(vec![
+            let expected = Mustache::from(vec![Segment::Expression(vec![
                 "foo".to_string(),
                 "bar".to_string(),
             ])]);
