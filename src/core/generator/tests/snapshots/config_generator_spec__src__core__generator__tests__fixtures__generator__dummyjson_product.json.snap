@@ -61,8 +61,8 @@ type Query {
   categories: [Category] @http(path: "/products/categories")
   categoryList: [String] @http(path: "/products/category-list")
   product(p1: Int!): Product @http(path: "/products/{{.args.p1}}")
+  productList(order: String, sortBy: String): ProductSearch @http(path: "/products", query: [{key: "sortBy", value: "{{.args.sortBy}}"}, {key: "order", value: "{{.args.order}}"}])
   productSearch(q: String): ProductSearch @http(path: "/products/search", query: [{key: "q", value: "{{.args.q}}"}])
-  products(order: String, sortBy: String): ProductSearch @http(path: "/products", query: [{key: "sortBy", value: "{{.args.sortBy}}"}, {key: "order", value: "{{.args.order}}"}])
 }
 
 type Review {
