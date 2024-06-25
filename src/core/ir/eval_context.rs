@@ -157,7 +157,7 @@ fn format_selection_field(field: SelectionField, related_fields: &RelatedFields)
 
         if !directives.is_empty() {
             output.push(' ');
-            output.push_str(&directives);
+            output.push_str(&directives.escape_default().to_string());
         }
     }
 

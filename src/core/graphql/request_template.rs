@@ -118,7 +118,7 @@ impl RequestTemplate {
                 let operation = operation.to_mut();
 
                 operation.push(' ');
-                operation.push_str(&directives);
+                operation.push_str(&directives.escape_default().to_string());
             }
         }
 
