@@ -106,20 +106,18 @@ impl Display for CLIError {
                 format!(" [at {}]", positioned_err).as_str(),
                 colored::Color::Cyan,
             ))?;
-        } else {
-            if !self.trace.is_empty() {
-                let mut buf = String::new();
-                buf.push_str(" [at ");
-                let len = self.trace.len();
-                for (i, trace) in self.trace.iter().enumerate() {
-                    buf.push_str(&trace.to_string());
-                    if i < len - 1 {
-                        buf.push('.');
-                    }
+        } else if !self.trace.is_empty() {
+            let mut buf = String::new();
+            buf.push_str(" [at ");
+            let len = self.trace.len();
+            for (i, trace) in self.trace.iter().enumerate() {
+                buf.push_str(&trace.to_string());
+                if i < len - 1 {
+                    buf.push('.');
                 }
-                buf.push(']');
-                f.write_str(&self.colored(&buf, colored::Color::Cyan))?;
             }
+            buf.push(']');
+            f.write_str(&self.colored(&buf, colored::Color::Cyan))?;
         }
 
         if !self.caused_by.is_empty() {

@@ -26,11 +26,7 @@ impl<T> From<&Pos<T>> for SourcePos {
 
 impl Display for SourcePos {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            format!("{} {}#{}", self.file_path, self.line, self.column)
-        )
+        write!(f, "{} {}#{}", self.file_path, self.line, self.column)
     }
 }
 

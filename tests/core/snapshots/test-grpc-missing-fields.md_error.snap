@@ -9,6 +9,8 @@ expression: errors
       "Query",
       "news",
       "@grpc",
+      "NewsData",
+      "news",
       "news"
     ],
     "description": null
