@@ -9,7 +9,7 @@
       {
         "curl": {
           "src": "https://dummyjson.com/quotes/1",
-          "fieldName": "quotes"
+          "fieldName": "quote"
         }
       },
       {
