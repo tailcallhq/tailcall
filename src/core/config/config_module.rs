@@ -103,8 +103,9 @@ impl ConfigModule {
         crate::core::document::print(self.into())
     }
 
-    /// Normalizes current config with default settings
+    /// Normalizes current config with default preset
     pub fn normalize_default(self) -> Valid<Self, String> {
+        // TODO: migrate to preset. That will change many snapshots in repo
         self.transform(
             NestedUnions
                 .pipe(UnionInputType)
