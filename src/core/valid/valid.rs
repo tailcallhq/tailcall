@@ -157,16 +157,6 @@ impl<A, E> Valid<A, E> {
     }
 }
 
-impl<A: std::fmt::Debug, E: std::fmt::Debug> Valid<A, E> {
-    pub fn unwrap(self) -> A {
-        self.0.unwrap()
-    }
-
-    pub fn unwrap_err(self) -> ValidationError<E> {
-        self.0.unwrap_err()
-    }
-}
-
 impl<A, E> Validator<A, E> for Valid<A, E> {
     fn to_result(self) -> Result<A, ValidationError<E>> {
         self.0

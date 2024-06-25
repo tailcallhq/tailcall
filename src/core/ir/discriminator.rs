@@ -347,6 +347,7 @@ mod tests {
     use super::Discriminator;
     use crate::core::config::{Field, Type};
     use crate::core::ir::discriminator::TypeName;
+    use crate::core::valid::Validator;
 
     #[test]
     fn test_single_distinct_field_optional() {
@@ -354,7 +355,7 @@ mod tests {
         let bar = Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new("Test", &types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
 
         assert_eq!(
             discriminator
@@ -401,7 +402,7 @@ mod tests {
             Type::default().fields(vec![("bar", Field { required: true, ..Field::default() })]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new("Test", &types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
 
         assert_eq!(
             discriminator
@@ -459,7 +460,7 @@ mod tests {
         ]);
         let types = vec![("A", &a), ("B", &b), ("C", &c)];
 
-        let discriminator = Discriminator::new("Test", &types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
 
         assert_eq!(
             discriminator
@@ -519,7 +520,7 @@ mod tests {
         ]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new("Test", &types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
 
         assert_eq!(
             discriminator
@@ -592,7 +593,7 @@ mod tests {
         let bar = Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new("Test", &types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
 
         assert_eq!(
             discriminator
@@ -660,7 +661,7 @@ mod tests {
         ]);
         let types = vec![("A", &a), ("B", &b), ("C", &c)];
 
-        let discriminator = Discriminator::new("Test", &types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
 
         assert_eq!(
             discriminator
@@ -759,7 +760,7 @@ mod tests {
             ("Var1_Var1", &var1_var1),
         ];
 
-        let discriminator = Discriminator::new("Test", &types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
 
         assert_eq!(
             discriminator
@@ -892,7 +893,7 @@ mod tests {
             ("TypeD", &type_d),
         ];
 
-        let discriminator = Discriminator::new("Test", &types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
 
         assert_eq!(
             discriminator
@@ -987,7 +988,7 @@ mod tests {
             ("TypeD", &type_d),
         ];
 
-        let discriminator = Discriminator::new("Test", &types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
 
         assert_eq!(
             discriminator
@@ -1067,6 +1068,7 @@ mod tests {
 
         assert_eq!(
             Discriminator::new("BigUnion", &union_types)
+                .to_result()
                 .unwrap_err()
                 .to_string(),
             "Validation Error
@@ -1104,7 +1106,10 @@ mod tests {
         ];
 
         assert_eq!(
-            Discriminator::new("Test", &types).unwrap_err().to_string(),
+            Discriminator::new("Test", &types)
+                .to_result()
+                .unwrap_err()
+                .to_string(),
             "Validation Error
 • Union have equal types: A == B == C  [Test]
 • Union have equal types: E == F  [Test]
@@ -1118,7 +1123,7 @@ mod tests {
         let bar = Type::default().fields(vec![("bar", Field::default())]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
-        let discriminator = Discriminator::new("Test", &types).unwrap();
+        let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
 
         assert_eq!(
             discriminator
