@@ -1,11 +1,11 @@
 use super::{Mustache, Segment};
 use crate::core::path::{PathGraphql, PathString};
 
-pub trait Eval {
+pub trait Eval<'a> {
     type In;
     type Out;
 
-    fn eval(&self, mustache: &Mustache, in_value: &Self::In) -> Self::Out;
+    fn eval(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out;
 }
 
 pub struct PathStringEval<A>(std::marker::PhantomData<A>);
@@ -16,7 +16,7 @@ impl<A> PathStringEval<A> {
     }
 }
 
-impl<A: PathString> Eval for PathStringEval<A> {
+impl<'a, A: PathString> Eval<'a> for PathStringEval<A> {
     type In = A;
     type Out = String;
 
@@ -35,6 +35,41 @@ impl<A: PathString> Eval for PathStringEval<A> {
     }
 }
 
+pub trait Path {
+    fn get_path<S: AsRef<str>>(&self, in_value: &[S]) -> Option<&Self>;
+}
+
+pub struct PathEval<A>(std::marker::PhantomData<A>);
+
+impl<A> PathEval<A> {
+    #[allow(unused)]
+    pub fn new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+#[allow(unused)]
+pub enum Exit<'a, A> {
+    Text(&'a str),
+    Value(&'a A),
+}
+
+impl<'a, A: Path + 'a> Eval<'a> for PathEval<&'a A> {
+    type In = &'a A;
+    type Out = Vec<Exit<'a, A>>;
+
+    fn eval(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out {
+        mustache
+            .segments()
+            .iter()
+            .filter_map(|segment| match segment {
+                Segment::Literal(text) => Some(Exit::Text(text)),
+                Segment::Expression(parts) => in_value.get_path(parts).map(Exit::Value),
+            })
+            .collect::<Vec<_>>()
+    }
+}
+
 pub struct PathGraphqlEval<A>(std::marker::PhantomData<A>);
 
 impl<A> PathGraphqlEval<A> {
@@ -43,7 +78,7 @@ impl<A> PathGraphqlEval<A> {
     }
 }
 
-impl<A: PathGraphql> Eval for PathGraphqlEval<A> {
+impl<'a, A: PathGraphql> Eval<'a> for PathGraphqlEval<A> {
     type In = A;
     type Out = String;
 
