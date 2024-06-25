@@ -7,7 +7,6 @@ use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
 use super::*;
-use crate::core::path::{PathGraphql, PathString};
 
 impl Mustache {
     // TODO: infallible function, no need to return Result
@@ -17,29 +16,6 @@ impl Mustache {
             Ok((_, mustache)) => Ok(mustache),
             Err(_) => Ok(Mustache::from(vec![Segment::Literal(str.to_string())])),
         }
-    }
-
-    pub fn render(&self, value: &impl PathString) -> String {
-        self.segments()
-            .iter()
-            .map(|segment| match segment {
-                Segment::Literal(text) => text.clone(),
-                Segment::Expression(parts) => value
-                    .path_string(parts)
-                    .map(|a| a.to_string())
-                    .unwrap_or_default(),
-            })
-            .collect()
-    }
-
-    pub fn render_graphql(&self, value: &impl PathGraphql) -> String {
-        self.segments()
-            .iter()
-            .map(|segment| match segment {
-                Segment::Literal(text) => text.to_string(),
-                Segment::Expression(parts) => value.path_graphql(parts).unwrap_or_default(),
-            })
-            .collect()
     }
 }
 
