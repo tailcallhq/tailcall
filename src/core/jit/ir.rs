@@ -9,7 +9,6 @@ use crate::core::{graphql, grpc, http};
 #[derive(Clone, Debug)]
 pub enum IR {
     Dynamic(DynamicValue<serde_json::Value>),
-    #[strum(to_string = "{0}")]
     IO(IO),
     Cache(Cache),
     Path(Vec<String>),
@@ -21,7 +20,6 @@ pub enum IR {
 #[derive(Clone, Debug)]
 pub struct Map {
     pub input: Box<IR>,
-    // accept key return value instead of
     pub map: HashMap<String, String>,
 }
 
@@ -31,10 +29,11 @@ pub struct Cache {
     pub io: IO,
 }
 
+#[allow(unused)]
 #[derive(Clone, Debug)]
 pub struct IO {
-    group_by: Option<GroupBy>,
-    protocol: Protocol,
+    pub group_by: Option<GroupBy>,
+    pub protocol: Protocol,
 }
 
 #[derive(Clone, Debug)]
