@@ -218,18 +218,10 @@ pub async fn init(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
     let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
 
-    let (file_path, content) = match selection {
-        Source::GraphQL => (file_path, tailcallrc.as_bytes()),
-        Source::Json => (json_file_path, tailcallrc_json.as_bytes()),
-        Source::Yml => (file_path, tailcallrc.as_bytes()),
-    };
-
-    confirm_overwrite(runtime.clone(), &file_path, content).await?;
+    confirm_overwrite(runtime.clone(), &file_path, tailcallrc.as_bytes()).await?;
+    confirm_overwrite(runtime.clone(), &json_file_path, tailcallrc_json.as_bytes()).await?;
+    confirm_overwrite_yml(runtime.clone(), &file_path, &yml_file_path).await?;
     create_main(runtime.clone(), folder_path, selection.ext()).await?;
-
-    if matches!(selection, Source::Yml) {
-        confirm_overwrite_yml(runtime.clone(), &file_path, &yml_file_path).await?;
-    }
 
     Ok(())
 }
