@@ -135,11 +135,7 @@ impl ConfigReader {
             }
         }
 
-        // Recreating the ConfigModule in order to recompute the values of
-        // `input_types`, `output_types` and `interface_types`
-        let mut final_config_module = ConfigModule::from(config_module.config().clone());
-        final_config_module.with_extensions(extensions);
-        Ok(final_config_module)
+        Ok(ConfigModule::from(config_module).with_extensions(extensions))
     }
 
     /// Reads the certificate from a given file
