@@ -13,9 +13,7 @@ type Album {
   cover_small: String
   cover_xl: String
   id: Int
-  link: String
   md5_image: String
-  release_date: String
   title: String
   tracklist: String
   type: String
@@ -23,15 +21,7 @@ type Album {
 
 type Artist {
   id: Int
-  link: String
   name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  radio: Boolean
-  share: String
   tracklist: String
   type: String
 }
@@ -52,13 +42,116 @@ type Contributor {
   type: String
 }
 
-type Query {
-  track(p1: Int!): Track @http(path: "/track/{{.args.p1}}")
-}
-
-type Track {
+type Daum {
   album: Album
   artist: Artist
+  duration: Int
+  explicit_content_cover: Int
+  explicit_content_lyrics: Int
+  explicit_lyrics: Boolean
+  id: Int
+  link: String
+  md5_image: String
+  preview: String
+  rank: Int
+  readable: Boolean
+  title: String
+  title_short: String
+  title_version: String
+  type: String
+}
+
+type Genre {
+  data: [T6]
+}
+
+type Query {
+  album(p1: Int!): T40 @http(path: "/album/{{.args.p1}}")
+  artist(p1: Int!): T41 @http(path: "/artist/{{.args.p1}}")
+  track(p1: Int!): T5 @http(path: "/track/{{.args.p1}}")
+}
+
+type T3 {
+  id: Int
+  link: String
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  radio: Boolean
+  share: String
+  tracklist: String
+  type: String
+}
+
+type T4 {
+  cover: String
+  cover_big: String
+  cover_medium: String
+  cover_small: String
+  cover_xl: String
+  id: Int
+  link: String
+  md5_image: String
+  release_date: String
+  title: String
+  tracklist: String
+  type: String
+}
+
+type T40 {
+  artist: T9
+  available: Boolean
+  contributors: [Contributor]
+  cover: String
+  cover_big: String
+  cover_medium: String
+  cover_small: String
+  cover_xl: String
+  duration: Int
+  explicit_content_cover: Int
+  explicit_content_lyrics: Int
+  explicit_lyrics: Boolean
+  fans: Int
+  genre_id: Int
+  genres: Genre
+  id: Int
+  label: String
+  link: String
+  md5_image: String
+  nb_tracks: Int
+  record_type: String
+  release_date: String
+  share: String
+  title: String
+  tracklist: String
+  tracks: Track
+  type: String
+  upc: String
+}
+
+type T41 {
+  id: Int
+  link: String
+  name: String
+  nb_album: Int
+  nb_fan: Int
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  radio: Boolean
+  share: String
+  tracklist: String
+  type: String
+}
+
+type T5 {
+  album: T4
+  artist: T3
   available_countries: [String]
   bpm: Int
   contributors: [Contributor]
@@ -82,4 +175,27 @@ type Track {
   title_version: String
   track_position: Int
   type: String
+}
+
+type T6 {
+  id: Int
+  name: String
+  picture: String
+  type: String
+}
+
+type T9 {
+  id: Int
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  tracklist: String
+  type: String
+}
+
+type Track {
+  data: [Daum]
 }

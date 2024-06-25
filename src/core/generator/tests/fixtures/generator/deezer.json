@@ -5,6 +5,18 @@
         "src": "https://api.deezer.com/track/3135556",
         "fieldName": "track"
       }
+    },
+    {
+      "curl": {
+        "src": "https://api.deezer.com/album/302127",
+        "fieldName": "album"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://api.deezer.com/artist/27",
+        "fieldName": "artist"
+      }
     }
   ],
   "preset": {
