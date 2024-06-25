@@ -3,7 +3,7 @@
     {
       "curl": {
         "src": "https://dummyjson.com/products?sortBy=title&order=asc",
-        "fieldName": "products"
+        "fieldName": "productList"
       }
     },
     {
