@@ -94,7 +94,7 @@ type LandingLeg {
 type LatestLaunch {
   auto_update: Boolean
   capsules: [String]
-  cores: [T6]
+  cores: [T2]
   crew: [String]
   date_local: String
   date_precision: String
@@ -107,7 +107,7 @@ type LatestLaunch {
   id: String
   launch_library_id: String
   launchpad: String
-  links: T5
+  links: T6
   name: String
   net: Boolean
   payloads: [String]
@@ -264,25 +264,7 @@ type SecondStage {
   thrust: ThrustVacuum
 }
 
-type T3 {
-  campaign: Empty
-  launch: String
-  media: Empty
-  recovery: Empty
-}
-
-type T5 {
-  article: Empty
-  flickr: Flickr
-  patch: Patch
-  presskit: Empty
-  reddit: T3
-  webcast: String
-  wikipedia: String
-  youtube_id: String
-}
-
-type T6 {
+type T2 {
   core: String
   flight: Int
   gridfins: Boolean
@@ -294,30 +276,25 @@ type T6 {
   reused: Boolean
 }
 
-type T82 {
-  recovered: Empty
-  recovery_attempt: Empty
-  reused: Empty
-  ships: [Any]
+type T5 {
+  campaign: Empty
+  launch: String
+  media: Empty
+  recovery: Empty
 }
 
-type T83 {
-  large: Empty
-  small: Empty
-}
-
-type T86 {
+type T6 {
   article: Empty
   flickr: Flickr
-  patch: T83
+  patch: Patch
   presskit: Empty
-  reddit: Reddit
+  reddit: T5
   webcast: String
-  wikipedia: Empty
+  wikipedia: String
   youtube_id: String
 }
 
-type T87 {
+type T82 {
   core: String
   flight: Int
   gridfins: Boolean
@@ -329,6 +306,29 @@ type T87 {
   reused: Boolean
 }
 
+type T83 {
+  recovered: Empty
+  recovery_attempt: Empty
+  reused: Empty
+  ships: [Any]
+}
+
+type T85 {
+  large: Empty
+  small: Empty
+}
+
+type T87 {
+  article: Empty
+  flickr: Flickr
+  patch: T85
+  presskit: Empty
+  reddit: Reddit
+  webcast: String
+  wikipedia: Empty
+  youtube_id: String
+}
+
 type ThrustVacuum {
   kN: Int
   lbf: Int
@@ -337,7 +337,7 @@ type ThrustVacuum {
 type UpcomingLaunch {
   auto_update: Boolean
   capsules: [Any]
-  cores: [T87]
+  cores: [T82]
   crew: [Any]
   date_local: String
   date_precision: String
@@ -345,12 +345,12 @@ type UpcomingLaunch {
   date_utc: String
   details: Empty
   failures: [Any]
-  fairings: T82
+  fairings: T83
   flight_number: Int
   id: String
   launch_library_id: String
   launchpad: String
-  links: T86
+  links: T87
   name: String
   net: Boolean
   payloads: [String]
