@@ -17,7 +17,7 @@ impl Default for NativeHttpTest {
     fn default() -> Self {
         let mut client = ClientBuilder::new(Client::new());
         client = client.with(Cache(HttpCache {
-            mode: CacheMode::Default,
+            mode: CacheMode::ForceCache,
             manager: FileSystemCacheManager::default(),
             options: HttpCacheOptions::default(),
         }));
