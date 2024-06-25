@@ -1,0 +1,34 @@
+{
+    "inputs": [
+      {
+        "curl": {
+          "src": "https://dummyjson.com/quotes",
+          "fieldName": "quoteList"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://dummyjson.com/quotes/1",
+          "fieldName": "quotes"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://dummyjson.com/quotes/random/10",
+          "fieldName": "randomQuotes"
+        }
+      }
+    ],
+    "preset": {
+      "mergeType": 1,
+      "consolidateURL": 0.5
+    },
+    "output": {
+      "path": "./output.graphql",
+      "format": "graphQL"
+    },
+    "schema": {
+      "query": "ProductRoot"
+    }
+  }
+  

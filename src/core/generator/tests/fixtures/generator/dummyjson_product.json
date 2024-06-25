@@ -1,0 +1,46 @@
+{
+    "inputs": [
+      {
+        "curl": {
+          "src": "https://dummyjson.com/products?sortBy=title&order=asc",
+          "fieldName": "products"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://dummyjson.com/products/1",
+          "fieldName": "product"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://dummyjson.com/products/search?q=phone",
+          "fieldName": "productSearch"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://dummyjson.com/products/categories",
+          "fieldName": "categories"
+        }
+      },
+      {
+        "curl": {
+          "src": "https://dummyjson.com/products/category-list",
+          "fieldName": "categoryList"
+        }
+      }
+    ],
+    "preset": {
+      "mergeType": 1,
+      "consolidateURL": 0.5
+    },
+    "output": {
+      "path": "./output.graphql",
+      "format": "graphQL"
+    },
+    "schema": {
+      "query": "ProductRoot"
+    }
+  }
+  
