@@ -152,6 +152,6 @@ impl ConfigModule {
             .transform(config)
             .map(ConfigModule::from)
             // set extensions back to config_module since transform executes only of raw Config
-            .map(|config| config.extensions(extensions))
+            .map(|config| config.with_extensions(extensions))
     }
 }
