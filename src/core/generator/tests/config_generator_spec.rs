@@ -40,7 +40,7 @@ async fn run_test(path: &str) -> anyhow::Result<()> {
     let config = ConfigGenerator::default()
         .inputs(input_samples)
         .transformers(vec![Box::new(preset)])
-        .generate(true)?;
+        .generate(false)?;
 
     insta::assert_snapshot!(path, config.to_sdl());
     Ok(())
