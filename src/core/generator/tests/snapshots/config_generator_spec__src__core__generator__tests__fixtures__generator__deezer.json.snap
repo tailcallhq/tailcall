@@ -126,15 +126,8 @@ type Query {
   chart: Chart @http(path: "/chart")
   editorial: Editorial @http(path: "/editorial")
   playlist(p1: Int!): Playlist @http(path: "/playlist/{{.args.p1}}")
-  search(q: String): Search @http(path: "/search", query: [{key: "q", value: "{{.args.q}}"}])
   track(p1: Int!): T5 @http(path: "/track/{{.args.p1}}")
   user(p1: Int!): T188 @http(path: "/user/{{.args.p1}}")
-}
-
-type Search {
-  data: [Any]
-  next: String
-  total: Int
 }
 
 type T166 {
