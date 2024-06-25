@@ -26,8 +26,14 @@
     },
     {
       "curl": {
-        "src": "https://api.deezer.com/chart",
-        "fieldName": "chart"
+        "src": "https://api.deezer.com/editorial",
+        "fieldName": "editorial"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://api.deezer.com/user/2529",
+        "fieldName": "user"
       }
     }
   ],
