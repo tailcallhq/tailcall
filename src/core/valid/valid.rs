@@ -55,7 +55,7 @@ pub trait Validator<A, E>: Sized {
         Valid(valid)
     }
 
-    fn positioned_err(self, position: Option<SourcePos>) -> Valid<A, E> {
+    fn positioned_err(self, position: &Option<SourcePos>) -> Valid<A, E> {
         let valid = self.to_result();
         if let Err(error) = valid {
             return Valid(Err(error.positioned_err(position)));

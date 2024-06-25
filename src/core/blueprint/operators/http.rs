@@ -31,7 +31,7 @@ pub fn compile_http(
                 .or(config_module.upstream.base_url.as_ref()),
             "No base URL defined".to_string(),
         ))
-        .positioned_err(http.to_source_pos())
+        .positioned_err(&http.to_source_pos())
         .zip(helpers::headers::to_mustache_headers(http.headers.as_ref()))
         .and_then(|(base_url, headers)| {
             let mut base_url = base_url.trim_end_matches('/').to_owned();

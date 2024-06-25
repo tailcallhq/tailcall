@@ -59,35 +59,35 @@ impl PositionedJsonSchema {
             JsonScheamWithSourcePosition::Str => {
                 if other.schema != self.schema {
                     return Valid::fail(format!("expected String, got {}", other.schema))
-                        .positioned_err(self.source_position.clone())
+                        .positioned_err(&self.source_position)
                         .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Num => {
                 if other.schema != self.schema {
                     return Valid::fail(format!("expected Number, got {}", other.schema))
-                        .positioned_err(self.source_position.clone())
+                        .positioned_err(&self.source_position)
                         .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Bool => {
                 if other.schema != self.schema {
                     return Valid::fail(format!("expected Boolean, got {}", other.schema))
-                        .positioned_err(self.source_position.clone())
+                        .positioned_err(&self.source_position)
                         .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Empty => {
                 if other.schema != self.schema {
                     return Valid::fail(format!("expected Empty, got {}", other.schema))
-                        .positioned_err(self.source_position.clone())
+                        .positioned_err(&self.source_position)
                         .trace(name);
                 }
             }
             JsonScheamWithSourcePosition::Any => {
                 if other.schema != self.schema {
                     return Valid::fail(format!("expected Any, got {}", other.schema))
-                        .positioned_err(self.source_position.clone())
+                        .positioned_err(&self.source_position)
                         .trace(name);
                 }
             }
@@ -95,7 +95,7 @@ impl PositionedJsonSchema {
                 if let JsonScheamWithSourcePosition::Obj(b) = &other.schema {
                     return Valid::from_iter(b.iter(), |(key, b)| {
                         Valid::from_option(a.get(key), format!("missing key: {}", key))
-                            .positioned_err(self.source_position.clone())
+                            .positioned_err(&self.source_position)
                             .trace(name)
                             .and_then(|a| a.compare(b, key))
                     })
@@ -103,7 +103,7 @@ impl PositionedJsonSchema {
                     .unit();
                 } else {
                     return Valid::fail("expected Object type".to_string())
-                        .positioned_err(self.source_position.clone())
+                        .positioned_err(&self.source_position)
                         .trace(name);
                 }
             }
@@ -112,7 +112,7 @@ impl PositionedJsonSchema {
                     return a.compare(b, name);
                 } else {
                     return Valid::fail("expected Non repeatable type".to_string())
-                        .positioned_err(self.source_position.clone())
+                        .positioned_err(&self.source_position)
                         .trace(name);
                 }
             }
@@ -121,7 +121,7 @@ impl PositionedJsonSchema {
                     return a.compare(b, name);
                 } else {
                     return Valid::fail("expected type to be required".to_string())
-                        .positioned_err(self.source_position.clone())
+                        .positioned_err(&self.source_position)
                         .trace(name);
                 }
             }
@@ -129,12 +129,12 @@ impl PositionedJsonSchema {
                 if let JsonScheamWithSourcePosition::Enum(b) = &other.schema {
                     if a.ne(b) {
                         return Valid::fail(format!("expected {:?} but found {:?}", a, b))
-                            .positioned_err(self.source_position.clone())
+                            .positioned_err(&self.source_position)
                             .trace(name);
                     }
                 } else {
                     return Valid::fail(format!("expected Enum got: {}", other.schema))
-                        .positioned_err(self.source_position.clone())
+                        .positioned_err(&self.source_position)
                         .trace(name);
                 }
             }
