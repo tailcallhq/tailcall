@@ -1,6 +1,5 @@
 use std::future::Future;
 use std::ops::Deref;
-use std::pin::Pin;
 
 use async_graphql_value::ConstValue;
 
@@ -10,12 +9,18 @@ use super::{Error, EvalContext, ResolverContextLike};
 use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
 
+// Fake trait to capture proper lifetimes.
+// see discussion https://users.rust-lang.org/t/rpitit-allows-more-flexible-code-in-comparison-with-raw-rpit-in-inherit-impl/113417
+// TODO: could be removed after migrating to 2024 edition
+pub trait Captures<T: ?Sized> {}
+impl<T: ?Sized, U: ?Sized> Captures<T> for U {}
+
 impl IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
     pub fn eval<'a, 'b, Ctx>(
         &'a self,
         ctx: &'b mut EvalContext<'a, Ctx>,
-    ) -> Pin<Box<dyn Future<Output = Result<ConstValue, Error>> + Send + 'b>>
+    ) -> impl Future<Output = Result<ConstValue, Error>> + Send + Captures<&'b &'a ()>
     where
         Ctx: ResolverContextLike + Sync,
     {
