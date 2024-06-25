@@ -5,7 +5,6 @@ use std::sync::{Arc, RwLock};
 use hyper::{Body, Request, Response};
 use lazy_static::lazy_static;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
-// use tailcall::core::error::Error;
 use tailcall::core::http::{handle_request, showcase, AppContext};
 
 use super::Error;
