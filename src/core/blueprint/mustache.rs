@@ -106,7 +106,6 @@ impl FieldDefinition {
     pub fn validate_field(
         &self,
         type_of: &Pos<config::Type>,
-        _pos_field: &Pos<config::Field>,
         config: &Config,
     ) -> Valid<(), String> {
         // XXX we could use `Mustache`'s `render` method with a mock

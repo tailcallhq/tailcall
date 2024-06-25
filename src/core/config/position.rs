@@ -31,14 +31,14 @@ impl<T> Pos<T> {
     }
 
     pub fn to_source_pos(&self) -> Option<SourcePos> {
-        if self.pos_trace_is_unsupported() {
+        if self.source_pos_is_unsupported() {
             return None;
         }
 
         Some(SourcePos::from(self))
     }
 
-    fn pos_trace_is_unsupported(&self) -> bool {
+    fn source_pos_is_unsupported(&self) -> bool {
         self.file_path.is_none()
     }
 }

@@ -77,11 +77,7 @@ pub fn update_graphql<'a>(
 
             compile_graphql(config, operation_type, &field.type_of, graphql)
                 .map(|resolver| b_field.resolver(Some(resolver)))
-                .and_then(|b_field| {
-                    b_field
-                        .validate_field(type_of, field, config)
-                        .map_to(b_field)
-                })
+                .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
         },
     )
 }
