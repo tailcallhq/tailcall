@@ -83,7 +83,7 @@ impl Generator {
     /// performs all the i/o's required in the config file and generates
     /// concrete vec containing data for generator.
     pub async fn resolve_io(&self, config: Config<Resolved>) -> anyhow::Result<Vec<Input>> {
-        let mut input_samples = vec![];
+        let mut input_samples = vec![Input::Null; config.inputs.len()];
 
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
@@ -91,16 +91,16 @@ impl Generator {
             .parent()
             .unwrap_or(Path::new(""));
 
-        for input in config.inputs {
+        for (index, input) in config.inputs.into_iter().enumerate() {
             match input.source {
                 Source::Curl { src, field_name } => {
                     let url = src.0;
                     let contents = reader.read_file(&url).await?.content;
-                    input_samples.push(Input::Json {
+                    input_samples[index] = Input::Json {
                         url: url.parse()?,
                         response: serde_json::from_str(&contents)?,
                         field_name,
-                    });
+                    };
                 }
                 Source::Proto { src } => {
                     let path = src.0;
@@ -108,13 +108,13 @@ impl Generator {
                     if let Some(relative_path_to_proto) = to_relative_path(output_dir, &path) {
                         metadata.path = relative_path_to_proto;
                     }
-                    input_samples.push(Input::Proto(metadata));
+                    input_samples[index] = Input::Proto(metadata);
                 }
                 Source::Config { src } => {
                     let path = src.0;
                     let source = config::Source::detect(&path)?;
                     let schema = reader.read_file(&path).await?.content;
-                    input_samples.push(Input::Config { schema, source });
+                    input_samples[index] = Input::Config { schema, source };
                 }
             }
         }

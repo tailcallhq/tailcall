@@ -36,6 +36,7 @@ pub enum Input {
         schema: String,
         source: config::Source,
     },
+    Null,
 }
 
 impl Default for Generator {
@@ -104,6 +105,7 @@ impl Generator {
                     config = config
                         .merge_right(self.generate_from_proto(proto_input, &self.operation_name)?);
                 }
+                Input::Null => unreachable!(),
             }
         }
 
