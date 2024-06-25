@@ -29,12 +29,6 @@
         "src": "https://api.deezer.com/chart",
         "fieldName": "chart"
       }
-    },
-    {
-      "curl": {
-        "src": "https://api.deezer.com/editorial",
-        "fieldName": "editorial"
-      }
     }
   ],
   "preset": {

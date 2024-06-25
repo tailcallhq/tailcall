@@ -70,11 +70,6 @@ type Daum {
   type: String
 }
 
-type Editorial {
-  data: [T186]
-  total: Int
-}
-
 type Genre {
   data: [T8]
 }
@@ -115,7 +110,6 @@ type Query {
   album(p1: Int!): T40 @http(path: "/album/{{.args.p1}}")
   artist(p1: Int!): T41 @http(path: "/artist/{{.args.p1}}")
   chart: Chart @http(path: "/chart")
-  editorial: Editorial @http(path: "/editorial")
   playlist(p1: Int!): Playlist @http(path: "/playlist/{{.args.p1}}")
   track(p1: Int!): T5 @http(path: "/track/{{.args.p1}}")
 }
@@ -217,17 +211,6 @@ type T183 {
 type T184 {
   data: [T183]
   total: Int
-}
-
-type T186 {
-  id: Int
-  name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  type: String
 }
 
 type T2 {
