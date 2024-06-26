@@ -1,11 +1,12 @@
 use derive_setters::Setters;
+use oas3::OpenApiV3Spec;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
 use serde_json::Value;
 use url::Url;
 
 use super::from_proto::from_proto;
-use super::{FromJsonGenerator, NameGenerator, RequestSample};
+use super::{from_openapi_spec, FromJsonGenerator, NameGenerator, RequestSample};
 use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
@@ -35,6 +36,9 @@ pub enum Input {
     Config {
         schema: String,
         source: config::Source,
+    },
+    OpenAPI {
+        spec: OpenApiV3Spec,
     },
 }
 
@@ -103,6 +107,9 @@ impl Generator {
                 Input::Proto(proto_input) => {
                     config = config
                         .merge_right(self.generate_from_proto(proto_input, &self.operation_name)?);
+                }
+                Input::OpenAPI { spec } => {
+                    config = config.merge_right(from_openapi_spec(spec.clone())?)
                 }
             }
         }

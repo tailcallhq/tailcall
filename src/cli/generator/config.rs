@@ -99,6 +99,9 @@ pub enum Source<Status = UnResolved> {
     Config {
         src: Location<Status>,
     },
+    OpenAPI {
+        src: Location<Status>,
+    },
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -144,6 +147,10 @@ impl Source<UnResolved> {
                 Ok(Source::Proto { src: resolved_path })
             }
             Source::Config { src, .. } => {
+                let resolved_path = src.into_resolved(parent_dir);
+                Ok(Source::Config { src: resolved_path })
+            }
+            Source::OpenAPI { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 Ok(Source::Config { src: resolved_path })
             }

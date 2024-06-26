@@ -1,4 +1,4 @@
-use oas3::Spec;
+use oas3::{OpenApiV3Spec, Spec};
 
 use crate::core::config::Config;
 
@@ -10,9 +10,8 @@ pub struct OpenApiToConfigConverter {
 }
 
 impl OpenApiToConfigConverter {
-    pub fn new(query: impl AsRef<str>, spec_str: impl AsRef<str>) -> anyhow::Result<Self> {
-        let spec = oas3::from_reader(spec_str.as_ref().as_bytes())?;
-        let config = Config::default().query(query.as_ref());
+    pub fn new(spec: OpenApiV3Spec) -> anyhow::Result<Self> {
+        let config = Config::default();
         Ok(Self { config, spec })
     }
 
@@ -21,7 +20,6 @@ impl OpenApiToConfigConverter {
     }
 }
 
-pub fn from_openapi_spec(query: impl AsRef<str>, spec_str: impl AsRef<str>) -> anyhow::Result<Config> {
-    OpenApiToConfigConverter::new(query, spec_str)
-        .map(|converter| converter.convert())
+pub fn from_openapi_spec(spec: OpenApiV3Spec) -> anyhow::Result<Config> {
+    OpenApiToConfigConverter::new(spec).map(|converter| converter.convert())
 }

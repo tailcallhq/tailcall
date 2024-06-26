@@ -1,4 +1,5 @@
 mod from_json;
+mod from_openapi;
 mod from_proto;
 mod generator;
 mod graphql_type;
@@ -6,6 +7,7 @@ mod json;
 mod proto;
 
 pub use from_json::{FromJsonGenerator, RequestSample};
+pub use from_openapi::from_openapi_spec;
 pub use generator::{Generator, Input};
 
 use crate::core::counter::{Count, Counter};

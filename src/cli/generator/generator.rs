@@ -116,6 +116,10 @@ impl Generator {
                     let schema = reader.read_file(&path).await?.content;
                     input_samples.push(Input::Config { schema, source });
                 }
+                Source::OpenAPI { src } => {
+                    let spec = oas3::from_path(src.0)?;
+                    input_samples.push(Input::OpenAPI { spec });
+                }
             }
         }
 

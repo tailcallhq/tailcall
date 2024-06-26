@@ -2,6 +2,4 @@
 source: src/core/generator/tests/open_api_to_config_spec.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream {
-  query: Query
-}
+
