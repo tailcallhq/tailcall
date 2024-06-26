@@ -176,17 +176,17 @@ impl ConfigReader {
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: Into<Resource> + ToString + Send + Sync>(
+    pub async fn read<T: Into<Resource> + Clone + ToString + Send + Sync>(
         &self,
         file: T,
     ) -> anyhow::Result<ConfigModule> {
-        self.read_all(vec![file]).await
+        self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: Into<Resource> + ToString + Send + Sync>(
+    pub async fn read_all<T: Into<Resource> + Clone + ToString + Send + Sync>(
         &self,
-        files: Vec<T>,
+        files: &[T],
     ) -> anyhow::Result<ConfigModule> {
         let files = self.resource_reader.read_files(files).await?;
         let mut config_module = ConfigModule::default();
@@ -303,7 +303,7 @@ mod reader_tests {
         .map(|x| x.to_string())
         .collect();
         let cr = ConfigReader::init(runtime);
-        let c = cr.read_all(files).await.unwrap();
+        let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
             ["Post", "Query", "Test", "User"]
                 .iter()
@@ -331,7 +331,7 @@ mod reader_tests {
         .map(|x| x.to_string())
         .collect();
         let cr = ConfigReader::init(runtime);
-        let c = cr.read_all(files).await.unwrap();
+        let c = cr.read_all(&files).await.unwrap();
         assert_eq!(
             ["Post", "Query", "User"]
                 .iter()

@@ -40,29 +40,23 @@ pub trait Reader {
 pub struct ResourceReader<A>(A);
 
 impl<A: Reader + Send + Sync> ResourceReader<A> {
-    pub async fn read_files<T: Into<Resource> + ToString + Send>(
-        &self,
-        paths: Vec<T>,
-    ) -> anyhow::Result<Vec<FileRead>> {
-        let files: Vec<_> = paths
-            .into_iter()
-            .map(|path| {
-                let path_str = path.to_string();
-                self.read_file(path).map_err(|e| e.context(path_str))
-            })
-            .collect();
+    pub async fn read_files<T>(&self, paths: &[T]) -> anyhow::Result<Vec<FileRead>>
+    where
+        T: Into<Resource> + Clone + ToString + Send,
+    {
+        let files = join_all(paths.iter().cloned().map(|path| {
+            let path_str = path.to_string();
+            self.read_file(path).map_err(|e| e.context(path_str))
+        }))
+        .await;
 
-        let content = join_all(files)
-            .await
-            .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
-        Ok(content)
+        files.into_iter().collect::<anyhow::Result<Vec<_>>>()
     }
 
-    pub async fn read_file<T: Into<Resource> + ToString + Send>(
-        &self,
-        path: T,
-    ) -> anyhow::Result<FileRead> {
+    pub async fn read_file<T>(&self, path: T) -> anyhow::Result<FileRead>
+    where
+        T: Into<Resource> + ToString + Send,
+    {
         self.0.read(path).await
     }
 }
