@@ -5,3 +5,14 @@ expression: jsonplaceholder
 schema @server @upstream {
   query: Query
 }
+
+type Query {
+  """
+  Returns a post by id
+  """
+  getPost: Post @http(path: "/posts/{id}")
+  """
+  Returns all posts
+  """
+  getPosts: PostsList @http(path: "/posts")
+}
