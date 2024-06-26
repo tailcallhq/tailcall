@@ -31,7 +31,7 @@ async fn main() -> Result<(), Error> {
 
     let runtime = init_runtime();
     let config = ConfigReader::init(runtime.clone())
-        .read("./config.graphql")
+        .read("./config.graphql".to_owned())
         .await?;
     let blueprint = Blueprint::try_from(&config)?;
     let endpoints = config
