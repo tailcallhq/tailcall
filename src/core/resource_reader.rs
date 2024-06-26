@@ -26,11 +26,18 @@ impl From<reqwest::Request> for Resource {
     }
 }
 
+impl From<&str> for Resource {
+    fn from(val: &str) -> Self {
+        Resource::File(val.to_owned())
+    }
+}
+
 impl From<String> for Resource {
     fn from(val: String) -> Self {
         Resource::File(val)
     }
 }
+
 #[async_trait::async_trait]
 pub trait Reader {
     async fn read<T: Into<Resource> + ToString + Send>(&self, file: T) -> anyhow::Result<FileRead>;
