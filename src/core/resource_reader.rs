@@ -20,15 +20,15 @@ pub enum Resource {
     Request(reqwest::Request),
 }
 
-impl Into<Resource> for reqwest::Request {
-    fn into(self) -> Resource {
-        Resource::Request(self)
+impl From<reqwest::Request> for Resource {
+    fn from(val: reqwest::Request) -> Self {
+        Resource::Request(val)
     }
 }
 
-impl Into<Resource> for String {
-    fn into(self) -> Resource {
-        Resource::File(self)
+impl From<String> for Resource {
+    fn from(val: String) -> Self {
+        Resource::File(val)
     }
 }
 
@@ -103,7 +103,8 @@ impl Reader for Direct {
         let content = match file.into() {
             Resource::File(file_path) => {
                 // Is an HTTP URL
-                let content = if let Ok(url) = Url::parse(&file_path) {
+
+                if let Ok(url) = Url::parse(&file_path) {
                     if url.scheme().starts_with("http") {
                         let response = self
                             .runtime
@@ -119,8 +120,7 @@ impl Reader for Direct {
                 } else {
                     // Is a file path
                     self.runtime.file.read(&file_path).await?
-                };
-                content
+                }
             }
             Resource::Request(request) => {
                 let response = self.runtime.http.execute(request).await?;
