@@ -11,7 +11,7 @@ use super::{ConfigModule, Content, Link, LinkType};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::{Cached, ResourceReader};
+use crate::core::resource_reader::{Cached, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
 
@@ -62,7 +62,7 @@ impl ConfigReader {
 
             match link.type_of {
                 LinkType::Config => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
@@ -84,12 +84,12 @@ impl ConfigReader {
                     config_module.extensions.add_proto(meta);
                 }
                 LinkType::Script => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     config_module.extensions.script = Some(content);
                 }
                 LinkType::Cert => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     config_module
                         .extensions
@@ -97,18 +97,18 @@ impl ConfigReader {
                         .extend(self.load_cert(content).await?);
                 }
                 LinkType::Key => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     config_module.extensions.keys = Arc::new(self.load_private_key(content).await?)
                 }
                 LinkType::Operation => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
                 LinkType::Htpasswd => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     config_module
@@ -117,7 +117,7 @@ impl ConfigReader {
                         .push(Content { id: link.id.clone(), content });
                 }
                 LinkType::Jwks => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     let de = &mut serde_json::Deserializer::from_str(&content);
@@ -176,14 +176,17 @@ impl ConfigReader {
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString + Send + Sync>(&self, file: T) -> anyhow::Result<ConfigModule> {
-        self.read_all(&[file]).await
+    pub async fn read<T: Into<Resource> + ToString + Send + Sync>(
+        &self,
+        file: T,
+    ) -> anyhow::Result<ConfigModule> {
+        self.read_all(vec![file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString + Send + Sync>(
+    pub async fn read_all<T: Into<Resource> + ToString + Send + Sync>(
         &self,
-        files: &[T],
+        files: Vec<T>,
     ) -> anyhow::Result<ConfigModule> {
         let files = self.resource_reader.read_files(files).await?;
         let mut config_module = ConfigModule::default();
@@ -300,7 +303,7 @@ mod reader_tests {
         .map(|x| x.to_string())
         .collect();
         let cr = ConfigReader::init(runtime);
-        let c = cr.read_all(&files).await.unwrap();
+        let c = cr.read_all(files).await.unwrap();
         assert_eq!(
             ["Post", "Query", "Test", "User"]
                 .iter()
@@ -328,7 +331,7 @@ mod reader_tests {
         .map(|x| x.to_string())
         .collect();
         let cr = ConfigReader::init(runtime);
-        let c = cr.read_all(&files).await.unwrap();
+        let c = cr.read_all(files).await.unwrap();
         assert_eq!(
             ["Post", "Query", "User"]
                 .iter()
@@ -350,7 +353,7 @@ mod reader_tests {
         let reader = ConfigReader::init(runtime);
 
         let config = reader
-            .read(&format!(
+            .read(format!(
                 "{}/examples/jsonplaceholder_script.graphql",
                 cargo_manifest
             ))

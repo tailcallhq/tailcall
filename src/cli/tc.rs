@@ -47,7 +47,7 @@ pub async fn run() -> Result<()> {
         .await;
     match cli.command {
         Command::Start { file_paths } => {
-            let config_module = config_reader.read_all(&file_paths).await?;
+            let config_module = config_reader.read_all(file_paths).await?;
             log_endpoint_set(&config_module.extensions.endpoint_set);
             Fmt::log_n_plus_one(false, &config_module.config);
             let server = Server::new(config_module);
@@ -55,7 +55,7 @@ pub async fn run() -> Result<()> {
             Ok(())
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format } => {
-            let config_module = (config_reader.read_all(&file_paths)).await?;
+            let config_module = (config_reader.read_all(file_paths.clone())).await?;
             log_endpoint_set(&config_module.extensions.endpoint_set);
             if let Some(format) = format {
                 Fmt::display(format.encode(&config_module)?);

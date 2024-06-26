@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
+use url::Url;
 
 use crate::core::runtime::TargetRuntime;
 
@@ -14,9 +15,21 @@ pub struct FileRead {
 }
 
 /// Supported Resources by Resource Reader
-enum Resource {
+pub enum Resource {
     File(String),
     Request(reqwest::Request),
+}
+
+impl Into<Resource> for reqwest::Request {
+    fn into(self) -> Resource {
+        Resource::Request(self)
+    }
+}
+
+impl Into<Resource> for String {
+    fn into(self) -> Resource {
+        Resource::File(self)
+    }
 }
 
 #[async_trait::async_trait]
@@ -28,7 +41,10 @@ pub trait Reader {
 pub struct ResourceReader<A>(A);
 
 impl<A: Reader + Send + Sync> ResourceReader<A> {
-    pub async fn read_files(&self, paths: Vec<Resource>) -> anyhow::Result<Vec<FileRead>> {
+    pub async fn read_files<T: Into<Resource> + ToString + Send>(
+        &self,
+        paths: Vec<T>,
+    ) -> anyhow::Result<Vec<FileRead>> {
         let files: Vec<_> = paths
             .into_iter()
             .map(|path| {
@@ -44,7 +60,10 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
         Ok(content)
     }
 
-    pub async fn read_file(&self, path: Resource) -> anyhow::Result<FileRead> {
+    pub async fn read_file<T: Into<Resource> + ToString + Send>(
+        &self,
+        path: T,
+    ) -> anyhow::Result<FileRead> {
         self.0.read(path).await
     }
 }
@@ -82,7 +101,27 @@ impl Reader for Direct {
     async fn read<T: Into<Resource> + ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         let path = file.to_string();
         let content = match file.into() {
-            Resource::File(file_path) => self.runtime.file.read(&file_path).await?,
+            Resource::File(file_path) => {
+                // Is an HTTP URL
+                let content = if let Ok(url) = Url::parse(&file_path) {
+                    if url.scheme().starts_with("http") {
+                        let response = self
+                            .runtime
+                            .http
+                            .execute(reqwest::Request::new(reqwest::Method::GET, url))
+                            .await?;
+
+                        String::from_utf8(response.body.to_vec())?
+                    } else {
+                        // Is a file path on Windows
+                        self.runtime.file.read(&file_path).await?
+                    }
+                } else {
+                    // Is a file path
+                    self.runtime.file.read(&file_path).await?
+                };
+                content
+            }
             Resource::Request(request) => {
                 let response = self.runtime.http.execute(request).await?;
                 String::from_utf8(response.body.to_vec())?
