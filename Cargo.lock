@@ -5321,7 +5321,6 @@ dependencies = [
 name = "tailcall-aws-lambda"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-graphql-value",
  "async-trait",
  "dotenvy",
@@ -5339,7 +5338,6 @@ dependencies = [
 name = "tailcall-cloudflare"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-graphql-value",
  "async-std",
  "async-trait",
@@ -5363,9 +5361,10 @@ dependencies = [
 name = "tailcall-fixtures"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "convert_case 0.6.0",
+ "derive_more",
  "indenter",
+ "thiserror",
 ]
 
 [[package]]
@@ -5379,7 +5378,6 @@ dependencies = [
 name = "tailcall-http-cache"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "http 0.2.12",
  "http-cache",
@@ -5405,9 +5403,10 @@ dependencies = [
 name = "tailcall-prettier"
 version = "0.1.0"
 dependencies = [
- "anyhow",
+ "derive_more",
  "lazy_static",
  "strum_macros",
+ "thiserror",
  "tokio",
 ]
 
@@ -5415,7 +5414,7 @@ dependencies = [
 name = "tailcall-tracker"
 version = "0.1.0"
 dependencies = [
- "anyhow",
+ "derive_more",
  "lazy_static",
  "machineid-rs",
  "reqwest",
@@ -5423,20 +5422,23 @@ dependencies = [
  "serde_json",
  "sysinfo 0.30.12",
  "tailcall-version",
+ "thiserror",
  "tokio",
  "tracing",
+ "url",
 ]
 
 [[package]]
 name = "tailcall-typedefs"
 version = "0.1.0"
 dependencies = [
- "anyhow",
+ "derive_more",
  "lazy_static",
  "schemars",
  "serde",
  "serde_json",
  "tailcall",
+ "thiserror",
  "tokio",
  "tracing",
 ]
@@ -5445,7 +5447,7 @@ dependencies = [
 name = "tailcall-upstream-grpc"
 version = "0.1.0"
 dependencies = [
- "anyhow",
+ "derive_more",
  "http-body-util",
  "hyper 0.14.29",
  "hyper-util",
@@ -5459,6 +5461,7 @@ dependencies = [
  "prost-types",
  "protoc-bin-vendored",
  "tailcall-fixtures",
+ "thiserror",
  "tokio",
  "tonic",
  "tonic-build 0.11.0",

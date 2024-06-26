@@ -184,7 +184,7 @@ mod test {
     }
 
     #[test]
-    fn test_type_name_generator() -> anyhow::Result<()> {
+    fn test_type_name_generator() -> Result<(), Error> {
         let config = Config::from_sdl(read_fixture(configs::NAME_GENERATION).as_str())
             .to_result()
             .unwrap();

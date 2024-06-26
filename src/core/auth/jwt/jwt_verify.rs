@@ -38,7 +38,10 @@ impl JwtVerifier {
         }
     }
 
-    fn resolve_token(&self, request: &RequestContext) -> anyhow::Result<Option<String>> {
+    fn resolve_token(
+        &self,
+        request: &RequestContext,
+    ) -> Result<Option<String>, crate::core::error::Error> {
         let value = request
             .allowed_headers
             .typed_try_get::<Authorization<Bearer>>()?;

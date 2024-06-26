@@ -1,7 +1,5 @@
 use std::panic;
 
-use anyhow::anyhow;
-
 mod cache;
 mod env;
 mod error;
@@ -17,14 +15,14 @@ async fn fetch(
     req: worker::Request,
     env: worker::Env,
     ctx: worker::Context,
-) -> anyhow::Result<worker::Response> {
+) -> Result<worker::Response> {
     let result = handle::fetch(req, env, ctx).await;
 
     match result {
         Ok(response) => Ok(response),
         Err(message) => {
             tracing::error!("ServerError: {}", message.to_string());
-            worker::Response::error(message.to_string(), 500).map_err(to_anyhow)
+            Ok(worker::Response::error(message.to_string(), 500)?)
         }
     }
 }
@@ -43,8 +41,4 @@ fn start() {
         // a runtime error.
         .without_time()
         .init();
-}
-
-fn to_anyhow<T: std::fmt::Display>(e: T) -> anyhow::Error {
-    anyhow!("{}", e)
 }

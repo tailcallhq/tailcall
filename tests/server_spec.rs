@@ -5,7 +5,6 @@ pub mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use anyhow::Result;
     use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
@@ -162,6 +161,7 @@ mod server_spec {
     use serde_json::json;
     use tailcall::cli::server::Server;
     use tailcall::core::config::reader::ConfigReader;
+    use tailcall::core::error::Error;
 
     async fn test_server(configs: &[&str], url: &str) {
         let runtime = crate::test::init(None);
@@ -194,7 +194,7 @@ mod server_spec {
             let url = url.to_owned();
             let query = query.clone();
 
-            let task: tokio::task::JoinHandle<Result<serde_json::Value, anyhow::Error>> =
+            let task: tokio::task::JoinHandle<Result<serde_json::Value, Error>> =
                 tokio::spawn(async move {
                     let response = client.post(url).json(&query).send().await?;
                     let response_body: serde_json::Value = response.json().await?;

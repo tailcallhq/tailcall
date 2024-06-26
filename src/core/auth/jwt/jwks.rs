@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use anyhow::Result;
 use derive_setters::Setters;
 use jsonwebtoken::jwk::{Jwk, JwkSet};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};

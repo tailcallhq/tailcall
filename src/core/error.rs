@@ -1,8 +1,12 @@
+use std::str::Utf8Error;
 use std::string::FromUtf8Error;
 
 use derive_more::From;
 use inquire::InquireError;
+use opentelemetry::metrics::MetricsError;
+use opentelemetry::trace::TraceError;
 use prost_reflect::DescriptorError;
+use tokio::task::JoinError;
 
 use super::config::UnsupportedConfigFormat;
 use super::grpc::error::Error as GrpcError;
@@ -17,7 +21,7 @@ pub enum Error {
     StdIO(std::io::Error),
 
     #[error("Utf8 Error")]
-    Utf8(FromUtf8Error),
+    FromUtf8(FromUtf8Error),
 
     #[error("Validation Error : {0}")]
     Validation(ValidationError<std::string::String>),
@@ -100,7 +104,7 @@ pub enum Error {
     #[error("Failed to execute request")]
     RequestExecutionFailed,
 
-    #[error("File Error")]
+    #[error("File Error: {0}")]
     File(file::Error),
 
     #[error("Http Error")]
@@ -117,6 +121,51 @@ pub enum Error {
 
     #[error("IRError {0}")]
     IRError(ir::Error),
+
+    #[error("Serde URL Encoded Error")]
+    SerdeUrlEncoded(serde_urlencoded::ser::Error),
+
+    #[error("Hyper Header ToStr Error")]
+    HyperHeaderToStr(hyper::header::ToStrError),
+
+    #[error("Utf8 Error")]
+    Utf8(Utf8Error),
+
+    #[error("Rand Error")]
+    Rand(rand::Error),
+
+    #[error("Trace Error")]
+    Trace(TraceError),
+
+    #[error("Join Error")]
+    Join(JoinError),
+
+    #[error("Metrics Error")]
+    Metrics(MetricsError),
+
+    #[error("Reqwest Error")]
+    Reqwest(reqwest::Error),
+
+    #[error("Unable to determine path")]
+    PathDeterminationFailed,
+
+    #[error("Schema mismatch Error")]
+    SchemaMismatch,
+
+    #[error("Failed to resolve parent value")]
+    ParentValueNotResolved,
+
+    #[error("Expected parent list index")]
+    ExpectedParentListIndex,
+
+    #[error("Can't resolve value for field")]
+    FieldValueNotResolved,
+
+    #[error("Expected list value")]
+    ExpectedListValue,
+
+    #[error("Headers Error")]
+    Headers(headers::Error),
 }
 
 pub mod file {
@@ -170,6 +219,8 @@ pub mod file {
 }
 
 pub mod http {
+    use std::string::FromUtf8Error;
+
     use derive_more::From;
 
     #[derive(From, thiserror::Error, Debug)]
@@ -223,6 +274,15 @@ pub mod http {
 
         #[error("Hyper HTTP Error")]
         Hyper(hyper::Error),
+
+        #[error("Utf8 Error")]
+        Utf8(FromUtf8Error),
+
+        #[error("Invalid request host")]
+        InvalidRequestHost,
+
+        #[error("Hyper Http Error")]
+        HyperHttp(hyper::http::Error),
     }
 }
 
@@ -269,6 +329,23 @@ pub mod graphql {
 
         #[error("HTTP Error")]
         Http(http::Error),
+    }
+}
+
+pub mod cache {
+    use derive_more::From;
+
+    #[derive(From, thiserror::Error, Debug)]
+    pub enum Error {
+        #[error("Serde Json Error")]
+        SerdeJson(serde_json::Error),
+
+        #[error("Worker Error : {0}")]
+        Worker(String),
+
+        #[error("Kv Error : {0}")]
+        #[from(ignore)]
+        Kv(String),
     }
 }
 

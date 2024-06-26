@@ -1,4 +1,3 @@
-use anyhow::Result;
 use opentelemetry_sdk::export::trace::SpanData;
 use opentelemetry_sdk::metrics::data::{Metric, ResourceMetrics, ScopeMetrics};
 use opentelemetry_sdk::metrics::reader::MetricReader;
@@ -6,6 +5,7 @@ use opentelemetry_sdk::metrics::PeriodicReader;
 use opentelemetry_sdk::testing::metrics::InMemoryMetricsExporter;
 use opentelemetry_sdk::testing::trace::InMemorySpanExporter;
 use serde::{Deserialize, Serialize};
+use tailcall::core::error::Error;
 
 pub struct InMemoryTelemetry {
     pub(super) trace_exporter: InMemorySpanExporter,
@@ -19,13 +19,13 @@ impl InMemoryTelemetry {
         self.metrics_exporter.reset();
     }
 
-    pub fn get_traces(&self) -> Result<Vec<TestSpan>> {
+    pub fn get_traces(&self) -> Result<Vec<TestSpan>, Error> {
         let spans = self.trace_exporter.get_finished_spans()?;
 
         Ok(spans.into_iter().map(TestSpan::from).collect())
     }
 
-    pub async fn get_metrics(&self) -> Result<Vec<TestMetrics>> {
+    pub async fn get_metrics(&self) -> Result<Vec<TestMetrics>, Error> {
         let metrics_reader = self.metrics_reader.clone();
         // call force_flush from blocking task to prevent deadlocking
         // see https://github.com/open-telemetry/opentelemetry-rust/issues/1395

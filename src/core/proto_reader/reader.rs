@@ -151,10 +151,10 @@ impl ProtoReader {
 mod test_proto_config {
     use std::path::{Path, PathBuf};
 
-    use anyhow::Result;
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
 
+    use crate::core::error::Error;
     use crate::core::proto_reader::ProtoReader;
     use crate::core::resource_reader::{Cached, ResourceReader};
 
@@ -170,7 +170,7 @@ mod test_proto_config {
     }
 
     #[tokio::test]
-    async fn test_nested_imports() -> Result<()> {
+    async fn test_nested_imports() -> Result<(), Error> {
         let test_dir = Path::new(protobuf::SELF);
         let test_file = protobuf::NESTED_0;
 
@@ -197,7 +197,7 @@ mod test_proto_config {
     }
 
     #[tokio::test]
-    async fn test_proto_no_pkg() -> Result<()> {
+    async fn test_proto_no_pkg() -> Result<(), Error> {
         let runtime = crate::core::runtime::test::init(None);
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime.clone()), runtime);
         let proto_no_pkg =

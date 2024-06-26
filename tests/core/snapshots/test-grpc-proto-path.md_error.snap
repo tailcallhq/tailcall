@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "File Error",
+    "message": "File Error: No such file or directory (os error 2)",
     "trace": [],
     "description": null
   }

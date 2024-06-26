@@ -1,4 +1,3 @@
-use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
 use hyper::body::Bytes;
@@ -149,7 +148,7 @@ impl Response<Bytes> {
         error
     }
 
-    pub fn to_resp_string(self) -> Result<Response<String>> {
+    pub fn to_resp_string(self) -> Result<Response<String>, http::Error> {
         Ok(Response::<String> {
             body: String::from_utf8(self.body.to_vec())?,
             status: self.status,

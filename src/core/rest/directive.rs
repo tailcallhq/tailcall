@@ -82,6 +82,7 @@ mod tests {
 
     use async_graphql::parser::types::Directive;
     use once_cell::sync::Lazy;
+    use pretty_assertions::assert_eq;
 
     use super::*;
 
@@ -183,7 +184,7 @@ mod tests {
             })
             .unzip();
 
-        pretty_assertions::assert_eq!(actual, expected);
+        assert_eq!(actual, expected);
     }
 
     #[test]
@@ -203,7 +204,7 @@ mod tests {
         .map(|result| result.is_err())
         .collect::<Vec<_>>();
 
-        pretty_assertions::assert_eq!(directives, vec![true; 5]);
+        assert_eq!(directives, vec![true; 5]);
     }
 
     #[test]
