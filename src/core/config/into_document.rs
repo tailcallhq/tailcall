@@ -2,7 +2,7 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::{Config, ConfigModule};
+use super::ConfigModule;
 use crate::core::blueprint::TypeLike;
 use crate::core::directive::DirectiveCodec;
 
@@ -135,7 +135,6 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     .collect(),
                 fields: type_def
                     .fields
-                    .clone()
                     .iter()
                     .map(|(name, field)| {
                         let directives = get_directives(field);
@@ -248,8 +247,11 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     .map(|variant| {
                         pos(EnumValueDefinition {
                             description: None,
-                            value: pos(Name::new(variant)),
-                            directives: Vec::new(),
+                            value: pos(Name::new(&variant.name)),
+                            directives: variant
+                                .alias
+                                .clone()
+                                .map_or(vec![], |v| vec![pos(v.to_directive())]),
                         })
                     })
                     .collect(),
@@ -277,8 +279,8 @@ fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDir
     directives.into_iter().flatten().collect()
 }
 
-impl From<Config> for ServiceDocument {
-    fn from(value: Config) -> Self {
-        config_document(&value.into())
+impl From<&ConfigModule> for ServiceDocument {
+    fn from(value: &ConfigModule) -> Self {
+        config_document(value)
     }
 }

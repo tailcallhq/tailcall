@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use serde_json::json;
 
-use crate::core::ir::{EvaluationContext, ResolverContextLike};
+use crate::core::ir::{EvalContext, ResolverContextLike};
 use crate::core::json::JsonLike;
 
 ///
@@ -49,7 +49,7 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
     }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike> PathString for EvalContext<'a, Ctx> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         let ctx = self;
 
@@ -78,7 +78,7 @@ impl<'a, Ctx: ResolverContextLike<'a>> PathString for EvaluationContext<'a, Ctx>
     }
 }
 
-impl<'a, Ctx: ResolverContextLike<'a>> PathGraphql for EvaluationContext<'a, Ctx> {
+impl<'a, Ctx: ResolverContextLike> PathGraphql for EvalContext<'a, Ctx> {
     fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
         let ctx = self;
 
@@ -114,7 +114,7 @@ mod tests {
         use once_cell::sync::Lazy;
 
         use crate::core::http::RequestContext;
-        use crate::core::ir::{EvaluationContext, ResolverContextLike};
+        use crate::core::ir::{EvalContext, ResolverContextLike};
         use crate::core::path::{PathGraphql, PathString};
         use crate::core::EnvIO;
 
@@ -192,24 +192,24 @@ mod tests {
         #[derive(Clone)]
         struct MockGraphqlContext;
 
-        impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
-            fn value(&'a self) -> Option<&'a Value> {
+        impl ResolverContextLike for MockGraphqlContext {
+            fn value(&self) -> Option<&Value> {
                 Some(&TEST_VALUES)
             }
 
-            fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
+            fn args(&self) -> Option<&IndexMap<Name, Value>> {
                 Some(&TEST_ARGS)
             }
 
-            fn field(&'a self) -> Option<SelectionField> {
+            fn field(&self) -> Option<SelectionField> {
                 None
             }
 
-            fn is_query(&'a self) -> bool {
+            fn is_query(&self) -> bool {
                 false
             }
 
-            fn add_error(&'a self, _: async_graphql::ServerError) {}
+            fn add_error(&self, _: async_graphql::ServerError) {}
         }
 
         static REQ_CTX: Lazy<RequestContext> = Lazy::new(|| {
@@ -221,8 +221,8 @@ mod tests {
             req_ctx
         });
 
-        static EVAL_CTX: Lazy<EvaluationContext<'static, MockGraphqlContext>> =
-            Lazy::new(|| EvaluationContext::new(&REQ_CTX, &MockGraphqlContext));
+        static EVAL_CTX: Lazy<EvalContext<'static, MockGraphqlContext>> =
+            Lazy::new(|| EvalContext::new(&REQ_CTX, &MockGraphqlContext));
 
         #[test]
         fn path_to_string() {

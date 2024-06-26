@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::parser::types::{
     BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition,
@@ -10,10 +10,10 @@ use async_graphql::Name;
 use async_graphql_value::ConstValue;
 
 use super::telemetry::Telemetry;
-use super::{Tag, JS};
+use super::{Alias, Tag, JS};
 use crate::core::config::{
     self, Cache, Call, Config, Enum, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
-    Server, Union, Upstream,
+    Server, Union, Upstream, Variant,
 };
 use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -209,26 +209,22 @@ fn to_union_types(
 fn to_enum_types(
     type_definitions: &[&Positioned<TypeDefinition>],
 ) -> Valid<BTreeMap<String, Enum>, String> {
-    Valid::succeed(
-        type_definitions
-            .iter()
-            .filter_map(|type_definition| {
-                let type_name = pos_name_to_string(&type_definition.node.name);
-                let type_opt = match type_definition.node.kind.clone() {
-                    TypeKind::Enum(enum_type) => to_enum(
-                        enum_type,
-                        type_definition
-                            .node
-                            .description
-                            .to_owned()
-                            .map(|pos| pos.node),
-                    ),
-                    _ => return None,
-                };
-                Some((type_name, type_opt))
-            })
-            .collect(),
-    )
+    Valid::from_iter(type_definitions.iter(), |type_definition| {
+        let type_name = pos_name_to_string(&type_definition.node.name);
+        let type_opt = match type_definition.node.kind.clone() {
+            TypeKind::Enum(enum_type) => to_enum(
+                enum_type,
+                type_definition
+                    .node
+                    .description
+                    .to_owned()
+                    .map(|pos| pos.node),
+            ),
+            _ => return Valid::succeed(None),
+        };
+        type_opt.map(|type_opt| Some((type_name, type_opt)))
+    })
+    .map(|values| values.into_iter().flatten().collect())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -410,13 +406,21 @@ fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {
     Union { types, doc: doc.clone() }
 }
 
-fn to_enum(enum_type: EnumType, doc: Option<String>) -> Enum {
-    let variants = enum_type
-        .values
-        .iter()
-        .map(|member| member.node.value.node.as_str().to_owned())
-        .collect();
-    Enum { variants, doc }
+fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {
+    let variants = Valid::from_iter(enum_type.values.iter(), |member| {
+        let name = member.node.value.node.as_str().to_owned();
+        let alias = member
+            .node
+            .directives
+            .iter()
+            .find(|d| d.node.name.node.as_str() == Alias::directive_name());
+        if let Some(alias) = alias {
+            Alias::from_directive(&alias.node).map(|alias| Variant { name, alias: Some(alias) })
+        } else {
+            Valid::succeed(Variant { name, alias: None })
+        }
+    });
+    variants.map(|v| Enum { variants: v.into_iter().collect::<BTreeSet<Variant>>(), doc })
 }
 fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
     directives.iter().find_map(|directive| {

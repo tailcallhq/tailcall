@@ -1,15 +1,37 @@
+use std::collections::HashMap;
+
 use crate::core::blueprint::FieldDefinition;
-use crate::core::config::{self, ConfigModule, Field, GraphQLOperationType};
+use crate::core::config::{Config, ConfigModule, Field, GraphQL, GraphQLOperationType, Type};
 use crate::core::graphql::RequestTemplate;
 use crate::core::helpers;
-use crate::core::ir::{IO, IR};
+use crate::core::ir::model::{IO, IR};
+use crate::core::ir::RelatedFields;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
+fn create_related_fields(config: &Config, type_name: &str) -> RelatedFields {
+    let mut map = HashMap::new();
+
+    if let Some(type_) = config.find_type(type_name) {
+        for (name, field) in &type_.fields {
+            if !field.has_resolver() {
+                map.insert(name.clone(), create_related_fields(config, &field.type_of));
+            }
+        }
+    } else if let Some(union_) = config.find_union(type_name) {
+        for type_name in &union_.types {
+            map.extend(create_related_fields(config, type_name).0);
+        }
+    };
+
+    RelatedFields(map)
+}
+
 pub fn compile_graphql(
-    config: &config::Config,
-    operation_type: &config::GraphQLOperationType,
-    graphql: &config::GraphQL,
+    config: &Config,
+    operation_type: &GraphQLOperationType,
+    type_name: &str,
+    graphql: &GraphQL,
 ) -> Valid<IR, String> {
     let args = graphql.args.as_ref();
     Valid::from_option(
@@ -28,6 +50,7 @@ pub fn compile_graphql(
                 &graphql.name,
                 args,
                 headers,
+                create_related_fields(config, type_name),
             )
             .map_err(|e| ValidationError::new(e.to_string())),
         )
@@ -41,15 +64,14 @@ pub fn compile_graphql(
 
 pub fn update_graphql<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, String> {
+    TryFold::<(&ConfigModule, &Field, &Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_of, _), b_field| {
             let Some(graphql) = &field.graphql else {
                 return Valid::succeed(b_field);
             };
 
-            compile_graphql(config, operation_type, graphql)
+            compile_graphql(config, operation_type, &field.type_of, graphql)
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
         },

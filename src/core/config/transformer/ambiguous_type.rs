@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use super::Transform;
 use crate::core::config::Config;
+use crate::core::transform::Transform;
 use crate::core::valid::{Valid, Validator};
 
 /// Resolves the ambiguous types by renaming the input and
@@ -56,7 +56,9 @@ fn insert_resolution(
 }
 
 impl Transform for AmbiguousType {
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    type Value = Config;
+    type Error = String;
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let mut input_types = config.input_types();
         let mut output_types = config.output_types();
         Valid::from_iter(input_types.intersection(&output_types), |current_name| {
@@ -143,13 +145,16 @@ impl Transform for AmbiguousType {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
 
-    use maplit::hashset;
+    use insta::assert_snapshot;
+    use prost_reflect::prost_types::FileDescriptorSet;
+    use tailcall_fixtures::protobuf;
 
     use crate::core::config::transformer::AmbiguousType;
-    use crate::core::config::{Config, ConfigModule, Type};
-    use crate::core::generator::Source;
+    use crate::core::config::{Config, Type};
+    use crate::core::generator::{Generator, Input};
+    use crate::core::proto_reader::ProtoMetadata;
+    use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     fn build_qry(mut config: Config) -> Config {
@@ -211,54 +216,38 @@ mod tests {
 
         config = build_qry(config);
 
-        let config_module = ConfigModule::from(config)
-            .transform(AmbiguousType::default())
+        let config = AmbiguousType::default()
+            .transform(config)
             .to_result()
             .unwrap();
 
-        let actual = config_module
-            .config
-            .types
-            .keys()
-            .map(|s| s.as_str())
-            .collect::<HashSet<_>>();
-
-        let expected = maplit::hashset![
-            "Query",
-            "Type1Input",
-            "Type1",
-            "Type2Input",
-            "Type2",
-            "Type3"
-        ];
-
-        assert_eq!(actual, expected);
+        assert_snapshot!(config.to_sdl());
     }
+
+    fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
+        Ok(protox::compile(files, [protobuf::SELF])?)
+    }
+
     #[tokio::test]
     async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
-        let gen = crate::core::generator::Generator::init(crate::core::runtime::test::init(None));
-        let news = tailcall_fixtures::protobuf::NEWS;
-        let config_module = gen
-            .read_all(Source::Proto, &[news], "Query")
-            .await?
-            .transform(AmbiguousType::default())
-            .to_result()?;
-        let actual = config_module
-            .config
-            .types
-            .keys()
-            .map(|s| s.as_str())
-            .collect::<HashSet<_>>();
+        let news_proto = tailcall_fixtures::protobuf::NEWS;
+        let set = compile_protobuf(&[protobuf::NEWS])?;
 
-        let expected = hashset![
-            "Query",
-            "news__News",
-            "news__NewsList",
-            "news__NewsInput",
-            "news__NewsId",
-            "news__MultipleNewsId"
-        ];
-        assert_eq!(actual, expected);
+        let cfg_module = Generator::default()
+            .inputs(vec![Input::Proto(ProtoMetadata {
+                descriptor_set: set,
+                path: news_proto.to_string(),
+            })])
+            .generate(false)?;
+
+        let mut config = AmbiguousType::default()
+            .transform(cfg_module.config)
+            .to_result()?;
+
+        // remove links since they break snapshot tests
+        config.links = Default::default();
+
+        assert_snapshot!(config.to_sdl());
         Ok(())
     }
 }

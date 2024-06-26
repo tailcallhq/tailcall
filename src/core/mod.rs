@@ -19,20 +19,22 @@ pub mod has_headers;
 pub mod helpers;
 pub mod http;
 pub mod ir;
+pub mod jit;
 pub mod json;
 pub mod merge_right;
 pub mod mustache;
 pub mod path;
 pub mod primitive;
 pub mod print_schema;
-mod proto_reader;
-mod resource_reader;
+pub mod proto_reader;
+pub mod resource_reader;
 pub mod rest;
 pub mod runtime;
 pub mod scalar;
 pub mod schema_extension;
 mod serde_value_ext;
 pub mod tracing;
+mod transform;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
@@ -44,7 +46,8 @@ use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
 use http::Response;
-use ir::IoId;
+use ir::model::IoId;
+pub use mustache::Mustache;
 pub use tailcall_macros as macros;
 
 pub trait EnvIO: Send + Sync + 'static {

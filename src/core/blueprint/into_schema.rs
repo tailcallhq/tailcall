@@ -9,7 +9,7 @@ use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, Type};
 use crate::core::http::RequestContext;
-use crate::core::ir::{Eval, EvaluationContext, ResolverContext};
+use crate::core::ir::{EvalContext, ResolverContext};
 use crate::core::scalar::CUSTOM_SCALARS;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
@@ -80,7 +80,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                         match &field.resolver {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
-                                let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                let ctx = EvalContext::new(req_ctx, &ctx);
                                 FieldFuture::from_value(
                                     ctx.path_value(&[field_name]).map(|a| a.into_owned()),
                                 )
@@ -94,10 +94,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();
-                                        let ctx = EvaluationContext::new(req_ctx, &ctx);
+                                        let mut ctx = EvalContext::new(req_ctx, &ctx);
 
-                                        let const_value =
-                                            expr.eval(ctx).await.map_err(|err| err.extend())?;
+                                        let const_value = expr
+                                            .eval(&mut ctx)
+                                            .await
+                                            .map_err(|err| err.extend())?;
                                         let p = match const_value {
                                             ConstValue::List(a) => Some(FieldValue::list(a)),
                                             ConstValue::Null => FieldValue::NONE,

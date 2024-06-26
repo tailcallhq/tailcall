@@ -7,7 +7,7 @@ use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
-use crate::core::ir::{Cache, Context, IR};
+use crate::core::ir::model::{Cache, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{config, scalar};
@@ -236,8 +236,8 @@ fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
             .iter()
             .map(|variant| EnumValueDefinition {
                 description: None,
-                name: variant.clone(),
-                directives: Vec::new(),
+                name: variant.name.clone(),
+                directives: vec![],
             })
             .collect(),
     })
@@ -300,7 +300,7 @@ fn update_resolver_from_path(
 
     process_path(context.clone()).and_then(|of_type| {
         let mut updated_base_field = base_field;
-        let resolver = IR::Context(Context::Path(context.path.to_owned()));
+        let resolver = IR::ContextPath(context.path.to_owned());
         if has_index {
             updated_base_field.of_type =
                 Type::NamedType { name: of_type.name().to_string(), non_null: false }
@@ -511,6 +511,7 @@ pub fn to_field_definition(
         .and(fix_dangling_resolvers())
         .and(update_cache_resolvers())
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
+        .and(update_enum_alias())
         .try_fold(
             &(config_module, field, type_of, name),
             FieldDefinition::default(),
@@ -519,15 +520,9 @@ pub fn to_field_definition(
 
 pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String> {
     TryFold::<ConfigModule, Vec<Definition>, String>::new(|config_module, _| {
-        let output_types = &config_module.output_types;
-        let input_types = &config_module.input_types;
-
         Valid::from_iter(config_module.types.iter(), |(name, type_)| {
-            let dbl_usage = input_types.contains(name) && output_types.contains(name);
             if type_.scalar() {
                 to_scalar_type_definition(name).trace(name)
-            } else if dbl_usage {
-                Valid::fail("type is used in input and output".to_string()).trace(name)
             } else {
                 to_object_type_definition(name, type_, config_module)
                     .trace(name)

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use async_graphql::dynamic::SchemaBuilder;
 
@@ -7,7 +7,7 @@ use super::{Server, TypeLike};
 use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::{Arg, Batch, Config, ConfigModule, Field};
-use crate::core::ir::{IO, IR};
+use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -94,7 +94,13 @@ where
         }
         JsonSchema::Obj(schema_fields)
     } else if let Some(type_enum_) = type_enum_ {
-        JsonSchema::Enum(type_enum_.variants.to_owned())
+        JsonSchema::Enum(
+            type_enum_
+                .variants
+                .iter()
+                .map(|variant| variant.name.clone())
+                .collect::<BTreeSet<String>>(),
+        )
     } else {
         match type_of {
             "String" => JsonSchema::Str,
@@ -124,7 +130,10 @@ impl TryFrom<&ConfigModule> for Blueprint {
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         config_blueprint()
-            .try_fold(config_module, Blueprint::default())
+            .try_fold(
+                &config_module.clone().normalize_default().to_result()?,
+                Blueprint::default(),
+            )
             .and_then(|blueprint| {
                 let schema_builder = SchemaBuilder::from(&blueprint);
                 match schema_builder.finish() {
