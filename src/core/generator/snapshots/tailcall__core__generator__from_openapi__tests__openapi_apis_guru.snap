@@ -5,3 +5,35 @@ expression: apis_guru
 schema @server @upstream {
   query: Query
 }
+
+type Query {
+  """
+  Returns the API entry for one specific version of an API where there is no serviceName.
+  """
+  getApi: Api @http(path: "/specs/{provider}/{api}.json")
+  """
+  Some basic metrics for the entire directory.
+Just stunning numbers to put on a front page and are intended purely for WoW effect :)
+
+  """
+  getMetrics: Metrics @http(path: "/metrics.json")
+  """
+  List all APIs in the directory for a particular providerName
+Returns links to the individual API entry for each API.
+
+  """
+  getProvider: ApIs @http(path: "/{provider}.json")
+  """
+  Returns the API entry for one specific version of an API where there is a serviceName.
+  """
+  getServiceApi: Api @http(path: "/specs/{provider}/{service}/{api}.json")
+  """
+  List all APIs in the directory.
+Returns links to the OpenAPI definitions for each API in the directory.
+If API exist in multiple versions `preferred` one is explicitly marked.
+Some basic info from the OpenAPI definition is cached inside each object.
+This allows you to generate some simple views without needing to fetch the OpenAPI definition for each API.
+
+  """
+  listApIs: ApIs @http(path: "/list.json")
+}

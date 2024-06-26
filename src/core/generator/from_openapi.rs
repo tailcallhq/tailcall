@@ -2,7 +2,8 @@ use oas3::{OpenApiV3Spec, Spec};
 
 use crate::core::config::Config;
 use crate::core::generator::json;
-use crate::core::transform::Transform;
+use crate::core::generator::openapi::QueryGenerator;
+use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::{Valid, Validator};
 
 #[derive(Default)]
@@ -23,7 +24,9 @@ impl Transform for FromOpenAPIGenerator {
     type Error = String;
 
     fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
-        json::SchemaGenerator::new(self.query.clone()).transform(value)
+        json::SchemaGenerator::new(self.query.clone())
+            .pipe(QueryGenerator::new(self.query.as_str(), &self.spec))
+            .transform(value)
     }
 }
 
