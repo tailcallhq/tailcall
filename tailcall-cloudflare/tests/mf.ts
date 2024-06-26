@@ -20,7 +20,7 @@ mockAgent
       headers: {
         "content-type": "application/json",
       },
-    }
+    },
   )
 
 mockAgent
@@ -35,7 +35,7 @@ mockAgent
       headers: {
         "content-type": "application/json",
       },
-    }
+    },
   )
 
 mockAgent
@@ -57,7 +57,7 @@ mockAgent
       headers: {
         "content-type": "application/grpc",
       },
-    }
+    },
   )
 
 export const mf = new Miniflare({
