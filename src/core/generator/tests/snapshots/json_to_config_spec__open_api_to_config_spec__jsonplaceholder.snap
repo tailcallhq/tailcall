@@ -2,4 +2,17 @@
 source: src/core/generator/tests/open_api_to_config_spec.rs
 expression: config.to_sdl()
 ---
+schema @server @upstream {
+  query: Query
+}
 
+type Query {
+  """
+  Returns a post by id
+  """
+  getPost: Post @http(path: "/posts/{id}")
+  """
+  Returns all posts
+  """
+  getPosts: PostsList @http(path: "/posts")
+}

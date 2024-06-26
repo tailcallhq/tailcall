@@ -2,4 +2,190 @@
 source: src/core/generator/tests/open_api_to_config_spec.rs
 expression: config.to_sdl()
 ---
+schema @server @upstream {
+  query: Query
+}
 
+type Query {
+  """
+  Get a list of Spotify playlists tagged with a particular category.
+
+  """
+  getACategoriesPlaylists: PagingFeaturedPlaylistObject @http(path: "/browse/categories/{category_id}/playlists")
+  """
+  Get a single category used to tag items in Spotify (on, for example, the Spotify player’s “Browse” tab).
+
+  """
+  getACategory: CategoryObject @http(path: "/browse/categories/{category_id}")
+  """
+  Get Spotify catalog information for a single audiobook chapter. Chapters are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
+
+  """
+  getAChapter: ChapterObject @http(path: "/chapters/{id}")
+  """
+  Get a list of the playlists owned or followed by the current Spotify
+user.
+
+  """
+  getAListOfCurrentUsersPlaylists: PagingPlaylistObject @http(path: "/me/playlists")
+  """
+  Get Spotify catalog information for a single show identified by its
+unique Spotify ID.
+
+  """
+  getAShow: ShowObject @http(path: "/shows/{id}")
+  """
+  Get Spotify catalog information about an show’s episodes. Optional parameters can be used to limit the number of episodes returned.
+
+  """
+  getAShowsEpisodes: PagingSimplifiedEpisodeObject @http(path: "/shows/{id}/episodes")
+  """
+  Get Spotify catalog information for a single album.
+
+  """
+  getAnAlbum: AlbumObject @http(path: "/albums/{id}")
+  """
+  Get Spotify catalog information about an album’s tracks.
+Optional parameters can be used to limit the number of tracks returned.
+
+  """
+  getAnAlbumsTracks: PagingSimplifiedTrackObject @http(path: "/albums/{id}/tracks")
+  """
+  Get Spotify catalog information for a single artist identified by their unique Spotify ID.
+
+  """
+  getAnArtist: ArtistObject @http(path: "/artists/{id}")
+  """
+  Get Spotify catalog information about an artist's albums.
+
+  """
+  getAnArtistsAlbums: PagingArtistDiscographyAlbumObject @http(path: "/artists/{id}/albums")
+  """
+  Get Spotify catalog information for a single audiobook. Audiobooks are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
+
+  """
+  getAnAudiobook: AudiobookObject @http(path: "/audiobooks/{id}")
+  """
+  Get Spotify catalog information for a single episode identified by its
+unique Spotify ID.
+
+  """
+  getAnEpisode: EpisodeObject @http(path: "/episodes/{id}")
+  """
+  Get a low-level audio analysis for a track in the Spotify catalog. The audio analysis describes the track’s structure and musical content, including rhythm, pitch, and timbre.
+
+  """
+  getAudioAnalysis: AudioAnalysisObject @http(path: "/audio-analysis/{id}")
+  """
+  Get audio feature information for a single track identified by its unique
+Spotify ID.
+
+  """
+  getAudioFeatures: AudioFeaturesObject @http(path: "/audio-features/{id}")
+  """
+  Get Spotify catalog information about an audiobook's chapters. Audiobooks are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
+
+  """
+  getAudiobookChapters: PagingSimplifiedChapterObject @http(path: "/audiobooks/{id}/chapters")
+  """
+  Get detailed profile information about the current user (including the
+current user's username).
+
+  """
+  getCurrentUsersProfile: PrivateUserObject @http(path: "/me")
+  """
+  Get a list of Spotify featured playlists (shown, for example, on a Spotify player's 'Browse' tab).
+
+  """
+  getFeaturedPlaylists: PagingFeaturedPlaylistObject @http(path: "/browse/featured-playlists")
+  """
+  Get information about the user’s current playback state, including track or episode, progress, and active device.
+
+  """
+  getInformationAboutTheUsersCurrentPlayback: CurrentlyPlayingContextObject @http(path: "/me/player")
+  """
+  Get a list of the playlists owned or followed by a Spotify user.
+
+  """
+  getListUsersPlaylists: PagingPlaylistObject @http(path: "/users/{user_id}/playlists")
+  """
+  Get a playlist owned by a Spotify user.
+
+  """
+  getPlaylist: PlaylistObject @http(path: "/playlists/{playlist_id}")
+  """
+  Get full details of the items of a playlist owned by a Spotify user.
+
+  """
+  getPlaylistsTracks: PagingPlaylistTrackObject @http(path: "/playlists/{playlist_id}/tracks")
+  """
+  Get the list of objects that make up the user's queue.
+
+  """
+  getQueue: QueueObject @http(path: "/me/player/queue")
+  """
+  Get tracks from the current user's recently played tracks.
+_**Note**: Currently doesn't support podcast episodes._
+
+  """
+  getRecentlyPlayed: CursorPagingPlayHistoryObject @http(path: "/me/player/recently-played")
+  """
+  Recommendations are generated based on the available information for a given seed entity and matched against similar artists and tracks. If there is sufficient information about the provided seeds, a list of tracks will be returned together with pool size details.
+
+For artists and tracks that are very new or obscure there might not be enough data to generate a list of tracks.
+
+  """
+  getRecommendations: RecommendationsObject @http(path: "/recommendations")
+  """
+  Get the object currently being played on the user's Spotify account.
+
+  """
+  getTheUsersCurrentlyPlayingTrack: CurrentlyPlayingObject @http(path: "/me/player/currently-playing")
+  """
+  Get Spotify catalog information for a single track identified by its
+unique Spotify ID.
+
+  """
+  getTrack: TrackObject @http(path: "/tracks/{id}")
+  """
+  Get public profile information about a Spotify user.
+
+  """
+  getUsersProfile: PublicUserObject @http(path: "/users/{user_id}")
+  """
+  Get a list of the albums saved in the current Spotify user's 'Your Music' library.
+
+  """
+  getUsersSavedAlbums: PagingSavedAlbumObject @http(path: "/me/albums")
+  """
+  Get a list of the audiobooks saved in the current Spotify user's 'Your Music' library.
+
+  """
+  getUsersSavedAudiobooks: PagingSavedAudiobookObject @http(path: "/me/audiobooks")
+  """
+  Get a list of the episodes saved in the current Spotify user's library.<br/>
+This API endpoint is in __beta__ and could change without warning. Please share any feedback that you have, or issues that you discover, in our [developer community forum](https://community.spotify.com/t5/Spotify-for-Developers/bd-p/Spotify_Developer).
+
+  """
+  getUsersSavedEpisodes: PagingSavedEpisodeObject @http(path: "/me/episodes")
+  """
+  Get a list of shows saved in the current Spotify user's library. Optional parameters can be used to limit the number of shows returned.
+
+  """
+  getUsersSavedShows: PagingSavedShowObject @http(path: "/me/shows")
+  """
+  Get a list of the songs saved in the current Spotify user's 'Your Music' library.
+
+  """
+  getUsersSavedTracks: PagingSavedTrackObject @http(path: "/me/tracks")
+  """
+  Get the current user's top artists based on calculated affinity.
+
+  """
+  getUsersTopArtists: PagingArtistObject @http(path: "/me/top/artists")
+  """
+  Get the current user's top tracks based on calculated affinity.
+
+  """
+  getUsersTopTracks: PagingTrackObject @http(path: "/me/top/tracks")
+}
