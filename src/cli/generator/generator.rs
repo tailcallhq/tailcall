@@ -87,6 +87,9 @@ impl Generator {
 
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
+        let output_dir = Path::new(&config.output.path.0)
+            .parent()
+            .unwrap_or(Path::new(""));
 
         for input in config.inputs {
             match input.source {
@@ -100,21 +103,9 @@ impl Generator {
                     });
                 }
                 Source::Proto { src } => {
-                    let path = src.0.clone();
-
+                    let path = src.0;
                     let mut metadata = proto_reader.read(&path).await?;
-
-                    let is_windows = path.contains("\\");
-
-                    let output_path = config.output.path.0.clone();
-                    let output_path = output_path.replace("\\", "/");
-                    let path = src.0.clone().replace("\\", "/");
-                    let output_dir = Path::new(&output_path).parent().unwrap_or(Path::new(""));
-
-                    if let Some(mut relative_path_to_proto) = to_relative_path(output_dir, &path) {
-                        if is_windows {
-                            relative_path_to_proto = relative_path_to_proto.replace("/", "\\");
-                        }
+                    if let Some(relative_path_to_proto) = to_relative_path(output_dir, &path) {
                         metadata.path = relative_path_to_proto;
                     }
                     input_samples.push(Input::Proto(metadata));
@@ -167,16 +158,4 @@ fn to_relative_path(from: &Path, to: &str) -> Option<String> {
 
     // Calculate the relative path from `from_path` to `to_path`
     diff_paths(to_path, from_path).map(|p| p.to_string_lossy().to_string())
-}
-
-#[cfg(test)]
-mod test {
-    use std::path::Path;
-
-    #[test]
-    fn test_path() {
-        let path = Path::new("D:\\tmp\\foo\\bar.txt");
-        let components = path.components().collect::<Vec<_>>();
-        println!("[Finder]: {:#?} ", components);
-    }
 }
