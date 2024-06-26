@@ -74,11 +74,11 @@ impl ResourceReader<Cached> {
     }
 }
 
-impl ToString for Resource {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for Resource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Resource::File(file_path) => file_path.to_string(),
-            Resource::Request(request_path) => request_path.url().to_string(),
+            Resource::File(file_path) => write!(f, "{}", file_path),
+            Resource::Request(request_path) => write!(f, "{}", request_path.url()),
         }
     }
 }
