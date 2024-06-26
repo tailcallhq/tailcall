@@ -166,7 +166,7 @@ mod server_spec {
     async fn test_server(configs: &[&str], url: &str) {
         let runtime = crate::test::init(None);
         let reader = ConfigReader::init(runtime);
-        let config_vec: Vec<String> = configs.iter().map(|&s| s.to_string()).collect();
+        let config_vec: Vec<&str> = configs.iter().map(|&s| s).collect();
         let config = reader.read_all(config_vec).await.unwrap();
         let mut server = Server::new(config);
         let server_up_receiver = server.server_up_receiver();
@@ -250,7 +250,7 @@ mod server_spec {
 
     #[tokio::test]
     async fn server_start_http2_nokey() {
-        let configs = &["tests/server/config/server-start-http2-nokey.graphql".to_string()];
+        let configs = &["tests/server/config/server-start-http2-nokey.graphql"];
         let runtime = crate::test::init(None);
         let reader = ConfigReader::init(runtime);
         let config = reader.read_all(configs.to_vec()).await.unwrap();
