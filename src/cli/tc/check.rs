@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use super::cli::fmt::Fmt;
 use super::helpers::{display_schema, log_endpoint_set};
+use crate::cli::fmt::Fmt;
 use crate::cli::CLIError;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
