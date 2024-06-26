@@ -31,13 +31,6 @@ impl From<String> for Resource {
         Resource::File(val)
     }
 }
-
-impl From<&str> for Resource {
-    fn from(val: &str) -> Self {
-        Resource::File(val.to_owned())
-    }
-}
-
 #[async_trait::async_trait]
 pub trait Reader {
     async fn read<T: Into<Resource> + ToString + Send>(&self, file: T) -> anyhow::Result<FileRead>;
