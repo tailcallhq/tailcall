@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::num::NonZeroU64;
 
+use async_graphql::Value;
 use strum_macros::Display;
 
 use super::{EvalContext, ResolverContextLike};
@@ -13,22 +14,17 @@ use crate::core::{grpc, http};
 
 #[derive(Clone, Debug, Display)]
 pub enum IR {
-    Context(Context),
-    Dynamic(DynamicValue),
+    Dynamic(DynamicValue<Value>),
     #[strum(to_string = "{0}")]
     IO(IO),
     Cache(Cache),
+
+    // TODO: Path can be implement using Pipe
     Path(Box<IR>, Vec<String>),
+    ContextPath(Vec<String>),
     Protect(Box<IR>),
     Map(Map),
-}
-
-#[derive(Clone, Debug)]
-pub enum Context {
-    Value,
-    Path(Vec<String>),
-    PushArgs { expr: Box<IR>, and_then: Box<IR> },
-    PushValue { expr: Box<IR>, and_then: Box<IR> },
+    Pipe(Box<IR>, Box<IR>),
 }
 
 #[derive(Clone, Debug)]
@@ -64,6 +60,7 @@ pub enum IO {
 
 #[derive(Clone, Copy, Debug)]
 pub struct DataLoaderId(usize);
+
 impl DataLoaderId {
     pub fn new(id: usize) -> Self {
         Self(id)
@@ -76,6 +73,7 @@ impl DataLoaderId {
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub struct IoId(u64);
+
 impl IoId {
     pub fn new(id: u64) -> Self {
         Self(id)
@@ -85,6 +83,7 @@ impl IoId {
         self.0
     }
 }
+
 pub trait CacheKey<Ctx> {
     fn cache_key(&self, ctx: &Ctx) -> Option<IoId>;
 }
@@ -109,12 +108,8 @@ impl Cache {
 }
 
 impl IR {
-    pub fn and_then(self, next: Self) -> Self {
-        IR::Context(Context::PushArgs { expr: Box::new(self), and_then: Box::new(next) })
-    }
-
-    pub fn with_args(self, args: IR) -> Self {
-        IR::Context(Context::PushArgs { expr: Box::new(args), and_then: Box::new(self) })
+    pub fn pipe(self, next: Self) -> Self {
+        IR::Pipe(Box::new(self), Box::new(next))
     }
 
     pub fn modify(self, mut f: impl FnMut(&IR) -> Option<IR>) -> IR {
@@ -132,17 +127,10 @@ impl IR {
             None => {
                 let expr = self;
                 match expr {
-                    IR::Context(ctx) => match ctx {
-                        Context::Value | Context::Path(_) => IR::Context(ctx),
-                        Context::PushArgs { expr, and_then } => IR::Context(Context::PushArgs {
-                            expr: expr.modify_box(modifier),
-                            and_then: and_then.modify_box(modifier),
-                        }),
-                        Context::PushValue { expr, and_then } => IR::Context(Context::PushValue {
-                            expr: expr.modify_box(modifier),
-                            and_then: and_then.modify_box(modifier),
-                        }),
-                    },
+                    IR::Pipe(first, second) => {
+                        IR::Pipe(first.modify_box(modifier), second.modify_box(modifier))
+                    }
+                    IR::ContextPath(path) => IR::ContextPath(path),
                     IR::Dynamic(_) => expr,
                     IR::IO(_) => expr,
                     IR::Cache(Cache { io, max_age }) => {

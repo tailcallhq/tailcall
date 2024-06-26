@@ -6,17 +6,17 @@ use crate::core::error::Error;
 use crate::core::mustache::Mustache;
 
 #[derive(Debug, Clone)]
-pub enum DynamicValue {
-    Value(ConstValue),
+pub enum DynamicValue<A> {
+    Value(A),
     Mustache(Mustache),
-    Object(IndexMap<Name, DynamicValue>),
-    Array(Vec<DynamicValue>),
+    Object(IndexMap<Name, DynamicValue<A>>),
+    Array(Vec<DynamicValue<A>>),
 }
 
-impl TryFrom<&DynamicValue> for ConstValue {
+impl TryFrom<&DynamicValue<ConstValue>> for ConstValue {
     type Error = Error;
 
-    fn try_from(value: &DynamicValue) -> Result<Self, Self::Error> {
+    fn try_from(value: &DynamicValue<ConstValue>) -> Result<Self, Self::Error> {
         match value {
             DynamicValue::Value(v) => Ok(v.to_owned()),
             DynamicValue::Mustache(_) => Err(Error::InvalidMustacheConstConversion),
@@ -36,7 +36,7 @@ impl TryFrom<&DynamicValue> for ConstValue {
     }
 }
 
-impl DynamicValue {
+impl<A> DynamicValue<A> {
     // Helper method to determine if the value is constant (non-mustache).
     pub fn is_const(&self) -> bool {
         match self {
@@ -48,7 +48,7 @@ impl DynamicValue {
     }
 }
 
-impl TryFrom<&Value> for DynamicValue {
+impl TryFrom<&Value> for DynamicValue<ConstValue> {
     type Error = Error;
 
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
@@ -62,7 +62,7 @@ impl TryFrom<&Value> for DynamicValue {
                 Ok(DynamicValue::Object(out))
             }
             Value::Array(arr) => {
-                let out: Result<Vec<DynamicValue>, Self::Error> =
+                let out: Result<Vec<DynamicValue<ConstValue>>, Self::Error> =
                     arr.iter().map(DynamicValue::try_from).collect();
                 Ok(DynamicValue::Array(out?))
             }
@@ -76,5 +76,11 @@ impl TryFrom<&Value> for DynamicValue {
             }
             _ => Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?)),
         }
+    }
+}
+
+impl<'a> From<&'a DynamicValue<serde_json::Value>> for serde_json_borrow::Value<'a> {
+    fn from(_value: &'a DynamicValue<serde_json::Value>) -> Self {
+        todo!()
     }
 }

@@ -3,8 +3,8 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall::core::generator::{Generator, Input};
 use tailcall::core::error::Error;
-use tailcall::core::generator::{from_json, ConfigGenerationRequest};
 use url::Url;
 
 #[derive(Serialize, Deserialize)]
@@ -38,7 +38,15 @@ fn load_json(path: &Path) -> Result<(String, Value), Error> {
 }
 
 fn test_spec(path: &Path, url: Url, body: Value) -> Result<(), Error> {
-    let config = from_json(&[ConfigGenerationRequest::new(url, body)], "Query")?;
+    let config = Generator::default()
+        .inputs(vec![Input::Json {
+            url,
+            response: body,
+            field_name: "f1".to_string(),
+        }])
+        .generate(true)?
+        .config;
+
     let snapshot_name = path.file_name().unwrap().to_str().unwrap();
     insta::assert_snapshot!(snapshot_name, config.to_sdl());
     Ok(())

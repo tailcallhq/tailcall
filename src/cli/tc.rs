@@ -9,6 +9,7 @@ use lazy_static::lazy_static;
 use stripmargin::StripMargin;
 
 use super::command::{Cli, Command};
+use super::generator::Generator;
 use super::update_checker;
 use crate::cli;
 use crate::cli::fmt::Fmt;
@@ -81,21 +82,23 @@ pub async fn run() -> Result<(), Error> {
             }
         }
         Command::Init { folder_path } => init(&folder_path).await,
-        Command::Gen { paths, input, output, query } => {
-            let generator = Generator::init(runtime);
-            let cfg = generator
-                .read_all(input, paths.as_ref(), query.as_str())
+        Command::Gen { file_path } => {
+            Generator::new(&file_path, runtime.clone())
+                .generate()
                 .await?;
 
-            let config = output.unwrap_or_default().encode(&cfg)?;
-            Fmt::display(config);
             Ok(())
         }
     }
 }
 
+/// Checks if file or folder already exists or not.
+fn is_exists(path: &str) -> bool {
+    fs::metadata(path).is_ok()
+}
+
 pub async fn init(folder_path: &str) -> Result<(), Error> {
-    let folder_exists = fs::metadata(folder_path).is_ok();
+    let folder_exists = is_exists(folder_path);
 
     if !folder_exists {
         let confirm = Confirm::new(&format!(

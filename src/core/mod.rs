@@ -21,14 +21,15 @@ pub mod has_headers;
 pub mod helpers;
 pub mod http;
 pub mod ir;
+pub mod jit;
 pub mod json;
 pub mod merge_right;
 pub mod mustache;
 pub mod path;
 pub mod primitive;
 pub mod print_schema;
-mod proto_reader;
-mod resource_reader;
+pub mod proto_reader;
+pub mod resource_reader;
 pub mod rest;
 pub mod runtime;
 pub mod scalar;
@@ -49,6 +50,7 @@ pub use errata::Errata;
 pub use error::{Error, Result};
 use http::Response;
 use ir::model::IoId;
+pub use mustache::Mustache;
 pub use tailcall_macros as macros;
 
 pub trait EnvIO: Send + Sync + 'static {
