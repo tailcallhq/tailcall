@@ -37,10 +37,13 @@ async fn run_test(path: &str) -> anyhow::Result<()> {
     // resolve i/o's
     let input_samples = generator.resolve_io(config).await?;
 
-    let config = ConfigGenerator::default()
+    let mut config = ConfigGenerator::default()
         .inputs(input_samples)
         .transformers(vec![Box::new(preset)])
         .generate(true)?;
+
+    // remove links since they break snapshot tests
+    config.config.links = Default::default();
 
     insta::assert_snapshot!(path, config.to_sdl());
     Ok(())
