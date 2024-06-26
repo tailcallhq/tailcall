@@ -27,7 +27,7 @@ pub trait Reader {
 #[derive(Clone)]
 pub struct ResourceReader<A>(A);
 
-impl<A: Reader + Send + Sync + 'static> ResourceReader<A> {
+impl<A: Reader + Send + Sync> ResourceReader<A> {
     pub async fn read_files(&self, paths: Vec<Resource>) -> anyhow::Result<Vec<FileRead>> {
         let files: Vec<_> = paths
             .into_iter()
