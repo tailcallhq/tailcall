@@ -152,10 +152,10 @@ mod tests {
 
     use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{Config, Type};
+    use crate::core::error::Error;
     use crate::core::generator::{Generator, Input};
     use crate::core::proto_reader::ProtoMetadata;
     use crate::core::transform::Transform;
-    use crate::core::error::Error;
     use crate::core::valid::Validator;
 
     fn build_qry(mut config: Config) -> Config {
@@ -225,7 +225,7 @@ mod tests {
         assert_snapshot!(config.to_sdl());
     }
 
-    fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
+    fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet, Error> {
         Ok(protox::compile(files, [protobuf::SELF])?)
     }
 

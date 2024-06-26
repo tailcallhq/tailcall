@@ -14,6 +14,7 @@ use super::ir;
 use super::rest::error::Error as RestError;
 use super::valid::ValidationError;
 use crate::cli::error::Error as CLIError;
+use crate::cli::generator::source::UnsupportedFileFormat;
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
@@ -166,6 +167,9 @@ pub enum Error {
 
     #[error("Headers Error")]
     Headers(headers::Error),
+
+    #[error("Unsupported File Format")]
+    UnsupportedFileFormat(UnsupportedFileFormat),
 }
 
 pub mod file {

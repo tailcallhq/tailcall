@@ -3,8 +3,8 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::core::generator::{Generator, Input};
 use tailcall::core::error::Error;
+use tailcall::core::generator::{Generator, Input};
 use url::Url;
 
 #[derive(Serialize, Deserialize)]

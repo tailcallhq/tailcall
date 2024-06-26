@@ -5,7 +5,6 @@ use super::json::{self, TypesGenerator};
 use super::NameGenerator;
 use crate::core::config::Config;
 use crate::core::merge_right::MergeRight;
-use crate::core::error::Error;
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::{Valid, Validator};
 
@@ -77,6 +76,7 @@ mod tests {
     use serde::Deserialize;
 
     use crate::core::config::transformer::Preset;
+    use crate::core::error::Error;
     use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
     use crate::core::transform::TransformerOps;
     use crate::core::valid::Validator;
@@ -93,7 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn generate_config_from_json() -> anyhow::Result<()> {
+    fn generate_config_from_json() -> Result<(), Error> {
         let mut request_samples = vec![];
         let fixtures = [
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",

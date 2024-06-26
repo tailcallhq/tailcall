@@ -26,6 +26,8 @@ pub enum Error {
 
     AuthError(String),
 
+    ExprEvalError(String),
+
     WorkerError(String),
 
     HttpError(String),
@@ -66,6 +68,10 @@ impl From<Error> for crate::core::Errata {
 
             Error::AuthError(message) => {
                 CoreError::new("Authentication Error").description(message)
+            }
+
+            Error::ExprEvalError(message) => {
+                CoreError::new("Expression Evaluation Error").description(message)
             }
 
             Error::WorkerError(message) => CoreError::new("Worker Error").description(message),

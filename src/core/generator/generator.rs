@@ -60,7 +60,7 @@ impl Generator {
         &self,
         type_name_generator: &NameGenerator,
         json_samples: &[RequestSample],
-    ) -> anyhow::Result<Config> {
+    ) -> Result<Config, Error> {
         Ok(
             FromJsonGenerator::new(json_samples, type_name_generator, &self.operation_name)
                 .generate()
@@ -73,7 +73,7 @@ impl Generator {
         &self,
         metadata: &ProtoMetadata,
         operation_name: &str,
-    ) -> anyhow::Result<Config> {
+    ) -> Result<Config, Error> {
         let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
         let mut config = from_proto(&[descriptor_set], operation_name)?;
         config.links.push(Link {
@@ -85,7 +85,7 @@ impl Generator {
     }
 
     /// Generated the actual configuratio from provided samples.
-    pub fn generate(&self, use_transformers: bool) -> anyhow::Result<ConfigModule> {
+    pub fn generate(&self, use_transformers: bool) -> Result<ConfigModule, Error> {
         let mut config: Config = Config::default();
         let type_name_generator = NameGenerator::new(&self.type_name_prefix);
 
@@ -143,11 +143,12 @@ mod test {
 
     use super::Generator;
     use crate::core::config::transformer::Preset;
+    use crate::core::error::Error;
     use crate::core::generator::generator::Input;
     use crate::core::generator::NameGenerator;
     use crate::core::proto_reader::ProtoMetadata;
 
-    fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
+    fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet, Error> {
         Ok(protox::compile(files, [tailcall_fixtures::protobuf::SELF])?)
     }
 
@@ -163,7 +164,7 @@ mod test {
     }
 
     #[test]
-    fn should_generate_config_from_proto() -> anyhow::Result<()> {
+    fn should_generate_config_from_proto() -> Result<(), Error> {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[news_proto])?;
 
@@ -179,7 +180,7 @@ mod test {
     }
 
     #[test]
-    fn should_generate_config_from_configs() -> anyhow::Result<()> {
+    fn should_generate_config_from_configs() -> Result<(), Error> {
         let cfg_module = Generator::default()
             .inputs(vec![Input::Config {
                 schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
@@ -192,7 +193,7 @@ mod test {
     }
 
     #[test]
-    fn should_generate_config_from_json() -> anyhow::Result<()> {
+    fn should_generate_config_from_json() -> Result<(), Error> {
         let parsed_content =
             parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
         let cfg_module = Generator::default()
@@ -208,7 +209,7 @@ mod test {
     }
 
     #[test]
-    fn should_generate_combined_config() -> anyhow::Result<()> {
+    fn should_generate_combined_config() -> Result<(), Error> {
         // Proto input
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let proto_set = compile_protobuf(&[news_proto])?;
@@ -244,7 +245,7 @@ mod test {
     }
 
     #[test]
-    fn generate_from_config_from_multiple_jsons() -> anyhow::Result<()> {
+    fn generate_from_config_from_multiple_jsons() -> Result<(), Error> {
         let mut inputs = vec![];
         let json_fixtures = [
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",
