@@ -6,7 +6,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::core::http::Response;
 use tailcall::core::HttpIO;
 
-use crate::fs_cache::FileSystemCacheManager;
+use crate::cacache_manager::CaCacheManager;
 
 #[derive(Clone)]
 pub struct NativeHttpTest {
@@ -18,7 +18,7 @@ impl Default for NativeHttpTest {
         let mut client = ClientBuilder::new(Client::new());
         client = client.with(Cache(HttpCache {
             mode: CacheMode::ForceCache,
-            manager: FileSystemCacheManager::default(),
+            manager: CaCacheManager::default(),
             options: HttpCacheOptions::default(),
         }));
         Self { client: client.build() }

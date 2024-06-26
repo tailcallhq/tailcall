@@ -174,8 +174,8 @@ tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
 tailcall-fixtures = { path = "./tailcall-fixtures" }
-crypto-hash = "0.3.4"
 http-cache-semantics = { version = "1.0.1", default-features = false, features = ["with_serde", "reqwest"]}
+cacache = { version = "13.0.0", default-features = false, features = ["tokio-runtime", "mmap"] }
 
 [features]
 

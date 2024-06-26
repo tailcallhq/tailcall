@@ -8,7 +8,7 @@ use tailcall::core::config;
 use tailcall::core::generator::Generator as ConfigGenerator;
 use tokio::runtime::Runtime;
 
-mod fs_cache;
+mod cacache_manager;
 mod http;
 
 datatest_stable::harness!(
