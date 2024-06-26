@@ -79,3 +79,9 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
         }
     }
 }
+
+impl<'a> From<&'a DynamicValue<serde_json::Value>> for serde_json_borrow::Value<'a> {
+    fn from(_value: &'a DynamicValue<serde_json::Value>) -> Self {
+        todo!()
+    }
+}
