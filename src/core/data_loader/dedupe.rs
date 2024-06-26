@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 
 use futures_util::Future;
 use tokio::sync::broadcast;
@@ -19,13 +19,13 @@ pub struct Dedupe<Key, Value> {
 
 enum State<Value> {
     Value(Value),
-    Send(broadcast::Sender<Value>),
+    Send(Weak<broadcast::Sender<Value>>),
 }
 
 enum Step<Value> {
     Value(Value),
     Recv(broadcast::Receiver<Value>),
-    Send(broadcast::Sender<Value>),
+    Send(Arc<broadcast::Sender<Value>>),
 }
 
 impl<K: Key, V: Value> Dedupe<K, V> {
@@ -38,36 +38,65 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         Fn: FnOnce() -> Fut,
         Fut: Future<Output = V>,
     {
-        match self.step(key) {
-            Step::Value(value) => value,
-            Step::Recv(mut rx) => rx.recv().await.unwrap(),
-            Step::Send(tx) => {
-                let value = or_else().await;
-                let mut guard = self.cache.lock().unwrap();
-                if self.persist {
-                    guard.insert(key.to_owned(), State::Value(value.clone()));
-                } else {
-                    guard.remove(key);
+        loop {
+            let value = match self.step(key) {
+                Step::Value(value) => value,
+                Step::Recv(mut rx) => {
+                    let result = rx.recv().await;
+
+                    match result {
+                        Ok(res) => res,
+                        Err(_) => {
+                            // if we got an error that means the task with
+                            // owned tx was dropped i.e. there is no result in cache
+                            // and we can try another attempt because probably another
+                            // task will do the execution
+                            continue;
+                        }
+                    }
                 }
-                let _ = tx.send(value.clone());
-                value
-            }
+                Step::Send(tx) => {
+                    let value = or_else().await;
+                    let mut guard = self.cache.lock().unwrap();
+                    if self.persist {
+                        guard.insert(key.to_owned(), State::Value(value.clone()));
+                    } else {
+                        guard.remove(key);
+                    }
+                    let _ = tx.send(value.clone());
+                    value
+                }
+            };
+
+            return value;
         }
     }
 
     fn step(&self, key: &K) -> Step<V> {
         let mut this = self.cache.lock().unwrap();
-        match this.get(key) {
-            Some(state) => match state {
-                State::Value(value) => Step::Value(value.clone()),
-                State::Send(tx) => Step::Recv(tx.subscribe()),
-            },
-            None => {
-                let (tx, _) = broadcast::channel(self.size);
-                this.insert(key.to_owned(), State::Send(tx.clone()));
-                Step::Send(tx.clone())
+
+        if let Some(state) = this.get(key) {
+            match state {
+                State::Value(value) => return Step::Value(value.clone()),
+                State::Send(tx) => {
+                    // we can upgrade from Weak to Arc only in case when
+                    // original tx is still alive
+                    // otherwise we will create in the code below
+                    if let Some(tx) = tx.upgrade() {
+                        return Step::Recv(tx.subscribe());
+                    }
+                }
             }
         }
+
+        let (tx, _) = broadcast::channel(self.size);
+        let tx = Arc::new(tx);
+        // store Weak version of tx and pass actual tx to further handling
+        // to control if tx is still alive and will be able to handle the request.
+        // Only single `strong` reference to tx should exist so we can
+        // understand when the execution is still alive and we'll get the response
+        this.insert(key.to_owned(), State::Send(Arc::downgrade(&tx)));
+        Step::Send(tx)
     }
 }
 
