@@ -7,7 +7,7 @@ use rustls_pki_types::{
 };
 use url::Url;
 
-use super::{ConfigModule, Content, Extensions, Link, LinkType};
+use super::{ConfigModule, Content, Link, LinkType};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
@@ -203,31 +203,23 @@ impl ConfigReader {
     /// Resolves all the links in a Config to create a ConfigModule
     pub async fn resolve(
         &self,
-        config: Config,
+        mut config: Config,
         parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
-        // Create initial config set
-        let config_module = ConfigModule::from(config);
-
-        // Extend it with the links
-        let mut config_module = self.ext_links(config_module, parent_dir).await?;
-
-        let server = &config_module.config().server;
+        // Setup telemetry in Config
         let reader_ctx = ConfigReaderContext {
             runtime: &self.runtime,
-            vars: &server
+            vars: &(&config.server)
                 .vars
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
                 .collect(),
             headers: Default::default(),
         };
-
-        let mut config = config_module.config().clone();
         config.telemetry.render_mustache(&reader_ctx)?;
-        config_module.with_config(config);
 
-        Ok(config_module.merge_right(ConfigModule::new(config, Extensions)))
+        // Create initial config set & extend it with the links
+        self.ext_links(ConfigModule::from(config), parent_dir).await
     }
 
     /// Checks if path is a URL or absolute path, returns directly if so.
