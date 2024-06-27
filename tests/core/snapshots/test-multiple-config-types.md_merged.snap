@@ -6,6 +6,16 @@ schema @server @upstream @link(id: "types", src: "types.graphql", type: Config) 
   query: Query
 }
 
+input Input {
+  id: Int
+  name: String
+}
+
+type Output {
+  id: Int
+  name: String
+}
+
 type Query {
   bar(input: Input): Output @expr(body: {id: "{{.args.input.id}}", name: "{{.args.input.name}}"})
 }

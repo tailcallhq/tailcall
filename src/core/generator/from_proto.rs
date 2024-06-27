@@ -11,7 +11,7 @@ use super::graphql_type::{GraphQLType, Unparsed};
 use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
-use crate::core::config::transformer::{AmbiguousType, RemoveUnused};
+use crate::core::config::transformer::{AmbiguousType, TreeShake};
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type, Union, Variant};
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
@@ -471,7 +471,7 @@ pub fn from_proto(descriptor_sets: &[FileDescriptorSet], query: &str) -> Result<
     }
 
     let config = AmbiguousType::default()
-        .pipe(RemoveUnused)
+        .pipe(TreeShake)
         .transform(ctx.config)
         .to_result()?;
 

@@ -1,0 +1,38 @@
+---
+source: src/core/config/transformer/nested_unions.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+input T1 {
+  t1: String
+}
+
+input T2 {
+  t2: Int
+}
+
+input T3 {
+  t3: Boolean
+  t33: Float!
+}
+
+input T4 {
+  t4: String
+}
+
+input T5 {
+  t5: Boolean
+}
+
+union U = T1 | T2 | T3 | T4 | T5
+
+union U1 = T1 | T2 | T3
+
+union U2 = T3 | T4
+
+type Query {
+  test(u: U!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
+}

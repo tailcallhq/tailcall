@@ -165,7 +165,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
 
     Valid::from(GrpcMethod::try_from(grpc.method.as_str()))
         .and_then(|method| {
-            let file_descriptor_set = config_module.extensions.get_file_descriptor_set();
+            let file_descriptor_set = config_module.extensions().get_file_descriptor_set();
 
             if file_descriptor_set.file.is_empty() {
                 return Valid::fail("Protobuf files were not specified in the config".to_string());

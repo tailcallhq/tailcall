@@ -43,8 +43,7 @@ fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {
             response: body,
             field_name: "f1".to_string(),
         }])
-        .generate(true)?
-        .config;
+        .generate(true)?;
 
     let snapshot_name = path.file_name().unwrap().to_str().unwrap();
     insta::assert_snapshot!(snapshot_name, config.to_sdl());
