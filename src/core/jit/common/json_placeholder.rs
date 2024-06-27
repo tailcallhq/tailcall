@@ -75,6 +75,6 @@ impl JsonPlaceholder {
             store
         });
 
-        Synth::new(plan.into_children(), store)
+        Synth::new(plan, store)
     }
 }
