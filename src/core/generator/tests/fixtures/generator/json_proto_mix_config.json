@@ -2,26 +2,8 @@
   "inputs": [
     {
       "curl": {
-        "src": "https://jsonplaceholder.typicode.com/posts/1",
-        "fieldName": "post"
-      }
-    },
-    {
-      "curl": {
-        "src": "https://jsonplaceholder.typicode.com/users/1",
-        "fieldName": "user"
-      }
-    },
-    {
-      "curl": {
         "src": "https://jsonplaceholder.typicode.com/users",
         "fieldName": "users"
-      }
-    },
-    {
-      "curl": {
-        "src": "https://jsonplaceholder.typicode.com/posts",
-        "fieldName": "posts"
       }
     },
     {
