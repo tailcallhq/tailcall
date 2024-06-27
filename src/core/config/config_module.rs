@@ -59,17 +59,9 @@ impl ConfigModule {
     /// Normalizes current config with default preset
     pub fn normalize_default(self) -> Valid<Self, String> {
         // TODO: migrate to preset. That will change many snapshots in repo
-        self.transform(
-            NestedUnions
-                .pipe(UnionInputType)
-                .pipe(AmbiguousType::default()),
-        )
-    }
-
-    pub fn transform<T: Transform<Value = Config, Error = String>>(
-        self,
-        transformer: T,
-    ) -> Valid<Self, String> {
+        let transformer = NestedUnions
+            .pipe(UnionInputType)
+            .pipe(AmbiguousType::default());
         let ConfigModule { config, extensions, .. } = self;
 
         transformer
