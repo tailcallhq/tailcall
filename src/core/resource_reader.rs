@@ -40,7 +40,7 @@ impl From<String> for Resource {
 
 #[async_trait::async_trait]
 pub trait Reader {
-    async fn read<T: Into<Resource> + ToString + Send>(&self, file: T) -> anyhow::Result<FileRead>;
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead>;
 }
 
 #[derive(Clone)]
@@ -49,11 +49,13 @@ pub struct ResourceReader<A>(A);
 impl<A: Reader + Send + Sync> ResourceReader<A> {
     pub async fn read_files<T>(&self, paths: &[T]) -> anyhow::Result<Vec<FileRead>>
     where
-        T: Into<Resource> + Clone + ToString + Send,
+        T: Into<Resource> + Clone + Send,
     {
         let files = join_all(paths.iter().cloned().map(|path| {
-            let path_str = path.to_string();
-            self.read_file(path).map_err(|e| e.context(path_str))
+            let resource: Resource = path.into();
+            let resource_path = resource.to_string();
+            self.read_file(resource)
+                .map_err(|e| e.context(resource_path))
         }))
         .await;
 
@@ -62,7 +64,7 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
 
     pub async fn read_file<T>(&self, path: T) -> anyhow::Result<FileRead>
     where
-        T: Into<Resource> + ToString + Send,
+        T: Into<Resource> + Send,
     {
         self.0.read(path).await
     }
@@ -98,12 +100,11 @@ impl Direct {
 #[async_trait::async_trait]
 impl Reader for Direct {
     /// Reads a file from the filesystem or from an HTTP URL
-    async fn read<T: Into<Resource> + ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
-        let path = file.to_string();
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         let content = match file.into() {
             Resource::RawPath(file_path) => {
                 // Is an HTTP URL
-
+                // FileRead { content, path }
                 if let Ok(url) = Url::parse(&file_path) {
                     if url.scheme().starts_with("http") {
                         let response = self
@@ -112,22 +113,28 @@ impl Reader for Direct {
                             .execute(reqwest::Request::new(reqwest::Method::GET, url))
                             .await?;
 
-                        String::from_utf8(response.body.to_vec())?
+                        let content = String::from_utf8(response.body.to_vec())?;
+                        FileRead { path: file_path, content }
                     } else {
                         // Is a file path on Windows
-                        self.runtime.file.read(&file_path).await?
+                        let content = self.runtime.file.read(&file_path).await?;
+                        FileRead { path: file_path, content }
                     }
                 } else {
                     // Is a file path
-                    self.runtime.file.read(&file_path).await?
+                    let content = self.runtime.file.read(&file_path).await?;
+                    FileRead { path: file_path, content }
                 }
             }
             Resource::Request(request) => {
+                let request_url = request.url().to_string();
                 let response = self.runtime.http.execute(request).await?;
-                String::from_utf8(response.body.to_vec())?
+                let content = String::from_utf8(response.body.to_vec())?;
+
+                FileRead { path: request_url, content }
             }
         };
-        Ok(FileRead { content, path })
+        Ok(content)
     }
 }
 
@@ -148,9 +155,10 @@ impl Cached {
 #[async_trait::async_trait]
 impl Reader for Cached {
     /// Reads a file from the filesystem or from an HTTP URL with cache
-    async fn read<T: Into<Resource> + ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         // check cache
-        let file_path = file.to_string();
+        let resource: Resource = file.into();
+        let file_path = resource.to_string();
         let content = self
             .cache
             .as_ref()
@@ -161,7 +169,7 @@ impl Reader for Cached {
         let content = if let Some(content) = content {
             content.to_owned()
         } else {
-            let file_read = self.direct.read(file).await?;
+            let file_read = self.direct.read(resource).await?;
             self.cache
                 .as_ref()
                 .lock()
