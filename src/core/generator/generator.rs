@@ -109,7 +109,8 @@ impl Generator {
                         .merge_right(self.generate_from_proto(proto_input, &self.operation_name)?);
                 }
                 Input::OpenAPI { spec } => {
-                    config = config.merge_right(from_openapi_spec(spec.clone())?)
+                    config =
+                        config.merge_right(from_openapi_spec(&self.operation_name, spec.clone()))
                 }
             }
         }

@@ -25,7 +25,7 @@ pub fn run_open_api_to_config_spec(path: &Path) -> datatest_stable::Result<()> {
 
 fn test_spec(snapshot_name: &str, content: String) -> anyhow::Result<()> {
     let spec = oas3::from_reader(content.as_bytes())?;
-    let config = from_openapi_spec(spec)?;
+    let config = from_openapi_spec("Query", spec);
     insta::assert_snapshot!(snapshot_name, config.to_sdl());
     Ok(())
 }
