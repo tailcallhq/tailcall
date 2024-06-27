@@ -1,4 +1,5 @@
 mod gen_gql_schema;
+mod new_gen_gql_schema;
 
 use std::env;
 use std::path::PathBuf;
