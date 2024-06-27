@@ -175,7 +175,7 @@ mod test {
             })])
             .generate(false)?;
 
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
     }
 
@@ -188,7 +188,7 @@ mod test {
             }])
             .generate(true)?;
 
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
     }
 
@@ -204,7 +204,7 @@ mod test {
             }])
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
     }
 
@@ -240,7 +240,7 @@ mod test {
             .generate(true)?;
 
         // Assert the combined output
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
     }
 
@@ -266,7 +266,7 @@ mod test {
             .inputs(inputs)
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
     }
 }
