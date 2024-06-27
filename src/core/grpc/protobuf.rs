@@ -278,7 +278,7 @@ pub mod tests {
         Ok(reader
             .resolve(config, None)
             .await?
-            .extensions
+            .extensions()
             .get_file_descriptor_set())
     }
 
