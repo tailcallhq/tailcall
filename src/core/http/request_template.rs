@@ -54,7 +54,7 @@ impl RequestTemplate {
 
         let qp_string = base_qp
             .chain(extra_qp)
-            .map(|(k, v)| QueryEncoder::detect(&v).encode(k, &v))
+            .map(|(k, v)| QueryEncoder::detect(&v).encode(&k, &v))
             .fold("".to_string(), |str, item| {
                 if str.is_empty() {
                     item
