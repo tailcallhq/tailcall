@@ -182,7 +182,6 @@ impl ProtobufOperation {
             .fields()
             .find(|field| field.is_list())
             .ok_or(anyhow!("Unable to find list field on type"))?;
-
         let field_kind = field_descriptor.kind();
         let child_message_descriptor = field_kind
             .as_message()
@@ -278,7 +277,7 @@ pub mod tests {
         Ok(reader
             .resolve(config, None)
             .await?
-            .extensions
+            .extensions()
             .get_file_descriptor_set())
     }
 
@@ -385,6 +384,61 @@ pub mod tests {
             serde_json::to_value(parsed)?,
             json!({
               "id": 1, "title": "Note 1", "body": "Content 1", "postImage": "Post image 1", "status": "PUBLISHED"
+            })
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn oneof_proto_file() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("oneof.OneOfService.GetOneOf").unwrap();
+
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::ONEOF).await?)?;
+        let service = file.find_service(&grpc_method)?;
+        let operation = service.find_operation(&grpc_method)?;
+
+        let input = operation.convert_input(r#"{ "payload": { "payload": "test" } }"#)?;
+
+        assert_eq!(input, b"\0\0\0\0\x08\x12\x06\n\x04test");
+
+        let input =
+            operation.convert_input(r#"{ "usual": "str", "command": { "command": "call" } }"#)?;
+
+        assert_eq!(input, b"\0\0\0\0\r\n\x03str\x1a\x06\n\x04call");
+
+        let output = b"\0\0\0\0\x08\x12\x06\n\x04body";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({
+                "usual": 0,
+                "payload": { "payload": "body" }
+            })
+        );
+
+        let output = b"\0\0\0\0\x09\x08\x05\x1A\x05\n\x03end";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({
+                "usual": 5,
+                "command": { "command": "end" }
+            })
+        );
+        let output = b"\0\0\0\0\x09\x22\x07content";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({
+                "usual": 0,
+                "response": "content"
             })
         );
 

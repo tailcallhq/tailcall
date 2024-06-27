@@ -17,11 +17,11 @@ pub fn update_protected<'a>(
                     .and_then(|type_| type_.protected.as_ref())
                     .is_some()
             {
-                if config.input_types.contains(type_name) {
+                if config.input_types().contains(type_name) {
                     return Valid::fail("Input types can not be protected".to_owned());
                 }
 
-                if !config.extensions.has_auth() {
+                if !config.extensions().has_auth() {
                     return Valid::fail(
                         "@protected operator is used but there is no @link definitions for auth providers".to_owned(),
                     );
