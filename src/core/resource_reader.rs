@@ -16,7 +16,7 @@ pub struct FileRead {
 
 /// Supported Resources by Resource Reader
 pub enum Resource {
-    File(String),
+    RawPath(String),
     Request(reqwest::Request),
 }
 
@@ -28,13 +28,13 @@ impl From<reqwest::Request> for Resource {
 
 impl From<&str> for Resource {
     fn from(val: &str) -> Self {
-        Resource::File(val.to_owned())
+        Resource::RawPath(val.to_owned())
     }
 }
 
 impl From<String> for Resource {
     fn from(val: String) -> Self {
-        Resource::File(val)
+        Resource::RawPath(val)
     }
 }
 
@@ -77,7 +77,7 @@ impl ResourceReader<Cached> {
 impl std::fmt::Display for Resource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Resource::File(file_path) => write!(f, "{}", file_path),
+            Resource::RawPath(file_path) => write!(f, "{}", file_path),
             Resource::Request(request_path) => write!(f, "{}", request_path.url()),
         }
     }
@@ -101,7 +101,7 @@ impl Reader for Direct {
     async fn read<T: Into<Resource> + ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         let path = file.to_string();
         let content = match file.into() {
-            Resource::File(file_path) => {
+            Resource::RawPath(file_path) => {
                 // Is an HTTP URL
 
                 if let Ok(url) = Url::parse(&file_path) {
