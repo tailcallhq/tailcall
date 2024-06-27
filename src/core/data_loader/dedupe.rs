@@ -123,8 +123,9 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
 
+    use futures_util::future::join_all;
     use tokio::join;
-    use tokio::time::sleep;
+    use tokio::time::{sleep, timeout_at, Instant};
 
     use super::*;
 
@@ -213,5 +214,28 @@ mod tests {
             1,
             "compute_value was called more than once"
         );
+    }
+
+    #[tokio::test]
+    async fn test_hanging() {
+        let cache = Arc::new(Dedupe::<u64, ()>::new(100, true));
+
+        let task = cache.dedupe(&1, move || async move {
+            sleep(Duration::from_millis(100)).await;
+        });
+
+        // drop the future since the underlying sleep timeout is higher than the timeout
+        // here
+        timeout_at(Instant::now() + Duration::from_millis(10), task)
+            .await
+            .expect_err("Should throw timeout error");
+
+        let tasks = (0..10).map(|_| {
+            cache.dedupe(&1, move || async move {
+                sleep(Duration::from_millis(100)).await;
+            })
+        });
+
+        join_all(tasks).await;
     }
 }
