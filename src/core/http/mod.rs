@@ -15,13 +15,13 @@ mod data_loader;
 mod cache;
 mod data_loader_request;
 mod method;
+mod query_encoder;
 mod request_context;
 mod request_handler;
 mod request_template;
 mod response;
 pub mod showcase;
 mod telemetry;
-mod query_encoder;
 
 pub static TAILCALL_HTTPS_ORIGIN: HeaderValue = HeaderValue::from_static("https://tailcall.run");
 pub static TAILCALL_HTTP_ORIGIN: HeaderValue = HeaderValue::from_static("http://tailcall.run");
