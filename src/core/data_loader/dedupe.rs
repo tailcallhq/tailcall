@@ -25,11 +25,11 @@ pub struct Dedupe<Key, Value> {
 /// Represents the current state of the operation.
 enum State<Value> {
     /// Means that the operation has been executed and the result is stored.
-    Value(Value),
+    Ready(Value),
 
     /// Means that the operation is in progress and the result can be sent via
     /// the stored sender whenever it's available in the future.
-    Send(Weak<broadcast::Sender<Value>>),
+    Pending(Weak<broadcast::Sender<Value>>),
 }
 
 /// Represents the next steps
@@ -63,7 +63,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                 let value = or_else().await;
                 let mut guard = self.cache.lock().unwrap();
                 if self.persist {
-                    guard.insert(key.to_owned(), State::Value(value.clone()));
+                    guard.insert(key.to_owned(), State::Ready(value.clone()));
                 } else {
                     guard.remove(key);
                 }
@@ -78,8 +78,8 @@ impl<K: Key, V: Value> Dedupe<K, V> {
 
         if let Some(state) = this.get(key) {
             match state {
-                State::Value(value) => return Step::Return(value.clone()),
-                State::Send(tx) => {
+                State::Ready(value) => return Step::Return(value.clone()),
+                State::Pending(tx) => {
                     // We can upgrade from Weak to Arc only in case when
                     // original tx is still alive
                     // otherwise we will create in the code below
@@ -96,7 +96,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         // to control if tx is still alive and will be able to handle the request.
         // Only single `strong` reference to tx should exist so we can
         // understand when the execution is still alive and we'll get the response
-        this.insert(key.to_owned(), State::Send(Arc::downgrade(&tx)));
+        this.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
         Step::Init(tx)
     }
 }
