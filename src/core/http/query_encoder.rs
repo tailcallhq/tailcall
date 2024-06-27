@@ -1,16 +1,16 @@
 pub enum QueryEncoder {
     /// it encodes the query value in the form of id=1&id=2&id=3
-    Repeated,
+    List,
     /// it encodes the query in the form of q=value
-    Simple,
+    Single,
 }
 
 impl QueryEncoder {
     pub fn detect(query: &str) -> Self {
         if query.starts_with('[') && query.ends_with(']') {
-            QueryEncoder::Repeated
+            QueryEncoder::List
         } else {
-            QueryEncoder::Simple
+            QueryEncoder::Single
         }
     }
 
@@ -20,7 +20,7 @@ impl QueryEncoder {
         V: AsRef<str>,
     {
         match self {
-            QueryEncoder::Repeated => values
+            QueryEncoder::List => values
                 .as_ref()
                 .trim_start_matches('[')
                 .trim_end_matches(']')
@@ -28,7 +28,7 @@ impl QueryEncoder {
                 .map(|v| format!("{}={}", key.as_ref(), v.trim()))
                 .collect::<Vec<_>>()
                 .join("&"),
-            QueryEncoder::Simple => format!("{}={}", key.as_ref(), values.as_ref()),
+            QueryEncoder::Single => format!("{}={}", key.as_ref(), values.as_ref()),
         }
     }
 }
