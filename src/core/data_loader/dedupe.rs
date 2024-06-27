@@ -11,21 +11,39 @@ impl<A: Send + Sync + Eq + Hash + Clone> Key for A {}
 pub trait Value: Send + Sync + Clone {}
 impl<A: Send + Sync + Clone> Value for A {}
 
+///
+/// Allows deduplication of async operations based on a key.
 pub struct Dedupe<Key, Value> {
+    /// Cache storage for the operations.
     cache: Arc<Mutex<HashMap<Key, State<Value>>>>,
+    /// Initial size of the multi-producer, multi-consumer channel.
     size: usize,
+    /// When enabled allows the operations to be cached forever.
     persist: bool,
 }
 
+/// Represents the current state of the operation.
 enum State<Value> {
+    /// Means that the operation has been executed and the result is stored.
     Value(Value),
+
+    /// Means that the operation is in progress and the result can be sent via
+    /// the stored sender whenever it's available in the future.
     Send(Weak<broadcast::Sender<Value>>),
 }
 
+/// Represents the next steps
 enum Step<Value> {
-    Value(Value),
-    Recv(broadcast::Receiver<Value>),
-    Send(Arc<broadcast::Sender<Value>>),
+    /// The operation has been executed and the result is available.
+    Return(Value),
+
+    /// The operation is in progress and the result will be sent via the
+    /// receiver.
+    Await(broadcast::Receiver<Value>),
+
+    /// The operation needs to be executed and the result needs to be sent to
+    /// the provided sender.
+    Init(Arc<broadcast::Sender<Value>>),
 }
 
 impl<K: Key, V: Value> Dedupe<K, V> {
@@ -40,22 +58,22 @@ impl<K: Key, V: Value> Dedupe<K, V> {
     {
         loop {
             let value = match self.step(key) {
-                Step::Value(value) => value,
-                Step::Recv(mut rx) => {
+                Step::Return(value) => value,
+                Step::Await(mut rx) => {
                     let result = rx.recv().await;
 
                     match result {
                         Ok(res) => res,
                         Err(_) => {
-                            // if we got an error that means the task with
-                            // owned tx was dropped i.e. there is no result in cache
+                            // If we get an error that means the task with
+                            // owned tx (sender) was dropped i.e. there is no result in cache
                             // and we can try another attempt because probably another
                             // task will do the execution
                             continue;
                         }
                     }
                 }
-                Step::Send(tx) => {
+                Step::Init(tx) => {
                     let value = or_else().await;
                     let mut guard = self.cache.lock().unwrap();
                     if self.persist {
@@ -77,13 +95,13 @@ impl<K: Key, V: Value> Dedupe<K, V> {
 
         if let Some(state) = this.get(key) {
             match state {
-                State::Value(value) => return Step::Value(value.clone()),
+                State::Value(value) => return Step::Return(value.clone()),
                 State::Send(tx) => {
-                    // we can upgrade from Weak to Arc only in case when
+                    // We can upgrade from Weak to Arc only in case when
                     // original tx is still alive
                     // otherwise we will create in the code below
                     if let Some(tx) = tx.upgrade() {
-                        return Step::Recv(tx.subscribe());
+                        return Step::Await(tx.subscribe());
                     }
                 }
             }
@@ -91,12 +109,12 @@ impl<K: Key, V: Value> Dedupe<K, V> {
 
         let (tx, _) = broadcast::channel(self.size);
         let tx = Arc::new(tx);
-        // store Weak version of tx and pass actual tx to further handling
+        // Store a Weak version of tx and pass actual tx to further handling
         // to control if tx is still alive and will be able to handle the request.
         // Only single `strong` reference to tx should exist so we can
         // understand when the execution is still alive and we'll get the response
         this.insert(key.to_owned(), State::Send(Arc::downgrade(&tx)));
-        Step::Send(tx)
+        Step::Init(tx)
     }
 }
 
