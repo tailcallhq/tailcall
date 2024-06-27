@@ -1,7 +1,7 @@
 pub enum QueryEncoder {
-    /// it encodes the query value in the form of id=1&id=2&id=3
+    /// it encodes the query value in the form of key=value1&key=value2&key=value3
     List,
-    /// it encodes the query in the form of q=value
+    /// it encodes the query in the form of key=value
     Single,
 }
 
