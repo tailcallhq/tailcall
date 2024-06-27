@@ -56,38 +56,21 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         Fn: FnOnce() -> Fut,
         Fut: Future<Output = V>,
     {
-        loop {
-            let value = match self.step(key) {
-                Step::Return(value) => value,
-                Step::Await(mut rx) => {
-                    let result = rx.recv().await;
-
-                    match result {
-                        Ok(res) => res,
-                        Err(_) => {
-                            // If we get an error that means the task with
-                            // owned tx (sender) was dropped i.e. there is no result in cache
-                            // and we can try another attempt because probably another
-                            // task will do the execution
-                            continue;
-                        }
-                    }
+        return match self.step(key) {
+            Step::Return(value) => value,
+            Step::Await(mut rx) => rx.recv().await.unwrap(),
+            Step::Init(tx) => {
+                let value = or_else().await;
+                let mut guard = self.cache.lock().unwrap();
+                if self.persist {
+                    guard.insert(key.to_owned(), State::Value(value.clone()));
+                } else {
+                    guard.remove(key);
                 }
-                Step::Init(tx) => {
-                    let value = or_else().await;
-                    let mut guard = self.cache.lock().unwrap();
-                    if self.persist {
-                        guard.insert(key.to_owned(), State::Value(value.clone()));
-                    } else {
-                        guard.remove(key);
-                    }
-                    let _ = tx.send(value.clone());
-                    value
-                }
-            };
-
-            return value;
-        }
+                let _ = tx.send(value.clone());
+                value
+            }
+        };
     }
 
     fn step(&self, key: &K) -> Step<V> {
