@@ -209,7 +209,8 @@ impl ConfigReader {
         // Setup telemetry in Config
         let reader_ctx = ConfigReaderContext {
             runtime: &self.runtime,
-            vars: &config.server
+            vars: &config
+                .server
                 .vars
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
