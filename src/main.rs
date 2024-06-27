@@ -1,15 +1,8 @@
-// Required for the #[global_allocator] proc macro
-#![allow(clippy::too_many_arguments)]
-
 use std::cell::Cell;
 
-use mimalloc::MiMalloc;
 use tailcall::cli::CLIError;
 use tailcall::core::tracing::default_tracing_tailcall;
 use tracing::subscriber::DefaultGuard;
-
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
 
 thread_local! {
     static TRACING_GUARD: Cell<Option<DefaultGuard>> = const { Cell::new(None) };
