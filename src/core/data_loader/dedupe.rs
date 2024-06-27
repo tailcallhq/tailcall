@@ -217,14 +217,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_hanging() {
+    async fn test_hanging_after_dropped() {
         let cache = Arc::new(Dedupe::<u64, ()>::new(100, true));
 
         let task = cache.dedupe(&1, move || async move {
             sleep(Duration::from_millis(100)).await;
         });
 
-        // drop the future since the underlying sleep timeout is higher than the timeout
+        // drops the future since the underlying sleep timeout is higher than the timeout
         // here
         timeout_at(Instant::now() + Duration::from_millis(10), task)
             .await
@@ -235,5 +235,35 @@ mod tests {
                 sleep(Duration::from_millis(100)).await;
             })
             .await;
+    }
+
+    #[tokio::test]
+    async fn test_hanging_dropped_while_in_use() {
+        let cache = Arc::new(Dedupe::<u64, ()>::new(100, true));
+
+        let first_cache = cache.clone();
+        let first = tokio::spawn(async move {
+            first_cache
+                .dedupe(&1, move || async move {
+                    sleep(Duration::from_millis(100)).await;
+                })
+                .await
+        });
+
+        let second_cache = cache.clone();
+        let second = tokio::spawn(async move {
+            second_cache
+                .dedupe(&1, move || async move {
+                    sleep(Duration::from_millis(100)).await;
+                })
+                .await
+        });
+
+        sleep(Duration::from_millis(10)).await;
+
+        // drop the first future
+        first.abort();
+
+        second.await.unwrap();
     }
 }
