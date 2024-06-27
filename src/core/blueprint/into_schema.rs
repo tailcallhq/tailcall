@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use anyhow::{bail, Result};
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql::{Error, ErrorExtensions};
 use async_graphql_value::ConstValue;
@@ -9,6 +8,7 @@ use futures_util::TryFutureExt;
 use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, Type};
+use crate::core::error;
 use crate::core::http::RequestContext;
 use crate::core::ir::{EvalContext, ResolverContext, TypeName};
 use crate::core::scalar::CUSTOM_SCALARS;
@@ -61,7 +61,7 @@ fn set_default_value(
 fn to_field_value<'a>(
     ctx: &mut EvalContext<'a, ResolverContext<'a>>,
     value: async_graphql::Value,
-) -> Result<FieldValue<'static>> {
+) -> Result<FieldValue<'static>, error::Error> {
     let type_name = ctx.type_name.take();
 
     Ok(match (value, type_name) {
@@ -77,7 +77,7 @@ fn to_field_value<'a>(
             FieldValue::from(value).with_type(type_name)
         }
         (ConstValue::Null, _) => FieldValue::NULL,
-        (_, Some(_)) => bail!("Failed to match type_name"),
+        (_, Some(_)) => return Err(error::Error::TypenameMatchFailed),
     })
 }
 

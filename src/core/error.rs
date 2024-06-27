@@ -170,6 +170,15 @@ pub enum Error {
 
     #[error("Unsupported File Format")]
     UnsupportedFileFormat(UnsupportedFileFormat),
+
+    #[error("Failed to match type_name")]
+    TypenameMatchFailed,
+
+    #[error("Value expected to be object")]
+    ObjectExpected,
+
+    #[error("Failed to find corresponding type for value")]
+    MissingTypeForValue,
 }
 
 pub mod file {

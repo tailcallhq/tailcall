@@ -12,9 +12,9 @@ use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
 use crate::core::config::transformer::{AmbiguousType, TreeShake};
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type, Union, Variant};
+use crate::core::error::Error;
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
-use crate::core::error::Error;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.

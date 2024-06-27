@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "IOException: Value expected to be object",
+        "message": "Value expected to be object",
         "locations": [
           {
             "line": 2,
