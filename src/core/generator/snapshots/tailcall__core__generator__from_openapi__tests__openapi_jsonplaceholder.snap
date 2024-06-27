@@ -6,6 +6,13 @@ schema @server @upstream {
   query: Query
 }
 
+type Post {
+  completed: String!
+  id: Int!
+  title: String!
+  userId: Int!
+}
+
 type Query {
   """
   Returns a post by id
