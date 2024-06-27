@@ -1,19 +1,19 @@
-use std::collections::BTreeMap;
-use std::fs;
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use anyhow::Result;
 use clap::Parser;
 use convert_case::{Case, Casing};
 use dotenvy::dotenv;
-use inquire::{Confirm, Select};
 use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 
 use super::command::{Cli, Command};
 use super::generator::Generator;
 use super::update_checker;
 use crate::cli::fmt::Fmt;
+use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
 use crate::cli::server::Server;
 use crate::cli::{self, CLIError};
 use crate::core::blueprint::Blueprint;
@@ -27,6 +27,13 @@ use crate::core::runtime::TargetRuntime;
 const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
+
+#[derive(Serialize, Deserialize)]
+pub struct GraphQLRC {
+    schema: Vec<String>,
+    #[serde(flatten)]
+    extra: HashMap<String, Value>,
+}
 
 lazy_static! {
     static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();
@@ -95,106 +102,37 @@ pub async fn run() -> Result<()> {
     }
 }
 
-async fn confirm_overwrite(
-    runtime: TargetRuntime,
-    file_path: impl AsRef<Path>,
-    content: &[u8],
-) -> Result<()> {
-    let file_exists = fs::metadata(file_path.as_ref()).is_ok();
-
-    if file_exists {
-        // confirm overwrite
-        let confirm = Confirm::new(&format!(
-            "Do you want to overwrite the file {}?",
-            file_path.as_ref().display()
-        ))
-        .with_default(false)
-        .prompt()?;
-
-        if !confirm {
-            return Ok(());
-        }
-    }
-
-    runtime
-        .file
-        .write(&file_path.as_ref().display().to_string(), content)
-        .await?;
-
-    Ok(())
-}
-
-async fn confirm_overwrite_yml(
+async fn confirm_and_write_yml(
     runtime: TargetRuntime,
     yml_file_path: impl AsRef<Path>,
 ) -> Result<()> {
-    let schema_entry = "./.tailcallrc.graphql";
+    let schema_entry = "./.tailcallrc.graphql".to_string();
+    let yml_file_path = yml_file_path.as_ref().display().to_string();
 
-    // setting to empty string if the file doesn't exist
-    let yaml_content = fs::read_to_string(&yml_file_path).unwrap_or_default();
-
-    let mut yaml = match serde_yaml::from_str(&yaml_content)? {
-        // necessary for handling two cases
-        // 1. file doesn't exist, hence, yaml_content is empty
-        // 2. file exists but is empty
-        Value::Null => Value::Mapping(serde_yaml::mapping::Mapping::new()),
-        x => x,
-    };
-
-    if let Some(mapping) = yaml.as_mapping_mut() {
-        let schema = mapping
-            .entry("schema".into())
-            .or_insert(Value::Sequence(Default::default()));
-
-        // handling the case where file exists but schema is null
-        if schema.is_null() {
-            *schema = Value::Sequence(Default::default());
-        }
-
-        if let Some(schema) = schema.as_sequence_mut() {
-            if !schema.contains(&serde_yaml::Value::from(schema_entry)) {
-                schema.push(serde_yaml::Value::from("./.tailcallrc.graphql"));
-                let content = serde_yaml::to_string(&yaml)?;
-                confirm_overwrite(runtime.clone(), yml_file_path, content.as_bytes()).await?;
-            } else {
-                tracing::info!("{YML_FILE_NAME} already exists");
+    match runtime.file.read(yml_file_path.as_ref()).await {
+        Ok(yml_content) => {
+            let mut graphqlrc: GraphQLRC = serde_yaml::from_str(&yml_content)?;
+            if !graphqlrc.schema.contains(&schema_entry) {
+                graphqlrc.schema.push(schema_entry);
             }
+            let content = serde_yaml::to_string(&graphqlrc)?;
+            confirm_and_write(runtime.clone(), &yml_file_path, content.as_bytes()).await
         }
-    } else {
-        tracing::warn!("{YML_FILE_NAME} already exists but it has an invalid format");
+        Err(_) => {
+            let graphqlrc = GraphQLRC { schema: vec![schema_entry], extra: HashMap::new() };
+            let content = serde_yaml::to_string(&graphqlrc)?;
+            runtime.file.write(&yml_file_path, content.as_bytes()).await
+        }
     }
-
-    Ok(())
-}
-
-/// Checks if file or folder already exists or not.
-fn is_exists(path: &str) -> bool {
-    fs::metadata(path).is_ok()
 }
 
 pub async fn init(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
-    let folder_exists = is_exists(folder_path);
+    create_directory(folder_path).await?;
 
-    if !folder_exists {
-        let confirm = Confirm::new(&format!(
-            "Do you want to create the folder {}?",
-            folder_path
-        ))
-        .with_default(false)
-        .prompt()?;
-
-        if confirm {
-            fs::create_dir_all(folder_path)?;
-        } else {
-            return Ok(());
-        };
-    }
-
-    let selection = Select::new(
+    let selection = select_prompt(
         "Please select the format in which you want to generate the config.",
         vec![Source::GraphQL, Source::Json, Source::Yml],
-    )
-    .prompt()?;
+    )?;
 
     let tailcallrc = include_str!("../../generated/.tailcallrc.graphql");
     let tailcallrc_json: &str = include_str!("../../generated/.tailcallrc.schema.json");
@@ -203,9 +141,19 @@ pub async fn init(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     let json_file_path = Path::new(folder_path).join(JSON_FILE_NAME);
     let yml_file_path = Path::new(folder_path).join(YML_FILE_NAME);
 
-    confirm_overwrite(runtime.clone(), &file_path, tailcallrc.as_bytes()).await?;
-    confirm_overwrite(runtime.clone(), &json_file_path, tailcallrc_json.as_bytes()).await?;
-    confirm_overwrite_yml(runtime.clone(), &yml_file_path).await?;
+    confirm_and_write(
+        runtime.clone(),
+        &file_path.display().to_string(),
+        tailcallrc.as_bytes(),
+    )
+    .await?;
+    confirm_and_write(
+        runtime.clone(),
+        &json_file_path.display().to_string(),
+        tailcallrc_json.as_bytes(),
+    )
+    .await?;
+    confirm_and_write_yml(runtime.clone(), &yml_file_path).await?;
     create_main(runtime.clone(), folder_path, selection).await?;
 
     Ok(())
@@ -251,10 +199,8 @@ async fn create_main(
         .join(format!("main.{}", source.ext()))
         .display()
         .to_string();
-    runtime
-        .file
-        .write(path.as_str(), content.as_bytes())
-        .await?;
+
+    confirm_and_write(runtime.clone(), &path, content.as_bytes()).await?;
     Ok(())
 }
 
