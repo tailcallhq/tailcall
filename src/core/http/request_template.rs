@@ -11,6 +11,7 @@ use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
+use crate::core::http::query_encoder::QueryEncoder;
 use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
@@ -53,7 +54,7 @@ impl RequestTemplate {
 
         let qp_string = base_qp
             .chain(extra_qp)
-            .map(|(k, v)| format!("{}={}", k, v))
+            .map(|(k, v)| QueryEncoder::detect(&v).encode(&k, &v))
             .fold("".to_string(), |str, item| {
                 if str.is_empty() {
                     item
