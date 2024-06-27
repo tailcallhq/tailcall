@@ -20,7 +20,7 @@ pub(super) async fn check_command(params: CheckParams, config_reader: &ConfigRea
     let CheckParams { file_paths, n_plus_one_queries, schema, format, runtime } = params;
 
     let config_module = (config_reader.read_all(&file_paths)).await?;
-    log_endpoint_set(&config_module.extensions.endpoint_set);
+    log_endpoint_set(&config_module.extensions().endpoint_set);
     if let Some(format) = format {
         Fmt::display(format.encode(&config_module)?);
     }
@@ -29,11 +29,12 @@ pub(super) async fn check_command(params: CheckParams, config_reader: &ConfigRea
     match blueprint {
         Ok(blueprint) => {
             tracing::info!("Config {} ... ok", file_paths.join(", "));
-            Fmt::log_n_plus_one(n_plus_one_queries, &config_module.config);
+            Fmt::log_n_plus_one(n_plus_one_queries, config_module.config());
             // Check the endpoints' schema
             let _ = config_module
-                .extensions
+                .extensions()
                 .endpoint_set
+                .clone()
                 .into_checked(&blueprint, runtime)
                 .await?;
             if schema {
