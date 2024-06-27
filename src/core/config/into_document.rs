@@ -2,7 +2,7 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::{Config};
+use super::Config;
 use crate::core::blueprint::TypeLike;
 use crate::core::directive::DirectiveCodec;
 
@@ -58,8 +58,10 @@ fn config_document(config: &Config) -> ServiceDocument {
             .map(|name| pos(Name::new(name))),
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
+    let interface_types = config.interface_types();
+    let input_types = config.input_types();
     for (type_name, type_def) in config.types.iter() {
-        let kind = if config.interface_types().contains(type_name) {
+        let kind = if interface_types.contains(type_name) {
             TypeKind::Interface(InterfaceType {
                 implements: type_def
                     .implements
@@ -91,7 +93,7 @@ fn config_document(config: &Config) -> ServiceDocument {
                     })
                     .collect::<Vec<Positioned<FieldDefinition>>>(),
             })
-        } else if config.input_types().contains(type_name) {
+        } else if input_types.contains(type_name) {
             TypeKind::InputObject(InputObjectType {
                 fields: type_def
                     .fields
