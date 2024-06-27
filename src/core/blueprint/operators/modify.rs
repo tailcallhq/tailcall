@@ -1,14 +1,23 @@
 use crate::core::blueprint::*;
 use crate::core::config;
+use crate::core::config::position::Pos;
 use crate::core::config::Field;
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
 
-pub fn update_modify<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+pub fn update_modify<'a>() -> TryFold<
+    'a,
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &'a str), FieldDefinition, String>::new(
         |(config, field, type_of, _), mut b_field| {
             if let Some(modify) = field.modify.as_ref() {
                 if let Some(new_name) = &modify.name {

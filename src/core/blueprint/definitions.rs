@@ -5,6 +5,7 @@ use regex::Regex;
 
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
+use crate::core::config::position::Pos;
 use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::{Cache, IR};
@@ -21,7 +22,7 @@ pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     }))
 }
 
-pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
+pub fn to_union_type_definition((name, u): (&String, &Pos<Union>)) -> Definition {
     Definition::Union(UnionTypeDefinition {
         name: name.to_owned(),
         description: u.doc.clone(),
@@ -61,10 +62,10 @@ type InvalidPathHandler = dyn Fn(&str, &[String], &[String]) -> Valid<Type, Stri
 type PathResolverErrorHandler = dyn Fn(&str, &str, &str, &[String]) -> Valid<Type, String>;
 
 struct ProcessFieldWithinTypeContext<'a> {
-    field: &'a config::Field,
+    field: &'a Pos<config::Field>,
     field_name: &'a str,
     remaining_path: &'a [String],
-    type_info: &'a config::Type,
+    type_info: &'a Pos<config::Type>,
     is_required: bool,
     config_module: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
@@ -75,8 +76,8 @@ struct ProcessFieldWithinTypeContext<'a> {
 #[derive(Clone)]
 struct ProcessPathContext<'a> {
     path: &'a [String],
-    field: &'a config::Field,
-    type_info: &'a config::Type,
+    field: &'a Pos<config::Field>,
+    type_info: &'a Pos<config::Type>,
     is_required: bool,
     config_module: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
@@ -226,7 +227,7 @@ fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
     Valid::succeed(to_type(field, Some(is_required)))
 }
 
-fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
+fn to_enum_type_definition((name, eu): (&String, &Pos<Enum>)) -> Definition {
     Definition::Enum(EnumTypeDefinition {
         name: name.to_owned(),
         directives: Vec::new(),
@@ -245,7 +246,7 @@ fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
 
 fn to_object_type_definition(
     name: &str,
-    type_of: &config::Type,
+    type_of: &Pos<config::Type>,
     config_module: &ConfigModule,
 ) -> Valid<Definition, String> {
     to_fields(name, type_of, config_module).map(|fields| {
@@ -258,10 +259,19 @@ fn to_object_type_definition(
     })
 }
 
-fn update_args<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+#[allow(clippy::type_complexity)]
+fn update_args<'a>() -> TryFold<
+    'a,
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(_, field, _typ, name), _| {
             // TODO! assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
@@ -320,10 +330,19 @@ fn update_resolver_from_path(
 /// resolvers that cannot be resolved from the root of the schema. This function
 /// finds such dangling resolvers and creates a resolvable path from the root
 /// schema.
-pub fn fix_dangling_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+#[allow(clippy::type_complexity)]
+pub fn fix_dangling_resolvers<'a>() -> TryFold<
+    'a,
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(config, field, ty, name), mut b_field| {
             let mut set = HashSet::new();
             if !field.has_resolver()
@@ -342,13 +361,22 @@ pub fn fix_dangling_resolvers<'a>(
 
 /// Wraps the IO Expression with Expression::Cached
 /// if `Field::cache` is present for that field
-pub fn update_cache_resolvers<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+#[allow(clippy::type_complexity)]
+pub fn update_cache_resolvers<'a>() -> TryFold<
+    'a,
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(_config, field, typ, _name), mut b_field| {
-            if let Some(config::Cache { max_age }) = field.cache.as_ref().or(typ.cache.as_ref()) {
-                b_field.map_expr(|expression| Cache::wrap(*max_age, expression))
+            if let Some(cache) = field.cache.as_ref().or(typ.cache.as_ref()) {
+                b_field.map_expr(|expression| Cache::wrap(cache.max_age.inner, expression))
             }
 
             Valid::succeed(b_field)
@@ -356,7 +384,7 @@ pub fn update_cache_resolvers<'a>(
     )
 }
 
-fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
+fn validate_field_type_exist(config: &Config, field: &Pos<Field>) -> Valid<(), String> {
     let field_type = &field.type_of;
     if !scalar::is_predefined_scalar(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
@@ -367,12 +395,14 @@ fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String
 
 fn to_fields(
     object_name: &str,
-    type_of: &config::Type,
+    type_of: &Pos<config::Type>,
     config_module: &ConfigModule,
 ) -> Valid<Vec<FieldDefinition>, String> {
     let operation_type = if config_module
         .schema
         .mutation
+        .as_ref()
+        .map(|mutation| mutation.inner.clone())
         .as_deref()
         .eq(&Some(object_name))
     {
@@ -400,8 +430,8 @@ fn to_fields(
         },
     );
 
-    let to_added_field = |add_field: &config::AddField,
-                          type_of: &config::Type|
+    let to_added_field = |add_field: &Pos<config::AddField>,
+                          type_of: &Pos<config::Type>|
      -> Valid<blueprint::FieldDefinition, String> {
         let source_field = type_of
             .fields
@@ -417,12 +447,12 @@ fn to_fields(
                 &add_field.name,
             )
             .and_then(|field_definition| {
-                let added_field_path = match source_field.http {
+                let added_field_path = match source_field.http.as_ref() {
                     Some(_) => add_field.path[1..]
                         .iter()
                         .map(|s| s.to_owned())
                         .collect::<Vec<_>>(),
-                    None => add_field.path.clone(),
+                    None => add_field.path.inner.clone(),
                 };
                 let invalid_path_handler = |field_name: &str,
                                             _added_field_path: &[String],
@@ -484,11 +514,11 @@ fn to_fields(
 
 #[allow(clippy::too_many_arguments)]
 pub fn to_field_definition(
-    field: &Field,
+    field: &Pos<Field>,
     operation_type: &GraphQLOperationType,
     object_name: &str,
     config_module: &ConfigModule,
-    type_of: &config::Type,
+    type_of: &Pos<config::Type>,
     name: &String,
 ) -> Valid<FieldDefinition, String> {
     let directives = field.resolvable_directives();

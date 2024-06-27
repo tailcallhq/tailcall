@@ -53,7 +53,11 @@ impl JsonPlaceholder {
             })
             .collect::<Vec<Value<'static>>>();
 
-        let config = ConfigModule::from(Config::from_sdl(Self::CONFIG).to_result().unwrap());
+        let config = ConfigModule::from(
+            Config::from_sdl("../fixtures/jsonplaceholder-mutation.graphql", Self::CONFIG)
+                .to_result()
+                .unwrap(),
+        );
         let builder = Builder::new(
             Blueprint::try_from(&config).unwrap(),
             async_graphql::parser::parse_query(query).unwrap(),

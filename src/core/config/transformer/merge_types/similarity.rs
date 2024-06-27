@@ -133,57 +133,108 @@ impl<'a> Similarity<'a> {
 #[cfg(test)]
 mod test {
     use super::Similarity;
+    use crate::core::config::position::Pos;
     use crate::core::config::{Config, Field, Type};
     use crate::core::valid::Validator;
 
     #[test]
     fn should_return_error_when_same_field_has_different_scalar_type() {
-        let mut foo1 = Type::default();
+        let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         foo1.fields.insert(
             "b".to_owned(),
-            Field { type_of: "String".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "String".to_owned(), ..Default::default() },
+            ),
         );
         foo1.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            ),
         );
 
-        let mut foo2 = Type::default();
+        let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         foo2.fields.insert(
             "b".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Float".to_owned(), ..Default::default() },
+            ),
         );
         foo2.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            ),
         );
 
-        let mut bar1 = Type::default();
+        let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         bar1.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Float".to_owned(), ..Default::default() },
+            ),
         );
 
-        let mut bar2 = Type::default();
+        let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
         bar2.fields.insert(
             "c".to_owned(),
-            Field { type_of: "String".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "String".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut cfg: Config = Config::default();
@@ -202,28 +253,48 @@ mod test {
 
     #[test]
     fn test_cyclic_type() {
-        let mut foo1 = Type::default();
+        let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            ),
         );
 
-        let mut foo2 = Type::default();
+        let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            ),
         );
 
-        let mut bar1 = Type::default();
+        let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Foo1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Foo1".to_owned(), ..Default::default() },
+            ),
         );
 
-        let mut bar2 = Type::default();
+        let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Foo2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Foo2".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut cfg: Config = Config::default();
@@ -243,39 +314,69 @@ mod test {
 
     #[test]
     fn test_nested_types() {
-        let mut foo1 = Type::default();
+        let mut foo1: Pos<Type> = Default::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            ),
         );
 
-        let mut foo2 = Type::default();
+        let mut foo2: Pos<Type> = Default::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            ),
         );
 
-        let mut bar1 = Type::default();
+        let mut bar1: Pos<Type> = Default::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Far1".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Far1".to_owned(), ..Default::default() },
+            ),
         );
 
-        let mut bar2 = Type::default();
+        let mut bar2: Pos<Type> = Default::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Far2".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Far2".to_owned(), ..Default::default() },
+            ),
         );
 
-        let mut far1 = Type::default();
+        let mut far1: Pos<Type> = Default::default();
         far1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
-        let mut far2 = Type::default();
+        let mut far2: Pos<Type> = Default::default();
         far2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "Int".to_owned(), ..Default::default() },
+            ),
         );
 
         let mut cfg: Config = Config::default();
@@ -297,15 +398,25 @@ mod test {
 
     #[test]
     fn test_required_and_optional_fields() {
-        let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            required: true,
-            ..Default::default()
-        };
+        let required_int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                type_of: "Int".to_owned(),
+                required: true,
+                ..Default::default()
+            },
+        );
 
-        let optional_int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+        let optional_int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Int".to_owned(), ..Default::default() },
+        );
 
-        let mut ty1 = Type::default();
+        let mut ty1: Pos<Type> = Default::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
         ty1.fields
@@ -313,7 +424,7 @@ mod test {
         ty1.fields
             .insert("c".to_string(), required_int_field.clone());
 
-        let mut ty2 = Type::default();
+        let mut ty2: Pos<Type> = Default::default();
         ty2.fields
             .insert("a".to_string(), optional_int_field.clone());
         ty2.fields
@@ -334,21 +445,30 @@ mod test {
 
     #[test]
     fn test_required_list_of_optional_int_vs_optional_list() {
-        let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            required: true,
-            ..Default::default()
-        };
+        let required_int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                type_of: "Int".to_owned(),
+                list: true,
+                required: true,
+                ..Default::default()
+            },
+        );
 
-        let optional_int_field =
-            Field { type_of: "Int".to_owned(), list: true, ..Default::default() };
+        let optional_int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Int".to_owned(), list: true, ..Default::default() },
+        );
 
-        let mut ty1 = Type::default();
+        let mut ty1: Pos<Type> = Default::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
-        let mut ty2 = Type::default();
+        let mut ty2: Pos<Type> = Default::default();
         ty2.fields
             .insert("a".to_string(), optional_int_field.clone());
 
@@ -365,25 +485,35 @@ mod test {
 
     #[test]
     fn test_list_of_required_int_vs_required_list() {
-        let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            list_type_required: true,
-            ..Default::default()
-        };
+        let required_int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                type_of: "Int".to_owned(),
+                list: true,
+                list_type_required: true,
+                ..Default::default()
+            },
+        );
 
-        let optional_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            required: true,
-            ..Default::default()
-        };
+        let optional_int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                type_of: "Int".to_owned(),
+                list: true,
+                required: true,
+                ..Default::default()
+            },
+        );
 
-        let mut ty1 = Type::default();
+        let mut ty1: Pos<Type> = Default::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
-        let mut ty2 = Type::default();
+        let mut ty2: Pos<Type> = Default::default();
         ty2.fields
             .insert("a".to_string(), optional_int_field.clone());
 
@@ -400,18 +530,23 @@ mod test {
 
     #[test]
     fn test_list_of_required_int_vs_list_of_required_int() {
-        let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            list_type_required: true,
-            ..Default::default()
-        };
+        let required_int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                type_of: "Int".to_owned(),
+                list: true,
+                list_type_required: true,
+                ..Default::default()
+            },
+        );
 
-        let mut ty1 = Type::default();
+        let mut ty1: Pos<Type> = Default::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
-        let mut ty2 = Type::default();
+        let mut ty2: Pos<Type> = Default::default();
         ty2.fields
             .insert("a".to_string(), required_int_field.clone());
 
@@ -428,18 +563,23 @@ mod test {
 
     #[test]
     fn test_required_list_vs_required_list() {
-        let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            required: true,
-            ..Default::default()
-        };
+        let required_int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                type_of: "Int".to_owned(),
+                list: true,
+                required: true,
+                ..Default::default()
+            },
+        );
 
-        let mut ty1 = Type::default();
+        let mut ty1: Pos<Type> = Default::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
-        let mut ty2 = Type::default();
+        let mut ty2: Pos<Type> = Default::default();
         ty2.fields
             .insert("a".to_string(), required_int_field.clone());
 
@@ -456,19 +596,24 @@ mod test {
 
     #[test]
     fn test_required_list_of_required_int_vs_required_list_of_required_int() {
-        let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            required: true,
-            list_type_required: true,
-            ..Default::default()
-        };
+        let required_int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                type_of: "Int".to_owned(),
+                list: true,
+                required: true,
+                list_type_required: true,
+                ..Default::default()
+            },
+        );
 
-        let mut ty1 = Type::default();
+        let mut ty1: Pos<Type> = Default::default();
         ty1.fields
             .insert("a".to_string(), required_int_field.clone());
 
-        let mut ty2 = Type::default();
+        let mut ty2: Pos<Type> = Default::default();
         ty2.fields
             .insert("a".to_string(), required_int_field.clone());
 
@@ -486,16 +631,26 @@ mod test {
     #[test]
     fn test_merge_incompatible_list_and_non_list_fields() {
         // Define fields
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
-        let list_int_field = Field { type_of: "Int".to_owned(), list: true, ..Default::default() };
+        let int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Int".to_owned(), ..Default::default() },
+        );
+        let list_int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Int".to_owned(), list: true, ..Default::default() },
+        );
 
         // Define types Foo and Bar
-        let mut foo = Type::default();
+        let mut foo: Pos<Type> = Default::default();
         foo.fields.insert("a".to_string(), int_field.clone());
         foo.fields.insert("b".to_string(), int_field.clone());
         foo.fields.insert("c".to_string(), list_int_field.clone());
 
-        let mut bar = Type::default();
+        let mut bar: Pos<Type> = Default::default();
         bar.fields.insert("a".to_string(), int_field.clone());
         bar.fields.insert("b".to_string(), int_field.clone());
         bar.fields.insert("c".to_string(), int_field.clone());

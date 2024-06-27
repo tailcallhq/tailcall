@@ -2,6 +2,7 @@ use serde_json::Value;
 
 use crate::core::blueprint::*;
 use crate::core::config;
+use crate::core::config::position::Pos;
 use crate::core::config::{Field, GraphQLOperationType};
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
@@ -10,9 +11,18 @@ use crate::core::valid::{Valid, ValidationError, Validator};
 pub fn update_call<'a>(
     operation_type: &'a GraphQLOperationType,
     object_name: &'a str,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+) -> TryFold<
+    'a,
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         move |(config, field, _, name), b_field| {
             let Some(ref calls) = field.call else {
                 return Valid::succeed(b_field);
@@ -47,7 +57,7 @@ pub fn update_call<'a>(
 
 fn compile_call(
     config_module: &ConfigModule,
-    call: &config::Call,
+    call: &Pos<config::Call>,
     operation_type: &GraphQLOperationType,
     object_name: &str,
 ) -> Valid<FieldDefinition, String> {
@@ -131,7 +141,7 @@ fn compile_call(
     })
 }
 
-fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
+fn get_type_and_field(call: &Pos<config::Step>) -> Option<(String, String)> {
     if let Some(query) = &call.query {
         Some(("Query".to_string(), query.clone()))
     } else {
@@ -142,9 +152,9 @@ fn get_type_and_field(call: &config::Step) -> Option<(String, String)> {
 }
 
 fn get_field_and_field_name<'a>(
-    call: &'a config::Step,
+    call: &'a Pos<config::Step>,
     config_module: &'a ConfigModule,
-) -> Valid<(&'a Field, String, &'a config::Type), String> {
+) -> Valid<(&'a Pos<Field>, String, &'a Pos<config::Type>), String> {
     Valid::from_option(
         get_type_and_field(call),
         "call must have query or mutation".to_string(),

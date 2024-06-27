@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::core::blueprint::FieldDefinition;
+use crate::core::config::position::Pos;
 use crate::core::config::{Config, ConfigModule, Field, GraphQL, GraphQLOperationType, Type};
 use crate::core::graphql::RequestTemplate;
 use crate::core::helpers;
@@ -31,7 +32,7 @@ pub fn compile_graphql(
     config: &Config,
     operation_type: &GraphQLOperationType,
     type_name: &str,
-    graphql: &GraphQL,
+    graphql: &Pos<GraphQL>,
 ) -> Valid<IR, String> {
     let args = graphql.args.as_ref();
     Valid::from_option(
@@ -41,14 +42,16 @@ pub fn compile_graphql(
             .or(config.upstream.base_url.as_ref()),
         "No base URL defined".to_string(),
     )
-    .zip(helpers::headers::to_mustache_headers(&graphql.headers))
+    .zip(helpers::headers::to_mustache_headers(
+        graphql.headers.as_ref(),
+    ))
     .and_then(|(base_url, headers)| {
         Valid::from(
             RequestTemplate::new(
-                base_url.to_owned(),
+                base_url.inner.to_owned(),
                 operation_type,
                 &graphql.name,
-                args,
+                args.map(|args| args.inner.as_ref()),
                 headers,
                 create_related_fields(config, type_name),
             )
@@ -56,16 +59,17 @@ pub fn compile_graphql(
         )
     })
     .map(|req_template| {
-        let field_name = graphql.name.clone();
-        let batch = graphql.batch;
+        let field_name = graphql.name.inner.clone();
+        let batch = graphql.batch.inner;
         IR::IO(IO::GraphQL { req_template, field_name, batch, dl_id: None })
     })
 }
 
 pub fn update_graphql<'a>(
     operation_type: &'a GraphQLOperationType,
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, String> {
-    TryFold::<(&ConfigModule, &Field, &Type, &'a str), FieldDefinition, String>::new(
+) -> TryFold<'a, (&'a ConfigModule, &'a Pos<Field>, &'a Pos<Type>, &'a str), FieldDefinition, String>
+{
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<Type>, &'a str), FieldDefinition, String>::new(
         |(config, field, type_of, _), b_field| {
             let Some(graphql) = &field.graphql else {
                 return Valid::succeed(b_field);

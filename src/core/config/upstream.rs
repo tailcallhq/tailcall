@@ -3,8 +3,10 @@ use std::collections::BTreeSet;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
+use super::position::Pos;
+use crate::core::config::positioned_config::PositionedConfig;
 use crate::core::is_default;
-use crate::core::macros::MergeRight;
+use crate::core::macros::{MergeRight, PositionedConfig};
 use crate::core::merge_right::MergeRight;
 
 const DEFAULT_MAX_SIZE: usize = 100;
@@ -45,6 +47,7 @@ pub struct Proxy {
     Default,
     schemars::JsonSchema,
     MergeRight,
+    PositionedConfig,
 )]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase", default)]
@@ -53,131 +56,173 @@ pub struct Proxy {
 /// keep-alive intervals, and more. If not specified, default values are used.
 pub struct Upstream {
     #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field, input_source_name = "onRequest")]
     /// onRequest field gives the ability to specify the global request
     /// interception handler.
-    pub on_request: Option<String>,
+    pub on_request: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `allowedHeaders` defines the HTTP headers allowed to be forwarded to
     /// upstream services. If not set, no headers are forwarded, enhancing
     /// security but possibly limiting data flow.
-    pub allowed_headers: Option<BTreeSet<String>>,
+    pub allowed_headers: Option<Pos<BTreeSet<String>>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field, input_source_name = "baseURL")]
     /// This refers to the default base URL for your APIs. If it's not
     /// explicitly mentioned in the `@upstream` operator, then each
     /// [@http](#http) operator must specify its own `baseURL`. If neither
     /// `@upstream` nor [@http](#http) provides a `baseURL`, it results in a
     /// compilation error.
-    pub base_url: Option<String>,
+    pub base_url: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// An object that specifies the batch settings, including `maxSize` (the
     /// maximum size of the batch), `delay` (the delay in milliseconds between
     /// each batch), and `headers` (an array of HTTP headers to be included in
     /// the batch).
-    pub batch: Option<Batch>,
+    pub batch: Option<Pos<Batch>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The time in seconds that the connection will wait for a response before
     /// timing out.
-    pub connect_timeout: Option<u64>,
+    pub connect_timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// Providing httpCache size enables Tailcall's HTTP caching, adhering to the [HTTP Caching RFC](https://tools.ietf.org/html/rfc7234), to enhance performance by minimizing redundant data fetches. Defaults to `0` if unspecified.
-    pub http_cache: Option<u64>,
+    pub http_cache: Option<Pos<u64>>,
 
     #[setters(strip_option)]
     #[serde(rename = "http2Only", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field, input_source_name = "http2Only")]
     /// The `http2Only` setting allows you to specify whether the client should
     /// always issue HTTP2 requests, without checking if the server supports it
     /// or not. By default it is set to `false` for all HTTP requests made by
     /// the server, but is automatically set to true for GRPC.
-    pub http2_only: Option<bool>,
+    pub http_2_only: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The time in seconds between each keep-alive message sent to maintain the
     /// connection.
-    pub keep_alive_interval: Option<u64>,
+    pub keep_alive_interval: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The time in seconds that the connection will wait for a keep-alive
     /// message before closing.
-    pub keep_alive_timeout: Option<u64>,
+    pub keep_alive_timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// A boolean value that determines whether keep-alive messages should be
     /// sent while the connection is idle.
-    pub keep_alive_while_idle: Option<bool>,
+    pub keep_alive_while_idle: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The maximum number of idle connections that will be maintained per host.
-    pub pool_max_idle_per_host: Option<usize>,
+    pub pool_max_idle_per_host: Option<Pos<usize>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The time in seconds that the connection pool will wait before closing
     /// idle connections.
-    pub pool_idle_timeout: Option<u64>,
+    pub pool_idle_timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The `proxy` setting defines an intermediary server through which the
     /// upstream requests will be routed before reaching their intended
     /// endpoint. By specifying a proxy URL, you introduce an additional layer,
     /// enabling custom routing and security policies.
-    pub proxy: Option<Proxy>,
+    pub proxy: Option<Pos<Proxy>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The time in seconds between each TCP keep-alive message sent to maintain
     /// the connection.
-    pub tcp_keep_alive: Option<u64>,
+    pub tcp_keep_alive: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The maximum time in seconds that the connection will wait for a
     /// response.
-    pub timeout: Option<u64>,
+    pub timeout: Option<Pos<u64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The User-Agent header value to be used in HTTP requests. @default
     /// `Tailcall/1.0`
-    pub user_agent: Option<String>,
+    pub user_agent: Option<Pos<String>>,
 }
 
 impl Upstream {
     pub fn get_pool_idle_timeout(&self) -> u64 {
-        self.pool_idle_timeout.unwrap_or(60)
+        self.pool_idle_timeout
+            .as_ref()
+            .map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_pool_max_idle_per_host(&self) -> usize {
-        self.pool_max_idle_per_host.unwrap_or(60)
+        self.pool_max_idle_per_host
+            .as_ref()
+            .map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_keep_alive_interval(&self) -> u64 {
-        self.keep_alive_interval.unwrap_or(60)
+        self.keep_alive_interval
+            .as_ref()
+            .map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_keep_alive_timeout(&self) -> u64 {
-        self.keep_alive_timeout.unwrap_or(60)
+        self.keep_alive_timeout
+            .as_ref()
+            .map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_keep_alive_while_idle(&self) -> bool {
-        self.keep_alive_while_idle.unwrap_or(false)
+        self.keep_alive_while_idle
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_connect_timeout(&self) -> u64 {
-        self.connect_timeout.unwrap_or(60)
+        self.connect_timeout
+            .as_ref()
+            .map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_timeout(&self) -> u64 {
-        self.timeout.unwrap_or(60)
+        self.timeout.as_ref().map_or(60, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_tcp_keep_alive(&self) -> u64 {
-        self.tcp_keep_alive.unwrap_or(5)
+        self.tcp_keep_alive
+            .as_ref()
+            .map_or(5, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_user_agent(&self) -> String {
         self.user_agent
             .clone()
-            .unwrap_or("Tailcall/1.0".to_string())
+            .map_or("Tailcall/1.0".to_string(), |Pos { inner, .. }| inner)
     }
+
     pub fn get_http_cache_size(&self) -> u64 {
-        self.http_cache.unwrap_or(0)
+        self.http_cache
+            .as_ref()
+            .map_or(0, |Pos { inner, .. }| *inner)
     }
+
     pub fn get_allowed_headers(&self) -> BTreeSet<String> {
-        self.allowed_headers.clone().unwrap_or_default()
+        self.allowed_headers.clone().unwrap_or_default().inner
     }
+
     pub fn get_delay(&self) -> usize {
         self.batch.clone().unwrap_or_default().delay
     }
@@ -189,11 +234,13 @@ impl Upstream {
     }
 
     pub fn get_http_2_only(&self) -> bool {
-        self.http2_only.unwrap_or(false)
+        self.http_2_only
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_on_request(&self) -> Option<String> {
-        self.on_request.clone()
+        self.on_request.clone().map(|Pos { inner, .. }| inner)
     }
 }
 
@@ -203,7 +250,12 @@ mod tests {
 
     fn setup_upstream_with_headers(headers: &[&str]) -> Upstream {
         Upstream {
-            allowed_headers: Some(headers.iter().map(|s| s.to_string()).collect()),
+            allowed_headers: Some(Pos::new(
+                0,
+                0,
+                None,
+                headers.iter().map(|s| s.to_string()).collect(),
+            )),
             ..Default::default()
         }
     }
@@ -215,12 +267,15 @@ mod tests {
         let merged = a.merge_right(b);
         assert_eq!(
             merged.allowed_headers,
-            Some(
+            Some(Pos::new(
+                0,
+                0,
+                None,
                 ["a", "b", "c", "d", "e", "f"]
                     .iter()
                     .map(|s| s.to_string())
                     .collect()
-            )
+            ))
         );
     }
 
@@ -232,7 +287,12 @@ mod tests {
 
         assert_eq!(
             merged.allowed_headers,
-            Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect())
+            Some(Pos::new(
+                0,
+                0,
+                None,
+                ["a", "b", "c"].iter().map(|s| s.to_string()).collect()
+            ))
         );
     }
 
@@ -244,7 +304,12 @@ mod tests {
 
         assert_eq!(
             merged.allowed_headers,
-            Some(["a", "b", "c"].iter().map(|s| s.to_string()).collect())
+            Some(Pos::new(
+                0,
+                0,
+                None,
+                ["a", "b", "c"].iter().map(|s| s.to_string()).collect()
+            ))
         );
     }
 }

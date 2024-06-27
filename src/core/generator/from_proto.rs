@@ -10,6 +10,7 @@ use super::graphql_type::{GraphQLType, Unparsed};
 use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
+use crate::core::config::position::Pos;
 use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type, Variant};
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
@@ -51,7 +52,7 @@ impl Context {
     }
 
     /// Resolves the actual name and inserts the type.
-    fn insert_type(mut self, name: String, ty: Type) -> Self {
+    fn insert_type(mut self, name: String, ty: Pos<Type>) -> Self {
         self.config.types.insert(name.to_string(), ty);
         self
     }
@@ -108,9 +109,10 @@ impl Context {
                 .map(|v| Variant { name: v, alias: None })
                 .collect();
 
-            self.config
-                .enums
-                .insert(type_name, Enum { variants: variants_with_comments, doc });
+            self.config.enums.insert(
+                type_name,
+                Pos::new(0, 0, None, Enum { variants: variants_with_comments, doc }),
+            );
         }
         self
     }
@@ -157,17 +159,22 @@ impl Context {
             // then drop it after handling nested types
             self.namespace.pop();
 
-            let mut ty = Type {
-                doc: self.comments_builder.get_comments(&msg_path),
-                ..Default::default()
-            };
+            let mut ty = Pos::new(
+                0,
+                0,
+                None,
+                Type {
+                    doc: self.comments_builder.get_comments(&msg_path),
+                    ..Default::default()
+                },
+            );
 
             for (field_index, field) in message.field.iter().enumerate() {
                 let field_name = GraphQLType::new(field.name())
                     .extend(self.namespace.as_slice())
                     .into_field();
 
-                let mut cfg_field = Field::default();
+                let mut cfg_field: Pos<Field> = Default::default();
 
                 let label = field.label().as_str_name().to_lowercase();
                 cfg_field.list = label.contains("repeated");
@@ -205,7 +212,7 @@ impl Context {
                 ty.fields.insert(field_name.to_string(), cfg_field);
             }
 
-            ty.tag = Some(Tag { id: msg_type.id() });
+            ty.tag = Some(Pos::new(0, 0, None, Tag { id: msg_type.id() }));
 
             self = self.insert_type(msg_type.to_string(), ty);
         }
@@ -232,7 +239,7 @@ impl Context {
                     .push(service_name)
                     .into_method();
 
-                let mut cfg_field = Field::default();
+                let mut cfg_field: Pos<Field> = Default::default();
                 let mut body = None;
 
                 if let Some(graphql_type) = get_input_type(method.input_type())? {
@@ -249,7 +256,7 @@ impl Context {
                         default_value: None,
                     };
 
-                    body = Some(format!("{{{{.args.{key}}}}}"));
+                    body = Some(Pos::new(0, 0, None, format!("{{{{.args.{key}}}}}")));
                     cfg_field.args.insert(key, val);
                 }
 
@@ -259,13 +266,18 @@ impl Context {
                 cfg_field.type_of = output_ty;
                 cfg_field.required = true;
 
-                cfg_field.grpc = Some(Grpc {
-                    base_url: None,
-                    body,
-                    group_by: vec![],
-                    headers: vec![],
-                    method: field_name.id(),
-                });
+                cfg_field.grpc = Some(Pos::new(
+                    0,
+                    0,
+                    None,
+                    Grpc {
+                        base_url: None,
+                        body,
+                        group_by: Pos::new(0, 0, None, vec![]),
+                        headers: Pos::new(0, 0, None, vec![]),
+                        method: Pos::new(0, 0, None, field_name.id()),
+                    },
+                ));
 
                 let method_path =
                     PathBuilder::new(&path).extend(PathField::Method, method_index as i32);
@@ -276,8 +288,8 @@ impl Context {
                     .types
                     .entry(self.query.clone())
                     .or_insert_with(|| {
-                        self.config.schema.query = Some(self.query.clone());
-                        Type::default()
+                        self.config.schema.query = Some(Pos::new(0, 0, None, self.query.clone()));
+                        Pos::new(0, 0, None, Type::default())
                     });
 
                 ty.fields.insert(field_name.to_string(), cfg_field);

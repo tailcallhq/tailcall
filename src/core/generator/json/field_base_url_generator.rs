@@ -1,6 +1,7 @@
 use url::Url;
 
 use super::url_utils::extract_base_url;
+use crate::core::config::position::Pos;
 use crate::core::config::Config;
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
@@ -32,7 +33,7 @@ impl Transform for FieldBaseUrlGenerator<'_> {
                 field.http = match field.http.clone() {
                     Some(mut http) => {
                         if http.base_url.is_none() {
-                            http.base_url = Some(base_url.clone());
+                            http.base_url = Some(Pos::new(0, 0, None, base_url.clone()));
                         }
                         Some(http)
                     }
@@ -51,6 +52,7 @@ mod test {
     use url::Url;
 
     use super::FieldBaseUrlGenerator;
+    use crate::core::config::position::Pos;
     use crate::core::config::{Config, Field, Http, Type};
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
@@ -62,30 +64,69 @@ mod test {
         let field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
 
         let mut config = Config::default();
-        let mut query_type = Type::default();
+        let mut query_type: Pos<Type> = Default::default();
         query_type.fields.insert(
             "f1".to_string(),
-            Field {
-                type_of: "Int".to_string(),
-                http: Some(Http { path: "/day".to_string(), ..Default::default() }),
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "Int".to_string(),
+                    http: Some(Pos::new(
+                        0,
+                        0,
+                        None,
+                        Http {
+                            path: Pos::new(0, 0, None, "/day".to_string()),
+                            ..Default::default()
+                        },
+                    )),
+                    ..Default::default()
+                },
+            ),
         );
         query_type.fields.insert(
             "f2".to_string(),
-            Field {
-                type_of: "String".to_string(),
-                http: Some(Http { path: "/month".to_string(), ..Default::default() }),
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "String".to_string(),
+                    http: Some(Pos::new(
+                        0,
+                        0,
+                        None,
+                        Http {
+                            path: Pos::new(0, 0, None, "/month".to_string()),
+                            ..Default::default()
+                        },
+                    )),
+                    ..Default::default()
+                },
+            ),
         );
         query_type.fields.insert(
             "f3".to_string(),
-            Field {
-                type_of: "String".to_string(),
-                http: Some(Http { path: "/status".to_string(), ..Default::default() }),
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "String".to_string(),
+                    http: Some(Pos::new(
+                        0,
+                        0,
+                        None,
+                        Http {
+                            path: Pos::new(0, 0, None, "/status".to_string()),
+                            ..Default::default()
+                        },
+                    )),
+                    ..Default::default()
+                },
+            ),
         );
         config.types.insert("Query".to_string(), query_type);
 
@@ -102,34 +143,67 @@ mod test {
         let field_base_url_gen = FieldBaseUrlGenerator::new(&url, query);
 
         let mut config = Config::default();
-        let mut query_type = Type::default();
+        let mut query_type: Pos<Type> = Default::default();
         query_type.fields.insert(
             "f1".to_string(),
-            Field {
-                type_of: "Int".to_string(),
-                http: Some(Http {
-                    base_url: Some("https://calender.com/api/v1/".to_string()),
-                    path: "/day".to_string(),
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "Int".to_string(),
+                    http: Some(Pos::new(
+                        0,
+                        0,
+                        None,
+                        Http {
+                            base_url: Some(Pos::new(
+                                0,
+                                0,
+                                None,
+                                "https://calender.com/api/v1/".to_string(),
+                            )),
+                            path: Pos::new(0, 0, None, "/day".to_string()),
+                            ..Default::default()
+                        },
+                    )),
                     ..Default::default()
-                }),
-                ..Default::default()
-            },
+                },
+            ),
         );
         query_type.fields.insert(
             "f2".to_string(),
-            Field {
-                type_of: "String".to_string(),
-                http: Some(Http { path: "/month".to_string(), ..Default::default() }),
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "String".to_string(),
+                    http: Some(Pos::new(
+                        0,
+                        0,
+                        None,
+                        Http {
+                            path: Pos::new(0, 0, None, "/month".to_string()),
+                            ..Default::default()
+                        },
+                    )),
+                    ..Default::default()
+                },
+            ),
         );
         query_type.fields.insert(
             "f3".to_string(),
-            Field {
-                type_of: "String".to_string(),
-                http: None,
-                ..Default::default()
-            },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field {
+                    type_of: "String".to_string(),
+                    http: None,
+                    ..Default::default()
+                },
+            ),
         );
         config.types.insert("Query".to_string(), query_type);
 

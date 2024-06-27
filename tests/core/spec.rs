@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::reader::ConfigReader;
-use tailcall::core::config::{Config, ConfigModule, Source};
+use tailcall::core::config::{Config, ConfigModule, SourceType};
 use tailcall::core::http::{handle_request, AppContext};
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::print_schema::print_schema;
@@ -118,7 +118,7 @@ async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
         // enabled for either new tests that request it or old graphql_spec
         // tests that were explicitly written with it in mind
         if spec.check_identity {
-            if matches!(source, Source::GraphQL) {
+            if matches!(source.input_type, SourceType::GraphQL) {
                 let actual = config.to_sdl();
 
                 // \r is added automatically in windows, it's safe to replace it with \n

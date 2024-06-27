@@ -4,6 +4,7 @@ use async_graphql_value::{ConstValue, Name};
 
 use super::ConfigModule;
 use crate::core::blueprint::TypeLike;
+use crate::core::config::position;
 use crate::core::directive::DirectiveCodec;
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -17,12 +18,12 @@ fn transform_default_value(value: Option<serde_json::Value>) -> Option<ConstValu
 fn config_document(config: &ConfigModule) -> ServiceDocument {
     let mut definitions = Vec::new();
     let mut directives = vec![
-        pos(config.server.to_directive()),
-        pos(config.upstream.to_directive()),
+        pos(config.server.inner.to_directive()),
+        pos(config.upstream.inner.to_directive()),
     ];
 
     directives.extend(config.links.iter().map(|link| {
-        let mut directive = link.to_directive();
+        let mut directive = link.inner.to_directive();
 
         let type_directive = (
             pos(Name::new("type")),
@@ -45,17 +46,21 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
     let schema_definition = SchemaDefinition {
         extend: false,
         directives,
-        query: config.schema.query.clone().map(|name| pos(Name::new(name))),
+        query: config
+            .schema
+            .query
+            .clone()
+            .map(|name| pos(Name::new(name.inner))),
         mutation: config
             .schema
             .mutation
             .clone()
-            .map(|name| pos(Name::new(name))),
+            .map(|name| pos(Name::new(name.inner))),
         subscription: config
             .schema
             .subscription
             .clone()
-            .map(|name| pos(Name::new(name))),
+            .map(|name| pos(Name::new(name.inner))),
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
     for (type_name, type_def) in config.types.iter() {
@@ -200,20 +205,25 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             directives: type_def
                 .added_fields
                 .iter()
-                .map(|added_field: &super::AddField| pos(added_field.to_directive()))
+                .map(|added_field| pos(added_field.inner.to_directive()))
                 .chain(
                     type_def
                         .cache
                         .as_ref()
-                        .map(|cache| pos(cache.to_directive())),
+                        .map(|cache| pos(cache.inner.to_directive())),
                 )
                 .chain(
                     type_def
                         .protected
                         .as_ref()
-                        .map(|protected| pos(protected.to_directive())),
+                        .map(|protected| pos(protected.inner.to_directive())),
                 )
-                .chain(type_def.tag.as_ref().map(|tag| pos(tag.to_directive())))
+                .chain(
+                    type_def
+                        .tag
+                        .as_ref()
+                        .map(|tag| pos(tag.inner.to_directive())),
+                )
                 .collect::<Vec<_>>(),
             kind,
         })));
@@ -262,18 +272,26 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
     ServiceDocument { definitions }
 }
 
-fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDirective>> {
+fn get_directives(
+    field: &position::Pos<crate::core::config::Field>,
+) -> Vec<Positioned<ConstDirective>> {
     let directives = vec![
-        field.http.as_ref().map(|d| pos(d.to_directive())),
-        field.script.as_ref().map(|d| pos(d.to_directive())),
-        field.const_field.as_ref().map(|d| pos(d.to_directive())),
-        field.modify.as_ref().map(|d| pos(d.to_directive())),
-        field.omit.as_ref().map(|d| pos(d.to_directive())),
-        field.graphql.as_ref().map(|d| pos(d.to_directive())),
-        field.grpc.as_ref().map(|d| pos(d.to_directive())),
-        field.cache.as_ref().map(|d| pos(d.to_directive())),
-        field.call.as_ref().map(|d| pos(d.to_directive())),
-        field.protected.as_ref().map(|d| pos(d.to_directive())),
+        field.http.as_ref().map(|d| pos(d.inner.to_directive())),
+        field.script.as_ref().map(|d| pos(d.inner.to_directive())),
+        field
+            .const_field
+            .as_ref()
+            .map(|d| pos(d.inner.to_directive())),
+        field.modify.as_ref().map(|d| pos(d.inner.to_directive())),
+        field.omit.as_ref().map(|d| pos(d.inner.to_directive())),
+        field.graphql.as_ref().map(|d| pos(d.inner.to_directive())),
+        field.grpc.as_ref().map(|d| pos(d.inner.to_directive())),
+        field.cache.as_ref().map(|d| pos(d.inner.to_directive())),
+        field.call.as_ref().map(|d| pos(d.inner.to_directive())),
+        field
+            .protected
+            .as_ref()
+            .map(|d| pos(d.inner.to_directive())),
     ];
 
     directives.into_iter().flatten().collect()

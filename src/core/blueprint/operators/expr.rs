@@ -2,21 +2,22 @@ use async_graphql_value::ConstValue;
 
 use crate::core::blueprint::*;
 use crate::core::config;
+use crate::core::config::position::Pos;
 use crate::core::config::Field;
 use crate::core::ir::model::IR;
 use crate::core::ir::model::IR::Dynamic;
+use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
 fn validate_data_with_schema(
     config: &config::Config,
-    field: &config::Field,
+    field: &Pos<config::Field>,
     gql_value: ConstValue,
 ) -> Valid<(), String> {
-    match to_json_schema_for_field(field, config)
-        .validate(&gql_value)
-        .to_result()
-    {
+    let json_schema: JsonSchema = to_json_schema_for_field(field, config).into();
+
+    match json_schema.validate(&gql_value).to_result() {
         Ok(_) => Valid::succeed(()),
         Err(err) => Valid::from_validation_err(err.transform(&(|a| a.to_owned()))),
     }
@@ -24,7 +25,7 @@ fn validate_data_with_schema(
 
 pub struct CompileExpr<'a> {
     pub config_module: &'a config::ConfigModule,
-    pub field: &'a config::Field,
+    pub field: &'a Pos<config::Field>,
     pub value: &'a serde_json::Value,
     pub validate: bool,
 }
@@ -59,10 +60,18 @@ pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
     })
 }
 
-pub fn update_const_field<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
+pub fn update_const_field<'a>() -> TryFold<
+    'a,
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &str), FieldDefinition, String>::new(
         |(config_module, field, _, _), b_field| {
             let Some(const_field) = &field.const_field else {
                 return Valid::succeed(b_field);

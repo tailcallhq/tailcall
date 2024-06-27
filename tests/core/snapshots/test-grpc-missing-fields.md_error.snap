@@ -10,6 +10,7 @@ expression: errors
       "news",
       "@grpc",
       "NewsData",
+      "news",
       "news"
     ],
     "description": null

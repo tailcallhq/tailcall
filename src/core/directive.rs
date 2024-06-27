@@ -1,5 +1,3 @@
-use std::slice::Iter;
-
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::{Name, Pos, Positioned};
 use serde::{Deserialize, Serialize};
@@ -36,17 +34,8 @@ pub trait DirectiveCodec<A> {
     fn trace_name() -> String {
         format!("@{}", Self::directive_name())
     }
-    fn from_directives(
-        directives: Iter<'_, Positioned<ConstDirective>>,
-    ) -> Valid<Option<A>, String> {
-        for directive in directives {
-            if directive.node.name.node == Self::directive_name() {
-                return Self::from_directive(&directive.node).map(Some);
-            }
-        }
-        Valid::succeed(None)
-    }
 }
+
 fn lower_case_first_letter(s: String) -> String {
     if s.len() <= 2 {
         s.to_lowercase()

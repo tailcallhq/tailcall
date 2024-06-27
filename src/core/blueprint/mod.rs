@@ -30,6 +30,8 @@ pub use server::*;
 pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
+use super::config::position::Pos;
+use super::valid::SourcePos;
 use crate::core::config::{Arg, ConfigModule, Field};
 use crate::core::try_fold::TryFold;
 
@@ -40,9 +42,10 @@ pub(crate) trait TypeLike {
     fn list(&self) -> bool;
     fn non_null(&self) -> bool;
     fn list_type_required(&self) -> bool;
+    fn position(&self) -> Option<SourcePos>;
 }
 
-impl TypeLike for Field {
+impl TypeLike for Pos<Field> {
     fn name(&self) -> &str {
         &self.type_of
     }
@@ -57,6 +60,10 @@ impl TypeLike for Field {
 
     fn list_type_required(&self) -> bool {
         self.list_type_required
+    }
+
+    fn position(&self) -> Option<SourcePos> {
+        self.to_source_pos()
     }
 }
 
@@ -75,6 +82,10 @@ impl TypeLike for Arg {
 
     fn list_type_required(&self) -> bool {
         false
+    }
+
+    fn position(&self) -> Option<SourcePos> {
+        None
     }
 }
 

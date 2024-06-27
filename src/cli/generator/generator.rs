@@ -27,11 +27,11 @@ impl Generator {
 
     /// Writes the configuration to the output file if allowed.
     async fn write(self, graphql_config: &ConfigModule, output_path: &str) -> anyhow::Result<()> {
-        let output_source = config::Source::detect(output_path)?;
+        let output_source = config::SourceType::detect(output_path)?;
         let config = match output_source {
-            config::Source::Json => graphql_config.to_json(true)?,
-            config::Source::Yml => graphql_config.to_yaml()?,
-            config::Source::GraphQL => graphql_config.to_sdl(),
+            config::SourceType::Json => graphql_config.to_json(true)?,
+            config::SourceType::Yml => graphql_config.to_yaml()?,
+            config::SourceType::GraphQL => graphql_config.to_sdl(),
         };
 
         if self.should_overwrite(output_path)? {
@@ -112,8 +112,9 @@ impl Generator {
                 }
                 Source::Config { src } => {
                     let path = src.0;
-                    let source = config::Source::detect(&path)?;
                     let schema = reader.read_file(&path).await?.content;
+                    let source =
+                        config::Source::new(path.clone(), config::SourceType::detect(&path)?);
                     input_samples.push(Input::Config { schema, source });
                 }
             }

@@ -103,7 +103,7 @@ fn get_batch(upstream: &config::Upstream) -> Valid<Option<Batch>, String> {
 fn get_base_url(upstream: &config::Upstream) -> Valid<Option<String>, String> {
     if let Some(ref base_url) = upstream.base_url {
         Valid::from(reqwest::Url::parse(base_url).map_err(|e| ValidationError::new(e.to_string())))
-            .map_to(Some(base_url.clone()))
+            .map_to(Some(base_url.inner.clone()))
     } else {
         Valid::succeed(None)
     }

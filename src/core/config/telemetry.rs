@@ -1,11 +1,13 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+use super::position::Pos;
 use super::KeyValue;
+use crate::core::config::positioned_config::PositionedConfig;
 use crate::core::config::{Apollo, ConfigReaderContext};
 use crate::core::helpers::headers::to_mustache_headers;
 use crate::core::is_default;
-use crate::core::macros::MergeRight;
+use crate::core::macros::{MergeRight, PositionedConfig};
 use crate::core::merge_right::MergeRight;
 use crate::core::mustache::Mustache;
 use crate::core::valid::Validator;
@@ -67,7 +69,17 @@ pub enum TelemetryExporter {
     Apollo(Apollo),
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
+)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The @telemetry directive facilitates seamless integration with
@@ -75,7 +87,7 @@ pub enum TelemetryExporter {
 /// by Tailcall.  By leveraging this directive, developers gain access to
 /// valuable insights into the performance and behavior of their applications.
 pub struct Telemetry {
-    pub export: Option<TelemetryExporter>,
+    pub export: Option<Pos<TelemetryExporter>>,
     /// The list of headers that will be sent as additional attributes to
     /// telemetry exporters Be careful about **leaking sensitive
     /// information** from requests when enabling the headers that may
@@ -84,8 +96,8 @@ pub struct Telemetry {
     pub request_headers: Vec<String>,
 }
 
-impl Telemetry {
-    pub fn merge_right(mut self, other: Self) -> Self {
+impl MergeRight for Telemetry {
+    fn merge_right(mut self, other: Self) -> Self {
         self.export = match (&self.export, other.export) {
             (None, None) => None,
             (None, Some(export)) => Some(export),
@@ -93,25 +105,29 @@ impl Telemetry {
             (Some(left), Some(right)) => Some(left.clone().merge_right(right.clone())),
         };
         self.request_headers.extend(other.request_headers);
-
         self
     }
+}
 
+impl Telemetry {
     pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> Result<()> {
         match &mut self.export {
-            Some(TelemetryExporter::Otlp(otlp)) => {
-                let url_tmpl = Mustache::parse(&otlp.url)?;
-                otlp.url = url_tmpl.render(reader_ctx);
+            Some(Pos { inner, .. }) => match inner {
+                TelemetryExporter::Otlp(otlp) => {
+                    let url_tmpl = Mustache::parse(&otlp.url)?;
+                    otlp.url = url_tmpl.render(reader_ctx);
 
-                let headers = to_mustache_headers(&otlp.headers).to_result()?;
-                otlp.headers = headers
-                    .into_iter()
-                    .map(|(key, tmpl)| (key.as_str().to_owned(), tmpl.render(reader_ctx)))
-                    .map(|(key, value)| KeyValue { key, value })
-                    .collect();
-            }
-            Some(TelemetryExporter::Apollo(apollo)) => apollo.render_mustache(reader_ctx)?,
-            _ => {}
+                    let headers = to_mustache_headers(&otlp.headers).to_result()?;
+                    otlp.headers = headers
+                        .into_iter()
+                        .map(|(key, tmpl)| (key.as_str().to_owned(), tmpl.render(reader_ctx)))
+                        .map(|(key, value)| KeyValue { key, value })
+                        .collect();
+                }
+                TelemetryExporter::Apollo(apollo) => apollo.render_mustache(reader_ctx)?,
+                _ => {}
+            },
+            None => {}
         }
 
         Ok(())
@@ -126,35 +142,60 @@ mod tests {
     fn merge_right() {
         let exporter_none = Telemetry { export: None, ..Default::default() };
         let exporter_stdout = Telemetry {
-            export: Some(TelemetryExporter::Stdout(StdoutExporter { pretty: true })),
+            export: Some(Pos::new(
+                0,
+                0,
+                None,
+                TelemetryExporter::Stdout(StdoutExporter { pretty: true }),
+            )),
             ..Default::default()
         };
         let exporter_otlp_1 = Telemetry {
-            export: Some(TelemetryExporter::Otlp(OtlpExporter {
-                url: "test-url".to_owned(),
-                headers: vec![KeyValue { key: "header_a".to_owned(), value: "a".to_owned() }],
-            })),
+            export: Some(Pos::new(
+                0,
+                0,
+                None,
+                TelemetryExporter::Otlp(OtlpExporter {
+                    url: "test-url".to_owned(),
+                    headers: vec![KeyValue { key: "header_a".to_owned(), value: "a".to_owned() }],
+                }),
+            )),
             request_headers: vec!["Api-Key-A".to_owned()],
         };
         let exporter_otlp_2 = Telemetry {
-            export: Some(TelemetryExporter::Otlp(OtlpExporter {
-                url: "test-url-2".to_owned(),
-                headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }],
-            })),
+            export: Some(Pos::new(
+                0,
+                0,
+                None,
+                TelemetryExporter::Otlp(OtlpExporter {
+                    url: "test-url-2".to_owned(),
+                    headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }],
+                }),
+            )),
             request_headers: vec!["Api-Key-B".to_owned()],
         };
         let exporter_prometheus_1 = Telemetry {
-            export: Some(TelemetryExporter::Prometheus(PrometheusExporter {
-                path: "/metrics".to_owned(),
-                format: PrometheusFormat::Text,
-            })),
+            export: Some(Pos::new(
+                0,
+                0,
+                None,
+                TelemetryExporter::Prometheus(PrometheusExporter {
+                    path: "/metrics".to_owned(),
+                    format: PrometheusFormat::Text,
+                }),
+            )),
             ..Default::default()
         };
         let exporter_prometheus_2 = Telemetry {
-            export: Some(TelemetryExporter::Prometheus(PrometheusExporter {
-                path: "/prom".to_owned(),
-                format: PrometheusFormat::Protobuf,
-            })),
+            export: Some(Pos::new(
+                0,
+                0,
+                None,
+                TelemetryExporter::Prometheus(PrometheusExporter {
+                    path: "/prom".to_owned(),
+                    format: PrometheusFormat::Protobuf,
+                }),
+            )),
             ..Default::default()
         };
 
@@ -186,11 +227,19 @@ mod tests {
         assert_eq!(
             exporter_otlp_1.clone().merge_right(exporter_otlp_2.clone()),
             Telemetry {
-                export: Some(TelemetryExporter::Otlp(OtlpExporter {
-                    url: "test-url-2".to_owned(),
-                    headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned() }]
-                })),
-                request_headers: vec!["Api-Key-A".to_string(), "Api-Key-B".to_string(),]
+                export: Some(Pos::new(
+                    0,
+                    0,
+                    None,
+                    TelemetryExporter::Otlp(OtlpExporter {
+                        url: "test-url-2".to_owned(),
+                        headers: vec![KeyValue {
+                            key: "header_b".to_owned(),
+                            value: "b".to_owned()
+                        }]
+                    })
+                )),
+                request_headers: vec!["Api-Key-A".to_string(), "Api-Key-B".to_string(),],
             }
         );
 

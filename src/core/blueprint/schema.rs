@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use async_graphql::parser::types::ConstDirective;
 
 use crate::core::blueprint::*;
+use crate::core::config::position::Pos;
 use crate::core::config::{Config, Field, Type};
 use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -26,8 +27,8 @@ fn validate_query(config: &Config) -> Valid<(), String> {
 /// making into the account the nesting
 fn validate_type_has_resolvers(
     name: &str,
-    ty: &Type,
-    types: &BTreeMap<String, Type>,
+    ty: &Pos<Type>,
+    types: &BTreeMap<String, Pos<Type>>,
     visited: &mut HashSet<String>,
 ) -> Valid<(), String> {
     if visited.contains(name) {
@@ -46,9 +47,9 @@ fn validate_type_has_resolvers(
 #[allow(clippy::too_many_arguments)]
 pub fn validate_field_has_resolver(
     name: &str,
-    field: &Field,
-    types: &BTreeMap<String, Type>,
-    parent_ty: &Type,
+    field: &Pos<Field>,
+    types: &BTreeMap<String, Pos<Type>>,
+    parent_ty: &Pos<Type>,
     visited: &mut HashSet<String>,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
@@ -120,8 +121,12 @@ pub fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
             ))
             .zip(to_directive(config.server.to_directive()))
             .map(|(query_type_name, directive)| SchemaDefinition {
-                query: query_type_name.to_owned(),
-                mutation: config.schema.mutation.clone(),
+                query: query_type_name.inner.to_owned(),
+                mutation: config
+                    .schema
+                    .mutation
+                    .as_ref()
+                    .map(|mutation| mutation.inner.to_owned()),
                 directives: vec![directive],
             })
     })

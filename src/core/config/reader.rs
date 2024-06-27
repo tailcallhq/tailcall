@@ -8,7 +8,7 @@ use rustls_pki_types::{
 use url::Url;
 
 use super::{ConfigModule, Content, Link, LinkType};
-use crate::core::config::{Config, ConfigReaderContext, Source};
+use crate::core::config::{Config, ConfigReaderContext, Source, SourceType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Cached, ResourceReader};
@@ -46,10 +46,10 @@ impl ConfigReader {
             .clone()
             .iter()
             .filter_map(|link| {
-                if link.src.is_empty() {
+                if link.inner.src.is_empty() {
                     return None;
                 }
-                Some(link.to_owned())
+                Some(link.inner.to_owned())
             })
             .collect();
 
@@ -65,7 +65,10 @@ impl ConfigReader {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
 
-                    let config = Config::from_source(Source::detect(&source.path)?, &content)?;
+                    let config = Config::from_source(
+                        Source::new(path.clone(), SourceType::detect(&source.path)?),
+                        &content,
+                    )?;
 
                     config_module = config_module.merge_right(ConfigModule::from(config.clone()));
 
@@ -189,7 +192,7 @@ impl ConfigReader {
         let mut config_module = ConfigModule::default();
 
         for file in files.iter() {
-            let source = Source::detect(&file.path)?;
+            let source = Source::new(file.path.clone(), SourceType::detect(&file.path)?);
             let schema = &file.content;
 
             // Create initial config module
@@ -258,6 +261,7 @@ mod reader_tests {
 
     use pretty_assertions::assert_eq;
 
+    use crate::core::config::position::Pos;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Type};
 
@@ -270,8 +274,8 @@ mod reader_tests {
         let runtime = crate::core::runtime::test::init(None);
 
         let mut cfg = Config::default();
-        cfg.schema.query = Some("Test".to_string());
-        cfg = cfg.types([("Test", Type::default())].to_vec());
+        cfg.schema.query = Some(Pos::new(0, 0, None, "Test".to_string()));
+        cfg = cfg.types([("Test", Pos::new(0, 0, None, Type::default()))].to_vec());
 
         let server = start_mock_server();
         let header_server = server.mock(|when, then| {

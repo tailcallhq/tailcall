@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use regex::Regex;
 use url::Url;
 
+use crate::core::config::position::Pos;
 use crate::core::config::{Arg, Field, Http, KeyValue};
 use crate::core::helpers::gql_type::detect_gql_data_type;
 
@@ -58,7 +59,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
         Self { url, http: Http::default() }
     }
 
-    fn add_path_variables(&mut self, field: &mut Field) {
+    fn add_path_variables(&mut self, field: &mut Pos<Field>) {
         let re = Regex::new(r"/(\d+)").unwrap();
         let mut arg_index = 1;
         let path_url = self.url.path();
@@ -80,10 +81,10 @@ impl<'a> HttpDirectiveGenerator<'a> {
         });
 
         // add path in http directive.
-        self.http.path = mustache_compatible_url.to_string();
+        self.http.path = Pos::new(0, 0, None, mustache_compatible_url.to_string());
     }
 
-    fn add_query_variables(&mut self, field: &mut Field) {
+    fn add_query_variables(&mut self, field: &mut Pos<Field>) {
         let url_utility = UrlUtility::new(self.url);
 
         for query in url_utility.get_query_params() {
@@ -102,11 +103,11 @@ impl<'a> HttpDirectiveGenerator<'a> {
         }
     }
 
-    pub fn generate_http_directive(mut self, field: &mut Field) -> Http {
+    pub fn generate_http_directive(mut self, field: &mut Pos<Field>) -> Pos<Http> {
         self.add_path_variables(field);
         self.add_query_variables(field);
 
-        self.http
+        Pos::new(0, 0, None, self.http)
     }
 }
 

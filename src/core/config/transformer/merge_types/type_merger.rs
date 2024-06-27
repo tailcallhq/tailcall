@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
+use crate::core::config::position::Pos;
 use crate::core::config::{Config, Type};
 use crate::core::merge_right::MergeRight;
 use crate::core::transform::Transform;
@@ -92,7 +93,7 @@ impl TypeMerger {
 
         // step 2: merge similar types into single merged type.
         for same_types in similar_type_group_list {
-            let mut merged_into = Type::default();
+            let mut merged_into = Pos::new(0, 0, None, Type::default());
             let merged_type_name = format!("M{}", merge_counter);
             let mut did_we_merge = false;
             for type_name in same_types {
@@ -192,7 +193,7 @@ impl TypeMerger {
     }
 }
 
-fn merge_type(type_: &Type, merge_into: Type) -> Type {
+fn merge_type(type_: &Pos<Type>, merge_into: Pos<Type>) -> Pos<Type> {
     merge_into.merge_right(type_.clone())
 }
 
@@ -210,6 +211,7 @@ mod test {
     use tailcall_fixtures;
 
     use super::TypeMerger;
+    use crate::core::config::position::Pos;
     use crate::core::config::{Config, Field, Type};
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
@@ -234,21 +236,41 @@ mod test {
 
     #[test]
     fn test_cyclic_merge_case() -> anyhow::Result<()> {
-        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
-        let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };
+        let str_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "String".to_owned(), ..Default::default() },
+        );
+        let int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Int".to_owned(), ..Default::default() },
+        );
+        let bool_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Boolean".to_owned(), ..Default::default() },
+        );
 
-        let mut ty1 = Type::default();
+        let mut ty1: Pos<Type> = Default::default();
         ty1.fields.insert("body".to_string(), str_field.clone());
         ty1.fields.insert("id".to_string(), int_field.clone());
         ty1.fields
             .insert("is_verified".to_string(), bool_field.clone());
         ty1.fields.insert("userId".to_string(), int_field.clone());
 
-        let mut ty2 = Type::default();
+        let mut ty2: Pos<Type> = Default::default();
         ty2.fields.insert(
             "t1".to_string(),
-            Field { type_of: "T1".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T1".to_string(), ..Default::default() },
+            ),
         );
         ty2.fields
             .insert("is_verified".to_string(), bool_field.clone());
@@ -260,14 +282,24 @@ mod test {
         config.types.insert("T1".to_string(), ty1);
         config.types.insert("T2".to_string(), ty2);
 
-        let mut q_type = Type::default();
+        let mut q_type: Pos<Type> = Default::default();
         q_type.fields.insert(
             "q1".to_string(),
-            Field { type_of: "T1".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T1".to_string(), ..Default::default() },
+            ),
         );
         q_type.fields.insert(
             "q2".to_string(),
-            Field { type_of: "T2".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T2".to_string(), ..Default::default() },
+            ),
         );
 
         config.types.insert("Query".to_owned(), q_type);
@@ -282,13 +314,38 @@ mod test {
 
     #[test]
     fn test_type_merger() -> anyhow::Result<()> {
-        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
-        let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };
-        let float_field = Field { type_of: "Float".to_owned(), ..Default::default() };
-        let id_field = Field { type_of: "ID".to_owned(), ..Default::default() };
+        let str_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "String".to_owned(), ..Default::default() },
+        );
+        let int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Int".to_owned(), ..Default::default() },
+        );
+        let bool_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Boolean".to_owned(), ..Default::default() },
+        );
+        let float_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Float".to_owned(), ..Default::default() },
+        );
+        let id_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "ID".to_owned(), ..Default::default() },
+        );
 
-        let mut ty = Type::default();
+        let mut ty: Pos<Type> = Default::default();
         ty.fields.insert("f1".to_string(), str_field.clone());
         ty.fields.insert("f2".to_string(), int_field.clone());
         ty.fields.insert("f3".to_string(), bool_field.clone());
@@ -301,22 +358,42 @@ mod test {
         config.types.insert("T3".to_string(), ty.clone());
         config.types.insert("T4".to_string(), ty.clone());
 
-        let mut q_type = Type::default();
+        let mut q_type: Pos<Type> = Default::default();
         q_type.fields.insert(
             "q1".to_string(),
-            Field { type_of: "T1".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T1".to_string(), ..Default::default() },
+            ),
         );
         q_type.fields.insert(
             "q2".to_string(),
-            Field { type_of: "T2".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T2".to_string(), ..Default::default() },
+            ),
         );
         q_type.fields.insert(
             "q3".to_string(),
-            Field { type_of: "T3".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T3".to_string(), ..Default::default() },
+            ),
         );
         q_type.fields.insert(
             "q4".to_string(),
-            Field { type_of: "T4".to_string(), ..Default::default() },
+            Pos::new(
+                0,
+                0,
+                None,
+                Field { type_of: "T4".to_string(), ..Default::default() },
+            ),
         );
 
         config.types.insert("Query".to_owned(), q_type);
@@ -334,7 +411,9 @@ mod test {
     #[test]
     fn test_input_types() {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::INPUT_TYPE_CONFIG).unwrap();
-        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let config = Config::from_sdl(tailcall_fixtures::configs::INPUT_TYPE_CONFIG, &sdl)
+            .to_result()
+            .unwrap();
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
@@ -342,7 +421,9 @@ mod test {
     #[test]
     fn test_union_types() {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::UNION_CONFIG).unwrap();
-        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let config = Config::from_sdl(tailcall_fixtures::configs::UNION_CONFIG, &sdl)
+            .to_result()
+            .unwrap();
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
@@ -350,22 +431,34 @@ mod test {
     #[test]
     fn test_list_field_types() {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::USER_LIST).unwrap();
-        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let config = Config::from_sdl(tailcall_fixtures::configs::USER_LIST, &sdl)
+            .to_result()
+            .unwrap();
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
 
     #[test]
     fn test_fail_when_scalar_field_not_match() {
-        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+        let str_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "String".to_owned(), ..Default::default() },
+        );
+        let int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Int".to_owned(), ..Default::default() },
+        );
 
-        let mut ty1 = Type::default();
+        let mut ty1: Pos<Type> = Default::default();
         ty1.fields.insert("a".to_string(), int_field.clone());
         ty1.fields.insert("b".to_string(), int_field.clone());
         ty1.fields.insert("c".to_string(), int_field.clone());
 
-        let mut ty2 = Type::default();
+        let mut ty2: Pos<Type> = Default::default();
         ty2.fields.insert("a".to_string(), int_field.clone());
         ty2.fields.insert("b".to_string(), int_field.clone());
         ty2.fields.insert("c".to_string(), str_field.clone());
@@ -380,15 +473,20 @@ mod test {
 
     #[test]
     fn test_interface_types() {
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+        let int_field = Pos::new(
+            0,
+            0,
+            None,
+            Field { type_of: "Int".to_owned(), ..Default::default() },
+        );
 
-        let mut ty1 = Type::default();
+        let mut ty1: Pos<Type> = Default::default();
         ty1.fields.insert("a".to_string(), int_field.clone());
 
-        let mut ty2 = Type::default();
+        let mut ty2: Pos<Type> = Default::default();
         ty2.fields.insert("a".to_string(), int_field.clone());
 
-        let mut ty3 = Type::default();
+        let mut ty3: Pos<Type> = Default::default();
         ty3.fields.insert("a".to_string(), int_field.clone());
 
         ty3.implements.insert("A".to_string());

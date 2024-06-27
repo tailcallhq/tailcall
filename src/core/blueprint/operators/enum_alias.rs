@@ -2,15 +2,24 @@ use std::collections::HashMap;
 
 use crate::core::blueprint::*;
 use crate::core::config;
+use crate::core::config::position::Pos;
 use crate::core::config::Field;
 use crate::core::ir::model::{Map, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
 
-pub fn update_enum_alias<'a>(
-) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
-{
-    TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
+pub fn update_enum_alias<'a>() -> TryFold<
+    'a,
+    (
+        &'a ConfigModule,
+        &'a Pos<Field>,
+        &'a Pos<config::Type>,
+        &'a str,
+    ),
+    FieldDefinition,
+    String,
+> {
+    TryFold::<(&ConfigModule, &Pos<Field>, &Pos<config::Type>, &'a str), FieldDefinition, String>::new(
         |(config, field, _, _), mut b_field| {
             let enum_type = config.enums.get(&field.type_of);
             if let Some(enum_type) = enum_type {

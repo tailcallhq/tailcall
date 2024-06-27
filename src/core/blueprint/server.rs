@@ -87,7 +87,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: config::ConfigModule) -> Result<Self, Self::Error> {
-        let config_server = config_module.server.clone();
+        let config_server = config_module.server.inner.clone();
 
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {

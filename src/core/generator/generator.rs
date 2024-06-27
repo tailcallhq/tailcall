@@ -6,6 +6,7 @@ use url::Url;
 
 use super::from_proto::from_proto;
 use super::{FromJsonGenerator, NameGenerator, RequestSample};
+use crate::core::config::position::Pos;
 use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
@@ -75,11 +76,16 @@ impl Generator {
     ) -> anyhow::Result<Config> {
         let descriptor_set = resolve_file_descriptor_set(metadata.descriptor_set.clone())?;
         let mut config = from_proto(&[descriptor_set], operation_name)?;
-        config.links.push(Link {
-            id: None,
-            src: metadata.path.to_owned(),
-            type_of: LinkType::Protobuf,
-        });
+        config.links.push(Pos::new(
+            0,
+            0,
+            None,
+            Link {
+                id: None,
+                src: metadata.path.to_owned(),
+                type_of: LinkType::Protobuf,
+            },
+        ));
         Ok(config)
     }
 
@@ -141,6 +147,7 @@ mod test {
     use serde::Deserialize;
 
     use super::Generator;
+    use crate::core::config;
     use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::Input;
     use crate::core::generator::NameGenerator;
@@ -182,7 +189,10 @@ mod test {
         let cfg_module = Generator::default()
             .inputs(vec![Input::Config {
                 schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
-                source: crate::core::config::Source::GraphQL,
+                source: config::Source::new(
+                    tailcall_fixtures::configs::USER_POSTS.to_string(),
+                    config::SourceType::GraphQL,
+                ),
             }])
             .generate(true)?;
 
@@ -219,7 +229,10 @@ mod test {
         // Config input
         let config_input = Input::Config {
             schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
-            source: crate::core::config::Source::GraphQL,
+            source: config::Source::new(
+                tailcall_fixtures::configs::USER_POSTS.to_string(),
+                config::SourceType::GraphQL,
+            ),
         };
 
         // Json Input

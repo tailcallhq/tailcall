@@ -3,14 +3,25 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use super::merge_key_value_vecs;
+use super::position::Pos;
 use crate::core::config::headers::Headers;
+use crate::core::config::positioned_config::PositionedConfig;
 use crate::core::config::KeyValue;
 use crate::core::is_default;
-use crate::core::macros::MergeRight;
+use crate::core::macros::{MergeRight, PositionedConfig};
 use crate::core::merge_right::MergeRight;
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    PositionedConfig,
 )]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
@@ -19,15 +30,17 @@ use crate::core::merge_right::MergeRight;
 /// behaves and helps tune tailcall for various use-cases.
 pub struct Server {
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `apolloTracing` exposes GraphQL query performance data, including
     /// execution time of queries and individual resolvers.
-    pub apollo_tracing: Option<bool>,
+    pub apollo_tracing: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `batchRequests` combines multiple requests into one, improving
     /// performance but potentially introducing latency and complicating
     /// debugging. Use judiciously. @default `false`.
-    pub batch_requests: Option<bool>,
+    pub batch_requests: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// Enables deduplication of IO operations to enhance performance.
@@ -39,54 +52,64 @@ pub struct Server {
     pub dedupe: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `headers` contains key-value pairs that are included as default headers
     /// in server responses, allowing for consistent header management across
     /// all responses.
-    pub headers: Option<Headers>,
+    pub headers: Option<Pos<Headers>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `globalResponseTimeout` sets the maximum query duration before
     /// termination, acting as a safeguard against long-running queries.
-    pub global_response_timeout: Option<i64>,
+    pub global_response_timeout: Option<Pos<i64>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `hostname` sets the server hostname.
-    pub hostname: Option<String>,
+    pub hostname: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `introspection` allows clients to fetch schema information directly,
     /// aiding tools and applications in understanding available types, fields,
     /// and operations. @default `true`.
-    pub introspection: Option<bool>,
+    pub introspection: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `pipelineFlush` allows to control flushing behavior of the server
     /// pipeline.
-    pub pipeline_flush: Option<bool>,
+    pub pipeline_flush: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `port` sets the Tailcall running port. @default `8000`.
-    pub port: Option<u16>,
+    pub port: Option<Pos<u16>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `queryValidation` checks incoming GraphQL queries against the schema,
     /// preventing errors from invalid queries. Can be disabled for performance.
     /// @default `false`.
-    pub query_validation: Option<bool>,
+    pub query_validation: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `responseValidation` Tailcall automatically validates responses from
     /// upstream services using inferred schema. @default `false`.
-    pub response_validation: Option<bool>,
+    pub response_validation: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// A link to an external JS file that listens on every HTTP request
     /// response event.
-    pub script: Option<ScriptOptions>,
+    pub script: Option<Pos<ScriptOptions>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `showcase` enables the /showcase/graphql endpoint.
-    pub showcase: Option<bool>,
+    pub showcase: Option<Pos<bool>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     #[merge_right(merge_right_fn = "merge_right_vars")]
@@ -95,14 +118,16 @@ pub struct Server {
     pub vars: Vec<KeyValue>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `version` sets the HTTP version for the server. Options are `HTTP1` and
     /// `HTTP2`. @default `HTTP1`.
-    pub version: Option<HttpVersion>,
+    pub version: Option<Pos<HttpVersion>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// `workers` sets the number of worker threads. @default the number of
     /// system cores.
-    pub workers: Option<usize>,
+    pub workers: Option<Pos<usize>>,
 }
 
 fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyValue> {
@@ -127,50 +152,74 @@ pub enum HttpVersion {
 
 impl Server {
     pub fn enable_apollo_tracing(&self) -> bool {
-        self.apollo_tracing.unwrap_or(false)
+        self.apollo_tracing
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_global_response_timeout(&self) -> i64 {
-        self.global_response_timeout.unwrap_or(0)
+        self.global_response_timeout
+            .as_ref()
+            .map_or(0, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_workers(&self) -> usize {
-        self.workers.unwrap_or(num_cpus::get())
+        self.workers
+            .as_ref()
+            .map_or(num_cpus::get(), |Pos { inner, .. }| *inner)
     }
 
     pub fn get_port(&self) -> u16 {
-        self.port.unwrap_or(8000)
+        self.port.as_ref().map_or(8000, |Pos { inner, .. }| *inner)
     }
+
     pub fn enable_http_validation(&self) -> bool {
-        self.response_validation.unwrap_or(false)
+        self.response_validation
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
+
     pub fn enable_cache_control(&self) -> bool {
         self.headers
             .as_ref()
             .map(|h| h.enable_cache_control())
             .unwrap_or(false)
     }
+
     pub fn enable_set_cookies(&self) -> bool {
         self.headers
             .as_ref()
             .map(|h| h.set_cookies())
             .unwrap_or(false)
     }
+
     pub fn enable_introspection(&self) -> bool {
-        self.introspection.unwrap_or(true)
+        self.introspection
+            .as_ref()
+            .map_or(true, |Pos { inner, .. }| *inner)
     }
     pub fn enable_query_validation(&self) -> bool {
-        self.query_validation.unwrap_or(false)
+        self.query_validation
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
+
     pub fn enable_batch_requests(&self) -> bool {
-        self.batch_requests.unwrap_or(false)
+        self.batch_requests
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
+
     pub fn enable_showcase(&self) -> bool {
-        self.showcase.unwrap_or(false)
+        self.showcase
+            .as_ref()
+            .map_or(false, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_hostname(&self) -> String {
-        self.hostname.clone().unwrap_or("127.0.0.1".to_string())
+        self.hostname
+            .clone()
+            .map_or("127.0.0.1".to_string(), |Pos { inner, .. }| inner)
     }
 
     pub fn get_vars(&self) -> BTreeMap<String, String> {
@@ -201,11 +250,14 @@ impl Server {
     }
 
     pub fn get_version(self) -> HttpVersion {
-        self.version.unwrap_or(HttpVersion::HTTP1)
+        self.version
+            .map_or(HttpVersion::HTTP1, |Pos { inner, .. }| inner)
     }
 
     pub fn get_pipeline_flush(&self) -> bool {
-        self.pipeline_flush.unwrap_or(true)
+        self.pipeline_flush
+            .as_ref()
+            .map_or(true, |Pos { inner, .. }| *inner)
     }
 
     pub fn get_dedupe(&self) -> bool {
@@ -219,7 +271,7 @@ mod tests {
     use crate::core::config::ScriptOptions;
 
     fn server_with_script_options(so: ScriptOptions) -> Server {
-        Server { script: Some(so), ..Default::default() }
+        Server { script: Some(Pos::new(0, 0, None, so)), ..Default::default() }
     }
 
     #[test]
@@ -227,7 +279,7 @@ mod tests {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let b = server_with_script_options(ScriptOptions { timeout: Some(200) });
         let merged = a.merge_right(b);
-        let expected = ScriptOptions { timeout: Some(200) };
+        let expected = Pos::new(0, 0, None, ScriptOptions { timeout: Some(200) });
         assert_eq!(merged.script, Some(expected));
     }
 
@@ -236,7 +288,7 @@ mod tests {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let b = server_with_script_options(ScriptOptions { timeout: None });
         let merged = a.merge_right(b);
-        let expected = ScriptOptions { timeout: Some(100) };
+        let expected = Pos::new(0, 0, None, ScriptOptions { timeout: Some(100) });
         assert_eq!(merged.script, Some(expected));
     }
 
@@ -245,7 +297,7 @@ mod tests {
         let a = server_with_script_options(ScriptOptions { timeout: None });
         let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let merged = a.merge_right(b);
-        let expected = ScriptOptions { timeout: Some(100) };
+        let expected = Pos::new(0, 0, None, ScriptOptions { timeout: Some(100) });
         assert_eq!(merged.script, Some(expected));
     }
 
@@ -254,7 +306,7 @@ mod tests {
         let a = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let b = Server::default();
         let merged = a.merge_right(b);
-        let expected = ScriptOptions { timeout: Some(100) };
+        let expected = Pos::new(0, 0, None, ScriptOptions { timeout: Some(100) });
         assert_eq!(merged.script, Some(expected));
     }
 
@@ -263,7 +315,7 @@ mod tests {
         let a = Server::default();
         let b = server_with_script_options(ScriptOptions { timeout: Some(100) });
         let merged = a.merge_right(b);
-        let expected = ScriptOptions { timeout: Some(100) };
+        let expected = Pos::new(0, 0, None, ScriptOptions { timeout: Some(100) });
         assert_eq!(merged.script, Some(expected));
     }
 

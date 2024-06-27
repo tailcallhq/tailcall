@@ -2,6 +2,7 @@ use url::Url;
 
 use super::http_directive_generator::HttpDirectiveGenerator;
 use super::types_generator::OperationGenerator;
+use crate::core::config::position::Pos;
 use crate::core::config::{Config, Field, Type};
 use crate::core::valid::Valid;
 
@@ -20,11 +21,16 @@ impl<'a> QueryGenerator<'a> {
 
 impl OperationGenerator for QueryGenerator<'_> {
     fn generate(&self, root_type: &str, mut config: Config) -> Valid<Config, String> {
-        let mut field = Field {
-            list: self.is_json_list,
-            type_of: root_type.to_owned(),
-            ..Default::default()
-        };
+        let mut field = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                list: self.is_json_list,
+                type_of: root_type.to_owned(),
+                ..Default::default()
+            },
+        );
 
         // generate required http directive.
         let http_directive_gen = HttpDirectiveGenerator::new(self.url);
@@ -34,7 +40,7 @@ impl OperationGenerator for QueryGenerator<'_> {
         if let Some(type_) = config.types.get_mut(self.query) {
             type_.fields.insert(self.field_name.to_owned(), field);
         } else {
-            let mut ty = Type::default();
+            let mut ty = Pos::new(0, 0, None, Type::default());
             ty.fields.insert(self.field_name.to_owned(), field);
             config.types.insert(self.query.to_owned(), ty);
         }

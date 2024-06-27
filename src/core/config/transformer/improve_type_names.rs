@@ -164,9 +164,12 @@ mod test {
 
     #[test]
     fn test_type_name_generator_transform() {
-        let config = Config::from_sdl(read_fixture(configs::AUTO_GENERATE_CONFIG).as_str())
-            .to_result()
-            .unwrap();
+        let config = Config::from_sdl(
+            configs::AUTO_GENERATE_CONFIG,
+            read_fixture(configs::AUTO_GENERATE_CONFIG).as_str(),
+        )
+        .to_result()
+        .unwrap();
 
         let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
@@ -174,9 +177,12 @@ mod test {
 
     #[test]
     fn test_type_name_generator_with_cyclic_types() -> anyhow::Result<()> {
-        let config = Config::from_sdl(read_fixture(configs::CYCLIC_CONFIG).as_str())
-            .to_result()
-            .unwrap();
+        let config = Config::from_sdl(
+            configs::CYCLIC_CONFIG,
+            read_fixture(configs::CYCLIC_CONFIG).as_str(),
+        )
+        .to_result()
+        .unwrap();
 
         let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
@@ -186,9 +192,12 @@ mod test {
 
     #[test]
     fn test_type_name_generator() -> anyhow::Result<()> {
-        let config = Config::from_sdl(read_fixture(configs::NAME_GENERATION).as_str())
-            .to_result()
-            .unwrap();
+        let config = Config::from_sdl(
+            configs::NAME_GENERATION,
+            read_fixture(configs::NAME_GENERATION).as_str(),
+        )
+        .to_result()
+        .unwrap();
 
         let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());

@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use regex::Regex;
 
-use super::Cause;
+use super::{Cause, SourcePos};
 
 #[derive(Debug, PartialEq, Default, Clone)]
 pub struct ValidationError<E>(Vec<Cause<E>>);
@@ -59,6 +59,14 @@ impl<E> ValidationError<E> {
         let mut errors = self.0;
         for cause in errors.iter_mut() {
             cause.trace.insert(0, message.to_owned());
+        }
+        Self(errors)
+    }
+
+    pub fn positioned_err(self, position: &Option<SourcePos>) -> Self {
+        let mut errors = self.0;
+        for cause in errors.iter_mut() {
+            cause.source_position.clone_from(position);
         }
         Self(errors)
     }

@@ -1,13 +1,14 @@
+use crate::core::config::position::Pos;
 use crate::core::config::{Link, LinkType};
 use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
 pub struct Links;
 
-impl TryFrom<Vec<Link>> for Links {
+impl TryFrom<Vec<Pos<Link>>> for Links {
     type Error = ValidationError<String>;
 
-    fn try_from(links: Vec<Link>) -> Result<Self, Self::Error> {
+    fn try_from(links: Vec<Pos<Link>>) -> Result<Self, Self::Error> {
         Valid::from_iter(links.iter().enumerate(), |(pos, link)| {
             Valid::succeed(link.to_owned())
                 .and_then(|link| {
@@ -31,7 +32,7 @@ impl TryFrom<Vec<Link>> for Links {
             let script_links = links
                 .iter()
                 .filter(|l| l.type_of == LinkType::Script)
-                .collect::<Vec<&Link>>();
+                .collect::<Vec<&Pos<Link>>>();
 
             if script_links.len() > 1 {
                 Valid::fail("Only one script link is allowed".to_string())
@@ -43,7 +44,7 @@ impl TryFrom<Vec<Link>> for Links {
             let key_links = links
                 .iter()
                 .filter(|l| l.type_of == LinkType::Key)
-                .collect::<Vec<&Link>>();
+                .collect::<Vec<&Pos<Link>>>();
 
             if key_links.len() > 1 {
                 Valid::fail("Only one key link is allowed".to_string())

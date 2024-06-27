@@ -7,14 +7,16 @@ use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::position::Pos;
 use super::telemetry::Telemetry;
-use super::{ConfigModule, KeyValue, Link, Server, Upstream};
+use super::{ConfigModule, KeyValue, Link, Server, SourceType, Upstream};
 use crate::core::config::from_document::from_document;
+use crate::core::config::positioned_config::PositionedConfig;
 use crate::core::config::source::Source;
 use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
 use crate::core::json::JsonSchema;
-use crate::core::macros::MergeRight;
+use crate::core::macros::{MergeRight, PositionedConfig};
 use crate::core::merge_right::MergeRight;
 use crate::core::valid::{Valid, Validator};
 use crate::core::{is_default, scalar};
@@ -38,13 +40,13 @@ pub struct Config {
     /// requests. Features such as request batching, SSL, HTTP2 etc. can be
     /// configured here.
     #[serde(default)]
-    pub server: Server,
+    pub server: Pos<Server>,
 
     ///
     /// Dictates how tailcall should handle upstream requests/responses.
     /// Tuning upstream can improve performance and reliability for connections.
     #[serde(default)]
-    pub upstream: Upstream,
+    pub upstream: Pos<Upstream>,
 
     ///
     /// Specifies the entry points for query and mutation in the generated
@@ -55,25 +57,25 @@ pub struct Config {
     /// A map of all the types in the schema.
     #[serde(default)]
     #[setters(skip)]
-    pub types: BTreeMap<String, Type>,
+    pub types: BTreeMap<String, Pos<Type>>,
 
     ///
     /// A map of all the union types in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub unions: BTreeMap<String, Union>,
+    pub unions: BTreeMap<String, Pos<Union>>,
 
     ///
     /// A map of all the enum types in the schema
     #[serde(default, skip_serializing_if = "is_default")]
-    pub enums: BTreeMap<String, Enum>,
+    pub enums: BTreeMap<String, Pos<Enum>>,
 
     ///
     /// A list of all links in the schema.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub links: Vec<Link>,
+    pub links: Vec<Pos<Link>>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// Enable [opentelemetry](https://opentelemetry.io) support
-    pub telemetry: Telemetry,
+    pub telemetry: Pos<Telemetry>,
 }
 
 ///
@@ -85,11 +87,11 @@ pub struct Config {
 pub struct Type {
     ///
     /// A map of field name and its definition.
-    pub fields: BTreeMap<String, Field>,
+    pub fields: BTreeMap<String, Pos<Field>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Additional fields to be added to the type
-    pub added_fields: Vec<AddField>,
+    pub added_fields: Vec<Pos<AddField>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Documentation for the type that is publicly visible.
@@ -101,19 +103,19 @@ pub struct Type {
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Setting to indicate if the type can be cached.
-    pub cache: Option<Cache>,
+    pub cache: Option<Pos<Cache>>,
     ///
     /// Marks field as protected by auth providers
     #[serde(default)]
-    pub protected: Option<Protected>,
+    pub protected: Option<Pos<Protected>>,
     #[serde(default, skip_serializing_if = "is_default")]
     ///
     /// Contains source information for the type.
-    pub tag: Option<Tag>,
+    pub tag: Option<Pos<Tag>>,
 }
 
 impl Type {
-    pub fn fields(mut self, fields: Vec<(&str, Field)>) -> Self {
+    pub fn fields(mut self, fields: Vec<(&str, Pos<Field>)>) -> Self {
         let mut graphql_fields = BTreeMap::new();
         for (name, field) in fields {
             graphql_fields.insert(name.to_string(), field);
@@ -128,7 +130,16 @@ impl Type {
 }
 
 #[derive(
-    Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    PositionedConfig,
 )]
 #[serde(deny_unknown_fields)]
 /// Used to represent an identifier for a type. Typically used via only by the
@@ -138,7 +149,17 @@ pub struct Tag {
     pub id: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    PositionedConfig,
+)]
 /// The @cache operator enables caching for the query, field or type it is
 /// applied to.
 #[serde(rename_all = "camelCase")]
@@ -146,11 +167,21 @@ pub struct Tag {
 pub struct Cache {
     /// Specifies the duration, in milliseconds, of how long the value has to be
     /// stored in the cache.
-    pub max_age: NonZeroU64,
+    #[positioned_field(field)]
+    pub max_age: Pos<NonZeroU64>,
 }
 
 #[derive(
-    Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema, MergeRight,
+    Clone,
+    Debug,
+    Deserialize,
+    Serialize,
+    PartialEq,
+    Eq,
+    Default,
+    schemars::JsonSchema,
+    MergeRight,
+    PositionedConfig,
 )]
 pub struct Protected {}
 
@@ -168,14 +199,16 @@ pub struct Protected {}
 )]
 #[setters(strip_option)]
 pub struct RootSchema {
-    pub query: Option<String>,
+    pub query: Option<Pos<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub mutation: Option<String>,
+    pub mutation: Option<Pos<String>>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub subscription: Option<String>,
+    pub subscription: Option<Pos<String>>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, PositionedConfig,
+)]
 #[serde(deny_unknown_fields)]
 /// Used to omit a field from public consumption.
 pub struct Omit {}
@@ -184,7 +217,16 @@ pub struct Omit {}
 /// A field definition containing all the metadata information about resolving a
 /// field.
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, Setters, PartialEq, Eq, schemars::JsonSchema,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Setters,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
 )]
 #[setters(strip_option)]
 pub struct Field {
@@ -221,51 +263,51 @@ pub struct Field {
     ///
     /// Allows modifying existing fields.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub modify: Option<Modify>,
+    pub modify: Option<Pos<Modify>>,
 
     ///
     /// Omits a field from public consumption.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub omit: Option<Omit>,
+    pub omit: Option<Pos<Omit>>,
 
     ///
     /// Inserts an HTTP resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub http: Option<Http>,
+    pub http: Option<Pos<Http>>,
 
     ///
     /// Inserts a call resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub call: Option<Call>,
+    pub call: Option<Pos<Call>>,
 
     ///
     /// Inserts a GRPC resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub grpc: Option<Grpc>,
+    pub grpc: Option<Pos<Grpc>>,
 
     ///
     /// Inserts a Javascript resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub script: Option<JS>,
+    pub script: Option<Pos<JS>>,
 
     ///
     /// Inserts a constant resolver for the field.
     #[serde(rename = "expr", default, skip_serializing_if = "is_default")]
-    pub const_field: Option<Expr>,
+    pub const_field: Option<Pos<Expr>>,
 
     ///
     /// Inserts a GraphQL resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub graphql: Option<GraphQL>,
+    pub graphql: Option<Pos<GraphQL>>,
 
     ///
     /// Sets the cache configuration for a field
-    pub cache: Option<Cache>,
+    pub cache: Option<Pos<Cache>>,
 
     ///
     /// Marks field as protected by auth provider
     #[serde(default)]
-    pub protected: Option<Protected>,
+    pub protected: Option<Pos<Protected>>,
 
     ///
     /// Stores the default value for the field
@@ -317,7 +359,10 @@ impl Field {
         self.http
             .as_ref()
             .is_some_and(|http| !http.group_by.is_empty())
-            || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
+            || self
+                .graphql
+                .as_ref()
+                .is_some_and(|graphql| graphql.batch.inner)
             || self
                 .grpc
                 .as_ref()
@@ -358,12 +403,16 @@ impl Field {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, PositionedConfig,
+)]
 pub struct JS {
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, PositionedConfig,
+)]
 #[serde(deny_unknown_fields)]
 pub struct Modify {
     #[serde(default, skip_serializing_if = "is_default")]
@@ -372,12 +421,22 @@ pub struct Modify {
     pub omit: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PositionedConfig)]
 pub struct Inline {
     pub path: Vec<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Default,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
+)]
 pub struct Arg {
     #[serde(rename = "type")]
     pub type_of: String,
@@ -388,7 +447,7 @@ pub struct Arg {
     #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
-    pub modify: Option<Modify>,
+    pub modify: Option<Pos<Modify>>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub default_value: Option<Value>,
 }
@@ -444,7 +503,17 @@ pub struct Alias {
     pub options: BTreeSet<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
+)]
 #[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///
@@ -455,36 +524,42 @@ pub struct Alias {
 /// the API endpoint specified when the `users` field is queried.
 pub struct Http {
     #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field, input_source_name = "onRequest")]
     /// onRequest field in @http directive gives the ability to specify the
     /// request interception handler.
-    pub on_request: Option<String>,
+    pub on_request: Option<Pos<String>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field, input_source_name = "baseURL")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
+    pub base_url: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// The body of the API call. It's used for methods like POST or PUT that
     /// send data to the server. You can pass it as a static object or use a
     /// Mustache template to substitute variables from the GraphQL variables.
-    pub body: Option<String>,
+    pub body: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(field)]
     /// The `encoding` parameter specifies the encoding of the request body. It
     /// can be `ApplicationJson` or `ApplicationXWwwFormUrlEncoded`. @default
     /// `ApplicationJson`.
-    pub encoding: Encoding,
+    pub encoding: Pos<Encoding>,
 
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
+    #[positioned_field(field, input_source_name = "batchKey")]
     /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+    pub group_by: Pos<Vec<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(field)]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@http` operator. It is used by specifying a
     /// key-value map of header names and their values.
-    pub headers: Vec<KeyValue>,
+    pub headers: Pos<Vec<KeyValue>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// Schema of the input of the API call. It is automatically inferred in
@@ -492,16 +567,18 @@ pub struct Http {
     pub input: Option<JsonSchema>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(field)]
     /// This refers to the HTTP method of the API call. Commonly used methods
     /// include `GET`, `POST`, `PUT`, `DELETE` etc. @default `GET`.
-    pub method: Method,
+    pub method: Pos<Method>,
 
     /// This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.
     ///
     /// For dynamic segments in your API endpoint, use Mustache templates for
     /// variable substitution. For instance, to fetch a specific user, use
     /// `/users/{{args.id}}`.
-    pub path: String,
+    #[positioned_field(field)]
+    pub path: Pos<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// Schema of the output of the API call. It is automatically inferred in
@@ -509,27 +586,49 @@ pub struct Http {
     pub output: Option<JsonSchema>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(field)]
     /// This represents the query parameters of your API call. You can pass it
     /// as a static object or use Mustache template for dynamic parameters.
     /// These parameters will be added to the URL.
-    pub query: Vec<KeyValue>,
+    pub query: Pos<Vec<KeyValue>>,
 }
 
 ///
 /// Provides the ability to refer to multiple fields in the Query or
 /// Mutation root.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
+)]
 pub struct Call {
     /// Steps are composed together to form a call.
     /// If you have multiple steps, the output of the previous step is passed as
     /// input to the next step.
-    pub steps: Vec<Step>,
+    #[positioned_field(list_field)]
+    pub steps: Vec<Pos<Step>>,
 }
 
 ///
 /// Provides the ability to refer to a field defined in the root Query or
 /// Mutation.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
+)]
 pub struct Step {
     #[serde(default, skip_serializing_if = "is_default")]
     /// The name of the field on the `Query` type that you want to call.
@@ -544,7 +643,17 @@ pub struct Step {
     pub args: BTreeMap<String, Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
+)]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 /// The @grpc operator indicates that a field or node is backed by a gRPC API.
@@ -558,62 +667,85 @@ pub struct Step {
 /// endpoint specified when the `users` field is queried.
 pub struct Grpc {
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field, input_source_name = "baseURL")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
+    pub base_url: Option<Pos<String>>,
+
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// This refers to the arguments of your gRPC call. You can pass it as a
     /// static object or use Mustache template for dynamic parameters. These
     /// parameters will be added in the body in `protobuf` format.
-    pub body: Option<String>,
+    pub body: Option<Pos<String>>,
+
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+    pub group_by: Pos<Vec<String>>,
+
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(field)]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@grpc` operator. It is used by specifying a
     /// key-value map of header names and their values. Note: content-type is
     /// automatically set to application/grpc
-    pub headers: Vec<KeyValue>,
+    pub headers: Pos<Vec<KeyValue>>,
+
+    #[positioned_field(field)]
     /// This refers to the gRPC method you're going to call. For instance
     /// `GetAllNews`.
-    pub method: String,
+    pub method: Pos<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    PositionedConfig,
+)]
 #[serde(deny_unknown_fields)]
 /// The @graphQL operator allows to specify GraphQL API server request to fetch
 /// data from.
 pub struct GraphQL {
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field)]
     /// Named arguments for the requested field. More info [here](https://tailcall.run/docs/guides/operators/#args)
-    pub args: Option<Vec<KeyValue>>,
+    pub args: Option<Pos<Vec<KeyValue>>>,
 
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
+    #[positioned_field(option_field, input_source_name = "baseURL")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
-    pub base_url: Option<String>,
+    pub base_url: Option<Pos<String>>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(field)]
     /// If the upstream GraphQL server supports request batching, you can
     /// specify the 'batch' argument to batch several requests into a single
     /// batch request.
     ///
     /// Make sure you have also specified batch settings to the `@upstream` and
     /// to the `@graphQL` operator.
-    pub batch: bool,
+    pub batch: Pos<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    #[positioned_field(field)]
     /// The headers parameter allows you to customize the headers of the GraphQL
     /// request made by the `@graphQL` operator. It is used by specifying a
     /// key-value map of header names and their values.
-    pub headers: Vec<KeyValue>,
+    pub headers: Pos<Vec<KeyValue>>,
 
+    #[positioned_field(field)]
     /// Specifies the root field on the upstream to request data from. This maps
     /// a field in your schema to a field in the upstream schema. When a query
     /// is received for this field, Tailcall requests data from the
     /// corresponding upstream field.
-    pub name: String,
+    pub name: Pos<String>,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -642,14 +774,18 @@ pub struct Expr {
     pub body: Value,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, PositionedConfig,
+)]
 #[serde(deny_unknown_fields)]
 /// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 pub struct AddField {
     /// Name of the new field to be added
-    pub name: String,
+    #[positioned_field(field)]
+    pub name: Pos<String>,
     /// Path of the data where the field should point to
-    pub path: Vec<String>,
+    #[positioned_field(field)]
+    pub path: Pos<Vec<String>>,
 }
 
 impl Config {
@@ -667,18 +803,18 @@ impl Config {
     }
 
     pub fn port(&self) -> u16 {
-        self.server.port.unwrap_or(8000)
+        self.server.get_port()
     }
 
-    pub fn find_type(&self, name: &str) -> Option<&Type> {
+    pub fn find_type(&self, name: &str) -> Option<&Pos<Type>> {
         self.types.get(name)
     }
 
-    pub fn find_union(&self, name: &str) -> Option<&Union> {
+    pub fn find_union(&self, name: &str) -> Option<&Pos<Union>> {
         self.unions.get(name)
     }
 
-    pub fn find_enum(&self, name: &str) -> Option<&Enum> {
+    pub fn find_enum(&self, name: &str) -> Option<&Pos<Enum>> {
         self.enums.get(name)
     }
 
@@ -699,11 +835,11 @@ impl Config {
     }
 
     pub fn query(mut self, query: &str) -> Self {
-        self.schema.query = Some(query.to_string());
+        self.schema.query = Some(Pos::new(0, 0, None, query.to_string()));
         self
     }
 
-    pub fn types(mut self, types: Vec<(&str, Type)>) -> Self {
+    pub fn types(mut self, types: Vec<(&str, Pos<Type>)>) -> Self {
         let mut graphql_types = BTreeMap::new();
         for (name, type_) in types {
             graphql_types.insert(name.to_string(), type_);
@@ -726,19 +862,19 @@ impl Config {
         Ok(serde_yaml::from_str(yaml)?)
     }
 
-    pub fn from_sdl(sdl: &str) -> Valid<Self, String> {
+    pub fn from_sdl(input_path: &str, sdl: &str) -> Valid<Self, String> {
         let doc = async_graphql::parser::parse_schema(sdl);
         match doc {
-            Ok(doc) => from_document(doc),
+            Ok(doc) => from_document(input_path, doc),
             Err(e) => Valid::fail(e.to_string()),
         }
     }
 
     pub fn from_source(source: Source, schema: &str) -> Result<Self> {
-        match source {
-            Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
-            Source::Json => Ok(Config::from_json(schema)?),
-            Source::Yml => Ok(Config::from_yaml(schema)?),
+        match source.input_type {
+            SourceType::GraphQL => Ok(Config::from_sdl(&source.input_path, schema).to_result()?),
+            SourceType::Json => Ok(Config::from_json(schema)?),
+            SourceType::Yml => Ok(Config::from_yaml(schema)?),
         }
     }
 
@@ -858,10 +994,10 @@ impl Config {
         let mut set = HashSet::new();
         let mut stack = Vec::new();
         if let Some(query) = &self.schema.query {
-            stack.push(query.clone());
+            stack.push(query.inner.clone());
         }
         if let Some(mutation) = &self.schema.mutation {
-            stack.push(mutation.clone());
+            stack.push(mutation.inner.clone());
         }
         while let Some(type_name) = stack.pop() {
             if set.contains(&type_name) {
@@ -902,17 +1038,40 @@ mod tests {
 
     #[test]
     fn test_field_has_or_not_batch_resolver() {
-        let f1 = Field { ..Default::default() };
+        let f1 = Pos::new(0, 0, None, Field { ..Default::default() });
 
-        let f2 = Field {
-            http: Some(Http { group_by: vec!["id".to_string()], ..Default::default() }),
-            ..Default::default()
-        };
+        let f2 = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                http: Some(Pos::new(
+                    0,
+                    0,
+                    None,
+                    Http {
+                        group_by: Pos::new(0, 0, None, vec!["id".to_string()]),
+                        ..Default::default()
+                    },
+                )),
+                ..Default::default()
+            },
+        );
 
-        let f3 = Field {
-            http: Some(Http { group_by: vec![], ..Default::default() }),
-            ..Default::default()
-        };
+        let f3 = Pos::new(
+            0,
+            0,
+            None,
+            Field {
+                http: Some(Pos::new(
+                    0,
+                    0,
+                    None,
+                    Http { group_by: Pos::new(0, 0, None, vec![]), ..Default::default() },
+                )),
+                ..Default::default()
+            },
+        );
 
         assert!(!f1.has_batched_resolver());
         assert!(f2.has_batched_resolver());
@@ -927,10 +1086,19 @@ mod tests {
 
     #[test]
     fn test_from_sdl_empty() {
-        let actual = Config::from_sdl("type Foo {a: Int}").to_result().unwrap();
+        let file_path: String = Default::default();
+        let actual = Config::from_sdl(&file_path, "type Foo {a: Int}")
+            .to_result()
+            .unwrap();
+
         let expected = Config::default().types(vec![(
             "Foo",
-            Type::default().fields(vec![("a", Field::int())]),
+            Pos::new(
+                1,
+                1,
+                Some(file_path.clone()),
+                Type::default().fields(vec![("a", Pos::new(1, 11, Some(file_path), Field::int()))]),
+            ),
         )]);
         assert_eq!(actual, expected);
     }
@@ -938,6 +1106,7 @@ mod tests {
     #[test]
     fn test_unused_types_with_cyclic_types() {
         let config = Config::from_sdl(
+            Default::default(),
             "
             type Bar {a: Int}
             type Foo {a: [Foo]}
@@ -964,7 +1133,7 @@ mod tests {
     #[test]
     fn test_is_root_operation_type_with_query() {
         let mut config = Config::default();
-        config.schema.query = Some("Query".to_string());
+        config.schema.query = Some(Pos::new(0, 0, None, "Query".to_string()));
 
         assert!(config.is_root_operation_type("Query"));
         assert!(!config.is_root_operation_type("Mutation"));
@@ -974,7 +1143,7 @@ mod tests {
     #[test]
     fn test_is_root_operation_type_with_mutation() {
         let mut config = Config::default();
-        config.schema.mutation = Some("Mutation".to_string());
+        config.schema.mutation = Some(Pos::new(0, 0, None, "Mutation".to_string()));
 
         assert!(!config.is_root_operation_type("Query"));
         assert!(config.is_root_operation_type("Mutation"));
@@ -984,7 +1153,7 @@ mod tests {
     #[test]
     fn test_is_root_operation_type_with_subscription() {
         let mut config = Config::default();
-        config.schema.subscription = Some("Subscription".to_string());
+        config.schema.subscription = Some(Pos::new(0, 0, None, "Subscription".to_string()));
 
         assert!(!config.is_root_operation_type("Query"));
         assert!(!config.is_root_operation_type("Mutation"));
@@ -1003,7 +1172,9 @@ mod tests {
     #[test]
     fn test_union_types() {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::UNION_CONFIG).unwrap();
-        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let config = Config::from_sdl(tailcall_fixtures::configs::UNION_CONFIG, &sdl)
+            .to_result()
+            .unwrap();
         let union_types = config.union_types();
         let expected_union_types: HashSet<String> = ["Bar", "Baz", "Foo"]
             .iter()

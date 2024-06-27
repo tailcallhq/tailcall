@@ -150,6 +150,7 @@ mod tests {
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
 
+    use crate::core::config::position::Pos;
     use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{Config, Type};
     use crate::core::generator::{Generator, Input};
@@ -158,9 +159,13 @@ mod tests {
     use crate::core::valid::Validator;
 
     fn build_qry(mut config: Config) -> Config {
-        let mut query = Type::default();
-        let mut field1 =
-            crate::core::config::Field { type_of: "Type1".to_string(), ..Default::default() };
+        let mut query: Pos<Type> = Default::default();
+        let mut field1 = Pos::new(
+            0,
+            0,
+            None,
+            crate::core::config::Field { type_of: "Type1".to_string(), ..Default::default() },
+        );
 
         let arg1 = crate::core::config::Arg { type_of: "Type1".to_string(), ..Default::default() };
 
@@ -187,27 +192,47 @@ mod tests {
         // Create a ConfigModule instance with ambiguous types
         let mut config = Config::default();
 
-        let mut type1 = Type::default();
-        let mut type2 = Type::default();
-        let mut type3 = Type::default();
+        let mut type1: Pos<Type> = Default::default();
+        let mut type2: Pos<Type> = Default::default();
+        let mut type3: Pos<Type> = Default::default();
 
         type1.fields.insert(
             "name".to_string(),
-            crate::core::config::Field::default().type_of("String".to_string()),
+            Pos::new(
+                0,
+                0,
+                None,
+                crate::core::config::Field::default().type_of("String".to_string()),
+            ),
         );
 
         type2.fields.insert(
             "ty1".to_string(),
-            crate::core::config::Field::default().type_of("Type1".to_string()),
+            Pos::new(
+                0,
+                0,
+                None,
+                crate::core::config::Field::default().type_of("Type1".to_string()),
+            ),
         );
 
         type3.fields.insert(
             "ty1".to_string(),
-            crate::core::config::Field::default().type_of("Type1".to_string()),
+            Pos::new(
+                0,
+                0,
+                None,
+                crate::core::config::Field::default().type_of("Type1".to_string()),
+            ),
         );
         type3.fields.insert(
             "ty2".to_string(),
-            crate::core::config::Field::default().type_of("Type2".to_string()),
+            Pos::new(
+                0,
+                0,
+                None,
+                crate::core::config::Field::default().type_of("Type2".to_string()),
+            ),
         );
 
         config.types.insert("Type1".to_string(), type1);

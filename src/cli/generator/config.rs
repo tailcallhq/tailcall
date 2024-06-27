@@ -107,7 +107,7 @@ pub struct Output<Status = UnResolved> {
     #[serde(skip_serializing_if = "Location::is_empty")]
     pub path: Location<Status>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub format: Option<config::Source>,
+    pub format: Option<config::SourceType>,
 }
 
 #[derive(Debug)]

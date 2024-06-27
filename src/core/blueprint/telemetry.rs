@@ -54,7 +54,7 @@ fn to_headers(headers: Vec<KeyValue>) -> Valid<HeaderMap, String> {
 pub fn to_opentelemetry<'a>() -> TryFold<'a, ConfigModule, Telemetry, String> {
     TryFoldConfig::<Telemetry>::new(|config, up| {
         if let Some(export) = config.telemetry.export.as_ref() {
-            let export = match export {
+            let export = match &export.inner {
                 config::TelemetryExporter::Stdout(config) => {
                     Valid::succeed(TelemetryExporter::Stdout(config.clone()))
                 }

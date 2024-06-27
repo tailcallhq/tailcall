@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use super::max_value_map::MaxValueMap;
+use crate::core::config::position::Pos;
 use crate::core::config::Config;
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
@@ -26,7 +27,8 @@ impl UrlTypeMapping {
             for field_ in type_.fields.values() {
                 if let Some(http_directive) = &field_.http {
                     if let Some(base_url) = &http_directive.base_url {
-                        self.url_to_frequency_map.increment(base_url.to_owned(), 1);
+                        self.url_to_frequency_map
+                            .increment(base_url.to_owned().inner, 1);
                         self.visited_type_set.insert(type_name.to_owned());
                     }
                 }
@@ -68,14 +70,14 @@ impl ConsolidateURL {
         url_type_mapping.populate_url_frequency_map(&config);
 
         if let Some(common_url) = url_type_mapping.find_common_url(self.threshold) {
-            config.upstream.base_url = Some(common_url.to_owned());
+            config.upstream.base_url = Some(Pos::new(0, 0, None, common_url.to_owned()));
 
             for type_name in url_type_mapping.visited_type_set {
                 if let Some(type_) = config.types.get_mut(&type_name) {
                     for field_ in type_.fields.values_mut() {
                         if let Some(htto_directive) = &mut field_.http {
                             if let Some(base_url) = &htto_directive.base_url {
-                                if *base_url == common_url {
+                                if *base_url.inner == common_url {
                                     htto_directive.base_url = None;
                                 }
                             }
@@ -119,9 +121,12 @@ mod test {
 
     #[test]
     fn should_generate_correct_upstream_when_multiple_base_urls_present() {
-        let config = Config::from_sdl(read_fixture(configs::MULTI_URL_CONFIG).as_str())
-            .to_result()
-            .unwrap();
+        let config = Config::from_sdl(
+            Default::default(),
+            read_fixture(configs::MULTI_URL_CONFIG).as_str(),
+        )
+        .to_result()
+        .unwrap();
 
         let transformed_config = ConsolidateURL::new(0.5)
             .transform(config)
@@ -132,9 +137,12 @@ mod test {
 
     #[test]
     fn should_not_generate_upstream_when_threshold_is_not_matched() {
-        let config = Config::from_sdl(read_fixture(configs::MULTI_URL_CONFIG).as_str())
-            .to_result()
-            .unwrap();
+        let config = Config::from_sdl(
+            Default::default(),
+            read_fixture(configs::MULTI_URL_CONFIG).as_str(),
+        )
+        .to_result()
+        .unwrap();
 
         let transformed_config = ConsolidateURL::new(0.9)
             .transform(config)
