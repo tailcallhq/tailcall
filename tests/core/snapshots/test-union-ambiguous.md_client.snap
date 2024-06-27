@@ -1,0 +1,71 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+type Bar {
+  bar: String
+}
+
+type Baz {
+  bar: String
+  baz: String
+}
+
+scalar Bytes
+
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+type Foo {
+  foo: String
+}
+
+union FooBarBaz = Bar | Baz | Foo
+
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
+scalar JSON
+
+type Nested {
+  bar: FooBarBaz
+  foo: FooBarBaz
+}
+
+scalar PhoneNumber
+
+type Query {
+  arr: [FooBarBaz]
+  bar: FooBarBaz
+  foo: FooBarBaz
+  nested: Nested
+  string: FooBarBaz
+  unknown: FooBarBaz
+  wrong: FooBarBaz
+}
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
+
+scalar Url
+
+schema {
+  query: Query
+}
