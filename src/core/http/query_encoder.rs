@@ -41,19 +41,19 @@ mod tests {
     fn test_detect_repeated() {
         let query = "[1,2,3]";
         let encoder = QueryEncoder::detect(query);
-        assert!(matches!(encoder, QueryEncoder::Repeated));
+        assert!(matches!(encoder, QueryEncoder::List));
     }
 
     #[test]
     fn test_detect_simple() {
         let query = "1";
         let encoder = QueryEncoder::detect(query);
-        assert!(matches!(encoder, QueryEncoder::Simple));
+        assert!(matches!(encoder, QueryEncoder::Single));
     }
 
     #[test]
     fn test_encode_repeated() {
-        let encoder = QueryEncoder::Repeated;
+        let encoder = QueryEncoder::List;
         let key = "id";
         let values = "[1,2,3]";
         let encoded = encoder.encode(key, values);
@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_encode_simple() {
-        let encoder = QueryEncoder::Simple;
+        let encoder = QueryEncoder::Single;
         let key = "q";
         let values = "value";
         let encoded = encoder.encode(key, values);
@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn test_encode_repeated_with_spaces() {
-        let encoder = QueryEncoder::Repeated;
+        let encoder = QueryEncoder::List;
         let key = "id";
         let values = "[ 1 , 2 , 3 ]";
         let encoded = encoder.encode(key, values);
