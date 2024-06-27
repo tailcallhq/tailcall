@@ -4,7 +4,7 @@ use std::sync::Arc;
 use http::NativeHttpTest;
 use tailcall::cli::generator::Generator;
 use tailcall::core::blueprint::Blueprint;
-use tailcall::core::config;
+use tailcall::core::config::{self, ConfigModule};
 use tailcall::core::generator::Generator as ConfigGenerator;
 use tokio::runtime::Runtime;
 
@@ -37,13 +37,16 @@ async fn run_test(path: &str) -> anyhow::Result<()> {
     // resolve i/o's
     let input_samples = generator.resolve_io(config).await?;
 
-    let mut config = ConfigGenerator::default()
+    let cfg_module = ConfigGenerator::default()
         .inputs(input_samples)
         .transformers(vec![Box::new(preset)])
         .generate(true)?;
 
     // remove links since they break snapshot tests
-    config.config.links = Default::default();
+    let mut base_config = cfg_module.config().clone();
+    base_config.links = Default::default();
+
+    let config = ConfigModule::from(base_config);    
 
     insta::assert_snapshot!(path, config.to_sdl());
     Ok(())
