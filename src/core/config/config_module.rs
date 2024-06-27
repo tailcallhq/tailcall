@@ -18,7 +18,7 @@ use crate::core::valid::{Valid, Validator};
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
-#[derive(Clone, Debug, Default, Getters, MergeRight)]
+#[derive(Clone, Debug, Default, Getters)]
 pub struct ConfigModule {
     config: Config,
     extensions: Extensions,
@@ -27,14 +27,28 @@ pub struct ConfigModule {
     interface_types: HashSet<String>,
 }
 
-impl ConfigModule {
-    pub fn with_config(&mut self, config: Config) {
-        self.config = config;
+impl MergeRight for ConfigModule {
+    fn merge_right(self, other: Self) -> Self {
+        ConfigModule::new(
+            self.config.merge_right(other.config),
+            self.extensions.merge_right(other.extensions),
+        )
     }
+}
 
-    pub fn with_extensions(mut self, extensions: Extensions) -> Self {
-        self.extensions = extensions;
-        self
+impl ConfigModule {
+    pub fn new(config: Config, extensions: Extensions) -> Self {
+        let input_types = config.input_types();
+        let output_types = config.output_types();
+        let interface_types = config.interface_types();
+
+        ConfigModule {
+            config,
+            extensions,
+            input_types,
+            output_types,
+            interface_types,
+        }
     }
 }
 
@@ -150,8 +164,6 @@ impl ConfigModule {
 
         transformer
             .transform(config)
-            .map(ConfigModule::from)
-            // set extensions back to config_module since transform executes only of raw Config
-            .map(|config| config.with_extensions(extensions))
+            .map(|config| ConfigModule::new(config, extensions))
     }
 }

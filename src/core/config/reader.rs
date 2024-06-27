@@ -7,7 +7,7 @@ use rustls_pki_types::{
 };
 use url::Url;
 
-use super::{ConfigModule, Content, Link, LinkType};
+use super::{ConfigModule, Content, Extensions, Link, LinkType};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
@@ -134,7 +134,7 @@ impl ConfigReader {
 
         // Recreating the ConfigModule in order to recompute the values of
         // `input_types`, `output_types` and `interface_types`
-        Ok(ConfigModule::from(base_config).with_extensions(extensions))
+        Ok(ConfigModule::new(base_config, extensions))
     }
 
     /// Reads the certificate from a given file
@@ -227,7 +227,7 @@ impl ConfigReader {
         config.telemetry.render_mustache(&reader_ctx)?;
         config_module.with_config(config);
 
-        Ok(config_module)
+        Ok(config_module.merge_right(ConfigModule::new(config, Extensions)))
     }
 
     /// Checks if path is a URL or absolute path, returns directly if so.
