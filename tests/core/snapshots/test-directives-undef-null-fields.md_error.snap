@@ -124,7 +124,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "can't use list type 'id' here",
+    "message": "argument 'id' is a nullable type",
     "trace": [
       "Query",
       "userListArg",
