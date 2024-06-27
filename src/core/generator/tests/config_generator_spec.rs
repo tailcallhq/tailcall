@@ -46,7 +46,7 @@ async fn run_test(path: &str) -> anyhow::Result<()> {
     let mut base_config = cfg_module.config().clone();
     base_config.links = Default::default();
 
-    let config = ConfigModule::from(base_config);    
+    let config = ConfigModule::from(base_config);
 
     insta::assert_snapshot!(path, config.to_sdl());
     Ok(())
