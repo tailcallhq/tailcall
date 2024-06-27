@@ -37,6 +37,17 @@ impl Default for JsonSchema {
 }
 
 impl JsonSchema {
+    pub fn from_scalar_type(type_name: &str) -> Self {
+        match type_name {
+            "String" => JsonSchema::Str,
+            "Int" => JsonSchema::Num,
+            "Boolean" => JsonSchema::Bool,
+            "Empty" => JsonSchema::Empty,
+            "JSON" => JsonSchema::Any,
+            _ => JsonSchema::Any,
+        }
+    }
+
     // TODO: validate `JsonLike` instead of fixing on `async_graphql::Value`
     pub fn validate(&self, value: &async_graphql::Value) -> Valid<(), &'static str> {
         match self {
@@ -100,6 +111,10 @@ impl JsonSchema {
 
     // TODO: add unit tests
     pub fn compare(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
+        if let JsonSchema::Any = other {
+            return Valid::succeed(());
+        }
+
         match self {
             JsonSchema::Str => {
                 if other != self {
@@ -121,11 +136,7 @@ impl JsonSchema {
                     return Valid::fail(format!("expected Empty, got {:?}", other)).trace(name);
                 }
             }
-            JsonSchema::Any => {
-                if other != self {
-                    return Valid::fail(format!("expected Any, got {:?}", other)).trace(name);
-                }
-            }
+            JsonSchema::Any => {}
             JsonSchema::Obj(a) => {
                 if let JsonSchema::Obj(b) = other {
                     return Valid::from_iter(b.iter(), |(key, b)| {
