@@ -98,11 +98,6 @@ impl Deref for ConfigModule {
 }
 
 impl ConfigModule {
-    /// Renders current config to graphQL string
-    pub fn to_sdl(&self) -> String {
-        crate::core::document::print(self.into())
-    }
-
     /// Normalizes current config with default preset
     pub fn normalize_default(self) -> Valid<Self, String> {
         // TODO: migrate to preset. That will change many snapshots in repo
