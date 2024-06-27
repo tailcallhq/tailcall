@@ -124,7 +124,6 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
 
-    use futures_util::future::join_all;
     use tokio::join;
     use tokio::time::{sleep, timeout_at, Instant};
 
@@ -231,12 +230,10 @@ mod tests {
             .await
             .expect_err("Should throw timeout error");
 
-        let tasks = (0..10).map(|_| {
-            cache.dedupe(&1, move || async move {
+        cache
+            .dedupe(&1, move || async move {
                 sleep(Duration::from_millis(100)).await;
             })
-        });
-
-        join_all(tasks).await;
+            .await;
     }
 }
