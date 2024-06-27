@@ -1,4 +1,4 @@
-use super::{to_type, FieldDefinition, Type};
+use super::{to_type, FieldDefinition};
 use crate::core::config::{self, Config};
 use crate::core::ir::model::{IO, IR};
 use crate::core::scalar;
