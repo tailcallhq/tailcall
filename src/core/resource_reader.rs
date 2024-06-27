@@ -104,7 +104,6 @@ impl Reader for Direct {
         let content = match file.into() {
             Resource::RawPath(file_path) => {
                 // Is an HTTP URL
-                // FileRead { content, path }
                 if let Ok(url) = Url::parse(&file_path) {
                     if url.scheme().starts_with("http") {
                         let response = self
