@@ -59,7 +59,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
     for (type_name, type_def) in config.types.iter() {
-        let kind = if config.interface_types.contains(type_name) {
+        let kind = if config.interface_types().contains(type_name) {
             TypeKind::Interface(InterfaceType {
                 implements: type_def
                     .implements
@@ -91,7 +91,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     })
                     .collect::<Vec<Positioned<FieldDefinition>>>(),
             })
-        } else if config.input_types.contains(type_name) {
+        } else if config.input_types().contains(type_name) {
             TypeKind::InputObject(InputObjectType {
                 fields: type_def
                     .fields

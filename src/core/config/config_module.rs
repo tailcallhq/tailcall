@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
-use derive_setters::Setters;
+use derive_getters::Getters;
 use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
@@ -18,13 +18,56 @@ use crate::core::valid::{Valid, Validator};
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
-#[derive(Clone, Debug, Default, Setters, MergeRight)]
+#[derive(Clone, Debug, Default, Getters)]
 pub struct ConfigModule {
-    pub config: Config,
-    pub extensions: Extensions,
-    pub input_types: HashSet<String>,
-    pub output_types: HashSet<String>,
-    pub interface_types: HashSet<String>,
+    config: Config,
+    extensions: Extensions,
+    input_types: HashSet<String>,
+    output_types: HashSet<String>,
+    interface_types: HashSet<String>,
+}
+
+impl MergeRight for ConfigModule {
+    fn merge_right(self, other: Self) -> Self {
+        ConfigModule::new(
+            self.config.merge_right(other.config),
+            self.extensions.merge_right(other.extensions),
+        )
+    }
+}
+
+impl ConfigModule {
+    pub fn new(config: Config, extensions: Extensions) -> Self {
+        let input_types = config.input_types();
+        let output_types = config.output_types();
+        let interface_types = config.interface_types();
+
+        ConfigModule {
+            config,
+            extensions,
+            input_types,
+            output_types,
+            interface_types,
+        }
+    }
+
+    /// Renders current config to graphQL string
+    pub fn to_sdl(&self) -> String {
+        crate::core::document::print(self.into())
+    }
+
+    /// Normalizes current config with default preset
+    pub fn normalize_default(self) -> Valid<Self, String> {
+        // TODO: migrate to preset. That will change many snapshots in repo
+        let transformer = NestedUnions
+            .pipe(UnionInputType)
+            .pipe(AmbiguousType::default());
+        let ConfigModule { config, extensions, .. } = self;
+
+        transformer
+            .transform(config)
+            .map(|config| ConfigModule::new(config, extensions))
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -97,23 +140,6 @@ impl Deref for ConfigModule {
     }
 }
 
-impl ConfigModule {
-    /// Renders current config to graphQL string
-    pub fn to_sdl(&self) -> String {
-        crate::core::document::print(self.into())
-    }
-
-    /// Normalizes current config with default preset
-    pub fn normalize_default(self) -> Valid<Self, String> {
-        // TODO: migrate to preset. That will change many snapshots in repo
-        self.transform(
-            NestedUnions
-                .pipe(UnionInputType)
-                .pipe(AmbiguousType::default()),
-        )
-    }
-}
-
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
         let input_types = config.input_types();
@@ -127,20 +153,5 @@ impl From<Config> for ConfigModule {
             interface_types,
             ..Default::default()
         }
-    }
-}
-
-impl ConfigModule {
-    pub fn transform<T: Transform<Value = Config, Error = String>>(
-        self,
-        transformer: T,
-    ) -> Valid<Self, String> {
-        let ConfigModule { config, extensions, .. } = self;
-
-        transformer
-            .transform(config)
-            .map(ConfigModule::from)
-            // set extensions back to config_module since transform executes only of raw Config
-            .map(|config| config.extensions(extensions))
     }
 }

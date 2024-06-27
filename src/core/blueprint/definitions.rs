@@ -528,9 +528,9 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                     .trace(name)
                     .and_then(|definition| match definition.clone() {
                         Definition::Object(object_type_definition) => {
-                            if config_module.input_types.contains(name) {
+                            if config_module.input_types().contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
-                            } else if config_module.interface_types.contains(name) {
+                            } else if config_module.interface_types().contains(name) {
                                 to_interface_type_definition(object_type_definition).trace(name)
                             } else {
                                 Valid::succeed(definition)
