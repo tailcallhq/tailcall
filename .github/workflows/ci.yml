@@ -146,6 +146,7 @@ jobs:
           - build: win32-ia32-msvc
             os: windows-latest
             target: i686-pc-windows-msvc
+            features: --no-default-features --features cli
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
@@ -187,7 +188,8 @@ jobs:
           echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
 
       - name: Run Cargo Test
-        run: cargo llvm-cov --workspace --all-features --lcov --target ${{ matrix.target }} --output-path lcov.info
+        # TODO: run llvm-cov only for single build since other builds are not sent to codecov anyway
+        run: cargo llvm-cov --workspace ${{ matrix.features || '--all-features' }} --lcov --target ${{ matrix.target }} --output-path lcov.info
 
       - name: Upload Coverage to Codecov
         if: matrix.build == 'darwin-arm64'
