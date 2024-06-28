@@ -4,9 +4,9 @@ use std::sync::Arc;
 use async_graphql_extension_apollo_tracing::ApolloTracing;
 
 use crate::cli::runtime::init;
+use crate::core::app_context::AppContext;
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::blueprint::{Blueprint, Http};
-use crate::core::http::AppContext;
 use crate::core::rest::{EndpointSet, Unchecked};
 use crate::core::schema_extension::SchemaExtension;
 
