@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package oneof;
+
+message Payload {
+	string payload = 1;
+}
+
+message Command {
+	string command = 1;
+}
+
+message Request {
+	string usual = 1;
+
+    oneof req_oneof {
+		Payload payload = 2;
+		Command command = 3;
+	}
+
+	oneof opt_oneof {
+		bool flag = 4;
+		Payload opt_payload = 5;
+	}
+}
+
+message Response {
+	int32 usual = 1;
+
+    oneof resp_oneof {
+		Payload payload = 2;
+		Command command = 3;
+		string response = 4;
+	}
+}
+
+service OneOfService {
+  rpc GetOneOf (Request) returns (Response) {}
+}

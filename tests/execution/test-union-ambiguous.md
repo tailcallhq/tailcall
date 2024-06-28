@@ -1,35 +1,40 @@
----
-identity: true
----
+# Test union types in ambiguous case
 
-# Test union type resolve
+In some cases, when the resolved data shape does not strongly correspond to GraphQL types, the discriminator may return the first possible type or no possible types at all.
 
 ```graphql @config
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-union FooBar = Bar | Foo
+union FooBarBaz = Bar | Foo | Baz
 
 type Bar {
-  bar: String!
+  bar: String
+}
+
+type Baz {
+  bar: String
+  baz: String
 }
 
 type Foo {
-  foo: String!
+  foo: String
 }
 
 type Nested {
-  bar: FooBar
-  foo: FooBar
+  bar: FooBarBaz
+  foo: FooBarBaz
 }
 
 type Query {
-  arr: [FooBar] @http(path: "/arr")
-  bar: FooBar @http(path: "/bar")
-  foo: FooBar @http(path: "/foo")
+  arr: [FooBarBaz] @http(path: "/arr")
+  bar: FooBarBaz @http(path: "/bar")
+  foo: FooBarBaz @http(path: "/foo")
   nested: Nested @http(path: "/nested")
-  unknown: FooBar @http(path: "/unknown")
+  unknown: FooBarBaz @http(path: "/unknown")
+  wrong: FooBarBaz @http(path: "/wrong")
+  string: FooBarBaz @http(path: "/string")
 }
 ```
 
@@ -80,6 +85,22 @@ type Query {
     status: 200
     body:
       unknown: baz
+
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/wrong
+  response:
+    status: 200
+    body:
+      foo: test-foo
+      bar: test-bar
+
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/string
+  response:
+    status: 200
+    body: "test-string"
 ```
 
 ```yml @test
@@ -153,6 +174,26 @@ type Query {
           ... on Bar {
             bar
           }
+        }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: >
+      query {
+        wrong {
+          foo
+        }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: >
+      query {
+        string {
+          foo
         }
       }
 ```
