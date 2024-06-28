@@ -5,6 +5,8 @@ use crate::core::blueprint::DynamicValue;
 use crate::core::config::group_by::GroupBy;
 use crate::core::http::HttpFilter;
 use crate::core::{graphql, grpc, http};
+use crate::core::ir::model::{CacheKey, IoId};
+use crate::core::jit::Eval;
 
 #[derive(Clone, Debug)]
 pub enum IR {
@@ -48,11 +50,23 @@ pub enum Protocol {
         batch: bool,
     },
     Grpc {
-        req_template: grpc::RequestTemplate,
+        template: grpc::RequestTemplate,
     },
     Script {
         name: String,
     },
+}
+
+impl CacheKey<Eval> for IO {
+    fn cache_key(&self, ctx: &Eval) -> Option<IoId> {
+        let protocol = &self.protocol;
+        match protocol {
+            Protocol::Http { template, .. } => template.cache_key(ctx),
+            Protocol::Grpc { template, .. } => template.cache_key(ctx),
+            Protocol::GraphQL { template, .. } => template.cache_key(ctx),
+            Protocol::Script { .. } => None,
+        }
+    }
 }
 
 impl Cache {

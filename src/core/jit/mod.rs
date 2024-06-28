@@ -12,3 +12,5 @@ pub use synth::*;
 // NOTE: Only used in tests and benchmarks
 pub mod common;
 pub mod ir;
+mod eval_io;
+pub mod exec;

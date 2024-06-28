@@ -1,18 +1,22 @@
 use serde_json_borrow::Value;
 
+use crate::core::app_context::AppContext;
 use crate::core::ir::Error;
+use crate::core::ir::model::CacheKey;
 use crate::core::jit::ir::IR;
-use crate::core::runtime::TargetRuntime;
 
 /// An async executor for the IR.
 pub struct Eval {
     #[allow(unused)]
-    runtime: TargetRuntime,
+    app_ctx: AppContext,
 }
 
 impl Eval {
-    pub fn new(runtime: TargetRuntime) -> Self {
-        Self { runtime }
+    pub fn app_ctx(&self) -> &AppContext {
+        &self.app_ctx
+    }
+    pub fn new(app_ctx: AppContext) -> Self {
+        Self { app_ctx }
     }
 
     #[async_recursion::async_recursion]
@@ -29,7 +33,7 @@ impl Eval {
                 Ok(value)
             }
             IR::Dynamic(value) => Ok(Value::from(value)),
-            IR::IO(_) => todo!(),
+            IR::IO(io) => todo!(),
             IR::Cache(_) => todo!(),
             IR::Protect => todo!(),
             IR::Map(_) => todo!(),
