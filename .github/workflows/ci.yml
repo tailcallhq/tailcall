@@ -189,7 +189,7 @@ jobs:
           echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
 
       - name: Run Cargo Test
-        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
+        run: cargo llvm-cov --workspace --all-features --lcov --target ${{ matrix.target }} --output-path lcov.info
 
       - name: Upload Coverage to Codecov
         if: matrix.build == 'darwin-arm64'
