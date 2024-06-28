@@ -1,3 +1,7 @@
+use async_graphql_value::ConstValue;
+
+use crate::core::ir::{EvalContext, ResolverContextLike};
+
 #[derive(Default)]
 pub enum QueryEncoder {
     /// it encodes the query value in the form of
@@ -8,15 +12,24 @@ pub enum QueryEncoder {
     Single,
 }
 
-impl QueryEncoder {
-    pub fn detect(list_type: bool) -> Self {
-        if list_type {
-            QueryEncoder::List
+pub trait Encoder {
+    fn encode<T: AsRef<str>>(&self, key: T, value: T) -> String;
+}
+
+impl<'a, Ctx: ResolverContextLike> Encoder for EvalContext<'a, Ctx> {
+    fn encode<T: AsRef<str>>(&self, key: T, value: T) -> String {
+        if let Some(arg_type) = self.path_arg(&[key.as_ref()]) {
+            match *arg_type {
+                ConstValue::List(_) => QueryEncoder::List.encode(key, value),
+                _ => QueryEncoder::Single.encode(key, value),
+            }
         } else {
-            QueryEncoder::Single
+            QueryEncoder::Single.encode(key, value)
         }
     }
+}
 
+impl QueryEncoder {
     pub fn encode<K, V>(&self, key: K, values: V) -> String
     where
         K: AsRef<str>,
@@ -39,18 +52,6 @@ impl QueryEncoder {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_detect_list_variant() {
-        let encoder = QueryEncoder::detect(true);
-        assert!(matches!(encoder, QueryEncoder::List));
-    }
-
-    #[test]
-    fn test_detect_single_variant() {
-        let encoder = QueryEncoder::detect(false);
-        assert!(matches!(encoder, QueryEncoder::Single));
-    }
 
     #[test]
     fn test_encode_repeated() {

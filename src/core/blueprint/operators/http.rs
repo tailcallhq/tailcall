@@ -11,7 +11,6 @@ use crate::core::{config, helpers};
 pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &config::Http,
-    field: &config::Field,
 ) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.group_by.is_empty() && http.method != Method::GET)
@@ -40,13 +39,7 @@ pub fn compile_http(
                 .query
                 .clone()
                 .iter()
-                .map(|key_value| {
-                    let mut is_list_type = false;
-                    if let Some(arg) = field.args.get(&key_value.key) {
-                        is_list_type = arg.list;
-                    }
-                    (key_value.key.clone(), key_value.value.clone(), is_list_type)
-                })
+                .map(|key_value| (key_value.key.clone(), key_value.value.clone()))
                 .collect();
 
             RequestTemplate::try_from(
@@ -90,7 +83,7 @@ pub fn update_http<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_module, http, field)
+            compile_http(config_module, http)
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field

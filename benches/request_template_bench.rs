@@ -6,7 +6,7 @@ use hyper::HeaderMap;
 use serde_json::json;
 use tailcall::core::endpoint::Endpoint;
 use tailcall::core::has_headers::HasHeaders;
-use tailcall::core::http::RequestTemplate;
+use tailcall::core::http::{Encoder, QueryEncoder, RequestTemplate};
 use tailcall::core::path::PathString;
 
 #[derive(Setters)]
@@ -20,6 +20,13 @@ impl Default for Context {
         Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
     }
 }
+
+impl Encoder for Context {
+    fn encode<T: AsRef<str>>(&self, key: T, value: T) -> String {
+        QueryEncoder::default().encode(key, value)
+    }
+}
+
 impl PathString for Context {
     fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
         self.value.path_string(parts)

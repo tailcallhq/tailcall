@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
@@ -8,11 +7,11 @@ use reqwest::header::HeaderValue;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
+use super::query_encoder::Encoder;
 use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
-use crate::core::http::query_encoder::QueryEncoder;
 use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
@@ -24,7 +23,7 @@ use crate::core::path::PathString;
 #[derive(Setters, Debug, Clone)]
 pub struct RequestTemplate {
     pub root_url: Mustache,
-    pub query: BTreeMap<String, Query>,
+    pub query: Vec<(String, Mustache)>,
     pub method: reqwest::Method,
     pub headers: MustacheHeaders,
     pub body_path: Option<Mustache>,
@@ -32,23 +31,16 @@ pub struct RequestTemplate {
     pub encoding: Encoding,
 }
 
-/// store some details about query to help the encode the query correctly.
-#[derive(Debug, Clone)]
-pub struct Query {
-    pub mustache: Mustache,
-    list_type: bool,
-}
-
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
-    fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+    fn create_url<C: PathString + Encoder>(&self, ctx: &C) -> anyhow::Result<Url> {
         let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
         }
         let extra_qp = self.query.iter().filter_map(|(k, v)| {
-            let value = v.mustache.render(ctx);
+            let value = v.render(ctx);
             if value.is_empty() {
                 None
             } else {
@@ -62,13 +54,7 @@ impl RequestTemplate {
 
         let qp_string = base_qp
             .chain(extra_qp)
-            .map(|(k, v)| {
-                if let Some(_arg) = self.query.get(k.as_ref()) {
-                    QueryEncoder::detect(_arg.list_type).encode(k, &v)
-                } else {
-                    QueryEncoder::default().encode(k, &v)
-                }
-            })
+            .map(|(k, v)| ctx.encode(&k, &v))
             .fold("".to_string(), |str, item| {
                 if str.is_empty() {
                     item
@@ -91,7 +77,7 @@ impl RequestTemplate {
     pub fn is_const(&self) -> bool {
         self.root_url.is_const()
             && self.body_path.as_ref().map_or(true, Mustache::is_const)
-            && self.query.iter().all(|(_, v)| v.mustache.is_const())
+            && self.query.iter().all(|(_, v)| v.is_const())
             && self.headers.iter().all(|(_, v)| v.is_const())
     }
 
@@ -109,7 +95,7 @@ impl RequestTemplate {
     }
 
     /// Creates a Request for the given context
-    pub fn to_request<C: PathString + HasHeaders>(
+    pub fn to_request<C: PathString + HasHeaders + Encoder>(
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
@@ -212,13 +198,8 @@ impl TryFrom<Endpoint> for RequestTemplate {
         let query = endpoint
             .query
             .iter()
-            .map(|(k, v, l)| {
-                Ok((
-                    k.to_owned(),
-                    Query { mustache: Mustache::parse(v)?, list_type: *l },
-                ))
-            })
-            .collect::<anyhow::Result<BTreeMap<_, _>>>()?;
+            .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v)?)))
+            .collect::<anyhow::Result<Vec<_>>>()?;
 
         let method = endpoint.method.clone().to_hyper();
         let headers = endpoint
@@ -246,7 +227,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
     }
 }
 
-impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: PathString + HasHeaders + Encoder> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> Option<IoId> {
         let mut hasher = TailcallHasher::default();
         let state = &mut hasher;
@@ -279,6 +260,7 @@ mod tests {
     use std::borrow::Cow;
     use std::collections::BTreeMap;
 
+    use async_graphql_value::Value;
     use derive_setters::Setters;
     use hyper::header::HeaderName;
     use hyper::HeaderMap;
@@ -287,7 +269,7 @@ mod tests {
 
     use super::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
-    use crate::core::http::request_template::Query;
+    use crate::core::http::query_encoder::{Encoder, QueryEncoder};
     use crate::core::mustache::Mustache;
     use crate::core::path::PathString;
 
@@ -295,11 +277,29 @@ mod tests {
     struct Context {
         pub value: serde_json::Value,
         pub headers: HeaderMap,
+        pub query: BTreeMap<String, Value>,
     }
 
     impl Default for Context {
         fn default() -> Self {
-            Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
+            Self {
+                value: serde_json::Value::Null,
+                headers: HeaderMap::new(),
+                query: BTreeMap::default(),
+            }
+        }
+    }
+
+    impl Encoder for Context {
+        fn encode<T: AsRef<str>>(&self, key: T, value: T) -> String {
+            if let Some(arg) = self.query.get(key.as_ref()) {
+                match *arg {
+                    Value::List(_) => QueryEncoder::List.encode(key, value),
+                    _ => QueryEncoder::Single.encode(key, value),
+                }
+            } else {
+                QueryEncoder::Single.encode(key, value)
+            }
         }
     }
 
@@ -316,7 +316,7 @@ mod tests {
     }
 
     impl RequestTemplate {
-        fn to_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
+        fn to_body<C: PathString + HasHeaders + Encoder>(&self, ctx: &C) -> anyhow::Result<String> {
             let body = self
                 .to_request(ctx)?
                 .body()
@@ -377,19 +377,11 @@ mod tests {
 
     #[test]
     fn test_url_query_params() {
-        let mut query = BTreeMap::new();
-        query.insert(
-            "foo".to_string(),
-            Query { mustache: Mustache::parse("0").unwrap(), list_type: false },
-        );
-        query.insert(
-            "bar".to_string(),
-            Query { mustache: Mustache::parse("1").unwrap(), list_type: false },
-        );
-        query.insert(
-            "baz".to_string(),
-            Query { mustache: Mustache::parse("2").unwrap(), list_type: false },
-        );
+        let query = vec![
+            ("foo".to_string(), Mustache::parse("0").unwrap()),
+            ("bar".to_string(), Mustache::parse("1").unwrap()),
+            ("baz".to_string(), Mustache::parse("2").unwrap()),
+        ];
 
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
@@ -399,32 +391,17 @@ mod tests {
         println!("[Finder]: {:#?}", req.url().to_string());
         assert_eq!(
             req.url().to_string(),
-            "http://localhost:3000/?bar=1&baz=2&foo=0"
+            "http://localhost:3000/?foo=0&bar=1&baz=2"
         );
     }
 
     #[test]
     fn test_url_query_params_template() {
-        let mut query = BTreeMap::new();
-        query.insert(
-            "foo".to_string(),
-            Query { mustache: Mustache::parse("0").unwrap(), list_type: false },
-        );
-        query.insert(
-            "bar".to_string(),
-            Query {
-                mustache: Mustache::parse("{{bar.id}}").unwrap(),
-                list_type: false,
-            },
-        );
-        query.insert(
-            "baz".to_string(),
-            Query {
-                mustache: Mustache::parse("{{baz.id}}").unwrap(),
-                list_type: false,
-            },
-        );
-
+        let query = vec![
+            ("foo".to_string(), Mustache::parse("0").unwrap()),
+            ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
+            ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
+        ];
         let tmpl = RequestTemplate::new("http://localhost:3000/")
             .unwrap()
             .query(query);
@@ -439,7 +416,7 @@ mod tests {
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
             req.url().to_string(),
-            "http://localhost:3000/?bar=1&baz=2&foo=0"
+            "http://localhost:3000/?foo=0&bar=1&baz=2"
         );
     }
 
@@ -613,7 +590,7 @@ mod tests {
                 "http://localhost:3000/{{foo.bar}}".to_string(),
             )
             .method(crate::core::http::Method::POST)
-            .query(vec![("foo".to_string(), "{{foo.bar}}".to_string(), false)])
+            .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
             .headers(headers)
             .body(Some("{{foo.bar}}".into()));
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
@@ -648,8 +625,8 @@ mod tests {
                 "http://localhost:3000/?a={{args.a}}&q=1".to_string(),
             )
             .query(vec![
-                ("b".to_string(), "1".to_string(), false),
-                ("c".to_string(), "{{args.c}}".to_string(), false),
+                ("b".to_string(), "1".to_string()),
+                ("c".to_string(), "{{args.c}}".to_string()),
             ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
@@ -682,8 +659,8 @@ mod tests {
                 "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
             )
                 .query(vec![
-                    ("e".to_string(), "{{args.e}}".to_string(), false),
-                    ("f".to_string(), "{{args.f}}".to_string(), false),
+                    ("e".to_string(), "{{args.e}}".to_string()),
+                    ("f".to_string(), "{{args.f}}".to_string()),
                 ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default().value(json!({
