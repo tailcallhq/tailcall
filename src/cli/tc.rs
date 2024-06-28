@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::path::Path;
 
 use anyhow::Result;
@@ -8,6 +8,7 @@ use dotenvy::dotenv;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
+use tailcall_macros::MergeRight;
 
 use super::command::{Cli, Command};
 use super::generator::Generator;
@@ -20,6 +21,7 @@ use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
 use crate::core::config::{Config, Expr, Field, RootSchema, Source, Type};
 use crate::core::http::API_URL_PREFIX;
+use crate::core::merge_right::MergeRight;
 use crate::core::print_schema;
 use crate::core::rest::{EndpointSet, Unchecked};
 use crate::core::runtime::TargetRuntime;
@@ -28,11 +30,20 @@ const FILE_NAME: &str = ".tailcallrc.graphql";
 const YML_FILE_NAME: &str = ".graphqlrc.yml";
 const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
-#[derive(Serialize, Deserialize)]
-pub struct GraphQLRC {
-    schema: Vec<String>,
-    #[serde(flatten)]
-    extra: HashMap<String, Value>,
+#[derive(Default, Deserialize, MergeRight, Serialize)]
+struct GraphQLRC {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    schema: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    documents: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    extensions: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    include: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    exclude: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    projects: Option<Value>,
 }
 
 lazy_static! {
@@ -103,25 +114,30 @@ pub async fn run() -> Result<()> {
     }
 }
 
+fn default_graphqlrc() -> GraphQLRC {
+    GraphQLRC {
+        schema: Some(Value::Sequence(vec!["./.tailcallrc.graphql".into()])),
+        ..Default::default()
+    }
+}
+
 async fn confirm_and_write_yml(
     runtime: TargetRuntime,
     yml_file_path: impl AsRef<Path>,
 ) -> Result<()> {
-    let schema_entry = "./.tailcallrc.graphql".to_string();
     let yml_file_path = yml_file_path.as_ref().display().to_string();
+
+    let mut final_graphqlrc = default_graphqlrc();
 
     match runtime.file.read(yml_file_path.as_ref()).await {
         Ok(yml_content) => {
-            let mut graphqlrc: GraphQLRC = serde_yaml::from_str(&yml_content)?;
-            if !graphqlrc.schema.contains(&schema_entry) {
-                graphqlrc.schema.push(schema_entry);
-            }
-            let content = serde_yaml::to_string(&graphqlrc)?;
+            let graphqlrc: GraphQLRC = serde_yaml::from_str(&yml_content)?;
+            final_graphqlrc = graphqlrc.merge_right(final_graphqlrc);
+            let content = serde_yaml::to_string(&final_graphqlrc)?;
             confirm_and_write(runtime.clone(), &yml_file_path, content.as_bytes()).await
         }
         Err(_) => {
-            let graphqlrc = GraphQLRC { schema: vec![schema_entry], extra: HashMap::new() };
-            let content = serde_yaml::to_string(&graphqlrc)?;
+            let content = serde_yaml::to_string(&final_graphqlrc)?;
             runtime.file.write(&yml_file_path, content.as_bytes()).await
         }
     }
