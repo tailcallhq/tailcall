@@ -103,9 +103,8 @@ jobs:
             darwin-arm64,
             darwin-x64,
             win32-x64-msvc,
-            win32-x64-gnu,
             win32-arm64-msvc,
-            win32-ia32-gnu,
+            win32-ia32-msvc,
           ]
         include:
           - build: linux-x64-gnu
@@ -139,15 +138,12 @@ jobs:
           - build: win32-x64-msvc
             os: windows-latest
 
-          - build: win32-x64-gnu
-            os: windows-latest
-
           - build: win32-arm64-msvc
             os: windows-latest
 
-          - build: win32-ia32-gnu
-            os: ubuntu-latest
-            target: i686-pc-windows-gnu
+          - build: win32-ia32-msvc
+            os: windows-latest
+            target: i686-pc-windows-msvc
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
@@ -271,9 +267,8 @@ jobs:
             darwin-arm64,
             darwin-x64,
             win32-x64-msvc,
-            win32-x64-gnu,
             win32-arm64-msvc,
-            win32-ia32-gnu,
+            win32-ia32-msvc,
           ]
         include:
           - build: linux-x64-gnu
@@ -329,13 +324,6 @@ jobs:
             libc: msvc
             ext: ".exe"
 
-          - build: win32-x64-gnu
-            os: windows-latest
-            rust: stable
-            target: x86_64-pc-windows-gnu
-            libc: glibc
-            ext: ".exe"
-
           - build: win32-arm64-msvc
             os: windows-latest
             rust: stable
@@ -344,10 +332,10 @@ jobs:
             libc: msvc
             ext: ".exe"
 
-          - build: win32-ia32-gnu
+          - build: win32-ia32-mscv
             os: ubuntu-latest
             rust: stable
-            target: i686-pc-windows-gnu
+            target: i686-pc-windows-msvc
             features: --no-default-features --features cli
             cross: true
             libc: glibc
