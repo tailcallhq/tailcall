@@ -329,6 +329,34 @@ mod tests {
     }
 
     #[test]
+    fn test_query_list_args() {
+        let query = vec![("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap())];
+
+        let tmpl = RequestTemplate::new("http://localhost:3000/")
+            .unwrap()
+            .query(query);
+
+        let mut query = BTreeMap::default();
+        query.insert("baz".to_owned(), Value::List(vec![]));
+
+        let ctx = Context::default()
+            .value(json!({
+              "baz": {
+                "id": "[1,2,3]"
+              }
+            }))
+            .query(query);
+        let req = tmpl.to_request(&ctx).unwrap();
+
+        println!("[Finder]: req : {:#?}", req.url().to_string());
+
+        assert_eq!(
+            req.url().to_string(),
+            "http://localhost:3000/?baz=1&baz=2&baz=3"
+        );
+    }
+
+    #[test]
     fn test_url() {
         let tmpl = RequestTemplate::new("http://localhost:3000/").unwrap();
         let ctx = Context::default();
