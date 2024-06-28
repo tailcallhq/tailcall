@@ -8,7 +8,9 @@ use async_graphql::futures_util::future::join_all;
 
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::error::graphql;
 use crate::core::http::{DataLoaderRequest, Response};
+use crate::core::ir::Error;
 use crate::core::runtime::TargetRuntime;
 
 pub struct GraphqlDataLoader {
@@ -34,7 +36,7 @@ impl GraphqlDataLoader {
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     type Value = Response<async_graphql::Value>;
-    type Error = Arc<anyhow::Error>;
+    type Error = Arc<Error>;
 
     #[allow(clippy::mutable_key_type)]
     async fn load(
@@ -43,7 +45,13 @@ impl Loader<DataLoaderRequest> for GraphqlDataLoader {
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if self.batch {
             let batched_req = create_batched_request(keys);
-            let result = self.runtime.http.execute(batched_req).await?.to_json();
+            let result = self
+                .runtime
+                .http
+                .execute(batched_req)
+                .await?
+                .to_json()
+                .map_err(graphql::Error::from);
             let hashmap = extract_responses(result, keys);
             Ok(hashmap)
         } else {
@@ -92,7 +100,7 @@ fn create_batched_request(dataloader_requests: &[DataLoaderRequest]) -> reqwest:
 
 #[allow(clippy::mutable_key_type)]
 fn extract_responses(
-    result: Result<Response<async_graphql::Value>, anyhow::Error>,
+    result: Result<Response<async_graphql::Value>, graphql::Error>,
     keys: &[DataLoaderRequest],
 ) -> HashMap<DataLoaderRequest, Response<async_graphql::Value>> {
     let mut hashmap = HashMap::new();

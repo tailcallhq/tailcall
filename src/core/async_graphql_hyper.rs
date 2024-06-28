@@ -1,7 +1,6 @@
 use std::any::Any;
 use std::hash::{Hash, Hasher};
 
-use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
 use async_graphql::{BatchResponse, Executor, Value};
 use headers::HeaderMap;
@@ -13,6 +12,8 @@ use tailcall_hasher::TailcallHasher;
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub struct OperationId(u64);
+
+use crate::core::error::Error;
 
 #[async_trait::async_trait]
 pub trait GraphQLRequestLike: Hash + Send {
@@ -173,7 +174,7 @@ static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
-    fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
+    fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>, Error> {
         let mut response = Response::builder()
             .status(status)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
@@ -191,11 +192,11 @@ impl GraphQLResponse {
         Ok(response)
     }
 
-    fn default_body(&self) -> Result<Body> {
+    fn default_body(&self) -> Result<Body, Error> {
         Ok(Body::from(serde_json::to_string(&self.0)?))
     }
 
-    pub fn into_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_response(self) -> Result<Response<hyper::Body>, Error> {
         self.build_response(StatusCode::OK, self.default_body()?)
     }
 
@@ -209,7 +210,7 @@ impl GraphQLResponse {
     /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
     /// Differs as `to_response` by flattening the response's data
     /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
-    pub fn into_rest_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_rest_response(self) -> Result<Response<hyper::Body>, Error> {
         if !self.0.is_ok() {
             return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?);
         }

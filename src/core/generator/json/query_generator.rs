@@ -47,11 +47,12 @@ mod test {
     use url::Url;
 
     use super::QueryGenerator;
+    use crate::core::error::Error;
     use crate::core::generator::json::types_generator::OperationGenerator;
     use crate::core::valid::Validator;
 
     #[test]
-    fn test_list_json_query_generator() -> anyhow::Result<()> {
+    fn test_list_json_query_generator() -> Result<(), Error> {
         let url = Url::parse("http://example.com/path").unwrap();
         let query_generator = QueryGenerator::new(true, &url, "Query", "f1");
         let config = query_generator
@@ -62,7 +63,7 @@ mod test {
     }
 
     #[test]
-    fn test_query_generator() -> anyhow::Result<()> {
+    fn test_query_generator() -> Result<(), Error> {
         let url = Url::parse("http://example.com/path").unwrap();
         let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
         let config = query_generator
@@ -73,7 +74,7 @@ mod test {
     }
 
     #[test]
-    fn test_query_generator_with_query_params() -> anyhow::Result<()> {
+    fn test_query_generator_with_query_params() -> Result<(), Error> {
         let url = Url::parse("http://example.com/path?q=12&is_verified=true").unwrap();
         let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
         let config = query_generator
@@ -84,7 +85,7 @@ mod test {
     }
 
     #[test]
-    fn test_query_generator_with_path_variables() -> anyhow::Result<()> {
+    fn test_query_generator_with_path_variables() -> Result<(), Error> {
         let url = Url::parse("http://example.com/users/12").unwrap();
         let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
         let config = query_generator

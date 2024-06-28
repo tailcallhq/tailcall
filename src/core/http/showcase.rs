@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
 use async_graphql::ServerError;
 use hyper::{Body, Request, Response};
 use serde::de::DeserializeOwned;
@@ -10,6 +9,7 @@ use super::AppContext;
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
+use crate::core::error::Error;
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
 
@@ -17,7 +17,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     req: &Request<Body>,
     runtime: TargetRuntime,
     enable_fs: bool,
-) -> Result<Result<AppContext, Response<Body>>> {
+) -> Result<Result<AppContext, Response<Body>>, Error> {
     let config_url = req
         .uri()
         .query()

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use anyhow::{anyhow, Error, Result};
 use async_graphql::dynamic::Schema;
 
+use super::{Error, Result};
 use crate::core::async_graphql_hyper::{GraphQLRequest, GraphQLRequestLike};
 use crate::core::blueprint::{Blueprint, SchemaModifiers};
 use crate::core::http::RequestContext;
@@ -25,7 +25,7 @@ impl OperationQuery {
             .await
             .errors
             .iter()
-            .map(|v| anyhow!("{}", v.message.clone()))
+            .map(|v| Error::ServerError(v.message.clone()))
             .collect()
     }
 }

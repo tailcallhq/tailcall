@@ -2,6 +2,6 @@
 
 pub mod config;
 mod generator;
-mod source;
+pub mod source;
 
 pub use generator::Generator;

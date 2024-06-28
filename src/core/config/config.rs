@@ -2,7 +2,6 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
-use anyhow::Result;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -12,6 +11,7 @@ use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
 use crate::core::config::source::Source;
 use crate::core::directive::DirectiveCodec;
+use crate::core::error::Error;
 use crate::core::http::Method;
 use crate::core::json::JsonSchema;
 use crate::core::macros::MergeRight;
@@ -682,11 +682,11 @@ impl Config {
         self.enums.get(name)
     }
 
-    pub fn to_yaml(&self) -> Result<String> {
+    pub fn to_yaml(&self) -> Result<String, Error> {
         Ok(serde_yaml::to_string(self)?)
     }
 
-    pub fn to_json(&self, pretty: bool) -> Result<String> {
+    pub fn to_json(&self, pretty: bool) -> Result<String, Error> {
         if pretty {
             Ok(serde_json::to_string_pretty(self)?)
         } else {
@@ -719,11 +719,11 @@ impl Config {
             || self.enums.contains_key(name)
     }
 
-    pub fn from_json(json: &str) -> Result<Self> {
+    pub fn from_json(json: &str) -> Result<Self, Error> {
         Ok(serde_json::from_str(json)?)
     }
 
-    pub fn from_yaml(yaml: &str) -> Result<Self> {
+    pub fn from_yaml(yaml: &str) -> Result<Self, Error> {
         Ok(serde_yaml::from_str(yaml)?)
     }
 
@@ -735,7 +735,7 @@ impl Config {
         }
     }
 
-    pub fn from_source(source: Source, schema: &str) -> Result<Self> {
+    pub fn from_source(source: Source, schema: &str) -> Result<Self, Error> {
         match source {
             Source::GraphQL => Ok(Config::from_sdl(schema).to_result()?),
             Source::Json => Ok(Config::from_json(schema)?),

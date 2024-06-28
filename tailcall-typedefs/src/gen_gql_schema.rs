@@ -2,13 +2,13 @@ use std::collections::{BTreeMap, HashSet};
 use std::fs::File;
 use std::io::Write;
 
-use anyhow::Result;
 use lazy_static::lazy_static;
 use schemars::schema::{
     ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
 use schemars::Map;
 use tailcall::core::config::Config;
+use tailcall::core::error::Error;
 use tailcall::core::scalar::CUSTOM_SCALARS;
 
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc.graphql";
@@ -553,7 +553,7 @@ fn write_all_directives(
     writer: &mut IndentedWriter<impl Write>,
     written_directives: &mut HashSet<String>,
     extra_it: &mut BTreeMap<String, ExtraTypes>,
-) -> Result<()> {
+) -> Result<(), Error> {
     let schema = schemars::schema_for!(Config);
 
     let defs: BTreeMap<String, Schema> = schema.definitions;
@@ -704,13 +704,13 @@ fn write_all_input_types(
     Ok(())
 }
 
-pub fn update_gql() -> Result<()> {
+pub fn update_gql() -> Result<(), Error> {
     let file = File::create(GRAPHQL_SCHEMA_FILE)?;
     generate_rc_file(file)?;
     Ok(())
 }
 
-fn generate_rc_file(file: File) -> Result<()> {
+fn generate_rc_file(file: File) -> Result<(), Error> {
     let mut file = IndentedWriter::new(file);
     let mut written_directives = HashSet::new();
 

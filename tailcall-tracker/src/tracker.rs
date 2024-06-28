@@ -1,5 +1,6 @@
 use reqwest::header::{HeaderName, HeaderValue};
 
+use super::Result;
 use crate::check_tracking::check_tracking;
 use crate::event::Event;
 
@@ -42,7 +43,7 @@ impl Tracker {
         }
     }
 
-    fn create_request(&self, event_name: &str) -> anyhow::Result<reqwest::Request> {
+    fn create_request(&self, event_name: &str) -> Result<reqwest::Request> {
         let event = Event::new(event_name);
         tracing::debug!("Sending event: {:?}", event);
         let mut url = reqwest::Url::parse(self.base_url.as_str())?;
@@ -61,7 +62,7 @@ impl Tracker {
         Ok(request)
     }
 
-    pub async fn dispatch(&'static self, name: &str) -> anyhow::Result<()> {
+    pub async fn dispatch(&'static self, name: &str) -> Result<()> {
         if self.is_tracking {
             let request = self.create_request(name)?;
             let client = reqwest::Client::new();

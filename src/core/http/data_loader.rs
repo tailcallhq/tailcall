@@ -9,7 +9,9 @@ use async_graphql_value::ConstValue;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::error::http;
 use crate::core::http::{DataLoaderRequest, Response};
+use crate::core::ir::Error;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
 
@@ -60,7 +62,7 @@ impl HttpDataLoader {
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for HttpDataLoader {
     type Value = Response<async_graphql::Value>;
-    type Error = Arc<anyhow::Error>;
+    type Error = Arc<Error>;
 
     async fn load(
         &self,
@@ -93,10 +95,9 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             for key in &keys {
                 let req = key.to_request();
                 let query_set: std::collections::HashMap<_, _> = req.url().query_pairs().collect();
-                let id = query_set.get(group_by.key()).ok_or(anyhow::anyhow!(
-                    "Unable to find key {} in query params",
-                    group_by.key()
-                ))?;
+                let id = query_set
+                    .get(group_by.key())
+                    .ok_or(http::Error::KeyNotFound(group_by.key().to_string()))?;
                 hashmap.insert(key.clone(), res.clone().body((self.body)(&body_value, id)));
             }
             Ok(hashmap)

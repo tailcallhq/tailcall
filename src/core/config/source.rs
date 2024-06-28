@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::Config;
+use crate::core::error::Error;
 use crate::core::valid::{ValidationError, Validator};
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
@@ -58,7 +59,7 @@ impl Source {
     }
 
     /// Encode the config to the given format
-    pub fn encode(&self, config: &Config) -> Result<String, anyhow::Error> {
+    pub fn encode(&self, config: &Config) -> Result<String, Error> {
         match self {
             Source::Yml => Ok(config.to_yaml()?),
             Source::GraphQL => Ok(config.to_sdl()),

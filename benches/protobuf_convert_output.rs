@@ -1,10 +1,10 @@
 use std::path::Path;
 
-use anyhow::Result;
 use criterion::{black_box, Criterion};
 use rand::{thread_rng, Fill};
 use serde_json::{json, Value};
 use tailcall::core::blueprint::GrpcMethod;
+use tailcall::core::error::Error;
 use tailcall::core::grpc::protobuf::ProtobufSet;
 
 const PROTO_DIR: &str = "benches/grpc";
@@ -13,7 +13,7 @@ const SERVICE_NAME: &str = "dummy.DummyService.GetDummy";
 const N: usize = 1000;
 const M: usize = 100;
 
-fn create_dummy_value(n: usize, m: usize) -> Result<Value> {
+fn create_dummy_value(n: usize, m: usize) -> Result<Value, Error> {
     let rng = &mut thread_rng();
     let mut ints = vec![0i32; n];
     let mut floats = vec![0f32; n];
@@ -26,7 +26,7 @@ fn create_dummy_value(n: usize, m: usize) -> Result<Value> {
 
             Ok(chars.into_iter().collect::<String>())
         })
-        .collect::<Result<_>>()?;
+        .collect::<Result<_, Error>>()?;
 
     ints.try_fill(rng)?;
     floats.try_fill(rng)?;

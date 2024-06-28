@@ -1,8 +1,8 @@
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use super::KeyValue;
 use crate::core::config::{Apollo, ConfigReaderContext};
+use crate::core::error::Error;
 use crate::core::helpers::headers::to_mustache_headers;
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
@@ -97,7 +97,7 @@ impl Telemetry {
         self
     }
 
-    pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> Result<()> {
+    pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> Result<(), Error> {
         match &mut self.export {
             Some(TelemetryExporter::Otlp(otlp)) => {
                 let url_tmpl = Mustache::parse(&otlp.url)?;

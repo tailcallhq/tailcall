@@ -1,7 +1,8 @@
 use std::sync::Arc;
+mod error;
 mod parser;
 mod prettier;
-use anyhow::Result;
+pub use error::{Error, Result};
 pub use parser::Parser;
 use prettier::Prettier;
 
@@ -15,10 +16,11 @@ pub async fn format<T: AsRef<str>>(source: T, parser: &Parser) -> Result<String>
 
 #[cfg(test)]
 mod tests {
+    use super::Result;
     use crate::{format, Parser};
 
     #[tokio::test]
-    async fn test_js() -> anyhow::Result<()> {
+    async fn test_js() -> Result<()> {
         let prettier = format("const x={a:3};", &Parser::Js).await?;
         assert_eq!("const x = {a: 3}\n", prettier);
         Ok(())

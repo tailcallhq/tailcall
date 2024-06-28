@@ -1,14 +1,13 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
-use anyhow::Result;
 use tokio::sync::oneshot::{self};
 
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
 use super::server_config::ServerConfig;
 use crate::cli::telemetry::init_opentelemetry;
-use crate::cli::CLIError;
+use crate::cli::Result;
 use crate::core::blueprint::{Blueprint, Http};
 use crate::core::config::ConfigModule;
 
@@ -32,7 +31,7 @@ impl Server {
 
     /// Starts the server in the current Runtime
     pub async fn start(self) -> Result<()> {
-        let blueprint = Blueprint::try_from(&self.config_module).map_err(CLIError::from)?;
+        let blueprint = Blueprint::try_from(&self.config_module)?;
         let endpoints = self.config_module.extensions().endpoint_set.clone();
         let server_config = Arc::new(ServerConfig::new(blueprint.clone(), endpoints).await?);
 

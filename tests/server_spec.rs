@@ -5,7 +5,6 @@ pub mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use anyhow::{anyhow, Result};
     use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
@@ -14,10 +13,11 @@ pub mod test {
     use tailcall::cli::javascript::init_worker_io;
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
+    use tailcall::core::error::file;
     use tailcall::core::http::Response;
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::worker::{Command, Event};
-    use tailcall::core::{EnvIO, FileIO, HttpIO};
+    use tailcall::core::{error, EnvIO, FileIO, HttpIO};
     use tailcall_http_cache::HttpCacheManager;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -73,7 +73,10 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+        async fn execute(
+            &self,
+            request: reqwest::Request,
+        ) -> Result<Response<Bytes>, error::http::Error> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?
@@ -95,20 +98,16 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl FileIO for TestFileIO {
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<(), file::Error> {
             let mut file = tokio::fs::File::create(path).await?;
-            file.write_all(content)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
+            file.write_all(content).await?;
             Ok(())
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+        async fn read<'a>(&'a self, path: &'a str) -> Result<String, file::Error> {
             let mut file = tokio::fs::File::open(path).await?;
             let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
+            file.read_to_end(&mut buffer).await?;
             Ok(String::from_utf8(buffer)?)
         }
     }
@@ -162,6 +161,7 @@ mod server_spec {
     use serde_json::json;
     use tailcall::cli::server::Server;
     use tailcall::core::config::reader::ConfigReader;
+    use tailcall::core::error::Error;
 
     async fn test_server(configs: &[&str], url: &str) {
         let runtime = crate::test::init(None);
@@ -194,7 +194,7 @@ mod server_spec {
             let url = url.to_owned();
             let query = query.clone();
 
-            let task: tokio::task::JoinHandle<Result<serde_json::Value, anyhow::Error>> =
+            let task: tokio::task::JoinHandle<Result<serde_json::Value, Error>> =
                 tokio::spawn(async move {
                     let response = client.post(url).json(&query).send().await?;
                     let response_body: serde_json::Value = response.json().await?;

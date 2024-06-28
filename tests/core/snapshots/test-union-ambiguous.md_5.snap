@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "IOException: Failed to find corresponding type for value",
+        "message": "Failed to find corresponding type for value",
         "locations": [
           {
             "line": 2,

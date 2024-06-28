@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 use std::fmt::Write;
 
-use anyhow::{bail, Result};
 use async_graphql::Value;
 use derive_more::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not};
 use indenter::indented;
 use indexmap::IndexMap;
 
 use crate::core::config::Type;
+use crate::core::error::Error;
 use crate::core::valid::{Cause, Valid, Validator};
 
 /// Represents the type name for the resolved value.
@@ -214,9 +214,9 @@ impl Discriminator {
         Valid::succeed(discriminator)
     }
 
-    pub fn resolve_type(&self, value: &Value) -> Result<TypeName> {
+    pub fn resolve_type(&self, value: &Value) -> Result<TypeName, Error> {
         if let Value::List(list) = value {
-            let results: Result<Vec<_>> = list
+            let results: Result<Vec<_>, Error> = list
                 .iter()
                 .map(|item| Ok(self.resolve_type_for_single(item)?.to_string()))
                 .collect();
@@ -229,9 +229,9 @@ impl Discriminator {
         }
     }
 
-    fn resolve_type_for_single(&self, value: &Value) -> Result<&str> {
+    fn resolve_type_for_single(&self, value: &Value) -> Result<&str, Error> {
         let Value::Object(obj) = value else {
-            bail!("Value expected to be object");
+            return Err(Error::ObjectExpected);
         };
 
         let mut possible_types = Repr::all_covered(self.types.len());
@@ -245,7 +245,7 @@ impl Discriminator {
 
             if possible_types.is_empty() {
                 // No possible types. Something is wrong with the resolved value.
-                bail!("Failed to find corresponding type for value")
+                return Err(Error::MissingTypeForValue);
             }
 
             if !possible_types.is_covering_multiple_types() {

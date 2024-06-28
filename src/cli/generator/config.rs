@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::core::config::{self};
+use crate::core::error::Error;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -124,7 +125,7 @@ pub struct Schema {
 }
 
 impl Output<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> Result<Output<Resolved>, Error> {
         Ok(Output {
             format: self.format,
             path: self.path.into_resolved(parent_dir),
@@ -133,7 +134,7 @@ impl Output<UnResolved> {
 }
 
 impl Source<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> Result<Source<Resolved>, Error> {
         match self {
             Source::Curl { src, field_name } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -152,7 +153,7 @@ impl Source<UnResolved> {
 }
 
 impl Input<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Input<Resolved>> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> Result<Input<Resolved>, Error> {
         let resolved_source = self.source.resolve(parent_dir)?;
         Ok(Input { source: resolved_source })
     }
@@ -160,14 +161,14 @@ impl Input<UnResolved> {
 
 impl Config {
     /// Resolves all the relative paths present inside the GeneratorConfig.
-    pub fn into_resolved(self, config_path: &str) -> anyhow::Result<Config<Resolved>> {
+    pub fn into_resolved(self, config_path: &str) -> Result<Config<Resolved>, Error> {
         let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
 
         let inputs = self
             .inputs
             .into_iter()
             .map(|input| input.resolve(parent_dir))
-            .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
+            .collect::<Result<Vec<Input<Resolved>>, Error>>()?;
 
         let output = self.output.resolve(parent_dir)?;
 

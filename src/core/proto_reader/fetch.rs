@@ -1,4 +1,3 @@
-use anyhow::{Context, Result};
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use hyper::header::HeaderName;
@@ -10,8 +9,9 @@ use serde_json::json;
 
 use crate::core::blueprint::GrpcMethod;
 use crate::core::config::ConfigReaderContext;
+use crate::core::error::Error;
 use crate::core::grpc::protobuf::ProtobufSet;
-use crate::core::grpc::RequestTemplate;
+use crate::core::grpc::{self, RequestTemplate};
 use crate::core::mustache::Mustache;
 use crate::core::runtime::TargetRuntime;
 
@@ -24,7 +24,7 @@ const REFLECTION_PROTO: &str = include_str!(concat!(
 ));
 
 /// This function is just used for better exception handling
-fn get_protobuf_set() -> Result<ProtobufSet> {
+fn get_protobuf_set() -> grpc::Result<ProtobufSet> {
     let descriptor = protox_parse::parse("reflection", REFLECTION_PROTO)?;
     let mut descriptor_set = FileDescriptorSet::default();
     descriptor_set.file.push(descriptor);
@@ -48,15 +48,15 @@ struct FileDescriptorProtoResponse {
 }
 
 impl FileDescriptorProtoResponse {
-    fn get(self) -> Result<Vec<u8>> {
+    fn get(self) -> Result<Vec<u8>, Error> {
         let file_descriptor_proto = self
             .file_descriptor_proto
             .first()
-            .context("Received empty fileDescriptorProto")?;
+            .ok_or_else(|| Error::EmptyFileDescriptorProto)?;
 
         BASE64_STANDARD
             .decode(file_descriptor_proto)
-            .context("Failed to decode fileDescriptorProto from BASE64")
+            .map_err(|_| Error::FileDescriptorProtoDecodeFailed)
     }
 }
 
@@ -88,13 +88,13 @@ impl GrpcReflection {
         }
     }
     /// Makes `ListService` request to the grpc reflection server
-    pub async fn list_all_files(&self) -> Result<Vec<String>> {
+    pub async fn list_all_files(&self) -> Result<Vec<String>, Error> {
         // Extracting names from services
         let methods: Vec<String> = self
             .execute(json!({"list_services": ""}))
             .await?
             .list_services_response
-            .context("Couldn't find definitions for service ServerReflection")?
+            .ok_or_else(|| Error::MissingServerReflectionDefinitions)?
             .service
             .iter()
             .map(|s| s.name.clone())
@@ -104,7 +104,7 @@ impl GrpcReflection {
     }
 
     /// Makes `Get Service` request to the grpc reflection server
-    pub async fn get_by_service(&self, service: &str) -> Result<FileDescriptorProto> {
+    pub async fn get_by_service(&self, service: &str) -> Result<FileDescriptorProto, Error> {
         let resp = self
             .execute(json!({"file_containing_symbol": service}))
             .await?;
@@ -112,7 +112,7 @@ impl GrpcReflection {
         request_proto(resp).await
     }
 
-    async fn execute(&self, body: serde_json::Value) -> Result<ReflectionResponse> {
+    async fn execute(&self, body: serde_json::Value) -> Result<ReflectionResponse, Error> {
         let server_reflection_method = &self.server_reflection_method;
         let protobuf_set = get_protobuf_set()?;
         let reflection_service = protobuf_set.find_service(server_reflection_method)?;
@@ -155,10 +155,10 @@ impl GrpcReflection {
 }
 
 /// For extracting `FileDescriptorProto` from `CustomResponse`
-async fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorProto> {
+async fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorProto, Error> {
     let file_descriptor_resp = response
         .file_descriptor_response
-        .context("Expected fileDescriptorResponse but found none")?;
+        .ok_or_else(|| Error::MissingFileDescriptorResponse)?;
     let file_descriptor_proto =
         FileDescriptorProto::decode(file_descriptor_resp.get()?.as_bytes())?;
 
@@ -169,9 +169,8 @@ async fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorPro
 mod grpc_fetch {
     use std::path::PathBuf;
 
-    use anyhow::Result;
-
     use super::*;
+    use crate::core::error::Error;
 
     fn get_fake_descriptor() -> Vec<u8> {
         let mut path = PathBuf::from(file!());
@@ -198,7 +197,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_resp_service() -> Result<()> {
+    async fn test_resp_service() -> Result<(), Error> {
         let server = start_mock_server();
 
         let http_reflection_file_mock = server.mock(|when, then| {
@@ -226,7 +225,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_resp_list_all() -> Result<()> {
+    async fn test_resp_list_all() -> Result<(), Error> {
         let server = start_mock_server();
 
         let http_reflection_list_all = server.mock(|when, then| {
@@ -258,7 +257,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_list_all_files_empty_response() -> Result<()> {
+    async fn test_list_all_files_empty_response() -> Result<(), Error> {
         let server = start_mock_server();
 
         let http_reflection_list_all_empty = server.mock(|when, then| {
@@ -286,7 +285,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_get_by_service_not_found() -> Result<()> {
+    async fn test_get_by_service_not_found() -> Result<(), Error> {
         let server = start_mock_server();
 
         let http_reflection_service_not_found = server.mock(|when, then| {

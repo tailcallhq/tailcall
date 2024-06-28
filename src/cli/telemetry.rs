@@ -1,6 +1,5 @@
 use std::io::Write;
 
-use anyhow::{anyhow, Result};
 use once_cell::sync::Lazy;
 use opentelemetry::logs::{LogError, LogResult};
 use opentelemetry::metrics::{MetricsError, Result as MetricsResult};
@@ -24,10 +23,11 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{Layer, Registry};
 
 use super::metrics::init_metrics;
-use crate::cli::CLIError;
+use super::{Error, Result};
 use crate::core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::core::runtime::TargetRuntime;
 use crate::core::tracing::{default_tracing_tailcall, get_log_level, tailcall_filter_target};
+use crate::core::Errata;
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     Resource::default().merge(&Resource::new(vec![
@@ -87,7 +87,7 @@ fn set_trace_provider(
             .install_batch(runtime::Tokio)?
             .provider()
             .ok_or(TraceError::Other(
-                anyhow!("Failed to instantiate OTLP provider").into(),
+                Error::TelemetryTrace("Failed to instantiate OTLP provider".to_string()).into(),
             ))?,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
@@ -190,7 +190,7 @@ fn set_tracing_subscriber(subscriber: impl Subscriber + Send + Sync) {
     let _ = tracing::subscriber::set_global_default(subscriber);
 }
 
-pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow::Result<()> {
+pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> Result<()> {
     if let Some(export) = &config.export {
         global::set_error_handler(|error| {
             if !matches!(
@@ -204,8 +204,8 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                     | global::Error::Log(LogError::Other(_)),
             ) {
                 tracing::subscriber::with_default(default_tracing_tailcall(), || {
-                    let cli = crate::cli::CLIError::new("Open Telemetry Error")
-                        .caused_by(vec![CLIError::new(error.to_string().as_str())])
+                    let cli = crate::core::Errata::new("Open Telemetry Error")
+                        .caused_by(vec![Errata::new(error.to_string().as_str())])
                         .trace(vec!["schema".to_string(), "@telemetry".to_string()]);
                     tracing::error!("{}", cli.color(true));
                 });

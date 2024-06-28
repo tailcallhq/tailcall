@@ -152,6 +152,7 @@ mod tests {
 
     use crate::core::config::transformer::AmbiguousType;
     use crate::core::config::{Config, Type};
+    use crate::core::error::Error;
     use crate::core::generator::{Generator, Input};
     use crate::core::proto_reader::ProtoMetadata;
     use crate::core::transform::Transform;
@@ -224,12 +225,12 @@ mod tests {
         assert_snapshot!(config.to_sdl());
     }
 
-    fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
+    fn compile_protobuf(files: &[&str]) -> Result<FileDescriptorSet, Error> {
         Ok(protox::compile(files, [protobuf::SELF])?)
     }
 
     #[tokio::test]
-    async fn test_resolve_ambiguous_news_types() -> anyhow::Result<()> {
+    async fn test_resolve_ambiguous_news_types() -> Result<(), Error> {
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let set = compile_protobuf(&[protobuf::NEWS])?;
 

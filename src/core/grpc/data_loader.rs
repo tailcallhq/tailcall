@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::Result;
 use async_graphql::async_trait;
 use async_graphql::futures_util::future::join_all;
 use async_graphql_value::ConstValue;
@@ -13,8 +12,10 @@ use super::request::execute_grpc_request;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::error::Error as CoreError;
 use crate::core::grpc::request::create_grpc_request;
 use crate::core::http::Response;
+use crate::core::ir::Error;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
 
@@ -35,11 +36,11 @@ impl GrpcDataLoader {
     async fn load_dedupe_only(
         &self,
         keys: &[DataLoaderRequest],
-    ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
+    ) -> Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>, Error> {
         let results = keys.iter().map(|key| async {
             let result = match key.to_request() {
                 Ok(req) => execute_grpc_request(&self.runtime, &self.operation, req).await,
-                Err(error) => Err(error),
+                Err(error) => Err(Error::from(error)),
             };
 
             // TODO: do we have to clone keys here? join_all seems like returns the results
@@ -62,11 +63,12 @@ impl GrpcDataLoader {
         &self,
         group_by: &GroupBy,
         keys: &[DataLoaderRequest],
-    ) -> Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
+    ) -> Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>, Error> {
         let inputs = keys.iter().map(|key| key.template.body.as_str());
         let (multiple_body, grouped_keys) = self
             .operation
-            .convert_multiple_inputs(inputs, group_by.key())?;
+            .convert_multiple_inputs(inputs, group_by.key())
+            .map_err(CoreError::Grpc)?;
 
         let first_request = keys[0].clone();
         let multiple_request = create_grpc_request(
@@ -101,7 +103,7 @@ impl GrpcDataLoader {
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for GrpcDataLoader {
     type Value = Response<async_graphql::Value>;
-    type Error = Arc<anyhow::Error>;
+    type Error = Arc<Error>;
 
     async fn load(
         &self,

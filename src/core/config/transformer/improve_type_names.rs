@@ -150,11 +150,11 @@ impl Transform for ImproveTypeNames {
 mod test {
     use std::fs;
 
-    use anyhow::Ok;
     use tailcall_fixtures::configs;
 
     use super::ImproveTypeNames;
     use crate::core::config::Config;
+    use crate::core::error::Error;
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
@@ -173,7 +173,7 @@ mod test {
     }
 
     #[test]
-    fn test_type_name_generator_with_cyclic_types() -> anyhow::Result<()> {
+    fn test_type_name_generator_with_cyclic_types() -> Result<(), Error> {
         let config = Config::from_sdl(read_fixture(configs::CYCLIC_CONFIG).as_str())
             .to_result()
             .unwrap();
@@ -185,7 +185,7 @@ mod test {
     }
 
     #[test]
-    fn test_type_name_generator() -> anyhow::Result<()> {
+    fn test_type_name_generator() -> Result<(), Error> {
         let config = Config::from_sdl(read_fixture(configs::NAME_GENERATION).as_str())
             .to_result()
             .unwrap();

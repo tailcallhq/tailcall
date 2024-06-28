@@ -281,6 +281,7 @@ mod tests {
     use tailcall_fixtures::protobuf;
 
     use crate::core::blueprint::GrpcMethod;
+    use crate::core::error::Error;
     use crate::core::grpc::protobuf::tests::get_proto_file;
     use crate::core::grpc::protobuf::ProtobufSet;
     use crate::core::json::JsonSchema;
@@ -398,7 +399,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_from_protobuf_conversion() -> anyhow::Result<()> {
+    async fn test_from_protobuf_conversion() -> Result<(), Error> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetNews").unwrap();
 
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;

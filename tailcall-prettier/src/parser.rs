@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use super::{Error, Result};
 
 #[derive(strum_macros::Display, Clone)]
 pub enum Parser {
@@ -15,7 +15,7 @@ impl Parser {
         let ext = path
             .split('.')
             .last()
-            .ok_or(anyhow!("No file extension found"))?
+            .ok_or(Error::FileExtensionNotFound)?
             .to_lowercase();
         match ext.as_str() {
             "gql" | "graphql" => Ok(Parser::Gql),
@@ -24,7 +24,7 @@ impl Parser {
             "md" => Ok(Parser::Md),
             "ts" => Ok(Parser::Ts),
             "js" => Ok(Parser::Js),
-            _ => Err(anyhow!("Unsupported file type")),
+            _ => Err(Error::UnsupportedFiletype),
         }
     }
 }

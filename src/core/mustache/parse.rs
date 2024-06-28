@@ -7,10 +7,11 @@ use nom::sequence::delimited;
 use nom::{Finish, IResult};
 
 use super::*;
+use crate::core::error::Error;
 
 impl Mustache {
     // TODO: infallible function, no need to return Result
-    pub fn parse(str: &str) -> anyhow::Result<Mustache> {
+    pub fn parse(str: &str) -> Result<Mustache, Error> {
         let result = parse_mustache(str).finish();
         match result {
             Ok((_, mustache)) => Ok(mustache),

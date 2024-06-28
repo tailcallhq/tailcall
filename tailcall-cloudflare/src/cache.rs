@@ -1,14 +1,11 @@
 use std::num::NonZeroU64;
 use std::rc::Rc;
 
-use anyhow::Result;
 use async_graphql_value::ConstValue;
 use serde_json::Value;
 use tailcall::core::ir::model::IoId;
-use tailcall::core::Cache;
+use tailcall::core::{error, Cache};
 use worker::kv::KvStore;
-
-use crate::to_anyhow;
 
 pub struct CloudflareChronoCache {
     env: Rc<worker::Env>,
@@ -22,8 +19,11 @@ impl CloudflareChronoCache {
     pub fn init(env: Rc<worker::Env>) -> Self {
         Self { env }
     }
-    fn get_kv(&self) -> Result<KvStore> {
-        self.env.kv("TMP_KV").map_err(to_anyhow)
+
+    fn get_kv(&self) -> Result<KvStore, error::cache::Error> {
+        self.env
+            .kv("TMP_KV")
+            .map_err(|e| error::cache::Error::Worker(e.to_string()))
     }
 }
 // TODO: Needs fix
@@ -31,33 +31,41 @@ impl CloudflareChronoCache {
 impl Cache for CloudflareChronoCache {
     type Key = IoId;
     type Value = ConstValue;
-    async fn set<'a>(&'a self, key: IoId, value: ConstValue, ttl: NonZeroU64) -> Result<()> {
+    async fn set<'a>(
+        &'a self,
+        key: IoId,
+        value: ConstValue,
+        ttl: NonZeroU64,
+    ) -> Result<(), error::cache::Error> {
         let kv_store = self.get_kv()?;
         let ttl = ttl.get();
         async_std::task::spawn_local(async move {
             kv_store
                 .put(&key.as_u64().to_string(), value.to_string())
-                .map_err(to_anyhow)?
+                .map_err(|e| error::cache::Error::Kv(e.to_string()))?
                 .expiration_ttl(ttl)
                 .execute()
                 .await
-                .map_err(to_anyhow)
+                .map_err(|e| error::cache::Error::Kv(e.to_string()))
         })
         .await
     }
 
-    async fn get<'a>(&'a self, key: &'a IoId) -> Result<Option<Self::Value>> {
+    async fn get<'a>(&'a self, key: &'a IoId) -> Result<Option<Self::Value>, error::cache::Error> {
         let kv_store = self.get_kv()?;
         let key = key.as_u64().to_string();
-        async_std::task::spawn_local(async move {
-            let val = kv_store
-                .get(&key)
-                .json::<Value>()
-                .await
-                .map_err(to_anyhow)?;
-            Ok(val.map(ConstValue::from_json).transpose()?)
-        })
-        .await
+        let result: Result<Option<ConstValue>, error::cache::Error> =
+            async_std::task::spawn_local(async move {
+                let val = kv_store
+                    .get(&key)
+                    .json::<Value>()
+                    .await
+                    .map_err(|e| error::cache::Error::Kv(e.to_string()))?;
+
+                Ok(val.map(ConstValue::from_json).transpose()?)
+            })
+            .await;
+        result
     }
 
     fn hit_rate(&self) -> Option<f64> {

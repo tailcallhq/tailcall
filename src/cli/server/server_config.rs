@@ -4,6 +4,7 @@ use std::sync::Arc;
 use async_graphql_extension_apollo_tracing::ApolloTracing;
 
 use crate::cli::runtime::init;
+use crate::cli::Result;
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::blueprint::{Blueprint, Http};
 use crate::core::http::AppContext;
@@ -16,10 +17,7 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub async fn new(
-        blueprint: Blueprint,
-        endpoints: EndpointSet<Unchecked>,
-    ) -> anyhow::Result<Self> {
+    pub async fn new(blueprint: Blueprint, endpoints: EndpointSet<Unchecked>) -> Result<Self> {
         let mut rt = init(&blueprint);
 
         let mut extensions = vec![];

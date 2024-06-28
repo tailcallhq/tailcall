@@ -10,7 +10,7 @@ use super::partial_request::PartialRequest;
 use super::path::{Path, Segment};
 use super::query_params::QueryParams;
 use super::type_map::TypeMap;
-use super::Request;
+use super::{Request, Result};
 use crate::core::async_graphql_hyper::GraphQLRequest;
 use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
@@ -38,7 +38,7 @@ impl Endpoint {
     pub fn get_path(&self) -> &Path {
         &self.path
     }
-    pub fn try_new(operations: &str) -> anyhow::Result<Vec<Self>> {
+    pub fn try_new(operations: &str) -> Result<Vec<Self>> {
         let doc = async_graphql::parser::parse_query(operations)?;
         let mut endpoints = Vec::new();
 
@@ -288,10 +288,11 @@ mod tests {
         use maplit::btreemap;
         use pretty_assertions::assert_eq;
 
+        use super::Result;
         use crate::core::rest::endpoint::tests::TEST_QUERY;
         use crate::core::rest::endpoint::Endpoint;
 
-        fn test_request(method: Method, uri: &str) -> anyhow::Result<hyper::Request<Body>> {
+        fn test_request(method: Method, uri: &str) -> Result<hyper::Request<Body>> {
             Ok(Request::builder()
                 .method(method)
                 .uri(Uri::from_str(uri)?)
