@@ -137,6 +137,7 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
 
+    use assert_eq;
     use tokio::join;
     use tokio::time::{sleep, timeout_at, Instant};
 
@@ -146,7 +147,7 @@ mod tests {
     async fn test_no_key() {
         let cache = Arc::new(Dedupe::<u64, u64>::new(1000, true));
         let actual = cache.dedupe(&1, || Box::pin(async { 1 })).await;
-        pretty_assertions::assert_eq!(actual, 1);
+        assert_eq!(actual, 1);
     }
 
     #[tokio::test]
@@ -155,7 +156,7 @@ mod tests {
         cache.dedupe(&1, || Box::pin(async { 1 })).await;
 
         let actual = cache.dedupe(&1, || Box::pin(async { 2 })).await;
-        pretty_assertions::assert_eq!(actual, 1);
+        assert_eq!(actual, 1);
     }
 
     #[tokio::test]
@@ -167,7 +168,7 @@ mod tests {
         }
 
         let actual = cache.dedupe(&1, || Box::pin(async { 2 })).await;
-        pretty_assertions::assert_eq!(actual, 0);
+        assert_eq!(actual, 0);
     }
 
     #[tokio::test]
@@ -188,7 +189,7 @@ mod tests {
         });
         let (a, b) = join!(a, b);
 
-        pretty_assertions::assert_eq!(a, b);
+        assert_eq!(a, b);
     }
 
     async fn compute_value(counter: Arc<AtomicUsize>) -> String {
@@ -253,7 +254,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_hanging_dropped_while_in_use() {
-        let cache = Arc::new(Dedupe::<u64, ()>::new(100, true));
+        let cache = Arc::new(Dedupe::<u64, u64>::new(100, true));
         let cache_1 = cache.clone();
         let cache_2 = cache.clone();
 
@@ -261,6 +262,7 @@ mod tests {
             cache_1
                 .dedupe(&1, move || async move {
                     sleep(Duration::from_millis(100)).await;
+                    100
                 })
                 .await
         });
@@ -269,6 +271,7 @@ mod tests {
             cache_2
                 .dedupe(&1, move || async move {
                     sleep(Duration::from_millis(100)).await;
+                    200
                 })
                 .await
         });
@@ -278,6 +281,7 @@ mod tests {
         // drop the first task
         task_1.abort();
 
-        task_2.await.unwrap();
+        let actual = task_2.await.unwrap();
+        assert_eq!(actual, 200)
     }
 }
