@@ -1,10 +1,8 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::HeaderMap;
 use url::Url;
 
 use crate::core::runtime::TargetRuntime;
@@ -16,28 +14,59 @@ pub struct FileRead {
     pub path: String,
 }
 
+/// Supported Resources by Resource Reader
+pub enum Resource {
+    RawPath(String),
+    Request(reqwest::Request),
+}
+
+impl From<reqwest::Request> for Resource {
+    fn from(val: reqwest::Request) -> Self {
+        Resource::Request(val)
+    }
+}
+
+impl From<&str> for Resource {
+    fn from(val: &str) -> Self {
+        Resource::RawPath(val.to_owned())
+    }
+}
+
+impl From<String> for Resource {
+    fn from(val: String) -> Self {
+        Resource::RawPath(val)
+    }
+}
+
+#[async_trait::async_trait]
+pub trait Reader {
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead>;
+}
+
 #[derive(Clone)]
 pub struct ResourceReader<A>(A);
 
 impl<A: Reader + Send + Sync> ResourceReader<A> {
-    /// Reads all the files in parallel
-    pub async fn read_files<T: ToString + Send + Sync>(
-        &self,
-        files: &[T],
-    ) -> anyhow::Result<Vec<FileRead>> {
-        let files = files.iter().map(|x| {
-            self.read_file(x.to_string())
-                .map_err(|e| e.context(x.to_string()))
-        });
-        let content = join_all(files)
-            .await
-            .into_iter()
-            .collect::<anyhow::Result<Vec<_>>>()?;
-        Ok(content)
+    pub async fn read_files<T>(&self, paths: &[T]) -> anyhow::Result<Vec<FileRead>>
+    where
+        T: Into<Resource> + Clone + Send,
+    {
+        let files = join_all(paths.iter().cloned().map(|path| {
+            let resource: Resource = path.into();
+            let resource_path = resource.to_string();
+            self.read_file(resource)
+                .map_err(|e| e.context(resource_path))
+        }))
+        .await;
+
+        files.into_iter().collect::<anyhow::Result<Vec<_>>>()
     }
 
-    pub async fn read_file<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
-        self.0.read(file).await
+    pub async fn read_file<T>(&self, path: T) -> anyhow::Result<FileRead>
+    where
+        T: Into<Resource> + Send,
+    {
+        self.0.read(path).await
     }
 }
 
@@ -45,19 +74,15 @@ impl ResourceReader<Cached> {
     pub fn cached(runtime: TargetRuntime) -> Self {
         ResourceReader(Cached::init(runtime))
     }
-
-    pub async fn get(
-        &self,
-        path: &str,
-        headers: Option<BTreeMap<String, String>>,
-    ) -> anyhow::Result<serde_json::Value> {
-        self.0.get(path, headers).await
-    }
 }
 
-#[async_trait::async_trait]
-pub trait Reader {
-    async fn read<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead>;
+impl std::fmt::Display for Resource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Resource::RawPath(file_path) => write!(f, "{}", file_path),
+            Resource::Request(request_path) => write!(f, "{}", request_path.url()),
+        }
+    }
 }
 
 /// Reads the files directly from the filesystem or from an HTTP URL
@@ -70,57 +95,45 @@ impl Direct {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self { runtime }
     }
-
-    // makes http request with passed headers.
-    pub async fn get<T: ToString + Send>(
-        &self,
-        path: T,
-        headers: Option<BTreeMap<String, String>>,
-    ) -> anyhow::Result<serde_json::Value> {
-        let url = Url::parse(&path.to_string())?;
-        let mut request = reqwest::Request::new(reqwest::Method::GET, url);
-
-        if let Some(headers_inner) = headers {
-            let mut header_map = HeaderMap::new();
-            for (key, value) in headers_inner {
-                let header_name = HeaderName::try_from(key)?;
-                let header_value = HeaderValue::try_from(value)?;
-                header_map.insert(header_name, header_value);
-            }
-            *request.headers_mut() = header_map;
-        }
-
-        let response = self.runtime.http.execute(request).await?;
-        let response: serde_json::Value = serde_json::from_slice(&response.body)?;
-        Ok(response)
-    }
 }
 
 #[async_trait::async_trait]
 impl Reader for Direct {
     /// Reads a file from the filesystem or from an HTTP URL
-    async fn read<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
-        // Is an HTTP URL
-        let content = if let Ok(url) = Url::parse(&file.to_string()) {
-            if url.scheme().starts_with("http") {
-                let response = self
-                    .runtime
-                    .http
-                    .execute(reqwest::Request::new(reqwest::Method::GET, url))
-                    .await?;
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+        let content = match file.into() {
+            Resource::RawPath(file_path) => {
+                // Is an HTTP URL
+                if let Ok(url) = Url::parse(&file_path) {
+                    if url.scheme().starts_with("http") {
+                        let response = self
+                            .runtime
+                            .http
+                            .execute(reqwest::Request::new(reqwest::Method::GET, url))
+                            .await?;
 
-                String::from_utf8(response.body.to_vec())?
-            } else {
-                // Is a file path on Windows
-
-                self.runtime.file.read(&file.to_string()).await?
+                        let content = String::from_utf8(response.body.to_vec())?;
+                        FileRead { path: file_path, content }
+                    } else {
+                        // Is a file path on Windows
+                        let content = self.runtime.file.read(&file_path).await?;
+                        FileRead { path: file_path, content }
+                    }
+                } else {
+                    // Is a file path
+                    let content = self.runtime.file.read(&file_path).await?;
+                    FileRead { path: file_path, content }
+                }
             }
-        } else {
-            // Is a file path
+            Resource::Request(request) => {
+                let request_url = request.url().to_string();
+                let response = self.runtime.http.execute(request).await?;
+                let content = String::from_utf8(response.body.to_vec())?;
 
-            self.runtime.file.read(&file.to_string()).await?
+                FileRead { path: request_url, content }
+            }
         };
-        Ok(FileRead { content, path: file.to_string() })
+        Ok(content)
     }
 }
 
@@ -136,41 +149,15 @@ impl Cached {
     pub fn init(runtime: TargetRuntime) -> Self {
         Self { direct: Direct::init(runtime), cache: Default::default() }
     }
-
-    pub async fn get<T: ToString + Send>(
-        &self,
-        path: T,
-        headers: Option<BTreeMap<String, String>>,
-    ) -> anyhow::Result<serde_json::Value> {
-        let content = self
-            .cache
-            .as_ref()
-            .lock()
-            .unwrap()
-            .get(&path.to_string())
-            .map(|v| v.to_owned());
-
-        let content = if let Some(content) = content {
-            serde_json::from_str(&content)?
-        } else {
-            let response = self.direct.get(path.to_string(), headers).await?;
-            self.cache
-                .as_ref()
-                .lock()
-                .unwrap()
-                .insert(path.to_string().to_owned(), response.to_string());
-            response
-        };
-        Ok(content)
-    }
 }
 
 #[async_trait::async_trait]
 impl Reader for Cached {
     /// Reads a file from the filesystem or from an HTTP URL with cache
-    async fn read<T: ToString + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead> {
         // check cache
-        let file_path = file.to_string();
+        let resource: Resource = file.into();
+        let file_path = resource.to_string();
         let content = self
             .cache
             .as_ref()
@@ -181,7 +168,7 @@ impl Reader for Cached {
         let content = if let Some(content) = content {
             content.to_owned()
         } else {
-            let file_read = self.direct.read(file.to_string()).await?;
+            let file_read = self.direct.read(resource).await?;
             self.cache
                 .as_ref()
                 .lock()

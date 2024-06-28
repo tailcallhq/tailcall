@@ -1,21 +1,23 @@
 use serde_json_borrow::{ObjectAsVec, Value};
 
+use super::ExecutionPlan;
 use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
 
 pub struct Synth<'a> {
-    operations: Vec<Field<Children>>,
+    selection: Vec<Field<Children>>,
     store: Store<Value<'a>>,
 }
 
 impl<'a> Synth<'a> {
-    pub fn new(operations: Vec<Field<Children>>, store: Store<Value<'a>>) -> Self {
-        Self { operations, store }
+    pub fn new(plan: ExecutionPlan, store: Store<Value<'a>>) -> Self {
+        Self { selection: plan.into_children(), store }
     }
+
     pub fn synthesize(&self) -> Value {
         let mut data = ObjectAsVec::default();
 
-        for child in self.operations.iter() {
+        for child in self.selection.iter() {
             let val = self.iter(child, None, None);
             data.insert(child.name.as_str(), val);
         }
@@ -226,7 +228,7 @@ mod tests {
                 store
             });
 
-        let synth = Synth::new(plan.into_children(), store);
+        let synth = Synth::new(plan, store);
         let val = synth.synthesize();
 
         serde_json::to_string_pretty(&val).unwrap()
