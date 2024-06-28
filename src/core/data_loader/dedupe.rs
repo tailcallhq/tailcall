@@ -63,7 +63,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                     Ok(value) => value,
                     Err(_) => {
                         // If we get an error that means the task with
-                        // owned tx (sender) was dropped i.e. there is no result in cache
+                        // owned tx (sender) was dropped.i.e. there is no result in cache
                         // and we can try another attempt because probably another
                         // task will do the execution
                         continue;
@@ -134,6 +134,7 @@ impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
 
@@ -283,5 +284,112 @@ mod tests {
 
         let actual = task_2.await.unwrap();
         assert_eq!(actual, 200)
+    }
+
+    #[tokio::test]
+    async fn test_should_not_abort_call_1() {
+        #[derive(Debug, PartialEq, Clone)]
+        struct Status {
+            // Set this in the first call
+            call_1: bool,
+
+            // Set this in the second call
+            call_2: bool,
+        }
+
+        let status = Arc::new(Mutex::new(Status { call_1: false, call_2: false }));
+
+        let cache = Arc::new(Dedupe::<u64, ()>::new(100, true));
+        let cache_1 = cache.clone();
+        let cache_2 = cache.clone();
+        let status_1 = status.clone();
+        let status_2 = status.clone();
+
+        // Task 1 completed in 100ms
+        let task_1 = tokio::spawn(async move {
+            cache_1
+                .dedupe(&1, move || async move {
+                    sleep(Duration::from_millis(100)).await;
+                    status_1.lock().unwrap().call_1 = true;
+                })
+                .await
+        });
+
+        // Task 2 completed in 200ms
+        let task_2 = tokio::spawn(async move {
+            cache_2
+                .dedupe(&1, move || async move {
+                    sleep(Duration::from_millis(200)).await;
+                    status_2.lock().unwrap().call_2 = true;
+                })
+                .await
+        });
+
+        // Wait for 10ms
+        sleep(Duration::from_millis(10)).await;
+
+        // drop the task_1
+        task_1.abort();
+
+        let _ = task_1.await;
+        let _ = task_2.await;
+
+        // Task 1 should still have completed because others are dependent on it.
+        let actual = status.lock().unwrap().deref().to_owned();
+        assert_eq!(actual, Status { call_1: true, call_2: false })
+    }
+
+    #[tokio::test]
+    async fn test_should_abort_all() {
+        #[derive(Debug, PartialEq, Clone)]
+        struct Status {
+            // Set this in the first call
+            call_1: bool,
+
+            // Set this in the second call
+            call_2: bool,
+        }
+
+        let status = Arc::new(Mutex::new(Status { call_1: false, call_2: false }));
+
+        let cache = Arc::new(Dedupe::<u64, ()>::new(100, true));
+        let cache_1 = cache.clone();
+        let cache_2 = cache.clone();
+        let status_1 = status.clone();
+        let status_2 = status.clone();
+
+        // Task 1 completed in 100ms
+        let task_1 = tokio::spawn(async move {
+            cache_1
+                .dedupe(&1, move || async move {
+                    sleep(Duration::from_millis(100)).await;
+                    status_1.lock().unwrap().call_1 = true;
+                })
+                .await
+        });
+
+        // Task 2 completed in 200ms
+        let task_2 = tokio::spawn(async move {
+            cache_2
+                .dedupe(&1, move || async move {
+                    sleep(Duration::from_millis(200)).await;
+                    status_2.lock().unwrap().call_2 = true;
+                })
+                .await
+        });
+
+        // Wait for 10ms
+        sleep(Duration::from_millis(10)).await;
+
+        // drop the task_1 & task_2
+        task_1.abort();
+        task_2.abort();
+
+        let _ = task_1.await;
+        let _ = task_2.await;
+
+        // No task should have completed
+        let actual = status.lock().unwrap().deref().to_owned();
+        assert_eq!(actual, Status { call_1: false, call_2: false })
     }
 }
