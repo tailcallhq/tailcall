@@ -142,11 +142,12 @@ jobs:
           - build: win32-arm64-msvc
             os: windows-latest
             target: aarch64-pc-windows-msvc
+            features: --no-default-features --features cli
 
           - build: win32-ia32-msvc
             os: windows-latest
             target: i686-pc-windows-msvc
-            features: --no-default-features --features cli
+
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/install-action@cargo-llvm-cov
