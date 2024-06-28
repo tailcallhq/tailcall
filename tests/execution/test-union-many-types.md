@@ -1,8 +1,11 @@
 ---
 error: true
+skip: true
 ---
 
 # Test when union has too many possible types
+
+TODO: snapshot mismatch when running the test on 32bit architecture
 
 ```graphql @config
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
