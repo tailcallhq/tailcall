@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   check_skip_ci:
-    name: Check Skip CI
+    name: Check Skip CIx
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
