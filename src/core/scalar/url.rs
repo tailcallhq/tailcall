@@ -1,11 +1,13 @@
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
+use tailcall_macros::DocumentDefinition;
 
 use crate::core::json::JsonLike;
 
 /// A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
-#[derive(JsonSchema, Default)]
+#[derive(JsonSchema, Default, DocumentDefinition)]
+#[doc_type("Scalar")]
 pub struct Url {
     #[allow(dead_code)]
     #[serde(rename = "Url")]

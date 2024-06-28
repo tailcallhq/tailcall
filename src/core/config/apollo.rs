@@ -1,10 +1,22 @@
 use serde::{Deserialize, Serialize};
+use tailcall_macros::DocumentDefinition;
 
 use crate::core::config::ConfigReaderContext;
 use crate::core::is_default;
 use crate::core::mustache::Mustache;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DocumentDefinition,
+)]
+#[doc_type("Input")]
 #[serde(rename_all = "camelCase")]
 pub struct Apollo {
     ///

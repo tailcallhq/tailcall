@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::ops::Deref;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use tailcall_macros::DocumentDefinition;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema)]
 pub struct KeyValues(pub BTreeMap<String, String>);
@@ -20,7 +21,18 @@ impl FromIterator<(String, String)> for KeyValues {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    schemars::JsonSchema,
+    DocumentDefinition,
+)]
+#[doc_type("Input")]
 pub struct KeyValue {
     pub key: String,
     pub value: String,

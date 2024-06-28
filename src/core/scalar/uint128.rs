@@ -1,9 +1,11 @@
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
+use tailcall_macros::DocumentDefinition;
 
 /// Represents unsigned integer type 128bit size as string
-#[derive(JsonSchema, Default)]
+#[derive(JsonSchema, Default, DocumentDefinition)]
+#[doc_type("Scalar")]
 pub struct UInt128(pub u128);
 
 impl super::Scalar for UInt128 {

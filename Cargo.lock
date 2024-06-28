@@ -5155,6 +5155,7 @@ dependencies = [
  "tailcall-macros",
  "tailcall-prettier",
  "tailcall-tracker",
+ "tailcall-typedefs-common",
  "tailcall-version",
  "temp-env",
  "tempfile",
@@ -5285,6 +5286,7 @@ name = "tailcall-typedefs"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-graphql-parser",
  "lazy_static",
  "schemars",
  "serde",
@@ -5292,6 +5294,15 @@ dependencies = [
  "tailcall",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "tailcall-typedefs-common"
+version = "0.1.0"
+dependencies = [
+ "async-graphql-parser",
+ "async-graphql-value",
+ "schemars",
 ]
 
 [[package]]

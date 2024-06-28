@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tailcall_macros::DocumentDefinition;
 
 use super::super::is_default;
 
@@ -29,7 +30,18 @@ pub enum LinkType {
 /// The @link directive allows you to import external resources, such as
 /// configuration – which will be merged into the config importing it –,
 /// or a .proto file – which will be later used by `@grpc` directive –.
-#[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug, Clone, schemars::JsonSchema)]
+#[derive(
+    Default,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    Debug,
+    Clone,
+    schemars::JsonSchema,
+    DocumentDefinition,
+)]
+#[doc_type("Directive")]
 #[serde(deny_unknown_fields)]
 pub struct Link {
     ///

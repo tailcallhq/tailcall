@@ -2,11 +2,13 @@ use async_graphql::validators::email;
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
+use tailcall_macros::DocumentDefinition;
 
 use crate::core::json::JsonLike;
 
 /// field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
-#[derive(JsonSchema, Default)]
+#[derive(JsonSchema, Default, DocumentDefinition)]
+#[doc_type("Scalar")]
 pub struct Email {
     #[allow(dead_code)]
     #[serde(rename = "Email")]

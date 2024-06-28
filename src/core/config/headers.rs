@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
+use tailcall_macros::DocumentDefinition;
 
 use crate::core::config::cors::Cors;
 use crate::core::config::KeyValue;
@@ -9,8 +10,18 @@ use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    DocumentDefinition,
 )]
+#[doc_type("Input")]
 #[serde(rename_all = "camelCase")]
 pub struct Headers {
     #[serde(default, skip_serializing_if = "is_default")]

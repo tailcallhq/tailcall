@@ -1,9 +1,11 @@
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
+use tailcall_macros::DocumentDefinition;
 
 /// Represents signed integer type 32bit size
-#[derive(JsonSchema, Default)]
+#[derive(JsonSchema, Default, DocumentDefinition)]
+#[doc_type("Scalar")]
 pub struct Int32(pub i32);
 
 impl super::Scalar for Int32 {

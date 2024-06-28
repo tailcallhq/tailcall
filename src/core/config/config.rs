@@ -6,6 +6,7 @@ use anyhow::Result;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall_macros::DocumentDefinition;
 
 use super::telemetry::Telemetry;
 use super::{ConfigModule, KeyValue, Link, Server, Upstream};
@@ -128,19 +129,40 @@ impl Type {
 }
 
 #[derive(
-    Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    DocumentDefinition,
 )]
 #[serde(deny_unknown_fields)]
 /// Used to represent an identifier for a type. Typically used via only by the
 /// configuration generators to provide additional information about the type.
+#[doc_type("Directive")]
 pub struct Tag {
     /// A unique identifier for the type.
     pub id: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    DocumentDefinition,
+)]
 /// The @cache operator enables caching for the query, field or type it is
 /// applied to.
+#[doc_type("DirectiveWithInput")]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct Cache {
@@ -150,8 +172,18 @@ pub struct Cache {
 }
 
 #[derive(
-    Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema, MergeRight,
+    Clone,
+    Debug,
+    Deserialize,
+    Serialize,
+    PartialEq,
+    Eq,
+    Default,
+    schemars::JsonSchema,
+    MergeRight,
+    DocumentDefinition,
 )]
+#[doc_type("Directive")]
 pub struct Protected {}
 
 #[derive(
@@ -175,9 +207,12 @@ pub struct RootSchema {
     pub subscription: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DocumentDefinition,
+)]
 #[serde(deny_unknown_fields)]
 /// Used to omit a field from public consumption.
+#[doc_type("Directive")]
 pub struct Omit {}
 
 ///
@@ -358,12 +393,18 @@ impl Field {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DocumentDefinition,
+)]
+#[doc_type("Directive")]
 pub struct JS {
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DocumentDefinition,
+)]
+#[doc_type("DirectiveWithInput")]
 #[serde(deny_unknown_fields)]
 pub struct Modify {
     #[serde(default, skip_serializing_if = "is_default")]
@@ -439,12 +480,25 @@ pub struct Variant {
     Ord,
     schemars::JsonSchema,
     MergeRight,
+    DocumentDefinition,
 )]
+#[doc_type("Directive")]
 pub struct Alias {
     pub options: BTreeSet<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DocumentDefinition,
+)]
+#[doc_type("DirectiveWithInput")]
 #[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///
@@ -518,7 +572,18 @@ pub struct Http {
 ///
 /// Provides the ability to refer to multiple fields in the Query or
 /// Mutation root.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DocumentDefinition,
+)]
+#[doc_type("Directive")]
 pub struct Call {
     /// Steps are composed together to form a call.
     /// If you have multiple steps, the output of the previous step is passed as
@@ -529,7 +594,18 @@ pub struct Call {
 ///
 /// Provides the ability to refer to a field defined in the root Query or
 /// Mutation.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DocumentDefinition,
+)]
+#[doc_type("Input")]
 pub struct Step {
     #[serde(default, skip_serializing_if = "is_default")]
     /// The name of the field on the `Query` type that you want to call.
@@ -544,7 +620,18 @@ pub struct Step {
     pub args: BTreeMap<String, Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DocumentDefinition,
+)]
+#[doc_type("DirectiveWithInput")]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 /// The @grpc operator indicates that a field or node is backed by a gRPC API.
@@ -580,7 +667,18 @@ pub struct Grpc {
     pub method: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DocumentDefinition,
+)]
+#[doc_type("DirectiveWithInput")]
 #[serde(deny_unknown_fields)]
 /// The @graphQL operator allows to specify GraphQL API server request to fetch
 /// data from.
@@ -633,7 +731,10 @@ impl Display for GraphQLOperationType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DocumentDefinition,
+)]
+#[doc_type("DirectiveWithInput")]
 #[serde(deny_unknown_fields)]
 /// The `@expr` operators allows you to specify an expression that can evaluate
 /// to a value. The expression can be a static value or built form a Mustache
@@ -642,7 +743,10 @@ pub struct Expr {
     pub body: Value,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DocumentDefinition,
+)]
+#[doc_type("Directive")]
 #[serde(deny_unknown_fields)]
 /// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 pub struct AddField {
