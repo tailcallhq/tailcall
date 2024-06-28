@@ -348,8 +348,6 @@ mod tests {
             .query(query);
         let req = tmpl.to_request(&ctx).unwrap();
 
-        println!("[Finder]: req : {:#?}", req.url().to_string());
-
         assert_eq!(
             req.url().to_string(),
             "http://localhost:3000/?baz=1&baz=2&baz=3"
