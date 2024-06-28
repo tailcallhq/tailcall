@@ -34,10 +34,10 @@ enum State<Value> {
 
 /// Represents the next steps
 enum Step<Value> {
-    /// The operation has been executed and the result is available.
+    /// The operation has been executed and the result must be returned.
     Return(Value),
 
-    /// The operation is in progress and the result will be sent via the
+    /// The operation is in progress and the result must be awaited on the
     /// receiver.
     Await(broadcast::Receiver<Value>),
 
@@ -224,8 +224,9 @@ mod tests {
             sleep(Duration::from_millis(100)).await;
         });
 
-        // drops the future since the underlying sleep timeout is higher than the timeout
-        // here
+        // drops the task since the underlying sleep timeout is higher than the
+        // timeout here
+
         timeout_at(Instant::now() + Duration::from_millis(10), task)
             .await
             .expect_err("Should throw timeout error");
@@ -240,19 +241,19 @@ mod tests {
     #[tokio::test]
     async fn test_hanging_dropped_while_in_use() {
         let cache = Arc::new(Dedupe::<u64, ()>::new(100, true));
+        let cache_1 = cache.clone();
+        let cache_2 = cache.clone();
 
-        let first_cache = cache.clone();
-        let first = tokio::spawn(async move {
-            first_cache
+        let task_1 = tokio::spawn(async move {
+            cache_1
                 .dedupe(&1, move || async move {
                     sleep(Duration::from_millis(100)).await;
                 })
                 .await
         });
 
-        let second_cache = cache.clone();
-        let second = tokio::spawn(async move {
-            second_cache
+        let task_2 = tokio::spawn(async move {
+            cache_2
                 .dedupe(&1, move || async move {
                     sleep(Duration::from_millis(100)).await;
                 })
@@ -261,9 +262,9 @@ mod tests {
 
         sleep(Duration::from_millis(10)).await;
 
-        // drop the first future
-        first.abort();
+        // drop the first task
+        task_1.abort();
 
-        second.await.unwrap();
+        task_2.await.unwrap();
     }
 }
