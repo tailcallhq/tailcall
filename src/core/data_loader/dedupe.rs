@@ -315,11 +315,14 @@ mod tests {
                 .await
         });
 
+        // Wait for 10ms
+        sleep(Duration::from_millis(10)).await;
+
         // Task 2 completed in 200ms
-        let task_2 = tokio::spawn(async move {
+        tokio::spawn(async move {
             cache_2
                 .dedupe(&1, move || async move {
-                    sleep(Duration::from_millis(200)).await;
+                    sleep(Duration::from_millis(120)).await;
                     status_2.lock().unwrap().call_2 = true;
                 })
                 .await
@@ -328,11 +331,10 @@ mod tests {
         // Wait for 10ms
         sleep(Duration::from_millis(10)).await;
 
-        // drop the task_1
+        // Abort the task_1
         task_1.abort();
 
-        let _ = task_1.await;
-        let _ = task_2.await;
+        sleep(Duration::from_millis(300)).await;
 
         // Task 1 should still have completed because others are dependent on it.
         let actual = status.lock().unwrap().deref().to_owned();
@@ -368,25 +370,24 @@ mod tests {
                 .await
         });
 
-        // Task 2 completed in 200ms
+        // Task 2 completed in 150ms
         let task_2 = tokio::spawn(async move {
             cache_2
                 .dedupe(&1, move || async move {
-                    sleep(Duration::from_millis(200)).await;
+                    sleep(Duration::from_millis(150)).await;
                     status_2.lock().unwrap().call_2 = true;
                 })
                 .await
         });
 
         // Wait for 10ms
-        sleep(Duration::from_millis(10)).await;
+        sleep(Duration::from_millis(50)).await;
 
-        // drop the task_1 & task_2
+        // Abort the task_1 & task_2
         task_1.abort();
         task_2.abort();
 
-        let _ = task_1.await;
-        let _ = task_2.await;
+        sleep(Duration::from_millis(300)).await;
 
         // No task should have completed
         let actual = status.lock().unwrap().deref().to_owned();
