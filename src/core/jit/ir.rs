@@ -57,7 +57,7 @@ pub enum Protocol {
     },
 }
 
-impl CacheKey<Eval> for IO {
+impl CacheKey<Eval<'_>> for IO {
     fn cache_key(&self, ctx: &Eval) -> Option<IoId> {
         let protocol = &self.protocol;
         match protocol {

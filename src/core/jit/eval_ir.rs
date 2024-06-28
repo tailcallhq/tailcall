@@ -1,27 +1,63 @@
+use std::borrow::Cow;
+use std::ops::Deref;
+use headers::HeaderMap;
 use serde_json_borrow::Value;
 
 use crate::core::app_context::AppContext;
-use crate::core::ir::Error;
+use crate::core::has_headers::HasHeaders;
+use crate::core::jit::req_ctx::RequestContext;
+use crate::core::ir::{Error, GraphQLOperationContext, RelatedFields};
 use crate::core::ir::model::CacheKey;
+use crate::core::jit::eval_io::eval_io;
 use crate::core::jit::ir::IR;
+use crate::core::path::{PathGraphql, PathString};
 
 /// An async executor for the IR.
-pub struct Eval {
+pub struct Eval<'a> {
     #[allow(unused)]
     app_ctx: AppContext,
+    req_ctx: RequestContext<'a>,
 }
 
-impl Eval {
+impl GraphQLOperationContext for Eval<'_> {
+    fn selection_set(&self, _related_fields: &RelatedFields) -> Option<String> {
+        todo!()
+    }
+}
+
+impl HasHeaders for Eval<'_> {
+    fn headers(&self) -> &HeaderMap {
+        todo!()
+    }
+}
+
+impl PathGraphql for Eval<'_> {
+    fn path_graphql<T: AsRef<str>>(&self, _path: &[T]) -> Option<String> {
+        todo!()
+    }
+}
+
+impl PathString for Eval<'_> {
+    fn path_string<T: AsRef<str>>(&self, _path: &[T]) -> Option<Cow<'_, str>> {
+        todo!()
+    }
+}
+
+impl<'a> Eval<'a> {
     pub fn app_ctx(&self) -> &AppContext {
         &self.app_ctx
     }
-    pub fn new(app_ctx: AppContext) -> Self {
-        Self { app_ctx }
+
+    pub fn req_ctx(&self) -> &RequestContext<'a> {
+        &self.req_ctx
+    }
+    pub fn new(app_ctx: AppContext, req_ctx: RequestContext<'a>) -> Self {
+        Self { app_ctx, req_ctx }
     }
 
     #[async_recursion::async_recursion]
     #[allow(clippy::only_used_in_recursion)]
-    pub async fn eval<'a>(
+    pub async fn eval(
         &'a self,
         ir: &'a IR,
         value: Option<Value<'a>>,
@@ -33,7 +69,10 @@ impl Eval {
                 Ok(value)
             }
             IR::Dynamic(value) => Ok(Value::from(value)),
-            IR::IO(io) => todo!(),
+            IR::IO(io) => {
+                let val = eval_io(io, &self).await?;
+                Ok(val)
+            }
             IR::Cache(_) => todo!(),
             IR::Protect => todo!(),
             IR::Map(_) => todo!(),
