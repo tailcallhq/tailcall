@@ -18,6 +18,19 @@ concurrency:
   # cancel-in-progress: true
 
 jobs:
+  check_skip_ci:
+    name: Check Skip CI
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Check PR Title
+        id: check_pr_title
+        run: |
+          if [[ "${{ github.event.pull_request.title }}" == skip-ci:* ]]; then
+            echo "::error ::Skipping CI"
+            exit 1
+          fi
+
   check_if_build:
     name: Check if Build
     runs-on: ubuntu-latest
