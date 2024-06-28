@@ -137,9 +137,11 @@ jobs:
 
           - build: win32-x64-msvc
             os: windows-latest
+            target: x86_64-pc-windows-msvc
 
           - build: win32-arm64-msvc
             os: windows-latest
+            target: aarch64-pc-windows-msvc
 
           - build: win32-ia32-msvc
             os: windows-latest
@@ -338,7 +340,7 @@ jobs:
             target: i686-pc-windows-msvc
             features: --no-default-features --features cli
             cross: true
-            libc: glibc
+            libc: msvc
             ext: ".exe"
     permissions:
       contents: write
