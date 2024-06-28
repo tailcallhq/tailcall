@@ -1,0 +1,20 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "oneof__OneOfService__GetOneOfVar1": {
+        "usual": 5,
+        "command": {
+          "command": "end"
+        }
+      }
+    }
+  }
+}
