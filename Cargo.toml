@@ -28,7 +28,7 @@ serde = { version = "1.0.200", features = ["derive"] }
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
 # one needs to add default feature tag if it is something IO related or might conflict with WASM
 
-mimalloc = { version = "0.1.41", default-features = false }
+mimalloc = { version = "0.1.41", default-features = false, optional = true }
 http-cache-reqwest = { version = "0.13.0", features = [
     "manager-moka",
 ], default-features = false, optional = true }
@@ -191,6 +191,7 @@ js = ["dep:rquickjs"]
 cli = [
     "tokio/fs",
     "tokio/rt-multi-thread",
+    "dep:mimalloc",
     "dep:http-cache-reqwest",
     "dep:moka",
     "dep:hyper-rustls",
