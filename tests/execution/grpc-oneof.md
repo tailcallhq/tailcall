@@ -41,7 +41,7 @@ service OneOfService {
 ```graphql @config
 schema
   @server(port: 8000)
-  @upstream(baseURL: "http://localhost:50051", httpCache: 42, batch: {delay: 10})
+  @upstream(baseURL: "http://localhost:50051", httpCache: {size: 42}, batch: {delay: 10})
   @link(src: "oneof.proto", type: Protobuf) {
   query: Query
 }

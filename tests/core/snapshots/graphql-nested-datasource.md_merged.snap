@@ -4,7 +4,7 @@ expression: formatter
 ---
 schema
   @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
-  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+  @upstream(baseURL: "http://upstream/graphql", httpCache: {enable: false, size: 42}) {
   query: Query
 }
 

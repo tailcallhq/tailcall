@@ -2,7 +2,7 @@
 source: src/core/generator/generator.rs
 expression: cfg_module.config().to_sdl()
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "https://example.com", httpCache: 42) @link(src: "../../../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
+schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "https://example.com", httpCache: {enable: false, size: 42}) @link(src: "../../../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
   query: Query
 }
 
