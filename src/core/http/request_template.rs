@@ -277,6 +277,7 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
+    use std::collections::BTreeMap;
 
     use derive_setters::Setters;
     use hyper::header::HeaderName;
@@ -286,6 +287,7 @@ mod tests {
 
     use super::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
+    use crate::core::http::request_template::Query;
     use crate::core::mustache::Mustache;
     use crate::core::path::PathString;
 
@@ -375,29 +377,54 @@ mod tests {
 
     #[test]
     fn test_url_query_params() {
-        let query = vec![
-            ("foo".to_string(), Mustache::parse("0").unwrap()),
-            ("bar".to_string(), Mustache::parse("1").unwrap()),
-            ("baz".to_string(), Mustache::parse("2").unwrap()),
-        ];
+        let mut query = BTreeMap::new();
+        query.insert(
+            "foo".to_string(),
+            Query { mustache: Mustache::parse("0").unwrap(), list_type: false },
+        );
+        query.insert(
+            "bar".to_string(),
+            Query { mustache: Mustache::parse("1").unwrap(), list_type: false },
+        );
+        query.insert(
+            "baz".to_string(),
+            Query { mustache: Mustache::parse("2").unwrap(), list_type: false },
+        );
+
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .query(query);
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
+        println!("[Finder]: {:#?}", req.url().to_string());
         assert_eq!(
             req.url().to_string(),
-            "http://localhost:3000/?foo=0&bar=1&baz=2"
+            "http://localhost:3000/?bar=1&baz=2&foo=0"
         );
     }
 
     #[test]
     fn test_url_query_params_template() {
-        let query = vec![
-            ("foo".to_string(), Mustache::parse("0").unwrap()),
-            ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
-            ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
-        ];
+        let mut query = BTreeMap::new();
+        query.insert(
+            "foo".to_string(),
+            Query { mustache: Mustache::parse("0").unwrap(), list_type: false },
+        );
+        query.insert(
+            "bar".to_string(),
+            Query {
+                mustache: Mustache::parse("{{bar.id}}").unwrap(),
+                list_type: false,
+            },
+        );
+        query.insert(
+            "baz".to_string(),
+            Query {
+                mustache: Mustache::parse("{{baz.id}}").unwrap(),
+                list_type: false,
+            },
+        );
+
         let tmpl = RequestTemplate::new("http://localhost:3000/")
             .unwrap()
             .query(query);
@@ -412,7 +439,7 @@ mod tests {
         let req = tmpl.to_request(&ctx).unwrap();
         assert_eq!(
             req.url().to_string(),
-            "http://localhost:3000/?foo=0&bar=1&baz=2"
+            "http://localhost:3000/?bar=1&baz=2&foo=0"
         );
     }
 

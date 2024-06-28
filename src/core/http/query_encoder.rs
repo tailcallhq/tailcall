@@ -1,14 +1,11 @@
+#[derive(Default)]
 pub enum QueryEncoder {
-    /// it encodes the query value in the form of key=value1&key=value2&key=value3
+    /// it encodes the query value in the form of
+    /// key=value1&key=value2&key=value3
     List,
     /// it encodes the query in the form of key=value
+    #[default]
     Single,
-}
-
-impl Default for QueryEncoder {
-    fn default() -> Self {
-        QueryEncoder::Single
-    }
 }
 
 impl QueryEncoder {
