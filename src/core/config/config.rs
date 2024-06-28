@@ -3,13 +3,12 @@ use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
-use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::{KeyValue, Link, Server, Upstream};
+use super::{ConfigModule, KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
 use crate::core::config::source::Source;
 use crate::core::directive::DirectiveCodec;
@@ -695,13 +694,8 @@ impl Config {
         }
     }
 
-    pub fn to_document(&self) -> ServiceDocument {
-        self.clone().into()
-    }
-
     pub fn to_sdl(&self) -> String {
-        let doc = self.to_document();
-        crate::core::document::print(doc)
+        ConfigModule::from(self.clone()).to_sdl()
     }
 
     pub fn query(mut self, query: &str) -> Self {
