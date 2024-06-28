@@ -241,7 +241,7 @@ mod tests {
             .generate(false)?;
 
         let mut config = AmbiguousType::default()
-            .transform(cfg_module.config)
+            .transform(cfg_module.config().clone())
             .to_result()?;
 
         // remove links since they break snapshot tests
