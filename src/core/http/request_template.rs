@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
@@ -23,12 +24,19 @@ use crate::core::path::PathString;
 #[derive(Setters, Debug, Clone)]
 pub struct RequestTemplate {
     pub root_url: Mustache,
-    pub query: Vec<(String, Mustache)>,
+    pub query: BTreeMap<String, Query>,
     pub method: reqwest::Method,
     pub headers: MustacheHeaders,
     pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
     pub encoding: Encoding,
+}
+
+/// store some details about query to help the encode the query correctly.
+#[derive(Debug, Clone)]
+pub struct Query {
+    pub mustache: Mustache,
+    list_type: bool,
 }
 
 impl RequestTemplate {
@@ -40,7 +48,7 @@ impl RequestTemplate {
             return Ok(url);
         }
         let extra_qp = self.query.iter().filter_map(|(k, v)| {
-            let value = v.render(ctx);
+            let value = v.mustache.render(ctx);
             if value.is_empty() {
                 None
             } else {
@@ -54,7 +62,13 @@ impl RequestTemplate {
 
         let qp_string = base_qp
             .chain(extra_qp)
-            .map(|(k, v)| QueryEncoder::detect(&v).encode(k, &v))
+            .map(|(k, v)| {
+                if let Some(_arg) = self.query.get(k.as_ref()) {
+                    QueryEncoder::detect(_arg.list_type).encode(k, &v)
+                } else {
+                    QueryEncoder::default().encode(k, &v)
+                }
+            })
             .fold("".to_string(), |str, item| {
                 if str.is_empty() {
                     item
@@ -77,7 +91,7 @@ impl RequestTemplate {
     pub fn is_const(&self) -> bool {
         self.root_url.is_const()
             && self.body_path.as_ref().map_or(true, Mustache::is_const)
-            && self.query.iter().all(|(_, v)| v.is_const())
+            && self.query.iter().all(|(_, v)| v.mustache.is_const())
             && self.headers.iter().all(|(_, v)| v.is_const())
     }
 
@@ -194,11 +208,18 @@ impl TryFrom<Endpoint> for RequestTemplate {
     type Error = anyhow::Error;
     fn try_from(endpoint: Endpoint) -> anyhow::Result<Self> {
         let path = Mustache::parse(endpoint.path.as_str())?;
+
         let query = endpoint
             .query
             .iter()
-            .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
-            .collect::<anyhow::Result<Vec<_>>>()?;
+            .map(|(k, v, l)| {
+                Ok((
+                    k.to_owned(),
+                    Query { mustache: Mustache::parse(v)?, list_type: *l },
+                ))
+            })
+            .collect::<anyhow::Result<BTreeMap<_, _>>>()?;
+
         let method = endpoint.method.clone().to_hyper();
         let headers = endpoint
             .headers
@@ -565,7 +586,7 @@ mod tests {
                 "http://localhost:3000/{{foo.bar}}".to_string(),
             )
             .method(crate::core::http::Method::POST)
-            .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
+            .query(vec![("foo".to_string(), "{{foo.bar}}".to_string(), false)])
             .headers(headers)
             .body(Some("{{foo.bar}}".into()));
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
@@ -600,8 +621,8 @@ mod tests {
                 "http://localhost:3000/?a={{args.a}}&q=1".to_string(),
             )
             .query(vec![
-                ("b".to_string(), "1".to_string()),
-                ("c".to_string(), "{{args.c}}".to_string()),
+                ("b".to_string(), "1".to_string(), false),
+                ("c".to_string(), "{{args.c}}".to_string(), false),
             ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
@@ -634,8 +655,8 @@ mod tests {
                 "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
             )
                 .query(vec![
-                    ("e".to_string(), "{{args.e}}".to_string()),
-                    ("f".to_string(), "{{args.f}}".to_string()),
+                    ("e".to_string(), "{{args.e}}".to_string(), false),
+                    ("f".to_string(), "{{args.f}}".to_string(), false),
                 ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default().value(json!({

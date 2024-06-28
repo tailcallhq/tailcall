@@ -5,9 +5,15 @@ pub enum QueryEncoder {
     Single,
 }
 
+impl Default for QueryEncoder {
+    fn default() -> Self {
+        QueryEncoder::Single
+    }
+}
+
 impl QueryEncoder {
-    pub fn detect(query: &str) -> Self {
-        if query.starts_with('[') && query.ends_with(']') {
+    pub fn detect(list_type: bool) -> Self {
+        if list_type {
             QueryEncoder::List
         } else {
             QueryEncoder::Single
@@ -38,16 +44,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_detect_repeated() {
-        let query = "[1,2,3]";
-        let encoder = QueryEncoder::detect(query);
+    fn test_detect_list_variant() {
+        let encoder = QueryEncoder::detect(true);
         assert!(matches!(encoder, QueryEncoder::List));
     }
 
     #[test]
-    fn test_detect_simple() {
-        let query = "1";
-        let encoder = QueryEncoder::detect(query);
+    fn test_detect_single_variant() {
+        let encoder = QueryEncoder::detect(false);
         assert!(matches!(encoder, QueryEncoder::Single));
     }
 
