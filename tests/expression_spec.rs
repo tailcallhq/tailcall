@@ -5,31 +5,32 @@ mod tests {
     use serde_json::json;
     use tailcall::core::blueprint::{Blueprint, DynamicValue};
     use tailcall::core::http::RequestContext;
-    use tailcall::core::ir::{EmptyResolverContext, Eval, EvaluationContext, EvaluationError, IR};
+    use tailcall::core::ir::model::IR;
+    use tailcall::core::ir::{EmptyResolverContext, Error, EvalContext};
     use tailcall::core::mustache::Mustache;
 
-    async fn eval(expr: &IR) -> Result<Value, EvaluationError> {
+    async fn eval(expr: &IR) -> Result<Value, Error> {
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());
         let req_ctx = RequestContext::new(runtime);
         let res_ctx = EmptyResolverContext {};
-        let eval_ctx = EvaluationContext::new(&req_ctx, &res_ctx);
-        expr.eval(eval_ctx).await
+        let mut eval_ctx = EvalContext::new(&req_ctx, &res_ctx);
+        expr.eval(&mut eval_ctx).await
     }
 
     #[tokio::test]
     async fn test_and_then() {
         let abcde = DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap();
         let expr = IR::Dynamic(abcde)
-            .and_then(IR::Dynamic(DynamicValue::Mustache(
+            .pipe(IR::Dynamic(DynamicValue::Mustache(
                 Mustache::parse("{{args.a}}").unwrap(),
             )))
-            .and_then(IR::Dynamic(DynamicValue::Mustache(
+            .pipe(IR::Dynamic(DynamicValue::Mustache(
                 Mustache::parse("{{args.b}}").unwrap(),
             )))
-            .and_then(IR::Dynamic(DynamicValue::Mustache(
+            .pipe(IR::Dynamic(DynamicValue::Mustache(
                 Mustache::parse("{{args.c}}").unwrap(),
             )))
-            .and_then(IR::Dynamic(DynamicValue::Mustache(
+            .pipe(IR::Dynamic(DynamicValue::Mustache(
                 Mustache::parse("{{args.d}}").unwrap(),
             )));
 
@@ -41,13 +42,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_args() {
-        let args =
-            IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap());
-
-        let expr = IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{args.a.b.c.d}}").unwrap(),
-        ))
-        .with_args(args);
+        let expr =
+            IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap())
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{args.a.b.c.d}}").unwrap(),
+                )));
 
         let actual = eval(&expr).await.unwrap();
         let expected = Value::from_json(json!("e")).unwrap();
@@ -57,22 +56,20 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_args_piping() {
-        let args =
-            IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap());
-
-        let expr = IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{args.a}}").unwrap(),
-        ))
-        .with_args(args)
-        .and_then(IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{args.b}}").unwrap(),
-        )))
-        .and_then(IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{args.c}}").unwrap(),
-        )))
-        .and_then(IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{args.d}}").unwrap(),
-        )));
+        let expr =
+            IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap())
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{args.a}}").unwrap(),
+                )))
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{args.b}}").unwrap(),
+                )))
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{args.c}}").unwrap(),
+                )))
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{args.d}}").unwrap(),
+                )));
 
         let actual = eval(&expr).await.unwrap();
         let expected = Value::from_json(json!("e")).unwrap();
@@ -85,15 +82,13 @@ mod tests {
         let args =
             IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap());
 
-        let expr_with_dot = IR::Dynamic(DynamicValue::Mustache(
+        let expr_with_dot = args.clone().pipe(IR::Dynamic(DynamicValue::Mustache(
             Mustache::parse("{{.args.a.b.c.d}}").unwrap(),
-        ))
-        .with_args(args.clone());
+        )));
 
-        let expr_without_dot = IR::Dynamic(DynamicValue::Mustache(
+        let expr_without_dot = args.pipe(IR::Dynamic(DynamicValue::Mustache(
             Mustache::parse("{{args.a.b.c.d}}").unwrap(),
-        ))
-        .with_args(args);
+        )));
 
         let actual_with_dot = eval(&expr_with_dot).await.unwrap();
         let actual_without_dot = eval(&expr_without_dot).await.unwrap();
@@ -105,22 +100,20 @@ mod tests {
 
     #[tokio::test]
     async fn test_optional_dot_piping() {
-        let args =
-            IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap());
-
-        let expr = IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{.args.a}}").unwrap(),
-        ))
-        .with_args(args)
-        .and_then(IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{.args.b}}").unwrap(),
-        )))
-        .and_then(IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{.args.c}}").unwrap(),
-        )))
-        .and_then(IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{.args.d}}").unwrap(),
-        )));
+        let expr =
+            IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap())
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{.args.a}}").unwrap(),
+                )))
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{.args.b}}").unwrap(),
+                )))
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{.args.c}}").unwrap(),
+                )))
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{.args.d}}").unwrap(),
+                )));
 
         let actual = eval(&expr).await.unwrap();
         let expected = Value::from_json(json!("e")).unwrap();
@@ -130,22 +123,20 @@ mod tests {
 
     #[tokio::test]
     async fn test_mixed_dot_usages() {
-        let args =
-            IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap());
-
-        let expr = IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{.args.a}}").unwrap(),
-        ))
-        .with_args(args)
-        .and_then(IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{args.b}}").unwrap(),
-        )))
-        .and_then(IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{.args.c}}").unwrap(),
-        )))
-        .and_then(IR::Dynamic(DynamicValue::Mustache(
-            Mustache::parse("{{args.d}}").unwrap(),
-        )));
+        let expr =
+            IR::Dynamic(DynamicValue::try_from(&json!({"a": {"b": {"c": {"d": "e"}}}})).unwrap())
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{.args.a}}").unwrap(),
+                )))
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{args.b}}").unwrap(),
+                )))
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{.args.c}}").unwrap(),
+                )))
+                .pipe(IR::Dynamic(DynamicValue::Mustache(
+                    Mustache::parse("{{args.d}}").unwrap(),
+                )));
 
         let actual = eval(&expr).await.unwrap();
         let expected = Value::from_json(json!("e")).unwrap();

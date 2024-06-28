@@ -11,7 +11,8 @@ use crate::core::config::{GraphQLOperationType, KeyValue};
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::http::Method::POST;
-use crate::core::ir::{CacheKey, GraphQLOperationContext, IoId};
+use crate::core::ir::model::{CacheKey, IoId};
+use crate::core::ir::{GraphQLOperationContext, RelatedFields};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathGraphql;
 
@@ -24,6 +25,7 @@ pub struct RequestTemplate {
     pub operation_name: String,
     pub operation_arguments: Option<Vec<(String, Mustache)>>,
     pub headers: MustacheHeaders,
+    pub related_fields: RelatedFields,
 }
 
 impl RequestTemplate {
@@ -83,17 +85,30 @@ impl RequestTemplate {
         ctx: &C,
     ) -> String {
         let operation_type = &self.operation_type;
-        let selection_set = ctx.selection_set().unwrap_or_default();
+        let selection_set = ctx.selection_set(&self.related_fields).unwrap_or_default();
         let operation = self
             .operation_arguments
             .as_ref()
             .map(|args| {
                 args.iter()
-                    .map(|(k, v)| format!(r#"{}: {}"#, k, v.render_graphql(ctx).escape_default()))
+                    .filter_map(|(k, v)| {
+                        let value = v.render_graphql(ctx);
+                        if value.is_empty() {
+                            None
+                        } else {
+                            Some(format!(r#"{}: {}"#, k, value.escape_default()))
+                        }
+                    })
                     .collect::<Vec<_>>()
                     .join(", ")
             })
-            .map(|args| format!("{}({})", self.operation_name, args))
+            .map(|args| {
+                if args.is_empty() {
+                    self.operation_name.clone()
+                } else {
+                    format!("{}({})", self.operation_name, args)
+                }
+            })
             .unwrap_or(self.operation_name.clone());
 
         format!(r#"{{ "query": "{operation_type} {{ {operation} {selection_set} }}" }}"#)
@@ -105,6 +120,7 @@ impl RequestTemplate {
         operation_name: &str,
         args: Option<&Vec<KeyValue>>,
         headers: MustacheHeaders,
+        related_fields: RelatedFields,
     ) -> anyhow::Result<Self> {
         let mut operation_arguments = None;
 
@@ -122,6 +138,7 @@ impl RequestTemplate {
             operation_name: operation_name.to_owned(),
             operation_arguments,
             headers,
+            related_fields,
         })
     }
 }
@@ -145,9 +162,11 @@ mod tests {
     use serde_json::json;
 
     use crate::core::config::GraphQLOperationType;
+    use crate::core::graphql::request_template::RelatedFields;
     use crate::core::graphql::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
-    use crate::core::ir::{CacheKey, GraphQLOperationContext};
+    use crate::core::ir::model::CacheKey;
+    use crate::core::ir::GraphQLOperationContext;
     use crate::core::json::JsonLike;
     use crate::core::path::PathGraphql;
 
@@ -169,7 +188,7 @@ mod tests {
     }
 
     impl GraphQLOperationContext for Context {
-        fn selection_set(&self) -> Option<String> {
+        fn selection_set(&self, _: &RelatedFields) -> Option<String> {
             Some("{ a,b,c }".to_owned())
         }
     }
@@ -182,6 +201,7 @@ mod tests {
             "myQuery",
             None,
             vec![],
+            RelatedFields::default(),
         )
         .unwrap();
         let ctx = Context {
@@ -218,6 +238,7 @@ mod tests {
             )
             .as_ref(),
             vec![],
+            RelatedFields::default(),
         )
         .unwrap();
         let ctx = Context {
@@ -255,6 +276,7 @@ mod tests {
             )
                 .as_ref(),
             vec![],
+            RelatedFields::default(),
         )
             .unwrap();
         let ctx = Context { value, headers: Default::default() };

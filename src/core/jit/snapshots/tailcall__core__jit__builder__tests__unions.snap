@@ -1,0 +1,48 @@
+---
+source: src/core/jit/builder.rs
+expression: plan
+---
+ExecutionPlan {
+    parent: [
+        Field {
+            id: 0,
+            name: "getUserIdOrEmail",
+            ir: "Some(..)",
+            type_of: UserIdOrEmail,
+            args: [
+                Arg {
+                    id: 0,
+                    name: "id",
+                    type_of: ID!,
+                    value: Some(
+                        Number(
+                            Number(1),
+                        ),
+                    ),
+                    default_value: None,
+                },
+            ],
+        },
+    ],
+    children: [
+        Field {
+            id: 0,
+            name: "getUserIdOrEmail",
+            ir: "Some(..)",
+            type_of: UserIdOrEmail,
+            args: [
+                Arg {
+                    id: 0,
+                    name: "id",
+                    type_of: ID!,
+                    value: Some(
+                        Number(
+                            Number(1),
+                        ),
+                    ),
+                    default_value: None,
+                },
+            ],
+        },
+    ],
+}

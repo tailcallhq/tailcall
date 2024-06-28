@@ -2,28 +2,67 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
-use derive_setters::Setters;
+use derive_getters::Getters;
 use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use super::transformer::Transform;
+use super::transformer::{AmbiguousType, NestedUnions, UnionInputType};
 use crate::core::config::Config;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::rest::{EndpointSet, Unchecked};
+use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::{Valid, Validator};
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
-#[derive(Clone, Debug, Default, Setters, MergeRight)]
+#[derive(Clone, Debug, Default, Getters)]
 pub struct ConfigModule {
-    pub config: Config,
-    pub extensions: Extensions,
-    pub input_types: HashSet<String>,
-    pub output_types: HashSet<String>,
-    pub interface_types: HashSet<String>,
+    config: Config,
+    extensions: Extensions,
+    input_types: HashSet<String>,
+    output_types: HashSet<String>,
+    interface_types: HashSet<String>,
+}
+
+impl MergeRight for ConfigModule {
+    fn merge_right(self, other: Self) -> Self {
+        ConfigModule::new(
+            self.config.merge_right(other.config),
+            self.extensions.merge_right(other.extensions),
+        )
+    }
+}
+
+impl ConfigModule {
+    pub fn new(config: Config, extensions: Extensions) -> Self {
+        let input_types = config.input_types();
+        let output_types = config.output_types();
+        let interface_types = config.interface_types();
+
+        ConfigModule {
+            config,
+            extensions,
+            input_types,
+            output_types,
+            interface_types,
+        }
+    }
+
+    /// Normalizes current config with default preset
+    pub fn normalize_default(self) -> Valid<Self, String> {
+        // TODO: migrate to preset. That will change many snapshots in repo
+        let transformer = NestedUnions
+            .pipe(UnionInputType)
+            .pipe(AmbiguousType::default());
+        let ConfigModule { config, extensions, .. } = self;
+
+        transformer
+            .transform(config)
+            .map(|config| ConfigModule::new(config, extensions))
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -109,11 +148,5 @@ impl From<Config> for ConfigModule {
             interface_types,
             ..Default::default()
         }
-    }
-}
-
-impl ConfigModule {
-    pub fn transform<T: Transform>(self, transformer: T) -> Valid<Self, String> {
-        transformer.transform(self.config).map(ConfigModule::from)
     }
 }

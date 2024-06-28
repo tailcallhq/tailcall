@@ -1,4 +1,5 @@
 use std::collections::{BTreeSet, HashMap};
+use std::fmt::Formatter;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
@@ -9,9 +10,9 @@ use derive_setters::Setters;
 use serde_json::Value;
 
 use super::telemetry::Telemetry;
-use super::GlobalTimeout;
+use super::{GlobalTimeout, Index};
 use crate::core::blueprint::{Server, Upstream};
-use crate::core::ir::IR;
+use crate::core::ir::model::IR;
 use crate::core::schema_extension::SchemaExtension;
 
 /// Blueprint is an intermediary representation that allows us to generate
@@ -27,10 +28,31 @@ pub struct Blueprint {
     pub telemetry: Telemetry,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Type {
     NamedType { name: String, non_null: bool },
     ListType { of_type: Box<Type>, non_null: bool },
+}
+
+impl std::fmt::Debug for Type {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Type::NamedType { name, non_null } => {
+                if *non_null {
+                    write!(f, "{}!", name)
+                } else {
+                    write!(f, "{}", name)
+                }
+            }
+            Type::ListType { of_type, non_null } => {
+                if *non_null {
+                    write!(f, "[{:?}]!", of_type)
+                } else {
+                    write!(f, "[{:?}]", of_type)
+                }
+            }
+        }
+    }
 }
 
 impl Default for Type {
@@ -47,6 +69,7 @@ impl Type {
             Type::ListType { of_type, .. } => of_type.name(),
         }
     }
+
     /// checks if the type is nullable
     pub fn is_nullable(&self) -> bool {
         !match self {
@@ -143,12 +166,13 @@ pub struct FieldDefinition {
     pub resolver: Option<IR>,
     pub directives: Vec<Directive>,
     pub description: Option<String>,
+    pub default_value: Option<serde_json::Value>,
 }
 
 impl FieldDefinition {
     ///
     /// Transforms the current expression if it exists on the provided field.
-    pub fn map_expr<F: FnMut(IR) -> IR>(&mut self, mut wrapper: F) {
+    pub fn map_expr<F: FnOnce(IR) -> IR>(&mut self, wrapper: F) {
         if let Some(resolver) = self.resolver.take() {
             self.resolver = Some(wrapper(resolver))
         }
@@ -262,5 +286,9 @@ impl Blueprint {
         // We should safely assume the blueprint is correct and,
         // generation of schema cannot fail.
         schema.finish().unwrap()
+    }
+
+    pub fn index(&self) -> Index {
+        Index::from(self)
     }
 }

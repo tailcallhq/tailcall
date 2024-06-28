@@ -37,11 +37,11 @@ impl ConfigReader {
     #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
-        mut config_module: ConfigModule,
+        config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
-            .config
+            .config()
             .links
             .clone()
             .iter()
@@ -57,6 +57,9 @@ impl ConfigReader {
             return Ok(config_module);
         }
 
+        let mut extensions = config_module.extensions().clone();
+        let mut base_config = config_module.config().clone();
+
         for link in links.iter() {
             let path = Self::resolve_path(&link.src, parent_dir);
 
@@ -66,53 +69,45 @@ impl ConfigReader {
                     let content = source.content;
 
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
-
-                    config_module = config_module.merge_right(ConfigModule::from(config.clone()));
+                    base_config = base_config.merge_right(config.clone());
 
                     if !config.links.is_empty() {
-                        config_module = config_module.merge_right(
-                            self.ext_links(
-                                ConfigModule::from(config),
-                                Path::new(&link.src).parent(),
-                            )
-                            .await?,
-                        );
+                        let cfg_module = self
+                            .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
+                            .await?;
+                        base_config = base_config.merge_right(cfg_module.config().clone());
                     }
                 }
                 LinkType::Protobuf => {
                     let meta = self.proto_reader.read(path).await?;
-                    config_module.extensions.add_proto(meta);
+                    extensions.add_proto(meta);
                 }
                 LinkType::Script => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
-                    config_module.extensions.script = Some(content);
+                    extensions.script = Some(content);
                 }
                 LinkType::Cert => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
-                    config_module
-                        .extensions
-                        .cert
-                        .extend(self.load_cert(content).await?);
+                    extensions.cert.extend(self.load_cert(content).await?);
                 }
                 LinkType::Key => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
-                    config_module.extensions.keys = Arc::new(self.load_private_key(content).await?)
+                    extensions.keys = Arc::new(self.load_private_key(content).await?)
                 }
                 LinkType::Operation => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
 
-                    config_module.extensions.endpoint_set = EndpointSet::try_new(&content)?;
+                    extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
                 LinkType::Htpasswd => {
                     let source = self.resource_reader.read_file(&path).await?;
                     let content = source.content;
 
-                    config_module
-                        .extensions
+                    extensions
                         .htpasswd
                         .push(Content { id: link.id.clone(), content });
                 }
@@ -122,7 +117,7 @@ impl ConfigReader {
 
                     let de = &mut serde_json::Deserializer::from_str(&content);
 
-                    config_module.extensions.jwks.push(Content {
+                    extensions.jwks.push(Content {
                         id: link.id.clone(),
                         content: serde_path_to_error::deserialize(de)?,
                     })
@@ -131,13 +126,15 @@ impl ConfigReader {
                     let meta = self.proto_reader.fetch(link.src.as_str()).await?;
 
                     for m in meta {
-                        config_module.extensions.add_proto(m);
+                        extensions.add_proto(m);
                     }
                 }
             }
         }
 
-        Ok(config_module)
+        // Recreating the ConfigModule in order to recompute the values of
+        // `input_types`, `output_types` and `interface_types`
+        Ok(ConfigModule::new(base_config, extensions))
     }
 
     /// Reads the certificate from a given file
@@ -206,32 +203,24 @@ impl ConfigReader {
     /// Resolves all the links in a Config to create a ConfigModule
     pub async fn resolve(
         &self,
-        config: Config,
+        mut config: Config,
         parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
-        // Create initial config set
-        let config_module = ConfigModule::from(config);
-
-        // Extend it with the links
-        let mut config_module = self.ext_links(config_module, parent_dir).await?;
-
-        let server = &mut config_module.config.server;
+        // Setup telemetry in Config
         let reader_ctx = ConfigReaderContext {
             runtime: &self.runtime,
-            vars: &server
+            vars: &config
+                .server
                 .vars
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
                 .collect(),
             headers: Default::default(),
         };
+        config.telemetry.render_mustache(&reader_ctx)?;
 
-        config_module
-            .config
-            .telemetry
-            .render_mustache(&reader_ctx)?;
-
-        Ok(config_module)
+        // Create initial config set & extend it with the links
+        self.ext_links(ConfigModule::from(config), parent_dir).await
     }
 
     /// Checks if path is a URL or absolute path, returns directly if so.
@@ -356,7 +345,10 @@ mod reader_tests {
         let path = format!("{}/examples/scripts/echo.js", cargo_manifest);
         let content = file_rt.read(&path).await;
 
-        assert_eq!(content.unwrap(), config.extensions.script.unwrap());
+        assert_eq!(
+            content.unwrap(),
+            config.extensions().script.clone().unwrap()
+        );
     }
 
     #[test]

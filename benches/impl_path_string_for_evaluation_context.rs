@@ -19,7 +19,7 @@ use tailcall::cli::runtime::cache_size::get_memory_by_percentage;
 use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::http::{RequestContext, Response};
-use tailcall::core::ir::{EvaluationContext, ResolverContextLike};
+use tailcall::core::ir::{EvalContext, ResolverContextLike};
 use tailcall::core::path::PathString;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
@@ -191,28 +191,28 @@ fn to_bench_id(input: &[&str]) -> BenchmarkId {
 #[derive(Clone)]
 struct MockGraphqlContext;
 
-impl<'a> ResolverContextLike<'a> for MockGraphqlContext {
-    fn value(&'a self) -> Option<&'a Value> {
+impl ResolverContextLike for MockGraphqlContext {
+    fn value(&self) -> Option<&Value> {
         Some(&TEST_VALUES)
     }
 
-    fn args(&'a self) -> Option<&'a IndexMap<Name, Value>> {
+    fn args(&self) -> Option<&IndexMap<Name, Value>> {
         Some(&TEST_ARGS)
     }
 
-    fn field(&'a self) -> Option<SelectionField> {
+    fn field(&self) -> Option<SelectionField> {
         None
     }
 
-    fn is_query(&'a self) -> bool {
+    fn is_query(&self) -> bool {
         false
     }
 
-    fn add_error(&'a self, _: async_graphql::ServerError) {}
+    fn add_error(&self, _: async_graphql::ServerError) {}
 }
 
 // assert that everything was set up correctly for the benchmark
-fn assert_test(eval_ctx: &EvaluationContext<'_, MockGraphqlContext>) {
+fn assert_test(eval_ctx: &EvalContext<'_, MockGraphqlContext>) {
     // value
     assert_eq!(
         eval_ctx.path_string(&["value", "root"]),
@@ -279,7 +279,7 @@ pub fn bench_main(c: &mut Criterion) {
     let mut req_ctx = request_context().allowed_headers(TEST_HEADERS.clone());
 
     req_ctx.server.vars = TEST_VARS.clone();
-    let eval_ctx = EvaluationContext::new(&req_ctx, &MockGraphqlContext);
+    let eval_ctx = EvalContext::new(&req_ctx, &MockGraphqlContext);
 
     assert_test(&eval_ctx);
 

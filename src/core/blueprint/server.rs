@@ -36,7 +36,7 @@ pub struct Server {
     pub cors: Option<Cors>,
     pub experimental_headers: HashSet<HeaderName>,
     pub auth: Option<Auth>,
-    pub batch_execution: bool,
+    pub dedupe: bool,
 }
 
 /// Mimic of mini_v8::Script that's wasm compatible
@@ -91,15 +91,15 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
 
         let http_server = match config_server.clone().get_version() {
             HttpVersion::HTTP2 => {
-                if config_module.extensions.cert.is_empty() {
+                if config_module.extensions().cert.is_empty() {
                     return Valid::fail("Certificate is required for HTTP2".to_string())
                         .to_result();
                 }
 
-                let cert = config_module.extensions.cert.clone();
+                let cert = config_module.extensions().cert.clone();
 
                 let key_file: PrivateKeyDer<'_> = config_module
-                    .extensions
+                    .extensions()
                     .keys
                     .first()
                     .ok_or_else(|| ValidationError::new("Key is required for HTTP2".to_string()))?
@@ -151,7 +151,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
                         script,
                         cors,
                         auth,
-                        batch_execution: config_server.get_batch_execution(),
+                        dedupe: config_server.get_dedupe(),
                     }
                 },
             )
@@ -160,7 +160,7 @@ impl TryFrom<crate::core::config::ConfigModule> for Server {
 }
 
 fn to_script(config_module: &crate::core::config::ConfigModule) -> Valid<Option<Script>, String> {
-    config_module.extensions.script.as_ref().map_or_else(
+    config_module.extensions().script.as_ref().map_or_else(
         || Valid::succeed(None),
         |script| {
             Valid::succeed(Some(Script {

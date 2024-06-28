@@ -3,7 +3,6 @@ use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
-use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -262,10 +261,16 @@ pub struct Field {
     ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
+
     ///
     /// Marks field as protected by auth provider
     #[serde(default)]
     pub protected: Option<Protected>,
+
+    ///
+    /// Stores the default value for the field
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub default_value: Option<Value>,
 }
 
 // It's a terminal implementation of MergeRight
@@ -388,7 +393,9 @@ pub struct Arg {
     pub default_value: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
@@ -397,8 +404,44 @@ pub struct Union {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 /// Definition of GraphQL enum type
 pub struct Enum {
-    pub variants: BTreeSet<String>,
+    pub variants: BTreeSet<Variant>,
     pub doc: Option<String>,
+}
+
+/// Definition of GraphQL value
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
+pub struct Variant {
+    pub name: String,
+    // directive: alias
+    pub alias: Option<Alias>,
+}
+
+/// The @alias directive indicates that aliases of one enum value.
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
+pub struct Alias {
+    pub options: BTreeSet<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
@@ -651,13 +694,9 @@ impl Config {
         }
     }
 
-    pub fn to_document(&self) -> ServiceDocument {
-        self.clone().into()
-    }
-
+    /// Renders current config to graphQL string
     pub fn to_sdl(&self) -> String {
-        let doc = self.to_document();
-        crate::core::document::print(doc)
+        crate::core::document::print(self.into())
     }
 
     pub fn query(mut self, query: &str) -> Self {
@@ -712,11 +751,16 @@ impl Config {
     /// Given a starting type, this function searches for all the unique types
     /// that this type can be connected to via it's fields
     fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
-        if let Some(type_) = self.find_type(type_of) {
+        if let Some(union_) = self.find_union(type_of) {
+            types.insert(type_of.into());
+
+            for type_ in union_.types.iter() {
+                types = self.find_connections(type_, types);
+            }
+        } else if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
-                    types.insert(field.type_of.clone());
                     types = self.find_connections(&field.type_of, types);
                 }
             }
@@ -743,6 +787,14 @@ impl Config {
             .fold(HashSet::new(), |types, type_of| {
                 self.find_connections(type_of, types)
             })
+    }
+
+    /// finds the all types which are present in union.
+    pub fn union_types(&self) -> HashSet<String> {
+        self.unions
+            .values()
+            .flat_map(|union| union.types.iter().cloned())
+            .collect()
     }
 
     /// Returns a list of all the types that are used as output types
@@ -785,6 +837,7 @@ impl Config {
     pub fn remove_types(mut self, types: HashSet<String>) -> Self {
         for unused_type in types {
             self.types.remove(&unused_type);
+            self.unions.remove(&unused_type);
         }
 
         self
@@ -792,7 +845,12 @@ impl Config {
 
     pub fn unused_types(&self) -> HashSet<String> {
         let used_types = self.get_all_used_type_names();
-        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        let all_types: HashSet<String> = self
+            .types
+            .keys()
+            .chain(self.unions.keys())
+            .cloned()
+            .collect();
         all_types.difference(&used_types).cloned().collect()
     }
 
@@ -807,11 +865,15 @@ impl Config {
             stack.push(mutation.clone());
         }
         while let Some(type_name) = stack.pop() {
-            if let Some(typ) = self.types.get(&type_name) {
-                if set.contains(&type_name) {
-                    continue;
+            if set.contains(&type_name) {
+                continue;
+            }
+            if let Some(union_) = self.unions.get(&type_name) {
+                set.insert(type_name);
+                for type_ in &union_.types {
+                    stack.push(type_.clone());
                 }
-
+            } else if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
@@ -937,5 +999,18 @@ mod tests {
         assert!(!config.is_root_operation_type("Query"));
         assert!(!config.is_root_operation_type("Mutation"));
         assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_union_types() {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::UNION_CONFIG).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let union_types = config.union_types();
+        let expected_union_types: HashSet<String> = ["Bar", "Baz", "Foo"]
+            .iter()
+            .cloned()
+            .map(String::from)
+            .collect();
+        assert_eq!(union_types, expected_union_types);
     }
 }
