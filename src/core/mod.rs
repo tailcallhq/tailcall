@@ -59,9 +59,7 @@ pub trait HttpIO: Sync + Send + 'static {
     async fn execute(
         &self,
         request: reqwest::Request,
-    ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        self.execute(request).await
-    }
+    ) -> anyhow::Result<Response<hyper::body::Bytes>>;
 }
 
 #[async_trait::async_trait]
