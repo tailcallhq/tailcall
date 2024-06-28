@@ -91,7 +91,7 @@ jobs:
                 libc: msvc
                 ext: ".exe"
 
-              - build: win32-ia32-mscv
+              - build: win32-ia32-msvc
                 os: windows-latest
                 rust: stable
                 target: i686-pc-windows-msvc
