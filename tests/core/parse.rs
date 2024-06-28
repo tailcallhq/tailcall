@@ -87,6 +87,7 @@ impl ExecutionSpec {
                             let _ = children.next();
                         }
                     } else if heading.depth == 2 {
+                        // TODO: use frontmatter parsing instead of handle it as heading?
                         if let Some(Node::Text(expect)) = heading.children.first() {
                             let split = expect.value.splitn(2, ':').collect::<Vec<&str>>();
                             match split[..] {
