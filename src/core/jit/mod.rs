@@ -1,4 +1,5 @@
 mod builder;
+mod eval;
 mod eval_ir;
 mod model;
 mod store;
