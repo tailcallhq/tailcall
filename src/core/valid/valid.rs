@@ -393,14 +393,14 @@ mod tests {
             let result = if x < 0 {
                 Valid::fail("x cannot be negative".into())
             } else {
-                Valid::succeed(x * x)
+                Valid::succeed(x)
             };
 
             let x = try_valid!(result);
             let result = if x == 0 {
                 Valid::fail("x cannot be zero".into())
             } else {
-                Valid::succeed(x / x)
+                Valid::succeed(x)
             };
 
             let x = try_valid!(result);
