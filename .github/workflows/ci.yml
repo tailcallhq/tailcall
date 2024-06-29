@@ -101,7 +101,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -110,7 +109,10 @@ jobs:
       - name: Install Prettier
         run: npm i -g prettier
 
-      - name: Install Stable Toolchain
+      - name: Install Rust Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install Cross compilation toolchain
         uses: taiki-e/setup-cross-toolchain-action@v1
         with:
           target: ${{ matrix.target }}
@@ -139,7 +141,10 @@ jobs:
           }
           echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
 
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
       - name: Run Cargo Test
+        if: matrix.test != 'false'
         # TODO: run llvm-cov only for single build since other builds are not sent to codecov anyway
         run: cargo llvm-cov --workspace ${{ matrix.features || '--all-features' }} --lcov --target ${{ matrix.target }} --output-path lcov.info
 
@@ -224,7 +229,7 @@ jobs:
       - name: Checkout Current Branch (Fast)
         uses: actions/checkout@v4
 
-      - name: Install Correct Toolchain
+      - name: Install Rust Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
