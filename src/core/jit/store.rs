@@ -26,6 +26,19 @@ impl<A> Store<A> {
         self.map.insert(field_id.as_usize(), data);
     }
 
+    pub fn set_single(&mut self, field_id: &FieldId, data: A) {
+        self.map.insert(field_id.as_usize(), Data::Single(data));
+    }
+
+    pub fn set_multiple(&mut self, field_id: &FieldId, data: A) {
+        match self.map.get_mut(field_id.as_usize()) {
+            Some(Data::Multiple(values)) => values.push(data),
+            _ => self
+                .map
+                .insert(field_id.as_usize(), Data::Multiple(vec![data])),
+        }
+    }
+
     pub fn get(&self, field_id: &FieldId) -> Option<&Data<A>> {
         self.map.get(field_id.as_usize())
     }
