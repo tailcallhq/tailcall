@@ -5,6 +5,18 @@ use crate::core::valid::Cause;
 #[derive(Debug, PartialEq)]
 pub struct Valid<A, E>(Result<A, ValidationError<E>>);
 
+#[allow(unused)]
+macro_rules! try_valid {
+    ($expr:expr $(,)?) => {
+        match crate::core::valid::Valid::to_result($expr) {
+            Ok(val) => val,
+            Err(err) => {
+                return crate::core::valid::Valid::from_validation_err(err);
+            }
+        }
+    };
+}
+
 pub trait Validator<A, E>: Sized {
     fn map<A1>(self, f: impl FnOnce(A) -> A1) -> Valid<A1, E> {
         Valid(self.to_result().map(f))
@@ -373,5 +385,30 @@ mod tests {
         let result = Valid::<i32, i32>::fail(1).foreach(|v| a = v);
         assert_eq!(result, Valid::fail(1));
         assert_eq!(a, 0);
+    }
+
+    #[test]
+    fn test_try_valid() {
+        let func = |x: i32| -> Valid<i32, String> {
+            let result = if x < 0 {
+                Valid::fail("x cannot be negative".into())
+            } else {
+                Valid::succeed(x * x)
+            };
+
+            let x = try_valid!(result);
+            let result = if x == 0 {
+                Valid::fail("x cannot be zero".into())
+            } else {
+                Valid::succeed(x / x)
+            };
+
+            let x = try_valid!(result);
+            Valid::succeed(x)
+        };
+
+        assert_eq!(func(1), Valid::succeed(1));
+        assert_eq!(func(0), Valid::fail("x cannot be zero".into()));
+        assert_eq!(func(-1), Valid::fail("x cannot be negative".into()));
     }
 }
