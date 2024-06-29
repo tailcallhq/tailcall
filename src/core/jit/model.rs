@@ -1,7 +1,5 @@
-use std::{
-    collections::HashMap,
-    fmt::{Debug, Formatter},
-};
+use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::model::IR;
 
@@ -195,9 +193,15 @@ impl ExecutionPlan {
 }
 
 pub struct Response<Value, Error> {
-    data: Value,
-    errors: Vec<Error>,
-    extensions: Vec<(String, Value)>,
+    pub data: Value,
+    pub errors: Vec<Error>,
+    pub extensions: Vec<(String, Value)>,
+}
+
+impl<Value, Error> Response<Value, Error> {
+    pub fn from_result(_result: Result<Value, Error>) -> Self {
+        todo!()
+    }
 }
 
 pub struct Request<Value> {

@@ -1,28 +1,33 @@
-use std::marker::PhantomData;
-
-use super::{ExecutionPlan, Request, Response};
+use super::{ExecutionPlan, Request, Response, Store, Synthesizer};
 use crate::core::runtime::TargetRuntime;
 
-struct Eval<Input, Output, Error> {
+struct Eval<Synth> {
     runtime: TargetRuntime,
     plan: ExecutionPlan,
-    _output: PhantomData<Output>,
-    _input: PhantomData<Input>,
-    _error: PhantomData<Error>,
+    synth: Synth,
 }
 
-impl<Input, Output, Error> Eval<Input, Output, Error> {
-    pub fn new(runtime: TargetRuntime, plan: ExecutionPlan) -> Self {
-        Self {
-            runtime,
-            plan,
-            _output: PhantomData::default(),
-            _input: PhantomData::default(),
-            _error: PhantomData::default(),
-        }
+impl<'a, Synth> Eval<Synth> {
+    pub fn new(runtime: TargetRuntime, plan: ExecutionPlan, synth: Synth) -> Self {
+        Self { runtime, plan, synth }
     }
 
-    pub async fn execute(&self, request: Request<Input>) -> Response<Output, Error> {
+    async fn execute_inner<Input, Output, Error>(
+        &self,
+        _request: Request<Input>,
+    ) -> Store<Result<Output, Error>> {
         todo!()
+    }
+
+    pub async fn execute<Input, Output, Error>(
+        &'a self,
+        request: Request<Input>,
+    ) -> Response<Output, Error>
+    where
+        Synth: Synthesizer<Value = Result<Output, Error>>,
+    {
+        let store = self.execute_inner(request).await;
+        let output = self.synth.synthesize(&store);
+        Response::from_result(output)
     }
 }
