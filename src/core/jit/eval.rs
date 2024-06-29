@@ -4,50 +4,60 @@ use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
 
-use super::{Children, ExecutionPlan, Field, Request, Store, Synthesizer};
+use super::{Children, ExecutionPlan, Field, Request, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
-use crate::core::runtime::TargetRuntime;
 
-pub struct Eval<Synth> {
-    runtime: TargetRuntime,
+pub struct Eval<Synth, Exec> {
     plan: ExecutionPlan,
     synth: Synth,
+    exec: Exec,
 }
 
-impl<Output, Synth> Eval<Synth>
+impl<Input, Output, Synth, Exec> Eval<Synth, Exec>
 where
     Output: Default + JsonLike<Output = Output>,
     Synth: Synthesizer<Value = Output>,
+    Exec: Executor<Input = Input, Output = Output>,
 {
-    pub fn new(runtime: TargetRuntime, plan: ExecutionPlan, synth: Synth) -> Self {
-        Self { runtime, plan, synth }
+    pub fn new(plan: ExecutionPlan, synth: Synth, exec: Exec) -> Self {
+        Self { plan, synth, exec }
     }
 
-    async fn execute_inner<Input>(&self, request: Request<Input>) -> Store<Output> {
+    async fn execute_inner(&self, request: Request<Input>) -> Store<Output> {
         let store = Arc::new(Mutex::new(Store::new(self.plan.size())));
-        let mut ctx = GraphQLContext::new(request, store.clone(), self.plan.to_owned());
+        let mut ctx = GraphQLContext::new(request, store.clone(), self.plan.to_owned(), &self.exec);
         ctx.execute().await;
 
         let store = mem::replace(&mut *store.lock().unwrap(), Store::new(0));
         store
     }
 
-    pub async fn execute<Input>(&self, request: Request<Input>) -> Output {
+    pub async fn execute(&self, request: Request<Input>) -> Output {
         let store = self.execute_inner(request).await;
         self.synth.synthesize(&store)
     }
 }
 
-struct GraphQLContext<Input, Output> {
+struct GraphQLContext<'a, Input, Output, Exec> {
     request: Request<Input>,
     store: Arc<Mutex<Store<Output>>>,
     plan: ExecutionPlan,
+    exec: &'a Exec,
 }
 
-impl<Input, Output: Default + JsonLike<Output = Output>> GraphQLContext<Input, Output> {
-    fn new(request: Request<Input>, store: Arc<Mutex<Store<Output>>>, plan: ExecutionPlan) -> Self {
-        Self { request, store, plan }
+impl<'a, Input, Output, Exec> GraphQLContext<'a, Input, Output, Exec>
+where
+    Output: Default + JsonLike<Output = Output>,
+    Exec: Executor<Input = Input, Output = Output>,
+{
+    fn new(
+        request: Request<Input>,
+        store: Arc<Mutex<Store<Output>>>,
+        plan: ExecutionPlan,
+        exec: &'a Exec,
+    ) -> Self {
+        Self { request, store, plan, exec }
     }
 
     async fn execute(&mut self) {
@@ -58,14 +68,14 @@ impl<Input, Output: Default + JsonLike<Output = Output>> GraphQLContext<Input, O
         .await;
     }
 
-    async fn execute_field<'a>(
-        &'a self,
-        field: &'a Field<Children>,
-        ctx: &'a ResolverContext<'a, Input, Output>,
+    async fn execute_field<'b>(
+        &'b self,
+        field: &'b Field<Children>,
+        ctx: &'b ResolverContext<'b, Input, Output>,
         is_multi: bool,
     ) {
         if let Some(ir) = &field.ir {
-            let value = self.execute_ir(ir, ctx).await;
+            let value = self.exec.execute(ir, ctx).await;
             // Array
             if let Ok(array) = value.as_array_ok() {
                 let ctx = ctx.with_parent_value(&value);
@@ -101,14 +111,6 @@ impl<Input, Output: Default + JsonLike<Output = Output>> GraphQLContext<Input, O
                 self.store.lock().unwrap().set_single(&field.id, value)
             };
         }
-    }
-
-    async fn execute_ir<'a>(
-        &'a self,
-        _ir: &'a IR,
-        _ctx: &'a ResolverContext<'a, Input, Output>,
-    ) -> Output {
-        todo!();
     }
 }
 
@@ -148,4 +150,20 @@ impl<'a, Input, Output> ResolverContext<'a, Input, Output> {
             value: Some(value),
         }
     }
+}
+
+pub trait Synthesizer {
+    type Value;
+    fn synthesize(&self, store: &Store<Self::Value>) -> Self::Value;
+}
+
+#[async_trait::async_trait]
+pub trait Executor {
+    type Input;
+    type Output;
+    async fn execute<'a>(
+        &'a self,
+        ir: &'a IR,
+        ctx: &'a ResolverContext<'a, Self::Input, Self::Output>,
+    ) -> Self::Output;
 }
