@@ -1,6 +1,6 @@
 mod builder;
-mod eval;
 mod model;
+mod query_executor;
 mod store;
 mod synth;
 pub use builder::*;

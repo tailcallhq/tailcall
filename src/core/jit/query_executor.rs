@@ -2,19 +2,20 @@ use std::borrow::Borrow;
 use std::mem;
 use std::sync::{Arc, Mutex};
 
+use derive_getters::Getters;
 use futures_util::future::join_all;
 
 use super::{Children, ExecutionPlan, Field, Request, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
-pub struct Eval<Synth, Exec> {
+pub struct QueryExecutor<Synth, Exec> {
     plan: ExecutionPlan,
     synth: Synth,
     exec: Exec,
 }
 
-impl<Input, Output, Synth, Exec> Eval<Synth, Exec>
+impl<Input, Output, Synth, Exec> QueryExecutor<Synth, Exec>
 where
     Output: Default + JsonLike<Output = Output>,
     Synth: Synthesizer<Value = Output>,
@@ -39,7 +40,8 @@ where
     }
 }
 
-struct GraphQLContext<'a, Input, Output, Exec> {
+#[derive(Getters)]
+pub struct GraphQLContext<'a, Input, Output, Exec> {
     request: Request<Input>,
     store: Arc<Mutex<Store<Output>>>,
     plan: ExecutionPlan,
@@ -114,7 +116,8 @@ where
     }
 }
 
-struct ResolverContext<'a, Input, Output> {
+#[derive(Getters)]
+pub struct ResolverContext<'a, Input, Output> {
     request: &'a Request<Input>,
     parent: Option<&'a Output>,
     value: Option<&'a Output>,
