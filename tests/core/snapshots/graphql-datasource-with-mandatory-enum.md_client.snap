@@ -30,7 +30,7 @@ scalar JSON
 scalar PhoneNumber
 
 type Post {
-  severity: WithOptEnum!
+  severity: WithMandatoryEnum!
 }
 
 type Query {
@@ -49,8 +49,8 @@ scalar UInt8
 
 scalar Url
 
-type WithOptEnum {
-  type: EnumType
+type WithMandatoryEnum {
+  type: EnumType!
 }
 
 schema {

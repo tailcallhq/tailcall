@@ -10,12 +10,12 @@ enum EnumType {
   WARNING
 }
 
-type WithOptEnum {
-  type: EnumType
+type WithMandatoryEnum {
+  type: EnumType!
 }
 
 type Post {
-  severity: WithOptEnum!
+  severity: WithMandatoryEnum!
 }
 
 type Query {

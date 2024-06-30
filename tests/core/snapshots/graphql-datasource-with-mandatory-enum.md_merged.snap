@@ -12,13 +12,13 @@ enum EnumType {
 }
 
 type Post {
-  severity: WithOptEnum!
+  severity: WithMandatoryEnum!
 }
 
 type Query {
   post: Post @expr(body: {severity: {type: null}})
 }
 
-type WithOptEnum {
-  type: EnumType
+type WithMandatoryEnum {
+  type: EnumType!
 }
