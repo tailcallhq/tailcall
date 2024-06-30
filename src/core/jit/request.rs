@@ -13,7 +13,7 @@ pub struct Request<Value> {
 }
 
 impl<Value> Request<Value> {
-    pub fn try_plan_from(&self, blueprint: Blueprint) -> Result<ExecutionPlan> {
+    pub fn try_plan_from(&self, blueprint: &Blueprint) -> Result<ExecutionPlan> {
         let doc = async_graphql::parser::parse_query(&self.operation)?;
         let builder = Builder::new(blueprint, doc);
         builder.build().map_err(Error::BuildError)

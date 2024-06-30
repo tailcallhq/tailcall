@@ -3,6 +3,8 @@ mod exec;
 mod model;
 mod store;
 mod synth;
+use std::sync::Arc;
+
 use async_graphql::Value;
 use builder::*;
 use context::Context;
@@ -21,68 +23,41 @@ pub use request::*;
 pub use response::*;
 use synth::{ConstValueSynth, Synthesizer};
 
+use super::app_context::AppContext;
 use super::blueprint::Blueprint;
+use super::http::RequestContext;
 use super::ir::model::IR;
+use super::ir::EvalContext;
 use super::json::JsonLike;
+use super::runtime::TargetRuntime;
 
-#[async_trait::async_trait]
-trait Jit: Sized {
-    type Input: Send + Sync;
-    type Output: JsonLike<Output = Self::Output> + Send + Sync;
-    type Error: Send + Sync;
-    type Synth: Synthesizer<Value = std::result::Result<Self::Output, Self::Error>> + Send + Sync;
-    type Exec: IRExecutor<Input = Self::Input, Output = Self::Output, Error = Self::Error>
-        + Send
-        + Sync;
+pub struct ConstValueExecutor {
+    plan: ExecutionPlan,
+    app_ctx: Arc<AppContext>,
+}
 
-    fn synth(&self) -> Self::Synth;
-    fn exec(&self) -> Self::Exec;
-    fn plan(self) -> ExecutionPlan;
+impl ConstValueExecutor {
+    pub fn new(request: Request<Value>, app_ctx: Arc<AppContext>) -> Result<Self> {
+        Ok(Self { plan: request.try_plan_from(&app_ctx.blueprint)?, app_ctx })
+    }
 
-    async fn execute(self, request: Request<Self::Input>) -> Response<Self::Output, Self::Error> {
-        let synth = self.synth();
-        let exec = self.exec();
-        let plan = self.plan();
+    async fn execute(self, request: Request<Value>) -> Response<Value, Error> {
+        let ctx = RequestContext::from(self.app_ctx.as_ref());
+        let synth = ConstValueSynth::new();
+        let exec = ConstValueExec::new(ctx);
+        let plan = self.plan;
         let exe = Executor::new(plan, synth, exec);
         exe.execute(request).await
     }
 }
 
-pub struct ConstValueJit {
-    plan: ExecutionPlan,
+struct ConstValueExec {
+    req_context: RequestContext,
 }
 
-impl ConstValueJit {
-    pub fn new(blueprint: Blueprint, request: Request<Value>) -> Result<Self> {
-        Ok(Self { plan: request.try_plan_from(blueprint)? })
-    }
-}
-
-#[async_trait::async_trait]
-impl Jit for ConstValueJit {
-    type Input = Value;
-    type Output = Value;
-    type Error = Error;
-    type Synth = ConstValueSynth;
-    type Exec = ConstValueExec;
-
-    fn synth(&self) -> Self::Synth {
-        ConstValueSynth::new()
-    }
-
-    fn exec(&self) -> Self::Exec {
-        ConstValueExec::new()
-    }
-
-    fn plan(self) -> ExecutionPlan {
-        self.plan
-    }
-}
-
-struct ConstValueExec;
 impl ConstValueExec {
-    pub fn new() -> Self {
-        Self
+    pub fn new(ctx: RequestContext) -> Self {
+        Self { req_context: ctx }
     }
 }
 
@@ -97,6 +72,8 @@ impl IRExecutor for ConstValueExec {
         ir: &'a IR,
         ctx: &'a Context<'a, Self::Input, Self::Output>,
     ) -> Result<Value> {
-        unimplemented!()
+        let req_context = &self.req_context;
+        let mut ctx = EvalContext::new(req_context, ctx);
+        Ok(ir.eval(&mut ctx).await?)
     }
 }
