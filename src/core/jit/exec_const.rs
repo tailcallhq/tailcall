@@ -18,11 +18,11 @@ pub struct ConstValueExecutor {
 }
 
 impl ConstValueExecutor {
-    pub fn new(request: Request<Value>, app_ctx: Arc<AppContext>) -> Result<Self> {
-        Ok(Self { plan: request.try_plan_from(&app_ctx.blueprint)?, app_ctx })
+    pub fn new(request: &Request<Value>, app_ctx: Arc<AppContext>) -> Result<Self> {
+        Ok(Self { plan: request.try_new(&app_ctx.blueprint)?, app_ctx })
     }
 
-    async fn execute(self, request: Request<Value>) -> Response<Value, Error> {
+    pub async fn execute(self, request: Request<Value>) -> Response<Value, Error> {
         let ctx = RequestContext::from(self.app_ctx.as_ref());
         let exec = ConstValueExec::new(ctx);
         let plan = self.plan;
