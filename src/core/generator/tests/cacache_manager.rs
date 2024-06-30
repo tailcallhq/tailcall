@@ -1,5 +1,8 @@
+use std::io::{Read, Write};
 use std::path::PathBuf;
 
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use http_cache_reqwest::{CacheManager, HttpResponse};
 use http_cache_semantics::CachePolicy;
 use serde::{Deserialize, Serialize};
@@ -25,16 +28,6 @@ impl Default for CaCacheManager {
 
 #[async_trait::async_trait]
 impl CacheManager for CaCacheManager {
-    async fn get(&self, cache_key: &str) -> Result<Option<(HttpResponse, CachePolicy)>> {
-        let store: Store = match cacache::read(&self.path, cache_key).await {
-            Ok(d) => serde_json::from_slice(&d)?,
-            Err(_e) => {
-                return Ok(None);
-            }
-        };
-        Ok(Some((store.response, store.policy)))
-    }
-
     async fn put(
         &self,
         cache_key: String,
@@ -42,9 +35,28 @@ impl CacheManager for CaCacheManager {
         policy: CachePolicy,
     ) -> Result<HttpResponse> {
         let data = Store { response: response.clone(), policy };
-        let bytes = serde_json::to_string(&data)?;
-        cacache::write(&self.path, cache_key, bytes).await?;
+        let bytes = bincode::serialize(&data)?; // Serialize using bincode
+
+        // Compress serialized data if necessary
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(&bytes)?;
+        let compressed_bytes = encoder.finish()?;
+
+        cacache::write(&self.path, cache_key, compressed_bytes).await?; // Store compressed data
         Ok(response)
+    }
+
+    async fn get(&self, cache_key: &str) -> Result<Option<(HttpResponse, CachePolicy)>> {
+        match cacache::read(&self.path, cache_key).await {
+            Ok(compressed_data) => {
+                let mut decoder = flate2::read::GzDecoder::new(compressed_data.as_slice());
+                let mut serialized_data = Vec::new();
+                decoder.read_to_end(&mut serialized_data)?;
+                let store: Store = bincode::deserialize(&serialized_data)?; // Deserialize compressed data
+                Ok(Some((store.response, store.policy)))
+            }
+            Err(_) => Ok(None), // Return None if cache miss
+        }
     }
 
     async fn delete(&self, cache_key: &str) -> Result<()> {
