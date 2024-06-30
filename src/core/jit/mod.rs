@@ -43,9 +43,10 @@ impl ConstValueExecutor {
 
     async fn execute(self, request: Request<Value>) -> Response<Value, Error> {
         let ctx = RequestContext::from(self.app_ctx.as_ref());
-        let synth = SynthConst::new();
         let exec = ConstValueExec::new(ctx);
         let plan = self.plan;
+        // TODO: drop the clones in plan
+        let synth = SynthConst::new(plan.clone());
         let exe = Executor::new(plan, synth, exec);
         exe.execute(request).await
     }

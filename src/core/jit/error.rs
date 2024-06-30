@@ -1,6 +1,6 @@
 use derive_more::From;
 
-#[derive(From)]
+#[derive(From, Debug, Clone)]
 pub enum Error {
     #[from(ignore)]
     BuildError(String),

@@ -17,6 +17,16 @@ pub enum Data<A> {
     Pending,
 }
 
+impl<A> Data<A> {
+    pub fn map<B>(self, ab: impl Fn(A) -> B) -> Data<B> {
+        match self {
+            Data::Single(a) => Data::Single(ab(a)),
+            Data::Multiple(values) => Data::Multiple(values.into_iter().map(ab).collect()),
+            Data::Pending => Data::Pending,
+        }
+    }
+}
+
 impl<A> Store<A> {
     pub fn new(size: usize) -> Self {
         Store { map: (0..size).map(|_| Data::Pending).collect() }

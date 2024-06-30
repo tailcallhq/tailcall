@@ -40,9 +40,9 @@ where
         store
     }
 
-    pub async fn execute(&self, request: Request<Input>) -> Response<Output, Error> {
+    pub async fn execute(self, request: Request<Input>) -> Response<Output, Error> {
         let store = self.execute_inner(request).await;
-        Response::new(self.synth.synthesize(&store))
+        Response::new(self.synth.synthesize(store))
     }
 }
 
