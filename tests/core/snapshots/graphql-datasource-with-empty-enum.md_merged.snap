@@ -1,0 +1,25 @@
+---
+source: tests/core/spec.rs
+assertion_line: 235
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+enum EnumType {
+  INFORMATION
+  WARNING
+}
+
+type Post {
+  severity: WithOptEnum!
+}
+
+type Query {
+  post: Post @graphQL(baseURL: "http://upstream/graphql", name: "post")
+}
+
+type WithOptEnum {
+  type: EnumType
+}

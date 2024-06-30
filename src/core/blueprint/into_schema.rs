@@ -81,9 +81,11 @@ fn to_type(def: &Definition) -> dynamic::Type {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
                                 let ctx = EvalContext::new(req_ctx, &ctx);
-                                FieldFuture::from_value(
-                                    ctx.path_value(&[field_name]).map(|a| a.into_owned()),
-                                )
+
+                                match ctx.path_value(&[field_name]).map(|a| a.into_owned()) {
+                                    Some(ConstValue::Null) => FieldFuture::Value(FieldValue::NONE),
+                                    a => FieldFuture::from_value(a),
+                                }
                             }
                             Some(expr) => {
                                 let span = tracing::info_span!(
