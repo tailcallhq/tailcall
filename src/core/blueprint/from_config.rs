@@ -102,14 +102,7 @@ where
                 .collect::<BTreeSet<String>>(),
         )
     } else {
-        match type_of {
-            "String" => JsonSchema::Str,
-            "Int" => JsonSchema::Num,
-            "Boolean" => JsonSchema::Bool,
-            "Empty" => JsonSchema::Empty,
-            "JSON" => JsonSchema::Any,
-            _ => JsonSchema::Any,
-        }
+        JsonSchema::from_scalar_type(type_of)
     };
 
     if !required {
@@ -130,7 +123,10 @@ impl TryFrom<&ConfigModule> for Blueprint {
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         config_blueprint()
-            .try_fold(config_module, Blueprint::default())
+            .try_fold(
+                &config_module.clone().normalize_default().to_result()?,
+                Blueprint::default(),
+            )
             .and_then(|blueprint| {
                 let schema_builder = SchemaBuilder::from(&blueprint);
                 match schema_builder.finish() {

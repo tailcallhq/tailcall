@@ -1,18 +1,18 @@
+mod discriminator;
 mod error;
 mod eval;
 mod eval_context;
 mod eval_http;
 mod eval_io;
-mod jit;
 mod resolver_context_like;
 
 pub mod model;
 use std::collections::HashMap;
 use std::ops::Deref;
 
+pub use discriminator::*;
 pub use error::*;
 pub use eval_context::EvalContext;
-pub use jit::*;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};
 
 /// Contains all the nested fields that are resolved with current parent

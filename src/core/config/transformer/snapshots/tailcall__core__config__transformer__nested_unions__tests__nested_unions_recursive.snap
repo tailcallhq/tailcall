@@ -1,0 +1,9 @@
+---
+source: src/core/config/transformer/nested_unions.rs
+expression: error
+---
+Validation Error
+• Recursive type U1 [U]
+• Recursive type U2 [U]
+• Recursive type U2 [U1]
+• Recursive type U1 [U2]

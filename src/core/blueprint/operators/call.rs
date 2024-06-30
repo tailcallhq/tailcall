@@ -103,7 +103,7 @@ fn compile_call(
             )
             .map(|(mut b_field, args_expr)| {
                 if !step.args.is_empty() {
-                    b_field.map_expr(|expr| args_expr.clone().and_then(expr));
+                    b_field.map_expr(|expr| args_expr.clone().pipe(expr));
                 }
 
                 b_field
@@ -120,7 +120,7 @@ fn compile_call(
                     b_field_next
                         .resolver
                         .as_ref()
-                        .map(|other_expr| expr.clone().and_then(other_expr.clone()))
+                        .map(|other_expr| expr.clone().pipe(other_expr.clone()))
                         .unwrap_or(expr)
                 });
 
@@ -151,7 +151,7 @@ fn get_field_and_field_name<'a>(
     )
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
-            config_module.config.find_type(&type_name),
+            config_module.config().find_type(&type_name),
             format!("{} type not found on config", type_name),
         )
         .and_then(|query_type| {

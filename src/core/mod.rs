@@ -19,6 +19,8 @@ pub mod has_headers;
 pub mod helpers;
 pub mod http;
 pub mod ir;
+#[allow(unused)]
+pub mod jit;
 pub mod json;
 pub mod merge_right;
 pub mod mustache;
@@ -46,6 +48,7 @@ use std::num::NonZeroU64;
 use async_graphql_value::ConstValue;
 use http::Response;
 use ir::model::IoId;
+pub use mustache::Mustache;
 pub use tailcall_macros as macros;
 
 pub trait EnvIO: Send + Sync + 'static {
@@ -57,9 +60,7 @@ pub trait HttpIO: Sync + Send + 'static {
     async fn execute(
         &self,
         request: reqwest::Request,
-    ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        self.execute(request).await
-    }
+    ) -> anyhow::Result<Response<hyper::body::Bytes>>;
 }
 
 #[async_trait::async_trait]

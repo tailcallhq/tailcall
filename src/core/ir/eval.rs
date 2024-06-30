@@ -1,47 +1,37 @@
 use std::future::Future;
 use std::ops::Deref;
-use std::pin::Pin;
 
 use async_graphql_value::ConstValue;
 
 use super::eval_io::eval_io;
-use super::model::{Cache, CacheKey, Context, Map, IR};
+use super::model::{Cache, CacheKey, Map, IR};
 use super::{Error, EvalContext, ResolverContextLike};
 use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
 
+// Fake trait to capture proper lifetimes.
+// see discussion https://users.rust-lang.org/t/rpitit-allows-more-flexible-code-in-comparison-with-raw-rpit-in-inherit-impl/113417
+// TODO: could be removed after migrating to 2024 edition
+pub trait Captures<T: ?Sized> {}
+impl<T: ?Sized, U: ?Sized> Captures<T> for U {}
+
 impl IR {
     #[tracing::instrument(skip_all, fields(otel.name = %self), err)]
-    pub fn eval<'a, Ctx>(
+    pub fn eval<'a, 'b, Ctx>(
         &'a self,
-        ctx: &'a mut EvalContext<'a, Ctx>,
-    ) -> Pin<Box<impl Future<Output = Result<ConstValue, Error>> + 'a>>
+        ctx: &'b mut EvalContext<'a, Ctx>,
+    ) -> impl Future<Output = Result<ConstValue, Error>> + Send + Captures<&'b &'a ()>
     where
         Ctx: ResolverContextLike + Sync,
     {
         Box::pin(async move {
             match self {
-                IR::Context(op) => match op {
-                    Context::Value => {
-                        Ok(ctx.value().cloned().unwrap_or(async_graphql::Value::Null))
-                    }
-                    Context::Path(path) => Ok(ctx
-                        .path_value(path)
-                        .map(|a| a.into_owned())
-                        .unwrap_or(async_graphql::Value::Null)),
-                    Context::PushArgs { expr, and_then } => {
-                        let args = expr.eval(&mut ctx.clone()).await?;
-                        let ctx = &mut ctx.with_args(args);
-                        and_then.eval(ctx).await
-                    }
-                    Context::PushValue { expr, and_then } => {
-                        let value = expr.eval(&mut ctx.clone()).await?;
-                        ctx.with_value(value);
-                        and_then.eval(ctx).await
-                    }
-                },
+                IR::ContextPath(path) => Ok(ctx
+                    .path_value(path)
+                    .map(|a| a.into_owned())
+                    .unwrap_or(async_graphql::Value::Null)),
                 IR::Path(input, path) => {
-                    let inp = &input.eval(ctx).await?;
+                    let inp = input.eval(ctx).await?;
                     Ok(inp
                         .get_path(path)
                         .unwrap_or(&async_graphql::Value::Null)
@@ -93,6 +83,18 @@ impl IR {
                         ))
                     }
                 }
+                IR::Pipe(first, second) => {
+                    let args = first.eval(&mut ctx.clone()).await?;
+                    let ctx = &mut ctx.with_args(args);
+                    second.eval(ctx).await
+                }
+                IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
+                    let type_name = discriminator.resolve_type(&value)?;
+
+                    ctx.set_type_name(type_name);
+
+                    Ok(value)
+                }),
             }
         })
     }

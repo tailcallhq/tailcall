@@ -1,0 +1,75 @@
+---
+source: src/core/jit/builder.rs
+expression: plan
+---
+ExecutionPlan {
+    parent: [
+        Field {
+            id: 0,
+            name: "posts",
+            ir: "Some(..)",
+            type_of: [Post],
+        },
+        Field {
+            id: 1,
+            name: "user",
+            ir: "Some(..)",
+            type_of: User,
+            refs: Some(
+                Parent(0),
+            ),
+        },
+        Field {
+            id: 2,
+            name: "id",
+            type_of: ID!,
+            refs: Some(
+                Parent(1),
+            ),
+        },
+        Field {
+            id: 3,
+            name: "name",
+            type_of: String!,
+            refs: Some(
+                Parent(1),
+            ),
+        },
+    ],
+    children: [
+        Field {
+            id: 0,
+            name: "posts",
+            ir: "Some(..)",
+            type_of: [Post],
+            refs: Some(
+                Children(
+                    [
+                        Field {
+                            id: 1,
+                            name: "user",
+                            ir: "Some(..)",
+                            type_of: User,
+                            refs: Some(
+                                Children(
+                                    [
+                                        Field {
+                                            id: 2,
+                                            name: "id",
+                                            type_of: ID!,
+                                        },
+                                        Field {
+                                            id: 3,
+                                            name: "name",
+                                            type_of: String!,
+                                        },
+                                    ],
+                                ),
+                            ),
+                        },
+                    ],
+                ),
+            ),
+        },
+    ],
+}
