@@ -11,6 +11,7 @@ use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
 use crate::core::ir::EvalContext;
 
+/// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
     plan: ExecutionPlan,
     app_ctx: Arc<AppContext>,
