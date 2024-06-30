@@ -149,7 +149,7 @@ impl ConstValueSynth {
 impl Synthesizer for ConstValueSynth {
     type Value = Result<async_graphql::Value>;
 
-    fn synthesize(&self, store: &Store<Self::Value>) -> Self::Value {
+    fn synthesize(&self, _store: &Store<Self::Value>) -> Self::Value {
         unimplemented!()
     }
 }
