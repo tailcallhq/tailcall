@@ -314,7 +314,7 @@ mod tests {
     #[test]
     fn test_location_resolve_with_url() {
         let json_source = r#""https://dummyjson.com/products""#;
-        let de_source: Location<UnResolved> = serde_json::from_str(&json_source).unwrap();
+        let de_source: Location<UnResolved> = serde_json::from_str(json_source).unwrap();
         let de_source = de_source.into_resolved(None);
         assert_eq!(de_source.0, "https://dummyjson.com/products");
         assert_eq!(de_source.1, PhantomData::<Resolved>);
@@ -322,9 +322,9 @@ mod tests {
 
     #[test]
     fn test_is_empty() {
-        let location_empty: Location<UnResolved> = serde_json::from_str(&r#""""#).unwrap();
+        let location_empty: Location<UnResolved> = serde_json::from_str(r#""""#).unwrap();
         let location_non_empty: Location<UnResolved> =
-            serde_json::from_str(&r#""https://dummyjson.com/products""#).unwrap();
+            serde_json::from_str(r#""https://dummyjson.com/products""#).unwrap();
         assert!(location_empty.is_empty());
         assert!(!location_non_empty.is_empty());
     }
