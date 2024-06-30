@@ -180,3 +180,43 @@ impl Reader for Cached {
         Ok(FileRead { content, path: file_path })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_from_reqwest_request() {
+        let original_url: Url = "https://tailcall.run".parse().unwrap();
+        let original_request = reqwest::Request::new(reqwest::Method::GET, original_url.clone());
+        let resource: Resource = original_request.try_clone().unwrap().into();
+        if let Resource::Request(converted_req) = resource {
+            assert_eq!(converted_req.url().as_str(), original_url.as_str());
+            assert_eq!(converted_req.method(), original_request.method());
+        } else {
+            panic!("Expected Resource::Request, got something else");
+        }
+    }
+
+    #[test]
+    fn test_from_str() {
+        let path = "https://tailcall.run";
+        let resource: Resource = path.into();
+        if let Resource::RawPath(ref p) = resource {
+            assert_eq!(p, path);
+        } else {
+            panic!("Expected Resource::RawPath, got something else");
+        }
+    }
+
+    #[test]
+    fn test_from_string() {
+        let path = String::from("./config.graphql");
+        let resource: Resource = path.clone().into();
+        if let Resource::RawPath(p) = resource {
+            assert_eq!(p, path);
+        } else {
+            panic!("Expected Resource::RawPath, got something else");
+        }
+    }
+}
