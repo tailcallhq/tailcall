@@ -1,18 +1,21 @@
 mod builder;
 mod model;
-mod query_executor;
+mod exec;
 mod store;
 mod synth;
 use async_graphql::Value;
 use builder::*;
+use context::Context;
 use model::*;
-use query_executor::{EvaluationContext, Executor, QueryExecutor, Synthesizer};
+use exec::{Executor, IRExecutor};
 use store::*;
+mod context;
 mod error;
 
 // NOTE: Only used in tests and benchmarks
 pub mod common;
 pub use error::*;
+use synth::Synthesizer;
 
 use super::blueprint::Blueprint;
 use super::ir::model::IR;
@@ -49,7 +52,7 @@ impl Jit for ConstValueJit {
         let plan = self.plan;
         let synth = ConstValueSynth::new();
         let ir_exec = ConstValueExec::new();
-        let exe = QueryExecutor::new(plan, synth, ir_exec);
+        let exe = Executor::new(plan, synth, ir_exec);
         let out = exe.execute(request).await;
         Response::new(out)
     }
@@ -62,7 +65,7 @@ impl ConstValueExec {
     }
 }
 #[async_trait::async_trait]
-impl Executor for ConstValueExec {
+impl IRExecutor for ConstValueExec {
     type Input = Value;
     type Output = Value;
     type Error = Error;
@@ -70,7 +73,7 @@ impl Executor for ConstValueExec {
     async fn execute<'a>(
         &'a self,
         ir: &'a IR,
-        ctx: &'a EvaluationContext<'a, Self::Input, Self::Output>,
+        ctx: &'a Context<'a, Self::Input, Self::Output>,
     ) -> Result<Value> {
         unimplemented!()
     }

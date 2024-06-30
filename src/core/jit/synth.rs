@@ -4,6 +4,11 @@ use super::ExecutionPlan;
 use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
 
+pub trait Synthesizer {
+    type Value;
+    fn synthesize(&self, store: &Store<Self::Value>) -> Self::Value;
+}
+
 pub struct Synth<'a> {
     selection: Vec<Field<Children>>,
     store: Store<Value<'a>>,
