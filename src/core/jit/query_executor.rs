@@ -15,47 +15,49 @@ pub struct QueryExecutor<Synth, Exec> {
     exec: Exec,
 }
 
-impl<Input, Output, Synth, Exec> QueryExecutor<Synth, Exec>
+impl<Input, Output, Error, Synth, Exec> QueryExecutor<Synth, Exec>
 where
-    Output: Default + JsonLike<Output = Output>,
-    Synth: Synthesizer<Value = Output>,
-    Exec: Executor<Input = Input, Output = Output>,
+    Output: JsonLike<Output = Output>,
+    Synth: Synthesizer<Value = Result<Output, Error>>,
+    Exec: Executor<Input = Input, Output = Output, Error = Error>,
 {
     pub fn new(plan: ExecutionPlan, synth: Synth, exec: Exec) -> Self {
         Self { plan, synth, exec }
     }
 
-    async fn execute_inner(&self, request: Request<Input>) -> Store<Output> {
-        let store = Arc::new(Mutex::new(Store::new(self.plan.size())));
-        let mut ctx = GraphQLContext::new(request, store.clone(), self.plan.to_owned(), &self.exec);
+    async fn execute_inner(&self, request: Request<Input>) -> Store<Result<Output, Error>> {
+        let store: Arc<Mutex<Store<Result<Output, Error>>>> =
+            Arc::new(Mutex::new(Store::new(self.plan.size())));
+        let mut ctx =
+            QueryExecutorInner::new(request, store.clone(), self.plan.to_owned(), &self.exec);
         ctx.execute().await;
 
         let store = mem::replace(&mut *store.lock().unwrap(), Store::new(0));
         store
     }
 
-    pub async fn execute(&self, request: Request<Input>) -> Output {
+    pub async fn execute(&self, request: Request<Input>) -> Result<Output, Error> {
         let store = self.execute_inner(request).await;
         self.synth.synthesize(&store)
     }
 }
 
 #[derive(Getters)]
-pub struct GraphQLContext<'a, Input, Output, Exec> {
+pub struct QueryExecutorInner<'a, Input, Output, Error, Exec> {
     request: Request<Input>,
-    store: Arc<Mutex<Store<Output>>>,
+    store: Arc<Mutex<Store<Result<Output, Error>>>>,
     plan: ExecutionPlan,
     exec: &'a Exec,
 }
 
-impl<'a, Input, Output, Exec> GraphQLContext<'a, Input, Output, Exec>
+impl<'a, Input, Output, Error, Exec> QueryExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: Default + JsonLike<Output = Output>,
-    Exec: Executor<Input = Input, Output = Output>,
+    Output: JsonLike<Output = Output>,
+    Exec: Executor<Input = Input, Output = Output, Error = Error>,
 {
     fn new(
         request: Request<Input>,
-        store: Arc<Mutex<Store<Output>>>,
+        store: Arc<Mutex<Store<Result<Output, Error>>>>,
         plan: ExecutionPlan,
         exec: &'a Exec,
     ) -> Self {
@@ -64,7 +66,7 @@ where
 
     async fn execute(&mut self) {
         join_all(self.plan.as_children().iter().map(|field| async {
-            let ctx: ResolverContext<Input, Output> = ResolverContext::new(&self.request);
+            let ctx = EvaluationContext::new(&self.request);
             self.execute_field(field, &ctx, false).await
         }))
         .await;
@@ -73,57 +75,60 @@ where
     async fn execute_field<'b>(
         &'b self,
         field: &'b Field<Children>,
-        ctx: &'b ResolverContext<'b, Input, Output>,
+        ctx: &'b EvaluationContext<'b, Input, Output>,
         is_multi: bool,
-    ) {
+    ) -> Result<(), Error> {
         if let Some(ir) = &field.ir {
-            let value = self.exec.execute(ir, ctx).await;
-            // Array
-            if let Ok(array) = value.as_array_ok() {
-                let ctx = ctx.with_parent_value(&value);
-                join_all(array.iter().map(|value| {
-                    let ctx = ctx.with_value(value);
+            let result = self.exec.execute(ir, ctx).await;
+            if let Ok(ref value) = result {
+                // Array
+                if let Ok(array) = value.as_array_ok() {
+                    let ctx = ctx.with_parent_value(&value);
+                    join_all(array.iter().map(|value| {
+                        let ctx = ctx.with_value(value);
 
+                        join_all(field.children().iter().map(|child| {
+                            let ctx = ctx.clone();
+                            async move {
+                                let ctx = ctx.clone();
+                                self.execute_field(child, ctx.clone().borrow(), true).await
+                            }
+                        }))
+                    }))
+                    .await;
+
+                // Object
+                } else {
                     join_all(field.children().iter().map(|child| {
                         let ctx = ctx.clone();
+                        let value = &value;
                         async move {
-                            let ctx = ctx.clone();
-                            self.execute_field(child, ctx.clone().borrow(), true).await
+                            let ctx = ctx.with_parent_value(value);
+                            self.execute_field(child, &ctx, false).await
                         }
                     }))
-                }))
-                .await;
-
-            // Object
-            } else {
-                join_all(field.children().iter().map(|child| {
-                    let ctx = ctx.clone();
-                    let value = &value;
-                    async move {
-                        let ctx = ctx.with_parent_value(value);
-                        self.execute_field(child, &ctx, false).await
-                    }
-                }))
-                .await;
+                    .await;
+                }
             }
 
             if is_multi {
-                self.store.lock().unwrap().set_multiple(&field.id, value)
+                self.store.lock().unwrap().set_multiple(&field.id, result)
             } else {
-                self.store.lock().unwrap().set_single(&field.id, value)
+                self.store.lock().unwrap().set_single(&field.id, result)
             };
         }
+        Ok(())
     }
 }
 
 #[derive(Getters)]
-pub struct ResolverContext<'a, Input, Output> {
+pub struct EvaluationContext<'a, Input, Output> {
     request: &'a Request<Input>,
     parent: Option<&'a Output>,
     value: Option<&'a Output>,
 }
 
-impl<'a, Input, Output> Clone for ResolverContext<'a, Input, Output> {
+impl<'a, Input, Output> Clone for EvaluationContext<'a, Input, Output> {
     fn clone(&self) -> Self {
         Self {
             request: self.request,
@@ -133,7 +138,7 @@ impl<'a, Input, Output> Clone for ResolverContext<'a, Input, Output> {
     }
 }
 
-impl<'a, Input, Output> ResolverContext<'a, Input, Output> {
+impl<'a, Input, Output> EvaluationContext<'a, Input, Output> {
     fn new(request: &'a Request<Input>) -> Self {
         Self { request, parent: None, value: None }
     }
@@ -164,9 +169,10 @@ pub trait Synthesizer {
 pub trait Executor {
     type Input;
     type Output;
+    type Error;
     async fn execute<'a>(
         &'a self,
         ir: &'a IR,
-        ctx: &'a ResolverContext<'a, Self::Input, Self::Output>,
-    ) -> Self::Output;
+        ctx: &'a EvaluationContext<'a, Self::Input, Self::Output>,
+    ) -> Result<Self::Output, Self::Error>;
 }

@@ -199,7 +199,7 @@ pub struct Response<Value, Error> {
 }
 
 impl<Value, Error> Response<Value, Error> {
-    pub fn from_result(_result: Result<Value, Error>) -> Self {
+    pub fn new(_result: Result<Value, Error>) -> Self {
         todo!()
     }
 }
