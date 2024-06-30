@@ -7,7 +7,7 @@ use futures_util::future::join_all;
 
 use super::context::Context;
 use super::synth::Synthesizer;
-use super::{Children, ExecutionPlan, Field, Request, Store};
+use super::{Children, ExecutionPlan, Field, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
@@ -40,9 +40,9 @@ where
         store
     }
 
-    pub async fn execute(&self, request: Request<Input>) -> Result<Output, Error> {
+    pub async fn execute(&self, request: Request<Input>) -> Response<Output, Error> {
         let store = self.execute_inner(request).await;
-        self.synth.synthesize(&store)
+        Response::new(self.synth.synthesize(&store))
     }
 }
 

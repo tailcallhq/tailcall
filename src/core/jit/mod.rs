@@ -44,8 +44,7 @@ trait Jit: Sized {
         let exec = self.exec();
         let plan = self.plan();
         let exe = Executor::new(plan, synth, exec);
-        let out = exe.execute(request).await;
-        Response::new(out)
+        exe.execute(request).await
     }
 }
 
