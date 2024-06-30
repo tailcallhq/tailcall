@@ -54,6 +54,8 @@ struct Visitor<'cfg> {
     new_types: BTreeMap<String, Type>,
     // maps type name to UnionPresence
     union_presence: HashMap<&'cfg String, UnionPresence>,
+    // track visited types
+    visited_types: Vec<&'cfg String>,
 }
 
 impl<'cfg> Visitor<'cfg> {
@@ -62,6 +64,7 @@ impl<'cfg> Visitor<'cfg> {
             config,
             union_presence: HashMap::new(),
             new_types: BTreeMap::new(),
+            visited_types: Vec::new(),
         }
     }
 
@@ -102,10 +105,11 @@ impl<'cfg> Visitor<'cfg> {
 
     /// Recursively walks over nested types and fills union_presence info
     fn collect_nested_unions_for_type(&mut self, type_name: &'cfg String) {
-        if self.union_presence.contains_key(type_name) {
+        if self.union_presence.contains_key(type_name) || self.visited_types.contains(&type_name) {
             return;
         }
-
+        // avoid endless recurssion
+        self.visited_types.push(type_name);
         if let Some(union_) = self.config.unions.get(type_name) {
             // if the type is union process the nested types recursively
             for type_name in &union_.types {
@@ -301,6 +305,16 @@ mod tests {
     fn test_nested_unions() {
         let config =
             std::fs::read_to_string(tailcall_fixtures::configs::YAML_NESTED_UNIONS).unwrap();
+        let config = Config::from_yaml(&config).unwrap();
+        let config = UnionInputType.transform(config).to_result().unwrap();
+
+        assert_snapshot!(config.to_sdl());
+    }
+
+    #[test]
+    fn test_recurssive_input() {
+        let config =
+            std::fs::read_to_string(tailcall_fixtures::configs::YAML_RECURSSIVE_INPUT).unwrap();
         let config = Config::from_yaml(&config).unwrap();
         let config = UnionInputType.transform(config).to_result().unwrap();
 

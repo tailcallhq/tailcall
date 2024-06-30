@@ -1,0 +1,26 @@
+---
+source: src/core/config/transformer/union_input_type.rs
+expression: config.to_sdl()
+---
+schema @server(port: 8000) @upstream(baseURL: "http://localhost:8083/mesh") {
+  query: Query
+}
+
+input PostFilter {
+  name: StringHashFilter
+  rec: PostFilter
+}
+
+input StringHashFilter {
+  eq: String
+  in: String
+}
+
+type Posts {
+  name: String
+  shortName: String
+}
+
+type Query {
+  queryposts(filter: PostFilter): String @graphQL(args: [{key: "filter", value: "{{.args.filter}}"}], baseURL: "http://localhost:8083/mesh", name: "queryposts")
+}
