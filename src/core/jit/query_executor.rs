@@ -83,7 +83,7 @@ where
             if let Ok(ref value) = result {
                 // Array
                 if let Ok(array) = value.as_array_ok() {
-                    let ctx = ctx.with_parent_value(&value);
+                    let ctx = ctx.with_parent_value(value);
                     join_all(array.iter().map(|value| {
                         let ctx = ctx.with_value(value);
 
