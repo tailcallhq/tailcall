@@ -295,4 +295,19 @@ mod tests {
         let actual = serde_json::to_string_pretty(&config).unwrap();
         insta::assert_snapshot!(actual)
     }
+
+    #[test]
+    fn should_use_default_presets_when_none_provided() {
+        let config_preset = Preset { merge_type: None, consolidate_url: None };
+        let transform_preset: config::transformer::Preset = config_preset.into();
+        assert_eq!(transform_preset, config::transformer::Preset::default());
+    }
+
+    #[test]
+    fn should_use_user_provided_presets_when_provided() {
+        let config_preset = Preset { merge_type: Some(0.5), consolidate_url: Some(1.0) };
+        let transform_preset: config::transformer::Preset = config_preset.into();
+        let expected_preset = config::transformer::Preset::new(0.5, 1.0, true, true);
+        assert_eq!(transform_preset, expected_preset);
+    }
 }
