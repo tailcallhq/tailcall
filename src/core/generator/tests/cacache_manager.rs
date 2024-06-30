@@ -35,14 +35,13 @@ impl CacheManager for CaCacheManager {
         policy: CachePolicy,
     ) -> Result<HttpResponse> {
         let data = Store { response: response.clone(), policy };
-        let bytes = bincode::serialize(&data)?; // Serialize using bincode
+        let bytes = bincode::serialize(&data)?;
 
-        // Compress serialized data if necessary
         let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
         encoder.write_all(&bytes)?;
         let compressed_bytes = encoder.finish()?;
 
-        cacache::write(&self.path, cache_key, compressed_bytes).await?; // Store compressed data
+        cacache::write(&self.path, cache_key, compressed_bytes).await?;
         Ok(response)
     }
 
@@ -52,10 +51,10 @@ impl CacheManager for CaCacheManager {
                 let mut decoder = flate2::read::GzDecoder::new(compressed_data.as_slice());
                 let mut serialized_data = Vec::new();
                 decoder.read_to_end(&mut serialized_data)?;
-                let store: Store = bincode::deserialize(&serialized_data)?; // Deserialize compressed data
+                let store: Store = bincode::deserialize(&serialized_data)?;
                 Ok(Some((store.response, store.policy)))
             }
-            Err(_) => Ok(None), // Return None if cache miss
+            Err(_) => Ok(None),
         }
     }
 
@@ -63,3 +62,4 @@ impl CacheManager for CaCacheManager {
         Ok(cacache::remove(&self.path, cache_key).await?)
     }
 }
+ 
