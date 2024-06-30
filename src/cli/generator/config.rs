@@ -310,4 +310,36 @@ mod tests {
         let expected_preset = config::transformer::Preset::new(0.5, 1.0, true, true);
         assert_eq!(transform_preset, expected_preset);
     }
+
+    #[test]
+    fn test_location_resolve_with_url() {
+        let json_source = r#""https://dummyjson.com/products""#;
+        let de_source: Location<UnResolved> = serde_json::from_str(&json_source).unwrap();
+        let de_source = de_source.into_resolved(None);
+        assert_eq!(de_source.0, "https://dummyjson.com/products");
+        assert_eq!(de_source.1, PhantomData::<Resolved>);
+    }
+
+    #[test]
+    fn test_is_empty() {
+        let location_empty: Location<UnResolved> = serde_json::from_str(&r#""""#).unwrap();
+        let location_non_empty: Location<UnResolved> =
+            serde_json::from_str(&r#""https://dummyjson.com/products""#).unwrap();
+        assert!(location_empty.is_empty());
+        assert!(!location_non_empty.is_empty());
+    }
+
+    #[test]
+    fn test_into_resolved_absolute_path() {
+        let location = Location::<UnResolved>("/absolute/path".to_string(), PhantomData);
+        let resolved_location = location.into_resolved(Some(Path::new("/user/test/path")));
+        assert!(resolved_location.0.eq("/absolute/path"))
+    }
+
+    #[test]
+    fn test_into_resolved_relative_path() {
+        let location = Location::<UnResolved>("../news.proto".to_string(), PhantomData);
+        let resolved_location = location.into_resolved(Some(Path::new("/user/test/path")));
+        assert!(resolved_location.0.eq("/user/test/news.proto"))
+    }
 }
