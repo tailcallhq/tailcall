@@ -62,4 +62,3 @@ impl CacheManager for CaCacheManager {
         Ok(cacache::remove(&self.path, cache_key).await?)
     }
 }
- 
