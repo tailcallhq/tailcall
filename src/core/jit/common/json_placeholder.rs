@@ -6,7 +6,7 @@ use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
 use crate::core::jit::store::{Data, Store};
-use crate::core::jit::synth::Synth;
+use crate::core::jit::synth::SynthBorrow;
 use crate::core::valid::Validator;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
@@ -18,7 +18,7 @@ impl JsonPlaceholder {
     const USERS: &'static str = include_str!("users.json");
     const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    pub fn init(query: &str) -> Synth {
+    pub fn init(query: &str) -> SynthBorrow {
         let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
 
@@ -75,6 +75,6 @@ impl JsonPlaceholder {
             store
         });
 
-        Synth::new(plan, store)
+        SynthBorrow::new(plan, store)
     }
 }

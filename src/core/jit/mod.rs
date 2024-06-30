@@ -21,7 +21,7 @@ pub mod common;
 pub use error::*;
 pub use request::*;
 pub use response::*;
-use synth::{ConstValueSynth, Synthesizer};
+use synth::{SynthConst, Synthesizer};
 
 use super::app_context::AppContext;
 use super::blueprint::Blueprint;
@@ -43,7 +43,7 @@ impl ConstValueExecutor {
 
     async fn execute(self, request: Request<Value>) -> Response<Value, Error> {
         let ctx = RequestContext::from(self.app_ctx.as_ref());
-        let synth = ConstValueSynth::new();
+        let synth = SynthConst::new();
         let exec = ConstValueExec::new(ctx);
         let plan = self.plan;
         let exe = Executor::new(plan, synth, exec);

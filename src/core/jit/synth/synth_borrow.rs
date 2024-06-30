@@ -1,20 +1,15 @@
 use serde_json_borrow::{ObjectAsVec, Value};
 
-use super::{ExecutionPlan, Result};
 use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
+use crate::core::jit::ExecutionPlan;
 
-pub trait Synthesizer {
-    type Value;
-    fn synthesize(&self, store: &Store<Self::Value>) -> Self::Value;
-}
-
-pub struct Synth<'a> {
+pub struct SynthBorrow<'a> {
     selection: Vec<Field<Children>>,
     store: Store<Value<'a>>,
 }
 
-impl<'a> Synth<'a> {
+impl<'a> SynthBorrow<'a> {
     pub fn new(plan: ExecutionPlan, store: Store<Value<'a>>) -> Self {
         Self { selection: plan.into_children(), store }
     }
@@ -140,20 +135,6 @@ impl<'a> Synth<'a> {
     }
 }
 
-pub struct ConstValueSynth;
-impl ConstValueSynth {
-    pub fn new() -> Self {
-        Self
-    }
-}
-impl Synthesizer for ConstValueSynth {
-    type Value = Result<async_graphql::Value>;
-
-    fn synthesize(&self, _store: &Store<Self::Value>) -> Self::Value {
-        unimplemented!()
-    }
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -165,7 +146,7 @@ mod tests {
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
-    use crate::core::jit::synth::Synth;
+    use crate::core::jit::synth::SynthBorrow;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -230,7 +211,7 @@ mod tests {
         }
     }
 
-    const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
+    const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
     fn init(query: &str, store: Vec<(FieldId, Data<Value<'static>>)>) -> String {
         let doc = async_graphql::parser::parse_query(query).unwrap();
@@ -247,7 +228,7 @@ mod tests {
                 store
             });
 
-        let synth = Synth::new(plan, store);
+        let synth = SynthBorrow::new(plan, store);
         let val = synth.synthesize();
 
         serde_json::to_string_pretty(&val).unwrap()
