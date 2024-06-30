@@ -1,0 +1,11 @@
+---
+source: src/core/jit/synth/synth_borrow.rs
+expression: val
+---
+{
+  "data": {
+    "user": {
+      "id": 1
+    }
+  }
+}
