@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::model::IR;
@@ -190,21 +189,4 @@ impl ExecutionPlan {
     pub fn size(&self) -> usize {
         self.parent.len()
     }
-}
-
-pub struct Response<Value, Error> {
-    pub data: Value,
-    pub errors: Vec<Error>,
-    pub extensions: Vec<(String, Value)>,
-}
-
-impl<Value, Error> Response<Value, Error> {
-    pub fn new(_result: Result<Value, Error>) -> Self {
-        todo!()
-    }
-}
-
-pub struct Request<Value> {
-    pub variables: HashMap<String, Value>,
-    pub extensions: HashMap<String, Value>,
 }

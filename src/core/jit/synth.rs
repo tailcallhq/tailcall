@@ -1,6 +1,6 @@
 use serde_json_borrow::{ObjectAsVec, Value};
 
-use super::ExecutionPlan;
+use super::{ExecutionPlan, Result};
 use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
 
@@ -137,6 +137,20 @@ impl<'a> Synth<'a> {
             Some(val) => val.clone(), // cloning here would be cheaper than cloning whole value
             None => Value::Null,      // TODO: we can just pass parent value instead of an option
         }
+    }
+}
+
+pub struct ConstValueSynth;
+impl ConstValueSynth {
+    pub fn new() -> Self {
+        Self
+    }
+}
+impl Synthesizer for ConstValueSynth {
+    type Value = Result<async_graphql::Value>;
+
+    fn synthesize(&self, store: &Store<Self::Value>) -> Self::Value {
+        unimplemented!()
     }
 }
 
