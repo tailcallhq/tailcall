@@ -38,7 +38,7 @@ impl Synth {
         type_of.is_list() == value.as_array_ok().is_ok()
     }
 
-    #[inline]
+    #[inline(always)]
     fn iter<'b>(
         &'b self,
         node: &'b Field<Children>,
@@ -50,7 +50,7 @@ impl Synth {
                 if !Self::is_array(&node.type_of, parent) {
                     return Ok(Value::Null);
                 }
-                self.iter_inner(node, Some(parent), index)
+                self.iter_inner(node, parent, index)
             }
             None => {
                 // we perform this check to avoid unnecessary hashing
@@ -92,15 +92,15 @@ impl Synth {
             }
         }
     }
-    #[inline]
+    #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
         node: &'b Field<Children>,
-        parent: Option<&'b Value>,
+        parent: &'b Value,
         index: Option<usize>,
     ) -> Result<Value> {
         match parent {
-            Some(Value::Object(obj)) => {
+            Value::Object(obj) => {
                 let mut ans = IndexMap::default();
                 let children = node.children();
 
@@ -118,7 +118,7 @@ impl Synth {
                         if let Some(val) = val {
                             ans.insert(
                                 Name::new(child.name.as_str()),
-                                self.iter_inner(child, Some(val), index)?,
+                                self.iter_inner(child, val, index)?,
                             );
                         } else {
                             ans.insert(
@@ -130,17 +130,15 @@ impl Synth {
                 }
                 Ok(Value::Object(ans))
             }
-            Some(Value::List(arr)) => {
+            Value::List(arr) => {
                 let mut ans = vec![];
                 for (i, val) in arr.iter().enumerate() {
-                    let val = self.iter_inner(node, Some(val), Some(i))?;
+                    let val = self.iter_inner(node, val, Some(i))?;
                     ans.push(val)
                 }
                 Ok(Value::List(ans))
             }
-            Some(val) => Ok(val.clone()), // cloning here would be cheaper than cloning whole value
-            None => Ok(Value::Null),      /* TODO: we can just pass parent value instead of an
-                                            * option */
+            val => Ok(val.clone()), // cloning here would be cheaper than cloning whole value
         }
     }
 }
