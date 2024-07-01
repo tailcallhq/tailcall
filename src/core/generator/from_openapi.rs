@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-
 use oas3::{OpenApiV3Spec, Spec};
 
 use crate::core::config::Config;
 use crate::core::generator::json;
-use crate::core::generator::openapi::{QueryGenerator, TypeGenerator};
+use crate::core::generator::openapi::{
+    AnonymousTypeGenerator, AnonymousTypes, QueryGenerator, TypeGenerator,
+};
 use crate::core::transform::Transform;
 use crate::core::valid::{Valid, Validator};
 
@@ -26,14 +26,28 @@ impl Transform for FromOpenAPIGenerator {
     type Error = String;
 
     fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
-        json::SchemaGenerator::new(self.query.clone())
+        let mut result = json::SchemaGenerator::new(self.query.clone())
             .transform(value)
             .and_then(|config| {
                 QueryGenerator::new(self.query.as_str(), &self.spec)
-                    .transform((HashMap::new(), config))
+                    .transform((AnonymousTypes::new(), config))
             })
             .and_then(|(types, config)| TypeGenerator::new(&self.spec).transform((types, config)))
-            .map(|(_, config)| config)
+            .and_then(|(types, config)| {
+                AnonymousTypeGenerator::new(&self.spec).transform((types, config))
+            });
+
+        loop {
+            match result.to_result() {
+                Ok((types, config)) => {
+                    if types.is_empty() {
+                        return Valid::succeed(config);
+                    }
+                    result = AnonymousTypeGenerator::new(&self.spec).transform((types, config));
+                }
+                Err(err) => return Valid::from_validation_err(err),
+            }
+        }
     }
 }
 

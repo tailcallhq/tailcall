@@ -1,10 +1,11 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 use convert_case::{Case, Casing};
 use oas3::spec::PathItem;
-use oas3::{OpenApiV3Spec, Schema};
+use oas3::OpenApiV3Spec;
 
 use crate::core::config::{Arg, Config, Field, Http, KeyValue, Type};
+use crate::core::generator::openapi::anonymous_type_generator::AnonymousTypes;
 use crate::core::generator::openapi::helpers::{get_schema_type, name_from_ref_path, TypeName};
 use crate::core::http::Method;
 use crate::core::transform::Transform;
@@ -19,7 +20,7 @@ struct SingleQueryGenerator<'a> {
 }
 
 impl<'a> Transform for SingleQueryGenerator<'a> {
-    type Value = (HashMap<String, Schema>, Config);
+    type Value = (AnonymousTypes, Config);
     type Error = String;
 
     fn transform(&self, (mut types, mut config): Self::Value) -> Valid<Self::Value, Self::Error> {
@@ -180,7 +181,7 @@ impl<'a> QueryGenerator<'a> {
 }
 
 impl<'a> Transform for QueryGenerator<'a> {
-    type Value = (HashMap<String, Schema>, Config);
+    type Value = (AnonymousTypes, Config);
     type Error = String;
 
     fn transform(&self, (mut types, mut config): Self::Value) -> Valid<Self::Value, Self::Error> {
