@@ -17,7 +17,7 @@ pub struct Builder {
 }
 
 impl Builder {
-    pub fn new(blueprint: Blueprint, document: ExecutableDocument) -> Self {
+    pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
         let index = blueprint.index();
         Self {
             document,
@@ -140,7 +140,7 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        Builder::new(blueprint, document).build().unwrap()
+        Builder::new(&blueprint, document).build().unwrap()
     }
 
     #[tokio::test]
