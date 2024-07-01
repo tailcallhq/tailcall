@@ -9,7 +9,7 @@ schema @server @upstream {
   """
   Meta information about API
   """
-type Api {
+type API {
   """
   Timestamp when the API was first added to the directory
   """
@@ -110,7 +110,7 @@ type Metrics {
   """
   Summary totals for the last 7 days
   """
-  thisWeek: Type0
+  thisWeek: Type2
   """
   Number of unofficial APIs
   """
@@ -142,7 +142,7 @@ Returns links to the individual API entry for each API.
   List all the providers in the directory
 
   """
-  getProviders: Unknown @http(baseURL: "https://api.apis.guru/v2", path: "/providers.json")
+  getProviders: Type0 @http(baseURL: "https://api.apis.guru/v2", path: "/providers.json")
   """
   Returns the API entry for one specific version of an API where there is a serviceName.
   """
@@ -151,7 +151,7 @@ Returns links to the individual API entry for each API.
   List all serviceNames in the directory for a particular providerName
 
   """
-  getServices(provider: String!): Unknown @http(baseURL: "https://api.apis.guru/v2", path: "/{{.args.provider}}/services.json")
+  getServices(provider: String!): Type1 @http(baseURL: "https://api.apis.guru/v2", path: "/{{.args.provider}}/services.json")
   """
   List all APIs in the directory.
 Returns links to the OpenAPI definitions for each API in the directory.
