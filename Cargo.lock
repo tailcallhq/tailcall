@@ -5286,7 +5286,6 @@ name = "tailcall-typedefs"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-graphql-parser",
  "lazy_static",
  "schemars",
  "serde",
