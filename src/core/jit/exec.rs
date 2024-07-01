@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::fmt::Debug;
 use std::mem;
 use std::sync::{Arc, Mutex};
 
@@ -22,9 +23,10 @@ pub struct Executor<Synth, IRExec> {
 
 impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec>
 where
-    Output: JsonLike<Output = Output>,
+    Output: JsonLike<Output = Output> + Default + Debug,
     Synth: Synthesizer<Value = Result<Output, Error>>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
+    Error: Debug,
 {
     pub fn new(plan: ExecutionPlan, synth: Synth, exec: Exec) -> Self {
         Self { plan, synth, exec }
@@ -56,8 +58,9 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: JsonLike<Output = Output>,
+    Output: JsonLike<Output = Output> + Default + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
+    Error: Debug,
 {
     fn new(
         request: Request<Input>,
@@ -87,38 +90,38 @@ where
             if let Ok(ref value) = result {
                 // Array
                 if let Ok(array) = value.as_array_ok() {
-                    join_all(array.iter().map(|value| {
-                        let ctx = ctx.with_value(value);
+                    let values = join_all(field.children().iter().map(|child| {
+                        join_all(array.iter().map(|value| {
+                            let ctx = ctx.with_value(value);
 
-                        join_all(field.children().iter().map(|child| {
-                            let ctx = ctx.clone();
                             async move {
-                                self.execute_field(child, &ctx, true).await
+                                if let Some(ir) = &child.ir {
+                                    self.exec.execute(ir, &ctx).await
+                                } else {
+                                    Ok(Output::default())
+                                }
                             }
+                            // async move { self.execute_field(child, &ctx, true).await }
                         }))
                     }))
                     .await;
 
+                    let mut store = self.store.lock().unwrap();
+                    for (field, values) in field.children().iter().zip(values) {
+                        store.set_multiple(&field.id, values)
+                    }
+
                 // Object
                 } else {
                     join_all(field.children().iter().map(|child| {
-                        let ctx = ctx.clone();
-                        let value = &value;
-                        async move {
-                            let ctx = ctx.with_value(value);
-                            self.execute_field(child, &ctx, false).await
-                        }
+                        let ctx = ctx.with_value(value);
+                        async move { self.execute_field(child, &ctx, false).await }
                     }))
                     .await;
                 }
             }
 
-            if is_multi {
-                // TODO: set multiple data at once instead of setting one by one
-                self.store.lock().unwrap().set_multiple(&field.id, result)
-            } else {
-                self.store.lock().unwrap().set_single(&field.id, result)
-            };
+            self.store.lock().unwrap().set_single(&field.id, result)
         }
         Ok(())
     }

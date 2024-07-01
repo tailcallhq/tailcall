@@ -28,7 +28,7 @@ mod tests {
         let response = executor.execute(request).await;
         let data = response.data;
 
-        insta::assert_json_snapshot!(data)
+        insta::assert_json_snapshot!(data);
     }
 
     #[tokio::test]
@@ -40,6 +40,5 @@ mod tests {
         let data = response.data;
 
         insta::assert_json_snapshot!(data);
-        assert!(false)
     }
 }
