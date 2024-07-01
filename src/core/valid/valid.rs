@@ -8,10 +8,10 @@ pub struct Valid<A, E>(Result<A, ValidationError<E>>);
 #[macro_export]
 macro_rules! try_valid {
     ($expr:expr $(,)?) => {
-        match crate::core::valid::Valid::to_result($expr) {
+        match $crate::core::valid::Valid::to_result($expr) {
             Ok(val) => val,
             Err(err) => {
-                return crate::core::valid::Valid::from_validation_err(err);
+                return $crate::core::valid::Valid::from_validation_err(err);
             }
         }
     };
