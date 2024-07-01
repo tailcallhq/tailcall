@@ -2,8 +2,10 @@ use oas3::{OpenApiV3Spec, Spec};
 
 use crate::core::config::Config;
 use crate::core::generator::json;
-use crate::core::generator::openapi::QueryGenerator;
-use crate::core::transform::{Transform, TransformerOps};
+use crate::core::generator::openapi::{
+    AnonymousTypeGenerator, AnonymousTypes, QueryGenerator, Sanitizer, TypeGenerator,
+};
+use crate::core::transform::Transform;
 use crate::core::valid::{Valid, Validator};
 
 #[derive(Default)]
@@ -24,9 +26,30 @@ impl Transform for FromOpenAPIGenerator {
     type Error = String;
 
     fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
-        json::SchemaGenerator::new(self.query.clone())
-            .pipe(QueryGenerator::new(self.query.as_str(), &self.spec))
+        let mut result = json::SchemaGenerator::new(self.query.clone())
             .transform(value)
+            .and_then(|config| {
+                QueryGenerator::new(self.query.as_str(), &self.spec)
+                    .transform((AnonymousTypes::new(), config))
+            })
+            .and_then(|(types, config)| TypeGenerator::new(&self.spec).transform((types, config)))
+            .and_then(|(types, config)| {
+                AnonymousTypeGenerator::new(&self.spec).transform((types, config))
+            });
+
+        let config = loop {
+            match result.to_result() {
+                Ok((types, config)) => {
+                    if types.is_empty() {
+                        break config;
+                    }
+                    result = AnonymousTypeGenerator::new(&self.spec).transform((types, config));
+                }
+                Err(err) => return Valid::from_validation_err(err),
+            }
+        };
+
+        Sanitizer.transform(config)
     }
 }
 
