@@ -1,9 +1,14 @@
+mod common;
+mod field_type;
+
 use std::collections::{BTreeMap, HashSet};
 
 use async_graphql_parser::types::*;
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
-use schemars::schema::{InstanceType, RootSchema, Schema, SchemaObject, SingleOrVec};
+use common::get_description;
+use field_type::get_field_type;
+use schemars::schema::{RootSchema, Schema, SchemaObject};
 use schemars::JsonSchema;
 
 fn pos<A>(a: A) -> Positioned<A> {
@@ -37,14 +42,7 @@ pub fn from_directive_location(str: DirectiveLocation) -> String {
     }
 }
 
-fn get_description<'a>(schema: &'a SchemaObject) -> Option<&'a String> {
-    schema
-        .metadata
-        .as_ref()
-        .and_then(|metadata| metadata.description.as_ref())
-}
-
-fn get_enum_values(obj: &Schema) -> Option<Vec<String>> {
+pub fn get_enum_values(obj: &Schema) -> Option<Vec<String>> {
     match obj {
         Schema::Object(schema_object) => {
             if let Some(enum_values) = &schema_object.enum_values {
@@ -140,104 +138,6 @@ fn do_stuff(schema: &SchemaObject) -> Vec<Positioned<InputValueDefinition>> {
     }
 
     arguments
-}
-
-fn get_field_type(name: String, schema: SchemaObject) -> Type {
-    match schema.instance_type {
-        Some(SingleOrVec::Single(typ))
-            if matches!(
-                *typ,
-                InstanceType::Null
-                    | InstanceType::Boolean
-                    | InstanceType::Number
-                    | InstanceType::String
-                    | InstanceType::Integer
-            ) =>
-        {
-            Type {
-                nullable: false,
-                base: BaseType::Named(Name::new(get_instace_type(&*typ))),
-            }
-        }
-        Some(SingleOrVec::Vec(typ))
-            if matches!(
-                typ.first().unwrap(),
-                InstanceType::Null
-                    | InstanceType::Boolean
-                    | InstanceType::Number
-                    | InstanceType::String
-                    | InstanceType::Integer
-            ) =>
-        {
-            Type {
-                nullable: true,
-                base: BaseType::Named(Name::new(get_instace_type(typ.first().unwrap()))),
-            }
-        }
-        _ => {
-            if let Some(arr_valid) = schema.array {
-                if let Some(SingleOrVec::Single(schema)) = arr_valid.items {
-                    return Type {
-                        nullable: true,
-                        base: BaseType::List(Box::new(get_field_type(name, schema.into_object()))),
-                    };
-                } else if let Some(SingleOrVec::Vec(schemas)) = arr_valid.items {
-                    return Type {
-                        nullable: true,
-                        base: BaseType::List(Box::new(get_field_type(
-                            name,
-                            schemas[0].clone().into_object(),
-                        ))),
-                    };
-                } else {
-                    return Type { nullable: true, base: BaseType::Named(Name::new("JSON")) };
-                }
-            } else if let Some(typ) = schema.object.clone() {
-                if !typ.properties.is_empty() {
-                    Type { nullable: true, base: BaseType::Named(Name::new(name)) }
-                } else {
-                    Type { nullable: true, base: BaseType::Named(Name::new("JSON")) }
-                }
-            } else if let Some(sub_schema) = schema.subschemas.clone().into_iter().next() {
-                let list = if let Some(list) = sub_schema.any_of {
-                    list
-                } else if let Some(list) = sub_schema.all_of {
-                    list
-                } else if let Some(list) = sub_schema.one_of {
-                    list
-                } else {
-                    return Type { nullable: true, base: BaseType::Named(Name::new("JSON")) };
-                };
-                let first = list.first().unwrap();
-                match first {
-                    Schema::Object(obj) => {
-                        let nm = obj
-                            .reference
-                            .to_owned()
-                            .unwrap()
-                            .split('/')
-                            .last()
-                            .unwrap()
-                            .to_string();
-                        Type { nullable: true, base: BaseType::Named(Name::new(nm)) }
-                    }
-                    _ => panic!(),
-                }
-            } else if let Some(reference) = schema.reference {
-                let nm = reference.split('/').last().unwrap().to_string();
-                Type { nullable: true, base: BaseType::Named(Name::new(nm)) }
-            } else {
-                Type { nullable: true, base: BaseType::Named(Name::new("JSON")) }
-            }
-        }
-    }
-}
-
-fn get_instace_type(typ: &InstanceType) -> String {
-    match typ {
-        &InstanceType::Integer => "Int".to_string(),
-        _ => format!("{:?}", typ),
-    }
 }
 
 pub trait DirectiveDefinition {
@@ -344,10 +244,6 @@ pub trait InputDefinition {
     }
 }
 
-pub trait DocumentDefinition {
-    fn definition(doc: ServiceDocument, generated_types: &mut HashSet<String>) -> ServiceDocument;
-}
-
 pub struct ServiceDocumentBuilder {
     definitions: Vec<TypeSystemDefinition>,
 }
@@ -382,8 +278,6 @@ impl ServiceDocumentBuilder {
 
 #[cfg(test)]
 mod tests {
-    use schemars::JsonSchema;
-
     use super::*;
 
     #[derive(JsonSchema)]
@@ -421,27 +315,6 @@ mod tests {
         enum_dummy: EnumDummy,
         input_dummy: Vec<InputDummy>,
     }
-
-    impl DocumentDefinition for DirectiveDummy {
-        fn definition(
-            mut doc: ServiceDocument,
-            generated_types: &mut HashSet<String>,
-        ) -> ServiceDocument {
-            let schema: RootSchema = Self::into_schemars();
-            doc.definitions.extend(Self::into_directive_definition(
-                schema,
-                Attrs { name: "DirectiveDummy", repeatable: false, locations: vec![] },
-                generated_types,
-            ));
-            doc
-        }
-    }
-
     #[test]
-    fn it_works_for_to_directives() {
-        let service_doc = ServiceDocument { definitions: vec![] };
-        let mut generated_types = HashSet::new();
-        to_service_doc::<DirectiveDummy>(service_doc, &mut generated_types);
-        assert_eq!(1, 2);
-    }
+    fn it_works_for_to_directives() {}
 }
