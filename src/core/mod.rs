@@ -1,7 +1,7 @@
 #![allow(clippy::module_inception)]
 #![allow(clippy::mutable_key_type)]
 
-mod app_context;
+pub mod app_context;
 pub mod async_graphql_hyper;
 mod auth;
 pub mod blueprint;
@@ -19,6 +19,7 @@ pub mod has_headers;
 pub mod helpers;
 pub mod http;
 pub mod ir;
+#[allow(unused)]
 pub mod jit;
 pub mod json;
 pub mod merge_right;

@@ -20,22 +20,6 @@ pub enum Resource {
     Request(reqwest::Request),
 }
 
-impl Resource {
-    fn as_request(&self) -> Option<&reqwest::Request> {
-        match self {
-            Resource::Request(request) => Some(request),
-            _ => None,
-        }
-    }
-
-    fn as_raw_path(&self) -> Option<&str> {
-        match self {
-            Resource::RawPath(path) => Some(path),
-            _ => None,
-        }
-    }
-}
-
 impl From<reqwest::Request> for Resource {
     fn from(val: reqwest::Request) -> Self {
         Resource::Request(val)
@@ -200,6 +184,22 @@ impl Reader for Cached {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    impl Resource {
+        fn as_request(&self) -> Option<&reqwest::Request> {
+            match self {
+                Resource::Request(request) => Some(request),
+                _ => None,
+            }
+        }
+
+        fn as_raw_path(&self) -> Option<&str> {
+            match self {
+                Resource::RawPath(path) => Some(path),
+                _ => None,
+            }
+        }
+    }
 
     #[test]
     fn test_from_reqwest_request() {
