@@ -17,6 +17,16 @@ pub enum Data<A> {
     Pending,
 }
 
+impl<A> Data<A> {
+    pub fn map<B>(self, ab: impl Fn(A) -> B) -> Data<B> {
+        match self {
+            Data::Single(a) => Data::Single(ab(a)),
+            Data::Multiple(values) => Data::Multiple(values.into_iter().map(ab).collect()),
+            Data::Pending => Data::Pending,
+        }
+    }
+}
+
 impl<A> Store<A> {
     pub fn new(size: usize) -> Self {
         Store { map: (0..size).map(|_| Data::Pending).collect() }
@@ -24,6 +34,19 @@ impl<A> Store<A> {
 
     pub fn set(&mut self, field_id: FieldId, data: Data<A>) {
         self.map.insert(field_id.as_usize(), data);
+    }
+
+    pub fn set_single(&mut self, field_id: &FieldId, data: A) {
+        self.map.insert(field_id.as_usize(), Data::Single(data));
+    }
+
+    pub fn set_multiple(&mut self, field_id: &FieldId, data: A) {
+        match self.map.get_mut(field_id.as_usize()) {
+            Some(Data::Multiple(values)) => values.push(data),
+            _ => self
+                .map
+                .insert(field_id.as_usize(), Data::Multiple(vec![data])),
+        }
     }
 
     pub fn get(&self, field_id: &FieldId) -> Option<&Data<A>> {
