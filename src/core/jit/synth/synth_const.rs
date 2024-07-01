@@ -1,35 +1,41 @@
-use serde_json_borrow::{ObjectAsVec, Value};
+use std::ops::Deref;
 
-use super::ExecutionPlan;
+use async_graphql::{Name, Value};
+use indexmap::IndexMap;
+
+use super::super::Result;
+use super::Synthesizer;
 use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
+use crate::core::jit::ExecutionPlan;
+use crate::core::json::JsonLike;
 
-pub struct Synth<'a> {
+struct Synth {
     selection: Vec<Field<Children>>,
-    store: Store<Value<'a>>,
+    store: Store<Result<Value>>,
 }
 
-impl<'a> Synth<'a> {
-    pub fn new(plan: ExecutionPlan, store: Store<Value<'a>>) -> Self {
+impl Synth {
+    pub fn new(plan: ExecutionPlan, store: Store<Result<Value>>) -> Self {
         Self { selection: plan.into_children(), store }
     }
 
-    pub fn synthesize(&self) -> Value {
-        let mut data = ObjectAsVec::default();
+    pub fn synthesize(&self) -> Result<Value> {
+        let mut data = IndexMap::default();
 
         for child in self.selection.iter() {
-            let val = self.iter(child, None, None);
-            data.insert(child.name.as_str(), val);
+            let val = self.iter(child, None, None)?;
+            data.insert(Name::new(child.name.as_str()), val);
         }
 
-        let mut output = ObjectAsVec::default();
-        output.insert("data", Value::Object(data));
-        Value::Object(output)
+        let mut output = IndexMap::default();
+        output.insert(Name::new("data"), Value::Object(data));
+        Ok(Value::Object(output))
     }
 
     /// checks if type_of is an array and value is an array
     fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
-        type_of.is_list() == value.is_array()
+        type_of.is_list() == value.as_array_ok().is_ok()
     }
 
     #[inline]
@@ -38,11 +44,11 @@ impl<'a> Synth<'a> {
         node: &'b Field<Children>,
         parent: Option<&'b Value>,
         index: Option<usize>,
-    ) -> Value {
+    ) -> Result<Value> {
         match parent {
             Some(parent) => {
                 if !Self::is_array(&node.type_of, parent) {
-                    return Value::Null;
+                    return Ok(Value::Null);
                 }
                 self.iter_inner(node, Some(parent), index)
             }
@@ -57,30 +63,30 @@ impl<'a> Synth<'a> {
                             // must return Null in all other cases.
                             Data::Single(val) => {
                                 if index.is_some() {
-                                    return Value::Null;
+                                    return Ok(Value::Null);
                                 }
-                                self.iter(node, Some(val), None)
+                                self.iter(node, Some(&val.clone()?), None)
                             }
                             Data::Multiple(list) => {
                                 if let Some(i) = index {
                                     match list.get(i) {
-                                        Some(val) => self.iter(node, Some(val), None),
-                                        None => Value::Null,
+                                        Some(val) => self.iter(node, Some(&val.clone()?), None),
+                                        None => Ok(Value::Null),
                                     }
                                 } else {
-                                    Value::Null
+                                    Ok(Value::Null)
                                 }
                             }
                             Data::Pending => {
                                 // TODO: should bailout instead of returning Null
-                                Value::Null
+                                Ok(Value::Null)
                             }
                         }
                     }
                     None => {
                         // IR exists, so there must be a value.
                         // if there is no value then we must return Null
-                        Value::Null
+                        Ok(Value::Null)
                     }
                 }
             }
@@ -92,61 +98,83 @@ impl<'a> Synth<'a> {
         node: &'b Field<Children>,
         parent: Option<&'b Value>,
         index: Option<usize>,
-    ) -> Value {
+    ) -> Result<Value> {
         match parent {
             Some(Value::Object(obj)) => {
-                let mut ans = ObjectAsVec::default();
+                let mut ans = IndexMap::default();
                 let children = node.children();
 
                 if children.is_empty() {
                     let val = obj.get(node.name.as_str());
                     // if it's a leaf node, then push the value
                     if let Some(val) = val {
-                        ans.insert(node.name.as_str(), val.to_owned());
+                        ans.insert(Name::new(node.name.as_str()), val.to_owned());
                     } else {
-                        return Value::Null;
+                        return Ok(Value::Null);
                     }
                 } else {
                     for child in children {
                         let val = obj.get(child.name.as_str());
                         if let Some(val) = val {
                             ans.insert(
-                                child.name.as_str(),
-                                self.iter_inner(child, Some(val), index),
+                                Name::new(child.name.as_str()),
+                                self.iter_inner(child, Some(val), index)?,
                             );
                         } else {
-                            ans.insert(child.name.as_str(), self.iter(child, None, index));
+                            ans.insert(
+                                Name::new(child.name.as_str()),
+                                self.iter(child, None, index)?,
+                            );
                         }
                     }
                 }
-                Value::Object(ans)
+                Ok(Value::Object(ans))
             }
-            Some(Value::Array(arr)) => {
+            Some(Value::List(arr)) => {
                 let mut ans = vec![];
                 for (i, val) in arr.iter().enumerate() {
-                    let val = self.iter_inner(node, Some(val), Some(i));
+                    let val = self.iter_inner(node, Some(val), Some(i))?;
                     ans.push(val)
                 }
-                Value::Array(ans)
+                Ok(Value::List(ans))
             }
-            Some(val) => val.clone(), // cloning here would be cheaper than cloning whole value
-            None => Value::Null,      // TODO: we can just pass parent value instead of an option
+            Some(val) => Ok(val.clone()), // cloning here would be cheaper than cloning whole value
+            None => Ok(Value::Null),      /* TODO: we can just pass parent value instead of an
+                                            * option */
         }
+    }
+}
+
+pub struct SynthConst {
+    plan: ExecutionPlan,
+}
+
+impl SynthConst {
+    pub fn new(plan: ExecutionPlan) -> Self {
+        Self { plan }
+    }
+}
+
+impl Synthesizer for SynthConst {
+    type Value = Result<Value>;
+
+    fn synthesize(self, store: Store<Self::Value>) -> Self::Value {
+        Synth::new(self.plan, store).synthesize()
     }
 }
 
 #[cfg(test)]
 mod tests {
 
-    use serde_json_borrow::Value;
+    use async_graphql::Value;
 
+    use super::Synth;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
-    use crate::core::jit::synth::Synth;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -198,7 +226,7 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value(self) -> Data<Value<'static>> {
+        fn into_value(self) -> Data<Value> {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
@@ -211,25 +239,25 @@ mod tests {
         }
     }
 
-    const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
+    const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn init(query: &str, store: Vec<(FieldId, Data<Value<'static>>)>) -> String {
+    fn init(query: &str, store: Vec<(FieldId, Data<Value>)>) -> String {
         let doc = async_graphql::parser::parse_query(query).unwrap();
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
 
-        let builder = Builder::new(Blueprint::try_from(&config).unwrap(), doc);
+        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build().unwrap();
 
         let store = store
             .into_iter()
             .fold(Store::new(plan.size()), |mut store, (id, data)| {
-                store.set(id, data);
+                store.set(id, data.map(Ok));
                 store
             });
 
         let synth = Synth::new(plan, store);
-        let val = synth.synthesize();
+        let val = synth.synthesize().unwrap();
 
         serde_json::to_string_pretty(&val).unwrap()
     }
