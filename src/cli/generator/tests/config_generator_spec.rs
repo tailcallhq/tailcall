@@ -13,7 +13,7 @@ mod http;
 
 datatest_stable::harness!(
     run_config_generator_spec,
-    "src/core/generator/tests/fixtures/generator",
+    "src/cli/generator/tests/fixtures/generator",
     r"^.*\.json"
 );
 
