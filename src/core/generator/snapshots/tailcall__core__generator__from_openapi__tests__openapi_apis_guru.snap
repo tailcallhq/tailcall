@@ -10,7 +10,7 @@ type Query {
   """
   Returns the API entry for one specific version of an API where there is no serviceName.
   """
-  getApi: Api @http(path: "/specs/{provider}/{api}.json")
+  getApi(api: String!, provider: String!): Api @http(path: "/specs/{{.args.provider}}/{{.args.api}}.json")
   """
   Some basic metrics for the entire directory.
 Just stunning numbers to put on a front page and are intended purely for WoW effect :)
@@ -22,11 +22,21 @@ Just stunning numbers to put on a front page and are intended purely for WoW eff
 Returns links to the individual API entry for each API.
 
   """
-  getProvider: ApIs @http(path: "/{provider}.json")
+  getProvider(provider: String!): ApIs @http(path: "/{{.args.provider}}.json")
+  """
+  List all the providers in the directory
+
+  """
+  getProviders: Unknown @http(path: "/providers.json")
   """
   Returns the API entry for one specific version of an API where there is a serviceName.
   """
-  getServiceApi: Api @http(path: "/specs/{provider}/{service}/{api}.json")
+  getServiceApi(api: String!, provider: String!, service: String!): Api @http(path: "/specs/{{.args.provider}}/{{.args.service}}/{{.args.api}}.json")
+  """
+  List all serviceNames in the directory for a particular providerName
+
+  """
+  getServices(provider: String!): Unknown @http(path: "/{{.args.provider}}/services.json")
   """
   List all APIs in the directory.
 Returns links to the OpenAPI definitions for each API in the directory.
