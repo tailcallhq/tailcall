@@ -330,7 +330,7 @@ mod tests {
 
     #[test]
     fn test_query_list_args() {
-        let query = vec![("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap())];
+        let query = vec![("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),("foo".to_string(), Mustache::parse("{{foo.id}}").unwrap())];
 
         let tmpl = RequestTemplate::new("http://localhost:3000/")
             .unwrap()
@@ -343,6 +343,9 @@ mod tests {
             .value(json!({
               "baz": {
                 "id": "[1,2,3]"
+              },
+              "foo": {
+                "id": "12"
               }
             }))
             .query(query);
@@ -350,7 +353,7 @@ mod tests {
 
         assert_eq!(
             req.url().to_string(),
-            "http://localhost:3000/?baz=1&baz=2&baz=3"
+            "http://localhost:3000/?baz=1&baz=2&baz=3&foo=12"
         );
     }
 
