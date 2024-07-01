@@ -1,0 +1,410 @@
+---
+source: tests/jit_spec.rs
+expression: data
+---
+{
+  "data": {
+    "posts": [
+      {
+        "id": 1,
+        "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+      },
+      {
+        "id": 2,
+        "title": "qui est esse"
+      },
+      {
+        "id": 3,
+        "title": "ea molestias quasi exercitationem repellat qui ipsa sit aut"
+      },
+      {
+        "id": 4,
+        "title": "eum et est occaecati"
+      },
+      {
+        "id": 5,
+        "title": "nesciunt quas odio"
+      },
+      {
+        "id": 6,
+        "title": "dolorem eum magni eos aperiam quia"
+      },
+      {
+        "id": 7,
+        "title": "magnam facilis autem"
+      },
+      {
+        "id": 8,
+        "title": "dolorem dolore est ipsam"
+      },
+      {
+        "id": 9,
+        "title": "nesciunt iure omnis dolorem tempora et accusantium"
+      },
+      {
+        "id": 10,
+        "title": "optio molestias id quia eum"
+      },
+      {
+        "id": 11,
+        "title": "et ea vero quia laudantium autem"
+      },
+      {
+        "id": 12,
+        "title": "in quibusdam tempore odit est dolorem"
+      },
+      {
+        "id": 13,
+        "title": "dolorum ut in voluptas mollitia et saepe quo animi"
+      },
+      {
+        "id": 14,
+        "title": "voluptatem eligendi optio"
+      },
+      {
+        "id": 15,
+        "title": "eveniet quod temporibus"
+      },
+      {
+        "id": 16,
+        "title": "sint suscipit perspiciatis velit dolorum rerum ipsa laboriosam odio"
+      },
+      {
+        "id": 17,
+        "title": "fugit voluptas sed molestias voluptatem provident"
+      },
+      {
+        "id": 18,
+        "title": "voluptate et itaque vero tempora molestiae"
+      },
+      {
+        "id": 19,
+        "title": "adipisci placeat illum aut reiciendis qui"
+      },
+      {
+        "id": 20,
+        "title": "doloribus ad provident suscipit at"
+      },
+      {
+        "id": 21,
+        "title": "asperiores ea ipsam voluptatibus modi minima quia sint"
+      },
+      {
+        "id": 22,
+        "title": "dolor sint quo a velit explicabo quia nam"
+      },
+      {
+        "id": 23,
+        "title": "maxime id vitae nihil numquam"
+      },
+      {
+        "id": 24,
+        "title": "autem hic labore sunt dolores incidunt"
+      },
+      {
+        "id": 25,
+        "title": "rem alias distinctio quo quis"
+      },
+      {
+        "id": 26,
+        "title": "est et quae odit qui non"
+      },
+      {
+        "id": 27,
+        "title": "quasi id et eos tenetur aut quo autem"
+      },
+      {
+        "id": 28,
+        "title": "delectus ullam et corporis nulla voluptas sequi"
+      },
+      {
+        "id": 29,
+        "title": "iusto eius quod necessitatibus culpa ea"
+      },
+      {
+        "id": 30,
+        "title": "a quo magni similique perferendis"
+      },
+      {
+        "id": 31,
+        "title": "ullam ut quidem id aut vel consequuntur"
+      },
+      {
+        "id": 32,
+        "title": "doloremque illum aliquid sunt"
+      },
+      {
+        "id": 33,
+        "title": "qui explicabo molestiae dolorem"
+      },
+      {
+        "id": 34,
+        "title": "magnam ut rerum iure"
+      },
+      {
+        "id": 35,
+        "title": "id nihil consequatur molestias animi provident"
+      },
+      {
+        "id": 36,
+        "title": "fuga nam accusamus voluptas reiciendis itaque"
+      },
+      {
+        "id": 37,
+        "title": "provident vel ut sit ratione est"
+      },
+      {
+        "id": 38,
+        "title": "explicabo et eos deleniti nostrum ab id repellendus"
+      },
+      {
+        "id": 39,
+        "title": "eos dolorem iste accusantium est eaque quam"
+      },
+      {
+        "id": 40,
+        "title": "enim quo cumque"
+      },
+      {
+        "id": 41,
+        "title": "non est facere"
+      },
+      {
+        "id": 42,
+        "title": "commodi ullam sint et excepturi error explicabo praesentium voluptas"
+      },
+      {
+        "id": 43,
+        "title": "eligendi iste nostrum consequuntur adipisci praesentium sit beatae perferendis"
+      },
+      {
+        "id": 44,
+        "title": "optio dolor molestias sit"
+      },
+      {
+        "id": 45,
+        "title": "ut numquam possimus omnis eius suscipit laudantium iure"
+      },
+      {
+        "id": 46,
+        "title": "aut quo modi neque nostrum ducimus"
+      },
+      {
+        "id": 47,
+        "title": "quibusdam cumque rem aut deserunt"
+      },
+      {
+        "id": 48,
+        "title": "ut voluptatem illum ea doloribus itaque eos"
+      },
+      {
+        "id": 49,
+        "title": "laborum non sunt aut ut assumenda perspiciatis voluptas"
+      },
+      {
+        "id": 50,
+        "title": "repellendus qui recusandae incidunt voluptates tenetur qui omnis exercitationem"
+      },
+      {
+        "id": 51,
+        "title": "soluta aliquam aperiam consequatur illo quis voluptas"
+      },
+      {
+        "id": 52,
+        "title": "qui enim et consequuntur quia animi quis voluptate quibusdam"
+      },
+      {
+        "id": 53,
+        "title": "ut quo aut ducimus alias"
+      },
+      {
+        "id": 54,
+        "title": "sit asperiores ipsam eveniet odio non quia"
+      },
+      {
+        "id": 55,
+        "title": "sit vel voluptatem et non libero"
+      },
+      {
+        "id": 56,
+        "title": "qui et at rerum necessitatibus"
+      },
+      {
+        "id": 57,
+        "title": "sed ab est est"
+      },
+      {
+        "id": 58,
+        "title": "voluptatum itaque dolores nisi et quasi"
+      },
+      {
+        "id": 59,
+        "title": "qui commodi dolor at maiores et quis id accusantium"
+      },
+      {
+        "id": 60,
+        "title": "consequatur placeat omnis quisquam quia reprehenderit fugit veritatis facere"
+      },
+      {
+        "id": 61,
+        "title": "voluptatem doloribus consectetur est ut ducimus"
+      },
+      {
+        "id": 62,
+        "title": "beatae enim quia vel"
+      },
+      {
+        "id": 63,
+        "title": "voluptas blanditiis repellendus animi ducimus error sapiente et suscipit"
+      },
+      {
+        "id": 64,
+        "title": "et fugit quas eum in in aperiam quod"
+      },
+      {
+        "id": 65,
+        "title": "consequatur id enim sunt et et"
+      },
+      {
+        "id": 66,
+        "title": "repudiandae ea animi iusto"
+      },
+      {
+        "id": 67,
+        "title": "aliquid eos sed fuga est maxime repellendus"
+      },
+      {
+        "id": 68,
+        "title": "odio quis facere architecto reiciendis optio"
+      },
+      {
+        "id": 69,
+        "title": "fugiat quod pariatur odit minima"
+      },
+      {
+        "id": 70,
+        "title": "voluptatem laborum magni"
+      },
+      {
+        "id": 71,
+        "title": "et iusto veniam et illum aut fuga"
+      },
+      {
+        "id": 72,
+        "title": "sint hic doloribus consequatur eos non id"
+      },
+      {
+        "id": 73,
+        "title": "consequuntur deleniti eos quia temporibus ab aliquid at"
+      },
+      {
+        "id": 74,
+        "title": "enim unde ratione doloribus quas enim ut sit sapiente"
+      },
+      {
+        "id": 75,
+        "title": "dignissimos eum dolor ut enim et delectus in"
+      },
+      {
+        "id": 76,
+        "title": "doloremque officiis ad et non perferendis"
+      },
+      {
+        "id": 77,
+        "title": "necessitatibus quasi exercitationem odio"
+      },
+      {
+        "id": 78,
+        "title": "quam voluptatibus rerum veritatis"
+      },
+      {
+        "id": 79,
+        "title": "pariatur consequatur quia magnam autem omnis non amet"
+      },
+      {
+        "id": 80,
+        "title": "labore in ex et explicabo corporis aut quas"
+      },
+      {
+        "id": 81,
+        "title": "tempora rem veritatis voluptas quo dolores vero"
+      },
+      {
+        "id": 82,
+        "title": "laudantium voluptate suscipit sunt enim enim"
+      },
+      {
+        "id": 83,
+        "title": "odit et voluptates doloribus alias odio et"
+      },
+      {
+        "id": 84,
+        "title": "optio ipsam molestias necessitatibus occaecati facilis veritatis dolores aut"
+      },
+      {
+        "id": 85,
+        "title": "dolore veritatis porro provident adipisci blanditiis et sunt"
+      },
+      {
+        "id": 86,
+        "title": "placeat quia et porro iste"
+      },
+      {
+        "id": 87,
+        "title": "nostrum quis quasi placeat"
+      },
+      {
+        "id": 88,
+        "title": "sapiente omnis fugit eos"
+      },
+      {
+        "id": 89,
+        "title": "sint soluta et vel magnam aut ut sed qui"
+      },
+      {
+        "id": 90,
+        "title": "ad iusto omnis odit dolor voluptatibus"
+      },
+      {
+        "id": 91,
+        "title": "aut amet sed"
+      },
+      {
+        "id": 92,
+        "title": "ratione ex tenetur perferendis"
+      },
+      {
+        "id": 93,
+        "title": "beatae soluta recusandae"
+      },
+      {
+        "id": 94,
+        "title": "qui qui voluptates illo iste minima"
+      },
+      {
+        "id": 95,
+        "title": "id minus libero illum nam ad officiis"
+      },
+      {
+        "id": 96,
+        "title": "quaerat velit veniam amet cupiditate aut numquam ut sequi"
+      },
+      {
+        "id": 97,
+        "title": "quas fugiat ut perspiciatis vero provident"
+      },
+      {
+        "id": 98,
+        "title": "laboriosam dolor voluptates"
+      },
+      {
+        "id": 99,
+        "title": "temporibus sit alias delectus eligendi possimus magni"
+      },
+      {
+        "id": 100,
+        "title": "at nam consequatur ea labore ea harum"
+      }
+    ]
+  }
+}
