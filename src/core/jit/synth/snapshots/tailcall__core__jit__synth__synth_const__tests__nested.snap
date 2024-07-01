@@ -1,5 +1,5 @@
 ---
-source: src/core/jit/synth.rs
+source: src/core/jit/synth/synth_const.rs
 expression: val
 ---
 {
@@ -20,16 +20,6 @@ expression: val
           "id": 2,
           "name": "bar"
         }
-      }
-    ],
-    "users": [
-      {
-        "id": 1,
-        "name": "Leanne Graham"
-      },
-      {
-        "id": 2,
-        "name": "Ervin Howell"
       }
     ]
   }
