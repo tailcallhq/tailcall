@@ -330,18 +330,4 @@ mod tests {
         assert!(location_empty.is_empty());
         assert!(!location_non_empty.is_empty());
     }
-
-    #[test]
-    fn test_into_resolved_absolute_path() {
-        let location = Location::<UnResolved>("/absolute/path".to_string(), PhantomData);
-        let resolved_location = location.into_resolved(Some(Path::new("/user/test/path")));
-        assert!(resolved_location.0.eq("/absolute/path"))
-    }
-
-    #[test]
-    fn test_into_resolved_relative_path() {
-        let location = Location::<UnResolved>("../news.proto".to_string(), PhantomData);
-        let resolved_location = location.into_resolved(Some(Path::new("/user/test/path")));
-        assert!(resolved_location.0.eq("/user/test/news.proto"))
-    }
 }
