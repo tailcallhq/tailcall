@@ -32,7 +32,7 @@ impl<'a> SynthBorrow<'a> {
         type_of.is_list() == value.is_array()
     }
 
-    #[inline]
+    #[inline(always)]
     fn iter<'b>(
         &'b self,
         node: &'b Field<Children>,
@@ -44,7 +44,7 @@ impl<'a> SynthBorrow<'a> {
                 if !Self::is_array(&node.type_of, parent) {
                     return Value::Null;
                 }
-                self.iter_inner(node, Some(parent), index)
+                self.iter_inner(node, parent, index)
             }
             None => {
                 // we perform this check to avoid unnecessary hashing
@@ -86,15 +86,15 @@ impl<'a> SynthBorrow<'a> {
             }
         }
     }
-    #[inline]
+    #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
         node: &'b Field<Children>,
-        parent: Option<&'b Value>,
+        parent: &'b Value,
         index: Option<usize>,
     ) -> Value {
         match parent {
-            Some(Value::Object(obj)) => {
+            Value::Object(obj) => {
                 let mut ans = ObjectAsVec::default();
                 let children = node.children();
 
@@ -110,10 +110,7 @@ impl<'a> SynthBorrow<'a> {
                     for child in children {
                         let val = obj.get(child.name.as_str());
                         if let Some(val) = val {
-                            ans.insert(
-                                child.name.as_str(),
-                                self.iter_inner(child, Some(val), index),
-                            );
+                            ans.insert(child.name.as_str(), self.iter_inner(child, val, index));
                         } else {
                             ans.insert(child.name.as_str(), self.iter(child, None, index));
                         }
@@ -121,16 +118,15 @@ impl<'a> SynthBorrow<'a> {
                 }
                 Value::Object(ans)
             }
-            Some(Value::Array(arr)) => {
+            Value::Array(arr) => {
                 let mut ans = vec![];
                 for (i, val) in arr.iter().enumerate() {
-                    let val = self.iter_inner(node, Some(val), Some(i));
+                    let val = self.iter_inner(node, val, Some(i));
                     ans.push(val)
                 }
                 Value::Array(ans)
             }
-            Some(val) => val.clone(), // cloning here would be cheaper than cloning whole value
-            None => Value::Null,      // TODO: we can just pass parent value instead of an option
+            val => val.clone(), // cloning here would be cheaper than cloning whole value
         }
     }
 }
