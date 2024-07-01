@@ -8,6 +8,8 @@ use crate::core::config::{Config, Enum, Field, Type, Union, Variant};
 use crate::core::generator::openapi::anonymous_type_generator::AnonymousTypes;
 use crate::core::valid::{Valid, Validator};
 
+pub const TYPE_FIELD: &str = "type_";
+
 ///
 /// The TypeName enum represents the name of a type in the generated code.
 /// Creating a special type is required since the types can be recursive

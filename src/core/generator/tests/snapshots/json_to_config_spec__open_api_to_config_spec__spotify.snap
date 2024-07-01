@@ -13,7 +13,7 @@ input Type10 {
   external_urls: Type5
   href: String
   id: String
-  type: String
+  type_: String
   uri: String
 }
 
@@ -343,7 +343,7 @@ type AlbumBase {
   The object type.
 
   """
-  type: Type23!
+  type_: Type23!
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the album.
 
@@ -370,7 +370,7 @@ type AlbumObject {
   restrictions: Type22
   total_tracks: Int!
   tracks: Type25!
-  type: Type23!
+  type_: Type23!
   uri: String!
 }
 
@@ -397,7 +397,7 @@ type ArtistDiscographyAlbumObject {
   release_date_precision: Type21!
   restrictions: Type22
   total_tracks: Int!
-  type: Type23!
+  type_: Type23!
   uri: String!
 }
 
@@ -446,7 +446,7 @@ type ArtistObject {
   The object type.
 
   """
-  type: Type30
+  type_: Type30
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the artist.
 
@@ -558,7 +558,7 @@ type AudioFeaturesObject {
   The object type.
 
   """
-  type: Type33
+  type_: Type33
   """
   The Spotify URI for the track.
 
@@ -661,7 +661,7 @@ type AudiobookBase {
   The object type.
 
   """
-  type: Type35!
+  type_: Type35!
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the audiobook.
 
@@ -688,7 +688,7 @@ type AudiobookObject {
   narrators: [NarratorObject]!
   publisher: String!
   total_chapters: Int!
-  type: Type35!
+  type_: Type35!
   uri: String!
 }
 
@@ -818,7 +818,7 @@ type ChapterBase {
   The object type.
 
   """
-  type: Type41!
+  type_: Type41!
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the chapter.
 
@@ -846,7 +846,7 @@ type ChapterObject {
   release_date_precision: Type38!
   restrictions: Type39
   resume_point: Type40
-  type: Type41!
+  type_: Type41!
   uri: String!
 }
 
@@ -878,7 +878,7 @@ type ContextObject {
   The object type, e.g. "artist", "playlist", "album", "show".
 
   """
-  type: String
+  type_: String
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the context.
 
@@ -896,7 +896,7 @@ type CopyrightObject {
   The type of copyright: `C` = the copyright, `P` = the sound recording (performance) copyright.
 
   """
-  type: String
+  type_: String
 }
 
 type CurrentlyPlayingContextObject {
@@ -1058,7 +1058,7 @@ type DeviceObject {
   """
   Device type, such as "computer", "smartphone" or "speaker".
   """
-  type: String
+  type_: String
   """
   The current volume in percent.
   """
@@ -1203,7 +1203,7 @@ type EpisodeBase {
   The object type.
 
   """
-  type: Type41!
+  type_: Type41!
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the episode.
 
@@ -1231,7 +1231,7 @@ type EpisodeObject {
   restrictions: Type50
   resume_point: Type51
   show: Type52!
-  type: Type41!
+  type_: Type41!
   uri: String!
 }
 
@@ -1352,7 +1352,7 @@ type LinkedTrackObject {
   The object type: "track".
 
   """
-  type: String
+  type_: String
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the track.
 
@@ -1649,7 +1649,7 @@ type PlaylistObject {
   The object type: "playlist"
 
   """
-  type: String
+  type_: String
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the playlist.
 
@@ -1663,7 +1663,7 @@ type PlaylistOwnerObject {
   followers: Type61
   href: String
   id: String
-  type: Type62
+  type_: Type62
   uri: String
 }
 
@@ -1727,7 +1727,7 @@ type PlaylistUserObject {
   The object type.
 
   """
-  type: Type62
+  type_: Type62
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for this user.
 
@@ -1787,7 +1787,7 @@ type PrivateUserObject {
   The object type: "user"
 
   """
-  type: String
+  type_: String
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the user.
 
@@ -1830,7 +1830,7 @@ type PublicUserObject {
   The object type.
 
   """
-  type: Type62
+  type_: Type62
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for this user.
 
@@ -1843,7 +1843,7 @@ type Query {
   Check to see if the current user is following one or more artists or other Spotify users.
 
   """
-  checkCurrentUserFollows(ids: String!, type: Type12!): [Boolean] @http(baseURL: "https://api.spotify.com/v1", path: "/me/following/contains", query: [{key: "ids", value: "{{.args.ids}}"}, {key: "type", value: "{{.args.type}}"}])
+  checkCurrentUserFollows(ids: String!, type_: Type12!): [Boolean] @http(baseURL: "https://api.spotify.com/v1", path: "/me/following/contains", query: [{key: "ids", value: "{{.args.ids}}"}, {key: "type", value: "{{.args.type_}}"}])
   """
   Check to see if one or more Spotify users are following a specified playlist.
 
@@ -1995,7 +1995,7 @@ current user's username).
   Get the current user's followed artists.
 
   """
-  getFollowed(after: String, limit: Int, type: Type10!): Type11 @http(baseURL: "https://api.spotify.com/v1", path: "/me/following", query: [{key: "after", value: "{{.args.after}}"}, {key: "limit", value: "{{.args.limit}}"}, {key: "type", value: "{{.args.type}}"}])
+  getFollowed(after: String, limit: Int, type_: Type10!): Type11 @http(baseURL: "https://api.spotify.com/v1", path: "/me/following", query: [{key: "after", value: "{{.args.after}}"}, {key: "limit", value: "{{.args.limit}}"}, {key: "type", value: "{{.args.type_}}"}])
   """
   Get information about the user’s current playback state, including track or episode, progress, and active device.
 
@@ -2146,7 +2146,7 @@ This API endpoint is in __beta__ and could change without warning. Please share 
 that match a keyword string. Audiobooks are only available within the US, UK, Canada, Ireland, New Zealand and Australia markets.
 
   """
-  search(include_external: Type16, limit: Int, market: String, offset: Int, q: String!, type: [Type15]!): Type17 @http(baseURL: "https://api.spotify.com/v1", path: "/search", query: [{key: "include_external", value: "{{.args.include_external}}"}, {key: "limit", value: "{{.args.limit}}"}, {key: "market", value: "{{.args.market}}"}, {key: "offset", value: "{{.args.offset}}"}, {key: "q", value: "{{.args.q}}"}, {key: "type", value: "{{.args.type}}"}])
+  search(include_external: Type16, limit: Int, market: String, offset: Int, q: String!, type_: [Type15]!): Type17 @http(baseURL: "https://api.spotify.com/v1", path: "/search", query: [{key: "include_external", value: "{{.args.include_external}}"}, {key: "limit", value: "{{.args.limit}}"}, {key: "market", value: "{{.args.market}}"}, {key: "offset", value: "{{.args.offset}}"}, {key: "q", value: "{{.args.q}}"}, {key: "type", value: "{{.args.type_}}"}])
 }
 
 type QueueObject {
@@ -2190,7 +2190,7 @@ type RecommendationSeedObject {
   The entity type of this seed. One of `artist`, `track` or `genre`.
 
   """
-  type: String
+  type_: String
 }
 
 type RecommendationsObject {
@@ -2470,7 +2470,7 @@ type ShowBase {
   The object type.
 
   """
-  type: Type75!
+  type_: Type75!
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the show.
 
@@ -2495,7 +2495,7 @@ type ShowObject {
   name: String!
   publisher: String!
   total_episodes: Int!
-  type: Type75!
+  type_: Type75!
   uri: String!
 }
 
@@ -2512,7 +2512,7 @@ type SimplifiedAlbumObject {
   release_date_precision: Type21!
   restrictions: Type22
   total_tracks: Int!
-  type: Type23!
+  type_: Type23!
   uri: String!
 }
 
@@ -2541,7 +2541,7 @@ type SimplifiedArtistObject {
   The object type.
 
   """
-  type: Type30
+  type_: Type30
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the artist.
 
@@ -2567,7 +2567,7 @@ type SimplifiedAudiobookObject {
   narrators: [NarratorObject]!
   publisher: String!
   total_chapters: Int!
-  type: Type35!
+  type_: Type35!
   uri: String!
 }
 
@@ -2590,7 +2590,7 @@ type SimplifiedChapterObject {
   release_date_precision: Type38!
   restrictions: Type39
   resume_point: Type40
-  type: Type41!
+  type_: Type41!
   uri: String!
 }
 
@@ -2613,7 +2613,7 @@ type SimplifiedEpisodeObject {
   release_date_precision: Type38!
   restrictions: Type50
   resume_point: Type51
-  type: Type41!
+  type_: Type41!
   uri: String!
 }
 
@@ -2677,7 +2677,7 @@ type SimplifiedPlaylistObject {
   The object type: "playlist"
 
   """
-  type: String
+  type_: String
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the playlist.
 
@@ -2701,7 +2701,7 @@ type SimplifiedShowObject {
   name: String!
   publisher: String!
   total_episodes: Int!
-  type: Type75!
+  type_: Type75!
   uri: String!
 }
 
@@ -2778,7 +2778,7 @@ type SimplifiedTrackObject {
   The object type: "track".
 
   """
-  type: String
+  type_: String
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the track.
 
@@ -2895,7 +2895,7 @@ type TrackObject {
   The object type: "track".
 
   """
-  type: Type84
+  type_: Type84
   """
   The [Spotify URI](/documentation/web-api/concepts/spotify-uris-ids) for the track.
 
@@ -3101,7 +3101,7 @@ type Type29 {
   name: String!
   publisher: String!
   total_episodes: Int!
-  type: Type8!
+  type_: Type8!
   uri: String!
 }
 
@@ -3331,7 +3331,7 @@ type Type42 {
   narrators: [NarratorObject]!
   publisher: String!
   total_chapters: Int!
-  type: Type3!
+  type_: Type3!
   uri: String!
 }
 
@@ -3365,7 +3365,7 @@ type Type44 {
 type Type45 {
   external_urls: Type4
   href: String
-  type: String
+  type_: String
   uri: String
 }
 
@@ -3380,7 +3380,7 @@ type Type46 {
   is_restricted: Boolean
   name: String
   supports_volume: Boolean
-  type: String
+  type_: String
   volume_percent: Int
 }
 
@@ -3437,7 +3437,7 @@ type Type52 {
   name: String!
   publisher: String!
   total_episodes: Int!
-  type: Type6!
+  type_: Type6!
   uri: String!
 }
 
@@ -3455,7 +3455,7 @@ type Type53 {
 type Type54 {
   external_urls: Type4
   href: String
-  type: String
+  type_: String
   uri: String
 }
 
@@ -3481,7 +3481,7 @@ type Type55 {
   preview_url: String
   restrictions: Type11
   track_number: Int
-  type: Type12
+  type_: Type12
   uri: String
 }
 
@@ -3511,7 +3511,7 @@ type Type58 {
   followers: Type14
   href: String
   id: String
-  type: Type15
+  type_: Type15
   uri: String
 }
 
@@ -3559,7 +3559,7 @@ type Type63 {
   followers: Type14
   href: String
   id: String
-  type: Type15
+  type_: Type15
   uri: String
 }
 
@@ -3609,7 +3609,7 @@ type Type69 {
   restrictions: Type19
   total_tracks: Int!
   tracks: Type22!
-  type: Type20!
+  type_: Type20!
   uri: String!
 }
 
@@ -3643,7 +3643,7 @@ type Type70 {
   narrators: [NarratorObject]!
   publisher: String!
   total_chapters: Int!
-  type: Type3!
+  type_: Type3!
   uri: String!
 }
 
@@ -3670,7 +3670,7 @@ type Type71 {
   restrictions: Type26
   resume_point: Type27
   show: Type29!
-  type: Type28!
+  type_: Type28!
   uri: String!
 }
 
@@ -3693,7 +3693,7 @@ type Type72 {
   name: String!
   publisher: String!
   total_episodes: Int!
-  type: Type6!
+  type_: Type6!
   uri: String!
 }
 
@@ -3719,7 +3719,7 @@ type Type73 {
   preview_url: String
   restrictions: Type11
   track_number: Int
-  type: Type12
+  type_: Type12
   uri: String
 }
 
@@ -3769,7 +3769,7 @@ type Type79 {
   external_urls: Type9
   href: String
   id: String
-  type: String
+  type_: String
   uri: String
 }
 
@@ -3808,7 +3808,7 @@ type Type81 {
   release_date_precision: Type18!
   restrictions: Type19
   total_tracks: Int!
-  type: Type20!
+  type_: Type20!
   uri: String!
 }
 
@@ -3829,7 +3829,7 @@ type Type83 {
   external_urls: Type9
   href: String
   id: String
-  type: String
+  type_: String
   uri: String
 }
 

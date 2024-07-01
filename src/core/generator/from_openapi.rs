@@ -3,7 +3,7 @@ use oas3::{OpenApiV3Spec, Spec};
 use crate::core::config::Config;
 use crate::core::generator::json;
 use crate::core::generator::openapi::{
-    AnonymousTypeGenerator, AnonymousTypes, QueryGenerator, TypeGenerator,
+    AnonymousTypeGenerator, AnonymousTypes, QueryGenerator, Sanitizer, TypeGenerator,
 };
 use crate::core::transform::Transform;
 use crate::core::valid::{Valid, Validator};
@@ -37,17 +37,19 @@ impl Transform for FromOpenAPIGenerator {
                 AnonymousTypeGenerator::new(&self.spec).transform((types, config))
             });
 
-        loop {
+        let config = loop {
             match result.to_result() {
                 Ok((types, config)) => {
                     if types.is_empty() {
-                        return Valid::succeed(config);
+                        break config;
                     }
                     result = AnonymousTypeGenerator::new(&self.spec).transform((types, config));
                 }
                 Err(err) => return Valid::from_validation_err(err),
             }
-        }
+        };
+
+        Sanitizer.transform(config)
     }
 }
 
