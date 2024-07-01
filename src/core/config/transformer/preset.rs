@@ -13,17 +13,6 @@ pub struct Preset {
     use_better_names: bool,
 }
 
-impl Preset {
-    pub fn new(
-        merge_type: f32,
-        consolidate_url: f32,
-        tree_shake: bool,
-        use_better_names: bool,
-    ) -> Self {
-        Self { merge_type, consolidate_url, tree_shake, use_better_names }
-    }
-}
-
 impl Transform for Preset {
     type Value = Config;
     type Error = String;

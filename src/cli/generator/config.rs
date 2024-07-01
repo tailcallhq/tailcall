@@ -307,7 +307,9 @@ mod tests {
     fn should_use_user_provided_presets_when_provided() {
         let config_preset = Preset { merge_type: Some(0.5), consolidate_url: Some(1.0) };
         let transform_preset: config::transformer::Preset = config_preset.into();
-        let expected_preset = config::transformer::Preset::new(0.5, 1.0, true, true);
+        let expected_preset = config::transformer::Preset::default()
+            .consolidate_url(1.0)
+            .merge_type(0.5);
         assert_eq!(transform_preset, expected_preset);
     }
 
