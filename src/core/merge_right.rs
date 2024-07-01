@@ -96,7 +96,12 @@ impl MergeRight for Value {
             },
             (Value::Mapping(mut lhs), other) => match other {
                 Value::Mapping(rhs) => {
-                    lhs.extend(rhs);
+                    for (key, mut value) in rhs {
+                        if let Some(lhs_value) = lhs.remove(&key) {
+                            value = lhs_value.merge_right(value);
+                        }
+                        lhs.insert(key, value);
+                    }
                     Value::Mapping(lhs)
                 }
                 Value::Sequence(mut rhs) => {
