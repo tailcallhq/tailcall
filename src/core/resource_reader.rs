@@ -20,6 +20,22 @@ pub enum Resource {
     Request(reqwest::Request),
 }
 
+impl Resource {
+    fn as_request(&self) -> Option<&reqwest::Request> {
+        match self {
+            Resource::Request(request) => Some(request),
+            _ => None,
+        }
+    }
+
+    fn as_raw_path(&self) -> Option<&str> {
+        match self {
+            Resource::RawPath(path) => Some(path),
+            _ => None,
+        }
+    }
+}
+
 impl From<reqwest::Request> for Resource {
     fn from(val: reqwest::Request) -> Self {
         Resource::Request(val)
@@ -178,5 +194,44 @@ impl Reader for Cached {
         };
 
         Ok(FileRead { content, path: file_path })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_from_reqwest_request() {
+        let original_url: Url = "https://tailcall.run".parse().unwrap();
+        let original_request = reqwest::Request::new(reqwest::Method::GET, original_url.clone());
+        let resource: Resource = original_request.try_clone().unwrap().into();
+        let request = resource.as_request().unwrap();
+
+        let actual = request;
+        let expected = original_request;
+
+        assert_eq!(actual.method(), expected.method());
+        assert_eq!(actual.url(), expected.url());
+    }
+
+    #[test]
+    fn test_from_str() {
+        let path = "https://tailcall.run";
+        let resource: Resource = path.into();
+
+        let actual = resource.as_raw_path().unwrap();
+        let expected = path;
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_from_string() {
+        let path = String::from("./config.graphql");
+        let resource: Resource = path.clone().into();
+        let actual = resource.as_raw_path().unwrap();
+        let expected = path.as_str();
+
+        assert_eq!(actual, expected);
     }
 }
