@@ -6,7 +6,7 @@ use super::context::Context;
 use super::exec::{Executor, IRExecutor};
 use super::synth::SynthConst;
 use super::{Error, ExecutionPlan, Request, Response, Result};
-use crate::core::app_context::AppContext;
+use crate::core::{app_context::AppContext, ir::ResolverContextLike};
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
 use crate::core::ir::EvalContext;

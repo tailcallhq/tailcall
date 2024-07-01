@@ -7,7 +7,7 @@ use serde::Deserialize;
 use super::{Builder, Error, ExecutionPlan, Result};
 use crate::core::blueprint::Blueprint;
 
-#[derive(Deserialize, Setters)]
+#[derive(Debug, Deserialize, Setters)]
 pub struct Request<Value> {
     pub query: String,
     pub operation_name: Option<String>,

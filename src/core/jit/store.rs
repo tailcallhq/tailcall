@@ -1,5 +1,6 @@
 use crate::core::jit::model::FieldId;
 
+#[derive(Debug)]
 pub struct Store<A> {
     map: Vec<Data<A>>,
 }
@@ -15,6 +16,16 @@ pub enum Data<A> {
     Multiple(Vec<A>),
     /// Represents that the value is yet to be computed
     Pending,
+}
+
+impl<A> std::fmt::Debug for Data<A> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Single(arg0) => f.debug_tuple("Single").finish(),
+            Self::Multiple(arg0) => f.debug_tuple("Multiple").field(&arg0.len()).finish(),
+            Self::Pending => write!(f, "Pending"),
+        }
+    }
 }
 
 impl<A> Data<A> {
@@ -33,19 +44,17 @@ impl<A> Store<A> {
     }
 
     pub fn set(&mut self, field_id: FieldId, data: Data<A>) {
-        self.map.insert(field_id.as_usize(), data);
+        self.map[field_id.as_usize()] = data;
     }
 
     pub fn set_single(&mut self, field_id: &FieldId, data: A) {
-        self.map.insert(field_id.as_usize(), Data::Single(data));
+        self.map[field_id.as_usize()] = Data::Single(data);
     }
 
     pub fn set_multiple(&mut self, field_id: &FieldId, data: A) {
         match self.map.get_mut(field_id.as_usize()) {
             Some(Data::Multiple(values)) => values.push(data),
-            _ => self
-                .map
-                .insert(field_id.as_usize(), Data::Multiple(vec![data])),
+            _ => self.map[field_id.as_usize()] = Data::Multiple(vec![data]),
         }
     }
 

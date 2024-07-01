@@ -87,15 +87,13 @@ where
             if let Ok(ref value) = result {
                 // Array
                 if let Ok(array) = value.as_array_ok() {
-                    let ctx = ctx.with_parent_value(value);
                     join_all(array.iter().map(|value| {
                         let ctx = ctx.with_value(value);
 
                         join_all(field.children().iter().map(|child| {
                             let ctx = ctx.clone();
                             async move {
-                                let ctx = ctx.clone();
-                                self.execute_field(child, ctx.clone().borrow(), true).await
+                                self.execute_field(child, &ctx, true).await
                             }
                         }))
                     }))
@@ -107,7 +105,7 @@ where
                         let ctx = ctx.clone();
                         let value = &value;
                         async move {
-                            let ctx = ctx.with_parent_value(value);
+                            let ctx = ctx.with_value(value);
                             self.execute_field(child, &ctx, false).await
                         }
                     }))
@@ -116,6 +114,7 @@ where
             }
 
             if is_multi {
+                // TODO: set multiple data at once instead of setting one by one
                 self.store.lock().unwrap().set_multiple(&field.id, result)
             } else {
                 self.store.lock().unwrap().set_single(&field.id, result)
