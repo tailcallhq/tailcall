@@ -414,7 +414,6 @@ mod tests {
             .query(query);
         let ctx = Context::default();
         let req = tmpl.to_request(&ctx).unwrap();
-        println!("[Finder]: {:#?}", req.url().to_string());
         assert_eq!(
             req.url().to_string(),
             "http://localhost:3000/?foo=0&bar=1&baz=2"
