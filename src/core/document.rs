@@ -2,6 +2,65 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
+fn pos<A>(a: A) -> Positioned<A> {
+    Positioned::new(a, Pos::default())
+}
+
+struct LineBreaker<'a> {
+    string: &'a str,
+    break_at: usize,
+    index: usize,
+}
+
+impl<'a> LineBreaker<'a> {
+    fn new(string: &'a str, break_at: usize) -> Self {
+        LineBreaker { string, break_at, index: 0 }
+    }
+}
+
+impl<'a> Iterator for LineBreaker<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.string.len() {
+            return None;
+        }
+
+        let end_index = self
+            .string
+            .chars()
+            .skip(self.index + self.break_at)
+            .enumerate()
+            .find(|(_, ch)| ch.is_whitespace())
+            .map(|(index, _)| self.index + self.break_at + index + 1)
+            .unwrap_or(self.string.len());
+
+        let start_index = self.index;
+        self.index = end_index;
+
+        Some(&self.string[start_index..end_index])
+    }
+}
+
+fn get_formated_docs(docs: Option<String>, indent: usize) -> String {
+    let mut indent_str = String::new();
+    if indent > 0 {
+        indent_str = " ".repeat(indent);
+    }
+    let mut formated_docs = String::new();
+    if let Some(docs) = docs {
+        let docs: String = docs.chars().filter(|ch| ch != &'\n').collect();
+        let line_breaker = LineBreaker::new(&docs, 80);
+        formated_docs.push_str(format!("{}\"\"\"", indent_str).as_str());
+        for line in line_breaker {
+            formated_docs.push_str(format!("\n{}{}", indent_str, line).as_str());
+        }
+        formated_docs.push_str(format!("\n{}\"\"\"\n", indent_str).as_str());
+    }
+
+    formated_docs
+}
+
 fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
     if directives.is_empty() {
         return String::new();
@@ -12,10 +71,6 @@ fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
         .collect::<Vec<String>>()
         .join(" ")
         + " "
-}
-
-fn pos<A>(a: A) -> Positioned<A> {
-    Positioned::new(a, Pos::default())
 }
 
 fn print_schema(schema: &SchemaDefinition) -> String {
@@ -76,7 +131,8 @@ fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
 fn print_type_def(type_def: &TypeDefinition) -> String {
     match &type_def.kind {
         TypeKind::Scalar => {
-            format!("scalar {}\n", type_def.name.node)
+            let doc = get_formated_docs(type_def.description.as_ref().map(|d| d.node.clone()), 0);
+            format!("{}scalar {}\n", doc, type_def.name.node)
         }
         TypeKind::Union(union) => {
             format!(
@@ -92,9 +148,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
         }
         TypeKind::InputObject(input) => {
             let directives = print_directives(&type_def.directives);
-            let doc = type_def.description.as_ref().map_or(String::new(), |d| {
-                format!(r#"  """{}  {}{}  """{}"#, "\n", d.node, "\n", "\n")
-            });
+            let doc = get_formated_docs(type_def.description.as_ref().map(|d| d.node.clone()), 0);
             format!(
                 "{}input {} {}{{\n{}\n}}\n",
                 doc,
@@ -239,9 +293,7 @@ fn print_default_value(value: Option<&Positioned<ConstValue>>) -> String {
 
 fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition) -> String {
     let directives_str = print_directives(&field.directives);
-    let doc = field.description.as_ref().map_or(String::new(), |d| {
-        format!(r#"  """{}  {}{}  """{}"#, "\n", d.node, "\n", "\n")
-    });
+    let doc = get_formated_docs(field.description.as_ref().map(|d| d.node.clone()), 2);
     format!(
         "{}  {}: {}{}{}",
         doc,
@@ -265,6 +317,47 @@ fn print_directive(directive: &DirectiveDefinition) -> String {
         format!("@{}({})", directive.name.node, args)
     }
 }
+
+fn print_directive_type_def(directive: &DirectiveDefinition) -> String {
+    let args = directive
+        .arguments
+        .iter()
+        .map(|arg| {
+            let doc = get_formated_docs(arg.node.description.as_ref().map(|d| d.node.clone()), 2);
+            format!("{}  {}: {}", doc, arg.node.name.node, arg.node.ty.node)
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let doc = get_formated_docs(directive.description.as_ref().map(|d| d.node.clone()), 0);
+    let locations = directive
+        .locations
+        .iter()
+        .map(|d| tailcall_typedefs_common::from_directive_location(d.node.clone()))
+        .collect::<Vec<_>>();
+    let repeatable = if directive.is_repeatable {
+        " repeatable"
+    } else {
+        ""
+    };
+    let locations = if locations.is_empty() {
+        String::new()
+    } else {
+        format!(" on {}", locations.join(" | "))
+    };
+    if args.is_empty() {
+        format!(
+            "{}directive @{}{}{}\n",
+            doc, directive.name.node, repeatable, locations
+        )
+    } else {
+        format!(
+            "{}directive @{}(\n{}\n){}{}\n",
+            doc, directive.name.node, args, repeatable, locations
+        )
+    }
+}
+
 pub fn print(sd: ServiceDocument) -> String {
     // Separate the definitions by type
     let definitions_len = sd.definitions.len();
@@ -275,6 +368,7 @@ pub fn print(sd: ServiceDocument) -> String {
     let mut enums = Vec::with_capacity(definitions_len);
     let mut unions = Vec::with_capacity(definitions_len);
     let mut inputs = Vec::with_capacity(definitions_len);
+    let mut directives = Vec::with_capacity(definitions_len);
 
     for def in sd.definitions.iter() {
         match def {
@@ -287,13 +381,16 @@ pub fn print(sd: ServiceDocument) -> String {
                 TypeKind::Union(_) => unions.push(print_type_def(&type_def.node)),
                 TypeKind::InputObject(_) => inputs.push(print_type_def(&type_def.node)),
             },
-            TypeSystemDefinition::Directive(_) => todo!("Directives are not supported yet"),
+            TypeSystemDefinition::Directive(type_def) => {
+                directives.push(print_directive_type_def(&type_def.node))
+            }
         }
     }
 
     // Concatenate the definitions in the desired order
     let sdl_string = schemas
         .into_iter()
+        .chain(directives)
         .chain(scalars)
         .chain(inputs)
         .chain(interfaces)

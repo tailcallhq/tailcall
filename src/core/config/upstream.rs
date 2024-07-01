@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
-use tailcall_macros::DocumentDefinition;
+use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
@@ -11,18 +11,8 @@ use crate::core::merge_right::MergeRight;
 const DEFAULT_MAX_SIZE: usize = 100;
 
 #[derive(
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    Clone,
-    Debug,
-    Setters,
-    schemars::JsonSchema,
-    MergeRight,
-    DocumentDefinition,
+    Serialize, Deserialize, PartialEq, Eq, Clone, Debug, Setters, schemars::JsonSchema, MergeRight,
 )]
-#[doc_type("Input")]
 #[serde(rename_all = "camelCase", default)]
 pub struct Batch {
     pub delay: usize,
@@ -40,18 +30,7 @@ impl Default for Batch {
     }
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    Clone,
-    Debug,
-    schemars::JsonSchema,
-    MergeRight,
-    DocumentDefinition,
-)]
-#[doc_type("Input")]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, schemars::JsonSchema, MergeRight)]
 pub struct Proxy {
     pub url: String,
 }
@@ -67,9 +46,10 @@ pub struct Proxy {
     Default,
     schemars::JsonSchema,
     MergeRight,
-    DocumentDefinition,
+    DirectiveDefinition,
+    InputDefinition,
 )]
-#[doc_type("Directive")]
+#[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase", default)]
 /// The `upstream` directive allows you to control various aspects of the

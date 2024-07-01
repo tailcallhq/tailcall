@@ -5292,6 +5292,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tailcall",
+ "tailcall-typedefs-common",
  "tokio",
  "tracing",
 ]

@@ -1,6 +1,5 @@
 use hyper::header;
 use serde::{Deserialize, Serialize};
-use tailcall_macros::DocumentDefinition;
 
 use crate::core::http::Method;
 use crate::core::is_default;
@@ -9,18 +8,8 @@ use crate::core::merge_right::MergeRight;
 
 /// Type to configure Cross-Origin Resource Sharing (CORS) for a server.
 #[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-    DocumentDefinition,
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
 )]
-#[doc_type("Input")]
 #[serde(rename_all = "camelCase")]
 pub struct Cors {
     /// Indicates whether the server allows credentials (e.g., cookies,

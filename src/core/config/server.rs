@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
-use tailcall_macros::DocumentDefinition;
+use tailcall_macros::DirectiveDefinition;
 
 use super::merge_key_value_vecs;
 use crate::core::config::headers::Headers;
@@ -20,9 +20,9 @@ use crate::core::merge_right::MergeRight;
     Eq,
     schemars::JsonSchema,
     MergeRight,
-    DocumentDefinition,
+    DirectiveDefinition,
 )]
-#[doc_type("Directive")]
+#[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The `@server` directive, when applied at the schema level, offers a
@@ -121,18 +121,7 @@ fn merge_right_vars(mut left: Vec<KeyValue>, right: Vec<KeyValue>) -> Vec<KeyVal
     left
 }
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-    DocumentDefinition,
-)]
-#[doc_type("Input")]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 #[serde(rename_all = "camelCase")]
 pub struct ScriptOptions {
     pub timeout: Option<u64>,

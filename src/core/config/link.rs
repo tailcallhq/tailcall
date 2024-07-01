@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tailcall_macros::DocumentDefinition;
+use tailcall_macros::DirectiveDefinition;
 
 use super::super::is_default;
 
@@ -39,9 +39,9 @@ pub enum LinkType {
     Debug,
     Clone,
     schemars::JsonSchema,
-    DocumentDefinition,
+    DirectiveDefinition,
 )]
-#[doc_type("Directive")]
+#[directive_definition(repeatable, locations = "Schema")]
 #[serde(deny_unknown_fields)]
 pub struct Link {
     ///

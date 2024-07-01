@@ -1,9 +1,9 @@
 mod gen_gql_schema;
-mod new_gen_gql_schema;
 
 use std::env;
 use std::path::PathBuf;
 use std::process::exit;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use gen_gql_schema::update_gql;
@@ -14,6 +14,7 @@ use tailcall::cli;
 use tailcall::core::config::Config;
 use tailcall::core::scalar::CUSTOM_SCALARS;
 use tailcall::core::tracing::default_tracing_for_name;
+use tailcall::core::FileIO;
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 
@@ -69,16 +70,17 @@ async fn mode_check() -> Result<()> {
 }
 
 async fn mode_fix() -> Result<()> {
-    update_json().await?;
-    update_gql()?;
+    let rt = cli::runtime::init(&Default::default());
+    let file_io = rt.file;
+
+    update_json(file_io.clone()).await?;
+    update_gql(file_io.clone()).await?;
     Ok(())
 }
 
-async fn update_json() -> Result<()> {
+async fn update_json(file_io: Arc<dyn FileIO>) -> Result<()> {
     let path = get_file_path();
     let schema = serde_json::to_string_pretty(&get_updated_json().await?)?;
-    let rt = cli::runtime::init(&Default::default());
-    let file_io = rt.file;
     tracing::info!("Updating JSON Schema: {}", path.to_str().unwrap());
     file_io
         .write(

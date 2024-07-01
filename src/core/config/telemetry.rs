@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use tailcall_macros::DocumentDefinition;
+use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
 use super::KeyValue;
 use crate::core::config::{Apollo, ConfigReaderContext};
@@ -20,18 +20,7 @@ mod defaults {
 }
 
 /// Output the opentelemetry data to the stdout. Mostly used for debug purposes
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-    DocumentDefinition,
-)]
-#[doc_type("Input")]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 #[serde(rename_all = "camelCase")]
 pub struct StdoutExporter {
     /// Output to stdout in pretty human-readable format
@@ -40,18 +29,7 @@ pub struct StdoutExporter {
 }
 
 /// Output the opentelemetry data to otlp collector
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-    DocumentDefinition,
-)]
-#[doc_type("Input")]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 #[serde(rename_all = "camelCase")]
 pub struct OtlpExporter {
     pub url: String,
@@ -60,18 +38,7 @@ pub struct OtlpExporter {
 }
 
 /// Output format for prometheus data
-#[derive(
-    Debug,
-    Clone,
-    Default,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    DocumentDefinition,
-)]
-#[doc_type("Input")]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum PrometheusFormat {
     #[default]
@@ -80,10 +47,7 @@ pub enum PrometheusFormat {
 }
 
 /// Output the telemetry metrics data to prometheus server
-#[derive(
-    Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, DocumentDefinition,
-)]
-#[doc_type("Input")]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PrometheusExporter {
     #[serde(
@@ -95,18 +59,7 @@ pub struct PrometheusExporter {
     pub format: PrometheusFormat,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-    DocumentDefinition,
-)]
-#[doc_type("Input")]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 #[serde(rename_all = "camelCase")]
 pub enum TelemetryExporter {
     Stdout(StdoutExporter),
@@ -124,9 +77,10 @@ pub enum TelemetryExporter {
     PartialEq,
     Eq,
     schemars::JsonSchema,
-    DocumentDefinition,
+    DirectiveDefinition,
+    InputDefinition,
 )]
-#[doc_type("DirectiveWithInput")]
+#[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The @telemetry directive facilitates seamless integration with

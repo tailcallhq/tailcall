@@ -1,13 +1,12 @@
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
-use tailcall_macros::DocumentDefinition;
+use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::JsonLike;
 
 /// Represents list of bytes
-#[derive(JsonSchema, Default, DocumentDefinition)]
-#[doc_type("Scalar")]
+#[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct Bytes(pub String);
 
 impl super::Scalar for Bytes {

@@ -1,11 +1,10 @@
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
-use tailcall_macros::DocumentDefinition;
+use tailcall_macros::ScalarDefinition;
 
 /// Represents signed integer type 128 bit size as string
-#[derive(JsonSchema, Default, DocumentDefinition)]
-#[doc_type("Scalar")]
+#[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct Int128(pub i128);
 
 impl super::Scalar for Int128 {

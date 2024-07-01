@@ -1,13 +1,12 @@
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
-use tailcall_macros::DocumentDefinition;
+use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::JsonLike;
 
 /// A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
-#[derive(JsonSchema, Default, DocumentDefinition)]
-#[doc_type("Scalar")]
+#[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct PhoneNumber {
     #[allow(dead_code)]
     #[serde(rename = "PhoneNumber")]
