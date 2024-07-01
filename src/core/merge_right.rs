@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
+use serde_yaml::Value;
+
 pub trait MergeRight {
     fn merge_right(self, other: Self) -> Self;
 }
@@ -75,5 +77,50 @@ where
     fn merge_right(mut self, other: Self) -> Self {
         self.extend(other);
         self
+    }
+}
+
+impl MergeRight for Value {
+    fn merge_right(self, other: Self) -> Self {
+        match (self, other) {
+            (Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_), other) => other,
+            (Value::Sequence(mut lhs), other) => match other {
+                Value::Sequence(rhs) => {
+                    lhs.extend(rhs);
+                    Value::Sequence(lhs)
+                }
+                other => {
+                    lhs.push(other);
+                    Value::Sequence(lhs)
+                }
+            },
+            (Value::Mapping(mut lhs), other) => match other {
+                Value::Mapping(rhs) => {
+                    for (key, mut value) in rhs {
+                        if let Some(lhs_value) = lhs.remove(&key) {
+                            value = lhs_value.merge_right(value);
+                        }
+                        lhs.insert(key, value);
+                    }
+                    Value::Mapping(lhs)
+                }
+                Value::Sequence(mut rhs) => {
+                    rhs.push(Value::Mapping(lhs));
+                    Value::Sequence(rhs)
+                }
+                other => other,
+            },
+            (Value::Tagged(mut lhs), other) => match other {
+                Value::Tagged(rhs) => {
+                    if lhs.tag == rhs.tag {
+                        lhs.value = lhs.value.merge_right(rhs.value);
+                        Value::Tagged(lhs)
+                    } else {
+                        Value::Tagged(rhs)
+                    }
+                }
+                other => other,
+            },
+        }
     }
 }

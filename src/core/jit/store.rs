@@ -2,7 +2,7 @@ use crate::core::jit::model::FieldId;
 
 #[derive(Debug)]
 pub struct Store<A> {
-    map: Vec<Data<A>>,
+    data: Vec<Data<A>>,
 }
 
 #[derive(Clone)]
@@ -40,25 +40,25 @@ impl<A> Data<A> {
 
 impl<A> Store<A> {
     pub fn new(size: usize) -> Self {
-        Store { map: (0..size).map(|_| Data::Pending).collect() }
+        Store { data: (0..size).map(|_| Data::Pending).collect() }
     }
 
     pub fn set(&mut self, field_id: FieldId, data: Data<A>) {
-        self.map[field_id.as_usize()] = data;
+        self.data[field_id.as_usize()] = data;
     }
 
     pub fn set_single(&mut self, field_id: &FieldId, data: A) {
-        self.map[field_id.as_usize()] = Data::Single(data);
+        self.data[field_id.as_usize()] = Data::Single(data);
     }
 
     pub fn set_multiple(&mut self, field_id: &FieldId, data: A) {
-        match self.map.get_mut(field_id.as_usize()) {
+        match self.data.get_mut(field_id.as_usize()) {
             Some(Data::Multiple(values)) => values.push(data),
-            _ => self.map[field_id.as_usize()] = Data::Multiple(vec![data]),
+            _ => self.data[field_id.as_usize()] = Data::Multiple(vec![data]),
         }
     }
 
     pub fn get(&self, field_id: &FieldId) -> Option<&Data<A>> {
-        self.map.get(field_id.as_usize())
+        self.data.get(field_id.as_usize())
     }
 }

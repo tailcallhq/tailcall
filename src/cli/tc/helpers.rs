@@ -1,5 +1,3 @@
-use std::fs;
-
 use lazy_static::lazy_static;
 
 use crate::cli::fmt::Fmt;
@@ -14,11 +12,6 @@ pub const JSON_FILE_NAME: &str = ".tailcallrc.schema.json";
 
 lazy_static! {
     pub static ref TRACKER: tailcall_tracker::Tracker = tailcall_tracker::Tracker::default();
-}
-
-/// Checks if file or folder already exists or not.
-pub(super) fn is_exists(path: &str) -> bool {
-    fs::metadata(path).is_ok()
 }
 
 pub(super) fn log_endpoint_set(endpoint_set: &EndpointSet<Unchecked>) {

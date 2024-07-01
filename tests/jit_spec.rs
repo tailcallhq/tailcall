@@ -3,9 +3,9 @@ mod tests {
     use std::sync::Arc;
 
     use async_graphql::Value;
+    use tailcall::core::app_context::AppContext;
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
-    use tailcall::core::http::AppContext;
     use tailcall::core::jit::{ConstValueExecutor, Request};
     use tailcall::core::rest::EndpointSet;
     use tailcall::core::valid::Validator;
