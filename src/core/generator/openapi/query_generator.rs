@@ -14,6 +14,7 @@ struct SingleQueryGenerator<'a> {
     path: String,
     path_item: PathItem,
     spec: &'a OpenApiV3Spec,
+    base_url: Option<String>,
 }
 
 ///
@@ -234,7 +235,13 @@ impl<'a> Transform for SingleQueryGenerator<'a> {
                 type_of: name,
                 list: is_list,
                 args,
-                http: Some(Http { path, method, query: query_params, ..Default::default() }),
+                http: Some(Http {
+                    path,
+                    base_url: self.base_url.clone(),
+                    method,
+                    query: query_params,
+                    ..Default::default()
+                }),
                 doc: operation.description,
                 ..Default::default()
             };
@@ -251,11 +258,13 @@ impl<'a> Transform for SingleQueryGenerator<'a> {
 pub struct QueryGenerator<'a> {
     query: &'a str,
     spec: &'a OpenApiV3Spec,
+    base_url: Option<String>,
 }
 
 impl<'a> QueryGenerator<'a> {
     pub fn new(query: &'a str, spec: &'a OpenApiV3Spec) -> Self {
-        Self { query, spec }
+        let base_url = spec.servers.first().map(|server| server.url.clone());
+        Self { query, spec, base_url }
     }
 }
 
@@ -268,11 +277,17 @@ impl<'a> Transform for QueryGenerator<'a> {
         let path_iter = self.spec.paths.clone().into_iter();
 
         Valid::from_iter(path_iter, |(path, path_item)| {
-            SingleQueryGenerator { query: self.query, path, path_item, spec: self.spec }
-                .transform(config.clone())
-                .map(|new_config| {
-                    config = new_config;
-                })
+            SingleQueryGenerator {
+                query: self.query,
+                path,
+                path_item,
+                spec: self.spec,
+                base_url: self.base_url.clone(),
+            }
+            .transform(config.clone())
+            .map(|new_config| {
+                config = new_config;
+            })
         });
 
         Valid::succeed(config)
