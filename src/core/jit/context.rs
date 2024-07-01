@@ -13,10 +13,7 @@ pub struct Context<'a, Input, Output> {
 
 impl<'a, Input, Output> Clone for Context<'a, Input, Output> {
     fn clone(&self) -> Self {
-        Self {
-            request: self.request,
-            value: self.value,
-        }
+        Self { request: self.request, value: self.value }
     }
 }
 
@@ -26,10 +23,7 @@ impl<'a, Input, Output> Context<'a, Input, Output> {
     }
 
     pub fn with_value(&self, value: &'a Output) -> Self {
-        Self {
-            request: self.request,
-            value: Some(value),
-        }
+        Self { request: self.request, value: Some(value) }
     }
 }
 

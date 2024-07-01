@@ -94,6 +94,7 @@ where
                         join_all(array.iter().map(|value| {
                             let ctx = ctx.with_value(value);
 
+                            // TODO: doesn't handle nested values
                             async move {
                                 if let Some(ir) = &child.ir {
                                     self.exec.execute(ir, &ctx).await
@@ -101,7 +102,6 @@ where
                                     Ok(Output::default())
                                 }
                             }
-                            // async move { self.execute_field(child, &ctx, true).await }
                         }))
                     }))
                     .await;

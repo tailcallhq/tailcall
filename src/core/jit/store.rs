@@ -13,7 +13,8 @@ pub enum Data<A> {
     /// Represents that the value was computed multiple times for the associated
     /// field. The order is guaranteed by the executor to be the same as the
     /// other of invocation and not the other of completion.
-    // TODO: there could be multiple inside multiple in case of nested resolvers that are resolved to lists
+    // TODO: there could be multiple inside multiple in case of nested resolvers that are resolved
+    // to lists
     Multiple(Vec<A>),
     /// Represents that the value is yet to be computed
     Pending,
