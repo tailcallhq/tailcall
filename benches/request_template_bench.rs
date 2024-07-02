@@ -1,12 +1,14 @@
 use std::borrow::Cow;
 
+use async_graphql::Value;
 use criterion::{black_box, Criterion};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use serde_json::json;
 use tailcall::core::endpoint::Endpoint;
 use tailcall::core::has_headers::HasHeaders;
-use tailcall::core::http::RequestTemplate;
+use tailcall::core::http::{Encoder, EncodingStrategy, RequestTemplate};
+use tailcall::core::json::JsonLike;
 use tailcall::core::path::PathString;
 
 #[derive(Setters)]
@@ -20,6 +22,22 @@ impl Default for Context {
         Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
     }
 }
+
+impl Encoder for Context {
+    fn encode<T: AsRef<str>, P: AsRef<str>>(
+        &self,
+        key: T,
+        path: &[P],
+        encoding_strategy: &EncodingStrategy,
+    ) -> Option<String> {
+        self.value.get_path(path).map(|v| {
+            let async_val = Cow::Owned(Value::from_json(v.clone()).unwrap());
+            let result = encoding_strategy.encode(key.as_ref(), async_val);
+            result.unwrap()
+        })
+    }
+}
+
 impl PathString for Context {
     fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
         self.value.path_string(parts)

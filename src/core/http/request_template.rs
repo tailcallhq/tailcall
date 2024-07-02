@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
@@ -7,12 +6,14 @@ use reqwest::header::HeaderValue;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
+use super::query_encoder::Encoder;
+use super::EncodingStrategy;
 use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
-use crate::core::mustache::Mustache;
+use crate::core::mustache::{Eval, Mustache, QueryEval};
 use crate::core::path::PathString;
 
 /// RequestTemplate is an extension of a Mustache template.
@@ -28,39 +29,36 @@ pub struct RequestTemplate {
     pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
     pub encoding: Encoding,
+    pub query_encoding_strategy: EncodingStrategy,
 }
 
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
-    fn create_url<C: PathString>(&self, ctx: &C) -> anyhow::Result<Url> {
+    fn create_url<C: PathString + Encoder>(&self, ctx: &C) -> anyhow::Result<Url> {
         let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
         }
-        let extra_qp = self.query.iter().filter_map(|(k, v)| {
-            let value = v.render(ctx);
-            if value.is_empty() {
-                None
-            } else {
-                Some((Cow::Borrowed(k.as_str()), Cow::Owned(value)))
-            }
-        });
+        let extra_qp = self
+            .query
+            .iter()
+            .map(|(k, v)| QueryEval::new(k, &self.query_encoding_strategy).eval(v, ctx));
 
         let base_qp = url
             .query_pairs()
             .filter_map(|(k, v)| if v.is_empty() { None } else { Some((k, v)) });
 
-        let qp_string = base_qp
-            .chain(extra_qp)
-            .map(|(k, v)| format!("{}={}", k, v))
-            .fold("".to_string(), |str, item| {
-                if str.is_empty() {
-                    item
-                } else {
-                    format!("{}&{}", str, item)
-                }
-            });
+        let qp_string = base_qp.map(|(k, v)| format!("{}={}", k, v));
+        let qp_string = qp_string.chain(extra_qp).fold("".to_string(), |str, item| {
+            if str.is_empty() {
+                item
+            } else if item.is_empty() {
+                str
+            } else {
+                format!("{}&{}", str, item)
+            }
+        });
 
         if qp_string.is_empty() {
             url.set_query(None);
@@ -94,7 +92,7 @@ impl RequestTemplate {
     }
 
     /// Creates a Request for the given context
-    pub fn to_request<C: PathString + HasHeaders>(
+    pub fn to_request<C: PathString + HasHeaders + Encoder>(
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
@@ -175,6 +173,7 @@ impl RequestTemplate {
             body_path: Default::default(),
             endpoint: Endpoint::new(root_url.to_string()),
             encoding: Default::default(),
+            query_encoding_strategy: Default::default(),
         })
     }
 
@@ -220,11 +219,12 @@ impl TryFrom<Endpoint> for RequestTemplate {
             body_path: body,
             endpoint,
             encoding,
+            query_encoding_strategy: Default::default(),
         })
     }
 }
 
-impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: PathString + HasHeaders + Encoder> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> Option<IoId> {
         let mut hasher = TailcallHasher::default();
         let state = &mut hasher;
@@ -256,6 +256,7 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
 mod tests {
     use std::borrow::Cow;
 
+    use async_graphql::Value;
     use derive_setters::Setters;
     use hyper::header::HeaderName;
     use hyper::HeaderMap;
@@ -264,6 +265,9 @@ mod tests {
 
     use super::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
+    use crate::core::http::query_encoder::Encoder;
+    use crate::core::http::EncodingStrategy;
+    use crate::core::json::JsonLike;
     use crate::core::mustache::Mustache;
     use crate::core::path::PathString;
 
@@ -276,6 +280,21 @@ mod tests {
     impl Default for Context {
         fn default() -> Self {
             Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
+        }
+    }
+
+    impl Encoder for Context {
+        fn encode<T: AsRef<str>, P: AsRef<str>>(
+            &self,
+            key: T,
+            path: &[P],
+            encoding_strategy: &EncodingStrategy,
+        ) -> Option<String> {
+            self.value.get_path(path).map(|v| {
+                let async_val = Cow::Owned(Value::from_json(v.clone()).unwrap());
+                let result = encoding_strategy.encode(key.as_ref(), async_val);
+                result.unwrap()
+            })
         }
     }
 
@@ -292,7 +311,7 @@ mod tests {
     }
 
     impl RequestTemplate {
-        fn to_body<C: PathString + HasHeaders>(&self, ctx: &C) -> anyhow::Result<String> {
+        fn to_body<C: PathString + HasHeaders + Encoder>(&self, ctx: &C) -> anyhow::Result<String> {
             let body = self
                 .to_request(ctx)?
                 .body()
@@ -302,6 +321,34 @@ mod tests {
 
             Ok(std::str::from_utf8(&body)?.to_string())
         }
+    }
+
+    #[test]
+    fn test_query_list_args() {
+        let query = vec![
+            ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
+            ("foo".to_string(), Mustache::parse("{{foo.id}}").unwrap()),
+        ];
+
+        let tmpl = RequestTemplate::new("http://localhost:3000/")
+            .unwrap()
+            .query(query);
+
+        let ctx = Context::default().value(json!({
+          "baz": {
+            "id": [1,2,3]
+          },
+          "foo": {
+            "id": "12"
+          }
+        }));
+
+        let req = tmpl.to_request(&ctx).unwrap();
+
+        assert_eq!(
+            req.url().to_string(),
+            "http://localhost:3000/?baz=1&baz=2&baz=3&foo=12"
+        );
     }
 
     #[test]
@@ -633,15 +680,15 @@ mod tests {
                 "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
             )
                 .query(vec![
-                    ("e".to_string(), "{{args.e}}".to_string()),
                     ("f".to_string(), "{{args.f}}".to_string()),
+                    ("e".to_string(), "{{args.e}}".to_string()),
                 ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default().value(json!({
               "args": {
+                "f": "baz",
                 "b": "foo",
                 "d": "bar",
-                "f": "baz"
               }
             }));
             let req = tmpl.to_request(&ctx).unwrap();
