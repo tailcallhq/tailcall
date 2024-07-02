@@ -45,4 +45,7 @@ ExecutionPlan {
             ],
         },
     ],
+    variables: Variables(
+        {},
+    ),
 }

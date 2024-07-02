@@ -78,9 +78,11 @@ where
                     .value
                     .as_ref()
                     .map(|value| {
-                        value.clone().into_const_with(|_| {
-                            // TODO: resolve variable names
-                            todo!()
+                        value.clone().into_const_with(|var| {
+                            self.plan
+                                .resolve_variable(&var)
+                                .cloned()
+                                .ok_or(anyhow::anyhow!("Variable not found: {name}",))
                         })
                     })
                     .or_else(|| Ok(arg.default_value.clone()).transpose());
