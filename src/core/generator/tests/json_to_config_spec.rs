@@ -1,3 +1,5 @@
+mod open_api_to_config_spec;
+
 use std::fs;
 use std::path::Path;
 
@@ -15,7 +17,10 @@ struct JsonFixture {
 datatest_stable::harness!(
     run_json_to_config_spec,
     "src/core/generator/tests/fixtures/json",
-    r"^.*\.json"
+    r"^.*\.json",
+    open_api_to_config_spec::run_open_api_to_config_spec,
+    "src/core/generator/tests/fixtures/openapi",
+    r"^.*\.yml"
 );
 
 pub fn run_json_to_config_spec(path: &Path) -> datatest_stable::Result<()> {

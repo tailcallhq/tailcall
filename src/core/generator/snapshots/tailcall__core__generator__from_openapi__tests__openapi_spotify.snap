@@ -1,0 +1,7 @@
+---
+source: src/core/generator/from_openapi.rs
+expression: spotify
+---
+schema @server @upstream {
+  query: Query
+}
