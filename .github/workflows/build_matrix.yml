@@ -7,6 +7,8 @@ on:
         value: ${{ jobs.setup-matrix.outputs.matrix }}
 
 jobs:
+  # IMPORTANT: in case of changing the structure of this file make sure to test
+  # the changes against `npm/gen-root.ts` file
   setup-matrix:
     runs-on: ubuntu-latest
     outputs:
