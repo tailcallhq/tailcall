@@ -37,7 +37,7 @@ impl ConfigReader {
     #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
-        config_module: ConfigModule,
+        mut config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
@@ -58,7 +58,7 @@ impl ConfigReader {
         }
 
         let mut extensions = config_module.extensions().clone();
-        let mut base_config = config_module.config().clone();
+        // let mut base_config = config_module.config().clone();
 
         for link in links.iter() {
             let path = Self::resolve_path(&link.src, parent_dir);
@@ -69,13 +69,13 @@ impl ConfigReader {
                     let content = source.content;
 
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
-                    base_config = base_config.merge_right(config.clone());
+                    config_module = config_module.merge_right(config.clone().into());
 
                     if !config.links.is_empty() {
                         let cfg_module = self
                             .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
                             .await?;
-                        base_config = base_config.merge_right(cfg_module.config().clone());
+                        config_module = config_module.merge_right(cfg_module.clone());
                     }
                 }
                 LinkType::Protobuf => {
@@ -134,7 +134,7 @@ impl ConfigReader {
 
         // Recreating the ConfigModule in order to recompute the values of
         // `input_types`, `output_types` and `interface_types`
-        Ok(ConfigModule::new(base_config, extensions))
+        Ok(config_module.set_extensions(extensions))
     }
 
     /// Reads the certificate from a given file
