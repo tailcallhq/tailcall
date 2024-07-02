@@ -161,7 +161,7 @@ directive @http(
   """
   Schema of the input of the API call. It is automatically inferred in most cases.
   """
-  input: schema
+  input: Schema
   """
   This refers to the HTTP method of the API call. Commonly used methods include `GET`, 
   `POST`, `PUT`, `DELETE` etc. @default `GET`.
@@ -175,7 +175,7 @@ directive @http(
   """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """
-  output: schema
+  output: Schema
   """
   This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
   dynamic segments in your API endpoint, use Mustache templates for variable substitution. 
@@ -544,8 +544,8 @@ input KeyValue {
 
 input Schema {
   Obj: JSON
-  Arr: schema
-  Opt: schema
+  Arr: Schema
+  Opt: Schema
   Enum: [String!]
 }
 
@@ -805,7 +805,7 @@ input Http {
   """
   Schema of the input of the API call. It is automatically inferred in most cases.
   """
-  input: schema
+  input: Schema
   """
   This refers to the HTTP method of the API call. Commonly used methods include `GET`, 
   `POST`, `PUT`, `DELETE` etc. @default `GET`.
@@ -819,7 +819,7 @@ input Http {
   """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """
-  output: schema
+  output: Schema
   """
   This refers to the API endpoint you're going to call. For instance `https://jsonplaceholder.typicode.com/users`.For 
   dynamic segments in your API endpoint, use Mustache templates for variable substitution. 

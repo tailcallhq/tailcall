@@ -5,7 +5,9 @@ use async_graphql_value::Name;
 use schemars::schema::{RootSchema, Schema, SchemaObject};
 use schemars::JsonSchema;
 
-use crate::common::{extract_enum_values, first_char_to_lower, get_description, pos};
+use crate::common::{
+    extract_enum_values, first_char_to_lower, first_char_to_upper, get_description, pos,
+};
 use crate::enum_definition::into_enum_definition;
 use crate::input_definition::{into_input_definition, into_input_value_definition};
 
@@ -58,20 +60,21 @@ pub fn into_directive_definition(
     let schema: SchemaObject = root_schema.schema;
     let description = get_description(&schema);
 
-    for (name, schema) in definitions.iter() {
-        if generated_types.contains(name) {
+    for (mut name, schema) in definitions.into_iter() {
+        if generated_types.contains(&name) {
             continue;
         }
-        let enum_values = extract_enum_values(schema);
+        let enum_values = extract_enum_values(&schema);
         if enum_values.is_some() {
-            service_doc_definitions.push(into_enum_definition(enum_values, name));
+            service_doc_definitions.push(into_enum_definition(enum_values, &name));
             generated_types.insert(name.to_string());
         } else {
+            generated_types.insert(name.to_string());
+            first_char_to_upper(&mut name);
             service_doc_definitions.push(into_input_definition(
                 schema.clone().into_object(),
                 name.as_str(),
             ));
-            generated_types.insert(name.to_string());
         }
     }
 
