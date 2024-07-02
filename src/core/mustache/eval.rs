@@ -1,11 +1,49 @@
 use super::{Mustache, Segment};
-use crate::core::path::{PathGraphql, PathString};
+use crate::core::{
+    http::{Encoder, EncodingStrategy},
+    path::{PathGraphql, PathString},
+};
 
 pub trait Eval<'a> {
     type In;
     type Out;
 
     fn eval(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out;
+}
+
+pub struct QueryEval<'a, A, T: AsRef<str>> {
+    key: T,
+    encoding_strategy: &'a EncodingStrategy,
+    _marker: std::marker::PhantomData<A>,
+}
+
+impl<'a, A, T: AsRef<str>> QueryEval<'a, A, T> {
+    pub fn new(key: T, encoding_strategy: &'a EncodingStrategy) -> Self {
+        Self {
+            _marker: std::marker::PhantomData,
+            key: key,
+            encoding_strategy,
+        }
+    }
+}
+
+impl<'a, A: Encoder, T: AsRef<str>> Eval<'a> for QueryEval<'_, A, T> {
+    type In = A;
+    type Out = String;
+
+    fn eval(&self, mustache: &Mustache, in_value: &Self::In) -> Self::Out {
+        mustache
+            .segments()
+            .iter()
+            .map(|segment| match segment {
+                Segment::Literal(text) => format!("{}={}", self.key.as_ref(), text),
+                Segment::Expression(parts) => in_value
+                    .encode(self.key.as_ref(), parts, self.encoding_strategy)
+                    .map(|a| a.to_string())
+                    .unwrap_or_default(),
+            })
+            .collect()
+    }
 }
 
 pub struct PathStringEval<A>(std::marker::PhantomData<A>);

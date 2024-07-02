@@ -1,12 +1,76 @@
 use std::borrow::Cow;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
-use crate::core::mustache::Segment;
-use crate::core::Mustache;
 
-// Only knows and cares about how to encode query args values.
-pub struct QueryEncoder<'a, Ctx: ResolverContextLike> {
-    ctx: &'a EvalContext<'a, Ctx>,
+#[derive(Default, Debug, Clone)]
+pub enum EncodingStrategy {
+    CommaSeparated,
+    #[default]
+    RepeatedKey,
+}
+
+pub trait Encoder {
+    fn encode<T: AsRef<str>, P: AsRef<str>>(
+        &self,
+        key: T,
+        path: &[P],
+        encoding_strategy: &EncodingStrategy,
+    ) -> Option<String>;
+}
+
+impl EncodingStrategy {
+    pub fn encode(&self, key: &str, value: Cow<'_, async_graphql::Value>) -> Option<String> {
+        match self {
+            Self::CommaSeparated => match &*value {
+                async_graphql::Value::List(list) => Some(format!(
+                    "{}={}",
+                    key,
+                    list.iter()
+                        .map(|val| val.to_string())
+                        .collect::<Vec<String>>()
+                        .join(",")
+                )),
+                _ => encode_value(key, value),
+            },
+            Self::RepeatedKey => match &*value {
+                async_graphql::Value::List(list) => Some(
+                    list.iter()
+                        .map(|val| format!("{}={}", key, val))
+                        .collect::<Vec<String>>()
+                        .join("&"),
+                ),
+                _ => encode_value(key, value),
+            },
+        }
+    }
+}
+
+impl<'a, Ctx: ResolverContextLike> Encoder for EvalContext<'a, Ctx> {
+    fn encode<T: AsRef<str>, P: AsRef<str>>(
+        &self,
+        key: T,
+        path: &[P],
+        encoding_strategy: &EncodingStrategy,
+    ) -> Option<String> {
+        let ctx = self;
+
+        if path.len() < 2 {
+            return None;
+        }
+
+        path.split_first()
+            .and_then(move |(head, tail)| match head.as_ref() {
+                "args" => encoding_strategy.encode(key.as_ref(), ctx.path_arg(tail)?),
+                "value" => encoding_strategy.encode(key.as_ref(), ctx.path_value(tail)?),
+                "vars" => ctx
+                    .var(tail[0].as_ref())
+                    .map(|v| format!("{}={}", key.as_ref(), v)),
+                "env" => ctx
+                    .env_var(tail[0].as_ref())
+                    .map(|v| format!("{}={}", key.as_ref(), v)),
+                _ => None,
+            })
+    }
 }
 
 pub fn encode_value(key: &str, value: Cow<'_, async_graphql::Value>) -> Option<String> {
@@ -20,80 +84,6 @@ pub fn encode_value(key: &str, value: Cow<'_, async_graphql::Value>) -> Option<S
         Cow::Owned(async_graphql::Value::Boolean(b)) => Some(format!("{}={}", key, b)),
         Cow::Borrowed(async_graphql::Value::Boolean(b)) => Some(format!("{}={}", key, b)),
 
-        Cow::Owned(async_graphql::Value::List(list)) => Some(
-            list.iter()
-                .map(|val| format!("{}={}", key, val))
-                .fold("".to_string(), |str, item| {
-                    if str.is_empty() {
-                        item
-                    } else if item.is_empty() {
-                        str
-                    } else {
-                        format!("{}&{}", str, item)
-                    }
-                }),
-        ),
-        Cow::Borrowed(async_graphql::Value::List(list)) => Some(
-            list.iter()
-                .map(|val| format!("{}={}", key, val))
-                .fold("".to_string(), |str, item| {
-                    if str.is_empty() {
-                        item
-                    } else if item.is_empty() {
-                        str
-                    } else {
-                        format!("{}&{}", str, item)
-                    }
-                }),
-        ),
         _ => None,
-    }
-}
-
-impl<'a, Ctx: ResolverContextLike> QueryEncoder<'a, Ctx> {
-    pub fn new(ctx: &'a EvalContext<'a, Ctx>) -> Self {
-        Self { ctx }
-    }
-
-    pub fn encode_expr<T: AsRef<str>, P: AsRef<str>>(&self, key: P, path: &[T]) -> Option<String> {
-        let ctx = self.ctx;
-
-        if path.len() < 2 {
-            return None;
-        }
-
-        path.split_first()
-            .and_then(move |(head, tail)| match head.as_ref() {
-                "args" => encode_value(key.as_ref(), ctx.path_arg(tail)?),
-                "value" => encode_value(key.as_ref(), ctx.path_value(tail)?),
-                "vars" => ctx
-                    .var(tail[0].as_ref())
-                    .map(|v| format!("{}={}", key.as_ref(), v)),
-                "env" => ctx
-                    .env_var(tail[0].as_ref())
-                    .map(|v| format!("{}={}", key.as_ref(), v)),
-                _ => None,
-            })
-    }
-}
-
-pub trait Encoder {
-    fn encode<T: AsRef<str>>(&self, key: T, mustache: &Mustache) -> String;
-}
-
-impl<'a, Ctx: ResolverContextLike> Encoder for EvalContext<'a, Ctx> {
-    fn encode<T: AsRef<str>>(&self, key: T, mustache: &Mustache) -> String {
-        let ctx = self;
-        mustache
-            .segments()
-            .iter()
-            .map(|segment| match segment {
-                Segment::Literal(text) => format!("{}={}", key.as_ref(), text),
-                Segment::Expression(parts) => QueryEncoder::new(ctx)
-                    .encode_expr(key.as_ref(), parts)
-                    .map(|a| a.to_string())
-                    .unwrap_or_default(),
-            })
-            .collect()
     }
 }

@@ -7,12 +7,13 @@ use tailcall_hasher::TailcallHasher;
 use url::Url;
 
 use super::query_encoder::Encoder;
+use super::EncodingStrategy;
 use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
-use crate::core::mustache::Mustache;
+use crate::core::mustache::{Eval, Mustache, QueryEval};
 use crate::core::path::PathString;
 
 /// RequestTemplate is an extension of a Mustache template.
@@ -28,6 +29,7 @@ pub struct RequestTemplate {
     pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
     pub encoding: Encoding,
+    pub query_encoding_strategy: EncodingStrategy,
 }
 
 impl RequestTemplate {
@@ -38,7 +40,10 @@ impl RequestTemplate {
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
         }
-        let extra_qp = self.query.iter().map(|(k, v)| ctx.encode(k, v));
+        let extra_qp = self
+            .query
+            .iter()
+            .map(|(k, v)| QueryEval::new(k, &self.query_encoding_strategy).eval(v, ctx));
 
         let base_qp = url
             .query_pairs()
@@ -168,6 +173,7 @@ impl RequestTemplate {
             body_path: Default::default(),
             endpoint: Endpoint::new(root_url.to_string()),
             encoding: Default::default(),
+            query_encoding_strategy: Default::default(),
         })
     }
 
@@ -213,6 +219,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
             body_path: body,
             endpoint,
             encoding,
+            query_encoding_strategy: Default::default()
         })
     }
 }
@@ -249,6 +256,7 @@ impl<Ctx: PathString + HasHeaders + Encoder> CacheKey<Ctx> for RequestTemplate {
 mod tests {
     use std::borrow::Cow;
 
+    use async_graphql::Value;
     use derive_setters::Setters;
     use hyper::header::HeaderName;
     use hyper::HeaderMap;
@@ -258,8 +266,9 @@ mod tests {
     use super::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
     use crate::core::http::query_encoder::Encoder;
+    use crate::core::http::EncodingStrategy;
     use crate::core::json::JsonLike;
-    use crate::core::mustache::{Mustache, Segment};
+    use crate::core::mustache::Mustache;
     use crate::core::path::PathString;
 
     #[derive(Setters)]
@@ -275,36 +284,17 @@ mod tests {
     }
 
     impl Encoder for Context {
-        fn encode<T: AsRef<str>>(&self, key: T, mustache: &Mustache) -> String {
-            mustache
-                .segments()
-                .iter()
-                .map(|segment| match segment {
-                    Segment::Literal(text) => format!("{}={}", key.as_ref(), text),
-                    Segment::Expression(parts) => self
-                        .value
-                        .get_path(parts)
-                        .map(|v| match v {
-                            serde_json::Value::Array(list) => list
-                                .iter()
-                                .map(|val| format!("{}={}", key.as_ref(), val))
-                                .fold("".to_string(), |str, item| {
-                                    if str.is_empty() {
-                                        item
-                                    } else if item.is_empty() {
-                                        str
-                                    } else {
-                                        format!("{}&{}", str, item)
-                                    }
-                                }),
-                            serde_json::Value::String(s) => {
-                                format!("{}={}", key.as_ref(), s)
-                            }
-                            _ => format!("{}={}", key.as_ref(), v),
-                        })
-                        .unwrap_or_default(),
-                })
-                .collect()
+        fn encode<T: AsRef<str>, P: AsRef<str>>(
+            &self,
+            key: T,
+            path: &[P],
+            encoding_strategy: &EncodingStrategy,
+        ) -> Option<String> {
+            self.value.get_path(path).map(|v| {
+                let async_val = Cow::Owned(Value::from_json(v.clone()).unwrap());
+                let result = encoding_strategy.encode(key.as_ref(),async_val);
+                result.unwrap()
+            })
         }
     }
 
