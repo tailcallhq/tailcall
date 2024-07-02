@@ -1,6 +1,6 @@
 use derive_setters::Setters;
 
-#[derive(Setters)]
+#[derive(Debug, Setters)]
 pub struct Response<Value, Error> {
     pub data: Option<Value>,
     pub errors: Vec<Error>,

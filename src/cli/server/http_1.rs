@@ -5,15 +5,30 @@ use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::cli::CLIError;
+#[cfg(not(feature = "jit"))]
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::core::http::handle_request;
+#[cfg(feature = "jit")]
+use crate::core::jit::Request;
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
-    let make_svc_single_req = make_service_fn(|_conn| {
+
+    #[cfg(feature = "jit")]
+    let jit_req = make_service_fn(|_conn| {
+        let state = Arc::clone(&sc);
+        async move {
+            Ok::<_, anyhow::Error>(service_fn(move |req| {
+                handle_request::<Request<async_graphql::Value>>(req, state.app_ctx.clone())
+            }))
+        }
+    });
+
+    #[cfg(not(feature = "jit"))]
+    let _make_svc_single_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
         async move {
             Ok::<_, anyhow::Error>(service_fn(move |req| {
@@ -22,7 +37,8 @@ pub async fn start_http_1(
         }
     });
 
-    let make_svc_batch_req = make_service_fn(|_conn| {
+    #[cfg(not(feature = "jit"))]
+    let _make_svc_batch_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
         async move {
             Ok::<_, anyhow::Error>(service_fn(move |req| {
@@ -41,12 +57,16 @@ pub async fn start_http_1(
             .or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
 
+    #[cfg(not(feature = "jit"))]
     let server: std::prelude::v1::Result<(), hyper::Error> =
         if sc.blueprint.server.enable_batch_requests {
-            builder.serve(make_svc_batch_req).await
+            builder.serve(_make_svc_batch_req).await
         } else {
-            builder.serve(make_svc_single_req).await
+            builder.serve(_make_svc_single_req).await
         };
+
+    #[cfg(feature = "jit")]
+    let server = builder.serve(jit_req).await;
 
     let result = server.map_err(CLIError::from);
 

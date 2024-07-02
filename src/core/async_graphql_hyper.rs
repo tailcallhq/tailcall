@@ -1,5 +1,7 @@
 use std::any::Any;
+use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
@@ -11,13 +13,16 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
 
+use crate::core::app_context::AppContext;
+
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub struct OperationId(u64);
 
 #[async_trait::async_trait]
 pub trait GraphQLRequestLike: Hash + Send {
+    type Response: Debug + Into<GraphQLResponse>;
     fn data<D: Any + Clone + Send + Sync>(self, data: D) -> Self;
-    async fn execute<E>(self, executor: &E) -> GraphQLResponse
+    async fn execute<E>(self, executor: &E, app_ctx: Option<Arc<AppContext>>) -> Self::Response
     where
         E: Executor;
 
@@ -67,6 +72,7 @@ impl Hash for GraphQLBatchRequest {
 }
 #[async_trait::async_trait]
 impl GraphQLRequestLike for GraphQLBatchRequest {
+    type Response = GraphQLResponse;
     fn data<D: Any + Clone + Send + Sync>(mut self, data: D) -> Self {
         for request in self.0.iter_mut() {
             request.data.insert(data.clone());
@@ -74,7 +80,7 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
         self
     }
     /// Shortcut method to execute the request on the executor.
-    async fn execute<E>(self, executor: &E) -> GraphQLResponse
+    async fn execute<E>(self, executor: &E, _: Option<Arc<AppContext>>) -> Self::Response
     where
         E: Executor,
     {
@@ -102,13 +108,14 @@ impl Hash for GraphQLRequest {
 }
 #[async_trait::async_trait]
 impl GraphQLRequestLike for GraphQLRequest {
+    type Response = GraphQLResponse;
     #[must_use]
     fn data<D: Any + Send + Sync>(mut self, data: D) -> Self {
         self.0.data.insert(data);
         self
     }
     /// Shortcut method to execute the request on the schema.
-    async fn execute<E>(self, executor: &E) -> GraphQLResponse
+    async fn execute<E>(self, executor: &E, _: Option<Arc<AppContext>>) -> Self::Response
     where
         E: Executor,
     {
@@ -165,7 +172,7 @@ impl GraphQLQuery {
         E: Executor,
     {
         let request: GraphQLRequest = self.into();
-        request.execute(executor).await
+        request.execute(executor, None).await
     }
 }
 
