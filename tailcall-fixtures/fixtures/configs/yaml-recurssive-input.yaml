@@ -1,0 +1,38 @@
+server:
+  port: 8000
+upstream:
+  baseURL: http://localhost:8083/mesh
+schema:
+  query: Query
+types:
+  PostFilter:
+    fields:
+      name:
+        type: StringHashFilter
+      rec:
+        type: PostFilter
+  Posts:
+    fields:
+      name:
+        type: String
+      shortName:
+        type: String
+  Query:
+    fields:
+      queryposts:
+        type: String
+        args:
+          filter:
+            type: PostFilter
+        graphql:
+          args:
+          - key: filter
+            value: '{{.args.filter}}'
+          baseURL: http://localhost:8083/mesh
+          name: queryposts
+  StringHashFilter:
+    fields:
+      eq:
+        type: String
+      in:
+        type: String
