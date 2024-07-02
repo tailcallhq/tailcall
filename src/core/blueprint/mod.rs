@@ -14,6 +14,7 @@ mod schema;
 mod server;
 pub mod telemetry;
 mod timeout;
+mod union_resolver;
 mod upstream;
 
 pub use auth::*;

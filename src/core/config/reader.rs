@@ -132,7 +132,7 @@ impl ConfigReader {
             }
         }
 
-        Ok(config_module.reset_config().add_extensions(extensions))
+        Ok(config_module.set_extensions(extensions))
     }
 
     /// Reads the certificate from a given file

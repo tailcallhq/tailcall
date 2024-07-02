@@ -3,7 +3,6 @@ use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
-use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -695,13 +694,9 @@ impl Config {
         }
     }
 
-    pub fn to_document(&self) -> ServiceDocument {
-        self.clone().into()
-    }
-
+    /// Renders current config to graphQL string
     pub fn to_sdl(&self) -> String {
-        let doc = self.to_document();
-        crate::core::document::print(doc)
+        crate::core::document::print(self.into())
     }
 
     pub fn query(mut self, query: &str) -> Self {

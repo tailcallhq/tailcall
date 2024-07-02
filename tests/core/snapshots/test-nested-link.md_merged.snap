@@ -2,6 +2,32 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream @link(src: "graphql-with-link.graphql", type: Config) {
+schema
+  @server
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com")
+  @link(src: "graphql-with-link.graphql", type: Config)
+  @link(src: "link-enum.graphql", type: Config)
+  @link(src: "link-enum.graphql", type: Config) {
   query: Query
+}
+
+enum Foo {
+  BAR
+  BAZ
+}
+
+type Post {
+  id: Int!
+  user: User @graphQL(args: [{key: "id", value: "{{.value.userId}}"}], name: "user")
+  userId: Int!
+}
+
+type Query {
+  foo: Foo @http(path: "/foo")
+  post(id: Int!): Post @http(baseURL: "http://jsonplaceholder.typicode.com", path: "/posts/{{.args.id}}")
+}
+
+type User {
+  id: Int
+  name: String
 }

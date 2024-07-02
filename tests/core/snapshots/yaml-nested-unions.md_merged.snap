@@ -1,0 +1,63 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+input T1Input {
+  t1: String
+}
+
+input T2Input {
+  t2: Int
+}
+
+input T3Input {
+  t3: Boolean
+  t33: Float!
+}
+
+input T4Input {
+  t4: String
+}
+
+input T5Input {
+  t5: Boolean
+}
+
+union U = T1 | T2 | T3 | T4 | T5
+
+union U1 = T1 | T2 | T3
+
+union U2 = T3 | T4
+
+type Query {
+  testVar0(u: T1Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
+  testVar1(u: T2Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
+  testVar2(u: T3Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
+  testVar3(u: T4Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
+  testVar4(u: T5Input!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
+}
+
+type T1 {
+  t1: String
+}
+
+type T2 {
+  t2: Int
+}
+
+type T3 {
+  t3: Boolean
+  t33: Float!
+}
+
+type T4 {
+  t4: String
+}
+
+type T5 {
+  t5: Boolean
+}

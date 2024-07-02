@@ -5,7 +5,7 @@ use crate::core::transform::{self, Transform, TransformerOps};
 
 /// Defines a set of default transformers that can be applied to any
 /// configuration to make it more maintainable.
-#[derive(Setters)]
+#[derive(Setters, Debug, PartialEq)]
 pub struct Preset {
     merge_type: f32,
     consolidate_url: f32,
@@ -22,6 +22,8 @@ impl Transform for Preset {
         config: Self::Value,
     ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
         transform::default()
+            .pipe(super::NestedUnions)
+            .pipe(super::UnionInputType)
             .pipe(super::TreeShake.when(self.tree_shake))
             .pipe(super::TypeMerger::new(self.merge_type))
             .pipe(super::ImproveTypeNames.when(self.use_better_names))

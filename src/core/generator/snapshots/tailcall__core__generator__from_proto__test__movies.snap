@@ -1,6 +1,6 @@
 ---
 source: src/core/generator/from_proto.rs
-expression: config
+expression: result
 ---
 schema @server @upstream {
   query: Query
