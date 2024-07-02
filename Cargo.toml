@@ -180,7 +180,6 @@ tailcall-fixtures = { path = "./tailcall-fixtures" }
 test-log = { version = "0.2.16", default-features = false, features = ["color", "trace"] }
 
 [features]
-jit = []
 # Feature Flag to enable V8.
 # V8 currently is not support on all platforms so, we control it via this feature flag.
 js = ["dep:rquickjs"]
