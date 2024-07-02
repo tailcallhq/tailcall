@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-use std::fmt::Debug;
 use std::mem;
 use std::sync::{Arc, Mutex};
 
@@ -9,7 +7,6 @@ use futures_util::future::join_all;
 use super::context::Context;
 use super::synth::Synthesizer;
 use super::{Children, ExecutionPlan, Field, Request, Response, Store};
-use crate::core::ir;
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
@@ -24,10 +21,9 @@ pub struct Executor<Synth, IRExec> {
 
 impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec>
 where
-    Output: JsonLike<Output = Output> + Default + Debug,
+    Output: JsonLike<Output = Output> + Default,
     Synth: Synthesizer<Value = Result<Output, Error>>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
-    Error: Debug,
 {
     pub fn new(plan: ExecutionPlan, synth: Synth, exec: Exec) -> Self {
         Self { plan, synth, exec }
@@ -59,9 +55,8 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: JsonLike<Output = Output> + Default + Debug,
+    Output: JsonLike<Output = Output> + Default,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
-    Error: Debug,
 {
     fn new(
         request: Request<Input>,
@@ -75,7 +70,7 @@ where
     async fn init(&mut self) {
         join_all(self.plan.as_children().iter().map(|field| async {
             let ctx = Context::new(&self.request);
-            self.execute(field, &ctx, false).await
+            self.execute(field, &ctx).await
         }))
         .await;
     }
@@ -84,7 +79,6 @@ where
         &'b self,
         field: &'b Field<Children>,
         ctx: &'b Context<'b, Input, Output>,
-        is_multi: bool,
     ) -> Result<(), Error> {
         if let Some(ir) = &field.ir {
             let result = self.ir_exec.execute(ir, ctx).await;
@@ -98,8 +92,8 @@ where
                             field
                                 .children()
                                 .iter()
-                                .filter_map(|field| field.ir.as_ref().map(|ir| (field, ir)))
-                                .map(|(field, ir)| {
+                                .filter_map(|field| field.ir.as_ref())
+                                .map(|ir| {
                                     join_all(array.iter().map(|value| {
                                         let ctx = ctx.with_value(value);
                                         // TODO: doesn't handle nested values
@@ -128,7 +122,7 @@ where
                 else {
                     join_all(field.children().iter().map(|child| {
                         let ctx = ctx.with_value(value);
-                        async move { self.execute(child, &ctx, false).await }
+                        async move { self.execute(child, &ctx).await }
                     }))
                     .await;
                 }

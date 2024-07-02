@@ -3,12 +3,8 @@ mod exec;
 mod model;
 mod store;
 mod synth;
-use std::sync::Arc;
 
-use async_graphql::Value;
 use builder::*;
-use context::Context;
-use exec::{Executor, IRExecutor};
 use model::*;
 use store::*;
 mod context;

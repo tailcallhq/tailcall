@@ -1,5 +1,4 @@
 use derive_getters::Getters;
-use indexmap::IndexMap;
 
 use super::Request;
 use crate::core::ir::ResolverContextLike;
@@ -44,7 +43,7 @@ impl<'a> ResolverContextLike for Context<'a, async_graphql::Value, async_graphql
         todo!()
     }
 
-    fn add_error(&self, error: async_graphql::ServerError) {
+    fn add_error(&self, _error: async_graphql::ServerError) {
         todo!()
     }
 }

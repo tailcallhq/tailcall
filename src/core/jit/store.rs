@@ -23,7 +23,7 @@ pub enum Data<A> {
 impl<A> std::fmt::Debug for Data<A> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Single(arg0) => f.debug_tuple("Single").finish(),
+            Self::Single(_) => f.debug_tuple("Single").finish(),
             Self::Multiple(arg0) => f.debug_tuple("Multiple").field(&arg0.len()).finish(),
             Self::Pending => write!(f, "Pending"),
         }

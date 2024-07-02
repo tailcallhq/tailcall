@@ -1,5 +1,4 @@
 use std::fmt::{Debug, Formatter};
-use std::slice::SliceIndex;
 
 use crate::core::ir::model::IR;
 

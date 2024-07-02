@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use async_graphql::parser::types::OperationType;
 use derive_setters::Setters;
 use serde::Deserialize;
 
