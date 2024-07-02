@@ -70,12 +70,7 @@ impl<'a> MustachePartsValidator<'a> {
                 // XXX this is a linear search but it's cost is less than that of
                 // constructing a HashMap since we'd have 3-4 arguments at max in
                 // most cases
-                if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
-                    // we can use non-scalar types in args
-                    if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
-                        return Valid::fail(format!("argument '{tail}' is a nullable type"));
-                    }
-                } else {
+                if !args.iter().any(|arg| arg.name == tail) {
                     return Valid::fail(format!("no argument '{tail}' found"));
                 }
             }
@@ -165,5 +160,57 @@ impl FieldDefinition {
             }
             _ => Valid::succeed(()),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::MustachePartsValidator;
+    use crate::core::blueprint::{FieldDefinition, InputFieldDefinition};
+    use crate::core::config::{Config, Field, Type};
+    use crate::core::valid::Validator;
+
+    #[test]
+    fn test_allow_list_arguments() {
+        let mut config = Config::default();
+
+        let mut t1_type = Type::default();
+        t1_type.fields.insert(
+            "numbers".to_owned(),
+            Field { type_of: "Int".to_owned(), list: true, ..Default::default() },
+        );
+        config.types.insert("T1".to_string(), t1_type);
+
+        let type_ = crate::core::blueprint::Type::ListType {
+            of_type: Box::new(crate::core::blueprint::Type::NamedType {
+                name: "Int".to_string(),
+                non_null: false,
+            }),
+            non_null: false,
+        };
+
+        let fld = FieldDefinition {
+            name: "f1".to_string(),
+            args: vec![InputFieldDefinition {
+                name: "q".to_string(),
+                of_type: type_,
+                default_value: None,
+                description: None,
+            }],
+            of_type: crate::core::blueprint::Type::NamedType {
+                name: "T1".to_string(),
+                non_null: false,
+            },
+            resolver: None,
+            directives: vec![],
+            description: None,
+            default_value: None,
+        };
+
+        let parts_validator =
+            MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &fld);
+        let actual = parts_validator.validate(&["args".to_string(), "q".to_string()], false);
+
+        assert!(actual.is_succeed())
     }
 }

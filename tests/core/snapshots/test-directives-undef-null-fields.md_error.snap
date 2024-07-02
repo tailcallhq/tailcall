@@ -124,26 +124,6 @@ expression: errors
     "description": null
   },
   {
-    "message": "argument 'id' is a nullable type",
-    "trace": [
-      "Query",
-      "userListArg",
-      "@http",
-      "path"
-    ],
-    "description": null
-  },
-  {
-    "message": "argument 'id' is a nullable type",
-    "trace": [
-      "Query",
-      "userNullableArg",
-      "@http",
-      "path"
-    ],
-    "description": null
-  },
-  {
     "message": "no argument 'uid' found",
     "trace": [
       "Query",
