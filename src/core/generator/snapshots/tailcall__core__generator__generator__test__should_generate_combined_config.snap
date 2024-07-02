@@ -75,5 +75,5 @@ type User {
   name: String!
   phone: String
   username: String!
-  website: String @expr(body: "/users/website/{{.value.username}}")
+  websiteExpr: String @expr(body: "/users/website/{{.value.username}}")
 }

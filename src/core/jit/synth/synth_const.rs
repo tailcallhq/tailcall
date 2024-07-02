@@ -8,7 +8,7 @@ use crate::core::jit::store::{Data, Store};
 use crate::core::jit::ExecutionPlan;
 use crate::core::json::JsonLike;
 
-struct Synth {
+pub struct Synth {
     selection: Vec<Field<Children>>,
     store: Store<Result<Value>>,
 }
@@ -43,6 +43,8 @@ impl Synth {
         parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Result<Value> {
+        // TODO: this implementation prefer parent value over value in the store
+        // that's opposite to the way async_graphql engine works in tailcall
         match parent {
             Some(parent) => {
                 if !Self::is_array(&node.type_of, parent) {
@@ -68,8 +70,13 @@ impl Synth {
                             Data::Multiple(list) => {
                                 if let Some(i) = index {
                                     match list.get(i) {
-                                        Some(val) => self.iter(node, Some(&val.clone()?), None),
-                                        None => Ok(Value::Null),
+                                        Some(Data::Single(val)) => {
+                                            self.iter(node, Some(&val.clone()?), index)
+                                        }
+                                        Some(Data::Multiple(_)) => {
+                                            todo!("Handle multiple data inside multiple")
+                                        }
+                                        _ => Ok(Value::Null),
                                     }
                                 } else {
                                     Ok(Value::Null)
@@ -227,8 +234,8 @@ mod tests {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
                 TestData::UsersData => Data::Multiple(vec![
-                    serde_json::from_str(USER1).unwrap(),
-                    serde_json::from_str(USER2).unwrap(),
+                    Data::Single(serde_json::from_str(USER1).unwrap()),
+                    Data::Single(serde_json::from_str(USER2).unwrap()),
                 ]),
                 TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
             }
@@ -329,7 +336,7 @@ mod tests {
     #[test]
     fn test_json_placeholder() {
         let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
-        let val = synth.synthesize();
+        let val = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }

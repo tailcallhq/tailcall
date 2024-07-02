@@ -34,7 +34,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_nested() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new("query {posts {title userId user {id name email} }}");
+        let request = Request::new("query {posts {title userId user {id name websiteExpr} }}");
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
