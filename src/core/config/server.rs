@@ -214,6 +214,9 @@ impl Server {
     pub fn get_dedupe(&self) -> bool {
         self.dedupe.unwrap_or(false)
     }
+    pub fn enable_jit(&self) -> bool {
+        self.enable_jit.unwrap_or(false)
+    }
 }
 
 #[cfg(test)]
