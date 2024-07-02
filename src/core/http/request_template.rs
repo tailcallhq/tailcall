@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
@@ -39,29 +38,22 @@ impl RequestTemplate {
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
         }
-        let extra_qp = self.query.iter().filter_map(|(k, v)| {
-            let value = v.render(ctx);
-            if value.is_empty() {
-                None
-            } else {
-                Some((Cow::Borrowed(k.as_str()), Cow::Owned(value)))
-            }
-        });
+        let extra_qp = self.query.iter().map(|(k, v)| ctx.encode(k, v));
 
         let base_qp = url
             .query_pairs()
             .filter_map(|(k, v)| if v.is_empty() { None } else { Some((k, v)) });
 
-        let qp_string = base_qp
-            .chain(extra_qp)
-            .map(|(k, v)| ctx.encode(&k, &v))
-            .fold("".to_string(), |str, item| {
-                if str.is_empty() {
-                    item
-                } else {
-                    format!("{}&{}", str, item)
-                }
-            });
+        let qp_string = base_qp.map(|(k, v)| format!("{}={}", k, v));
+        let qp_string = qp_string.chain(extra_qp).fold("".to_string(), |str, item| {
+            if str.is_empty() {
+                item
+            } else if item.is_empty() {
+                str
+            } else {
+                format!("{}&{}", str, item)
+            }
+        });
 
         if qp_string.is_empty() {
             url.set_query(None);
@@ -194,13 +186,11 @@ impl TryFrom<Endpoint> for RequestTemplate {
     type Error = anyhow::Error;
     fn try_from(endpoint: Endpoint) -> anyhow::Result<Self> {
         let path = Mustache::parse(endpoint.path.as_str())?;
-
         let query = endpoint
             .query
             .iter()
-            .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v)?)))
+            .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
             .collect::<anyhow::Result<Vec<_>>>()?;
-
         let method = endpoint.method.clone().to_hyper();
         let headers = endpoint
             .headers
@@ -258,9 +248,7 @@ impl<Ctx: PathString + HasHeaders + Encoder> CacheKey<Ctx> for RequestTemplate {
 #[cfg(test)]
 mod tests {
     use std::borrow::Cow;
-    use std::collections::BTreeMap;
 
-    use async_graphql_value::Value;
     use derive_setters::Setters;
     use hyper::header::HeaderName;
     use hyper::HeaderMap;
@@ -269,37 +257,54 @@ mod tests {
 
     use super::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
-    use crate::core::http::query_encoder::{Encoder, QueryEncoder};
-    use crate::core::mustache::Mustache;
+    use crate::core::http::query_encoder::Encoder;
+    use crate::core::json::JsonLike;
+    use crate::core::mustache::{Mustache, Segment};
     use crate::core::path::PathString;
 
     #[derive(Setters)]
     struct Context {
         pub value: serde_json::Value,
         pub headers: HeaderMap,
-        pub query: BTreeMap<String, Value>,
     }
 
     impl Default for Context {
         fn default() -> Self {
-            Self {
-                value: serde_json::Value::Null,
-                headers: HeaderMap::new(),
-                query: BTreeMap::default(),
-            }
+            Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
         }
     }
 
     impl Encoder for Context {
-        fn encode<T: AsRef<str>>(&self, key: T, value: T) -> String {
-            if let Some(arg) = self.query.get(key.as_ref()) {
-                match *arg {
-                    Value::List(_) => QueryEncoder::List.encode(key, value),
-                    _ => QueryEncoder::Single.encode(key, value),
-                }
-            } else {
-                QueryEncoder::Single.encode(key, value)
-            }
+        fn encode<T: AsRef<str>>(&self, key: T, mustache: &Mustache) -> String {
+            mustache
+                .segments()
+                .iter()
+                .map(|segment| match segment {
+                    Segment::Literal(text) => format!("{}={}", key.as_ref(), text),
+                    Segment::Expression(parts) => self
+                        .value
+                        .get_path(parts)
+                        .map(|v| match v {
+                            serde_json::Value::Array(list) => list
+                                .iter()
+                                .map(|val| format!("{}={}", key.as_ref(), val))
+                                .fold("".to_string(), |str, item| {
+                                    if str.is_empty() {
+                                        item
+                                    } else if item.is_empty() {
+                                        str
+                                    } else {
+                                        format!("{}&{}", str, item)
+                                    }
+                                }),
+                            serde_json::Value::String(s) => {
+                                format!("{}={}", key.as_ref(), s)
+                            }
+                            _ => format!("{}={}", key.as_ref(), v),
+                        })
+                        .unwrap_or_default(),
+                })
+                .collect()
         }
     }
 
@@ -339,19 +344,15 @@ mod tests {
             .unwrap()
             .query(query);
 
-        let mut query = BTreeMap::default();
-        query.insert("baz".to_owned(), Value::List(vec![]));
+        let ctx = Context::default().value(json!({
+          "baz": {
+            "id": [1,2,3]
+          },
+          "foo": {
+            "id": "12"
+          }
+        }));
 
-        let ctx = Context::default()
-            .value(json!({
-              "baz": {
-                "id": "[1,2,3]"
-              },
-              "foo": {
-                "id": "12"
-              }
-            }))
-            .query(query);
         let req = tmpl.to_request(&ctx).unwrap();
 
         assert_eq!(
@@ -414,7 +415,6 @@ mod tests {
             ("bar".to_string(), Mustache::parse("1").unwrap()),
             ("baz".to_string(), Mustache::parse("2").unwrap()),
         ];
-
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .query(query);
@@ -690,15 +690,15 @@ mod tests {
                 "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
             )
                 .query(vec![
-                    ("e".to_string(), "{{args.e}}".to_string()),
                     ("f".to_string(), "{{args.f}}".to_string()),
+                    ("e".to_string(), "{{args.e}}".to_string()),
                 ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default().value(json!({
               "args": {
+                "f": "baz",
                 "b": "foo",
                 "d": "bar",
-                "f": "baz"
               }
             }));
             let req = tmpl.to_request(&ctx).unwrap();
