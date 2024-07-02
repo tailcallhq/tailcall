@@ -1050,6 +1050,13 @@
             "null"
           ]
         },
+        "enableJIT": {
+          "description": "`enableJIT` enables Just-In-Time (JIT) compilation, which compiles",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "globalResponseTimeout": {
           "description": "`globalResponseTimeout` sets the maximum query duration before termination, acting as a safeguard against long-running queries.",
           "type": [
