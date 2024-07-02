@@ -1,4 +1,5 @@
 #![allow(clippy::too_many_arguments)]
+#![allow(unused_doc_comments)]
 
 use std::sync::Arc;
 

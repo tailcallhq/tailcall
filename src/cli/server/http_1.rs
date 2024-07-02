@@ -1,3 +1,4 @@
+#![allow(unused_doc_comments)]
 use std::sync::Arc;
 
 use hyper::service::{make_service_fn, service_fn};
