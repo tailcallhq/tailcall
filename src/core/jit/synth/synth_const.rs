@@ -25,10 +25,9 @@ impl Synth {
             let val = self.iter(child, None, None)?;
             data.insert(Name::new(child.name.as_str()), val);
         }
-
-        let mut output = IndexMap::default();
-        output.insert(Name::new("data"), Value::Object(data));
-        Ok(Value::Object(output))
+        // As we are using Response struct, the data will be wrapped in a key "data" by
+        // the struct
+        Ok(Value::Object(data))
     }
 
     /// checks if type_of is an array and value is an array
