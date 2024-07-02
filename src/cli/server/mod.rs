@@ -1,7 +1,6 @@
 pub mod http_1;
 pub mod http_2;
 pub mod http_server;
-mod jit_hyper;
 pub mod playground;
 pub mod server_config;
 

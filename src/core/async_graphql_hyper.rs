@@ -77,10 +77,7 @@ impl GraphQLRequestLike for GraphqlJitRequest {
         app_ctx: Arc<AppContext>,
     ) -> crate::core::jit::Response<Value, Error> {
         match ConstValueExecutor::new(&self.0, app_ctx) {
-            Ok(exec) => {
-                
-                exec.execute(self.0).await
-            }
+            Ok(exec) => exec.execute(self.0).await,
             Err(_) => {
                 todo!()
             }

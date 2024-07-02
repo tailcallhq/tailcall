@@ -5,7 +5,7 @@ use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
 use crate::cli::CLIError;
-use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
+use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphqlJitRequest};
 use crate::core::http::handle_request;
 
 pub async fn start_http_1(
@@ -13,6 +13,15 @@ pub async fn start_http_1(
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
+    let jit_req = make_service_fn(|_conn| {
+        let state = Arc::clone(&sc);
+        async move {
+            Ok::<_, anyhow::Error>(service_fn(move |req| {
+                handle_request::<GraphqlJitRequest>(req, state.app_ctx.clone())
+            }))
+        }
+    });
+
     let make_svc_single_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
         async move {
@@ -41,12 +50,13 @@ pub async fn start_http_1(
             .or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
 
-    let server: std::prelude::v1::Result<(), hyper::Error> =
-        if sc.blueprint.server.enable_batch_requests {
-            builder.serve(make_svc_batch_req).await
-        } else {
-            builder.serve(make_svc_single_req).await
-        };
+    let server: std::prelude::v1::Result<(), hyper::Error> = if sc.blueprint.server.enable_jit {
+        builder.serve(jit_req).await
+    } else if sc.blueprint.server.enable_batch_requests {
+        builder.serve(make_svc_batch_req).await
+    } else {
+        builder.serve(make_svc_single_req).await
+    };
 
     let result = server.map_err(CLIError::from);
 
