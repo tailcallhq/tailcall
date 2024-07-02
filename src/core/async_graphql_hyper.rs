@@ -1,5 +1,6 @@
 use std::any::Any;
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
@@ -11,6 +12,9 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
 
+use crate::core::http::AppContext;
+use crate::core::jit::{ConstValueExecutor, Error, Request};
+
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub struct OperationId(u64);
 
@@ -21,6 +25,10 @@ pub trait GraphQLRequestLike: Hash + Send {
     where
         E: Executor;
 
+    async fn execute_jit(
+        self,
+        app_ctx: Arc<AppContext>,
+    ) -> crate::core::jit::Response<Value, Error>;
     fn parse_query(&mut self) -> Option<&ExecutableDocument>;
 
     fn is_query(&mut self) -> bool {
@@ -44,6 +52,43 @@ pub trait GraphQLRequestLike: Hash + Send {
         }
         self.hash(state);
         OperationId(hasher.finish())
+    }
+}
+
+#[derive(Debug, Deserialize, Hash)]
+pub struct GraphqlJitRequest(pub Request<Value>);
+
+#[async_trait::async_trait]
+impl GraphQLRequestLike for GraphqlJitRequest {
+    fn data<D: Any + Clone + Send + Sync>(mut self, data: D) -> Self {
+        self.0.data.insert(data);
+        self
+    }
+
+    async fn execute<E>(self, _: &E) -> GraphQLResponse
+    where
+        E: Executor,
+    {
+        todo!()
+    }
+
+    async fn execute_jit(
+        self,
+        app_ctx: Arc<AppContext>,
+    ) -> crate::core::jit::Response<Value, Error> {
+        match ConstValueExecutor::new(&self.0, app_ctx) {
+            Ok(exec) => {
+                
+                exec.execute(self.0).await
+            }
+            Err(_) => {
+                todo!()
+            }
+        }
+    }
+
+    fn parse_query(&mut self) -> Option<&ExecutableDocument> {
+        todo!()
     }
 }
 
@@ -81,6 +126,10 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
         GraphQLResponse(executor.execute_batch(self.0).await)
     }
 
+    async fn execute_jit(self, _: Arc<AppContext>) -> crate::core::jit::Response<Value, Error> {
+        todo!()
+    }
+
     fn parse_query(&mut self) -> Option<&ExecutableDocument> {
         None
     }
@@ -113,6 +162,10 @@ impl GraphQLRequestLike for GraphQLRequest {
         E: Executor,
     {
         GraphQLResponse(executor.execute(self.0).await.into())
+    }
+
+    async fn execute_jit(self, _: Arc<AppContext>) -> crate::core::jit::Response<Value, Error> {
+        todo!()
     }
 
     fn parse_query(&mut self) -> Option<&ExecutableDocument> {
