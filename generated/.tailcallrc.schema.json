@@ -1051,7 +1051,7 @@
           ]
         },
         "enableJIT": {
-          "description": "`enableJIT` enables Just-In-Time (JIT) compilation, which compiles",
+          "description": "`enableJIT` enables Just-In-Time (JIT) compilation, which compiles.\n\n This flag indicates whether to enable the JIT (Just-In-Time) executor for GraphQL requests.",
           "type": [
             "boolean",
             "null"

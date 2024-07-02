@@ -13,6 +13,12 @@ pub async fn start_http_1(
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
+    /// Handles GraphQL JIT requests.
+    /// # Arguments
+    /// * `req` - HTTP request containing the GraphQL JIT request payload.
+    /// * `app_ctx` - Application context containing necessary dependencies.
+    ///
+    /// # Returns - asynchronous GraphQL JIT response
     let jit_req = make_service_fn(|_conn| {
         let state = Arc::clone(&sc);
         async move {

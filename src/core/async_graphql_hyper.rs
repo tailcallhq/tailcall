@@ -64,7 +64,8 @@ impl GraphQLRequestLike for GraphqlJitRequest {
         self.0.data.insert(data);
         self
     }
-
+    /// Executes the GraphQL request using the default executor.
+    /// This method is not yet implemented (`todo!()`).
     async fn execute<E>(self, _: &E) -> GraphQLResponse
     where
         E: Executor,
@@ -72,6 +73,10 @@ impl GraphQLRequestLike for GraphqlJitRequest {
         todo!()
     }
 
+    /// This method executes the GraphQL request using the JIT executor.
+    ///
+    /// # Arguments - `app_ctx` - Application context containing necessary dependencies.
+    /// # Returns - A `Response` containing the result of the JIT execution.
     async fn execute_jit(
         self,
         app_ctx: Arc<AppContext>,
@@ -84,6 +89,9 @@ impl GraphQLRequestLike for GraphqlJitRequest {
         }
     }
 
+    /// Parses the GraphQL query into an executable document.
+    /// # Returns - The parsed executable document if successful, otherwise `None`.
+    /// This method is not yet implemented (`todo!()`).
     fn parse_query(&mut self) -> Option<&ExecutableDocument> {
         todo!()
     }
