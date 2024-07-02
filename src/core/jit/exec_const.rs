@@ -9,7 +9,7 @@ use super::{Error, ExecutionPlan, Request, Response, Result};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
-use crate::core::ir::{EvalContext, ResolverContextLike};
+use crate::core::ir::EvalContext;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
