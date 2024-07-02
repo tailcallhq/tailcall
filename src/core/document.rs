@@ -391,11 +391,11 @@ pub fn print(sd: ServiceDocument) -> String {
     let sdl_string = schemas
         .into_iter()
         .chain(directives)
-        .chain(scalars)
         .chain(inputs)
+        .chain(enums)
+        .chain(scalars)
         .chain(interfaces)
         .chain(unions)
-        .chain(enums)
         .chain(objects)
         // Chain other types as needed...
         .collect::<Vec<String>>()
