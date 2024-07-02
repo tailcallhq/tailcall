@@ -53,6 +53,7 @@ type Post {
   title: String!
   user: User @http(path: "/users/{{.value.userId}}")
   userId: Int!
+  users: [User] @http(path: "/users")
 }
 
 type Query {
@@ -74,6 +75,7 @@ type User {
   id: Int!
   name: String!
   phone: String
+  posts: [Post] @http(path: "/posts")
   username: String!
   website: String @expr(body: "/users/website/{{.value.username}}")
 }

@@ -18,6 +18,7 @@ type User {
   email: String!
   phone: String
   website: String @expr(body: "/users/website/{{.value.username}}")
+  posts: [Post] @http(path: "/posts")
 }
 
 type Post {
@@ -26,4 +27,5 @@ type Post {
   title: String!
   body: String!
   user: User @http(path: "/users/{{.value.userId}}")
+  users: [User] @http(path: "/users")
 }
