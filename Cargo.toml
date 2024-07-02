@@ -55,7 +55,7 @@ tailcall-version = { path = "./tailcall-version", optional = true }
 
 # dependencies safe for wasm:
 
-rustls-pemfile = { version = "1.0.4" }
+rustls-pemfile = { version = "2.0.0" }
 schemars = { version = "0.8.17", features = ["derive"] }
 hyper = { version = "0.14.28", features = ["server"], default-features = false }
 tokio = { workspace = true }
