@@ -126,10 +126,7 @@ impl TryFrom<&ConfigModule> for Blueprint {
         config_blueprint()
             .try_fold(
                 // Apply required transformers to the configuration
-                &config_module
-                    .to_owned()
-                    .transform(Required)
-                    .to_result()?,
+                &config_module.to_owned().transform(Required).to_result()?,
                 Blueprint::default(),
             )
             .and_then(|blueprint| {
