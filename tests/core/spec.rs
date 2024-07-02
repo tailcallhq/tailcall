@@ -252,7 +252,7 @@ async fn test_spec(spec: ExecutionSpec) {
         .iter()
         .fold(ConfigModule::default(), |acc, c| acc.merge_right(c.clone()))
         // Apply required transformers to the configuration
-        .transform(Required::default())
+        .transform(Required)
         .to_result()
         .unwrap()
         .to_sdl();

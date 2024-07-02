@@ -128,7 +128,7 @@ impl TryFrom<&ConfigModule> for Blueprint {
                 // Apply required transformers to the configuration
                 &config_module
                     .to_owned()
-                    .transform(Required::default())
+                    .transform(Required)
                     .to_result()?,
                 Blueprint::default(),
             )
