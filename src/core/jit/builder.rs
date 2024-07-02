@@ -1,8 +1,12 @@
 use std::collections::HashMap;
 
 use async_graphql::parser::types::{
-    DocumentOperations, ExecutableDocument, OperationType, Selection, SelectionSet,
+    DocumentOperations, ExecutableDocument, OperationDefinition, OperationType, Selection,
+    SelectionSet,
 };
+use async_graphql::Positioned;
+use async_graphql_value::{ConstValue, Variables};
+use indexmap::IndexMap;
 
 use super::model::*;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
@@ -14,16 +18,22 @@ pub struct Builder {
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: ExecutableDocument,
+    pub variables: Option<Variables>,
 }
 
 impl Builder {
-    pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
+    pub fn new(
+        blueprint: &Blueprint,
+        document: ExecutableDocument,
+        variables: Option<Variables>,
+    ) -> Self {
         let index = blueprint.index();
         Self {
             document,
             index,
             arg_id: Counter::default(),
             field_id: Counter::default(),
+            variables,
         }
     }
 
@@ -75,6 +85,7 @@ impl Builder {
                         QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                         _ => None,
                     };
+
                     fields.push(Field { id, name, ir, type_of, args, refs: refs.clone() });
                     fields = fields.merge_right(child_fields);
                 }
@@ -94,14 +105,28 @@ impl Builder {
 
     pub fn build(&self) -> Result<ExecutionPlan, String> {
         let mut fields = Vec::new();
+        let mut variables = IndexMap::new();
 
         for fragment in self.document.fragments.values() {
             let on_type = fragment.node.type_condition.node.on.node.as_str();
             fields.extend(self.iter(&fragment.node.selection_set.node, on_type, None));
         }
 
+        let operation_variables = |operation: &Positioned<OperationDefinition>| {
+            operation
+                .node
+                .variable_definitions
+                .clone()
+                .into_iter()
+                .filter_map(move |var| {
+                    let value = var.node.default_value?;
+                    Some((var.node.name.node, value.node))
+                })
+        };
+
         match &self.document.operations {
             DocumentOperations::Single(single) => {
+                variables.extend(operation_variables(single));
                 let name = self.get_type(single.node.ty).ok_or(format!(
                     "Root Operation type not defined for {}",
                     single.node.ty
@@ -110,6 +135,7 @@ impl Builder {
             }
             DocumentOperations::Multiple(multiple) => {
                 for single in multiple.values() {
+                    variables.extend(operation_variables(single));
                     let name = self.get_type(single.node.ty).ok_or(format!(
                         "Root Operation type not defined for {}",
                         single.node.ty
@@ -119,7 +145,15 @@ impl Builder {
             }
         }
 
-        Ok(ExecutionPlan::new(fields))
+        if let Some(vars) = self.variables.as_ref() {
+            variables.extend(
+                vars.iter()
+                    .map(|(name, value)| (name.clone(), value.clone())),
+            );
+        }
+
+        let variables = Variables::from_value(ConstValue::Object(variables));
+        Ok(ExecutionPlan::new(fields, variables))
     }
 }
 
@@ -140,7 +174,7 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        Builder::new(&blueprint, document).build().unwrap()
+        Builder::new(&blueprint, document, None).build().unwrap()
     }
 
     #[tokio::test]

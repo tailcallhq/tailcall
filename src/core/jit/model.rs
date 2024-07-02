@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Formatter};
 
+use async_graphql_value::{ConstValue, Name, Variables};
+
 use crate::core::ir::model::IR;
 
 #[derive(Debug, Clone)]
@@ -139,10 +141,11 @@ pub struct Children(Vec<Field<Children>>);
 pub struct ExecutionPlan {
     parent: Vec<Field<Parent>>,
     children: Vec<Field<Children>>,
+    variables: Variables,
 }
 
 impl ExecutionPlan {
-    pub fn new(fields: Vec<Field<Parent>>) -> Self {
+    pub fn new(fields: Vec<Field<Parent>>, variables: Variables) -> Self {
         let field_children = fields
             .clone()
             .into_iter()
@@ -150,7 +153,11 @@ impl ExecutionPlan {
             .map(|f| f.into_children(&fields))
             .collect::<Vec<_>>();
 
-        Self { parent: fields, children: field_children }
+        Self { parent: fields, children: field_children, variables }
+    }
+
+    pub fn with_variables(self, variables: Variables) -> Self {
+        Self { variables, ..self }
     }
 
     pub fn as_children(&self) -> &[Field<Children>] {
@@ -184,6 +191,10 @@ impl ExecutionPlan {
                 }
             }
         }
+    }
+
+    pub fn resolve_variable(&self, var_name: &Name) -> Option<&ConstValue> {
+        self.variables.get(var_name)
     }
 
     pub fn size(&self) -> usize {

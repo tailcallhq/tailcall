@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
+use async_graphql_value::{ConstValue, Name, Variables};
 use derive_setters::Setters;
+use indexmap::IndexMap;
 use serde::Deserialize;
 
 use super::{Builder, Error, ExecutionPlan, Result};
@@ -15,9 +17,18 @@ pub struct Request<Value> {
 }
 
 impl<Value> Request<Value> {
-    pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan> {
+    pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan>
+    where
+        Value: Clone + Into<ConstValue>,
+    {
         let doc = async_graphql::parser::parse_query(&self.query)?;
-        let builder = Builder::new(blueprint, doc);
+        let variables: IndexMap<Name, ConstValue> = self
+            .variables
+            .iter()
+            .map(|(k, v)| (Name::new(k), v.clone().into()))
+            .collect();
+        let variables = Variables::from_value(ConstValue::Object(variables));
+        let builder = Builder::new(blueprint, doc, Some(variables));
         builder.build().map_err(Error::BuildError)
     }
 }
