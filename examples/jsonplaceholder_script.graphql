@@ -1,6 +1,10 @@
 schema
   @server(port: 8000, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, onRequest: "onRequest")
+  @upstream(
+    baseURL: "http://jsonplaceholder.typicode.com"
+    httpCache: {enable: false, size: 42}
+    onRequest: "onRequest"
+  )
   @link(type: Script, src: "scripts/echo.js") {
   query: Query
 }

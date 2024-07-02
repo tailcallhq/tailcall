@@ -6,7 +6,7 @@
   },
   "upstream": {
     "baseURL": "http://jsonplaceholder.typicode.com",
-    "httpCache": 42
+    "httpCache": {"enable": false, "size": 42}
   },
   "schema": {
     "query": "Query"

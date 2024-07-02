@@ -4,7 +4,7 @@ expression: formatter
 ---
 schema
   @server(port: 8000)
-  @upstream(baseURL: "http://localhost:50051", httpCache: 42)
+  @upstream(baseURL: "http://localhost:50051", httpCache: {enable: false, size: 42})
   @link(src: "http://localhost:50051", type: Grpc) {
   query: Query
 }

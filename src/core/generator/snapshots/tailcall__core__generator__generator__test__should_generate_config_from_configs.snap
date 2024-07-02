@@ -1,8 +1,8 @@
 ---
 source: src/core/generator/generator.rs
-expression: cfg_module.config.to_sdl()
+expression: cfg_module.config().to_sdl()
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
+schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: {enable: false, size: 42}) {
   query: Query
 }
 

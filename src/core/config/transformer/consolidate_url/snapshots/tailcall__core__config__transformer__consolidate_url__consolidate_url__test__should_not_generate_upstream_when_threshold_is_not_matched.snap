@@ -2,7 +2,7 @@
 source: src/core/config/transformer/consolidate_url/consolidate_url.rs
 expression: transformed_config.to_sdl()
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(httpCache: 42) {
+schema @server(hostname: "0.0.0.0", port: 8000) @upstream(httpCache: {enable: false, size: 42}) {
   query: Query
 }
 

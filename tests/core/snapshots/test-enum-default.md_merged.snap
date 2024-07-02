@@ -4,7 +4,7 @@ expression: formatter
 ---
 schema
   @server(port: 8080)
-  @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: []}, httpCache: 42)
+  @upstream(baseURL: "http://localhost:50051", batch: {delay: 10, headers: []}, httpCache: {enable: false, size: 42})
   @link(id: "news", src: "./service.proto", type: Protobuf) {
   query: Query
 }

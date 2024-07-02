@@ -2,7 +2,7 @@
 source: src/core/config/transformer/improve_type_names.rs
 expression: transformed_config.to_sdl()
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://example.typicode.com", httpCache: 42) {
+schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://example.typicode.com", httpCache: {enable: false, size: 42}) {
   query: Query
 }
 

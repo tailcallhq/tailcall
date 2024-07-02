@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use anyhow::Result;
+use cache_size::get_memory_by_percentage;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;
@@ -13,10 +14,10 @@ use opentelemetry_semantic_conventions::trace::{
 };
 use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use tailcall_http_cache::HttpCacheManager;
+use tailcall_http_cache::{HttpCacheManager, HttpMemoryCapCache};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use super::HttpIO;
+use super::{cache_size, HttpIO};
 use crate::core::blueprint::telemetry::Telemetry;
 use crate::core::blueprint::Upstream;
 use crate::core::http::Response;
@@ -112,13 +113,30 @@ impl NativeHttp {
 
         let mut client = ClientBuilder::new(builder.build().expect("Failed to build client"));
 
-        if upstream.http_cache > 0 {
-            client = client.with(Cache(HttpCache {
-                mode: CacheMode::Default,
-                manager: HttpCacheManager::new(upstream.http_cache),
-                options: HttpCacheOptions::default(),
-            }))
+        let http_cache_size = upstream.http_cache.as_ref().map(|cache| cache.size);
+        let http_cache_enable = upstream.http_cache.as_ref().map(|cache| cache.enable);
+        if http_cache_size > Some(0) {
+            if http_cache_enable == Some(false) {
+                client = client.with(Cache(HttpCache {
+                    mode: CacheMode::Default,
+                    manager: HttpCacheManager::new(http_cache_size.unwrap()),
+                    options: HttpCacheOptions::default(),
+                }))
+            } else {
+                let memory_by_percentage = http_cache_size
+                    .as_ref()
+                    .map(|percentage| get_memory_by_percentage(*percentage))
+                    .unwrap_or(0);
+                if memory_by_percentage != 0 {
+                    client = client.with(Cache(HttpCache {
+                        mode: CacheMode::Default,
+                        manager: HttpMemoryCapCache::new(memory_by_percentage),
+                        options: HttpCacheOptions::default(),
+                    }))
+                }
+            }
         }
+
         Self {
             client: client.build(),
             http2_only: upstream.http2_only,
@@ -190,6 +208,7 @@ mod tests {
     use tokio;
 
     use super::*;
+    use crate::core::config::HttpCache as OtherHttpCache;
     use crate::core::http::Response;
 
     fn start_mock_server() -> httpmock::MockServer {
@@ -251,8 +270,8 @@ mod tests {
             when.method(httpmock::Method::GET).path("/test-3");
             then.status(200).body("Hello");
         });
-
-        let upstream = Upstream { http_cache: 2, ..Default::default() };
+        let http_cache = OtherHttpCache { enable: false, size: 2 };
+        let upstream = Upstream { http_cache: Some(http_cache), ..Default::default() };
         let native_http = NativeHttp::init(&upstream, &Default::default());
         let port = server.port();
 
