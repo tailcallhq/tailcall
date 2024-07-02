@@ -84,7 +84,7 @@ where
                 let value: Option<Input> = arg
                     .value
                     .as_ref()
-                    .and_then(|value| Input::from_parsed_value(value.clone()))
+                    .and_then(|value| Input::from_parsed_value(value.clone(), &self.plan.variables))
                     .or_else(|| arg.default_value.clone());
 
                 if let Some(value) = value {

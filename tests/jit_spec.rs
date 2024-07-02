@@ -1,8 +1,10 @@
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use std::sync::Arc;
 
     use async_graphql::Value;
+    use async_graphql_value::ConstValue;
     use tailcall::core::app_context::AppContext;
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
@@ -57,6 +59,26 @@ mod tests {
     async fn test_executor_arguments_default_value() {
         //  NOTE: This test makes a real HTTP call
         let request = Request::new("query {user2 {id name}}");
+        let executor = new_executor(&request).await.unwrap();
+        let response = executor.execute(request).await;
+        let data = response.data;
+
+        insta::assert_json_snapshot!(data);
+    }
+
+    #[tokio::test]
+    async fn test_executor_variables() {
+        //  NOTE: This test makes a real HTTP call
+        let query = r#"
+            query user($id: Int!) {
+              user(id: $id) {
+                id
+                name
+              }
+            }
+        "#;
+        let request = Request::new(query);
+        let request = request.variables(HashMap::from([("id".into(), ConstValue::from(1))]));
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;

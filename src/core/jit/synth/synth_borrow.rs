@@ -214,7 +214,7 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
 
-        let builder = ConstBuilder::new(&Blueprint::try_from(&config).unwrap(), doc);
+        let builder = ConstBuilder::new(&Blueprint::try_from(&config).unwrap(), doc, None);
         let plan = builder.build().unwrap();
 
         let store = store

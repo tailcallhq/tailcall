@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::model::IR;
@@ -167,10 +168,14 @@ pub struct Children<ParsedValue: Clone, Input: Clone>(
 pub struct ExecutionPlan<ParsedValue: Clone, Input: Clone> {
     parent: Vec<Field<Parent, ParsedValue, Input>>,
     children: Vec<Field<Children<ParsedValue, Input>, ParsedValue, Input>>,
+    pub variables: HashMap<String, Input>,
 }
 
 impl<ParsedValue: Clone, Input: Clone> ExecutionPlan<ParsedValue, Input> {
-    pub fn new(fields: Vec<Field<Parent, ParsedValue, Input>>) -> Self {
+    pub fn new(
+        fields: Vec<Field<Parent, ParsedValue, Input>>,
+        variables: HashMap<String, Input>,
+    ) -> Self {
         let field_children = fields
             .clone()
             .into_iter()
@@ -178,7 +183,11 @@ impl<ParsedValue: Clone, Input: Clone> ExecutionPlan<ParsedValue, Input> {
             .map(|f| f.into_children(&fields))
             .collect::<Vec<_>>();
 
-        Self { parent: fields, children: field_children }
+        Self { parent: fields, children: field_children, variables }
+    }
+
+    pub fn with_variables(self, variables: HashMap<String, Input>) -> Self {
+        Self { variables, ..self }
     }
 
     pub fn as_children(&self) -> &[Field<Children<ParsedValue, Input>, ParsedValue, Input>] {

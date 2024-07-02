@@ -59,4 +59,5 @@ ExecutionPlan {
             ),
         },
     ],
+    variables: {},
 }

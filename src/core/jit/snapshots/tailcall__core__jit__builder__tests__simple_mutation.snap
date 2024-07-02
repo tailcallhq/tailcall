@@ -191,4 +191,5 @@ ExecutionPlan {
             ),
         },
     ],
+    variables: {},
 }

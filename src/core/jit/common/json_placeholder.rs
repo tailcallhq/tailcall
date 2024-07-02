@@ -58,6 +58,7 @@ impl JsonPlaceholder {
         let builder = ConstBuilder::new(
             &Blueprint::try_from(&config).unwrap(),
             async_graphql::parser::parse_query(query).unwrap(),
+            None,
         );
         let plan = builder.build().unwrap();
         let posts_id = plan.find_field_path(&["posts"]).unwrap().id.to_owned();
