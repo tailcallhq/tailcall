@@ -147,11 +147,11 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> anyhow::Result<Response<Body>> {
     if app_ctx.blueprint.server.enable_jit {
         // TODO: implement into_hyper
-        let _response = request
+        let response = request
             .data(req_ctx.clone())
             .execute_jit(app_ctx.clone())
             .await;
-        Ok(Response::new(Body::empty()))
+        response.try_into_hyper_response()
     } else {
         let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
 
