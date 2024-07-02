@@ -6,8 +6,6 @@ schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "https://exam
   query: Query
 }
 
-scalar Any
-
 input Id @tag(id: "news.NewsId") {
   id: Int
 }
@@ -21,6 +19,8 @@ enum news__Status {
   DRAFT
   PUBLISHED
 }
+
+scalar Any
 
 type F1 {
   campaignTemplates: Any

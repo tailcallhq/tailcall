@@ -10,9 +10,9 @@ input greetings__HelloRequest @tag(id: "greetings.HelloRequest") {
   name: String
 }
 
-  """
-  The request message containing the user's name.
-  """
+"""
+The request message containing the user's name.
+"""
 input greetings_a__b__HelloRequest @tag(id: "greetings_a.b.HelloRequest") {
   name: String
 }
