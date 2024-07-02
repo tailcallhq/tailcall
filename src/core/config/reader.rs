@@ -11,7 +11,7 @@ use super::{ConfigModule, Content, Link, LinkType};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::{Cached, ResourceReader};
+use crate::core::resource_reader::{Cached, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
 
@@ -37,7 +37,7 @@ impl ConfigReader {
     #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
-        mut config_module: ConfigModule,
+        config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
@@ -58,27 +58,24 @@ impl ConfigReader {
         }
 
         let mut extensions = config_module.extensions().clone();
+        let mut base_config = config_module.config().clone();
 
         for link in links.iter() {
             let path = Self::resolve_path(&link.src, parent_dir);
 
             match link.type_of {
                 LinkType::Config => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
-
-                    config_module = config_module.merge_right(ConfigModule::from(config.clone()));
+                    base_config = base_config.merge_right(config.clone());
 
                     if !config.links.is_empty() {
-                        config_module = config_module.merge_right(
-                            self.ext_links(
-                                ConfigModule::from(config),
-                                Path::new(&link.src).parent(),
-                            )
-                            .await?,
-                        );
+                        let cfg_module = self
+                            .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
+                            .await?;
+                        base_config = base_config.merge_right(cfg_module.config().clone());
                     }
                 }
                 LinkType::Protobuf => {
@@ -86,34 +83,36 @@ impl ConfigReader {
                     extensions.add_proto(meta);
                 }
                 LinkType::Script => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     extensions.script = Some(content);
                 }
                 LinkType::Cert => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     extensions.cert.extend(self.load_cert(content).await?);
                 }
                 LinkType::Key => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     extensions.keys = Arc::new(self.load_private_key(content).await?)
                 }
                 LinkType::Operation => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
+
                     extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
                 LinkType::Htpasswd => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
+
                     extensions
                         .htpasswd
                         .push(Content { id: link.id.clone(), content });
                 }
                 LinkType::Jwks => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     let de = &mut serde_json::Deserializer::from_str(&content);
@@ -125,6 +124,7 @@ impl ConfigReader {
                 }
                 LinkType::Grpc => {
                     let meta = self.proto_reader.fetch(link.src.as_str()).await?;
+
                     for m in meta {
                         extensions.add_proto(m);
                     }
@@ -132,6 +132,8 @@ impl ConfigReader {
             }
         }
 
+        // Recreating the ConfigModule in order to recompute the values of
+        // `input_types`, `output_types` and `interface_types`
         Ok(config_module.set_extensions(extensions))
     }
 
@@ -167,12 +169,15 @@ impl ConfigReader {
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString + Send + Sync>(&self, file: T) -> anyhow::Result<ConfigModule> {
+    pub async fn read<T: Into<Resource> + Clone + ToString + Send + Sync>(
+        &self,
+        file: T,
+    ) -> anyhow::Result<ConfigModule> {
         self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString + Send + Sync>(
+    pub async fn read_all<T: Into<Resource> + Clone + ToString + Send + Sync>(
         &self,
         files: &[T],
     ) -> anyhow::Result<ConfigModule> {
@@ -201,33 +206,24 @@ impl ConfigReader {
     /// Resolves all the links in a Config to create a ConfigModule
     pub async fn resolve(
         &self,
-        config: Config,
+        mut config: Config,
         parent_dir: Option<&Path>,
     ) -> anyhow::Result<ConfigModule> {
-        // Create initial config set
-        let config_module = ConfigModule::from(config);
-
-        // Extend it with the links
-        let config_module = self.ext_links(config_module, parent_dir).await?;
-
-        let server = &config_module.config().server;
+        // Setup telemetry in Config
         let reader_ctx = ConfigReaderContext {
             runtime: &self.runtime,
-            vars: &server
+            vars: &config
+                .server
                 .vars
                 .iter()
                 .map(|vars| (vars.key.clone(), vars.value.clone()))
                 .collect(),
             headers: Default::default(),
         };
+        config.telemetry.render_mustache(&reader_ctx)?;
 
-        config_module
-            .config()
-            .telemetry
-            .clone()
-            .render_mustache(&reader_ctx)?;
-
-        Ok(config_module)
+        // Create initial config set & extend it with the links
+        self.ext_links(ConfigModule::from(config), parent_dir).await
     }
 
     /// Checks if path is a URL or absolute path, returns directly if so.
@@ -342,7 +338,7 @@ mod reader_tests {
         let reader = ConfigReader::init(runtime);
 
         let config = reader
-            .read(&format!(
+            .read(format!(
                 "{}/examples/jsonplaceholder_script.graphql",
                 cargo_manifest
             ))
