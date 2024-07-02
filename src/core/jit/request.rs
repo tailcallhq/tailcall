@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
-use async_graphql::parser::types::OperationType;
 use derive_setters::Setters;
 use serde::Deserialize;
 
 use super::{Builder, Error, ExecutionPlan, Result};
 use crate::core::blueprint::Blueprint;
 
-#[derive(Deserialize, Setters)]
+#[derive(Debug, Deserialize, Setters)]
 pub struct Request<Value> {
     pub query: String,
     pub operation_name: Option<String>,

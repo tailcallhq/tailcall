@@ -19,7 +19,6 @@ pub mod has_headers;
 pub mod helpers;
 pub mod http;
 pub mod ir;
-#[allow(unused)]
 pub mod jit;
 pub mod json;
 pub mod merge_right;
@@ -104,6 +103,12 @@ pub mod tests {
 
     #[derive(Clone, Default)]
     pub struct TestEnvIO(HashMap<String, String>);
+
+    impl TestEnvIO {
+        pub fn init(env_vars: HashMap<String, String>) -> Self {
+            Self(env_vars)
+        }
+    }
 
     impl EnvIO for TestEnvIO {
         fn get(&self, key: &str) -> Option<Cow<'_, str>> {
