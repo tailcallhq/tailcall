@@ -46,7 +46,7 @@ async fn run_command(cli: Cli, config_reader: ConfigReader, runtime: TargetRunti
             .await?;
         }
         Command::Init { folder_path } => {
-            init::init_command(&folder_path).await?;
+            init::init_command(runtime, &folder_path).await?;
         }
         Command::Gen { file_path } => {
             gen::gen_command(&file_path, runtime).await?;

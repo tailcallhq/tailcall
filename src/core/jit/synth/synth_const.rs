@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use async_graphql::{Name, Value};
 use indexmap::IndexMap;
 
