@@ -1,0 +1,55 @@
+---
+source: src/core/generator/from_json.rs
+expression: config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://example.com") {
+  query: Query
+}
+
+scalar Any
+
+type Children {
+  age: Int
+  name: String
+}
+
+type Container {
+  age: Int
+}
+
+type F1 {
+  campaignTemplates: Any
+  colors: [Any]
+}
+
+type F3 {
+  people: [People]
+}
+
+type F4 {
+  container: T7
+}
+
+type People {
+  age: Int
+  children: [Children]
+  name: String
+}
+
+type Query {
+  f1: F1 @http(path: "/")
+  f2: [Any] @http(path: "/api/v2/users")
+  f3(children: Boolean): F3 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
+  f4: F4 @http(path: "/")
+  f5: Any @http(path: "/")
+}
+
+type T6 {
+  container: Container
+  name: String
+}
+
+type T7 {
+  container: T6
+  name: String
+}

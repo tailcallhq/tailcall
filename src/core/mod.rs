@@ -1,7 +1,7 @@
 #![allow(clippy::module_inception)]
 #![allow(clippy::mutable_key_type)]
 
-mod app_context;
+pub mod app_context;
 pub mod async_graphql_hyper;
 mod auth;
 pub mod blueprint;
@@ -19,14 +19,15 @@ pub mod has_headers;
 pub mod helpers;
 pub mod http;
 pub mod ir;
+pub mod jit;
 pub mod json;
 pub mod merge_right;
 pub mod mustache;
 pub mod path;
 pub mod primitive;
 pub mod print_schema;
-mod proto_reader;
-mod resource_reader;
+pub mod proto_reader;
+pub mod resource_reader;
 pub mod rest;
 pub mod runtime;
 pub mod scalar;
@@ -46,6 +47,7 @@ use std::num::NonZeroU64;
 use async_graphql_value::ConstValue;
 use http::Response;
 use ir::model::IoId;
+pub use mustache::Mustache;
 pub use tailcall_macros as macros;
 
 pub trait EnvIO: Send + Sync + 'static {
@@ -57,9 +59,7 @@ pub trait HttpIO: Sync + Send + 'static {
     async fn execute(
         &self,
         request: reqwest::Request,
-    ) -> anyhow::Result<Response<hyper::body::Bytes>> {
-        self.execute(request).await
-    }
+    ) -> anyhow::Result<Response<hyper::body::Bytes>>;
 }
 
 #[async_trait::async_trait]
@@ -103,6 +103,12 @@ pub mod tests {
 
     #[derive(Clone, Default)]
     pub struct TestEnvIO(HashMap<String, String>);
+
+    impl TestEnvIO {
+        pub fn init(env_vars: HashMap<String, String>) -> Self {
+            Self(env_vars)
+        }
+    }
 
     impl EnvIO for TestEnvIO {
         fn get(&self, key: &str) -> Option<Cow<'_, str>> {

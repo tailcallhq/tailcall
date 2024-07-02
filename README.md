@@ -8,13 +8,13 @@ Please support us by giving the repository a star
 [high-performance]: https://github.com/tailcallhq/graphql-benchmarks
 
 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=for-the-badge&logo=x&color=black&labelColor=black)](https://twitter.com/intent/tweet?text=%40tailcallhq%20is%20building%20a%20high-performance%20API%20Orchestration%20solution%20over%20%23GraphQL.%0A%0ACheck%20it%20out%20at%3A%0A%F0%9F%94%97%20https%3A%2F%2Ftailcall.run%20%0A%F0%9F%94%97%20https%3A%2F%2Fgithub.com%2Ftailcallhq%2Ftailcall%20%0A%0A&hashtags=api,http,rest,grpc,graphql,nocode,microservice,opensource)
-[![Discord](https://img.shields.io/discord/1044859667798568962?style=for-the-badge&cacheSeconds=120&logo=discord)](https://discord.gg/Q2ZExpFCnA)
+[![Discord](https://img.shields.io/discord/1044859667798568962?style=for-the-badge&cacheSeconds=120&logo=discord)](https://discord.gg/kRZBPpkgwq)
 
 [![Open Bounties](https://img.shields.io/endpoint?url=https%3A%2F%2Fconsole.algora.io%2Fapi%2Fshields%2Ftailcallhq%2Fbounties%3Fstatus%3Dopen&style=for-the-badge)](https://console.algora.io/org/tailcallhq/bounties?status=open)
 [![Rewarded Bounties](https://img.shields.io/endpoint?url=https%3A%2F%2Fconsole.algora.io%2Fapi%2Fshields%2Ftailcallhq%2Fbounties%3Fstatus%3Dcompleted&style=for-the-badge)](https://console.algora.io/org/tailcallhq/bounties?status=completed)
 [![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/tailcallhq/tailcall/ci.yml?style=for-the-badge)](https://github.com/tailcallhq/tailcall/actions)
 ![GitHub release (by tag)](https://img.shields.io/github/downloads/tailcallhq/tailcall/total?style=for-the-badge)
-[![Discord](https://img.shields.io/discord/1044859667798568962?style=for-the-badge&cacheSeconds=60)](https://discord.gg/Q2ZExpFCnA)
+[![Discord](https://img.shields.io/discord/1044859667798568962?style=for-the-badge&cacheSeconds=60)](https://discord.gg/kRZBPpkgwq)
 [![Codecov](https://img.shields.io/codecov/c/github/tailcallhq/tailcall?style=for-the-badge)](https://app.codecov.io/gh/tailcallhq/tailcall)
 
 ## Installation

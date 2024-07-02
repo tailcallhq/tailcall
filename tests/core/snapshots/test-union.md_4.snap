@@ -1,0 +1,28 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "internal: non-null types require a return value",
+        "locations": [
+          {
+            "line": 4,
+            "column": 7
+          }
+        ],
+        "path": [
+          "unknown",
+          "foo"
+        ]
+      }
+    ]
+  }
+}

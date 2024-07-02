@@ -1,0 +1,910 @@
+---
+source: tests/jit_spec.rs
+expression: data
+---
+{
+  "data": {
+    "posts": [
+      {
+        "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+        "userId": 1,
+        "user": {
+          "id": 1,
+          "name": "Leanne Graham",
+          "email": "Sincere@april.biz"
+        }
+      },
+      {
+        "title": "qui est esse",
+        "userId": 1,
+        "user": {
+          "id": 1,
+          "name": "Leanne Graham",
+          "email": "Sincere@april.biz"
+        }
+      },
+      {
+        "title": "ea molestias quasi exercitationem repellat qui ipsa sit aut",
+        "userId": 1,
+        "user": {
+          "id": 1,
+          "name": "Leanne Graham",
+          "email": "Sincere@april.biz"
+        }
+      },
+      {
+        "title": "eum et est occaecati",
+        "userId": 1,
+        "user": {
+          "id": 1,
+          "name": "Leanne Graham",
+          "email": "Sincere@april.biz"
+        }
+      },
+      {
+        "title": "nesciunt quas odio",
+        "userId": 1,
+        "user": {
+          "id": 1,
+          "name": "Leanne Graham",
+          "email": "Sincere@april.biz"
+        }
+      },
+      {
+        "title": "dolorem eum magni eos aperiam quia",
+        "userId": 1,
+        "user": {
+          "id": 1,
+          "name": "Leanne Graham",
+          "email": "Sincere@april.biz"
+        }
+      },
+      {
+        "title": "magnam facilis autem",
+        "userId": 1,
+        "user": {
+          "id": 1,
+          "name": "Leanne Graham",
+          "email": "Sincere@april.biz"
+        }
+      },
+      {
+        "title": "dolorem dolore est ipsam",
+        "userId": 1,
+        "user": {
+          "id": 1,
+          "name": "Leanne Graham",
+          "email": "Sincere@april.biz"
+        }
+      },
+      {
+        "title": "nesciunt iure omnis dolorem tempora et accusantium",
+        "userId": 1,
+        "user": {
+          "id": 1,
+          "name": "Leanne Graham",
+          "email": "Sincere@april.biz"
+        }
+      },
+      {
+        "title": "optio molestias id quia eum",
+        "userId": 1,
+        "user": {
+          "id": 1,
+          "name": "Leanne Graham",
+          "email": "Sincere@april.biz"
+        }
+      },
+      {
+        "title": "et ea vero quia laudantium autem",
+        "userId": 2,
+        "user": {
+          "id": 2,
+          "name": "Ervin Howell",
+          "email": "Shanna@melissa.tv"
+        }
+      },
+      {
+        "title": "in quibusdam tempore odit est dolorem",
+        "userId": 2,
+        "user": {
+          "id": 2,
+          "name": "Ervin Howell",
+          "email": "Shanna@melissa.tv"
+        }
+      },
+      {
+        "title": "dolorum ut in voluptas mollitia et saepe quo animi",
+        "userId": 2,
+        "user": {
+          "id": 2,
+          "name": "Ervin Howell",
+          "email": "Shanna@melissa.tv"
+        }
+      },
+      {
+        "title": "voluptatem eligendi optio",
+        "userId": 2,
+        "user": {
+          "id": 2,
+          "name": "Ervin Howell",
+          "email": "Shanna@melissa.tv"
+        }
+      },
+      {
+        "title": "eveniet quod temporibus",
+        "userId": 2,
+        "user": {
+          "id": 2,
+          "name": "Ervin Howell",
+          "email": "Shanna@melissa.tv"
+        }
+      },
+      {
+        "title": "sint suscipit perspiciatis velit dolorum rerum ipsa laboriosam odio",
+        "userId": 2,
+        "user": {
+          "id": 2,
+          "name": "Ervin Howell",
+          "email": "Shanna@melissa.tv"
+        }
+      },
+      {
+        "title": "fugit voluptas sed molestias voluptatem provident",
+        "userId": 2,
+        "user": {
+          "id": 2,
+          "name": "Ervin Howell",
+          "email": "Shanna@melissa.tv"
+        }
+      },
+      {
+        "title": "voluptate et itaque vero tempora molestiae",
+        "userId": 2,
+        "user": {
+          "id": 2,
+          "name": "Ervin Howell",
+          "email": "Shanna@melissa.tv"
+        }
+      },
+      {
+        "title": "adipisci placeat illum aut reiciendis qui",
+        "userId": 2,
+        "user": {
+          "id": 2,
+          "name": "Ervin Howell",
+          "email": "Shanna@melissa.tv"
+        }
+      },
+      {
+        "title": "doloribus ad provident suscipit at",
+        "userId": 2,
+        "user": {
+          "id": 2,
+          "name": "Ervin Howell",
+          "email": "Shanna@melissa.tv"
+        }
+      },
+      {
+        "title": "asperiores ea ipsam voluptatibus modi minima quia sint",
+        "userId": 3,
+        "user": {
+          "id": 3,
+          "name": "Clementine Bauch",
+          "email": "Nathan@yesenia.net"
+        }
+      },
+      {
+        "title": "dolor sint quo a velit explicabo quia nam",
+        "userId": 3,
+        "user": {
+          "id": 3,
+          "name": "Clementine Bauch",
+          "email": "Nathan@yesenia.net"
+        }
+      },
+      {
+        "title": "maxime id vitae nihil numquam",
+        "userId": 3,
+        "user": {
+          "id": 3,
+          "name": "Clementine Bauch",
+          "email": "Nathan@yesenia.net"
+        }
+      },
+      {
+        "title": "autem hic labore sunt dolores incidunt",
+        "userId": 3,
+        "user": {
+          "id": 3,
+          "name": "Clementine Bauch",
+          "email": "Nathan@yesenia.net"
+        }
+      },
+      {
+        "title": "rem alias distinctio quo quis",
+        "userId": 3,
+        "user": {
+          "id": 3,
+          "name": "Clementine Bauch",
+          "email": "Nathan@yesenia.net"
+        }
+      },
+      {
+        "title": "est et quae odit qui non",
+        "userId": 3,
+        "user": {
+          "id": 3,
+          "name": "Clementine Bauch",
+          "email": "Nathan@yesenia.net"
+        }
+      },
+      {
+        "title": "quasi id et eos tenetur aut quo autem",
+        "userId": 3,
+        "user": {
+          "id": 3,
+          "name": "Clementine Bauch",
+          "email": "Nathan@yesenia.net"
+        }
+      },
+      {
+        "title": "delectus ullam et corporis nulla voluptas sequi",
+        "userId": 3,
+        "user": {
+          "id": 3,
+          "name": "Clementine Bauch",
+          "email": "Nathan@yesenia.net"
+        }
+      },
+      {
+        "title": "iusto eius quod necessitatibus culpa ea",
+        "userId": 3,
+        "user": {
+          "id": 3,
+          "name": "Clementine Bauch",
+          "email": "Nathan@yesenia.net"
+        }
+      },
+      {
+        "title": "a quo magni similique perferendis",
+        "userId": 3,
+        "user": {
+          "id": 3,
+          "name": "Clementine Bauch",
+          "email": "Nathan@yesenia.net"
+        }
+      },
+      {
+        "title": "ullam ut quidem id aut vel consequuntur",
+        "userId": 4,
+        "user": {
+          "id": 4,
+          "name": "Patricia Lebsack",
+          "email": "Julianne.OConner@kory.org"
+        }
+      },
+      {
+        "title": "doloremque illum aliquid sunt",
+        "userId": 4,
+        "user": {
+          "id": 4,
+          "name": "Patricia Lebsack",
+          "email": "Julianne.OConner@kory.org"
+        }
+      },
+      {
+        "title": "qui explicabo molestiae dolorem",
+        "userId": 4,
+        "user": {
+          "id": 4,
+          "name": "Patricia Lebsack",
+          "email": "Julianne.OConner@kory.org"
+        }
+      },
+      {
+        "title": "magnam ut rerum iure",
+        "userId": 4,
+        "user": {
+          "id": 4,
+          "name": "Patricia Lebsack",
+          "email": "Julianne.OConner@kory.org"
+        }
+      },
+      {
+        "title": "id nihil consequatur molestias animi provident",
+        "userId": 4,
+        "user": {
+          "id": 4,
+          "name": "Patricia Lebsack",
+          "email": "Julianne.OConner@kory.org"
+        }
+      },
+      {
+        "title": "fuga nam accusamus voluptas reiciendis itaque",
+        "userId": 4,
+        "user": {
+          "id": 4,
+          "name": "Patricia Lebsack",
+          "email": "Julianne.OConner@kory.org"
+        }
+      },
+      {
+        "title": "provident vel ut sit ratione est",
+        "userId": 4,
+        "user": {
+          "id": 4,
+          "name": "Patricia Lebsack",
+          "email": "Julianne.OConner@kory.org"
+        }
+      },
+      {
+        "title": "explicabo et eos deleniti nostrum ab id repellendus",
+        "userId": 4,
+        "user": {
+          "id": 4,
+          "name": "Patricia Lebsack",
+          "email": "Julianne.OConner@kory.org"
+        }
+      },
+      {
+        "title": "eos dolorem iste accusantium est eaque quam",
+        "userId": 4,
+        "user": {
+          "id": 4,
+          "name": "Patricia Lebsack",
+          "email": "Julianne.OConner@kory.org"
+        }
+      },
+      {
+        "title": "enim quo cumque",
+        "userId": 4,
+        "user": {
+          "id": 4,
+          "name": "Patricia Lebsack",
+          "email": "Julianne.OConner@kory.org"
+        }
+      },
+      {
+        "title": "non est facere",
+        "userId": 5,
+        "user": {
+          "id": 5,
+          "name": "Chelsey Dietrich",
+          "email": "Lucio_Hettinger@annie.ca"
+        }
+      },
+      {
+        "title": "commodi ullam sint et excepturi error explicabo praesentium voluptas",
+        "userId": 5,
+        "user": {
+          "id": 5,
+          "name": "Chelsey Dietrich",
+          "email": "Lucio_Hettinger@annie.ca"
+        }
+      },
+      {
+        "title": "eligendi iste nostrum consequuntur adipisci praesentium sit beatae perferendis",
+        "userId": 5,
+        "user": {
+          "id": 5,
+          "name": "Chelsey Dietrich",
+          "email": "Lucio_Hettinger@annie.ca"
+        }
+      },
+      {
+        "title": "optio dolor molestias sit",
+        "userId": 5,
+        "user": {
+          "id": 5,
+          "name": "Chelsey Dietrich",
+          "email": "Lucio_Hettinger@annie.ca"
+        }
+      },
+      {
+        "title": "ut numquam possimus omnis eius suscipit laudantium iure",
+        "userId": 5,
+        "user": {
+          "id": 5,
+          "name": "Chelsey Dietrich",
+          "email": "Lucio_Hettinger@annie.ca"
+        }
+      },
+      {
+        "title": "aut quo modi neque nostrum ducimus",
+        "userId": 5,
+        "user": {
+          "id": 5,
+          "name": "Chelsey Dietrich",
+          "email": "Lucio_Hettinger@annie.ca"
+        }
+      },
+      {
+        "title": "quibusdam cumque rem aut deserunt",
+        "userId": 5,
+        "user": {
+          "id": 5,
+          "name": "Chelsey Dietrich",
+          "email": "Lucio_Hettinger@annie.ca"
+        }
+      },
+      {
+        "title": "ut voluptatem illum ea doloribus itaque eos",
+        "userId": 5,
+        "user": {
+          "id": 5,
+          "name": "Chelsey Dietrich",
+          "email": "Lucio_Hettinger@annie.ca"
+        }
+      },
+      {
+        "title": "laborum non sunt aut ut assumenda perspiciatis voluptas",
+        "userId": 5,
+        "user": {
+          "id": 5,
+          "name": "Chelsey Dietrich",
+          "email": "Lucio_Hettinger@annie.ca"
+        }
+      },
+      {
+        "title": "repellendus qui recusandae incidunt voluptates tenetur qui omnis exercitationem",
+        "userId": 5,
+        "user": {
+          "id": 5,
+          "name": "Chelsey Dietrich",
+          "email": "Lucio_Hettinger@annie.ca"
+        }
+      },
+      {
+        "title": "soluta aliquam aperiam consequatur illo quis voluptas",
+        "userId": 6,
+        "user": {
+          "id": 6,
+          "name": "Mrs. Dennis Schulist",
+          "email": "Karley_Dach@jasper.info"
+        }
+      },
+      {
+        "title": "qui enim et consequuntur quia animi quis voluptate quibusdam",
+        "userId": 6,
+        "user": {
+          "id": 6,
+          "name": "Mrs. Dennis Schulist",
+          "email": "Karley_Dach@jasper.info"
+        }
+      },
+      {
+        "title": "ut quo aut ducimus alias",
+        "userId": 6,
+        "user": {
+          "id": 6,
+          "name": "Mrs. Dennis Schulist",
+          "email": "Karley_Dach@jasper.info"
+        }
+      },
+      {
+        "title": "sit asperiores ipsam eveniet odio non quia",
+        "userId": 6,
+        "user": {
+          "id": 6,
+          "name": "Mrs. Dennis Schulist",
+          "email": "Karley_Dach@jasper.info"
+        }
+      },
+      {
+        "title": "sit vel voluptatem et non libero",
+        "userId": 6,
+        "user": {
+          "id": 6,
+          "name": "Mrs. Dennis Schulist",
+          "email": "Karley_Dach@jasper.info"
+        }
+      },
+      {
+        "title": "qui et at rerum necessitatibus",
+        "userId": 6,
+        "user": {
+          "id": 6,
+          "name": "Mrs. Dennis Schulist",
+          "email": "Karley_Dach@jasper.info"
+        }
+      },
+      {
+        "title": "sed ab est est",
+        "userId": 6,
+        "user": {
+          "id": 6,
+          "name": "Mrs. Dennis Schulist",
+          "email": "Karley_Dach@jasper.info"
+        }
+      },
+      {
+        "title": "voluptatum itaque dolores nisi et quasi",
+        "userId": 6,
+        "user": {
+          "id": 6,
+          "name": "Mrs. Dennis Schulist",
+          "email": "Karley_Dach@jasper.info"
+        }
+      },
+      {
+        "title": "qui commodi dolor at maiores et quis id accusantium",
+        "userId": 6,
+        "user": {
+          "id": 6,
+          "name": "Mrs. Dennis Schulist",
+          "email": "Karley_Dach@jasper.info"
+        }
+      },
+      {
+        "title": "consequatur placeat omnis quisquam quia reprehenderit fugit veritatis facere",
+        "userId": 6,
+        "user": {
+          "id": 6,
+          "name": "Mrs. Dennis Schulist",
+          "email": "Karley_Dach@jasper.info"
+        }
+      },
+      {
+        "title": "voluptatem doloribus consectetur est ut ducimus",
+        "userId": 7,
+        "user": {
+          "id": 7,
+          "name": "Kurtis Weissnat",
+          "email": "Telly.Hoeger@billy.biz"
+        }
+      },
+      {
+        "title": "beatae enim quia vel",
+        "userId": 7,
+        "user": {
+          "id": 7,
+          "name": "Kurtis Weissnat",
+          "email": "Telly.Hoeger@billy.biz"
+        }
+      },
+      {
+        "title": "voluptas blanditiis repellendus animi ducimus error sapiente et suscipit",
+        "userId": 7,
+        "user": {
+          "id": 7,
+          "name": "Kurtis Weissnat",
+          "email": "Telly.Hoeger@billy.biz"
+        }
+      },
+      {
+        "title": "et fugit quas eum in in aperiam quod",
+        "userId": 7,
+        "user": {
+          "id": 7,
+          "name": "Kurtis Weissnat",
+          "email": "Telly.Hoeger@billy.biz"
+        }
+      },
+      {
+        "title": "consequatur id enim sunt et et",
+        "userId": 7,
+        "user": {
+          "id": 7,
+          "name": "Kurtis Weissnat",
+          "email": "Telly.Hoeger@billy.biz"
+        }
+      },
+      {
+        "title": "repudiandae ea animi iusto",
+        "userId": 7,
+        "user": {
+          "id": 7,
+          "name": "Kurtis Weissnat",
+          "email": "Telly.Hoeger@billy.biz"
+        }
+      },
+      {
+        "title": "aliquid eos sed fuga est maxime repellendus",
+        "userId": 7,
+        "user": {
+          "id": 7,
+          "name": "Kurtis Weissnat",
+          "email": "Telly.Hoeger@billy.biz"
+        }
+      },
+      {
+        "title": "odio quis facere architecto reiciendis optio",
+        "userId": 7,
+        "user": {
+          "id": 7,
+          "name": "Kurtis Weissnat",
+          "email": "Telly.Hoeger@billy.biz"
+        }
+      },
+      {
+        "title": "fugiat quod pariatur odit minima",
+        "userId": 7,
+        "user": {
+          "id": 7,
+          "name": "Kurtis Weissnat",
+          "email": "Telly.Hoeger@billy.biz"
+        }
+      },
+      {
+        "title": "voluptatem laborum magni",
+        "userId": 7,
+        "user": {
+          "id": 7,
+          "name": "Kurtis Weissnat",
+          "email": "Telly.Hoeger@billy.biz"
+        }
+      },
+      {
+        "title": "et iusto veniam et illum aut fuga",
+        "userId": 8,
+        "user": {
+          "id": 8,
+          "name": "Nicholas Runolfsdottir V",
+          "email": "Sherwood@rosamond.me"
+        }
+      },
+      {
+        "title": "sint hic doloribus consequatur eos non id",
+        "userId": 8,
+        "user": {
+          "id": 8,
+          "name": "Nicholas Runolfsdottir V",
+          "email": "Sherwood@rosamond.me"
+        }
+      },
+      {
+        "title": "consequuntur deleniti eos quia temporibus ab aliquid at",
+        "userId": 8,
+        "user": {
+          "id": 8,
+          "name": "Nicholas Runolfsdottir V",
+          "email": "Sherwood@rosamond.me"
+        }
+      },
+      {
+        "title": "enim unde ratione doloribus quas enim ut sit sapiente",
+        "userId": 8,
+        "user": {
+          "id": 8,
+          "name": "Nicholas Runolfsdottir V",
+          "email": "Sherwood@rosamond.me"
+        }
+      },
+      {
+        "title": "dignissimos eum dolor ut enim et delectus in",
+        "userId": 8,
+        "user": {
+          "id": 8,
+          "name": "Nicholas Runolfsdottir V",
+          "email": "Sherwood@rosamond.me"
+        }
+      },
+      {
+        "title": "doloremque officiis ad et non perferendis",
+        "userId": 8,
+        "user": {
+          "id": 8,
+          "name": "Nicholas Runolfsdottir V",
+          "email": "Sherwood@rosamond.me"
+        }
+      },
+      {
+        "title": "necessitatibus quasi exercitationem odio",
+        "userId": 8,
+        "user": {
+          "id": 8,
+          "name": "Nicholas Runolfsdottir V",
+          "email": "Sherwood@rosamond.me"
+        }
+      },
+      {
+        "title": "quam voluptatibus rerum veritatis",
+        "userId": 8,
+        "user": {
+          "id": 8,
+          "name": "Nicholas Runolfsdottir V",
+          "email": "Sherwood@rosamond.me"
+        }
+      },
+      {
+        "title": "pariatur consequatur quia magnam autem omnis non amet",
+        "userId": 8,
+        "user": {
+          "id": 8,
+          "name": "Nicholas Runolfsdottir V",
+          "email": "Sherwood@rosamond.me"
+        }
+      },
+      {
+        "title": "labore in ex et explicabo corporis aut quas",
+        "userId": 8,
+        "user": {
+          "id": 8,
+          "name": "Nicholas Runolfsdottir V",
+          "email": "Sherwood@rosamond.me"
+        }
+      },
+      {
+        "title": "tempora rem veritatis voluptas quo dolores vero",
+        "userId": 9,
+        "user": {
+          "id": 9,
+          "name": "Glenna Reichert",
+          "email": "Chaim_McDermott@dana.io"
+        }
+      },
+      {
+        "title": "laudantium voluptate suscipit sunt enim enim",
+        "userId": 9,
+        "user": {
+          "id": 9,
+          "name": "Glenna Reichert",
+          "email": "Chaim_McDermott@dana.io"
+        }
+      },
+      {
+        "title": "odit et voluptates doloribus alias odio et",
+        "userId": 9,
+        "user": {
+          "id": 9,
+          "name": "Glenna Reichert",
+          "email": "Chaim_McDermott@dana.io"
+        }
+      },
+      {
+        "title": "optio ipsam molestias necessitatibus occaecati facilis veritatis dolores aut",
+        "userId": 9,
+        "user": {
+          "id": 9,
+          "name": "Glenna Reichert",
+          "email": "Chaim_McDermott@dana.io"
+        }
+      },
+      {
+        "title": "dolore veritatis porro provident adipisci blanditiis et sunt",
+        "userId": 9,
+        "user": {
+          "id": 9,
+          "name": "Glenna Reichert",
+          "email": "Chaim_McDermott@dana.io"
+        }
+      },
+      {
+        "title": "placeat quia et porro iste",
+        "userId": 9,
+        "user": {
+          "id": 9,
+          "name": "Glenna Reichert",
+          "email": "Chaim_McDermott@dana.io"
+        }
+      },
+      {
+        "title": "nostrum quis quasi placeat",
+        "userId": 9,
+        "user": {
+          "id": 9,
+          "name": "Glenna Reichert",
+          "email": "Chaim_McDermott@dana.io"
+        }
+      },
+      {
+        "title": "sapiente omnis fugit eos",
+        "userId": 9,
+        "user": {
+          "id": 9,
+          "name": "Glenna Reichert",
+          "email": "Chaim_McDermott@dana.io"
+        }
+      },
+      {
+        "title": "sint soluta et vel magnam aut ut sed qui",
+        "userId": 9,
+        "user": {
+          "id": 9,
+          "name": "Glenna Reichert",
+          "email": "Chaim_McDermott@dana.io"
+        }
+      },
+      {
+        "title": "ad iusto omnis odit dolor voluptatibus",
+        "userId": 9,
+        "user": {
+          "id": 9,
+          "name": "Glenna Reichert",
+          "email": "Chaim_McDermott@dana.io"
+        }
+      },
+      {
+        "title": "aut amet sed",
+        "userId": 10,
+        "user": {
+          "id": 10,
+          "name": "Clementina DuBuque",
+          "email": "Rey.Padberg@karina.biz"
+        }
+      },
+      {
+        "title": "ratione ex tenetur perferendis",
+        "userId": 10,
+        "user": {
+          "id": 10,
+          "name": "Clementina DuBuque",
+          "email": "Rey.Padberg@karina.biz"
+        }
+      },
+      {
+        "title": "beatae soluta recusandae",
+        "userId": 10,
+        "user": {
+          "id": 10,
+          "name": "Clementina DuBuque",
+          "email": "Rey.Padberg@karina.biz"
+        }
+      },
+      {
+        "title": "qui qui voluptates illo iste minima",
+        "userId": 10,
+        "user": {
+          "id": 10,
+          "name": "Clementina DuBuque",
+          "email": "Rey.Padberg@karina.biz"
+        }
+      },
+      {
+        "title": "id minus libero illum nam ad officiis",
+        "userId": 10,
+        "user": {
+          "id": 10,
+          "name": "Clementina DuBuque",
+          "email": "Rey.Padberg@karina.biz"
+        }
+      },
+      {
+        "title": "quaerat velit veniam amet cupiditate aut numquam ut sequi",
+        "userId": 10,
+        "user": {
+          "id": 10,
+          "name": "Clementina DuBuque",
+          "email": "Rey.Padberg@karina.biz"
+        }
+      },
+      {
+        "title": "quas fugiat ut perspiciatis vero provident",
+        "userId": 10,
+        "user": {
+          "id": 10,
+          "name": "Clementina DuBuque",
+          "email": "Rey.Padberg@karina.biz"
+        }
+      },
+      {
+        "title": "laboriosam dolor voluptates",
+        "userId": 10,
+        "user": {
+          "id": 10,
+          "name": "Clementina DuBuque",
+          "email": "Rey.Padberg@karina.biz"
+        }
+      },
+      {
+        "title": "temporibus sit alias delectus eligendi possimus magni",
+        "userId": 10,
+        "user": {
+          "id": 10,
+          "name": "Clementina DuBuque",
+          "email": "Rey.Padberg@karina.biz"
+        }
+      },
+      {
+        "title": "at nam consequatur ea labore ea harum",
+        "userId": 10,
+        "user": {
+          "id": 10,
+          "name": "Clementina DuBuque",
+          "email": "Rey.Padberg@karina.biz"
+        }
+      }
+    ]
+  }
+}

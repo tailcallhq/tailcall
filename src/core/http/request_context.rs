@@ -7,13 +7,14 @@ use cache_control::{Cachability, CacheControl};
 use derive_setters::Setters;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
+use crate::core::app_context::AppContext;
 use crate::core::auth::context::AuthContext;
 use crate::core::blueprint::{Server, Upstream};
 use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
-use crate::core::http::{AppContext, DataLoaderRequest, HttpDataLoader};
+use crate::core::http::{DataLoaderRequest, HttpDataLoader};
 use crate::core::ir::model::IoId;
 use crate::core::ir::Error;
 use crate::core::runtime::TargetRuntime;

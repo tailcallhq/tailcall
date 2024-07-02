@@ -29,7 +29,7 @@ input news__NewsInput @tag(id: "news.News") {
   body: String
   id: Int
   postImage: String
-  status: news__StatusInput
+  status: news__Status
   title: String
 }
 

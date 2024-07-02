@@ -69,6 +69,7 @@ impl Type {
             Type::ListType { of_type, .. } => of_type.name(),
         }
     }
+
     /// checks if the type is nullable
     pub fn is_nullable(&self) -> bool {
         !match self {
@@ -171,7 +172,7 @@ pub struct FieldDefinition {
 impl FieldDefinition {
     ///
     /// Transforms the current expression if it exists on the provided field.
-    pub fn map_expr<F: FnMut(IR) -> IR>(&mut self, mut wrapper: F) {
+    pub fn map_expr<F: FnOnce(IR) -> IR>(&mut self, wrapper: F) {
         if let Some(resolver) = self.resolver.take() {
             self.resolver = Some(wrapper(resolver))
         }

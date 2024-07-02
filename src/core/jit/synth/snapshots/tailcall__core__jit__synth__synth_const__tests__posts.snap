@@ -1,0 +1,16 @@
+---
+source: src/core/jit/synth/synth_const.rs
+expression: val
+---
+{
+  "data": {
+    "posts": [
+      {
+        "id": 1
+      },
+      {
+        "id": 2
+      }
+    ]
+  }
+}

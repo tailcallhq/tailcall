@@ -1,0 +1,28 @@
+---
+source: src/core/config/transformer/union_input_type.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+input T1 {
+  t1: String
+}
+
+input T2 {
+  t2: Int
+}
+
+input T3 {
+  t3: Boolean
+  t33: Float!
+}
+
+union U = T1 | T2 | T3
+
+type Query {
+  testVar0(u: T1!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
+  testVar1(u: T2!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
+  testVar2(u: T3!): U @http(baseURL: "http://localhost", path: "/users/{{args.u}}")
+}

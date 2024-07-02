@@ -34,13 +34,13 @@ pub enum Auth {
 
 impl Auth {
     pub fn make(config_module: &ConfigModule) -> Valid<Option<Auth>, String> {
-        let htpasswd = config_module.extensions.htpasswd.iter().map(|htpasswd| {
+        let htpasswd = config_module.extensions().htpasswd.iter().map(|htpasswd| {
             Auth::Provider(Provider::Basic(Basic {
                 htpasswd: htpasswd.content.clone(),
             }))
         });
 
-        let jwks = config_module.extensions.jwks.iter().map(|jwks| {
+        let jwks = config_module.extensions().jwks.iter().map(|jwks| {
             Auth::Provider(Provider::Jwt(Jwt {
                 jwks: jwks.content.clone(),
                 // TODO: read those options from link instead of using defaults

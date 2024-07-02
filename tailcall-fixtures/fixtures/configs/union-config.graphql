@@ -1,0 +1,23 @@
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+union FooBar = Bar | Baz | Foo
+
+type Bar {
+  bar: String
+}
+
+type Baz {
+  bar: String
+}
+
+type Foo {
+  a: String
+  foo: String
+  bar: String
+}
+
+type Query {
+  foo: FooBar @http(path: "/foo")
+}

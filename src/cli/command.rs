@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use strum_macros::Display;
 use tailcall_version::VERSION;
 
-use crate::core::{config, generator};
+use crate::core::config;
 
 const ABOUT: &str = r"
    __        _ __           ____
@@ -43,7 +43,7 @@ pub enum Command {
         #[arg(short, long)]
         schema: bool,
 
-        /// Prints the input config in the provided format.
+        /// Prints the input config in the provided format
         #[clap(short, long)]
         format: Option<config::Source>,
     },
@@ -57,21 +57,8 @@ pub enum Command {
 
     /// Generates a Tailcall Configuration from one or more source files.
     Gen {
-        /// Path of the source files separated by spaces if more than one
+        /// Path of the configuration file
         #[arg(required = true)]
-        paths: Vec<String>,
-
-        /// Format of the input file
-        #[clap(short, long)]
-        input: generator::Source,
-
-        /// Format of the output file
-        #[clap(short, long)]
-        output: Option<config::Source>,
-
-        /// Root query name
-        #[arg(default_value = "Query")]
-        #[clap(short, long)]
-        query: String,
+        file_path: String,
     },
 }

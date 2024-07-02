@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "IOException: Failed to find corresponding type for value",
+        "locations": [
+          {
+            "line": 2,
+            "column": 3
+          }
+        ]
+      }
+    ]
+  }
+}

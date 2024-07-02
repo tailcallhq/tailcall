@@ -5,7 +5,8 @@ use std::sync::Arc;
 use async_graphql::{SelectionField, ServerError, Value};
 use reqwest::header::HeaderMap;
 
-use super::{GraphQLOperationContext, ResolverContextLike};
+use super::discriminator::TypeName;
+use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike};
 use crate::core::http::RequestContext;
 
 // TODO: rename to ResolverContext
@@ -23,6 +24,12 @@ pub struct EvalContext<'a, Ctx: ResolverContextLike> {
 
     // Overridden Arguments for Async GraphQL Context
     graphql_ctx_args: Option<Arc<Value>>,
+
+    /// Type name of resolved data that is calculated
+    /// dynamically based on the shape of the value itself.
+    /// Required for proper Union type resolutions.
+    /// More details at [TypeName]
+    pub type_name: Option<TypeName>,
 }
 
 impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
@@ -48,6 +55,7 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
             graphql_ctx,
             graphql_ctx_value: None,
             graphql_ctx_args: None,
+            type_name: None,
         }
     }
 
@@ -105,21 +113,31 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
     pub fn add_error(&self, error: ServerError) {
         self.graphql_ctx.add_error(error)
     }
+
+    pub fn set_type_name(&mut self, type_name: TypeName) {
+        self.type_name = Some(type_name);
+    }
 }
 
 impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'a, Ctx> {
-    fn selection_set(&self) -> Option<String> {
+    fn selection_set(&self, related_fields: &RelatedFields) -> Option<String> {
         let selection_set = self.graphql_ctx.field()?.selection_set();
 
-        format_selection_set(selection_set)
+        format_selection_set(selection_set, related_fields)
     }
 }
 
 fn format_selection_set<'a>(
     selection_set: impl Iterator<Item = SelectionField<'a>>,
+    related_fields: &RelatedFields,
 ) -> Option<String> {
     let set = selection_set
-        .map(format_selection_field)
+        .filter_map(|field| {
+            // add to set only related fields that should be resolved with current resolver
+            related_fields
+                .get(field.name())
+                .map(|related_fields| format_selection_field(field, related_fields))
+        })
         .collect::<Vec<_>>();
 
     if set.is_empty() {
@@ -129,10 +147,10 @@ fn format_selection_set<'a>(
     Some(format!("{{ {} }}", set.join(" ")))
 }
 
-fn format_selection_field(field: SelectionField) -> String {
+fn format_selection_field(field: SelectionField, related_fields: &RelatedFields) -> String {
     let name = field.name();
     let arguments = format_selection_field_arguments(field);
-    let selection_set = format_selection_set(field.selection_set());
+    let selection_set = format_selection_set(field.selection_set(), related_fields);
 
     if let Some(set) = selection_set {
         format!("{}{} {}", name, arguments, set)
@@ -162,7 +180,7 @@ fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> 
         .collect::<Vec<_>>()
         .join(",");
 
-    Cow::Owned(format!("({})", args))
+    Cow::Owned(format!("({})", args.escape_default()))
 }
 
 // TODO: this is the same code as src/json/json_like.rs::get_path

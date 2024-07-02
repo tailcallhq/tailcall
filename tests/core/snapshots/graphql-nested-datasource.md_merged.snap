@@ -1,0 +1,31 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
+  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+  query: Query
+}
+
+type A {
+  b: B @graphQL(args: [{key: "id", value: "{{.value.bid}}"}], name: "b")
+  bid: Int!
+  c: C @graphQL(args: [{key: "id", value: "{{.value.cid}}"}], name: "c")
+  cid: Int!
+  id: Int!
+}
+
+type B {
+  id: Int!
+  y: String!
+}
+
+type C {
+  id: Int!
+  x: String!
+}
+
+type Query {
+  a: [A] @graphQL(name: "a")
+}

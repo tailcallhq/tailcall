@@ -17,7 +17,7 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
     let config_module: ConfigModule = Config::from_sdl(sdl.as_str()).to_result().unwrap().into();
 
     let blueprint = Blueprint::try_from(&config_module).unwrap();
-    let endpoints = config_module.extensions.endpoint_set;
+    let endpoints = config_module.extensions().endpoint_set.clone();
 
     let server_config = tokio_runtime
         .block_on(ServerConfig::new(blueprint, endpoints))

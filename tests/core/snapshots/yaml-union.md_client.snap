@@ -1,0 +1,75 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Bytes
+
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  testVar0(u: T1Input!): U
+  testVar1(u: T2Input!): U
+  testVar2(u: T3Input!): U
+}
+
+type T1 {
+  t1: String
+}
+
+input T1Input {
+  t1: String
+}
+
+type T2 {
+  t2: Int
+}
+
+input T2Input {
+  t2: Int
+}
+
+type T3 {
+  t3: Boolean
+  t33: Float!
+}
+
+input T3Input {
+  t3: Boolean
+  t33: Float!
+}
+
+union U = T1 | T2 | T3
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
+
+scalar Url
+
+schema {
+  query: Query
+}

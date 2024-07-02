@@ -12,6 +12,6 @@ lazy_static = "1.4.0"
 schemars = "0.8.17"
 serde = "1.0.200"
 serde_json = "1.0.116"
-tailcall = { path = "../" }
+tailcall = { path = "../", default-features = false, features = ["cli"]}
 tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1.40"
