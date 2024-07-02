@@ -70,7 +70,14 @@ impl<'a> MustachePartsValidator<'a> {
                 // XXX this is a linear search but it's cost is less than that of
                 // constructing a HashMap since we'd have 3-4 arguments at max in
                 // most cases
-                if !args.iter().any(|arg| arg.name == tail) {
+                if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
+                    // we can use non-scalar types in args
+                    if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
+                        return Valid::fail(format!(
+                            "argument '{tail}' is a nullable type found in non-query type"
+                        ));
+                    }
+                } else {
                     return Valid::fail(format!("no argument '{tail}' found"));
                 }
             }
@@ -170,8 +177,7 @@ mod test {
     use crate::core::config::{Config, Field, Type};
     use crate::core::valid::Validator;
 
-    #[test]
-    fn test_allow_list_arguments() {
+    fn setup() -> (Config, FieldDefinition) {
         let mut config = Config::default();
 
         let mut t1_type = Type::default();
@@ -207,10 +213,28 @@ mod test {
             default_value: None,
         };
 
+        (config, fld)
+    }
+
+    #[test]
+    fn test_allow_list_arguments_for_query_type() {
+        let (config, field_def) = setup();
+
         let parts_validator =
-            MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &fld);
-        let actual = parts_validator.validate(&["args".to_string(), "q".to_string()], false);
+            MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &field_def);
+        let actual = parts_validator.validate(&["args".to_string(), "q".to_string()], true);
 
         assert!(actual.is_succeed())
+    }
+
+    #[test]
+    fn test_fail_validation_list_arguments_for_non_query_type() {
+        let (config, field_def) = setup();
+
+        let parts_validator =
+            MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &field_def);
+        let actual = parts_validator.validate(&["args".to_string(), "q".to_string()], false);
+
+        assert!(actual.to_result().is_err())
     }
 }
