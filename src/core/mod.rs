@@ -19,7 +19,6 @@ pub mod has_headers;
 pub mod helpers;
 pub mod http;
 pub mod ir;
-#[allow(unused)]
 pub mod jit;
 pub mod json;
 pub mod merge_right;
