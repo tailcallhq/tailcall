@@ -11,6 +11,8 @@ use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::rest::{EndpointSet, Unchecked};
+use crate::core::valid::{Valid, Validator};
+use crate::core::Transform;
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
@@ -52,6 +54,10 @@ impl MergeRight for Cache {
 }
 
 impl ConfigModule {
+    pub fn new(config: Config, extensions: Extensions) -> Self {
+        ConfigModule { cache: Cache::from(config), extensions }
+    }
+
     pub fn set_extensions(mut self, extensions: Extensions) -> Self {
         self.extensions = extensions;
         self
@@ -80,6 +86,15 @@ impl ConfigModule {
 
     pub fn interface_types(&self) -> &HashSet<String> {
         &self.cache.interface_types
+    }
+
+    pub fn transform<T: Transform<Value = Config>>(
+        self,
+        transformer: T,
+    ) -> Valid<Self, T::Error> {
+        transformer
+            .transform(self.cache.config)
+            .map(|config| ConfigModule::new(config, self.extensions))
     }
 }
 
