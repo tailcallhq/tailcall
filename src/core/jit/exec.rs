@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::mem;
 use std::sync::{Arc, Mutex};
 
@@ -22,7 +21,7 @@ pub struct Executor<Synth, IRExec> {
 
 impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec>
 where
-    Output: JsonLike<Output = Output>,
+    Output: JsonLike<Output = Output> + Default,
     Synth: Synthesizer<Value = Result<Output, Error>>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
@@ -34,7 +33,7 @@ where
         let store: Arc<Mutex<Store<Result<Output, Error>>>> =
             Arc::new(Mutex::new(Store::new(self.plan.size())));
         let mut ctx = ExecutorInner::new(request, store.clone(), self.plan.to_owned(), &self.exec);
-        ctx.execute().await;
+        ctx.init().await;
 
         let store = mem::replace(&mut *store.lock().unwrap(), Store::new(0));
         store
@@ -51,75 +50,85 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
     request: Request<Input>,
     store: Arc<Mutex<Store<Result<Output, Error>>>>,
     plan: ExecutionPlan,
-    exec: &'a Exec,
+    ir_exec: &'a Exec,
 }
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: JsonLike<Output = Output>,
+    Output: JsonLike<Output = Output> + Default,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
     fn new(
         request: Request<Input>,
         store: Arc<Mutex<Store<Result<Output, Error>>>>,
         plan: ExecutionPlan,
-        exec: &'a Exec,
+        ir_exec: &'a Exec,
     ) -> Self {
-        Self { request, store, plan, exec }
+        Self { request, store, plan, ir_exec }
     }
 
-    async fn execute(&mut self) {
+    async fn init(&mut self) {
         join_all(self.plan.as_children().iter().map(|field| async {
             let ctx = Context::new(&self.request);
-            self.execute_field(field, &ctx, false).await
+            self.execute(field, &ctx).await
         }))
         .await;
     }
 
-    async fn execute_field<'b>(
+    async fn execute<'b>(
         &'b self,
         field: &'b Field<Children>,
         ctx: &'b Context<'b, Input, Output>,
-        is_multi: bool,
     ) -> Result<(), Error> {
         if let Some(ir) = &field.ir {
-            let result = self.exec.execute(ir, ctx).await;
+            let result = self.ir_exec.execute(ir, ctx).await;
             if let Ok(ref value) = result {
                 // Array
-                if let Ok(array) = value.as_array_ok() {
-                    let ctx = ctx.with_parent_value(value);
-                    join_all(array.iter().map(|value| {
-                        let ctx = ctx.with_value(value);
+                // Check if the field expects a list
+                if field.type_of.is_list() {
+                    // Check if the value is an array
+                    if let Ok(array) = value.as_array_ok() {
+                        let values = join_all(
+                            field
+                                .children()
+                                .iter()
+                                .filter_map(|field| field.ir.as_ref())
+                                .map(|ir| {
+                                    join_all(array.iter().map(|value| {
+                                        let ctx = ctx.with_value(value);
+                                        // TODO: doesn't handle nested values
+                                        async move { self.ir_exec.execute(ir, &ctx).await }
+                                    }))
+                                }),
+                        )
+                        .await;
 
-                        join_all(field.children().iter().map(|child| {
-                            let ctx = ctx.clone();
-                            async move {
-                                let ctx = ctx.clone();
-                                self.execute_field(child, ctx.clone().borrow(), true).await
-                            }
-                        }))
-                    }))
-                    .await;
-
-                // Object
-                } else {
-                    join_all(field.children().iter().map(|child| {
-                        let ctx = ctx.clone();
-                        let value = &value;
-                        async move {
-                            let ctx = ctx.with_parent_value(value);
-                            self.execute_field(child, &ctx, false).await
+                        let mut store = self.store.lock().unwrap();
+                        for (field, values) in field
+                            .children()
+                            .iter()
+                            .filter(|field| field.ir.is_some())
+                            .zip(values)
+                        {
+                            store.set_multiple(&field.id, values)
                         }
+                    }
+                    // TODO:  We should throw an error stating that we expected
+                    // a list type here but because the `Error` is a
+                    // type-parameter, its not possible
+                }
+                // TODO: Validate if the value is an Object
+                // Has to be an Object, we don't do anything while executing if its a Scalar
+                else {
+                    join_all(field.children().iter().map(|child| {
+                        let ctx = ctx.with_value(value);
+                        async move { self.execute(child, &ctx).await }
                     }))
                     .await;
                 }
             }
 
-            if is_multi {
-                self.store.lock().unwrap().set_multiple(&field.id, result)
-            } else {
-                self.store.lock().unwrap().set_single(&field.id, result)
-            };
+            self.store.lock().unwrap().set_single(&field.id, result)
         }
         Ok(())
     }
