@@ -1,0 +1,11 @@
+---
+source: tests/jit_spec.rs
+expression: data
+---
+{
+  "data": {
+    "user": {
+      "id": 1
+    }
+  }
+}

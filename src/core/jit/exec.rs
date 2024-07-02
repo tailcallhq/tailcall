@@ -1,6 +1,7 @@
 use std::mem;
 use std::sync::{Arc, Mutex};
 
+use async_graphql_value::ConstValue;
 use derive_getters::Getters;
 use futures_util::future::join_all;
 
@@ -70,6 +71,28 @@ where
     async fn init(&mut self) {
         join_all(self.plan.as_children().iter().map(|field| async {
             let ctx = Context::new(&self.request);
+            let mut arg_map = indexmap::IndexMap::new();
+            for arg in field.args.iter() {
+                let name = async_graphql::Name::new(&arg.name);
+                let value: Option<anyhow::Result<ConstValue>> = arg
+                    .value
+                    .as_ref()
+                    .map(|value| {
+                        value.clone().into_const_with(|_| {
+                            // TODO: resolve variable names
+                            todo!()
+                        })
+                    })
+                    .or_else(|| Ok(arg.default_value.clone()).transpose());
+
+                if let Some(Ok(value)) = value {
+                    arg_map.insert(name, value);
+                } else if !arg.type_of.is_nullable() {
+                    // TODO: throw error here
+                    todo!()
+                }
+            }
+            let ctx = ctx.with_args(dbg!(&arg_map));
             self.execute(field, &ctx).await
         }))
         .await;

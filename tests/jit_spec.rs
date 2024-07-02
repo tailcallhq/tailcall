@@ -41,4 +41,15 @@ mod tests {
 
         insta::assert_json_snapshot!(data);
     }
+
+    #[tokio::test]
+    async fn test_executor_arguments() {
+        //  NOTE: This test makes a real HTTP call
+        let request = Request::new("query {user(id: 1) {id}}");
+        let executor = new_executor(&request).await.unwrap();
+        let response = executor.execute(request).await;
+        let data = response.data;
+
+        insta::assert_json_snapshot!(data);
+    }
 }
