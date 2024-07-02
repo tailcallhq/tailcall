@@ -6,6 +6,7 @@ use syn::{parse_macro_input, DeriveInput};
 #[derive(Default)]
 struct DirectiveDefinitionAttr {
     is_repeatable: bool,
+    is_lowercase_name: bool,
     locations: Option<String>,
 }
 
@@ -22,6 +23,10 @@ fn get_directive_definition_attr(input: &DeriveInput) -> syn::Result<DirectiveDe
                     let value = meta.value()?;
                     let s: syn::LitStr = value.parse()?;
                     directve_definition_attr.locations = Some(s.value());
+                }
+
+                if meta.path.is_ident("lowercase_name") {
+                    directve_definition_attr.is_lowercase_name = true;
                 }
 
                 Ok(())
@@ -43,6 +48,7 @@ pub fn expand_directive_definition(input: TokenStream) -> TokenStream {
 
     let directive_definition_attr = directive_definition_attr.unwrap();
     let is_repeatable = directive_definition_attr.is_repeatable;
+    let is_lowercase_name = directive_definition_attr.is_lowercase_name;
     let locations = if let Some(locations) = directive_definition_attr.locations {
         locations
             .split(",")
@@ -51,16 +57,18 @@ pub fn expand_directive_definition(input: TokenStream) -> TokenStream {
     } else {
         vec![]
     };
+
     let expanded = quote! {
-        impl tailcall_typedefs_common::DirectiveDefinition for #struct_identifier {
+        impl tailcall_typedefs_common::directive_definition::DirectiveDefinition for #struct_identifier {
             fn directive_definition(generated_types: &mut std::collections::HashSet<String>) -> Vec<async_graphql::parser::types::TypeSystemDefinition> {
                 let schemars = Self::into_schemars();
-                let attr = tailcall_typedefs_common::Attrs {
+                let attr = tailcall_typedefs_common::directive_definition::Attrs {
                     name: stringify!(#struct_identifier),
                     repeatable: #is_repeatable,
-                    locations: vec![#(#locations),*]
+                    locations: vec![#(#locations),*],
+                    is_lowercase_name: #is_lowercase_name
                 };
-                Self::into_directive_definition(schemars, attr, generated_types)
+                tailcall_typedefs_common::directive_definition::into_directive_definition(schemars, attr, generated_types)
             }
         }
     };
@@ -73,10 +81,10 @@ pub fn expand_scalar_definition(input: TokenStream) -> TokenStream {
     let struct_identifier = &input.ident;
 
     let expanded = quote! {
-        impl tailcall_typedefs_common::ScalarDefinition for #struct_identifier {
+        impl tailcall_typedefs_common::scalar_definition::ScalarDefinition for #struct_identifier {
             fn scalar_definition() -> async_graphql::parser::types::TypeSystemDefinition {
                 let schemars = Self::into_schemars();
-                Self::into_scalar_definition(schemars, stringify!(#struct_identifier))
+                tailcall_typedefs_common::scalar_definition::into_scalar_definition(schemars, stringify!(#struct_identifier))
             }
         }
     };
@@ -89,10 +97,10 @@ pub fn expand_input_definition(input: TokenStream) -> TokenStream {
     let struct_identifier = &input.ident;
 
     let expanded = quote! {
-        impl tailcall_typedefs_common::InputDefinition for #struct_identifier {
+        impl tailcall_typedefs_common::input_definition::InputDefinition for #struct_identifier {
             fn input_definition() -> async_graphql::parser::types::TypeSystemDefinition {
                 let schemars = Self::into_schemars();
-                Self::into_input_definition(schemars, stringify!(#struct_identifier))
+                tailcall_typedefs_common::input_definition::into_input_definition(schemars.schema, stringify!(#struct_identifier))
             }
         }
     };

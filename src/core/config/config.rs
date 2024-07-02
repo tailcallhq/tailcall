@@ -159,6 +159,7 @@ pub struct Tag {
     schemars::JsonSchema,
     MergeRight,
     DirectiveDefinition,
+    InputDefinition,
 )]
 #[directive_definition(locations = "Object,FieldDefinition")]
 /// The @cache operator enables caching for the query, field or type it is
@@ -404,13 +405,21 @@ impl Field {
     DirectiveDefinition,
     InputDefinition,
 )]
-#[directive_definition(locations = "FieldDefinition")]
+#[directive_definition(locations = "FieldDefinition", lowercase_name)]
 pub struct JS {
     pub name: String,
 }
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DirectiveDefinition,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
 )]
 #[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
