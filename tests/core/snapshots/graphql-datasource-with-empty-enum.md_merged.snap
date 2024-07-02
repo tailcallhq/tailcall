@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+enum EnumType {
+  INFORMATION
+  WARNING
+}
+
+type Post {
+  severity: WithOptEnum!
+}
+
+type Query {
+  post: Post @expr(body: {severity: {type: null}})
+}
+
+type WithOptEnum {
+  type: EnumType
+}

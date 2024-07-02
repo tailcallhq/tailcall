@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use async_graphql::parser::types::ExecutableDocument;
 use derive_setters::Setters;
 use serde::Deserialize;
 
@@ -12,7 +11,7 @@ use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::Blueprint;
 
-#[derive(Deserialize, Setters)]
+#[derive(Debug, Deserialize, Setters)]
 pub struct Request<Value> {
     #[serde(default)]
     pub query: String,
@@ -39,7 +38,7 @@ impl<Value> Hash for Request<Value> {
 }
 
 // we already have a struct named Data in store
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Extras(pub HashMap<TypeId, Box<dyn Any + Sync + Send>>);
 
 impl From<Result<Response<async_graphql::Value, Error>>> for GraphQLResponse {

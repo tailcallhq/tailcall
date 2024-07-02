@@ -1,15 +1,17 @@
 use std::fs;
 use std::path::Path;
 
+use hyper::header::{HeaderName, HeaderValue};
+use hyper::HeaderMap;
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
-use crate::core::config::{self, ConfigModule};
+use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::ResourceReader;
+use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
 
 /// CLI that reads the the config file and generates the required tailcall
@@ -76,8 +78,14 @@ impl Generator {
             ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
         };
 
-        // While reading resolve the internal paths of generalized config.
-        config.into_resolved(config_path)
+        // While reading resolve the internal paths and mustache headers of generalized
+        // config.
+        let reader_context = ConfigReaderContext {
+            runtime: &self.runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
+        config.into_resolved(config_path, reader_context)
     }
 
     /// performs all the i/o's required in the config file and generates
@@ -93,12 +101,23 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src, field_name } => {
+                Source::Curl { src, field_name, headers: resolved_headers } => {
                     let url = src.0;
-                    let contents = reader.read_file(&url).await?.content;
+                    let mut request = reqwest::Request::new(reqwest::Method::GET, url.parse()?);
+                    if let Some(headers_inner) = resolved_headers.headers() {
+                        let mut header_map = HeaderMap::new();
+                        for (key, value) in headers_inner {
+                            let header_name = HeaderName::try_from(key)?;
+                            let header_value = HeaderValue::try_from(value)?;
+                            header_map.insert(header_name, header_value);
+                        }
+                        *request.headers_mut() = header_map;
+                    }
+                    let resource: Resource = request.into();
+                    let response = reader.read_file(resource).await?;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
-                        response: serde_json::from_str(&contents)?,
+                        response: serde_json::from_str(&response.content)?,
                         field_name,
                     });
                 }
@@ -113,7 +132,7 @@ impl Generator {
                 Source::Config { src } => {
                     let path = src.0;
                     let source = config::Source::detect(&path)?;
-                    let schema = reader.read_file(&path).await?.content;
+                    let schema = reader.read_file(path).await?.content;
                     input_samples.push(Input::Config { schema, source });
                 }
             }
