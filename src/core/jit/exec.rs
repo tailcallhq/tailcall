@@ -98,10 +98,7 @@ where
                             field
                                 .children()
                                 .iter()
-                                .filter_map(|field| match &field.ir {
-                                    Some(ir) => Some((field, ir)),
-                                    None => None,
-                                })
+                                .filter_map(|field| field.ir.as_ref().map(|ir| (field, ir)))
                                 .map(|(field, ir)| {
                                     join_all(array.iter().map(|value| {
                                         let ctx = ctx.with_value(value);
