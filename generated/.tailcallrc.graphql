@@ -251,7 +251,10 @@ directive @server(
   """
   dedupe: Boolean
   """
-  `enableJIT` enables Just-In-Time (JIT) compilation, which compiles
+  `enableJIT` enables Just-In-Time (JIT) compilation for GraphQL queries.
+  Just-In-Time (JIT) compilation optimizes query execution by compiling GraphQL queries 
+  at runtime rather than interpreting them directly. This can potentially improve 
+  performance by reducing execution overhead.
   """
   enableJIT: Boolean
   """
