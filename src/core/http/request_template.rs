@@ -219,7 +219,7 @@ impl TryFrom<Endpoint> for RequestTemplate {
             body_path: body,
             endpoint,
             encoding,
-            query_encoding_strategy: Default::default()
+            query_encoding_strategy: Default::default(),
         })
     }
 }
@@ -292,7 +292,7 @@ mod tests {
         ) -> Option<String> {
             self.value.get_path(path).map(|v| {
                 let async_val = Cow::Owned(Value::from_json(v.clone()).unwrap());
-                let result = encoding_strategy.encode(key.as_ref(),async_val);
+                let result = encoding_strategy.encode(key.as_ref(), async_val);
                 result.unwrap()
             })
         }

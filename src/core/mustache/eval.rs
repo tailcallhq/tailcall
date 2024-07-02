@@ -1,8 +1,6 @@
 use super::{Mustache, Segment};
-use crate::core::{
-    http::{Encoder, EncodingStrategy},
-    path::{PathGraphql, PathString},
-};
+use crate::core::http::{Encoder, EncodingStrategy};
+use crate::core::path::{PathGraphql, PathString};
 
 pub trait Eval<'a> {
     type In;
@@ -19,11 +17,7 @@ pub struct QueryEval<'a, A, T: AsRef<str>> {
 
 impl<'a, A, T: AsRef<str>> QueryEval<'a, A, T> {
     pub fn new(key: T, encoding_strategy: &'a EncodingStrategy) -> Self {
-        Self {
-            _marker: std::marker::PhantomData,
-            key: key,
-            encoding_strategy,
-        }
+        Self { _marker: std::marker::PhantomData, key, encoding_strategy }
     }
 }
 
