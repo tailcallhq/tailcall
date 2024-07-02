@@ -7,7 +7,8 @@ use crate::core::ir::{EvalContext, ResolverContextLike};
 pub enum EncodingStrategy {
     /// Encodes the query list as key=value1,value2,value3,...
     CommaSeparated,
-    /// Encodes the query list by repeating the key for each value: key=value1&key=value2&key=value3&...
+    /// Encodes the query list by repeating the key for each value:
+    /// key=value1&key=value2&key=value3&...
     #[default]
     RepeatedKey,
 }
@@ -120,8 +121,9 @@ pub fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use async_graphql::Value;
+
+    use super::*;
     #[test]
     fn test_encode_comma_separated_strategy() {
         let key = "ids";
