@@ -103,7 +103,6 @@ where
                                     None => None,
                                 })
                                 .map(|(field, ir)| {
-                                    println!("Field: {}", field.name);
                                     join_all(array.iter().map(|value| {
                                         let ctx = ctx.with_value(value);
                                         // TODO: doesn't handle nested values
@@ -120,7 +119,6 @@ where
                             .filter(|field| field.ir.is_some())
                             .zip(values)
                         {
-                            println!("Setting Multiple: {}", field.name);
                             store.set_multiple(&field.id, values)
                         }
                     }
@@ -139,7 +137,6 @@ where
                 }
             }
 
-            println!("Setting Single: {}", field.name);
             self.store.lock().unwrap().set_single(&field.id, result)
         }
         Ok(())
