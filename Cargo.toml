@@ -57,7 +57,7 @@ tailcall-version = { path = "./tailcall-version", optional = true }
 
 rustls-pemfile = { version = "1.0.4" }
 schemars = { version = "0.8.17", features = ["derive"] }
-hyper = { version = "0.14.28", features = ["server"], default-features = false }
+hyper = { version = "1.0.0", features = ["server"], default-features = false }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 reqwest = { workspace = true }
