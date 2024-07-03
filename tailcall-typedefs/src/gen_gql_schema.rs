@@ -90,7 +90,7 @@ mod tests {
     use tailcall_typedefs_common::ServiceDocumentBuilder;
 
     use tailcall_typedefs_common::directive_definition::{into_directive_definition, Attrs, DirectiveDefinition};
-    use tailcall_typedefs_common::scalar_definition::ScalarDefinition;
+    use tailcall_typedefs_common::scalar_definition::{into_scalar_definition, ScalarDefinition};
 
     #[derive(JsonSchema)]
     struct FooScalar(String);
