@@ -20,28 +20,32 @@ use tailcall_typedefs_common::ServiceDocumentBuilder;
 static GRAPHQL_SCHEMA_FILE: &str = "generated/.tailcallrc";
 
 pub async fn update_gql(file_io: Arc<dyn FileIO>) -> Result<()> {
-    let mut generated_types: HashSet<String> = HashSet::new();
     let builder = ServiceDocumentBuilder::new();
 
-    let generated_types_mut = &mut generated_types;
+    // Types may depend on other similar types when creating direcitve definitions.
+    // To avoid generating the same GraphQL type multiple times, this hash set is
+    // used to track visited types and ensure no duplicates are generated.
+    let mut generated_types: HashSet<String> = HashSet::new();
+    let generated_types = &mut generated_types;
+
     let doc = builder
-        .add_directive(AddField::directive_definition(generated_types_mut))
-        .add_directive(Alias::directive_definition(generated_types_mut))
-        .add_directive(Cache::directive_definition(generated_types_mut))
-        .add_directive(Call::directive_definition(generated_types_mut))
-        .add_directive(Expr::directive_definition(generated_types_mut))
-        .add_directive(GraphQL::directive_definition(generated_types_mut))
-        .add_directive(Grpc::directive_definition(generated_types_mut))
-        .add_directive(Http::directive_definition(generated_types_mut))
-        .add_directive(JS::directive_definition(generated_types_mut))
-        .add_directive(Link::directive_definition(generated_types_mut))
-        .add_directive(Modify::directive_definition(generated_types_mut))
-        .add_directive(Omit::directive_definition(generated_types_mut))
-        .add_directive(Protected::directive_definition(generated_types_mut))
-        .add_directive(Server::directive_definition(generated_types_mut))
-        .add_directive(Tag::directive_definition(generated_types_mut))
-        .add_directive(Telemetry::directive_definition(generated_types_mut))
-        .add_directive(Upstream::directive_definition(generated_types_mut))
+        .add_directive(AddField::directive_definition(generated_types))
+        .add_directive(Alias::directive_definition(generated_types))
+        .add_directive(Cache::directive_definition(generated_types))
+        .add_directive(Call::directive_definition(generated_types))
+        .add_directive(Expr::directive_definition(generated_types))
+        .add_directive(GraphQL::directive_definition(generated_types))
+        .add_directive(Grpc::directive_definition(generated_types))
+        .add_directive(Http::directive_definition(generated_types))
+        .add_directive(JS::directive_definition(generated_types))
+        .add_directive(Link::directive_definition(generated_types))
+        .add_directive(Modify::directive_definition(generated_types))
+        .add_directive(Omit::directive_definition(generated_types))
+        .add_directive(Protected::directive_definition(generated_types))
+        .add_directive(Server::directive_definition(generated_types))
+        .add_directive(Tag::directive_definition(generated_types))
+        .add_directive(Telemetry::directive_definition(generated_types))
+        .add_directive(Upstream::directive_definition(generated_types))
         .add_input(GraphQL::input_definition())
         .add_input(Grpc::input_definition())
         .add_input(Http::input_definition())
@@ -87,10 +91,11 @@ mod tests {
     use std::collections::HashSet;
 
     use schemars::JsonSchema;
-    use tailcall_typedefs_common::ServiceDocumentBuilder;
-
-    use tailcall_typedefs_common::directive_definition::{into_directive_definition, Attrs, DirectiveDefinition};
+    use tailcall_typedefs_common::directive_definition::{
+        into_directive_definition, Attrs, DirectiveDefinition,
+    };
     use tailcall_typedefs_common::scalar_definition::{into_scalar_definition, ScalarDefinition};
+    use tailcall_typedefs_common::ServiceDocumentBuilder;
 
     #[derive(JsonSchema)]
     struct FooScalar(String);
@@ -106,20 +111,25 @@ mod tests {
     struct ComplexDirective {
         field1: i32,
         enum_field: FooEnum,
-        custom_type: FooType
+        custom_type: FooType,
     }
 
     impl DirectiveDefinition for ComplexDirective {
-        fn directive_definition(generated_types: &mut HashSet<String>) -> Vec<async_graphql_parser::types::TypeSystemDefinition> {
+        fn directive_definition(
+            generated_types: &mut HashSet<String>,
+        ) -> Vec<async_graphql_parser::types::TypeSystemDefinition> {
             let root_schema = Self::into_schemars();
 
-            into_directive_definition(root_schema, Attrs {
-                name: "ComplexDirective",
-                repeatable: true,
-                locations: vec!["Schema"],
-                is_lowercase_name: false
-            }, generated_types)
-
+            into_directive_definition(
+                root_schema,
+                Attrs {
+                    name: "ComplexDirective",
+                    repeatable: true,
+                    locations: vec!["Schema"],
+                    is_lowercase_name: false,
+                },
+                generated_types,
+            )
         }
     }
 
@@ -127,7 +137,7 @@ mod tests {
     enum FooEnum {
         Variant,
         Variant2,
-        Variat3
+        Variat3,
     }
 
     #[derive(JsonSchema)]
@@ -135,17 +145,17 @@ mod tests {
         field1: i32,
         field2: Option<i32>,
         field3: Vec<String>,
-        inner_type: BarType
+        inner_type: BarType,
     }
 
     #[derive(JsonSchema)]
     struct BarType {
-        field2: BazType
+        field2: BazType,
     }
 
     #[derive(JsonSchema)]
     struct BazType {
-        field: i32
+        field: i32,
     }
 
     #[test]
@@ -160,7 +170,9 @@ mod tests {
     #[test]
     fn it_works_for_into_directive_with_complex_type() {
         let builder = ServiceDocumentBuilder::new();
-        let doc = builder.add_directive(ComplexDirective::directive_definition(&mut HashSet::new())).build();
+        let doc = builder
+            .add_directive(ComplexDirective::directive_definition(&mut HashSet::new()))
+            .build();
         let actual = tailcall::core::document::print(doc);
         let expected = "directive @complexDirective(\n  custom_type: FooType\n  enum_field: FooEnum\n  field1: Int!\n) repeatable on SCHEMA\n\ninput BarType {\n  field2: BazType\n}\n\ninput BazType {\n  field: Int!\n}\n\ninput FooType {\n  field1: Int!\n  field2: Int\n  field3: [String!]\n  inner_type: BarType\n}\n\nenum FooEnum {\n  Variant\n  Variant2\n  Variat3\n}".to_string();
 
