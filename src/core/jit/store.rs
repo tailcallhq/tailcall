@@ -1,11 +1,19 @@
+use std::iter::repeat_with;
+
 use crate::core::jit::model::FieldId;
+
+#[derive(Debug, Clone)]
+pub struct MultipleDataPath {
+    pub index: usize,
+    pub len: usize,
+}
 
 #[derive(Debug)]
 pub struct Store<A> {
     data: Vec<Data<A>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub enum Data<A> {
     /// Represents that the value was computed only once for the associated
     /// field
@@ -15,8 +23,9 @@ pub enum Data<A> {
     /// other of invocation and not the other of completion.
     // TODO: there could be multiple inside multiple in case of nested resolvers that are resolved
     // to lists
-    Multiple(Vec<A>),
+    Multiple(Vec<Data<A>>),
     /// Represents that the value is yet to be computed
+    #[default]
     Pending,
 }
 
@@ -31,10 +40,12 @@ impl<A> std::fmt::Debug for Data<A> {
 }
 
 impl<A> Data<A> {
-    pub fn map<B>(self, ab: impl Fn(A) -> B) -> Data<B> {
+    pub fn map<B>(self, ab: impl Fn(A) -> B + Copy) -> Data<B> {
         match self {
             Data::Single(a) => Data::Single(ab(a)),
-            Data::Multiple(values) => Data::Multiple(values.into_iter().map(ab).collect()),
+            Data::Multiple(values) => {
+                Data::Multiple(values.into_iter().map(|e| e.map(ab)).collect())
+            }
             Data::Pending => Data::Pending,
         }
     }
@@ -53,8 +64,15 @@ impl<A> Store<A> {
         self.data[field_id.as_usize()] = Data::Single(data);
     }
 
-    pub fn set_multiple(&mut self, field_id: &FieldId, data: Vec<A>) {
-        self.data[field_id.as_usize()] = Data::Multiple(data);
+    pub fn set_multiple(&mut self, field_id: &FieldId, path: &MultipleDataPath, data: A) {
+        if let Data::Multiple(v) = &mut self.data[field_id.as_usize()] {
+            v[path.index] = Data::Single(data)
+        } else {
+            let mut v: Vec<_> = repeat_with(|| Data::Pending).take(path.len).collect();
+            v[path.index] = Data::Single(data);
+
+            self.data[field_id.as_usize()] = Data::Multiple(v);
+        };
     }
 
     pub fn get(&self, field_id: &FieldId) -> Option<&Data<A>> {
