@@ -175,7 +175,7 @@ mod test {
     use crate::core::config::{Config, Field, Type};
     use crate::core::valid::Validator;
 
-    fn setup() -> (Config, FieldDefinition) {
+    fn initialize_test_config_and_field() -> (Config, FieldDefinition) {
         let mut config = Config::default();
 
         let mut t1_type = Type::default();
@@ -216,23 +216,25 @@ mod test {
 
     #[test]
     fn test_allow_list_arguments_for_query_type() {
-        let (config, field_def) = setup();
+        let (config, field_def) = initialize_test_config_and_field();
 
         let parts_validator =
             MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &field_def);
-        let actual = parts_validator.validate(&["args".to_string(), "q".to_string()], true);
+        let validation_result =
+            parts_validator.validate(&["args".to_string(), "q".to_string()], true);
 
-        assert!(actual.is_succeed())
+        assert!(validation_result.is_succeed())
     }
 
     #[test]
     fn test_fail_validation_list_arguments_for_non_query_type() {
-        let (config, field_def) = setup();
+        let (config, field_def) = initialize_test_config_and_field();
 
         let parts_validator =
             MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &field_def);
-        let actual = parts_validator.validate(&["args".to_string(), "q".to_string()], false);
+        let validation_result =
+            parts_validator.validate(&["args".to_string(), "q".to_string()], false);
 
-        assert!(actual.to_result().is_err())
+        assert!(validation_result.to_result().is_err())
     }
 }
