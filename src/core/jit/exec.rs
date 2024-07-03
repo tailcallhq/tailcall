@@ -9,24 +9,27 @@ use super::context::Context;
 use super::synth::Synthesizer;
 use super::{Children, ExecutionPlan, Field, Request, Response, Store};
 use crate::core::ir::model::IR;
+use crate::core::jit::builder::FromAsyncGraphqlValue;
 use crate::core::json::JsonLike;
 
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
-pub struct Executor<Synth, IRExec> {
-    plan: ExecutionPlan,
+pub struct Executor<Synth, IRExec, Input: Clone> {
+    plan: ExecutionPlan<Input>,
     synth: Synth,
     exec: IRExec,
 }
 
-impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec>
+impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec, Input>
 where
-    Output: JsonLike<Output = Output> + Default,
+    Output: JsonLike<Output = Output> + Default + Clone,
+    Input: Clone + FromAsyncGraphqlValue,
     Synth: Synthesizer<Value = Result<Output, Error>>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
+    ConstValue: From<Input>,
 {
-    pub fn new(plan: ExecutionPlan, synth: Synth, exec: Exec) -> Self {
+    pub fn new(plan: ExecutionPlan<Input>, synth: Synth, exec: Exec) -> Self {
         Self { plan, synth, exec }
     }
 
@@ -47,22 +50,24 @@ where
 }
 
 #[derive(Getters)]
-struct ExecutorInner<'a, Input, Output, Error, Exec> {
+struct ExecutorInner<'a, Input: Clone, Output: Clone, Error, Exec> {
     request: Request<Input>,
     store: Arc<Mutex<Store<Result<Output, Error>>>>,
-    plan: ExecutionPlan,
+    plan: ExecutionPlan<Input>,
     ir_exec: &'a Exec,
 }
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: JsonLike<Output = Output> + Default,
+    Output: JsonLike<Output = Output> + Default + Clone,
+    Input: Clone + FromAsyncGraphqlValue,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
+    ConstValue: From<Input>,
 {
     fn new(
         request: Request<Input>,
         store: Arc<Mutex<Store<Result<Output, Error>>>>,
-        plan: ExecutionPlan,
+        plan: ExecutionPlan<Input>,
         ir_exec: &'a Exec,
     ) -> Self {
         Self { request, store, plan, ir_exec }
@@ -73,26 +78,21 @@ where
             let ctx = Context::new(&self.request);
             let mut arg_map = indexmap::IndexMap::new();
             for arg in field.args.iter() {
-                let name = async_graphql::Name::new(&arg.name);
-                let value: Option<anyhow::Result<ConstValue>> = arg
+                let name = arg.name.as_str();
+                let value: Option<Input> = arg
                     .value
                     .as_ref()
-                    .map(|value| {
-                        value.clone().into_const_with(|_| {
-                            // TODO: resolve variable names
-                            todo!()
-                        })
-                    })
-                    .or_else(|| Ok(arg.default_value.clone()).transpose());
+                    .and_then(|value| Input::from_async_graphql_value(value.clone()))
+                    .or_else(|| arg.default_value.clone());
 
-                if let Some(Ok(value)) = value {
+                if let Some(value) = value {
                     arg_map.insert(name, value);
                 } else if !arg.type_of.is_nullable() {
                     // TODO: throw error here
                     todo!()
                 }
             }
-            let ctx = ctx.with_args(dbg!(&arg_map));
+            let ctx = ctx.with_args(&arg_map);
             self.execute(field, &ctx).await
         }))
         .await;
@@ -100,7 +100,7 @@ where
 
     async fn execute<'b>(
         &'b self,
-        field: &'b Field<Children>,
+        field: &'b Field<Children<Input>, Input>,
         ctx: &'b Context<'b, Input, Output>,
     ) -> Result<(), Error> {
         if let Some(ir) = &field.ir {
@@ -113,8 +113,7 @@ where
                     if let Ok(array) = value.as_array_ok() {
                         let values = join_all(
                             field
-                                .children()
-                                .iter()
+                                .children_iter()
                                 .filter_map(|field| field.ir.as_ref())
                                 .map(|ir| {
                                     join_all(array.iter().map(|value| {
@@ -128,8 +127,7 @@ where
 
                         let mut store = self.store.lock().unwrap();
                         for (field, values) in field
-                            .children()
-                            .iter()
+                            .children_iter()
                             .filter(|field| field.ir.is_some())
                             .zip(values)
                         {
@@ -143,7 +141,7 @@ where
                 // TODO: Validate if the value is an Object
                 // Has to be an Object, we don't do anything while executing if its a Scalar
                 else {
-                    join_all(field.children().iter().map(|child| {
+                    join_all(field.children_iter().map(|child| {
                         let ctx = ctx.with_value(value);
                         async move { self.execute(child, &ctx).await }
                     }))

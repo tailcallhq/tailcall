@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use derive_setters::Setters;
 use serde::Deserialize;
 
-use super::{Builder, Error, ExecutionPlan, Result};
+use super::{ConstBuilder, Error, ExecutionPlan, Result};
 use crate::core::blueprint::Blueprint;
+use crate::core::jit::builder::Builder;
 
 #[derive(Debug, Deserialize, Setters)]
 pub struct Request<Value> {
@@ -15,9 +16,9 @@ pub struct Request<Value> {
 }
 
 impl<Value> Request<Value> {
-    pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan> {
+    pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan<async_graphql::Value>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
-        let builder = Builder::new(blueprint, doc);
+        let builder = ConstBuilder::new(blueprint, doc);
         builder.build().map_err(Error::BuildError)
     }
 }

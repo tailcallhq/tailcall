@@ -1,4 +1,5 @@
 use async_graphql::{Name, Value};
+use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::super::Result;
@@ -9,12 +10,12 @@ use crate::core::jit::ExecutionPlan;
 use crate::core::json::JsonLike;
 
 struct Synth {
-    selection: Vec<Field<Children>>,
+    selection: Vec<Field<Children<Value>, Value>>,
     store: Store<Result<Value>>,
 }
 
 impl Synth {
-    pub fn new(plan: ExecutionPlan, store: Store<Result<Value>>) -> Self {
+    pub fn new(plan: ExecutionPlan<Value>, store: Store<Result<Value>>) -> Self {
         Self { selection: plan.into_children(), store }
     }
 
@@ -39,7 +40,7 @@ impl Synth {
     #[inline(always)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Children<Value>, Value>,
         parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Result<Value> {
@@ -93,7 +94,7 @@ impl Synth {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Children<Value>, Value>,
         parent: &'b Value,
         index: Option<usize>,
     ) -> Result<Value> {
@@ -102,15 +103,7 @@ impl Synth {
                 let mut ans = IndexMap::default();
                 let children = node.children();
 
-                if children.is_empty() {
-                    let val = obj.get(node.name.as_str());
-                    // if it's a leaf node, then push the value
-                    if let Some(val) = val {
-                        ans.insert(Name::new(node.name.as_str()), val.to_owned());
-                    } else {
-                        return Ok(Value::Null);
-                    }
-                } else {
+                if let Some(children) = children {
                     for child in children {
                         let val = obj.get(child.name.as_str());
                         if let Some(val) = val {
@@ -124,6 +117,14 @@ impl Synth {
                                 self.iter(child, None, index)?,
                             );
                         }
+                    }
+                } else {
+                    let val = obj.get(node.name.as_str());
+                    // if it's a leaf node, then push the value
+                    if let Some(val) = val {
+                        ans.insert(Name::new(node.name.as_str()), val.to_owned());
+                    } else {
+                        return Ok(Value::Null);
                     }
                 }
                 Ok(Value::Object(ans))
@@ -142,11 +143,11 @@ impl Synth {
 }
 
 pub struct SynthConst {
-    plan: ExecutionPlan,
+    plan: ExecutionPlan<Value>,
 }
 
 impl SynthConst {
-    pub fn new(plan: ExecutionPlan) -> Self {
+    pub fn new(plan: ExecutionPlan<ConstValue>) -> Self {
         Self { plan }
     }
 }
@@ -167,7 +168,7 @@ mod tests {
     use super::Synth;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
-    use crate::core::jit::builder::Builder;
+    use crate::core::jit::builder::{Builder, ConstBuilder};
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
@@ -242,7 +243,7 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
 
-        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
+        let builder = ConstBuilder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build().unwrap();
 
         let store = store

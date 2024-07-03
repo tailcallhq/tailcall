@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
+use async_graphql_value::ConstValue;
 use serde_json_borrow::Value;
 
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
-use crate::core::jit::builder::Builder;
+use crate::core::jit::builder::{Builder, ConstBuilder};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::SynthBorrow;
 use crate::core::valid::Validator;
@@ -18,7 +19,7 @@ impl JsonPlaceholder {
     const USERS: &'static str = include_str!("users.json");
     const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    pub fn init(query: &str) -> SynthBorrow {
+    pub fn init(query: &str) -> SynthBorrow<ConstValue> {
         let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
 
@@ -54,7 +55,7 @@ impl JsonPlaceholder {
             .collect::<Vec<Value<'static>>>();
 
         let config = ConfigModule::from(Config::from_sdl(Self::CONFIG).to_result().unwrap());
-        let builder = Builder::new(
+        let builder = ConstBuilder::new(
             &Blueprint::try_from(&config).unwrap(),
             async_graphql::parser::parse_query(query).unwrap(),
         );

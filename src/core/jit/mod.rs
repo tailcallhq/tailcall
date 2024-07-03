@@ -1,4 +1,3 @@
-mod builder;
 mod exec;
 mod model;
 mod store;
@@ -14,6 +13,7 @@ mod request;
 mod response;
 
 // NOTE: Only used in tests and benchmarks
+mod builder;
 pub mod common;
 
 // Public Exports
