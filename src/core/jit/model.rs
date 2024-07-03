@@ -69,8 +69,8 @@ impl<ParsedValue: Clone, Input: Clone> Field<Children<ParsedValue, Input>, Parse
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub struct ChildrenIter<'a, ParsedValue: Clone, Input: Clone>(
-    #[allow(clippy::type_complexity)]
     Option<std::slice::Iter<'a, Field<Children<ParsedValue, Input>, ParsedValue, Input>>>,
 );
 
