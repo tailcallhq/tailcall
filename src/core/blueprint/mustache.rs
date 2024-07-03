@@ -74,7 +74,7 @@ impl<'a> MustachePartsValidator<'a> {
                     // we can use non-scalar types in args
                     if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
                         return Valid::fail(format!(
-                            "argument '{tail}' is a nullable type found in non-query type"
+                            "argument '{tail}' is a nullable type"
                         ));
                     }
                 } else {
