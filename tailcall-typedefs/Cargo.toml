@@ -15,4 +15,5 @@ serde_json = "1.0.116"
 tailcall = { path = "../" }
 tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1.40"
+async-graphql-parser = "7.0.6"
 tailcall-typedefs-common = { path = "../tailcall-typedefs-common" }
