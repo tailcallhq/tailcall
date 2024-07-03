@@ -1,0 +1,421 @@
+---
+source: src/cli/generator/generator.rs
+expression: config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://api.deezer.com") {
+  query: Query
+}
+
+scalar Any
+
+type Album {
+  cover: String
+  cover_big: String
+  cover_medium: String
+  cover_small: String
+  cover_xl: String
+  id: Int
+  md5_image: String
+  title: String
+  tracklist: String
+  type: String
+}
+
+type Artist {
+  id: Int
+  link: String
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  radio: Boolean
+  tracklist: String
+  type: String
+}
+
+type Chart {
+  albums: T167
+  artists: T169
+  playlists: T181
+  podcasts: Podcast
+  tracks: T166
+}
+
+type Contributor {
+  id: Int
+  link: String
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  radio: Boolean
+  role: String
+  share: String
+  tracklist: String
+  type: String
+}
+
+type Daum {
+  album: Album
+  artist: T42
+  duration: Int
+  explicit_content_cover: Int
+  explicit_content_lyrics: Int
+  explicit_lyrics: Boolean
+  id: Int
+  link: String
+  md5_image: String
+  preview: String
+  rank: Int
+  readable: Boolean
+  time_add: Int
+  title: String
+  title_short: String
+  title_version: String
+  type: String
+}
+
+type Editorial {
+  data: [T185]
+  total: Int
+}
+
+type Genre {
+  data: [T5]
+}
+
+type Playlist {
+  checksum: String
+  collaborative: Boolean
+  creation_date: String
+  creator: User
+  description: String
+  duration: Int
+  fans: Int
+  id: Int
+  is_loved_track: Boolean
+  link: String
+  md5_image: String
+  nb_tracks: Int
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_type: String
+  picture_xl: String
+  public: Boolean
+  share: String
+  title: String
+  tracklist: String
+  tracks: Track
+  type: String
+}
+
+type Podcast {
+  data: [T182]
+  total: Int
+}
+
+type Query {
+  album(p1: Int!): T39 @http(path: "/album/{{.args.p1}}")
+  artist(p1: Int!): T40 @http(path: "/artist/{{.args.p1}}")
+  chart: Chart @http(path: "/chart")
+  editorial: Editorial @http(path: "/editorial")
+  playlist(p1: Int!): Playlist @http(path: "/playlist/{{.args.p1}}")
+  search(q: String): Search @http(path: "/search", query: [{key: "q", value: "{{.args.q}}"}])
+  track(p1: Int!): T4 @http(path: "/track/{{.args.p1}}")
+  user(p1: Int!): T187 @http(path: "/user/{{.args.p1}}")
+}
+
+type Search {
+  data: [Any]
+  next: String
+  total: Int
+}
+
+type T165 {
+  album: Album
+  artist: Artist
+  duration: Int
+  explicit_content_cover: Int
+  explicit_content_lyrics: Int
+  explicit_lyrics: Boolean
+  id: Int
+  link: String
+  md5_image: String
+  position: Int
+  preview: String
+  rank: Int
+  title: String
+  title_short: String
+  title_version: String
+  type: String
+}
+
+type T166 {
+  data: [T165]
+  total: Int
+}
+
+type T167 {
+  data: [Any]
+  total: Int
+}
+
+type T168 {
+  id: Int
+  link: String
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  position: Int
+  radio: Boolean
+  tracklist: String
+  type: String
+}
+
+type T169 {
+  data: [T168]
+  total: Int
+}
+
+type T180 {
+  checksum: String
+  creation_date: String
+  id: Int
+  link: String
+  md5_image: String
+  nb_tracks: Int
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_type: String
+  picture_xl: String
+  public: Boolean
+  title: String
+  tracklist: String
+  type: String
+  user: User
+}
+
+type T181 {
+  data: [T180]
+  total: Int
+}
+
+type T182 {
+  available: Boolean
+  description: String
+  fans: Int
+  id: Int
+  link: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  share: String
+  title: String
+  type: String
+}
+
+type T185 {
+  id: Int
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  type: String
+}
+
+type T187 {
+  country: String
+  id: Int
+  link: String
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  tracklist: String
+  type: String
+}
+
+type T2 {
+  id: Int
+  link: String
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  radio: Boolean
+  share: String
+  tracklist: String
+  type: String
+}
+
+type T3 {
+  cover: String
+  cover_big: String
+  cover_medium: String
+  cover_small: String
+  cover_xl: String
+  id: Int
+  link: String
+  md5_image: String
+  release_date: String
+  title: String
+  tracklist: String
+  type: String
+}
+
+type T37 {
+  album: Album
+  artist: User
+  duration: Int
+  explicit_content_cover: Int
+  explicit_content_lyrics: Int
+  explicit_lyrics: Boolean
+  id: Int
+  link: String
+  md5_image: String
+  preview: String
+  rank: Int
+  readable: Boolean
+  title: String
+  title_short: String
+  title_version: String
+  type: String
+}
+
+type T38 {
+  data: [T37]
+}
+
+type T39 {
+  artist: T8
+  available: Boolean
+  contributors: [Contributor]
+  cover: String
+  cover_big: String
+  cover_medium: String
+  cover_small: String
+  cover_xl: String
+  duration: Int
+  explicit_content_cover: Int
+  explicit_content_lyrics: Int
+  explicit_lyrics: Boolean
+  fans: Int
+  genre_id: Int
+  genres: Genre
+  id: Int
+  label: String
+  link: String
+  md5_image: String
+  nb_tracks: Int
+  record_type: String
+  release_date: String
+  share: String
+  title: String
+  tracklist: String
+  tracks: T38
+  type: String
+  upc: String
+}
+
+type T4 {
+  album: T3
+  artist: T2
+  available_countries: [String]
+  bpm: Int
+  contributors: [Contributor]
+  disk_number: Int
+  duration: Int
+  explicit_content_cover: Int
+  explicit_content_lyrics: Int
+  explicit_lyrics: Boolean
+  gain: Int
+  id: Int
+  isrc: String
+  link: String
+  md5_image: String
+  preview: String
+  rank: Int
+  readable: Boolean
+  release_date: String
+  share: String
+  title: String
+  title_short: String
+  title_version: String
+  track_position: Int
+  type: String
+}
+
+type T40 {
+  id: Int
+  link: String
+  name: String
+  nb_album: Int
+  nb_fan: Int
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  radio: Boolean
+  share: String
+  tracklist: String
+  type: String
+}
+
+type T42 {
+  id: Int
+  link: String
+  name: String
+  tracklist: String
+  type: String
+}
+
+type T5 {
+  id: Int
+  name: String
+  picture: String
+  type: String
+}
+
+type T8 {
+  id: Int
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  tracklist: String
+  type: String
+}
+
+type Track {
+  checksum: String
+  data: [Daum]
+}
+
+type User {
+  id: Int
+  name: String
+  tracklist: String
+  type: String
+}
