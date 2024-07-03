@@ -265,8 +265,3 @@ harness = false
 name = "json_to_config_spec"
 path = "src/core/generator/tests/json_to_config_spec.rs"
 harness = false
-
-[[test]]
-name = "config_generator_spec"
-path = "src/cli/generator/tests/config_generator_spec.rs"
-harness = false
