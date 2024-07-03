@@ -250,8 +250,6 @@ mod test {
     }
 
     mod http {
-        use crate::core::http::Response;
-        use crate::core::HttpIO;
         use anyhow::Result;
         use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
         use hyper::body::Bytes;
@@ -259,6 +257,8 @@ mod test {
         use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
         use super::cacache_manager::CaCacheManager;
+        use crate::core::http::Response;
+        use crate::core::HttpIO;
 
         #[derive(Clone)]
         pub struct NativeHttpTest {
@@ -293,12 +293,16 @@ mod test {
     }
 
     mod generator_spec {
+        use std::path::Path;
+        use std::sync::Arc;
+
+        use tokio::runtime::Runtime;
+
         use super::http::NativeHttpTest;
+        use crate::cli::generator::Generator;
+        use crate::core::blueprint::Blueprint;
         use crate::core::config::{self, ConfigModule};
         use crate::core::generator::Generator as ConfigGenerator;
-        use crate::{cli::generator::Generator, core::blueprint::Blueprint};
-        use std::{path::Path, sync::Arc};
-        use tokio::runtime::Runtime;
 
         pub fn run_config_generator_spec(path: &Path) -> datatest_stable::Result<()> {
             let path = path.to_path_buf();
@@ -341,13 +345,11 @@ mod test {
     fn test_generator() {
         let path = "src/cli/generator/tests/fixtures/generator";
         if let Ok(entries) = std::fs::read_dir(path) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    let path = entry.path();
-                    if let Some(extension) = path.extension() {
-                        if extension == "json" {
-                            let _ = generator_spec::run_config_generator_spec(&path);
-                        }
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if let Some(extension) = path.extension() {
+                    if extension == "json" {
+                        let _ = generator_spec::run_config_generator_spec(&path);
                     }
                 }
             }
