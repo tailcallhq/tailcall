@@ -3,7 +3,7 @@ use std::sync::Arc;
 use criterion::Criterion;
 use hyper::Request;
 use tailcall::cli::server::server_config::ServerConfig;
-use tailcall::core::async_graphql_hyper::{GraphqlJitRequest, GraphQLRequest};
+use tailcall::core::async_graphql_hyper::{GraphQLRequest, GraphqlJitRequest};
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::{Config, ConfigModule};
 use tailcall::core::http::handle_request;
