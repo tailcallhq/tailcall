@@ -1,6 +1,6 @@
 ---
 source: src/core/generator/generator.rs
-expression: cfg_module.config.to_sdl()
+expression: cfg_module.config().to_sdl()
 ---
 schema @server @upstream @link(src: "../../../tailcall-fixtures/fixtures/protobuf/news.proto", type: Protobuf) {
   query: Query
@@ -10,16 +10,16 @@ input news__MultipleNewsId @tag(id: "news.MultipleNewsId") {
   ids: [news__NewsId]
 }
 
-input news__News @tag(id: "news.News") {
+input news__NewsId @tag(id: "news.NewsId") {
+  id: Int
+}
+
+input news__NewsInput @tag(id: "news.News") {
   body: String
   id: Int
   postImage: String
   status: news__Status
   title: String
-}
-
-input news__NewsId @tag(id: "news.NewsId") {
-  id: Int
 }
 
 enum news__Status {
@@ -29,12 +29,20 @@ enum news__Status {
 }
 
 type Query {
-  news__NewsService__AddNews(news: news__News!): news__News! @grpc(body: "{{.args.news}}", method: "news.NewsService.AddNews")
+  news__NewsService__AddNews(news: news__NewsInput!): news__News! @grpc(body: "{{.args.news}}", method: "news.NewsService.AddNews")
   news__NewsService__DeleteNews(newsId: news__NewsId!): Empty! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.DeleteNews")
-  news__NewsService__EditNews(news: news__News!): news__News! @grpc(body: "{{.args.news}}", method: "news.NewsService.EditNews")
+  news__NewsService__EditNews(news: news__NewsInput!): news__News! @grpc(body: "{{.args.news}}", method: "news.NewsService.EditNews")
   news__NewsService__GetAllNews: news__NewsList! @grpc(method: "news.NewsService.GetAllNews")
   news__NewsService__GetMultipleNews(multipleNewsId: news__MultipleNewsId!): news__NewsList! @grpc(body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
   news__NewsService__GetNews(newsId: news__NewsId!): news__News! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
+}
+
+type news__News @tag(id: "news.News") {
+  body: String
+  id: Int
+  postImage: String
+  status: news__Status
+  title: String
 }
 
 type news__NewsList @tag(id: "news.NewsList") {

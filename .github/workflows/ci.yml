@@ -18,6 +18,10 @@ concurrency:
   # cancel-in-progress: true
 
 jobs:
+  setup_build_matrix:
+    name: Outputs matrix used for cross compilation
+    uses: ./.github/workflows/build_matrix.yml
+
   check_if_build:
     name: Check if Build
     runs-on: ubuntu-latest
@@ -89,68 +93,14 @@ jobs:
 
   test:
     name: Run Tests on ${{ matrix.build }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    needs: setup_build_matrix
     strategy:
       fail-fast: false
-      matrix:
-        build:
-          [
-            linux-x64-gnu,
-            linux-x64-musl,
-            linux-arm64-gnu,
-            linux-arm64-musl,
-            linux-ia32-gnu,
-            darwin-arm64,
-            darwin-x64,
-            win32-x64-msvc,
-            win32-x64-gnu,
-            win32-arm64-msvc,
-            win32-ia32-gnu,
-          ]
-        include:
-          - build: linux-x64-gnu
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
+      matrix: ${{ fromJson(needs.setup_build_matrix.outputs.matrix) }}
 
-          - build: linux-x64-musl
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
-
-          - build: linux-arm64-gnu
-            os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-
-          - build: linux-arm64-musl
-            os: ubuntu-latest
-            target: aarch64-unknown-linux-musl
-
-          - build: linux-ia32-gnu
-            os: ubuntu-latest
-            target: i686-unknown-linux-gnu
-
-          - build: darwin-arm64
-            os: macos-latest
-            target: aarch64-apple-darwin
-
-          - build: darwin-x64
-            os: macos-latest
-            target: x86_64-apple-darwin
-
-          - build: win32-x64-msvc
-            os: windows-latest
-
-          - build: win32-x64-gnu
-            os: windows-latest
-
-          - build: win32-arm64-msvc
-            os: windows-latest
-
-          - build: win32-ia32-gnu
-            os: ubuntu-latest
-            target: i686-pc-windows-gnu
     steps:
       - uses: actions/checkout@v4
-      - uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -159,8 +109,11 @@ jobs:
       - name: Install Prettier
         run: npm i -g prettier
 
-      - name: Install Stable Toolchain
+      - name: Install Rust Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install Cross compilation toolchain
+        uses: taiki-e/setup-cross-toolchain-action@v1
         with:
           target: ${{ matrix.target }}
 
@@ -188,8 +141,12 @@ jobs:
           }
           echo "$(Resolve-Path nasm-2.16.02)" >> $env:GITHUB_PATH
 
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
       - name: Run Cargo Test
-        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
+        if: matrix.test != 'false'
+        # TODO: run llvm-cov only for single build since other builds are not sent to codecov anyway
+        run: cargo llvm-cov --workspace ${{ matrix.features || '--all-features' }} --lcov --target ${{ matrix.target }} --output-path lcov.info
 
       - name: Upload Coverage to Codecov
         if: matrix.build == 'darwin-arm64'
@@ -254,104 +211,13 @@ jobs:
   # TODO: move to separate file to separate responsibilities
   release:
     name: Release
-    needs: [test, draft_release, check_if_build, test_cf]
+    needs: [setup_build_matrix, test, draft_release, check_if_build, test_cf]
     # TODO: put a condition to separate job that other will depend on to remove duplication?
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.check_if_build.outputs.check_if_build == 'true')
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
-      matrix:
-        build:
-          [
-            linux-x64-gnu,
-            linux-x64-musl,
-            linux-arm64-gnu,
-            linux-arm64-musl,
-            linux-ia32-gnu,
-            darwin-arm64,
-            darwin-x64,
-            win32-x64-msvc,
-            win32-x64-gnu,
-            win32-arm64-msvc,
-            win32-ia32-gnu,
-          ]
-        include:
-          - build: linux-x64-gnu
-            os: ubuntu-latest
-            rust: stable
-            target: x86_64-unknown-linux-gnu
-            libc: glibc
-            cross: false
-
-          - build: linux-x64-musl
-            os: ubuntu-latest
-            rust: stable
-            target: x86_64-unknown-linux-musl
-            libc: musl
-            cross: true
-
-          - build: linux-arm64-gnu
-            os: ubuntu-latest
-            rust: stable
-            target: aarch64-unknown-linux-gnu
-            libc: glibc
-            cross: true
-
-          - build: linux-arm64-musl
-            os: ubuntu-latest
-            rust: stable
-            target: aarch64-unknown-linux-musl
-            libc: musl
-            cross: true
-
-          - build: linux-ia32-gnu
-            os: ubuntu-latest
-            rust: stable
-            target: i686-unknown-linux-gnu
-            libc: glibc
-            cross: true
-
-          - build: darwin-arm64
-            os: macos-latest
-            rust: stable
-            target: aarch64-apple-darwin
-
-          - build: darwin-x64
-            os: macos-latest
-            rust: stable
-            target: x86_64-apple-darwin
-            cross: false
-
-          - build: win32-x64-msvc
-            os: windows-latest
-            rust: stable
-            target: x86_64-pc-windows-msvc
-            libc: msvc
-            ext: ".exe"
-
-          - build: win32-x64-gnu
-            os: windows-latest
-            rust: stable
-            target: x86_64-pc-windows-gnu
-            libc: glibc
-            ext: ".exe"
-
-          - build: win32-arm64-msvc
-            os: windows-latest
-            rust: stable
-            target: aarch64-pc-windows-msvc
-            features: --no-default-features --features cli
-            libc: msvc
-            ext: ".exe"
-
-          - build: win32-ia32-gnu
-            os: ubuntu-latest
-            rust: stable
-            target: i686-pc-windows-gnu
-            features: --no-default-features --features cli
-            cross: true
-            libc: glibc
-            ext: ".exe"
+      matrix: ${{ fromJson(needs.setup_build_matrix.outputs.matrix) }}
     permissions:
       contents: write
       pull-requests: write
@@ -363,7 +229,7 @@ jobs:
       - name: Checkout Current Branch (Fast)
         uses: actions/checkout@v4
 
-      - name: Install Correct Toolchain
+      - name: Install Rust Toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}

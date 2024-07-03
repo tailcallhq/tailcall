@@ -61,6 +61,7 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 reqwest = { workspace = true }
 derive_setters = "0.1.6"
+derive-getters = "0.4.0"
 thiserror = "1.0.59"
 serde_json = { workspace = true }
 serde = { workspace = true }
@@ -150,6 +151,7 @@ convert_case = "0.6.0"
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
 tailcall-tracker = { path = "tailcall-tracker", optional = true }
+tailcall-typedefs-common = { path = "./tailcall-typedefs-common" }
 tonic-types = "0.11.0"
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
@@ -160,7 +162,8 @@ Inflector = "0.11.4"
 path-clean = "=1.0.1"
 pathdiff = "0.2.1"
 num = "0.4.3"
-tailcall-typedefs-common = { path = "./tailcall-typedefs-common" }
+indenter = "0.3.3"
+derive_more = "0.99.18"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
@@ -174,6 +177,7 @@ tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
 tailcall-fixtures = { path = "./tailcall-fixtures" }
+test-log = { version = "0.2.16", default-features = false, features = ["color", "trace"] }
 
 [features]
 

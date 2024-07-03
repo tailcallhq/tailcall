@@ -102,14 +102,7 @@ where
                 .collect::<BTreeSet<String>>(),
         )
     } else {
-        match type_of {
-            "String" => JsonSchema::Str,
-            "Int" => JsonSchema::Num,
-            "Boolean" => JsonSchema::Bool,
-            "Empty" => JsonSchema::Empty,
-            "JSON" => JsonSchema::Any,
-            _ => JsonSchema::Any,
-        }
+        JsonSchema::from_scalar_type(type_of)
     };
 
     if !required {

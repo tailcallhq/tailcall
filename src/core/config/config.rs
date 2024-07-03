@@ -9,7 +9,7 @@ use serde_json::Value;
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
 use super::telemetry::Telemetry;
-use super::{ConfigModule, KeyValue, Link, Server, Upstream};
+use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
 use crate::core::config::source::Source;
 use crate::core::directive::DirectiveCodec;
@@ -815,8 +815,9 @@ impl Config {
         }
     }
 
+    /// Renders current config to graphQL string
     pub fn to_sdl(&self) -> String {
-        ConfigModule::from(self.clone()).to_sdl()
+        crate::core::document::print(self.into())
     }
 
     pub fn query(mut self, query: &str) -> Self {

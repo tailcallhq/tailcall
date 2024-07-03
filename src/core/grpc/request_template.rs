@@ -162,7 +162,7 @@ mod tests {
                 .resolve(config, None)
                 .await
                 .unwrap()
-                .extensions
+                .extensions()
                 .get_file_descriptor_set(),
         )
         .unwrap();
