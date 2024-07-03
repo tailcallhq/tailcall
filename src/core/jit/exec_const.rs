@@ -13,7 +13,7 @@ use crate::core::ir::EvalContext;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
-    plan: ExecutionPlan<Value>,
+    plan: ExecutionPlan<async_graphql_value::Value, Value>,
     app_ctx: Arc<AppContext>,
 }
 

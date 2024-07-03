@@ -11,19 +11,19 @@ use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::ExecutionPlan;
 use crate::core::merge_right::MergeRight;
 
-pub trait Builder<Input: Clone> {
-    fn build(&self) -> Result<ExecutionPlan<Input>, String>;
+pub trait Builder<ParsedValue: Clone, Input: Clone> {
+    fn build(&self) -> Result<ExecutionPlan<ParsedValue, Input>, String>;
 }
 
-pub trait FromAsyncGraphqlValue
+pub trait FromParsedValue<ParsedValue>
 where
     Self: Sized,
 {
-    fn from_async_graphql_value(value: async_graphql_value::Value) -> Option<Self>;
+    fn from_parsed_value(value: ParsedValue) -> Option<Self>;
 }
 
-impl FromAsyncGraphqlValue for ConstValue {
-    fn from_async_graphql_value(value: async_graphql_value::Value) -> Option<Self> {
+impl FromParsedValue<async_graphql_value::Value> for ConstValue {
+    fn from_parsed_value(value: async_graphql_value::Value) -> Option<Self> {
         value.into_const()
     }
 }
@@ -51,7 +51,7 @@ impl ConstBuilder {
         selection: &SelectionSet,
         type_of: &str,
         refs: Option<Parent>,
-    ) -> Vec<Field<Parent, async_graphql::Value>> {
+    ) -> Vec<Field<Parent, async_graphql_value::Value, async_graphql::Value>> {
         let mut fields = vec![];
         for selection in &selection.items {
             if let Selection::Field(gql_field) = &selection.node {
@@ -112,8 +112,8 @@ impl ConstBuilder {
     }
 }
 
-impl Builder<ConstValue> for ConstBuilder {
-    fn build(&self) -> Result<ExecutionPlan<ConstValue>, String> {
+impl Builder<async_graphql_value::Value, ConstValue> for ConstBuilder {
+    fn build(&self) -> Result<ExecutionPlan<async_graphql_value::Value, ConstValue>, String> {
         let mut fields = Vec::new();
 
         for fragment in self.document.fragments.values() {
@@ -156,7 +156,9 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>) -> ExecutionPlan<async_graphql::Value> {
+    fn plan(
+        query: impl AsRef<str>,
+    ) -> ExecutionPlan<async_graphql_value::Value, async_graphql::Value> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();

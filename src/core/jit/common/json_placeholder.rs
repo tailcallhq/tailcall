@@ -19,7 +19,7 @@ impl JsonPlaceholder {
     const USERS: &'static str = include_str!("users.json");
     const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    pub fn init(query: &str) -> SynthBorrow<ConstValue> {
+    pub fn init(query: &str) -> SynthBorrow<async_graphql_value::Value, ConstValue> {
         let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
 

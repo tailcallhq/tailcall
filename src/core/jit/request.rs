@@ -16,7 +16,10 @@ pub struct Request<Value> {
 }
 
 impl<Value> Request<Value> {
-    pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan<async_graphql::Value>> {
+    pub fn try_new(
+        &self,
+        blueprint: &Blueprint,
+    ) -> Result<ExecutionPlan<async_graphql_value::Value, async_graphql::Value>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = ConstBuilder::new(blueprint, doc);
         builder.build().map_err(Error::BuildError)

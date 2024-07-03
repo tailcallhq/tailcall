@@ -4,13 +4,13 @@ use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::ExecutionPlan;
 
-pub struct SynthBorrow<'a, Input: Clone> {
-    selection: Vec<Field<Children<Input>, Input>>,
+pub struct SynthBorrow<'a, ParsedValue: Clone, Input: Clone> {
+    selection: Vec<Field<Children<ParsedValue, Input>, ParsedValue, Input>>,
     store: Store<Value<'a>>,
 }
 
-impl<'a, Input: Clone> SynthBorrow<'a, Input> {
-    pub fn new(plan: ExecutionPlan<Input>, store: Store<Value<'a>>) -> Self {
+impl<'a, ParsedValue: Clone, Input: Clone> SynthBorrow<'a, ParsedValue, Input> {
+    pub fn new(plan: ExecutionPlan<ParsedValue, Input>, store: Store<Value<'a>>) -> Self {
         Self { selection: plan.into_children(), store }
     }
 
@@ -35,7 +35,7 @@ impl<'a, Input: Clone> SynthBorrow<'a, Input> {
     #[inline(always)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Children<Input>, Input>,
+        node: &'b Field<Children<ParsedValue, Input>, ParsedValue, Input>,
         parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Value {
@@ -89,7 +89,7 @@ impl<'a, Input: Clone> SynthBorrow<'a, Input> {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Children<Input>, Input>,
+        node: &'b Field<Children<ParsedValue, Input>, ParsedValue, Input>,
         parent: &'b Value,
         index: Option<usize>,
     ) -> Value {

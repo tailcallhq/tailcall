@@ -10,12 +10,16 @@ use crate::core::jit::ExecutionPlan;
 use crate::core::json::JsonLike;
 
 struct Synth {
-    selection: Vec<Field<Children<Value>, Value>>,
+    selection:
+        Vec<Field<Children<async_graphql_value::Value, Value>, async_graphql_value::Value, Value>>,
     store: Store<Result<Value>>,
 }
 
 impl Synth {
-    pub fn new(plan: ExecutionPlan<Value>, store: Store<Result<Value>>) -> Self {
+    pub fn new(
+        plan: ExecutionPlan<async_graphql_value::Value, Value>,
+        store: Store<Result<Value>>,
+    ) -> Self {
         Self { selection: plan.into_children(), store }
     }
 
@@ -40,7 +44,11 @@ impl Synth {
     #[inline(always)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Children<Value>, Value>,
+        node: &'b Field<
+            Children<async_graphql_value::Value, Value>,
+            async_graphql_value::Value,
+            Value,
+        >,
         parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Result<Value> {
@@ -94,7 +102,11 @@ impl Synth {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Children<Value>, Value>,
+        node: &'b Field<
+            Children<async_graphql_value::Value, Value>,
+            async_graphql_value::Value,
+            Value,
+        >,
         parent: &'b Value,
         index: Option<usize>,
     ) -> Result<Value> {
@@ -143,11 +155,11 @@ impl Synth {
 }
 
 pub struct SynthConst {
-    plan: ExecutionPlan<Value>,
+    plan: ExecutionPlan<async_graphql_value::Value, Value>,
 }
 
 impl SynthConst {
-    pub fn new(plan: ExecutionPlan<ConstValue>) -> Self {
+    pub fn new(plan: ExecutionPlan<async_graphql_value::Value, ConstValue>) -> Self {
         Self { plan }
     }
 }
