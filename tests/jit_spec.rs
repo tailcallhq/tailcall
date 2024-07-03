@@ -11,7 +11,7 @@ mod tests {
     use tailcall::core::valid::Validator;
 
     async fn new_executor(request: &Request<Value>) -> anyhow::Result<ConstValueExecutor> {
-        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS).await?;
+        let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
         let config = Config::from_sdl(&sdl).to_result()?;
         let blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
         let runtime = tailcall::cli::runtime::init(&blueprint);
@@ -45,7 +45,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_nested_list() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new("query {posts { users { posts { id } } }}");
+        let request = Request::new("query {posts { id comments { id name email title } }}");
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;

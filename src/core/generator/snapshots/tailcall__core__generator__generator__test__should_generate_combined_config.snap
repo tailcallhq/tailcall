@@ -30,6 +30,14 @@ enum news__Status {
   PUBLISHED
 }
 
+type Comment {
+  body: String!
+  email: String!
+  id: Int!
+  name: String!
+  title: String! @expr(body: "{{.value.email}}: {{.value.name}}")
+}
+
 type F1 {
   campaignTemplates: Any
   colors: [Any]
@@ -49,6 +57,7 @@ type NewsNewsServiceGetMultipleNew @tag(id: "news.NewsList") {
 
 type Post {
   body: String!
+  comments: [Comment] @http(path: "/posts/{{.value.id}}/comments")
   id: Int!
   title: String!
   user: User @http(path: "/users/{{.value.userId}}")
@@ -75,7 +84,6 @@ type User {
   id: Int!
   name: String!
   phone: String
-  posts: [Post] @http(path: "/posts")
   username: String!
   websiteExpr: String @expr(body: "/users/website/{{.value.username}}")
 }

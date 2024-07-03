@@ -77,7 +77,7 @@ impl JsonPlaceholder {
         ]
         .into_iter()
         .fold(Store::new(plan.size()), |mut store, (id, data)| {
-            store.set(id, data);
+            store.set_data(id, data);
             store
         });
 

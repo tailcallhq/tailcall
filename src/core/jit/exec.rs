@@ -7,7 +7,7 @@ use futures_util::future::join_all;
 
 use super::context::Context;
 use super::synth::Synthesizer;
-use super::{Children, ExecutionPlan, Field, MultipleDataPath, Request, Response, Store};
+use super::{Children, DataPath, ExecutionPlan, Field, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
@@ -71,7 +71,7 @@ where
     async fn init(&mut self) {
         join_all(self.plan.as_children().iter().map(|field| async {
             let ctx = Context::new(&self.request);
-            self.execute(field, &ctx, None).await
+            self.execute(field, &ctx, DataPath::single()).await
         }))
         .await;
     }
@@ -80,7 +80,7 @@ where
         &'b self,
         field: &'b Field<Children>,
         ctx: &'b Context<'b, Input, Output>,
-        multiple_path: Option<MultipleDataPath>,
+        data_path: DataPath,
     ) -> Result<(), Error> {
         if let Some(ir) = &field.ir {
             let result = self.ir_exec.execute(ir, ctx).await;
@@ -94,8 +94,8 @@ where
                         join_all(field.children().iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
                                 let ctx = ctx.with_value(value);
-                                let multiple_path = MultipleDataPath { index, len: array.len() };
-                                async move { self.execute(field, &ctx, Some(multiple_path)).await }
+                                let data_path = data_path.with_path(array.len(), index);
+                                async move { self.execute(field, &ctx, data_path).await }
                             }))
                         }))
                         .await;
@@ -109,8 +109,8 @@ where
                 else {
                     join_all(field.children().iter().map(|child| {
                         let ctx = ctx.with_value(value);
-                        let multiple_path = multiple_path.clone();
-                        async move { self.execute(child, &ctx, multiple_path).await }
+                        let data_path = data_path.clone();
+                        async move { self.execute(child, &ctx, data_path).await }
                     }))
                     .await;
                 }
@@ -118,12 +118,7 @@ where
 
             let mut store = self.store.lock().unwrap();
 
-            if let Some(multiple_path) = &multiple_path {
-                dbg!(field, multiple_path);
-                store.set_multiple(&field.id, multiple_path, result)
-            } else {
-                store.set_single(&field.id, result);
-            }
+            store.set(&field.id, &data_path, result);
         }
 
         Ok(())

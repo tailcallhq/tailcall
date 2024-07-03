@@ -6,8 +6,17 @@ schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonp
   query: Query
 }
 
+type Comment {
+  body: String!
+  email: String!
+  id: Int!
+  name: String!
+  title: String! @expr(body: "{{.value.email}}: {{.value.name}}")
+}
+
 type Post {
   body: String!
+  comments: [Comment] @http(path: "/posts/{{.value.id}}/comments")
   id: Int!
   title: String!
   user: User @http(path: "/users/{{.value.userId}}")
@@ -27,7 +36,6 @@ type User {
   id: Int!
   name: String!
   phone: String
-  posts: [Post] @http(path: "/posts")
   username: String!
   websiteExpr: String @expr(body: "/users/website/{{.value.username}}")
 }
