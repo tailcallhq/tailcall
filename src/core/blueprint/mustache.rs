@@ -73,9 +73,7 @@ impl<'a> MustachePartsValidator<'a> {
                 if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
                     // we can use non-scalar types in args
                     if !is_query && arg.default_value.is_none() && arg.of_type.is_nullable() {
-                        return Valid::fail(format!(
-                            "argument '{tail}' is a nullable type"
-                        ));
+                        return Valid::fail(format!("argument '{tail}' is a nullable type"));
                     }
                 } else {
                     return Valid::fail(format!("no argument '{tail}' found"));
