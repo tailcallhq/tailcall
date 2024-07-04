@@ -8,7 +8,7 @@ use crate::core::jit::store::{Data, Store};
 use crate::core::jit::ExecutionPlan;
 use crate::core::json::JsonLike;
 
-struct Synth {
+pub struct Synth {
     selection: Vec<Field<Children>>,
     store: Store<Result<Value>>,
 }

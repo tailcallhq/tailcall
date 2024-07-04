@@ -7,7 +7,9 @@ use crate::core::json::Object;
 
 pub trait JsonLike {
     type Output;
-    type Obj: Object<'a>;
+    type Obj: Object;
+    fn default() -> Self;
+    fn new_array(arr: Vec<Self::Output>) -> Self;
     fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str>;
     fn as_object_ok(&self) -> Result<&Self::Obj, &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;
@@ -99,6 +101,14 @@ impl JsonLike for serde_json::Value {
             serde_json::Value::Object(obj) => Ok(obj),
             _ => return Err("expected object"),
         }
+    }
+
+    fn default() -> Self::Output {
+        Default::default()
+    }
+
+    fn new_array(arr: Vec<Self::Output>) -> Self::Output {
+        serde_json::Value::Array(arr)
     }
 }
 
@@ -205,11 +215,27 @@ impl JsonLike for async_graphql::Value {
             _ => return Err("expected object"),
         }
     }
+
+    fn default() -> Self::Output {
+        Default::default()
+    }
+
+    fn new_array(arr: Vec<Self::Output>) -> Self::Output {
+        ConstValue::List(arr)
+    }
 }
 
 impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
     type Output = serde_json_borrow::Value<'ctx>;
     type Obj = ObjectAsVec<'ctx>;
+
+    fn default() -> Self::Output {
+        serde_json_borrow::Value::Null
+    }
+
+    fn new_array(arr: Vec<Self::Output>) -> Self::Output {
+        serde_json_borrow::Value::Array(arr)
+    }
 
     fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
         match self {
