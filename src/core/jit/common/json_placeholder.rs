@@ -14,7 +14,7 @@ use crate::core::jit::synth::{Synth, SynthBorrow};
 use crate::core::json::{JsonLike, Object};
 use crate::core::valid::Validator;
 
-pub trait SynthExt<Value: JsonLike<Output = Value> + Clone> {
+pub trait SynthExt<Value: JsonLike<Output = Value>> {
     fn init(plan: ExecutionPlan, data: Vec<(FieldId, Data<Value>)>) -> Self;
     fn synthesize(&'static self) -> jit::Result<Value>;
 }
@@ -116,7 +116,6 @@ impl JsonPlaceholder {
         builder.build().unwrap()
     }
 
-    // for Store<Result<ConstValue>> we'll need different type from `T`
     fn data<'a, Value: JsonLike<Output = Value> + Deserialize<'a> + Clone + 'static>(
         plan: &ExecutionPlan,
         data: TestData<Value>,
@@ -140,6 +139,11 @@ impl JsonPlaceholder {
         store.to_vec()
     }
 
+    // I recommend to directly cast the return value to the desired type
+    // example:
+    // let synth: Box<SynthBorrow> = JsonPlaceholder::init("<qry>");
+    // we need 2 generic types because SynthBorrow takes BorrowedValue
+    // whereas Synth takes jit::Result<ConstValue>
     pub fn init<
         'a,
         Value: JsonLike<Output = Value> + Deserialize<'a> + Clone + 'static,
