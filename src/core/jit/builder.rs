@@ -56,7 +56,7 @@ impl ConstBuilder {
         for selection in &selection.items {
             if let Selection::Field(gql_field) = &selection.node {
                 let field_name = gql_field.node.name.node.as_str();
-                let field_args = gql_field
+                let mut field_args = gql_field
                     .node
                     .arguments
                     .iter()
@@ -64,6 +64,20 @@ impl ConstBuilder {
                     .collect::<HashMap<_, _>>();
 
                 if let Some(field_def) = self.index.get_field(type_of, field_name) {
+                    if let QueryField::Field((_, args)) = field_def {
+                        for (arg_name, arg_value) in args {
+                            if let Some(default_value) = arg_value.default_value.as_ref() {
+                                if !field_args.contains_key(arg_name) {
+                                    if let Ok(default_value) =
+                                        async_graphql_value::Value::from_json(default_value.clone())
+                                    {
+                                        field_args.insert(arg_name.clone(), default_value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     let mut args = vec![];
                     for (arg_name, value) in field_args {
                         if let Some(arg) = field_def.get_arg(&arg_name) {

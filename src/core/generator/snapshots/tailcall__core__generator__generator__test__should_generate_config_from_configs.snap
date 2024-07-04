@@ -1,6 +1,6 @@
 ---
 source: src/core/generator/generator.rs
-expression: cfg_module.config.to_sdl()
+expression: cfg_module.config().to_sdl()
 ---
 schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
@@ -18,6 +18,7 @@ type Query {
   post(id: Int!): Post @http(path: "/posts/{{.args.id}}")
   posts: [Post] @http(path: "/posts")
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  user2(id: Int = 1): User @http(path: "/users/{{.args.id}}")
   users: [User] @http(path: "/users")
 }
 
