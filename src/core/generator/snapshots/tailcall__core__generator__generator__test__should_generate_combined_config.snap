@@ -30,6 +30,21 @@ enum news__Status {
   PUBLISHED
 }
 
+type Album {
+  id: Int!
+  photos: [Photo] @http(path: "/albums/{{.value.id}}/photos?_limit=3")
+  title: Int
+  userId: Int!
+}
+
+type Comment {
+  body: String!
+  email: String!
+  id: Int!
+  name: String!
+  title: String! @expr(body: "{{.value.email}}: {{.value.name}}")
+}
+
 type F1 {
   campaignTemplates: Any
   colors: [Any]
@@ -47,12 +62,21 @@ type NewsNewsServiceGetMultipleNew @tag(id: "news.NewsList") {
   news: [News]
 }
 
+type Photo {
+  albumId: Int!
+  combinedId: String! @expr(body: "Album: {{.value.albumId}}, photo: {{.value.id}}")
+  id: Int!
+  title: String!
+}
+
 type Post {
   body: String!
+  comments: [Comment] @http(path: "/posts/{{.value.id}}/comments")
   id: Int!
   title: String!
   user: User @http(path: "/users/{{.value.userId}}")
   userId: Int!
+  users: [User] @http(path: "/users")
 }
 
 type Query {
@@ -64,12 +88,13 @@ type Query {
   news__NewsService__GetMultipleNews(multipleNewsId: news__MultipleNewsId!): NewsNewsServiceGetMultipleNew! @grpc(body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
   news__NewsService__GetNews(newsId: news__NewsId!): News! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
   post(id: Int!): Post @http(path: "/posts/{{.args.id}}")
-  posts: [Post] @http(path: "/posts")
+  posts: [Post] @http(path: "/posts?_limit=11")
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
   users: [User] @http(path: "/users")
 }
 
 type User {
+  albums: [Album] @http(path: "/users/{{.value.id}}/albums?_limit=2")
   email: String!
   id: Int!
   name: String!
