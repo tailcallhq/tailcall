@@ -33,6 +33,14 @@ ExecutionPlan {
         },
         Field {
             id: 2,
+            name: "email",
+            type_of: String!,
+            refs: Some(
+                Parent(0),
+            ),
+        },
+        Field {
+            id: 3,
             name: "phone",
             type_of: String,
             refs: Some(
@@ -69,6 +77,11 @@ ExecutionPlan {
                         },
                         Field {
                             id: 2,
+                            name: "email",
+                            type_of: String!,
+                        },
+                        Field {
+                            id: 3,
                             name: "phone",
                             type_of: String,
                         },

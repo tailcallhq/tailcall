@@ -242,6 +242,7 @@ mod tests {
             r#"
             fragment UserPII on User {
               name
+              email
               phone
             }
 
