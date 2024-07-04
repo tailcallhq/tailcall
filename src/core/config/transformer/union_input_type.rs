@@ -108,7 +108,7 @@ impl<'cfg> Visitor<'cfg> {
         if self.union_presence.contains_key(type_name) || self.visited_types.contains(&type_name) {
             return;
         }
-        // avoid endless recurssion
+        // avoid endless recursion
         self.visited_types.push(type_name);
 
         if let Some(union_) = self.config.unions.get(type_name) {
