@@ -1,0 +1,49 @@
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  foo1: [Foo1]
+  foo2: [Foo2!]!
+  foo3: Foo3
+  foo4: Foo4!
+  foo5: [Foo5]
+}
+
+type Foo1 {
+  bar: Bar1
+  b: String
+}
+
+type Bar1 {
+  a: Int
+}
+
+type Foo2 {
+  bar: Bar2!
+}
+
+type Bar2 {
+  a: Int
+}
+
+type Foo3 {
+  bar: [Bar3!]!
+}
+
+type Bar3 {
+  a: Int!
+}
+
+type Foo4 {
+  bar: [Bar4!]!
+}
+
+type Bar4 {
+  a: Int
+  b: Int
+}
+
+type Foo5 {
+  bar: [Int]
+}

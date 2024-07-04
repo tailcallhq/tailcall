@@ -13,10 +13,6 @@ type Children {
   name: String
 }
 
-type Container {
-  age: Int
-}
-
 type F1 {
   campaignTemplates: Any
   colors: [Any]
@@ -45,7 +41,7 @@ type Query {
 }
 
 type T6 {
-  container: Container
+  container: Int
   name: String
 }
 

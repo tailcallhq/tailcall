@@ -1,0 +1,15 @@
+---
+source: src/core/config/transformer/flatten_single_types.rs
+expression: transformed_config.to_sdl()
+---
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+type Foo {
+  a: Int
+}
+
+type Query {
+  foo: Foo @grpc(method: "news.NewsService.GetAllNews")
+}
