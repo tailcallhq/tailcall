@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use serde::Deserialize;
 
 use serde_json_borrow::Value;
 
@@ -7,25 +8,51 @@ use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::SynthBorrow;
+use crate::core::json::{JsonLike, Object};
 use crate::core::valid::Validator;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
 /// and benchmarks.
 pub struct JsonPlaceholder;
 
+struct TestData<T> {
+    posts: Vec<T>,
+    users: Vec<T>,
+}
+
 impl JsonPlaceholder {
     const POSTS: &'static str = include_str!("posts.json");
     const USERS: &'static str = include_str!("users.json");
     const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
+    fn value<'a, T: JsonLike + Deserialize<'a> + 'static>() -> TestData<T> {
+        let posts = serde_json::from_str::<Vec<T>>(Self::POSTS).unwrap();
+        let users = serde_json::from_str::<Vec<T>>(Self::USERS).unwrap();
+        let user_map = users.iter().fold(HashMap::new(), |mut map, user| {
+            let id = user
+                .as_object_ok()
+                .ok()
+                .and_then(|user| {
+                    user.get_val(&"id")
+                })
+                .and_then(|u| u.as_u64_ok().ok());
+
+            if let Some(id) = id {
+                map.insert(id, user);
+            }
+            map
+        });
+        todo!()
+    }
+
     pub fn init(query: &str) -> SynthBorrow {
         let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
-
         let user_map = users.iter().fold(HashMap::new(), |mut map, user| {
             let id = user
-                .as_object()
-                .and_then(|user| user.get("id"))
+                .as_object_ok()
+                .ok()
+                .and_then(|user| user.get_val(&"id"))
                 .and_then(|u| u.as_u64());
 
             if let Some(id) = id {
@@ -33,7 +60,6 @@ impl JsonPlaceholder {
             }
             map
         });
-
         let users: Vec<Value<'static>> = posts
             .iter()
             .map(|post| {
