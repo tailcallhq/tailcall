@@ -45,7 +45,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_nested_list() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new("query {posts { id comments { id name email title } }}");
+        let request = Request::new("query {posts { id user { id albums { id photos { id title combinedId } } } }}");
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
