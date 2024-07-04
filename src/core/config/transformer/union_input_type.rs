@@ -314,7 +314,7 @@ mod tests {
     #[test]
     fn test_recursive_input() {
         let config =
-            std::fs::read_to_string(tailcall_fixtures::configs::YAML_RECURSSIVE_INPUT).unwrap();
+            std::fs::read_to_string(tailcall_fixtures::configs::YAML_RECURSIVE_INPUT).unwrap();
         let config = Config::from_yaml(&config).unwrap();
         let config = UnionInputType.transform(config).to_result().unwrap();
 
