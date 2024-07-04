@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::core::config::{Arg, Config, Field, Type};
 use crate::core::transform::Transform;
@@ -55,7 +55,7 @@ struct Visitor<'cfg> {
     // maps type name to UnionPresence
     union_presence: HashMap<&'cfg String, UnionPresence>,
     // track visited types
-    visited_types: Vec<&'cfg String>,
+    visited_types: HashSet<&'cfg String>,
 }
 
 impl<'cfg> Visitor<'cfg> {
@@ -109,7 +109,7 @@ impl<'cfg> Visitor<'cfg> {
             return;
         }
         // avoid endless recursion
-        self.visited_types.push(type_name);
+        self.visited_types.insert(type_name);
 
         if let Some(union_) = self.config.unions.get(type_name) {
             // if the type is union process the nested types recursively
