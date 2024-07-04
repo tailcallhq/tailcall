@@ -1,5 +1,6 @@
 use indexmap::IndexMap;
 use serde_json_borrow::{ObjectAsVec, Value};
+
 use crate::core::json::JsonLike;
 
 pub trait Object {
@@ -37,7 +38,11 @@ impl<'a> Object for ObjectAsVec<'a> {
     type Value = Value<'a>;
 
     fn get_val(&self, key: &str) -> Option<Self::Value> {
-        self.clone().into_vec().into_iter().find(|(k, _)| k == key).map(|(_, v)| v)
+        self.clone()
+            .into_vec()
+            .into_iter()
+            .find(|(k, _)| k == key)
+            .map(|(_, v)| v)
     }
 
     fn insert_val(&mut self, _key: &str, _value: Self::Value) {

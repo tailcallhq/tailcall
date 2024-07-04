@@ -14,6 +14,7 @@ impl<'a> SynthBorrow<'a> {
         Self { selection: plan.into_children(), store }
     }
 
+    #[allow(unused)]
     pub fn synthesize(&self) -> Value {
         let mut data = ObjectAsVec::default();
 
@@ -28,11 +29,13 @@ impl<'a> SynthBorrow<'a> {
     }
 
     /// checks if type_of is an array and value is an array
+    #[allow(unused)]
     fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
         type_of.is_list() == value.is_array()
     }
 
     #[inline(always)]
+    #[allow(unused)]
     fn iter<'b>(
         &'b self,
         node: &'b Field<Children>,
@@ -133,7 +136,6 @@ impl<'a> SynthBorrow<'a> {
 
 #[cfg(test)]
 mod tests {
-
     use serde_json_borrow::Value;
 
     use crate::core::blueprint::Blueprint;
@@ -300,7 +302,8 @@ mod tests {
 
     #[test]
     fn test_json_placeholder() {
-        let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
+        let synth: Box<SynthBorrow> =
+            JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
         let val = synth.synthesize();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }

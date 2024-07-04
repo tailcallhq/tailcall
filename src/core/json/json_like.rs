@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 use serde_json_borrow::ObjectAsVec;
+
 use crate::core::json::Object;
 
 pub trait JsonLike {
@@ -99,7 +100,7 @@ impl JsonLike for serde_json::Value {
     fn as_object_ok(&self) -> Result<&Self::Obj, &str> {
         match self {
             serde_json::Value::Object(obj) => Ok(obj),
-            _ => return Err("expected object"),
+            _ => Err("expected object"),
         }
     }
 
@@ -212,7 +213,7 @@ impl JsonLike for async_graphql::Value {
     fn as_object_ok(&self) -> Result<&Self::Obj, &str> {
         match self {
             ConstValue::Object(obj) => Ok(obj),
-            _ => return Err("expected object"),
+            _ => Err("expected object"),
         }
     }
 
@@ -247,7 +248,7 @@ impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
     fn as_object_ok(&self) -> Result<&Self::Obj, &str> {
         match self {
             serde_json_borrow::Value::Object(obj) => Ok(obj),
-            _ => return Err("expected object"),
+            _ => Err("expected object"),
         }
     }
 
@@ -267,7 +268,10 @@ impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
     }
 
     fn as_u64_ok(&self) -> Result<u64, &str> {
-        todo!()
+        match self {
+            serde_json_borrow::Value::Number(n) => Ok(n.as_u64().ok_or("expected u64")?),
+            _ => Err("expected u64"),
+        }
     }
 
     fn as_f64_ok(&self) -> Result<f64, &str> {
@@ -349,7 +353,6 @@ pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String
 
 #[cfg(test)]
 mod tests {
-
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
