@@ -1,0 +1,29 @@
+---
+source: src/core/config/transformer/flatten_single_types.rs
+expression: transformed_config.to_sdl()
+---
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+type Bar4 {
+  a: Int
+  b: Int
+}
+
+type Foo1 {
+  b: String
+  bar: Int
+}
+
+type Foo5 {
+  bar: [Int]
+}
+
+type Query {
+  foo1: [Foo1]
+  foo2: [Int]!
+  foo3: [Int!]
+  foo4: [Bar4!]!
+  foo5: [Foo5]
+}

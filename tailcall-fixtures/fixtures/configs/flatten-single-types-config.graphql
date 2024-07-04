@@ -1,0 +1,39 @@
+schema @server @upstream(baseURL: "http://jsonplacheholder.typicode.com") {
+  query: Query
+}
+
+type Query {
+  foo1: Foo1!
+  foo2: Foo2
+  foo3: Foo3!
+}
+
+type Mutation {
+  foo1: Foo1
+}
+
+type Foo1 {
+  bar: Bar1
+}
+
+type Bar1 {
+  a: Int
+}
+
+type Foo2 {
+  bar: Bar1
+  b: String
+}
+
+type Bar2 {
+  a: Int
+}
+
+type Foo3 {
+  bar: Bar3!
+}
+
+type Bar3 {
+  a: Int
+  b: Int
+}

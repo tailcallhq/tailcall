@@ -10,6 +10,7 @@ pub struct Preset {
     merge_type: f32,
     consolidate_url: f32,
     tree_shake: bool,
+    flatten_single_types: bool,
     use_better_names: bool,
 }
 
@@ -26,6 +27,7 @@ impl Transform for Preset {
             .pipe(super::TreeShake.when(self.tree_shake))
             .pipe(super::TypeMerger::new(self.merge_type))
             .pipe(super::ImproveTypeNames.when(self.use_better_names))
+            .pipe(super::FlattenSingleTypes.when(self.flatten_single_types))
             .pipe(super::ConsolidateURL::new(self.consolidate_url))
             .transform(config)
     }
@@ -36,8 +38,9 @@ impl Default for Preset {
         Self {
             merge_type: 1.0,
             consolidate_url: 0.5,
-            use_better_names: true,
             tree_shake: true,
+            flatten_single_types: true,
+            use_better_names: true,
         }
     }
 }

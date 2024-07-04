@@ -84,10 +84,6 @@ type Editorial {
   total: Int
 }
 
-type Genre {
-  data: [T5]
-}
-
 type Playlist {
   checksum: String
   collaborative: Boolean
@@ -301,10 +297,6 @@ type T37 {
   type: String
 }
 
-type T38 {
-  data: [T37]
-}
-
 type T39 {
   artist: T8
   available: Boolean
@@ -320,7 +312,7 @@ type T39 {
   explicit_lyrics: Boolean
   fans: Int
   genre_id: Int
-  genres: Genre
+  genres: [T5]
   id: Int
   label: String
   link: String
@@ -331,7 +323,7 @@ type T39 {
   share: String
   title: String
   tracklist: String
-  tracks: T38
+  tracks: [T37]
   type: String
   upc: String
 }
