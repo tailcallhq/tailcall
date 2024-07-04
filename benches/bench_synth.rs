@@ -1,5 +1,5 @@
 use criterion::Criterion;
-use tailcall::core::jit::common::{JsonPlaceholder};
+use tailcall::core::jit::common::JsonPlaceholder;
 use tailcall::core::jit::SynthBorrow;
 
 pub fn bench_synth_nested(c: &mut Criterion) {
