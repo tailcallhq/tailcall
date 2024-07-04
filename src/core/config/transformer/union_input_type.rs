@@ -312,7 +312,7 @@ mod tests {
         assert_snapshot!(config.to_sdl());
     }
     #[test]
-    fn test_recurssive_input() {
+    fn test_recursive_input() {
         let config =
             std::fs::read_to_string(tailcall_fixtures::configs::YAML_RECURSSIVE_INPUT).unwrap();
         let config = Config::from_yaml(&config).unwrap();
