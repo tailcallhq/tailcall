@@ -61,8 +61,6 @@ impl HttpIO for Http {
             .iter()
             .find(|mock| {
                 let mock_req = &mock.mock.request;
-                dbg!(req.url());
-                dbg!(&mock_req.0.body);
                 let method_match = req.method() == mock_req.0.method.clone().to_hyper();
                 let url_match = req.url().as_str() == mock_req.0.url.clone().as_str();
                 let body_match = mock_req
@@ -71,10 +69,9 @@ impl HttpIO for Http {
                     .as_ref()
                     .map(|body| {
                         let mock_body = body.to_bytes();
-                        dbg!("here check", &mock_body);
 
                         req.body()
-                            .and_then(|body| body.as_bytes().map(|req_body| dbg!(req_body) == dbg!(mock_body)))
+                            .and_then(|body| body.as_bytes().map(|req_body| req_body == mock_body))
                             .unwrap_or(false)
                     })
                     .unwrap_or(true);
