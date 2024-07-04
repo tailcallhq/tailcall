@@ -19,7 +19,6 @@ pub mod has_headers;
 pub mod helpers;
 pub mod http;
 pub mod ir;
-#[allow(unused)]
 pub mod jit;
 pub mod json;
 pub mod merge_right;
@@ -50,6 +49,7 @@ use http::Response;
 use ir::model::IoId;
 pub use mustache::Mustache;
 pub use tailcall_macros as macros;
+pub use transform::Transform;
 
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;
@@ -104,6 +104,12 @@ pub mod tests {
 
     #[derive(Clone, Default)]
     pub struct TestEnvIO(HashMap<String, String>);
+
+    impl TestEnvIO {
+        pub fn init(env_vars: HashMap<String, String>) -> Self {
+            Self(env_vars)
+        }
+    }
 
     impl EnvIO for TestEnvIO {
         fn get(&self, key: &str) -> Option<Cow<'_, str>> {
