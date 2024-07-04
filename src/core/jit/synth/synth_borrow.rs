@@ -136,6 +136,9 @@ impl<'a> SynthBorrow<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::rc::Rc;
+    
+
     use serde_json_borrow::Value;
 
     use crate::core::blueprint::Blueprint;
@@ -302,7 +305,7 @@ mod tests {
 
     #[test]
     fn test_json_placeholder() {
-        let synth: Box<SynthBorrow> =
+        let synth: Rc<SynthBorrow> =
             JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
         let val = synth.synthesize();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())

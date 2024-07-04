@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use async_graphql_value::ConstValue;
 use serde::Deserialize;
@@ -150,10 +151,10 @@ impl JsonPlaceholder {
         T: SynthExt<Value>,
     >(
         query: &str,
-    ) -> Box<T> {
+    ) -> Rc<T> {
         let plan = Self::plan(query);
         let data = Self::value::<Value>();
         let data = Self::data(&plan, data);
-        Box::new(T::init(plan, data))
+        Rc::new(T::init(plan, data))
     }
 }
