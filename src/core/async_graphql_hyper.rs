@@ -12,7 +12,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
 
-use crate::core::http::AppContext;
+use crate::core::app_context::AppContex
 use crate::core::jit::{ConstValueExecutor, Error, Request};
 
 #[derive(PartialEq, Eq, Clone, Hash, Debug)]
