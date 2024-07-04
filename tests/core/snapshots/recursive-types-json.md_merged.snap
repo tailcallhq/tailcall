@@ -2,7 +2,7 @@
 source: tests/core/spec.rs
 expression: formatter
 ---
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com", httpCache: 42) {
   query: Query
   mutation: Mutation
 }
@@ -15,7 +15,7 @@ input ConnectionInput {
 input UserInput {
   connections: [ConnectionInput] @http(path: "/connections/{{.value.id}}")
   id: Int!
-  name: String
+  name: String!
 }
 
 type Connection {
@@ -28,11 +28,11 @@ type Mutation {
 }
 
 type Query {
-  user: User @http(path: "/users/1")
+  user(id: Int!): User @http(path: "/users/1")
 }
 
 type User {
   connections: [Connection] @http(path: "/connections/{{.value.id}}")
   id: Int!
-  name: String
+  name: String!
 }
