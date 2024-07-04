@@ -64,7 +64,7 @@ impl<'cfg> Visitor<'cfg> {
             config,
             union_presence: HashMap::new(),
             new_types: BTreeMap::new(),
-            visited_types: Vec::new(),
+            visited_types: HashSet::new(),
         }
     }
 
