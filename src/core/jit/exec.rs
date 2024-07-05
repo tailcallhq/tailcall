@@ -70,7 +70,7 @@ where
     async fn init(&mut self) {
         join_all(self.plan.as_children().iter().map(|field| async {
             let ctx = Context::new(&self.request);
-            self.execute(field, &ctx, DataPath::single()).await
+            self.execute(field, &ctx, DataPath::new()).await
         }))
         .await;
     }
@@ -93,7 +93,7 @@ where
                         join_all(field.children().iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
                                 let ctx = ctx.with_value(value);
-                                let data_path = data_path.with_index(index);
+                                let data_path = data_path.clone().with_index(index);
                                 async move { self.execute(field, &ctx, data_path).await }
                             }))
                         }))

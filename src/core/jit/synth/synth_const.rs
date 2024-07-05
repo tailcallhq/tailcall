@@ -22,7 +22,7 @@ impl Synth {
         let mut data = IndexMap::default();
 
         for child in self.selection.iter() {
-            let val = self.iter(child, None, &DataPath::single())?;
+            let val = self.iter(child, None, &DataPath::new())?;
             data.insert(Name::new(child.name.as_str()), val);
         }
 
@@ -59,7 +59,7 @@ impl Synth {
                     Some(val) => {
                         let mut data = val;
 
-                        for index in data_path.multiple_indexes() {
+                        for index in data_path.as_slice() {
                             match data {
                                 Data::Multiple(v) => {
                                     data = &v[index];
@@ -126,7 +126,7 @@ impl Synth {
             Value::List(arr) => {
                 let mut ans = vec![];
                 for (i, val) in arr.iter().enumerate() {
-                    let val = self.iter_inner(node, val, &data_path.with_index(i))?;
+                    let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
                     ans.push(val)
                 }
                 Ok(Value::List(ans))

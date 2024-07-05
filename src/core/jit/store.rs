@@ -5,32 +5,26 @@ use crate::core::jit::model::FieldId;
 /// Path to the data in the store with info
 /// to resolve nested multiple data
 #[derive(Debug, Clone)]
-pub struct DataPath {
-    /// List of paths, where every entry contains info about specific
-    /// level ot multiple data
-    multiple_path: Vec<usize>,
-}
+pub struct DataPath(Vec<usize>);
 
 impl DataPath {
     /// Create default DataPath that resolved to single value
-    pub fn single() -> Self {
-        Self { multiple_path: Vec::new() }
+    pub fn new() -> Self {
+        Self(Vec::new())
     }
 
     /// Create new DataPath with specified additional entry
-    pub fn with_index(&self, index: usize) -> Self {
-        let mut multiple_path = self.multiple_path.clone();
+    pub fn with_index(mut self, index: usize) -> Self {
+        self.0.push(index);
 
-        multiple_path.push(index);
-
-        Self { multiple_path }
+        Self(self.0)
     }
 
     /// Iterator over indexes only for multiple paths.
     /// Helpful when collecting the data after it has been previously
     /// resolved
-    pub fn multiple_indexes(&self) -> impl Iterator<Item = &usize> + '_ {
-        self.multiple_path.iter()
+    pub fn as_slice(&self) -> &[usize] {
+        &self.0
     }
 }
 
@@ -94,7 +88,7 @@ impl<A> Store<A> {
     }
 
     pub fn set(&mut self, field_id: &FieldId, path: &DataPath, data: A) {
-        let path = &path.multiple_path;
+        let path = path.as_slice();
         let mut current_entry = self.data.entry(field_id.as_usize());
 
         for index in path {
