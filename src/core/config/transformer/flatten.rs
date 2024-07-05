@@ -27,10 +27,14 @@ impl Transform for Flatten {
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         for root in roots(&config) {
-            if let Some((field, ty_of)) = iter(IterHelper::new(&config, &root)) {
+            let mut unused = vec![];
+            if let Some((field, ty_of)) = iter(IterHelper::new(&config, &root), &mut unused) {
                 let ty = config.types.get_mut(&root).unwrap();
                 let fields = &mut ty.fields;
                 fields.get_mut(field.as_str()).unwrap().type_of = ty_of;
+                for unused in unused {
+                    config.types.remove(&unused);
+                }
             }
         }
         /*Valid::from_iter(roots(&config), |root| {
@@ -62,27 +66,31 @@ fn roots(config: &Config) -> Vec<String> {
 }
 
 #[inline(always)]
-fn iter(iter_helper: IterHelper) -> Option<(String, String)> {
+fn iter(iter_helper: IterHelper, unused: &mut Vec<String>) -> Option<(String, String)> {
     let config = iter_helper.config;
     let ty = iter_helper.ty;
     let ty = config.types.get(ty).unwrap();
 
     if ty.fields.len() == 1 {
         if let Some((field_name, field)) = ty.fields.iter().next() {
-            if SCALAR_TYPES.contains(field.type_of.as_str()) {
+            let ty_of = field.type_of.clone();
+
+            if SCALAR_TYPES.contains(ty_of.as_str()) {
                 return if let Some(field_name) = iter_helper.root_field {
-                    Some((field_name, field.type_of.clone()))
+                    Some((field_name, ty_of))
                 } else {
-                    Some((field_name.clone(), field.type_of.clone()))
+                    Some((field_name.clone(), ty_of))
                 };
             }
+            unused.push(ty_of.as_str().to_string());
             return if iter_helper.root_field.is_some() {
-                iter(iter_helper.ty(field.type_of.as_str()))
+                iter(iter_helper.ty(ty_of.as_str()), unused)
             } else {
                 iter(
                     iter_helper
-                        .ty(field.type_of.as_str())
+                        .ty(ty_of.as_str())
                         .root_field(Some(field_name.clone())),
+                    unused,
                 )
             };
         }
@@ -107,6 +115,6 @@ mod test {
         .to_result()
         .unwrap();
         let transformed = Flatten.transform(config).to_result().unwrap();
-        println!("{}", transformed.to_sdl());
+        insta::assert_snapshot!(transformed.to_sdl())
     }
 }
