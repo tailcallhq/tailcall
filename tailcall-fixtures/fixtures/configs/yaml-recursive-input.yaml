@@ -1,0 +1,31 @@
+server:
+  port: 8000
+upstream:
+  baseURL: http://localhost
+schema:
+  query: Query
+types:
+  Bar:
+    fields:
+      name:
+        type: Foo
+      rec:
+        type: Bar
+
+  Query:
+    fields:
+      bars:
+        type: String
+        args:
+          filter:
+            type: Bar
+        graphql:
+          args:
+          - key: baz
+            value: '{{.args.baz}}'
+          baseURL: http://localhost
+          name: bars
+  Foo:
+    fields:
+      name:
+        type: String
