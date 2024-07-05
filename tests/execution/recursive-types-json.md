@@ -1,28 +1,80 @@
-# Recursive Type
+# Recursive Type JSON
 
-```graphql @config
-schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
-  query: Query
-  mutation: Mutation
-}
-
-type User {
-  name: String
-  id: Int!
-  connections: [Connection] @http(path: "/connections/{{.value.id}}")
-}
-
-type Connection {
-  type: String
-  user: User
-}
-
-type Query {
-  user: User @http(path: "/users/1")
-}
-
-type Mutation {
-  createUser(user: User): User @http(path: "/user", method: "POST", body: "{{.args.user}}")
+```json @config
+{
+  "$schema": "./.tailcallrc.schema.json",
+  "upstream": {
+    "baseURL": "https://jsonplaceholder.typicode.com",
+    "httpCache": 42
+  },
+  "schema": {
+    "query": "Query",
+    "mutation": "Mutation"
+  },
+  "types": {
+    "Query": {
+      "fields": {
+        "user": {
+          "type": "User",
+          "args": {
+            "id": {
+              "type": "Int",
+              "required": true
+            }
+          },
+          "http": {
+            "path": "/users/1"
+          }
+        }
+      }
+    },
+    "Mutation": {
+      "fields": {
+        "createUser": {
+          "args": {
+            "user": {
+              "type": "User"
+            }
+          },
+          "type": "User",
+          "http": {
+            "path": "/user",
+            "method": "POST",
+            "body": "{{.args.user}}"
+          }
+        }
+      }
+    },
+    "User": {
+      "fields": {
+        "id": {
+          "type": "Int",
+          "required": true
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "connections": {
+          "type": "Connection",
+          "list": true,
+          "http": {
+            "path": "/connections/{{.value.id}}"
+          }
+        }
+      }
+    },
+    "Connection": {
+      "fields": {
+        "type": {
+          "type": "String"
+        },
+        "user": {
+          "type": "User"
+        }
+      }
+    }
+  }
 }
 ```
 

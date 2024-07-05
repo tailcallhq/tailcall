@@ -1,0 +1,22 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Connection {
+  type: String
+  user: User
+}
+
+type Query {
+  user: User
+}
+
+type User {
+  connections: [Connection]
+  id: Int!
+  name: String
+}

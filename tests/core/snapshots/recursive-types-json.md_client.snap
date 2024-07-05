@@ -4,6 +4,16 @@ expression: formatted
 ---
 scalar Bytes
 
+type Connection {
+  type: String
+  user: User
+}
+
+input ConnectionInput {
+  type: String
+  user: UserInput
+}
+
 scalar Date
 
 scalar Email
@@ -21,6 +31,10 @@ scalar Int64
 scalar Int8
 
 scalar JSON
+
+type Mutation {
+  createUser(user: UserInput): User
+}
 
 scalar PhoneNumber
 
@@ -41,11 +55,18 @@ scalar UInt8
 scalar Url
 
 type User {
-  friend: User
+  connections: [Connection]
+  id: Int!
+  name: String!
+}
+
+input UserInput {
+  connections: [ConnectionInput]
   id: Int!
   name: String!
 }
 
 schema {
   query: Query
+  mutation: Mutation
 }
