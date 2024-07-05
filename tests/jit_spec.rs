@@ -41,4 +41,61 @@ mod tests {
 
         insta::assert_json_snapshot!(data);
     }
+
+    #[tokio::test]
+    async fn test_executor_fragments() {
+        //  NOTE: This test makes a real HTTP call
+        let request = Request::new(
+            r#"
+            fragment UserPII on User {
+              name
+              email
+              phone
+            }
+
+            query {
+              users {
+                id
+                ...UserPII
+                username
+              }
+            }
+        "#,
+        );
+        let executor = new_executor(&request).await.unwrap();
+        let response = executor.execute(request).await;
+        let data = response.data;
+
+        insta::assert_json_snapshot!(data);
+    }
+
+    #[tokio::test]
+    async fn test_executor_fragments_nested() {
+        //  NOTE: This test makes a real HTTP call
+        let request = Request::new(
+            r#"
+            fragment UserPII on User {
+              name
+              email
+              phone
+            }
+
+            query {
+              posts {
+                id
+                user {
+                    id
+                    ...UserPII
+                    username
+                }
+              }
+            }
+        "#,
+        );
+        let executor = new_executor(&request).await.unwrap();
+        let response = executor.execute(request).await;
+        let data = response.data;
+
+        insta::assert_json_snapshot!(data);
+    }
 }
