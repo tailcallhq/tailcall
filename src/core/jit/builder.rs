@@ -135,12 +135,12 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>) -> Vec<Field<Children>> {
+    fn plan(query: impl AsRef<str>) -> ExecutionPlan {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        Builder::new(&blueprint, document).build().unwrap().into_children()
+        Builder::new(&blueprint, document).build().unwrap()
     }
 
     #[tokio::test]
@@ -152,7 +152,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[tokio::test]
@@ -165,7 +165,7 @@ mod tests {
         "#,
         );
 
-        assert_eq!(plan.len(), 4)
+        assert_eq!(plan.size(), 4)
     }
 
     #[test]
@@ -177,7 +177,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -203,7 +203,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -223,7 +223,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -242,7 +242,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -257,7 +257,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -276,7 +276,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -294,6 +294,6 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 }
