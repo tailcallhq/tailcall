@@ -7,6 +7,12 @@ use crate::core::jit::model::FieldId;
 #[derive(Debug, Clone)]
 pub struct DataPath(Vec<usize>);
 
+impl Default for DataPath {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DataPath {
     /// Create default DataPath that resolved to single value
     pub fn new() -> Self {

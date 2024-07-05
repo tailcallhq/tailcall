@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "createUser": {
+        "name": "NewUser",
+        "id": 111,
+        "connections": [
+          {
+            "type": "friend",
+            "user": {
+              "name": "User1",
+              "id": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}
