@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
 use serde::Deserialize;
@@ -31,17 +30,6 @@ impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
                 _ => HashMap::new(),
             },
             extensions: value.extensions,
-        }
-    }
-}
-
-impl Hash for Request<async_graphql::Value> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.query.hash(state);
-        self.operation_name.hash(state);
-        for (name, value) in self.variables.iter() {
-            name.hash(state);
-            value.to_string().hash(state);
         }
     }
 }
