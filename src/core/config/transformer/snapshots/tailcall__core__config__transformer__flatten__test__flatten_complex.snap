@@ -1,0 +1,12 @@
+---
+source: src/core/config/transformer/flatten.rs
+expression: transformed.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  bar: Int
+  foo: Int
+}
