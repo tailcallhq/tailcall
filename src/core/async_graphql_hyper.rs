@@ -60,9 +60,8 @@ pub struct GraphqlJitRequest(pub Request<Value>);
 
 #[async_trait::async_trait]
 impl GraphQLRequestLike for GraphqlJitRequest {
-    fn data<D: Any + Clone + Send + Sync>(mut self, data: D) -> Self {
-        self.0.data.insert(data);
-        self
+    fn data<D: Any + Clone + Send + Sync>(self, _: D) -> Self {
+        unimplemented!("We don't need it for GraphqlJitRequest")
     }
     /// Executes the GraphQL request using the default executor.
     /// This method is not yet implemented (`todo!()`).

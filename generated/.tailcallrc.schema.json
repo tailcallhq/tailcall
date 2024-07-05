@@ -1051,7 +1051,7 @@
           ]
         },
         "enableJIT": {
-          "description": "`enableJIT` enables Just-In-Time (JIT) compilation, which compiles - `Some(true)`: Enables JIT compilation, allowing dynamic code optimization. - `Some(false)` or `None`: Disables JIT compilation, relying on default execution mechanisms.\n\nDefaults to `None`, indicating no explicit configuration.",
+          "description": "`enableJIT` enables Just-In-Time (JIT) compilation, which compiles When set to true, it enables optimizations for each incomming request independently, resulting is significantly better performance in most cases.",
           "type": [
             "boolean",
             "null"

@@ -19,7 +19,9 @@ use crate::core::merge_right::MergeRight;
 /// behaves and helps tune tailcall for various use-cases.
 pub struct Server {
     /// `enableJIT` enables Just-In-Time (JIT) compilation, which compiles
-    /// When set to true, it enables optimizations for each incomming request independently, resulting is significantly better performance in most cases.
+    /// When set to true, it enables optimizations for each incomming request
+    /// independently, resulting is significantly better performance in most
+    /// cases.
     #[serde(default, skip_serializing_if = "is_default", rename = "enableJIT")]
     enable_jit: Option<bool>,
     #[serde(default, skip_serializing_if = "is_default")]

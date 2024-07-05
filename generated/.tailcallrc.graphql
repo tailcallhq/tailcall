@@ -251,10 +251,9 @@ directive @server(
   """
   dedupe: Boolean
   """
-  `enableJIT` enables Just-In-Time (JIT) compilation, which compiles - `Some(true)`: 
-  Enables JIT compilation, allowing dynamic code optimization. - `Some(false)` or `None`: 
-  Disables JIT compilation, relying on default execution mechanisms.Defaults to `None`, 
-  indicating no explicit configuration.
+  `enableJIT` enables Just-In-Time (JIT) compilation, which compiles When set to true, 
+  it enables optimizations for each incomming request independently, resulting is significantly 
+  better performance in most cases.
   """
   enableJIT: Boolean
   """

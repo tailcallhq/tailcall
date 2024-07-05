@@ -45,7 +45,6 @@ impl<A> Request<A> {
             operation_name: None,
             variables: HashMap::new(),
             extensions: HashMap::new(),
-            data: Default::default(),
         }
     }
 }

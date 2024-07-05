@@ -17,20 +17,19 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
     let config_module: ConfigModule = Config::from_sdl(sdl.as_str()).to_result().unwrap().into();
 
     let mut blueprint = Blueprint::try_from(&config_module).unwrap();
-    blueprint.server.enable_jit = false;
     let mut blueprint_clone = blueprint.clone();
-    blueprint_clone.server.enable_jit = true;
 
     let endpoints = config_module.extensions().endpoint_set.clone();
     let endpoints_clone = endpoints.clone();
 
-    let server_config = tokio_runtime
-        .block_on(ServerConfig::new(blueprint, endpoints))
-        .unwrap();
-    let server_config = Arc::new(server_config);
-
     c.bench_function("test_handle_request", |b| {
-        let server_config = server_config.clone();
+        blueprint.server.enable_jit = false;
+        let server_config = tokio_runtime
+            .block_on(ServerConfig::new(blueprint.clone(), endpoints.clone()))
+            .unwrap();
+        let server_config = Arc::new(server_config);
+
+        let server_config = server_config;
         b.iter(|| {
             let server_config = server_config.clone();
             tokio_runtime.block_on(async move {
@@ -46,12 +45,18 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
             });
         })
     });
-    let server_config = tokio_runtime
-        .block_on(ServerConfig::new(blueprint_clone, endpoints_clone))
-        .unwrap();
-    let server_config = Arc::new(server_config);
+
     c.bench_function("test_handle_request_jit", |b| {
-        let server_config = server_config.clone();
+        blueprint_clone.server.enable_jit = true;
+        let server_config = tokio_runtime
+            .block_on(ServerConfig::new(
+                blueprint_clone.clone(),
+                endpoints_clone.clone(),
+            ))
+            .unwrap();
+        let server_config = Arc::new(server_config);
+
+        let server_config = server_config;
         b.iter(|| {
             let server_config = server_config.clone();
             tokio_runtime.block_on(async move {
