@@ -251,6 +251,12 @@ directive @server(
   """
   dedupe: Boolean
   """
+  `enableJIT` enables Just-In-Time (JIT) compilation, which compiles When set to true, 
+  it enables optimizations for each incomming request independently, resulting is significantly 
+  better performance in most cases.
+  """
+  enableJIT: Boolean
+  """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
   """
