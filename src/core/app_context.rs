@@ -1,17 +1,20 @@
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, DynamicRequest};
-use async_graphql::Response;
+use async_graphql_value::ConstValue;
+use hyper::body::Bytes;
 
+use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
-use crate::core::data_loader::DataLoader;
+use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
 use crate::core::grpc;
 use crate::core::grpc::data_loader::GrpcDataLoader;
-use crate::core::http::{DataLoaderRequest, HttpDataLoader};
-use crate::core::ir::{DataLoaderId, IO, IR};
+use crate::core::http::{DataLoaderRequest, HttpDataLoader, Response};
+use crate::core::ir::model::{DataLoaderId, IoId, IO, IR};
+use crate::core::ir::Error;
 use crate::core::rest::{Checked, EndpointSet};
 use crate::core::runtime::TargetRuntime;
 
@@ -24,6 +27,8 @@ pub struct AppContext {
     pub grpc_data_loaders: Arc<Vec<DataLoader<grpc::DataLoaderRequest, GrpcDataLoader>>>,
     pub endpoints: EndpointSet<Checked>,
     pub auth_ctx: Arc<GlobalAuthContext>,
+    pub dedupe_handler: Arc<DedupeResult<IoId, ConstValue, Error>>,
+    pub dedupe_operation_handler: DedupeResult<OperationId, Response<Bytes>, Error>,
 }
 
 impl AppContext {
@@ -44,7 +49,7 @@ impl AppContext {
                     field.map_expr(|expr| {
                         expr.modify(|expr| match expr {
                             IR::IO(io) => match io {
-                                IO::Http { req_template, group_by, .. } => {
+                                IO::Http { req_template, group_by, http_filter, .. } => {
                                     let data_loader = HttpDataLoader::new(
                                         runtime.clone(),
                                         group_by.clone(),
@@ -55,7 +60,8 @@ impl AppContext {
                                     let result = Some(IR::IO(IO::Http {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
-                                        dl_id: Some(DataLoaderId(http_data_loaders.len())),
+                                        dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
+                                        http_filter: http_filter.clone(),
                                     }));
 
                                     http_data_loaders.push(data_loader);
@@ -74,7 +80,7 @@ impl AppContext {
                                         req_template: req_template.clone(),
                                         field_name: field_name.clone(),
                                         batch: *batch,
-                                        dl_id: Some(DataLoaderId(gql_data_loaders.len())),
+                                        dl_id: Some(DataLoaderId::new(gql_data_loaders.len())),
                                     }));
 
                                     gql_data_loaders.push(graphql_data_loader);
@@ -95,7 +101,7 @@ impl AppContext {
                                     let result = Some(IR::IO(IO::Grpc {
                                         req_template: req_template.clone(),
                                         group_by: group_by.clone(),
-                                        dl_id: Some(DataLoaderId(grpc_data_loaders.len())),
+                                        dl_id: Some(DataLoaderId::new(grpc_data_loaders.len())),
                                     }));
 
                                     grpc_data_loaders.push(data_loader);
@@ -127,10 +133,12 @@ impl AppContext {
             grpc_data_loaders: Arc::new(grpc_data_loaders),
             endpoints,
             auth_ctx: Arc::new(auth_ctx),
+            dedupe_handler: Arc::new(DedupeResult::new(false)),
+            dedupe_operation_handler: DedupeResult::new(false),
         }
     }
 
-    pub async fn execute(&self, request: impl Into<DynamicRequest>) -> Response {
+    pub async fn execute(&self, request: impl Into<DynamicRequest>) -> async_graphql::Response {
         self.schema.execute(request).await
     }
 }

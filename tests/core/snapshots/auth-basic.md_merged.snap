@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server(port: 8000) @upstream @link(id: "htpasswd", src: ".htpasswd", type: Htpasswd) {
   query: Query

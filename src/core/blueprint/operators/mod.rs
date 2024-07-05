@@ -1,4 +1,5 @@
 mod call;
+mod enum_alias;
 mod expr;
 mod graphql;
 mod grpc;
@@ -8,6 +9,7 @@ mod modify;
 mod protected;
 
 pub use call::*;
+pub use enum_alias::*;
 pub use expr::*;
 pub use graphql::*;
 pub use grpc::*;

@@ -6,7 +6,8 @@ use hyper::Response;
 use serde::de::DeserializeOwned;
 use url::Url;
 
-use super::{AppContext, Request};
+use super::Request;
+use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;

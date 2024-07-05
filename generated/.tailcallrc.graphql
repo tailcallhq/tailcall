@@ -14,6 +14,13 @@ directive @addField(
 ) repeatable  on OBJECT
 
 """
+The @alias directive indicates that aliases of one enum value.
+"""
+directive @alias(
+  options: [String!]
+) on ENUM_VALUE_DEFINITION
+
+"""
 The @cache operator enables caching for the query, field or type it is applied to.
 """
 directive @cache(
@@ -161,6 +168,11 @@ directive @http(
   """
   method: Method
   """
+  onRequest field in @http directive gives the ability to specify the request interception 
+  handler.
+  """
+  onRequest: String
+  """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """
   output: Schema
@@ -231,6 +243,13 @@ directive @server(
   introducing latency and complicating debugging. Use judiciously. @default `false`.
   """
   batchRequests: Boolean
+  """
+  Enables deduplication of IO operations to enhance performance.This flag prevents 
+  duplicate IO requests from being executed concurrently, reducing resource load. Caution: 
+  May lead to issues with APIs that expect unique results for identical inputs, such 
+  as nonce-based APIs.
+  """
+  dedupe: Boolean
   """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
@@ -350,11 +369,6 @@ directive @upstream(
   """
   connectTimeout: Int
   """
-  When set to `true`, it will ensure no HTTP, GRPC, or any other IO call is made more 
-  than once within the context of a single GraphQL request.
-  """
-  dedupe: Boolean
-  """
   The `http2Only` setting allows you to specify whether the client should always issue 
   HTTP2 requests, without checking if the server supports it or not. By default it 
   is set to `false` for all HTTP requests made by the server, but is automatically 
@@ -381,6 +395,10 @@ directive @upstream(
   the connection is idle.
   """
   keepAliveWhileIdle: Boolean
+  """
+  onRequest field gives the ability to specify the global request interception handler.
+  """
+  onRequest: String
   """
   The time in seconds that the connection pool will wait before closing idle connections.
   """
@@ -646,6 +664,11 @@ input Http {
   """
   method: Method
   """
+  onRequest field in @http directive gives the ability to specify the request interception 
+  handler.
+  """
+  onRequest: String
+  """
   Schema of the output of the API call. It is automatically inferred in most cases.
   """
   output: Schema
@@ -780,6 +803,10 @@ input Schema {
   Enum: [String!]
 }
 """
+Represents list of bytes
+"""
+scalar Bytes
+"""
 A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.
 """
 scalar Date
@@ -792,6 +819,26 @@ Empty scalar type represents an empty value.
 """
 scalar Empty
 """
+Represents signed integer type 128 bit size as string
+"""
+scalar Int128
+"""
+Represents signed integer type 16bit size
+"""
+scalar Int16
+"""
+Represents signed integer type 32bit size
+"""
+scalar Int32
+"""
+Represents signed integer type 64bit size as string
+"""
+scalar Int64
+"""
+Represents signed integer type 8bit size
+"""
+scalar Int8
+"""
 The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ ECMA-404.pdf).
 """
 scalar JSON
@@ -799,6 +846,26 @@ scalar JSON
 A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
 """
 scalar PhoneNumber
+"""
+Represents unsigned integer type 128bit size as string
+"""
+scalar UInt128
+"""
+Represents unsigned integer type 16bit size
+"""
+scalar UInt16
+"""
+Represents unsigned integer type 32bit size
+"""
+scalar UInt32
+"""
+Represents unsigned integer type 64bit size as string
+"""
+scalar UInt64
+"""
+Represents unsigned integer type 8bit size
+"""
+scalar UInt8
 """
 A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
 """

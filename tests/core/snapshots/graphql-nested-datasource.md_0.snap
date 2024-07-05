@@ -1,0 +1,60 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "a": [
+        {
+          "id": 1,
+          "bid": 1,
+          "cid": 1,
+          "b": {
+            "y": "y1"
+          },
+          "c": {
+            "x": "x1"
+          }
+        },
+        {
+          "id": 2,
+          "bid": 1,
+          "cid": 2,
+          "b": {
+            "y": "y1"
+          },
+          "c": {
+            "x": "x2"
+          }
+        },
+        {
+          "id": 3,
+          "bid": 2,
+          "cid": 1,
+          "b": {
+            "y": "y2"
+          },
+          "c": {
+            "x": "x1"
+          }
+        },
+        {
+          "id": 4,
+          "bid": 2,
+          "cid": 2,
+          "b": {
+            "y": "y2"
+          },
+          "c": {
+            "x": "x2"
+          }
+        }
+      ]
+    }
+  }
+}

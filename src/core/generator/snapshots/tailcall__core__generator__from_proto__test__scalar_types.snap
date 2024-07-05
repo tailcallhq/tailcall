@@ -1,0 +1,51 @@
+---
+source: src/core/generator/from_proto.rs
+expression: config
+---
+schema @server @upstream {
+  query: Query
+}
+
+input scalars__ItemInput @tag(id: "scalars.Item") {
+  boolean: Boolean
+  bytesType: Bytes
+  doubleNum: Float
+  fixedint32: Int
+  fixedint64: Int64
+  floatNum: Float
+  integer32: Int
+  integer64: Int64
+  sfixedint32: Int
+  sfixedint64: Int64
+  sinteger32: Int
+  sinteger64: Int64
+  str: String
+  uinteger32: UInt32
+  uinteger64: UInt64
+}
+
+type Query {
+  scalars__Example__Get(item: scalars__ItemInput!): scalars__Result! @grpc(body: "{{.args.item}}", method: "scalars.Example.Get")
+}
+
+type scalars__Item @tag(id: "scalars.Item") {
+  boolean: Boolean
+  bytesType: Bytes
+  doubleNum: Float
+  fixedint32: Int
+  fixedint64: Int64
+  floatNum: Float
+  integer32: Int
+  integer64: Int64
+  sfixedint32: Int
+  sfixedint64: Int64
+  sinteger32: Int
+  sinteger64: Int64
+  str: String
+  uinteger32: UInt32
+  uinteger64: UInt64
+}
+
+type scalars__Result @tag(id: "scalars.Result") {
+  result: [scalars__Item]
+}

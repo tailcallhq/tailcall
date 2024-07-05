@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: client
+expression: formatted
 ---
 type A {
   a: Int
@@ -12,6 +12,8 @@ type BC {
   f: Boolean
 }
 
+scalar Bytes
+
 type D {
   e: Int
 }
@@ -22,6 +24,16 @@ scalar Email
 
 scalar Empty
 
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
 scalar JSON
 
 scalar PhoneNumber
@@ -29,6 +41,16 @@ scalar PhoneNumber
 type Query {
   a: A
 }
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
 
 scalar Url
 

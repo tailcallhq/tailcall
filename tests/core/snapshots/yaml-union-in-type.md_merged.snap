@@ -1,0 +1,91 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream {
+  query: Query
+}
+
+input NNU__nu0 {
+  new: Boolean
+  nu: NU__u0
+  other: Int
+}
+
+input NNU__nu1 {
+  new: Boolean
+  nu: NU__u1
+  other: Int
+}
+
+input NNU__nu2 {
+  new: Boolean
+  nu: NU__u2
+  other: Int
+}
+
+input NU__u0 {
+  test: String
+  u: T1Input
+}
+
+input NU__u1 {
+  test: String
+  u: T2Input
+}
+
+input NU__u2 {
+  test: String
+  u: T3Input
+}
+
+input T1Input {
+  t1: String
+}
+
+input T2Input {
+  t2: Int
+}
+
+input T3Input {
+  t3: Boolean
+  t33: Float!
+}
+
+union U = T1 | T2 | T3
+
+type NNU {
+  new: Boolean
+  nu: NU
+  other: Int
+}
+
+type NU {
+  test: String
+  u: U
+}
+
+type Query {
+  testVar0Var0(nnu: NNU__nu0, nu: NU__u0!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar0Var1(nnu: NNU__nu0, nu: NU__u1!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar0Var2(nnu: NNU__nu0, nu: NU__u2!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar1Var0(nnu: NNU__nu1, nu: NU__u0!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar1Var1(nnu: NNU__nu1, nu: NU__u1!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar1Var2(nnu: NNU__nu1, nu: NU__u2!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar2Var0(nnu: NNU__nu2, nu: NU__u0!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar2Var1(nnu: NNU__nu2, nu: NU__u1!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+  testVar2Var2(nnu: NNU__nu2, nu: NU__u2!): U @http(baseURL: "http://localhost", path: "/users/{{args.nu.u}}")
+}
+
+type T1 {
+  t1: String
+}
+
+type T2 {
+  t2: Int
+}
+
+type T3 {
+  t3: Boolean
+  t33: Float!
+}

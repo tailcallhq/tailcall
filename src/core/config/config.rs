@@ -3,7 +3,6 @@ use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
-use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -262,10 +261,16 @@ pub struct Field {
     ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
+
     ///
     /// Marks field as protected by auth provider
     #[serde(default)]
     pub protected: Option<Protected>,
+
+    ///
+    /// Stores the default value for the field
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub default_value: Option<Value>,
 }
 
 // It's a terminal implementation of MergeRight
@@ -388,7 +393,9 @@ pub struct Arg {
     pub default_value: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
@@ -397,8 +404,44 @@ pub struct Union {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 /// Definition of GraphQL enum type
 pub struct Enum {
-    pub variants: BTreeSet<String>,
+    pub variants: BTreeSet<Variant>,
     pub doc: Option<String>,
+}
+
+/// Definition of GraphQL value
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
+pub struct Variant {
+    pub name: String,
+    // directive: alias
+    pub alias: Option<Alias>,
+}
+
+/// The @alias directive indicates that aliases of one enum value.
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
+pub struct Alias {
+    pub options: BTreeSet<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
@@ -411,6 +454,11 @@ pub struct Enum {
 /// REST API. In this scenario, the GraphQL server will make a GET request to
 /// the API endpoint specified when the `users` field is queried.
 pub struct Http {
+    #[serde(rename = "onRequest", default, skip_serializing_if = "is_default")]
+    /// onRequest field in @http directive gives the ability to specify the
+    /// request interception handler.
+    pub on_request: Option<String>,
+
     #[serde(rename = "baseURL", default, skip_serializing_if = "is_default")]
     /// This refers to the base URL of the API. If not specified, the default
     /// base URL is the one specified in the `@upstream` operator.
@@ -605,6 +653,19 @@ pub struct AddField {
 }
 
 impl Config {
+    pub fn is_root_operation_type(&self, type_name: &str) -> bool {
+        let type_name = type_name.to_lowercase();
+
+        [
+            &self.schema.query,
+            &self.schema.mutation,
+            &self.schema.subscription,
+        ]
+        .iter()
+        .filter_map(|&root_name| root_name.as_ref())
+        .any(|root_name| root_name.to_lowercase() == type_name)
+    }
+
     pub fn port(&self) -> u16 {
         self.server.port.unwrap_or(8000)
     }
@@ -633,13 +694,9 @@ impl Config {
         }
     }
 
-    pub fn to_document(&self) -> ServiceDocument {
-        self.clone().into()
-    }
-
+    /// Renders current config to graphQL string
     pub fn to_sdl(&self) -> String {
-        let doc = self.to_document();
-        crate::core::document::print(doc)
+        crate::core::document::print(self.into())
     }
 
     pub fn query(mut self, query: &str) -> Self {
@@ -694,11 +751,16 @@ impl Config {
     /// Given a starting type, this function searches for all the unique types
     /// that this type can be connected to via it's fields
     fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
-        if let Some(type_) = self.find_type(type_of) {
+        if let Some(union_) = self.find_union(type_of) {
+            types.insert(type_of.into());
+
+            for type_ in union_.types.iter() {
+                types = self.find_connections(type_, types);
+            }
+        } else if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
-                    types.insert(field.type_of.clone());
                     types = self.find_connections(&field.type_of, types);
                 }
             }
@@ -725,6 +787,14 @@ impl Config {
             .fold(HashSet::new(), |types, type_of| {
                 self.find_connections(type_of, types)
             })
+    }
+
+    /// finds the all types which are present in union.
+    pub fn union_types(&self) -> HashSet<String> {
+        self.unions
+            .values()
+            .flat_map(|union| union.types.iter().cloned())
+            .collect()
     }
 
     /// Returns a list of all the types that are used as output types
@@ -767,6 +837,7 @@ impl Config {
     pub fn remove_types(mut self, types: HashSet<String>) -> Self {
         for unused_type in types {
             self.types.remove(&unused_type);
+            self.unions.remove(&unused_type);
         }
 
         self
@@ -774,7 +845,12 @@ impl Config {
 
     pub fn unused_types(&self) -> HashSet<String> {
         let used_types = self.get_all_used_type_names();
-        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        let all_types: HashSet<String> = self
+            .types
+            .keys()
+            .chain(self.unions.keys())
+            .cloned()
+            .collect();
         all_types.difference(&used_types).cloned().collect()
     }
 
@@ -789,7 +865,15 @@ impl Config {
             stack.push(mutation.clone());
         }
         while let Some(type_name) = stack.pop() {
-            if let Some(typ) = self.types.get(&type_name) {
+            if set.contains(&type_name) {
+                continue;
+            }
+            if let Some(union_) = self.unions.get(&type_name) {
+                set.insert(type_name);
+                for type_ in &union_.types {
+                    stack.push(type_.clone());
+                }
+            } else if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
@@ -850,5 +934,83 @@ mod tests {
             Type::default().fields(vec![("a", Field::int())]),
         )]);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_unused_types_with_cyclic_types() {
+        let config = Config::from_sdl(
+            "
+            type Bar {a: Int}
+            type Foo {a: [Foo]}
+
+            type Query {
+                foos: [Foo]
+            }
+
+            schema {
+                query: Query
+            }
+            ",
+        )
+        .to_result()
+        .unwrap();
+
+        let actual = config.unused_types();
+        let mut expected = HashSet::new();
+        expected.insert("Bar".to_string());
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_query() {
+        let mut config = Config::default();
+        config.schema.query = Some("Query".to_string());
+
+        assert!(config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_mutation() {
+        let mut config = Config::default();
+        config.schema.mutation = Some("Mutation".to_string());
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_subscription() {
+        let mut config = Config::default();
+        config.schema.subscription = Some("Subscription".to_string());
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_no_root_operation() {
+        let config = Config::default();
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_union_types() {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::UNION_CONFIG).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let union_types = config.union_types();
+        let expected_union_types: HashSet<String> = ["Bar", "Baz", "Foo"]
+            .iter()
+            .cloned()
+            .map(String::from)
+            .collect();
+        assert_eq!(union_types, expected_union_types);
     }
 }

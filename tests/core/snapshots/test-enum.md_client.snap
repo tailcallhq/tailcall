@@ -1,7 +1,9 @@
 ---
 source: tests/core/spec.rs
-expression: client
+expression: formatted
 ---
+scalar Bytes
+
 scalar Date
 
 scalar Email
@@ -13,6 +15,16 @@ enum Foo {
   BAZ
 }
 
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
 scalar JSON
 
 scalar PhoneNumber
@@ -20,6 +32,16 @@ scalar PhoneNumber
 type Query {
   foo(val: String!): Foo
 }
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
 
 scalar Url
 

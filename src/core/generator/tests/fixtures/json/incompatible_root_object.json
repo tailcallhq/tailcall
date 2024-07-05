@@ -1,0 +1,9 @@
+{
+  "url": "https://example.com/",
+  "body": {
+    "color_names": ["red", "blue"],
+    "10": ["a", "b", "c"],
+    "content_type": "application/json",
+    "other content": "not available"
+  }
+}

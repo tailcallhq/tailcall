@@ -1,6 +1,6 @@
 use super::{to_type, FieldDefinition, Type};
 use crate::core::config::{self, Config};
-use crate::core::ir::{IO, IR};
+use crate::core::ir::model::{IO, IR};
 use crate::core::scalar;
 use crate::core::valid::{Valid, Validator};
 

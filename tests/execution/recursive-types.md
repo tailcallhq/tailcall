@@ -3,16 +3,26 @@
 ```graphql @config
 schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
+  mutation: Mutation
 }
 
 type User {
   name: String
-  id: Int
-  friend: User @http(path: "/friends/1")
+  id: Int!
+  connections: [Connection] @http(path: "/connections/{{.value.id}}")
+}
+
+type Connection {
+  type: String
+  user: User
 }
 
 type Query {
   user: User @http(path: "/users/1")
+}
+
+type Mutation {
+  createUser(user: User): User @http(path: "/user", method: "POST", body: "{{.args.user}}")
 }
 ```
 
@@ -27,18 +37,113 @@ type Query {
       name: User1
 - request:
     method: GET
-    url: https://jsonplaceholder.typicode.com/friends/1
-  expectedHits: 2
+    url: https://jsonplaceholder.typicode.com/connections/1
   response:
     status: 200
     body:
-      id: 2
-      name: User2
+      - type: friend
+        user:
+          id: 2
+          name: User2
+
+- request:
+    method: GET
+    url: https://jsonplaceholder.typicode.com/connections/2
+  response:
+    status: 200
+    body:
+      - type: friend
+        user:
+          id: 3
+          name: User3
+      - type: coworker
+        user:
+          id: 4
+          name: User4
+
+- request:
+    method: POST
+    url: https://jsonplaceholder.typicode.com/user
+    body:
+      id: 111
+      name: NewUser
+      connections:
+        - type: friend
+          user:
+            id: 1
+            name: User1
+  response:
+    status: 200
+    body:
+      id: 111
+      name: NewUser
+
+- request:
+    method: GET
+    url: https://jsonplaceholder.typicode.com/connections/111
+  response:
+    status: 200
+    body:
+      - type: friend
+        user:
+          id: 1
+          name: User1
 ```
 
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: query { user { name id friend { name id friend { name id } } } }
+    query: |
+      query {
+        user {
+          name
+          id
+          connections {
+            type
+            user {
+              name
+              id
+              connections {
+                user {
+                  name
+                  id
+                }
+              }
+            }
+          }
+        }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      mutation {
+        createUser(
+          user: {
+            id: 111,
+            name: "NewUser",
+            connections: [
+              {
+                type: "friend"
+                user: {
+                  id: 1
+                  name: "User1"
+                }
+              }
+            ]
+          }
+        ) {
+          name
+          id
+          connections {
+            type
+            user {
+              name
+              id
+            }
+          }
+        }
+      }
 ```

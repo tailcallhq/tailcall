@@ -1,0 +1,7 @@
+---
+source: src/core/generator/json/query_generator.rs
+expression: config.to_sdl()
+---
+type Query {
+  f1(is_verified: Boolean, q: Int): T1 @http(path: "/path", query: [{key: "q", value: "{{.args.q}}"}, {key: "is_verified", value: "{{.args.is_verified}}"}])
+}

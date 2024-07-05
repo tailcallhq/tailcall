@@ -5,12 +5,12 @@ use schemars::{schema_for, JsonSchema};
 
 use crate::core::json::JsonLike;
 
+/// field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
 #[derive(JsonSchema, Default)]
 pub struct Email {
     #[allow(dead_code)]
     #[serde(rename = "Email")]
     #[schemars(schema_with = "email_schema")]
-    /// field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
     pub email: String,
 }
 
@@ -34,37 +34,33 @@ impl super::Scalar for Email {
             false
         }
     }
-    fn scalar(&self) -> Schema {
+    fn schema(&self) -> Schema {
         Schema::Object(schema_for!(Self).schema)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use anyhow::Result;
     use async_graphql_value::ConstValue;
 
     use crate::core::scalar::{Email, Scalar};
 
-    #[tokio::test]
-    async fn test_email_valid_req_resp() -> Result<()> {
+    #[test]
+    fn test_email_valid_req_resp() {
         assert!(Email::default().validate()(&ConstValue::String(
             "valid@email.com".to_string()
         )));
-        Ok(())
     }
 
-    #[tokio::test]
-    async fn test_email_invalid() -> Result<()> {
+    #[test]
+    fn test_email_invalid() {
         assert!(!Email::default().validate()(&ConstValue::String(
             "invalid_email".to_string()
         )));
-        Ok(())
     }
 
-    #[tokio::test]
-    async fn test_email_invalid_const_value() -> Result<()> {
+    #[test]
+    fn test_email_invalid_const_value() {
         assert!(!Email::default().validate()(&ConstValue::Null));
-        Ok(())
     }
 }

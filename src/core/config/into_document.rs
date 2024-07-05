@@ -2,14 +2,19 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::{Config, ConfigModule};
+use super::Config;
 use crate::core::blueprint::TypeLike;
 use crate::core::directive::DirectiveCodec;
 
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
-fn config_document(config: &ConfigModule) -> ServiceDocument {
+
+fn transform_default_value(value: Option<serde_json::Value>) -> Option<ConstValue> {
+    value.map(ConstValue::from_json).and_then(Result::ok)
+}
+
+fn config_document(config: &Config) -> ServiceDocument {
     let mut definitions = Vec::new();
     let mut directives = vec![
         pos(config.server.to_directive()),
@@ -53,8 +58,10 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
             .map(|name| pos(Name::new(name))),
     };
     definitions.push(TypeSystemDefinition::Schema(pos(schema_definition)));
+    let interface_types = config.interface_types();
+    let input_types = config.input_types();
     for (type_name, type_def) in config.types.iter() {
-        let kind = if config.interface_types.contains(type_name) {
+        let kind = if interface_types.contains(type_name) {
             TypeKind::Interface(InterfaceType {
                 implements: type_def
                     .implements
@@ -86,7 +93,7 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     })
                     .collect::<Vec<Positioned<FieldDefinition>>>(),
             })
-        } else if config.input_types.contains(type_name) {
+        } else if input_types.contains(type_name) {
             TypeKind::InputObject(InputObjectType {
                 fields: type_def
                     .fields
@@ -112,7 +119,8 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                             name: pos(Name::new(name.clone())),
                             ty: pos(Type { nullable: !field.required, base: base_type }),
 
-                            default_value: None,
+                            default_value: transform_default_value(field.default_value.clone())
+                                .map(pos),
                             directives,
                         })
                     })
@@ -129,7 +137,6 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     .collect(),
                 fields: type_def
                     .fields
-                    .clone()
                     .iter()
                     .map(|(name, field)| {
                         let directives = get_directives(field);
@@ -167,10 +174,10 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                                     name: pos(Name::new(name.clone())),
                                     ty: pos(Type { nullable: !arg.required, base: base_type }),
 
-                                    default_value: arg
-                                        .default_value
-                                        .clone()
-                                        .map(|v| pos(ConstValue::String(v.to_string()))),
+                                    default_value: transform_default_value(
+                                        arg.default_value.clone(),
+                                    )
+                                    .map(pos),
                                     directives: Vec::new(),
                                 })
                             })
@@ -242,8 +249,11 @@ fn config_document(config: &ConfigModule) -> ServiceDocument {
                     .map(|variant| {
                         pos(EnumValueDefinition {
                             description: None,
-                            value: pos(Name::new(variant)),
-                            directives: Vec::new(),
+                            value: pos(Name::new(&variant.name)),
+                            directives: variant
+                                .alias
+                                .clone()
+                                .map_or(vec![], |v| vec![pos(v.to_directive())]),
                         })
                     })
                     .collect(),
@@ -271,8 +281,8 @@ fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDir
     directives.into_iter().flatten().collect()
 }
 
-impl From<Config> for ServiceDocument {
-    fn from(value: Config) -> Self {
-        config_document(&value.into())
+impl From<&Config> for ServiceDocument {
+    fn from(value: &Config) -> Self {
+        config_document(value)
     }
 }

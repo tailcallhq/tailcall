@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "internal: invalid value for scalar \"Int64\", expected \"FieldValue::Value\"",
+        "locations": [
+          {
+            "line": 1,
+            "column": 3
+          }
+        ],
+        "path": [
+          "a"
+        ]
+      }
+    ]
+  }
+}

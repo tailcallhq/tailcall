@@ -1,0 +1,15 @@
+---
+source: src/core/config/transformer/merge_types/type_merger.rs
+expression: config.to_sdl()
+---
+type T1 {
+  a: Int
+  b: Int
+  c: Int
+}
+
+type T2 {
+  a: Int
+  b: Int
+  c: String
+}

@@ -1,0 +1,26 @@
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  f1: [RootType1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+}
+
+type RootType1 {
+  id: ID!
+  name: String!
+  posts: [T32]!
+}
+
+type T32 {
+  id: ID!
+  title: String!
+  content: String!
+  author: RootType1!
+  cycle: T33
+}
+
+type T33 {
+  id: ID!
+  cycle: T33
+}

@@ -2,6 +2,7 @@ use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
 use hyper::body::Bytes;
+use hyper::Body;
 use indexmap::IndexMap;
 use prost::Message;
 use tonic::Status;
@@ -9,7 +10,7 @@ use tonic_types::Status as GrpcStatus;
 
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::http::{to_hyper_headers, to_reqwest_headers};
-use crate::core::ir::EvaluationError;
+use crate::core::ir::Error;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
@@ -39,7 +40,8 @@ impl FromValue for ConstValue {
                 ConstValue::List(a.into_iter().map(|v| Self::from_value(v)).collect())
             }
             serde_json_borrow::Value::Object(o) => ConstValue::Object(
-                o.into_iter()
+                o.into_vec()
+                    .into_iter()
                     .map(|(k, v)| (Name::new(k), Self::from_value(v)))
                     .collect(),
             ),
@@ -52,6 +54,13 @@ impl Response<Bytes> {
         let status = hyper::StatusCode::from_u16(resp.status().as_u16())?;
         let headers = to_hyper_headers(resp.headers());
         let body = resp.bytes().await?;
+        Ok(Response { status, headers, body })
+    }
+
+    pub async fn from_hyper(resp: hyper::Response<hyper::Body>) -> Result<Self> {
+        let status = resp.status();
+        let headers = resp.headers().to_owned();
+        let body = hyper::body::to_bytes(resp.into_body()).await?;
         Ok(Response { status, headers, body })
     }
 
@@ -96,10 +105,7 @@ impl Response<Bytes> {
             // TODO
             Some(status) => status,
             None => {
-                return EvaluationError::IOException(
-                    "Error while parsing upstream headers".to_owned(),
-                )
-                .into()
+                return Error::IOException("Error while parsing upstream headers".to_owned()).into()
             }
         };
 
@@ -132,7 +138,7 @@ impl Response<Bytes> {
         }
         obj.insert(Name::new("details"), ConstValue::List(status_details));
 
-        let error = EvaluationError::GRPCError {
+        let error = Error::GRPCError {
             grpc_code: grpc_status.code() as i32,
             grpc_description: grpc_status.code().description().to_owned(),
             grpc_status_message: grpc_status.message().to_owned(),
@@ -151,5 +157,14 @@ impl Response<Bytes> {
             status: self.status,
             headers: self.headers,
         })
+    }
+}
+
+impl From<Response<Bytes>> for hyper::Response<Body> {
+    fn from(resp: Response<Bytes>) -> Self {
+        let mut response = hyper::Response::new(Body::from(resp.body));
+        *response.headers_mut() = resp.headers;
+        *response.status_mut() = resp.status;
+        response
     }
 }

@@ -1,7 +1,7 @@
-# test-scalar-email
+# Test scalars
 
 ```graphql @config
-# this is already defined scalars in tailcall
+# these are pre-defined scalars in Tailcall
 scalar Email
 
 # this is custom scalars in config
@@ -17,6 +17,7 @@ type Query {
   date(value: Date!): Date! @expr(body: "{{.args.value}}")
   url(value: Url!): Url! @expr(body: "{{.args.value}}")
   any(value: AnyScalar!): AnyScalar @expr(body: "{{.args.value}}")
+  bytes(value: Bytes): Bytes @expr(body: "{{.args.value}}")
 }
 ```
 
@@ -46,6 +47,11 @@ type Query {
   body:
     query: '{ any1: any(value: { test: "abc" } ), any2: any(value: "string-value") }'
 
+- method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: '{ bytes(value: "test") }'
+
 # Invalid value test
 
 - method: POST
@@ -69,4 +75,9 @@ type Query {
   url: http://localhost:8000/graphql
   body:
     query: '{ url(value: "invalid_host") }'
+
+- method: POST
+  url: http://localhost:8000/graphql
+  body:
+    query: "{ bytes(value: 44864) }"
 ```

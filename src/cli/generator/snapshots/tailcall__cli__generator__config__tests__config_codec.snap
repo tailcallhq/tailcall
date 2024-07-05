@@ -1,0 +1,19 @@
+---
+source: src/cli/generator/config.rs
+expression: actual
+---
+{
+  "inputs": [
+    {
+      "curl": {
+        "src": "https://example.com",
+        "headers": {
+          "user-agent": "tailcall-v1"
+        },
+        "fieldName": "test"
+      }
+    }
+  ],
+  "output": {},
+  "schema": {}
+}

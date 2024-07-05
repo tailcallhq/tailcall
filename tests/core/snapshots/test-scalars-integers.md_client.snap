@@ -1,0 +1,54 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Bytes
+
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  int128(x: Int128): Int128
+  int16(x: Int16): Int16
+  int32(x: Int32): Int32
+  int64(x: Int64): Int64
+  int8(x: Int8): Int8
+  uint128(x: UInt128): UInt128
+  uint16(x: UInt16): UInt16
+  uint32(x: UInt32): UInt32
+  uint64(x: UInt64): UInt64
+  uint8(x: UInt8): UInt8
+}
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
+
+scalar Url
+
+schema {
+  query: Query
+}

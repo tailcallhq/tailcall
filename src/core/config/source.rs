@@ -1,14 +1,27 @@
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use super::Config;
 use crate::core::valid::{ValidationError, Validator};
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum Source {
     Json,
     Yml,
     #[default]
     GraphQL,
+}
+
+impl std::fmt::Display for Source {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Source::Json => write!(f, "JSON"),
+            Source::Yml => write!(f, "YML"),
+            Source::GraphQL => write!(f, "GraphQL"),
+        }
+    }
 }
 
 const JSON_EXT: &str = "json";

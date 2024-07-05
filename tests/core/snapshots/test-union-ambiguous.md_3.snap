@@ -1,0 +1,31 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "arr": [
+        {
+          "foo": "foo1"
+        },
+        {
+          "bar": "bar2"
+        },
+        {
+          "foo": "foo3"
+        },
+        {
+          "foo": "foo4"
+        },
+        {
+          "bar": "bar5"
+        }
+      ]
+    }
+  }
+}

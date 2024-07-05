@@ -30,6 +30,15 @@ pub struct Server {
     pub batch_requests: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
+    /// Enables deduplication of IO operations to enhance performance.
+    ///
+    /// This flag prevents duplicate IO requests from being executed
+    /// concurrently, reducing resource load. Caution: May lead to issues
+    /// with APIs that expect unique results for identical inputs, such as
+    /// nonce-based APIs.
+    pub dedupe: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
     /// `headers` contains key-value pairs that are included as default headers
     /// in server responses, allowing for consistent header management across
     /// all responses.
@@ -197,6 +206,10 @@ impl Server {
 
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
+    }
+
+    pub fn get_dedupe(&self) -> bool {
+        self.dedupe.unwrap_or(false)
     }
 }
 

@@ -4,11 +4,11 @@ use schemars::{schema_for, JsonSchema};
 
 use crate::core::json::JsonLike;
 
+/// A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
 #[derive(JsonSchema, Default)]
 pub struct Url {
     #[allow(dead_code)]
     #[serde(rename = "Url")]
-    /// A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
     pub url: String,
 }
 
@@ -22,7 +22,7 @@ impl super::Scalar for Url {
             false
         }
     }
-    fn scalar(&self) -> Schema {
+    fn schema(&self) -> Schema {
         Schema::Object(schema_for!(Self).schema)
     }
 }

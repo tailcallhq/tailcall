@@ -1,8 +1,4 @@
----
-error: true
----
-
-# test-dbl-usage-many
+# test-dbl-usage
 
 ```graphql @config
 schema {

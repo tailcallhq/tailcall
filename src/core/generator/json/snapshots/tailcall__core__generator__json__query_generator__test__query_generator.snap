@@ -1,0 +1,7 @@
+---
+source: src/core/generator/json/query_generator.rs
+expression: config.to_sdl()
+---
+type Query {
+  f1: T1 @http(path: "/path")
+}

@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server(hostname: "localhost", port: 8000) @upstream {
   query: Query
@@ -12,6 +12,7 @@ scalar Email
 
 type Query {
   any(value: AnyScalar!): AnyScalar @expr(body: "{{.args.value}}")
+  bytes(value: Bytes): Bytes @expr(body: "{{.args.value}}")
   date(value: Date!): Date! @expr(body: "{{.args.value}}")
   email(value: Email!): Email! @expr(body: "{{.args.value}}")
   phone(value: PhoneNumber!): PhoneNumber! @expr(body: "{{.args.value}}")

@@ -182,7 +182,6 @@ impl ProtobufOperation {
             .fields()
             .find(|field| field.is_list())
             .ok_or(anyhow!("Unable to find list field on type"))?;
-
         let field_kind = field_descriptor.kind();
         let child_message_descriptor = field_kind
             .as_message()
@@ -244,7 +243,6 @@ impl ProtobufOperation {
 pub mod tests {
     use std::path::Path;
 
-    // TODO: Rewrite protobuf tests
     use anyhow::Result;
     use prost_reflect::Value;
     use serde_json::json;
@@ -279,7 +277,7 @@ pub mod tests {
         Ok(reader
             .resolve(config, None)
             .await?
-            .extensions
+            .extensions()
             .get_file_descriptor_set())
     }
 
@@ -393,6 +391,61 @@ pub mod tests {
     }
 
     #[tokio::test]
+    async fn oneof_proto_file() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("oneof.OneOfService.GetOneOf").unwrap();
+
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::ONEOF).await?)?;
+        let service = file.find_service(&grpc_method)?;
+        let operation = service.find_operation(&grpc_method)?;
+
+        let input = operation.convert_input(r#"{ "payload": { "payload": "test" } }"#)?;
+
+        assert_eq!(input, b"\0\0\0\0\x08\x12\x06\n\x04test");
+
+        let input =
+            operation.convert_input(r#"{ "usual": "str", "command": { "command": "call" } }"#)?;
+
+        assert_eq!(input, b"\0\0\0\0\r\n\x03str\x1a\x06\n\x04call");
+
+        let output = b"\0\0\0\0\x08\x12\x06\n\x04body";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({
+                "usual": 0,
+                "payload": { "payload": "body" }
+            })
+        );
+
+        let output = b"\0\0\0\0\x09\x08\x05\x1A\x05\n\x03end";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({
+                "usual": 5,
+                "command": { "command": "end" }
+            })
+        );
+        let output = b"\0\0\0\0\x09\x22\x07content";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({
+                "usual": 0,
+                "response": "content"
+            })
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn news_proto_file_multiple_messages() -> Result<()> {
         let grpc_method = GrpcMethod::try_from("news.NewsService.GetMultipleNews").unwrap();
         let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::NEWS).await?)?;
@@ -487,6 +540,110 @@ pub mod tests {
         assert_eq!(
             serde_json::to_value(parsed)?,
             json!({"id": 0, "str": "", "num": [], "nestedRep": [], "nested": {"id": 0, "str": "", "num": []}})
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn scalars_proto_file() -> Result<()> {
+        let grpc_method = GrpcMethod::try_from("scalars.Example.Get").unwrap();
+
+        let file = ProtobufSet::from_proto_file(get_proto_file(protobuf::SCALARS).await?)?;
+        let service = file.find_service(&grpc_method)?;
+        let operation = service.find_operation(&grpc_method)?;
+
+        // numbers as numbers in json
+        let input = operation
+            .convert_input(r#"{ "boolean": true, "doubleNum": 3.25, "fixedint64": 1248645648 }"#)?;
+
+        assert_eq!(
+            input,
+            b"\0\0\0\0\x14\x08\x01\x19\0\0\0\0\0\0\n@)\x10\xd2lJ\0\0\0\0"
+        );
+
+        // the same output as input result from above to verify conversion
+        let output = b"\0\0\0\0\x16\n\x14\x08\x01\x19\0\0\0\0\0\0\n@)\x10\xd2lJ\0\0\0\0";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({
+              "result": [{
+                "boolean": true,
+                "bytesType": "",
+                "doubleNum": 3.25,
+                "fixedint32": 0,
+                // by default, prost outputs 64bit integers as strings
+                "fixedint64": "1248645648",
+                "floatNum": 0.0,
+                "integer32": 0,
+                "integer64": "0",
+                "sfixedint32": 0,
+                "sfixedint64": "0",
+                "sinteger32": 0,
+                "sinteger64": "0",
+                "str": "",
+                "uinteger32": 0,
+                "uinteger64": "0"
+              }]
+            })
+        );
+
+        // numbers as string in json
+        let input = operation.convert_input(
+            r#"{ "integer32": "125", "sinteger64": "-18564864651", "uinteger64": "464646694646" }"#,
+        )?;
+
+        assert_eq!(
+            input,
+            b"\0\0\0\0\x108}`\x95\xea\xea\xa8\x8a\x01x\xf6\xcd\xe7\xf8\xc2\r"
+        );
+
+        // the same output as input result from above to verify conversion
+        let output = b"\0\0\0\0\x12\n\x108}`\x95\xea\xea\xa8\x8a\x01x\xf6\xcd\xe7\xf8\xc2\r";
+
+        let parsed = operation.convert_output::<serde_json::Value>(output)?;
+
+        assert_eq!(
+            serde_json::to_value(parsed)?,
+            json!({
+              "result": [{
+                "boolean": false,
+                "bytesType": "",
+                "doubleNum": 0.0,
+                "fixedint32": 0,
+                "fixedint64": "0",
+                "floatNum": 0.0,
+                "integer32": 125,
+                "integer64": "0",
+                "sfixedint32": 0,
+                "sfixedint64": "0",
+                "sinteger32": 0,
+                "sinteger64": "-18564864651",
+                "str": "",
+                "uinteger32": 0,
+                "uinteger64": "464646694646"
+              }]
+            })
+        );
+
+        // numbers out of range
+        let input: anyhow::Error = operation
+            .convert_input(
+                r#"{
+                "floatNum": 1e154561.14848449464654948484542189,
+                "integer32": 32147483647,
+                "sinteger32": "32147483647",
+                "integer64": "4894654899848486451568418645165486465"
+            }"#,
+            )
+            .unwrap_err();
+
+        assert_eq!(
+            input.to_string(),
+            "Failed to parse input according to type scalars.Item"
         );
 
         Ok(())

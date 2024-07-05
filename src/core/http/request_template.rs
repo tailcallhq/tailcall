@@ -12,7 +12,7 @@ use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::http::to_reqwest_headers;
-use crate::core::ir::CacheKey;
+use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
 
@@ -226,23 +226,20 @@ impl TryFrom<Endpoint> for RequestTemplate {
 }
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
-    fn cache_key(&self, ctx: &Ctx) -> Option<u64> {
+    fn cache_key(&self, ctx: &Ctx) -> Option<IoId> {
         let mut hasher = TailcallHasher::default();
         let state = &mut hasher;
 
         self.method.hash(state);
 
-        let mut headers = vec![];
         for (name, mustache) in self.headers.iter() {
             name.hash(state);
             mustache.render(ctx).hash(state);
-            headers.push((name.to_string(), mustache.render(ctx)));
         }
 
         for (name, value) in ctx.headers().iter() {
             name.hash(state);
             value.hash(state);
-            headers.push((name.to_string(), value.to_str().unwrap().to_string()));
         }
 
         if let Some(body) = self.body_path.as_ref() {
@@ -252,7 +249,7 @@ impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
         let url = self.create_url(ctx).unwrap();
         url.hash(state);
 
-        Some(hasher.finish())
+        Some(IoId::new(hasher.finish()))
     }
 }
 
@@ -737,12 +734,13 @@ mod tests {
 
         use crate::core::http::request_template::tests::Context;
         use crate::core::http::RequestTemplate;
-        use crate::core::ir::CacheKey;
+        use crate::core::ir::model::{CacheKey, IoId};
         use crate::core::mustache::Mustache;
 
-        fn assert_no_duplicate<const N: usize>(arr: [Option<u64>; N]) {
+        fn assert_no_duplicate<const N: usize>(arr: [Option<IoId>; N]) {
+            let len = arr.len();
             let set = HashSet::from(arr);
-            assert_eq!(arr.len(), set.len());
+            assert_eq!(len, set.len());
         }
 
         #[test]

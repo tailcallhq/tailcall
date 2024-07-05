@@ -11,7 +11,7 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": "internal: invalid value for scalar \"Url\", expected \"FieldValue::Value\"",
+        "message": "internal: invalid value for scalar \"Date\", expected \"FieldValue::Value\"",
         "locations": [
           {
             "line": 1,
@@ -19,7 +19,7 @@ expression: response
           }
         ],
         "path": [
-          "url"
+          "date"
         ]
       }
     ]

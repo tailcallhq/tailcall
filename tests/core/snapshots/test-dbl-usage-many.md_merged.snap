@@ -22,8 +22,8 @@ type Post {
 }
 
 type Query {
-  post(input: PostInput!): Post! @http(baseURL: "http://localhost:8080", path: "/user/{{.args.input.id}}")
-  user(input: UserInput!): User! @http(baseURL: "http://localhost:8080", path: "/user/{{.args.input.id}}")
+  post(input: PostInput!): Post @http(baseURL: "http://localhost:8080", path: "/user/{{.args.input.id}}")
+  user(input: UserInput!): User @http(baseURL: "http://localhost:8080", path: "/user/{{.args.input.id}}")
 }
 
 type User {

@@ -27,7 +27,7 @@ pub struct Upstream {
     pub http_cache: u64,
     pub batch: Option<Batch>,
     pub http2_only: bool,
-    pub dedupe: bool,
+    pub on_request: Option<String>,
 }
 
 impl Upstream {
@@ -57,7 +57,7 @@ impl TryFrom<&ConfigModule> for Upstream {
 
         let mut allowed_headers = config_upstream.get_allowed_headers();
 
-        if config_module.extensions.has_auth() {
+        if config_module.extensions().has_auth() {
             // force add auth specific headers to use it to make actual validation
             allowed_headers.insert(hyper::header::AUTHORIZATION.to_string());
         }
@@ -81,7 +81,7 @@ impl TryFrom<&ConfigModule> for Upstream {
                 http_cache: (config_upstream).get_http_cache_size(),
                 batch,
                 http2_only: (config_upstream).get_http_2_only(),
-                dedupe: (config_upstream).get_dedupe(),
+                on_request: (config_upstream).get_on_request(),
             })
             .to_result()
     }

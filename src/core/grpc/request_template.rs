@@ -13,7 +13,7 @@ use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::http::to_reqwest_headers;
-use crate::core::ir::CacheKey;
+use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
 
@@ -107,11 +107,11 @@ impl RenderedRequestTemplate {
 }
 
 impl<Ctx: PathString + HasHeaders> CacheKey<Ctx> for RequestTemplate {
-    fn cache_key(&self, ctx: &Ctx) -> Option<u64> {
+    fn cache_key(&self, ctx: &Ctx) -> Option<IoId> {
         let mut hasher = TailcallHasher::default();
         let rendered_req = self.render(ctx).unwrap();
         rendered_req.hash(&mut hasher);
-        Some(hasher.finish())
+        Some(IoId::new(hasher.finish()))
     }
 }
 
@@ -131,7 +131,7 @@ mod tests {
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-    use crate::core::ir::CacheKey;
+    use crate::core::ir::model::CacheKey;
     use crate::core::mustache::Mustache;
 
     async fn get_protobuf_op() -> ProtobufOperation {
@@ -162,7 +162,7 @@ mod tests {
                 .resolve(config, None)
                 .await
                 .unwrap()
-                .extensions
+                .extensions()
                 .get_file_descriptor_set(),
         )
         .unwrap();

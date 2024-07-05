@@ -1,10 +1,12 @@
 ---
 source: tests/core/spec.rs
-expression: client
+expression: formatted
 ---
 type Bar {
-  bar: String
+  bar: String!
 }
+
+scalar Bytes
 
 scalar Date
 
@@ -13,18 +15,47 @@ scalar Email
 scalar Empty
 
 type Foo {
-  foo: String
+  foo: String!
 }
 
 union FooBar = Bar | Foo
 
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
 scalar JSON
+
+type Nested {
+  bar: FooBar
+  foo: FooBar
+}
 
 scalar PhoneNumber
 
 type Query {
+  arr: [FooBar]
+  bar: FooBar
   foo: FooBar
+  nested: Nested
+  unknown: FooBar
 }
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
 
 scalar Url
 
