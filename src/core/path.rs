@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
 use serde_json::json;
 
@@ -15,6 +16,12 @@ use crate::core::json::JsonLike;
 /// This is typically used in evaluating mustache templates.
 pub trait PathString {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
+}
+
+/// PathValue trait provides a method for accessing values from JSON-like
+/// structure it returns raw value.
+pub trait PathValue {
+    fn path_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<Cow<'_, RawValue<'a>>>;
 }
 
 ///
@@ -46,6 +53,50 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
         Cow::Borrowed(async_graphql::Value::Object(map)) => Some(json!(map).to_string().into()),
         Cow::Borrowed(async_graphql::Value::List(list)) => Some(json!(list).to_string().into()),
         _ => None,
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum RawValue<'a> {
+    Value(Cow<'a, async_graphql::Value>),
+    Arg(Cow<'a, async_graphql::Value>),
+    Vars(Cow<'a, BTreeMap<String, String>>),
+    Var(Cow<'a, str>),
+    Headers(Cow<'a, str>),
+    Env(Cow<'a, str>),
+    None,
+}
+
+impl<'a, Ctx: ResolverContextLike> PathValue for EvalContext<'a, Ctx> {
+    fn path_value<'b, T: AsRef<str>>(&'b self, path: &[T]) -> Option<Cow<'b, RawValue<'b>>> {
+        let ctx = self;
+
+        if path.is_empty() {
+            return None;
+        }
+
+        if path.len() == 1 {
+            return match path[0].as_ref() {
+                "value" => Some(Cow::Owned(RawValue::Value(ctx.path_value(&[] as &[T])?))),
+                "args" => Some(Cow::Owned(RawValue::Arg(ctx.path_arg::<&str>(&[])?))),
+                "vars" => Some(Cow::Owned(RawValue::Vars(Cow::Borrowed(ctx.vars())))),
+                _ => None,
+            };
+        }
+
+        path.split_first()
+            .and_then(move |(head, tail)| match head.as_ref() {
+                "value" => Some(Cow::Owned(RawValue::Value(ctx.path_value(tail)?))),
+                "args" => Some(Cow::Owned(RawValue::Arg(ctx.path_arg(tail)?))),
+                "headers" => Some(Cow::Owned(RawValue::Headers(Cow::Borrowed(
+                    ctx.header(tail[0].as_ref())?,
+                )))),
+                "vars" => Some(Cow::Owned(RawValue::Var(Cow::Borrowed(
+                    ctx.var(tail[0].as_ref())?,
+                )))),
+                "env" => Some(Cow::Owned(RawValue::Env(ctx.env_var(tail[0].as_ref())?))),
+                _ => None,
+            })
     }
 }
 

@@ -6,15 +6,14 @@ use reqwest::header::HeaderValue;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
-use super::query_encoder::Encoder;
-use super::EncodingStrategy;
+use super::query_encoder::QueryEncoder;
 use crate::core::config::Encoding;
 use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
-use crate::core::mustache::{Eval, Mustache, QueryEval};
-use crate::core::path::PathString;
+use crate::core::mustache::{Eval, Mustache, RawValueEval};
+use crate::core::path::{PathString, PathValue};
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -29,21 +28,25 @@ pub struct RequestTemplate {
     pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
     pub encoding: Encoding,
-    pub query_encoding_strategy: EncodingStrategy,
+    pub query_encoder: QueryEncoder,
 }
 
 impl RequestTemplate {
     /// Creates a URL for the context
     /// Fills in all the mustache templates with required values.
-    fn create_url<C: PathString + Encoder>(&self, ctx: &C) -> anyhow::Result<Url> {
+    fn create_url<C: PathString + PathValue>(&self, ctx: &C) -> anyhow::Result<Url> {
         let mut url = url::Url::parse(self.root_url.render(ctx).as_str())?;
         if self.query.is_empty() && self.root_url.is_const() {
             return Ok(url);
         }
-        let extra_qp = self
-            .query
-            .iter()
-            .map(|(k, v)| QueryEval::new(k, &self.query_encoding_strategy).eval(v, ctx));
+
+        // evaluates mustache template and returns the values evaluated mustache template.
+        let raw_eval = RawValueEval::new();
+
+        let extra_qp = self.query.iter().filter_map(|(key, value)| {
+            let parsed_values = raw_eval.eval(value, ctx);
+            self.query_encoder.encode(key, &parsed_values)
+        });
 
         let base_qp = url
             .query_pairs()
@@ -92,7 +95,7 @@ impl RequestTemplate {
     }
 
     /// Creates a Request for the given context
-    pub fn to_request<C: PathString + HasHeaders + Encoder>(
+    pub fn to_request<C: PathString + HasHeaders + PathValue>(
         &self,
         ctx: &C,
     ) -> anyhow::Result<reqwest::Request> {
@@ -173,7 +176,7 @@ impl RequestTemplate {
             body_path: Default::default(),
             endpoint: Endpoint::new(root_url.to_string()),
             encoding: Default::default(),
-            query_encoding_strategy: Default::default(),
+            query_encoder: Default::default(),
         })
     }
 
@@ -219,12 +222,12 @@ impl TryFrom<Endpoint> for RequestTemplate {
             body_path: body,
             endpoint,
             encoding,
-            query_encoding_strategy: Default::default(),
+            query_encoder: Default::default(),
         })
     }
 }
 
-impl<Ctx: PathString + HasHeaders + Encoder> CacheKey<Ctx> for RequestTemplate {
+impl<Ctx: PathString + HasHeaders + PathValue> CacheKey<Ctx> for RequestTemplate {
     fn cache_key(&self, ctx: &Ctx) -> Option<IoId> {
         let mut hasher = TailcallHasher::default();
         let state = &mut hasher;
@@ -256,7 +259,6 @@ impl<Ctx: PathString + HasHeaders + Encoder> CacheKey<Ctx> for RequestTemplate {
 mod tests {
     use std::borrow::Cow;
 
-    use async_graphql::Value;
     use derive_setters::Setters;
     use hyper::header::HeaderName;
     use hyper::HeaderMap;
@@ -265,11 +267,9 @@ mod tests {
 
     use super::RequestTemplate;
     use crate::core::has_headers::HasHeaders;
-    use crate::core::http::query_encoder::Encoder;
-    use crate::core::http::EncodingStrategy;
     use crate::core::json::JsonLike;
     use crate::core::mustache::Mustache;
-    use crate::core::path::PathString;
+    use crate::core::path::{PathString, PathValue, RawValue};
 
     #[derive(Setters)]
     struct Context {
@@ -283,17 +283,14 @@ mod tests {
         }
     }
 
-    impl Encoder for Context {
-        fn encode<T: AsRef<str>, P: AsRef<str>>(
-            &self,
-            key: T,
-            path: &[P],
-            encoding_strategy: &EncodingStrategy,
-        ) -> Option<String> {
-            self.value.get_path(path).map(|v| {
-                let async_val = Cow::Owned(Value::from_json(v.clone()).unwrap());
-                let result = encoding_strategy.encode(key.as_ref(), async_val);
-                result.unwrap()
+    impl PathValue for Context {
+        fn path_value<'a, T: AsRef<str>>(
+            &'a self,
+            path: &[T],
+        ) -> Option<Cow<'_, crate::core::path::RawValue<'a>>> {
+            self.value.get_path(path).map(|a| {
+                let p = async_graphql::Value::from_json(a.clone()).unwrap();
+                Cow::Owned(RawValue::Arg(Cow::Owned(p)))
             })
         }
     }
@@ -311,7 +308,10 @@ mod tests {
     }
 
     impl RequestTemplate {
-        fn to_body<C: PathString + HasHeaders + Encoder>(&self, ctx: &C) -> anyhow::Result<String> {
+        fn to_body<C: PathString + HasHeaders + PathValue>(
+            &self,
+            ctx: &C,
+        ) -> anyhow::Result<String> {
             let body = self
                 .to_request(ctx)?
                 .body()

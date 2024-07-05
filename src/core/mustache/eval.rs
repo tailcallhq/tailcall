@@ -1,6 +1,7 @@
+use std::borrow::Cow;
+
 use super::{Mustache, Segment};
-use crate::core::http::{Encoder, EncodingStrategy};
-use crate::core::path::{PathGraphql, PathString};
+use crate::core::path::{PathGraphql, PathString, PathValue, RawValue};
 
 pub trait Eval<'a> {
     type In;
@@ -9,34 +10,30 @@ pub trait Eval<'a> {
     fn eval(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out;
 }
 
-pub struct QueryEval<'a, A, T: AsRef<str>> {
-    key: T,
-    encoding_strategy: &'a EncodingStrategy,
+/// RawValue parses the mustace template and uses ctx to return raw values.
+pub struct RawValueEval<A> {
     _marker: std::marker::PhantomData<A>,
 }
 
-impl<'a, A, T: AsRef<str>> QueryEval<'a, A, T> {
-    pub fn new(key: T, encoding_strategy: &'a EncodingStrategy) -> Self {
-        Self { _marker: std::marker::PhantomData, key, encoding_strategy }
+impl<A> RawValueEval<A> {
+    pub fn new() -> Self {
+        Self { _marker: std::marker::PhantomData }
     }
 }
 
-impl<'a, A: Encoder, T: AsRef<str>> Eval<'a> for QueryEval<'_, A, T> {
+impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
     type In = A;
-    type Out = String;
+    type Out = Vec<RawValue<'a>>; // FIX THIS, can't use Cow
 
-    fn eval(&self, mustache: &Mustache, in_value: &Self::In) -> Self::Out {
+    fn eval(&self, mustache: &Mustache, in_value: &'a Self::In) -> Self::Out {
         mustache
             .segments()
             .iter()
-            .map(|segment| match segment {
-                Segment::Literal(text) => format!("{}={}", self.key.as_ref(), text),
-                Segment::Expression(parts) => in_value
-                    .encode(self.key.as_ref(), parts, self.encoding_strategy)
-                    .map(|a| a.to_string())
-                    .unwrap_or_default(),
+            .flat_map(|segment| match segment {
+                Segment::Literal(text) => Some(RawValue::Var(Cow::Owned(text.into())).to_owned()),
+                Segment::Expression(parts) => in_value.path_value(parts).map(|a| a.into_owned()),
             })
-            .collect()
+            .collect::<Vec<_>>()
     }
 }
 
