@@ -21,7 +21,9 @@ fn get_single_field_path(
         if ty.fields.len() == 1 {
             if let Some((sub_field_name, sub_field)) = ty.fields.first_key_value() {
                 let sub_path = get_single_field_path(config, sub_field_name, &sub_field.type_of);
-                if let Some(sub_path) = sub_path { path.extend(sub_path) }
+                if let Some(sub_path) = sub_path {
+                    path.extend(sub_path)
+                }
                 Some(path)
             } else {
                 None
