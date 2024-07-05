@@ -1,7 +1,9 @@
 use std::future::Future;
 use std::sync::Arc;
+
 use async_graphql::{Data, Executor, Response};
 use futures_util::stream::BoxStream;
+
 use crate::core::app_context::AppContext;
 use crate::core::jit;
 use crate::core::jit::ConstValueExecutor;
@@ -18,21 +20,27 @@ impl JITExecutor {
 }
 
 impl Executor for JITExecutor {
-    fn execute(&self, request: async_graphql::Request) -> impl Future<Output=Response> + Send {
+    fn execute(&self, request: async_graphql::Request) -> impl Future<Output = Response> + Send {
         let request = jit::Request::from(request);
 
         match ConstValueExecutor::new(&request, self.app_ctx.clone()) {
-            Ok(exec) => async {
-                let resp = exec.execute(request).await;
-                resp.into_async_graphql()
-            },
+            Ok(exec) => {
+                async {
+                    let resp = exec.execute(request).await;
+                    resp.into_async_graphql()
+                }
+            }
             Err(_) => {
                 todo!()
             }
         }
     }
 
-    fn execute_stream(&self, _: async_graphql::Request, _: Option<Arc<Data>>) -> BoxStream<'static, Response> {
+    fn execute_stream(
+        &self,
+        _: async_graphql::Request,
+        _: Option<Arc<Data>>,
+    ) -> BoxStream<'static, Response> {
         todo!()
     }
 }

@@ -28,7 +28,7 @@ impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
                 async_graphql_value::ConstValue::Object(val) => {
                     HashMap::from_iter(val.into_iter().map(|(k, v)| (k.to_string(), v)))
                 }
-                _ => HashMap::new()
+                _ => HashMap::new(),
             },
             extensions: value.extensions,
         }

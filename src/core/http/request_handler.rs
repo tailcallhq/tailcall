@@ -148,13 +148,13 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
         // TODO: implement into_hyper
-        let resp = request.execute(&JITExecutor::new(app_ctx.clone())).await;
+        
         // let mut resp = resp.try_into_hyper_response()?;
         // update_response_headers(&mut resp, req_ctx, app_ctx);
-        resp
+        request.execute(&JITExecutor::new(app_ctx.clone())).await
     } else {
-        let response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-        response
+        
+        request.data(req_ctx.clone()).execute(&app_ctx.schema).await
     };
     response = update_cache_control_header(response, app_ctx, req_ctx.clone());
 

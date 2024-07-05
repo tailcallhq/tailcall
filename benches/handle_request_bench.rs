@@ -3,7 +3,7 @@ use std::sync::Arc;
 use criterion::Criterion;
 use hyper::Request;
 use tailcall::cli::server::server_config::ServerConfig;
-use tailcall::core::async_graphql_hyper::{GraphQLRequest, GraphqlJitRequest};
+use tailcall::core::async_graphql_hyper::GraphQLRequest;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::{Config, ConfigModule};
 use tailcall::core::http::handle_request;
@@ -22,14 +22,16 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
     let endpoints = config_module.extensions().endpoint_set.clone();
     let endpoints_clone = endpoints.clone();
 
-    c.bench_function("test_handle_request", |b| {
-        blueprint.server.enable_jit = false;
-        let server_config = tokio_runtime
-            .block_on(ServerConfig::new(blueprint.clone(), endpoints.clone()))
-            .unwrap();
-        let server_config = Arc::new(server_config);
+    blueprint.server.enable_jit = false;
+    let server_config = tokio_runtime
+        .block_on(ServerConfig::new(blueprint.clone(), endpoints.clone()))
+        .unwrap();
+    let server_config = Arc::new(server_config);
 
-        let server_config = server_config;
+
+    c.bench_function("test_handle_request", |b| {
+        let server_config = server_config.clone();
+
         b.iter(|| {
             let server_config = server_config.clone();
             tokio_runtime.block_on(async move {
@@ -46,17 +48,17 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
         })
     });
 
-    c.bench_function("test_handle_request_jit", |b| {
-        blueprint_clone.server.enable_jit = true;
-        let server_config = tokio_runtime
-            .block_on(ServerConfig::new(
-                blueprint_clone.clone(),
-                endpoints_clone.clone(),
-            ))
-            .unwrap();
-        let server_config = Arc::new(server_config);
+    blueprint_clone.server.enable_jit = true;
+    let server_config = tokio_runtime
+        .block_on(ServerConfig::new(
+            blueprint_clone,
+            endpoints_clone,
+        ))
+        .unwrap();
+    let server_config = Arc::new(server_config);
 
-        let server_config = server_config;
+    c.bench_function("test_handle_request_jit", |b| {
+        let server_config = server_config.clone();
         b.iter(|| {
             let server_config = server_config.clone();
             tokio_runtime.block_on(async move {
@@ -66,7 +68,7 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
                     .body(hyper::Body::from(QUERY))
                     .unwrap();
 
-                let _ = handle_request::<GraphqlJitRequest>(req, server_config.app_ctx.clone())
+                let _ = handle_request::<GraphQLRequest>(req, server_config.app_ctx.clone())
                     .await
                     .unwrap();
             });

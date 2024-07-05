@@ -33,7 +33,8 @@ impl Response<async_graphql::Value, jit::Error> {
             resp = resp.extension(name, value);
         }
         for error in self.errors {
-            resp.errors.push(async_graphql::ServerError::new(error.to_string(), None));
+            resp.errors
+                .push(async_graphql::ServerError::new(error.to_string(), None));
         }
         resp
     }
