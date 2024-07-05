@@ -11,7 +11,7 @@ use super::{ConfigModule, Content, Link, LinkType};
 use crate::core::config::{Config, ConfigReaderContext, Source};
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::{Cached, ResourceReader};
+use crate::core::resource_reader::{Cached, Resource, ResourceReader};
 use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
 
@@ -37,7 +37,7 @@ impl ConfigReader {
     #[async_recursion::async_recursion]
     async fn ext_links(
         &self,
-        config_module: ConfigModule,
+        mut config_module: ConfigModule,
         parent_dir: Option<&'async_recursion Path>,
     ) -> anyhow::Result<ConfigModule> {
         let links: Vec<Link> = config_module
@@ -58,24 +58,24 @@ impl ConfigReader {
         }
 
         let mut extensions = config_module.extensions().clone();
-        let mut base_config = config_module.config().clone();
+        // let mut base_config = config_module.config().clone();
 
         for link in links.iter() {
             let path = Self::resolve_path(&link.src, parent_dir);
 
             match link.type_of {
                 LinkType::Config => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     let config = Config::from_source(Source::detect(&source.path)?, &content)?;
-                    base_config = base_config.merge_right(config.clone());
+                    config_module = config_module.merge_right(config.clone().into());
 
                     if !config.links.is_empty() {
                         let cfg_module = self
                             .ext_links(ConfigModule::from(config), Path::new(&link.src).parent())
                             .await?;
-                        base_config = base_config.merge_right(cfg_module.config().clone());
+                        config_module = config_module.merge_right(cfg_module.clone());
                     }
                 }
                 LinkType::Protobuf => {
@@ -83,28 +83,28 @@ impl ConfigReader {
                     extensions.add_proto(meta);
                 }
                 LinkType::Script => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     extensions.script = Some(content);
                 }
                 LinkType::Cert => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     extensions.cert.extend(self.load_cert(content).await?);
                 }
                 LinkType::Key => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
                     extensions.keys = Arc::new(self.load_private_key(content).await?)
                 }
                 LinkType::Operation => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     extensions.endpoint_set = EndpointSet::try_new(&content)?;
                 }
                 LinkType::Htpasswd => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     extensions
@@ -112,7 +112,7 @@ impl ConfigReader {
                         .push(Content { id: link.id.clone(), content });
                 }
                 LinkType::Jwks => {
-                    let source = self.resource_reader.read_file(&path).await?;
+                    let source = self.resource_reader.read_file(path).await?;
                     let content = source.content;
 
                     let de = &mut serde_json::Deserializer::from_str(&content);
@@ -134,7 +134,7 @@ impl ConfigReader {
 
         // Recreating the ConfigModule in order to recompute the values of
         // `input_types`, `output_types` and `interface_types`
-        Ok(ConfigModule::new(base_config, extensions))
+        Ok(config_module.set_extensions(extensions))
     }
 
     /// Reads the certificate from a given file
@@ -169,12 +169,15 @@ impl ConfigReader {
     }
 
     /// Reads a single file and returns the config
-    pub async fn read<T: ToString + Send + Sync>(&self, file: T) -> anyhow::Result<ConfigModule> {
+    pub async fn read<T: Into<Resource> + Clone + ToString + Send + Sync>(
+        &self,
+        file: T,
+    ) -> anyhow::Result<ConfigModule> {
         self.read_all(&[file]).await
     }
 
     /// Reads all the files and returns a merged config
-    pub async fn read_all<T: ToString + Send + Sync>(
+    pub async fn read_all<T: Into<Resource> + Clone + ToString + Send + Sync>(
         &self,
         files: &[T],
     ) -> anyhow::Result<ConfigModule> {
@@ -335,7 +338,7 @@ mod reader_tests {
         let reader = ConfigReader::init(runtime);
 
         let config = reader
-            .read(&format!(
+            .read(format!(
                 "{}/examples/jsonplaceholder_script.graphql",
                 cargo_manifest
             ))

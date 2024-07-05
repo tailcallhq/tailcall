@@ -152,7 +152,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[tokio::test]
@@ -177,7 +177,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -203,7 +203,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -223,7 +223,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -242,7 +242,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -257,7 +257,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -276,7 +276,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 
     #[test]
@@ -294,6 +294,6 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_children());
     }
 }

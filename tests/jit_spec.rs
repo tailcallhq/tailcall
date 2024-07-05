@@ -3,9 +3,9 @@ mod tests {
     use std::sync::Arc;
 
     use async_graphql::Value;
+    use tailcall::core::app_context::AppContext;
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
-    use tailcall::core::http::AppContext;
     use tailcall::core::jit::{ConstValueExecutor, Request};
     use tailcall::core::rest::EndpointSet;
     use tailcall::core::valid::Validator;
@@ -28,6 +28,17 @@ mod tests {
         let response = executor.execute(request).await;
         let data = response.data;
 
-        insta::assert_json_snapshot!(data)
+        insta::assert_json_snapshot!(data);
+    }
+
+    #[tokio::test]
+    async fn test_executor_nested() {
+        //  NOTE: This test makes a real HTTP call
+        let request = Request::new("query {posts {title userId user {id name email} }}");
+        let executor = new_executor(&request).await.unwrap();
+        let response = executor.execute(request).await;
+        let data = response.data;
+
+        insta::assert_json_snapshot!(data);
     }
 }

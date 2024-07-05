@@ -1,0 +1,100 @@
+name: Build matrix
+
+on:
+  workflow_call:
+    outputs:
+      matrix:
+        value: ${{ jobs.setup-matrix.outputs.matrix }}
+
+jobs:
+  # IMPORTANT: in case of changing the structure of this file make sure to test
+  # the changes against `npm/gen-root.ts` file
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.setup-matrix.outputs.matrix }}
+    steps:
+      - id: setup-matrix
+        uses: druzsan/setup-matrix@v2
+        with:
+          matrix: |
+            build:
+              [
+                linux-x64-gnu,
+                linux-x64-musl,
+                linux-arm64-gnu,
+                linux-arm64-musl,
+                linux-ia32-gnu,
+                darwin-arm64,
+                darwin-x64,
+                win32-x64-msvc,
+                win32-arm64-msvc,
+                win32-ia32-msvc,
+              ]
+            include:
+              - build: linux-x64-gnu
+                os: ubuntu-latest
+                rust: stable
+                target: x86_64-unknown-linux-gnu
+                libc: glibc
+
+              - build: linux-x64-musl
+                os: ubuntu-latest
+                rust: stable
+                target: x86_64-unknown-linux-musl
+                libc: musl
+                cross: true
+
+              - build: linux-arm64-gnu
+                os: ubuntu-latest
+                rust: stable
+                target: aarch64-unknown-linux-gnu
+                libc: glibc
+                cross: true
+
+              - build: linux-arm64-musl
+                os: ubuntu-latest
+                rust: stable
+                target: aarch64-unknown-linux-musl
+                libc: musl
+                cross: true
+
+              - build: linux-ia32-gnu
+                os: ubuntu-latest
+                rust: stable
+                target: i686-unknown-linux-gnu
+                libc: glibc
+                cross: true
+
+              - build: darwin-arm64
+                os: macos-latest
+                rust: stable
+                target: aarch64-apple-darwin
+
+              - build: darwin-x64
+                os: macos-latest
+                rust: stable
+                target: x86_64-apple-darwin
+
+              - build: win32-x64-msvc
+                os: windows-latest
+                rust: stable
+                target: x86_64-pc-windows-msvc
+                libc: msvc
+                ext: ".exe"
+
+              - build: win32-arm64-msvc
+                os: windows-latest
+                rust: stable
+                target: aarch64-pc-windows-msvc
+                features: --no-default-features --features cli
+                libc: msvc
+                ext: ".exe"
+                test: false # TODO: tests are broken without default features
+
+              - build: win32-ia32-msvc
+                os: windows-latest
+                rust: stable
+                target: i686-pc-windows-msvc
+                libc: msvc
+                ext: ".exe"
