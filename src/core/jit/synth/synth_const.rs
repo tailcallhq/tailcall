@@ -26,9 +26,7 @@ impl Synth {
             data.insert(Name::new(child.name.as_str()), val);
         }
 
-        let mut output = IndexMap::default();
-        output.insert(Name::new("data"), Value::Object(data));
-        Ok(Value::Object(output))
+        Ok(Value::Object(data))
     }
 
     /// checks if type_of is an array and value is an array
