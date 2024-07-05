@@ -1,0 +1,23 @@
+schema {
+    query: Query
+}
+
+type Query {
+  foo: Foo
+  not_single: NotSingle
+}
+
+# Type with only one field
+type Foo { 
+  bar: Bar
+}
+
+# Type with only one field
+type Bar {
+  a: Int
+}
+
+type NotSingle {
+    f1: Int
+    f2: Int
+}

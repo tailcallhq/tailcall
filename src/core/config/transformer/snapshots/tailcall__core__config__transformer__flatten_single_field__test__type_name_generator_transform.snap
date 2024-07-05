@@ -1,0 +1,26 @@
+---
+source: src/core/config/transformer/flatten_single_field.rs
+assertion_line: 90
+expression: transformed_config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Bar {
+  a: Int
+}
+
+type Foo {
+  bar: Bar
+}
+
+type NotSingle {
+  f1: Int
+  f2: Int
+}
+
+type Query @addField(name: "foo", path: ["foo", "bar", "a"]) {
+  foo: Foo @omit
+  not_single: NotSingle
+}
