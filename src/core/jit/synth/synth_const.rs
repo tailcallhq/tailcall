@@ -3,13 +3,13 @@ use indexmap::IndexMap;
 
 use super::super::Result;
 use super::Synthesizer;
-use crate::core::jit::model::{Children, Field};
+use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::{DataPath, ExecutionPlan};
 use crate::core::json::JsonLike;
 
 pub struct Synth {
-    selection: Vec<Field<Children>>,
+    selection: Vec<Field<Nested>>,
     store: Store<Result<Value>>,
 }
 
@@ -39,7 +39,7 @@ impl Synth {
     #[inline(always)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Nested>,
         parent: Option<&'b Value>,
         data_path: &DataPath,
     ) -> Result<Value> {
@@ -88,7 +88,7 @@ impl Synth {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Nested>,
         parent: &'b Value,
         data_path: &'b DataPath,
     ) -> Result<Value> {
@@ -167,7 +167,6 @@ mod tests {
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
-    
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"

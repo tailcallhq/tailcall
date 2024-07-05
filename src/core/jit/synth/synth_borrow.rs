@@ -1,11 +1,11 @@
 use serde_json_borrow::{ObjectAsVec, Value};
 
-use crate::core::jit::model::{Children, Field};
+use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::ExecutionPlan;
 
 pub struct SynthBorrow<'a> {
-    selection: Vec<Field<Children>>,
+    selection: Vec<Field<Nested>>,
     store: Store<Value<'a>>,
 }
 
@@ -38,7 +38,7 @@ impl<'a> SynthBorrow<'a> {
     #[allow(unused)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Nested>,
         parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Value {
@@ -82,7 +82,7 @@ impl<'a> SynthBorrow<'a> {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Nested>,
         parent: &'b Value,
         index: Option<usize>,
     ) -> Value {

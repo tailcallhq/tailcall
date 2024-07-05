@@ -34,9 +34,9 @@ impl Builder {
         &self,
         selection: &SelectionSet,
         type_of: &str,
-        refs: Option<Parent>,
+        refs: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Parent>> {
+    ) -> Vec<Field<Flat>> {
         let mut fields = vec![];
         for selection in &selection.items {
             match &selection.node {
@@ -78,7 +78,7 @@ impl Builder {
                         let child_fields = self.iter(
                             &gql_field.selection_set.node,
                             type_of.name(),
-                            Some(Parent::new(id.clone())),
+                            Some(Flat::new(id.clone())),
                             fragments,
                         );
                         let name = field_name.to_owned();

@@ -54,22 +54,22 @@ pub struct Field<A> {
     pub extensions: Option<A>,
 }
 
-const EMPTY_VEC: &Vec<Field<Children>> = &Vec::new();
-impl Field<Children> {
-    pub fn children(&self) -> &Vec<Field<Children>> {
+const EMPTY_VEC: &Vec<Field<Nested>> = &Vec::new();
+impl Field<Nested> {
+    pub fn children(&self) -> &Vec<Field<Nested>> {
         match &self.extensions {
-            Some(Children(children)) => children,
+            Some(Nested(children)) => children,
             _ => EMPTY_VEC,
         }
     }
 }
 
-impl Field<Parent> {
+impl Field<Flat> {
     fn parent(&self) -> Option<&FieldId> {
-        self.extensions.as_ref().map(|Parent(id)| id)
+        self.extensions.as_ref().map(|Flat(id)| id)
     }
 
-    fn into_children(self, fields: &[Field<Parent>]) -> Field<Children> {
+    fn into_children(self, fields: &[Field<Flat>]) -> Field<Nested> {
         let mut children = Vec::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
@@ -82,7 +82,7 @@ impl Field<Parent> {
         let refs = if children.is_empty() {
             None
         } else {
-            Some(Children(children))
+            Some(Nested(children))
         };
 
         Field {
@@ -115,34 +115,40 @@ impl<A: Debug + Clone> Debug for Field<A> {
     }
 }
 
+///
+/// A flat or linear representation of the execution plan where each field
+/// refers to its parent.
 #[derive(Clone)]
-pub struct Parent(FieldId);
+pub struct Flat(FieldId);
 
-impl Parent {
+impl Flat {
     pub fn new(id: FieldId) -> Self {
-        Parent(id)
+        Flat(id)
     }
     pub fn as_id(&self) -> &FieldId {
         &self.0
     }
 }
-impl Debug for Parent {
+impl Debug for Flat {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Parent({:?})", self.0)
     }
 }
 
+///
+/// A nested representation of the execution plan where each field refers to its
+/// children forming a tree.
 #[derive(Clone, Debug)]
-pub struct Children(Vec<Field<Children>>);
+pub struct Nested(Vec<Field<Nested>>);
 
 #[derive(Clone, Debug)]
 pub struct ExecutionPlan {
-    parent: Vec<Field<Parent>>,
-    children: Vec<Field<Children>>,
+    parent: Vec<Field<Flat>>,
+    children: Vec<Field<Nested>>,
 }
 
 impl ExecutionPlan {
-    pub fn new(fields: Vec<Field<Parent>>) -> Self {
+    pub fn new(fields: Vec<Field<Flat>>) -> Self {
         let field_children = fields
             .clone()
             .into_iter()
@@ -153,23 +159,23 @@ impl ExecutionPlan {
         Self { parent: fields, children: field_children }
     }
 
-    pub fn as_children(&self) -> &[Field<Children>] {
+    pub fn as_children(&self) -> &[Field<Nested>] {
         &self.children
     }
 
-    pub fn into_children(self) -> Vec<Field<Children>> {
+    pub fn into_children(self) -> Vec<Field<Nested>> {
         self.children
     }
 
-    pub fn as_parent(&self) -> &[Field<Parent>] {
+    pub fn as_parent(&self) -> &[Field<Flat>] {
         &self.parent
     }
 
-    pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
+    pub fn find_field(&self, id: FieldId) -> Option<&Field<Flat>> {
         self.parent.iter().find(|field| field.id == id)
     }
 
-    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Parent>> {
+    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Flat>> {
         match path.split_first() {
             None => None,
             Some((name, path)) => {

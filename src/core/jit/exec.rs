@@ -7,7 +7,7 @@ use futures_util::future::join_all;
 
 use super::context::Context;
 use super::synth::Synthesizer;
-use super::{Children, DataPath, ExecutionPlan, Field, Request, Response, Store};
+use super::{DataPath, ExecutionPlan, Field, Nested, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
@@ -77,7 +77,7 @@ where
 
     async fn execute<'b>(
         &'b self,
-        field: &'b Field<Children>,
+        field: &'b Field<Nested>,
         ctx: &'b Context<'b, Input, Output>,
         data_path: DataPath,
     ) -> Result<(), Error> {
