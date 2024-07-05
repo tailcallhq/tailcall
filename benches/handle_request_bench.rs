@@ -28,7 +28,6 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
         .unwrap();
     let server_config = Arc::new(server_config);
 
-
     c.bench_function("test_handle_request", |b| {
         let server_config = server_config.clone();
 
@@ -50,10 +49,7 @@ pub fn benchmark_handle_request(c: &mut Criterion) {
 
     blueprint_clone.server.enable_jit = true;
     let server_config = tokio_runtime
-        .block_on(ServerConfig::new(
-            blueprint_clone,
-            endpoints_clone,
-        ))
+        .block_on(ServerConfig::new(blueprint_clone, endpoints_clone))
         .unwrap();
     let server_config = Arc::new(server_config);
 
