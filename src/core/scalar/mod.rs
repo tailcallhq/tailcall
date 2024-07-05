@@ -71,7 +71,7 @@ lazy_static! {
     };
 }
 lazy_static! {
-    static ref SCALAR_TYPES: HashSet<&'static str> = {
+    pub static ref SCALAR_TYPES: HashSet<&'static str> = {
         let mut set = HashSet::new();
         set.extend(["String", "Int", "Float", "ID", "Boolean"]);
         set.extend(CUSTOM_SCALARS.keys().map(|k| k.as_str()));

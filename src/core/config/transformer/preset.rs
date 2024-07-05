@@ -11,6 +11,7 @@ pub struct Preset {
     consolidate_url: f32,
     tree_shake: bool,
     use_better_names: bool,
+    flatten: bool,
 }
 
 impl Transform for Preset {
@@ -25,6 +26,7 @@ impl Transform for Preset {
             .pipe(super::Required)
             .pipe(super::TreeShake.when(self.tree_shake))
             .pipe(super::TypeMerger::new(self.merge_type))
+            .pipe(super::Flatten.when(self.flatten))
             .pipe(super::ImproveTypeNames.when(self.use_better_names))
             .pipe(super::ConsolidateURL::new(self.consolidate_url))
             .transform(config)
