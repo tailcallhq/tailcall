@@ -135,12 +135,12 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>) -> ExecutionPlan {
+    fn plan(query: impl AsRef<str>) -> Vec<Field<Children>> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        Builder::new(&blueprint, document).build().unwrap()
+        Builder::new(&blueprint, document).build().unwrap().into_children()
     }
 
     #[tokio::test]
@@ -165,7 +165,7 @@ mod tests {
         "#,
         );
 
-        assert_eq!(plan.size(), 4)
+        assert_eq!(plan.len(), 4)
     }
 
     #[test]
