@@ -1,7 +1,7 @@
 use derive_more::From;
 use serde::Serialize;
 
-#[derive(From, Debug, Clone)]
+#[derive(From, Debug, Clone, strum_macros::Display)]
 pub enum Error {
     #[from(ignore)]
     BuildError(String),

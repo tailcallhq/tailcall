@@ -21,6 +21,7 @@ use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
+use crate::core::jit::JITExecutor;
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -145,20 +146,21 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     req_ctx: &Arc<RequestContext>,
     request: T,
 ) -> anyhow::Result<Response<Body>> {
-    if app_ctx.blueprint.server.enable_jit {
+    let mut response = if app_ctx.blueprint.server.enable_jit {
         // TODO: implement into_hyper
-        let resp = request.execute_jit(app_ctx.clone()).await;
-        let mut resp = resp.try_into_hyper_response()?;
-        update_response_headers(&mut resp, req_ctx, app_ctx);
-        Ok(resp)
+        let resp = request.execute(&JITExecutor::new(app_ctx.clone())).await;
+        // let mut resp = resp.try_into_hyper_response()?;
+        // update_response_headers(&mut resp, req_ctx, app_ctx);
+        resp
     } else {
-        let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+        let response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
+        response
+    };
+    response = update_cache_control_header(response, app_ctx, req_ctx.clone());
 
-        response = update_cache_control_header(response, app_ctx, req_ctx.clone());
-        let mut resp = response.into_response()?;
-        update_response_headers(&mut resp, req_ctx, app_ctx);
-        Ok(resp)
-    }
+    let mut resp = response.into_response()?;
+    update_response_headers(&mut resp, req_ctx, app_ctx);
+    Ok(resp)
 }
 
 fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> HeaderMap {

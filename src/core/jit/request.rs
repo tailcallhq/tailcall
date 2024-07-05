@@ -19,6 +19,22 @@ pub struct Request<Value> {
     pub extensions: HashMap<String, Value>,
 }
 
+impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
+    fn from(value: async_graphql::Request) -> Self {
+        Self {
+            query: value.query,
+            operation_name: value.operation_name,
+            variables: match value.variables.into_value() {
+                async_graphql_value::ConstValue::Object(val) => {
+                    HashMap::from_iter(val.into_iter().map(|(k, v)| (k.to_string(), v)))
+                }
+                _ => HashMap::new()
+            },
+            extensions: value.extensions,
+        }
+    }
+}
+
 impl Hash for Request<async_graphql::Value> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.query.hash(state);

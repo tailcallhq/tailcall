@@ -27,11 +27,14 @@ impl<Value, Error> Response<Value, Error> {
 }
 
 impl Response<async_graphql::Value, jit::Error> {
-    pub fn try_into_hyper_response(self) -> anyhow::Result<hyper::Response<hyper::Body>> {
-        let body = serde_json::to_string(&self)?;
-        let resp = hyper::Response::builder()
-            .header("Content-Type", "application/json")
-            .body(hyper::Body::from(body))?;
-        Ok(resp)
+    pub fn into_async_graphql(self) -> async_graphql::Response {
+        let mut resp = async_graphql::Response::new(self.data.unwrap_or_default());
+        for (name, value) in self.extensions {
+            resp = resp.extension(name, value);
+        }
+        for error in self.errors {
+            resp.errors.push(async_graphql::ServerError::new(error.to_string(), None));
+        }
+        resp
     }
 }
