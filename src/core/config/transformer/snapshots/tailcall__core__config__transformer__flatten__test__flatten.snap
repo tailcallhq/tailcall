@@ -6,6 +6,16 @@ schema @server @upstream {
   query: Query
 }
 
+type Bar {
+  a: Int
+  b: Int
+}
+
+type Foo {
+  bar: Bar
+}
+
 type Query {
-  foo: Int
+  foo: Foo
+  foo1: Int
 }
