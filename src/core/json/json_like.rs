@@ -317,10 +317,6 @@ impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
     }
 
     fn get_key(&self, _path: &str) -> Option<&Self::Output> {
-        /*match self {
-            serde_json_borrow::Value::Object(map) => map.get(path),
-            _ => None,
-        }*/
         todo!()
     }
 
