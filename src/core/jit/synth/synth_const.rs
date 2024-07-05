@@ -162,7 +162,6 @@ impl Synthesizer for SynthConst {
 #[cfg(test)]
 mod tests {
     use std::rc::Rc;
-    
 
     use async_graphql::Value;
 

@@ -137,7 +137,6 @@ impl<'a> SynthBorrow<'a> {
 #[cfg(test)]
 mod tests {
     use std::rc::Rc;
-    
 
     use serde_json_borrow::Value;
 
