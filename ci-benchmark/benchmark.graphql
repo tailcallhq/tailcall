@@ -1,10 +1,8 @@
-schema
-  @server(port: 8000, hostname: "0.0.0.0", enableJIT: true)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42) {
+schema @server(port: 8000, hostname: "0.0.0.0") @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
-type Query {
+type Query @cache(maxAge: 30000) {
   posts: [Post] @http(path: "/posts")
 }
 
