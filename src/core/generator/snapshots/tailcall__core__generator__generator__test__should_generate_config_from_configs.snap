@@ -47,10 +47,10 @@ type Query {
 
 type User {
   albums: [Album] @http(path: "/users/{{.value.id}}/albums?_limit=2")
+  blog: String @expr(body: "https://test.blog/users/website/{{.value.username}}")
   email: String!
   id: Int!
   name: String!
   phone: String
   username: String!
-  websiteExpr: String @expr(body: "/users/website/{{.value.username}}")
 }

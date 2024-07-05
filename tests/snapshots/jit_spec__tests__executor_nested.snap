@@ -11,7 +11,7 @@ expression: data
         "user": {
           "id": 1,
           "name": "Leanne Graham",
-          "websiteExpr": "/users/website/Bret"
+          "blog": "https://test.blog/users/website/Bret"
         }
       },
       {
@@ -20,7 +20,7 @@ expression: data
         "user": {
           "id": 1,
           "name": "Leanne Graham",
-          "websiteExpr": "/users/website/Bret"
+          "blog": "https://test.blog/users/website/Bret"
         }
       },
       {
@@ -29,7 +29,7 @@ expression: data
         "user": {
           "id": 1,
           "name": "Leanne Graham",
-          "websiteExpr": "/users/website/Bret"
+          "blog": "https://test.blog/users/website/Bret"
         }
       },
       {
@@ -38,7 +38,7 @@ expression: data
         "user": {
           "id": 1,
           "name": "Leanne Graham",
-          "websiteExpr": "/users/website/Bret"
+          "blog": "https://test.blog/users/website/Bret"
         }
       },
       {
@@ -47,7 +47,7 @@ expression: data
         "user": {
           "id": 1,
           "name": "Leanne Graham",
-          "websiteExpr": "/users/website/Bret"
+          "blog": "https://test.blog/users/website/Bret"
         }
       },
       {
@@ -56,7 +56,7 @@ expression: data
         "user": {
           "id": 1,
           "name": "Leanne Graham",
-          "websiteExpr": "/users/website/Bret"
+          "blog": "https://test.blog/users/website/Bret"
         }
       },
       {
@@ -65,7 +65,7 @@ expression: data
         "user": {
           "id": 1,
           "name": "Leanne Graham",
-          "websiteExpr": "/users/website/Bret"
+          "blog": "https://test.blog/users/website/Bret"
         }
       },
       {
@@ -74,7 +74,7 @@ expression: data
         "user": {
           "id": 1,
           "name": "Leanne Graham",
-          "websiteExpr": "/users/website/Bret"
+          "blog": "https://test.blog/users/website/Bret"
         }
       },
       {
@@ -83,7 +83,7 @@ expression: data
         "user": {
           "id": 1,
           "name": "Leanne Graham",
-          "websiteExpr": "/users/website/Bret"
+          "blog": "https://test.blog/users/website/Bret"
         }
       },
       {
@@ -92,7 +92,7 @@ expression: data
         "user": {
           "id": 1,
           "name": "Leanne Graham",
-          "websiteExpr": "/users/website/Bret"
+          "blog": "https://test.blog/users/website/Bret"
         }
       },
       {
@@ -101,7 +101,7 @@ expression: data
         "user": {
           "id": 2,
           "name": "Ervin Howell",
-          "websiteExpr": "/users/website/Antonette"
+          "blog": "https://test.blog/users/website/Antonette"
         }
       }
     ]
