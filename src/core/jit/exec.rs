@@ -31,12 +31,11 @@ where
     }
 
     async fn execute_inner(&self, request: Request<Input>) -> Store<Result<Output, Error>> {
-        let store: Arc<Mutex<Store<Result<Output, Error>>>> =
-            Arc::new(Mutex::new(Store::new(self.plan.size())));
+        let store: Arc<Mutex<Store<Result<Output, Error>>>> = Arc::new(Mutex::new(Store::new()));
         let mut ctx = ExecutorInner::new(request, store.clone(), self.plan.to_owned(), &self.exec);
         ctx.init().await;
 
-        let store = mem::replace(&mut *store.lock().unwrap(), Store::new(0));
+        let store = mem::replace(&mut *store.lock().unwrap(), Store::new());
         store
     }
 
@@ -94,7 +93,7 @@ where
                         join_all(field.children().iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
                                 let ctx = ctx.with_value(value);
-                                let data_path = data_path.with_path(array.len(), index);
+                                let data_path = data_path.with_index(index);
                                 async move { self.execute(field, &ctx, data_path).await }
                             }))
                         }))

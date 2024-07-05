@@ -126,7 +126,7 @@ impl Synth {
             Value::List(arr) => {
                 let mut ans = vec![];
                 for (i, val) in arr.iter().enumerate() {
-                    let val = self.iter_inner(node, val, &data_path.with_path(arr.len(), i))?;
+                    let val = self.iter_inner(node, val, &data_path.with_index(i))?;
                     ans.push(val)
                 }
                 Ok(Value::List(ans))
@@ -221,10 +221,15 @@ mod tests {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
-                TestData::UsersData => Data::Multiple(vec![
-                    Data::Single(serde_json::from_str(USER1).unwrap()),
-                    Data::Single(serde_json::from_str(USER2).unwrap()),
-                ]),
+                TestData::UsersData => Data::Multiple(
+                    vec![
+                        Data::Single(serde_json::from_str(USER1).unwrap()),
+                        Data::Single(serde_json::from_str(USER2).unwrap()),
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    .collect(),
+                ),
                 TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
             }
         }
@@ -242,7 +247,7 @@ mod tests {
 
         let store = store
             .into_iter()
-            .fold(Store::new(plan.size()), |mut store, (id, data)| {
+            .fold(Store::new(), |mut store, (id, data)| {
                 store.set_data(id, data.map(Ok));
                 store
             });

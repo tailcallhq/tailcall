@@ -36,7 +36,7 @@ impl JsonPlaceholder {
             map
         });
 
-        let users: Vec<_> = posts
+        let users: HashMap<_, _> = posts
             .iter()
             .map(|post| {
                 let user_id = if let Value::Object(post) = post {
@@ -57,6 +57,7 @@ impl JsonPlaceholder {
             })
             .map(Ok)
             .map(Data::Single)
+            .enumerate()
             .collect();
 
         let config = ConfigModule::from(Config::from_sdl(Self::CONFIG).to_result().unwrap());
@@ -76,7 +77,7 @@ impl JsonPlaceholder {
             (users_id, Data::Multiple(users)),
         ]
         .into_iter()
-        .fold(Store::new(plan.size()), |mut store, (id, data)| {
+        .fold(Store::new(), |mut store, (id, data)| {
             store.set_data(id, data);
             store
         });
