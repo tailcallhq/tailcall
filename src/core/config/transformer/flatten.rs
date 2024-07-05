@@ -106,7 +106,7 @@ mod test {
     use crate::core::Transform;
 
     #[test]
-    fn test_foo() {
+    fn test_flatten() {
         let config = Config::from_sdl(
             std::fs::read_to_string(tailcall_fixtures::generator::FLATTEN)
                 .unwrap()
