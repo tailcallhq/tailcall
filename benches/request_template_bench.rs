@@ -1,15 +1,14 @@
 use std::borrow::Cow;
 
-use async_graphql::Value;
 use criterion::{black_box, Criterion};
 use derive_setters::Setters;
 use hyper::HeaderMap;
 use serde_json::json;
 use tailcall::core::endpoint::Endpoint;
 use tailcall::core::has_headers::HasHeaders;
-use tailcall::core::http::{Encoder, EncodingStrategy, RequestTemplate};
+use tailcall::core::http::RequestTemplate;
 use tailcall::core::json::JsonLike;
-use tailcall::core::path::PathString;
+use tailcall::core::path::{PathString, PathValue, RawValue};
 
 #[derive(Setters)]
 struct Context {
@@ -23,16 +22,11 @@ impl Default for Context {
     }
 }
 
-impl Encoder for Context {
-    fn encode<T: AsRef<str>, P: AsRef<str>>(
-        &self,
-        key: T,
-        path: &[P],
-        encoding_strategy: &EncodingStrategy,
-    ) -> Option<String> {
-        self.value.get_path(path).and_then(|v| {
-            let async_val = Cow::Owned(Value::from_json(v.clone()).unwrap());
-            encoding_strategy.encode(key.as_ref(), async_val)
+impl PathValue for Context {
+    fn path_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<Cow<'_, RawValue<'a>>> {
+        self.value.get_path(path).map(|a| {
+            let p = async_graphql::Value::from_json(a.clone()).unwrap();
+            Cow::Owned(RawValue::Arg(Cow::Owned(p)))
         })
     }
 }

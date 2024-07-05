@@ -15,6 +15,12 @@ pub struct RawValueEval<A> {
     _marker: std::marker::PhantomData<A>,
 }
 
+impl<A> Default for RawValueEval<A> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<A> RawValueEval<A> {
     pub fn new() -> Self {
         Self { _marker: std::marker::PhantomData }

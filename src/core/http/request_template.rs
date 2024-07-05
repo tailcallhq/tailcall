@@ -40,7 +40,8 @@ impl RequestTemplate {
             return Ok(url);
         }
 
-        // evaluates mustache template and returns the values evaluated mustache template.
+        // evaluates mustache template and returns the values evaluated mustache
+        // template.
         let raw_eval = RawValueEval::new();
 
         let extra_qp = self.query.iter().filter_map(|(key, value)| {
