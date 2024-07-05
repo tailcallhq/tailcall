@@ -9,6 +9,8 @@ use async_graphql::Positioned;
 use super::model::*;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
+use crate::core::jit::Variables;
+use crate::core::json::JsonLike;
 use crate::core::merge_right::MergeRight;
 
 pub struct Builder {
@@ -16,17 +18,56 @@ pub struct Builder {
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: ExecutableDocument,
+    variables: Variables<async_graphql_value::ConstValue>,
 }
 
 impl Builder {
-    pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
+    pub fn new(
+        blueprint: &Blueprint,
+        document: ExecutableDocument,
+        variables: Variables<async_graphql_value::ConstValue>,
+    ) -> Self {
         let index = blueprint.index();
         Self {
             document,
             index,
             arg_id: Counter::default(),
             field_id: Counter::default(),
+            variables,
         }
+    }
+
+    fn skip(&self, directives: &[Positioned<async_graphql::parser::types::Directive>]) -> bool {
+        for directive in directives {
+            let include = match &*directive.node.name.node {
+                "skip" => false,
+                "include" => true,
+                _ => continue,
+            };
+
+            if let Some(condition_input) = directive.node.get_argument("if") {
+                let condition = match &condition_input.node {
+                    async_graphql_value::Value::Variable(name) => {
+                        let st = name.as_str();
+                        self.variables
+                            .get(st)
+                            .and_then(|v| v.as_bool_ok().ok())
+                            .unwrap_or_default()
+                    }
+                    async_graphql_value::Value::String(st) => self
+                        .variables
+                        .get(st)
+                        .and_then(|v| v.as_bool_ok().ok())
+                        .unwrap_or_default(),
+                    async_graphql_value::Value::Boolean(b) => *b,
+                    _ => false,
+                };
+                if condition != include {
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -41,6 +82,12 @@ impl Builder {
         for selection in &selection.items {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
+                    // If the field is skipped then,
+                    // we don't include that in the plan
+                    if self.skip(&gql_field.directives) {
+                        continue;
+                    }
+
                     let field_name = gql_field.name.node.as_str();
                     let field_args = gql_field
                         .arguments
@@ -177,7 +224,9 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        Builder::new(&blueprint, document).build().unwrap()
+        Builder::new(&blueprint, document, Variables::new())
+            .build()
+            .unwrap()
     }
 
     #[tokio::test]

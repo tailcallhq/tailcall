@@ -171,6 +171,7 @@ mod tests {
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
+    use crate::core::jit::Variables;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -242,7 +243,11 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
 
-        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
+        let builder = Builder::new(
+            &Blueprint::try_from(&config).unwrap(),
+            doc,
+            Variables::new(),
+        );
         let plan = builder.build().unwrap();
 
         let store = store

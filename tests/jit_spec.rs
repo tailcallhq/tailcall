@@ -98,4 +98,28 @@ mod tests {
 
         insta::assert_json_snapshot!(data);
     }
+    #[tokio::test]
+    async fn test_skip() {
+        //  NOTE: This test makes a real HTTP call
+        let mut request = Request::new(
+            r#"
+                query ($skipName: Boolean!){
+                  users {
+                    id
+                    name @skip(if: $skipName)
+                    email @include(if: $skipName)
+                  }
+                }
+        "#,
+        );
+        request
+            .variables
+            .insert("skipName".to_string(), Value::Boolean(true));
+
+        let executor = new_executor(&request).await.unwrap();
+        let response = executor.execute(request).await;
+        let data = response.data;
+
+        insta::assert_json_snapshot!(data);
+    }
 }

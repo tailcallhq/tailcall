@@ -7,6 +7,7 @@ use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::SynthBorrow;
+use crate::core::jit::Variables;
 use crate::core::valid::Validator;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
@@ -57,6 +58,7 @@ impl JsonPlaceholder {
         let builder = Builder::new(
             &Blueprint::try_from(&config).unwrap(),
             async_graphql::parser::parse_query(query).unwrap(),
+            Variables::new(),
         );
         let plan = builder.build().unwrap();
         let posts_id = plan.find_field_path(&["posts"]).unwrap().id.to_owned();
