@@ -1,10 +1,9 @@
 use std::fs;
 use std::path::Path;
 
-use hyper::header::{HeaderName, HeaderValue};
-use hyper::HeaderMap;
 use inquire::Confirm;
 use pathdiff::diff_paths;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;

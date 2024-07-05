@@ -19,7 +19,7 @@ use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::transformer::Required;
 use tailcall::core::config::{Config, ConfigModule, Source};
-use tailcall::core::http::handle_request;
+use tailcall::core::http::{handle_request, Request};
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::print_schema::print_schema;
 use tailcall::core::valid::{Cause, ValidationError, Validator};

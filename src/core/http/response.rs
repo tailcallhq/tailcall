@@ -1,8 +1,8 @@
 use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
+use http_body_util::BodyExt;
 use hyper::body::Bytes;
-use hyper::Body;
 use indexmap::IndexMap;
 use prost::Message;
 use tonic::Status;
@@ -11,6 +11,7 @@ use tonic_types::Status as GrpcStatus;
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::http::{to_hyper_headers, to_reqwest_headers};
 use crate::core::ir::Error;
+use crate::core::Body;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {
@@ -57,10 +58,10 @@ impl Response<Bytes> {
         Ok(Response { status, headers, body })
     }
 
-    pub async fn from_hyper(resp: hyper::Response<hyper::Body>) -> Result<Self> {
+    pub async fn from_hyper(resp: hyper::Response<Body>) -> Result<Self> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
-        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        let body = resp.into_body().collect().await?.to_bytes();
         Ok(Response { status, headers, body })
     }
 

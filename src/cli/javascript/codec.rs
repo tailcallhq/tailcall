@@ -186,7 +186,7 @@ impl<'js> FromJs<'js> for WorkerResponse {
         let headers = object.get::<&str, BTreeMap<String, String>>("headers")?;
         let body = object.get::<&str, Option<String>>("body")?;
         let response = Response {
-            status: reqwest::StatusCode::from_u16(status).map_err(|_| rquickjs::Error::FromJs {
+            status: hyper::StatusCode::from_u16(status).map_err(|_| rquickjs::Error::FromJs {
                 from: "u16",
                 to: "reqwest::StatusCode",
                 message: Some("invalid status code".to_string()),
@@ -207,14 +207,11 @@ mod test {
     use std::collections::BTreeMap;
 
     use anyhow::Result;
-    use headers::{HeaderName, HeaderValue};
+    use headers::{HeaderMap, HeaderName, HeaderValue};
     use hyper::body::Bytes;
     use pretty_assertions::assert_eq;
-    use reqwest::header::HeaderValue;
-    use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
-    use reqwest::header::HeaderMap;
     use reqwest::Request;
-    use rquickjs::{Context, FromJs, IntoJs, Object, Runtime, String as JsString};
+    use rquickjs::{Context, Object, Runtime};
 
     use super::*;
     use crate::core::http::Response;
@@ -224,7 +221,7 @@ mod test {
         let mut headers = HeaderMap::new();
         headers.insert("content-type", "application/json".parse().unwrap());
         let response = crate::core::http::Response {
-            status: reqwest::StatusCode::OK,
+            status: hyper::StatusCode::OK,
             headers,
             body: Bytes::from("Hello, World!"),
         };
@@ -251,7 +248,7 @@ mod test {
         let response: Result<crate::core::http::Response<Bytes>> = js_response.try_into();
         assert!(response.is_ok());
         let response = response.unwrap();
-        assert_eq!(response.status, reqwest::StatusCode::OK);
+        assert_eq!(response.status, hyper::StatusCode::OK);
         assert_eq!(
             response.headers.get("content-type").unwrap(),
             "application/json"
@@ -268,7 +265,7 @@ mod test {
             HeaderValue::from_str("🚀").unwrap(),
         );
         let response = crate::core::http::Response {
-            status: reqwest::StatusCode::OK,
+            status: hyper::StatusCode::OK,
             headers,
             body: body.into(),
         };
@@ -327,7 +324,7 @@ mod test {
         let runtime = Runtime::new().unwrap();
         let context = Context::base(&runtime).unwrap();
         context.with(|ctx| {
-            let value = JsString::from_str(ctx.clone(), "invalid")
+            let value = rquickjs::String::from_str(ctx.clone(), "invalid")
                 .unwrap()
                 .into_value();
             assert!(Command::from_js(&ctx, value).is_err());
@@ -354,8 +351,8 @@ mod test {
         let context = Context::base(&runtime).unwrap();
         context.with(|ctx| {
             let js_response = WorkerResponse::try_from(Response {
-                status: reqwest::StatusCode::OK,
-                headers: reqwest::header::HeaderMap::default(),
+                status: hyper::StatusCode::OK,
+                headers: hyper::header::HeaderMap::default(),
                 body: Bytes::new(),
             })
             .unwrap();
@@ -404,7 +401,7 @@ mod test {
                 .insert(reqwest::Body::from("Hello, World!"));
             request.headers_mut().insert(
                 reqwest::header::CONTENT_TYPE,
-                HeaderValue::from_str("application/json").unwrap(),
+                reqwest::header::HeaderValue::from_str("application/json").unwrap(),
             );
 
             let js_request: WorkerRequest = (&request).try_into().unwrap();
@@ -443,7 +440,7 @@ mod test {
                 .insert(reqwest::Body::from("Hello, World!"));
             request.headers_mut().insert(
                 reqwest::header::CONTENT_TYPE,
-                HeaderValue::from_str("application/json").unwrap(),
+                reqwest::header::HeaderValue::from_str("application/json").unwrap(),
             );
 
             let js_request: WorkerRequest = (&request).try_into().unwrap();
