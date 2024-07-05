@@ -1,7 +1,7 @@
 use crate::core::config::Config;
 use crate::core::scalar::SCALAR_TYPES;
-use crate::core::Transform;
 use crate::core::valid::Valid;
+use crate::core::Transform;
 
 #[derive(Default)]
 pub struct Flatten;
@@ -52,17 +52,17 @@ fn iter(config: &Config, ty: &str, root_field: Option<String>) -> Option<(String
     let ty = config.types.get(ty).unwrap();
 
     if ty.fields.len() == 1 {
-        for (field_name, field) in ty.fields.iter() {
+        if let Some((field_name, field)) = ty.fields.iter().next() {
             if SCALAR_TYPES.contains(field.type_of.as_str()) {
                 return if let Some(field_name) = root_field {
                     Some((field_name, field.type_of.clone()))
                 } else {
                     Some((field_name.clone(), field.type_of.clone()))
-                }
+                };
             }
             return if let Some(field_name) = root_field {
                 iter(config, &field.type_of, Some(field_name))
-            }else {
+            } else {
                 iter(config, &field.type_of, Some(field_name.clone()))
             };
         }
@@ -72,36 +72,17 @@ fn iter(config: &Config, ty: &str, root_field: Option<String>) -> Option<(String
 
 #[cfg(test)]
 mod test {
-    use crate::core::config::Config;
-    use crate::core::Transform;
-    use crate::core::valid::Validator;
-
     use super::Flatten;
-
-    const SDL: &str = r#"
-        schema {
-          query: Query
-        }
-
-        type Query {
-          foo: Foo
-        }
-
-        # Type with only one field
-        type Foo {
-          bar: Bar
-        }
-
-        # Type with only one field
-        type Bar {
-          a: Int
-        }
-    "#;
+    use crate::core::config::Config;
+    use crate::core::valid::Validator;
+    use crate::core::Transform;
 
     #[test]
     fn test_foo() {
-        let config = Config::from_sdl(SDL).to_result().unwrap();
-        let transformed = Flatten::default().transform(config).to_result().unwrap();
+        let config = Config::from_sdl(tailcall_fixtures::generator::FLATTEN)
+            .to_result()
+            .unwrap();
+        let transformed = Flatten.transform(config).to_result().unwrap();
         println!("{}", transformed.to_sdl());
     }
 }
