@@ -64,7 +64,6 @@ pub enum RawValue<'a> {
     Var(Cow<'a, str>),
     Headers(Cow<'a, str>),
     Env(Cow<'a, str>),
-    None,
 }
 
 impl<'a, Ctx: ResolverContextLike> PathValue for EvalContext<'a, Ctx> {
