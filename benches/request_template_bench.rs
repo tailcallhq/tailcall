@@ -30,10 +30,9 @@ impl Encoder for Context {
         path: &[P],
         encoding_strategy: &EncodingStrategy,
     ) -> Option<String> {
-        self.value.get_path(path).map(|v| {
+        self.value.get_path(path).and_then(|v| {
             let async_val = Cow::Owned(Value::from_json(v.clone()).unwrap());
-            let result = encoding_strategy.encode(key.as_ref(), async_val);
-            result.unwrap()
+            encoding_strategy.encode(key.as_ref(), async_val)
         })
     }
 }
