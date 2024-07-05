@@ -11,22 +11,22 @@ struct DirectiveDefinitionAttr {
 }
 
 fn get_directive_definition_attr(input: &DeriveInput) -> syn::Result<DirectiveDefinitionAttr> {
-    let mut directve_definition_attr: DirectiveDefinitionAttr = Default::default();
+    let mut directive_definition_attr: DirectiveDefinitionAttr = Default::default();
     for attr in input.attrs.iter() {
         if attr.path().is_ident("directive_definition") {
             attr.parse_nested_meta(|meta| {
                 if meta.path.is_ident("repeatable") {
-                    directve_definition_attr.is_repeatable = true;
+                    directive_definition_attr.is_repeatable = true;
                 }
 
                 if meta.path.is_ident("locations") {
                     let value = meta.value()?;
                     let s: syn::LitStr = value.parse()?;
-                    directve_definition_attr.locations = Some(s.value());
+                    directive_definition_attr.locations = Some(s.value());
                 }
 
                 if meta.path.is_ident("lowercase_name") {
-                    directve_definition_attr.is_lowercase_name = true;
+                    directive_definition_attr.is_lowercase_name = true;
                 }
 
                 Ok(())
@@ -34,7 +34,7 @@ fn get_directive_definition_attr(input: &DeriveInput) -> syn::Result<DirectiveDe
         }
     }
 
-    Ok(directve_definition_attr)
+    Ok(directive_definition_attr)
 }
 
 pub fn expand_directive_definition(input: TokenStream) -> TokenStream {

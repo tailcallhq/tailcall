@@ -42,23 +42,23 @@ impl<'a> Iterator for LineBreaker<'a> {
     }
 }
 
-fn get_formated_docs(docs: Option<String>, indent: usize) -> String {
+fn get_formatted_docs(docs: Option<String>, indent: usize) -> String {
     let mut indent_str = String::new();
     if indent > 0 {
         indent_str = " ".repeat(indent);
     }
-    let mut formated_docs = String::new();
+    let mut formatted_docs = String::new();
     if let Some(docs) = docs {
         let docs: String = docs.chars().filter(|ch| ch != &'\n').collect();
         let line_breaker = LineBreaker::new(&docs, 80);
-        formated_docs.push_str(format!("{}\"\"\"", indent_str).as_str());
+        formatted_docs.push_str(format!("{}\"\"\"", indent_str).as_str());
         for line in line_breaker {
-            formated_docs.push_str(format!("\n{}{}", indent_str, line).as_str());
+            formatted_docs.push_str(format!("\n{}{}", indent_str, line).as_str());
         }
-        formated_docs.push_str(format!("\n{}\"\"\"\n", indent_str).as_str());
+        formatted_docs.push_str(format!("\n{}\"\"\"\n", indent_str).as_str());
     }
 
-    formated_docs
+    formatted_docs
 }
 
 fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
@@ -131,7 +131,7 @@ fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
 fn print_type_def(type_def: &TypeDefinition) -> String {
     match &type_def.kind {
         TypeKind::Scalar => {
-            let doc = get_formated_docs(type_def.description.as_ref().map(|d| d.node.clone()), 0);
+            let doc = get_formatted_docs(type_def.description.as_ref().map(|d| d.node.clone()), 0);
             format!("{}scalar {}\n", doc, type_def.name.node)
         }
         TypeKind::Union(union) => {
@@ -148,7 +148,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
         }
         TypeKind::InputObject(input) => {
             let directives = print_directives(&type_def.directives);
-            let doc = get_formated_docs(type_def.description.as_ref().map(|d| d.node.clone()), 0);
+            let doc = get_formatted_docs(type_def.description.as_ref().map(|d| d.node.clone()), 0);
             format!(
                 "{}input {} {}{{\n{}\n}}\n",
                 doc,
@@ -293,7 +293,7 @@ fn print_default_value(value: Option<&Positioned<ConstValue>>) -> String {
 
 fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition) -> String {
     let directives_str = print_directives(&field.directives);
-    let doc = get_formated_docs(field.description.as_ref().map(|d| d.node.clone()), 2);
+    let doc = get_formatted_docs(field.description.as_ref().map(|d| d.node.clone()), 2);
     format!(
         "{}  {}: {}{}{}",
         doc,
@@ -323,13 +323,13 @@ fn print_directive_type_def(directive: &DirectiveDefinition) -> String {
         .arguments
         .iter()
         .map(|arg| {
-            let doc = get_formated_docs(arg.node.description.as_ref().map(|d| d.node.clone()), 2);
+            let doc = get_formatted_docs(arg.node.description.as_ref().map(|d| d.node.clone()), 2);
             format!("{}  {}: {}", doc, arg.node.name.node, arg.node.ty.node)
         })
         .collect::<Vec<String>>()
         .join("\n");
 
-    let doc = get_formated_docs(directive.description.as_ref().map(|d| d.node.clone()), 0);
+    let doc = get_formatted_docs(directive.description.as_ref().map(|d| d.node.clone()), 0);
     let locations = directive
         .locations
         .iter()

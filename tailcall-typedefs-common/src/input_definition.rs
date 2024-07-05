@@ -88,7 +88,7 @@ fn determine_input_type_from_schema(mut name: String, schema: SchemaObject) -> T
                 | InstanceType::String
                 | InstanceType::Integer => Type {
                     nullable: false,
-                    base: BaseType::Named(Name::new(get_instace_type_name(typ))),
+                    base: BaseType::Named(Name::new(get_instance_type_name(typ))),
                 },
                 _ => determine_type_from_schema(name, &schema),
             },
@@ -99,7 +99,7 @@ fn determine_input_type_from_schema(mut name: String, schema: SchemaObject) -> T
                 | InstanceType::String
                 | InstanceType::Integer => Type {
                     nullable: true,
-                    base: BaseType::Named(Name::new(get_instace_type_name(typ.first().unwrap()))),
+                    base: BaseType::Named(Name::new(get_instance_type_name(typ.first().unwrap()))),
                 },
                 _ => determine_type_from_schema(name, &schema),
             },
@@ -174,7 +174,7 @@ fn determine_type_from_object_valid(name: String, typ: &ObjectValidation) -> Typ
     }
 }
 
-fn get_instace_type_name(typ: &InstanceType) -> String {
+fn get_instance_type_name(typ: &InstanceType) -> String {
     match typ {
         &InstanceType::Integer => "Int".to_string(),
         _ => format!("{:?}", typ),
