@@ -5,10 +5,10 @@ use super::super::Result;
 use super::Synthesizer;
 use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
-use crate::core::jit::ExecutionPlan;
+use crate::core::jit::{DataPath, ExecutionPlan};
 use crate::core::json::JsonLike;
 
-struct Synth {
+pub struct Synth {
     selection: Vec<Field<Children>>,
     store: Store<Result<Value>>,
 }
@@ -22,7 +22,7 @@ impl Synth {
         let mut data = IndexMap::default();
 
         for child in self.selection.iter() {
-            let val = self.iter(child, None, None)?;
+            let val = self.iter(child, None, &DataPath::new())?;
             data.insert(Name::new(child.name.as_str()), val);
         }
         // As we are using Response struct, the data will be wrapped in a key "data" by
@@ -40,41 +40,36 @@ impl Synth {
         &'b self,
         node: &'b Field<Children>,
         parent: Option<&'b Value>,
-        index: Option<usize>,
+        data_path: &DataPath,
     ) -> Result<Value> {
+        // TODO: this implementation prefer parent value over value in the store
+        // that's opposite to the way async_graphql engine works in tailcall
         match parent {
             Some(parent) => {
                 if !Self::is_array(&node.type_of, parent) {
                     return Ok(Value::Null);
                 }
-                self.iter_inner(node, parent, index)
+                self.iter_inner(node, parent, data_path)
             }
             None => {
                 // we perform this check to avoid unnecessary hashing
 
                 match self.store.get(&node.id) {
                     Some(val) => {
-                        match val {
-                            // if index is given, then the data should be a list
-                            // if index is not given, then the data should be a value
-                            // must return Null in all other cases.
-                            Data::Single(val) => {
-                                if index.is_some() {
-                                    return Ok(Value::Null);
+                        let mut data = val;
+
+                        for index in data_path.as_slice() {
+                            match data {
+                                Data::Multiple(v) => {
+                                    data = &v[index];
                                 }
-                                self.iter(node, Some(&val.clone()?), None)
+                                _ => return Ok(Value::Null),
                             }
-                            Data::Multiple(list) => {
-                                if let Some(i) = index {
-                                    match list.get(i) {
-                                        Some(val) => self.iter(node, Some(&val.clone()?), None),
-                                        None => Ok(Value::Null),
-                                    }
-                                } else {
-                                    Ok(Value::Null)
-                                }
-                            }
-                            Data::Pending => {
+                        }
+
+                        match data {
+                            Data::Single(val) => self.iter(node, Some(&val.clone()?), data_path),
+                            _ => {
                                 // TODO: should bailout instead of returning Null
                                 Ok(Value::Null)
                             }
@@ -94,7 +89,7 @@ impl Synth {
         &'b self,
         node: &'b Field<Children>,
         parent: &'b Value,
-        index: Option<usize>,
+        data_path: &'b DataPath,
     ) -> Result<Value> {
         match parent {
             Value::Object(obj) => {
@@ -115,12 +110,12 @@ impl Synth {
                         if let Some(val) = val {
                             ans.insert(
                                 Name::new(child.name.as_str()),
-                                self.iter_inner(child, val, index)?,
+                                self.iter_inner(child, val, data_path)?,
                             );
                         } else {
                             ans.insert(
                                 Name::new(child.name.as_str()),
-                                self.iter(child, None, index)?,
+                                self.iter(child, None, data_path)?,
                             );
                         }
                     }
@@ -130,7 +125,7 @@ impl Synth {
             Value::List(arr) => {
                 let mut ans = vec![];
                 for (i, val) in arr.iter().enumerate() {
-                    let val = self.iter_inner(node, val, Some(i))?;
+                    let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
                     ans.push(val)
                 }
                 Ok(Value::List(ans))
@@ -225,10 +220,15 @@ mod tests {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
-                TestData::UsersData => Data::Multiple(vec![
-                    serde_json::from_str(USER1).unwrap(),
-                    serde_json::from_str(USER2).unwrap(),
-                ]),
+                TestData::UsersData => Data::Multiple(
+                    vec![
+                        Data::Single(serde_json::from_str(USER1).unwrap()),
+                        Data::Single(serde_json::from_str(USER2).unwrap()),
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    .collect(),
+                ),
                 TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
             }
         }
@@ -246,8 +246,8 @@ mod tests {
 
         let store = store
             .into_iter()
-            .fold(Store::new(plan.size()), |mut store, (id, data)| {
-                store.set(id, data.map(Ok));
+            .fold(Store::new(), |mut store, (id, data)| {
+                store.set_data(id, data.map(Ok));
                 store
             });
 
@@ -328,7 +328,7 @@ mod tests {
     #[test]
     fn test_json_placeholder() {
         let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
-        let val = synth.synthesize();
+        let val = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }
