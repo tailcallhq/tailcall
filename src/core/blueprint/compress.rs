@@ -14,10 +14,14 @@ pub fn compress(mut blueprint: Blueprint) -> Blueprint {
     // for root-definitions.
     let defined_query_type = blueprint.query().clone();
     let mutation = blueprint.mutation().unwrap_or("Mutation".to_string());
+    let subscription = blueprint
+        .subscription()
+        .unwrap_or("Subscription".to_string());
 
     // Push to root-types
     root_type.push(defined_query_type.as_str());
     root_type.push(mutation.as_str());
+    root_type.push(subscription.as_str());
 
     let mut referenced_types = identify_referenced_types(&graph, root_type);
     referenced_types.insert("Query".to_string());

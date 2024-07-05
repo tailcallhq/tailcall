@@ -147,6 +147,7 @@ pub struct EnumValueDefinition {
 pub struct SchemaDefinition {
     pub query: String,
     pub mutation: Option<String>,
+    pub subscription: Option<String>,
     pub directives: Vec<Directive>,
 }
 
@@ -226,6 +227,10 @@ impl Blueprint {
 
     pub fn mutation(&self) -> Option<String> {
         self.schema.mutation.clone()
+    }
+
+    pub fn subscription(&self) -> Option<String> {
+        self.schema.subscription.clone()
     }
 
     fn drop_resolvers(mut self) -> Self {

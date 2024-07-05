@@ -622,6 +622,7 @@ pub enum GraphQLOperationType {
     #[default]
     Query,
     Mutation,
+    Subscription,
 }
 
 impl Display for GraphQLOperationType {
@@ -629,6 +630,7 @@ impl Display for GraphQLOperationType {
         f.write_str(match self {
             Self::Query => "query",
             Self::Mutation => "mutation",
+            Self::Subscription => "subscription",
         })
     }
 }
@@ -809,6 +811,10 @@ impl Config {
             types = self.find_connections(mutation, types);
         }
 
+        if let Some(ref subscription) = &self.schema.subscription {
+            types = self.find_connections(subscription, types);
+        }
+
         types
     }
 
@@ -863,6 +869,9 @@ impl Config {
         }
         if let Some(mutation) = &self.schema.mutation {
             stack.push(mutation.clone());
+        }
+        if let Some(subscription) = &self.schema.subscription {
+            stack.push(subscription.clone());
         }
         while let Some(type_name) = stack.pop() {
             if set.contains(&type_name) {

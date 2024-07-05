@@ -101,10 +101,31 @@ fn validate_mutation(config: &Config) -> Valid<(), String> {
     }
 }
 
+fn validate_subscription(config: &Config) -> Valid<(), String> {
+    let subscription_type_name = config.schema.subscription.as_ref();
+
+    if let Some(subscription_type_name) = subscription_type_name {
+        let Some(subscription) = config.find_type(subscription_type_name) else {
+            return Valid::fail("Subscription type is not defined".to_owned())
+                .trace(subscription_type_name);
+        };
+        let mut set = HashSet::new();
+        validate_type_has_resolvers(
+            subscription_type_name,
+            subscription,
+            &config.types,
+            &mut set,
+        )
+    } else {
+        Valid::succeed(())
+    }
+}
+
 pub fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
     TryFoldConfig::new(|config, _| {
         validate_query(config)
             .and(validate_mutation(config))
+            .and(validate_subscription(config))
             .and(Valid::from_option(
                 config.schema.query.as_ref(),
                 "Query root is missing".to_owned(),
@@ -113,6 +134,7 @@ pub fn to_schema<'a>() -> TryFoldConfig<'a, SchemaDefinition> {
             .map(|(query_type_name, directive)| SchemaDefinition {
                 query: query_type_name.to_owned(),
                 mutation: config.schema.mutation.clone(),
+                subscription: config.schema.subscription.clone(),
                 directives: vec![directive],
             })
     })

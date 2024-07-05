@@ -42,6 +42,10 @@ impl Index {
     pub fn get_mutation(&self) -> Option<&str> {
         self.schema.mutation.as_deref()
     }
+
+    pub fn get_subscription(&self) -> Option<&str> {
+        self.schema.subscription.as_deref()
+    }
 }
 
 impl From<&Blueprint> for Index {

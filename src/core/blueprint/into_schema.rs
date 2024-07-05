@@ -225,7 +225,8 @@ impl From<&Blueprint> for SchemaBuilder {
     fn from(blueprint: &Blueprint) -> Self {
         let query = blueprint.query();
         let mutation = blueprint.mutation();
-        let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
+        let subscription = blueprint.subscription();
+        let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), subscription.as_deref());
 
         for (k, v) in CUSTOM_SCALARS.iter() {
             schema = schema.register(dynamic::Type::Scalar(

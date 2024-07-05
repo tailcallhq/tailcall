@@ -120,7 +120,7 @@ impl Builder {
         match ty {
             OperationType::Query => Some(self.index.get_query()),
             OperationType::Mutation => self.index.get_mutation(),
-            OperationType::Subscription => None,
+            OperationType::Subscription => self.index.get_subscription(),
         }
     }
 
