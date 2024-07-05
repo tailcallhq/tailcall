@@ -86,7 +86,14 @@ impl Builder {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
                         };
-                        fields.push(Field { id, name, ir, type_of, args, refs: refs.clone() });
+                        fields.push(Field {
+                            id,
+                            name,
+                            ir,
+                            type_of,
+                            args,
+                            extensions: refs.clone(),
+                        });
                         fields = fields.merge_right(child_fields);
                     }
                 }
