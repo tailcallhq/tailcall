@@ -1,5 +1,5 @@
 schema {
-    query: Query
+  query: Query
 }
 
 type Query {
@@ -8,7 +8,7 @@ type Query {
 }
 
 # Type with only one field
-type Foo { 
+type Foo {
   bar: Bar
 }
 
@@ -18,6 +18,6 @@ type Bar {
 }
 
 type NotSingle {
-    f1: Int
-    f2: Int
+  f1: Int
+  f2: Int
 }

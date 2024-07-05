@@ -26,7 +26,7 @@ impl Transform for Preset {
             .pipe(super::Required)
             .pipe(super::TreeShake.when(self.tree_shake))
             .pipe(super::TypeMerger::new(self.merge_type))
-            .pipe(super::FlattenSingleField).when(self.flatten_single_field)
+            .pipe(super::FlattenSingleField.when(self.flatten_single_field))
             .pipe(super::ImproveTypeNames.when(self.use_better_names))
             .pipe(super::ConsolidateURL::new(self.consolidate_url))
             .transform(config)

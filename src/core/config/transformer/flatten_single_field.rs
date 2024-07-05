@@ -1,16 +1,16 @@
-use crate::core::config::AddField;
-use crate::core::config::Config;
-use crate::core::config::Omit;
-use crate::core::config::Type;
+use crate::core::config::{AddField, Config, Omit};
 use crate::core::transform::Transform;
-use crate::core::valid::Valid;
-use crate::core::valid::Validator;
+use crate::core::valid::{Valid, Validator};
 
 /// Flat single field type and inline to Query directly by addField
 #[derive(Default)]
 pub struct FlattenSingleField;
 
-fn get_single_field_path(config: &Config, field_name: &str, type_name: &str) -> Option<Vec<String>> {
+fn get_single_field_path(
+    config: &Config,
+    field_name: &str,
+    type_name: &str,
+) -> Option<Vec<String>> {
     let mut path = Vec::new();
     path.push(field_name.to_owned());
     if config.is_scalar(type_name) || config.enums.contains_key(type_name) {
@@ -20,8 +20,8 @@ fn get_single_field_path(config: &Config, field_name: &str, type_name: &str) -> 
     if let Some(ty) = ty {
         if ty.fields.len() == 1 {
             if let Some((sub_field_name, sub_field)) = ty.fields.first_key_value() {
-                let sub_path = get_single_field_path(&config, &sub_field_name, &sub_field.type_of);
-                sub_path.map(|sub_path| path.extend(sub_path));
+                let sub_path = get_single_field_path(config, sub_field_name, &sub_field.type_of);
+                if let Some(sub_path) = sub_path { path.extend(sub_path) }
                 Some(path)
             } else {
                 None
@@ -29,7 +29,6 @@ fn get_single_field_path(config: &Config, field_name: &str, type_name: &str) -> 
         } else {
             None
         }
-
     } else {
         None
     }
@@ -43,18 +42,20 @@ impl Transform for FlattenSingleField {
         if let Some(root) = &config.schema.query {
             let root_query = config.types.get_mut(root);
             if let Some(root_query) = root_query {
-                let field_trans = Valid::from_iter(root_query.fields.iter_mut(), |(name, field)| {
-                    if let Some(path) = get_single_field_path(&origin_config, &name, &field.type_of) {
-                        if path.len() > 1 {
-                            field.omit = Some(Omit{});
-                            root_query.added_fields.push(AddField {
-                                name: name.to_owned(),
-                                path
-                            });
+                let field_trans =
+                    Valid::from_iter(root_query.fields.iter_mut(), |(name, field)| {
+                        if let Some(path) =
+                            get_single_field_path(&origin_config, name, &field.type_of)
+                        {
+                            if path.len() > 1 {
+                                field.omit = Some(Omit {});
+                                root_query
+                                    .added_fields
+                                    .push(AddField { name: name.to_owned(), path });
+                            }
                         }
-                    }
-                    Valid::succeed(())
-                });
+                        Valid::succeed(())
+                    });
                 field_trans.map(|_| config)
             } else {
                 Valid::fail("Query type is not existed.".to_owned())
@@ -89,5 +90,4 @@ mod test {
         let transformed_config = FlattenSingleField.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
     }
-
 }
