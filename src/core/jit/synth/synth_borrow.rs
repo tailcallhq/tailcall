@@ -64,17 +64,7 @@ impl<'a> SynthBorrow<'a> {
                                 }
                                 self.iter(node, Some(val), None)
                             }
-                            Data::Multiple(list) => {
-                                if let Some(i) = index {
-                                    match list.get(i) {
-                                        Some(val) => self.iter(node, Some(val), None),
-                                        None => Value::Null,
-                                    }
-                                } else {
-                                    Value::Null
-                                }
-                            }
-                            Data::Pending => {
+                            _ => {
                                 // TODO: should bailout instead of returning Null
                                 Value::Null
                             }
@@ -202,10 +192,15 @@ mod tests {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
-                TestData::UsersData => Data::Multiple(vec![
-                    serde_json::from_str(USER1).unwrap(),
-                    serde_json::from_str(USER2).unwrap(),
-                ]),
+                TestData::UsersData => Data::Multiple(
+                    vec![
+                        Data::Single(serde_json::from_str(USER1).unwrap()),
+                        Data::Single(serde_json::from_str(USER2).unwrap()),
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    .collect(),
+                ),
                 TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
             }
         }
@@ -223,8 +218,8 @@ mod tests {
 
         let store = store
             .into_iter()
-            .fold(Store::new(plan.size()), |mut store, (id, data)| {
-                store.set(id, data);
+            .fold(Store::new(), |mut store, (id, data)| {
+                store.set_data(id, data);
                 store
             });
 

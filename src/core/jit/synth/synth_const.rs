@@ -167,7 +167,7 @@ mod tests {
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
-    use crate::core::jit::SynthBorrow;
+    
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -330,7 +330,7 @@ mod tests {
 
     #[test]
     fn test_json_placeholder() {
-        let synth: Rc<SynthBorrow> =
+        let synth: Rc<Synth> =
             JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
         let val = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
