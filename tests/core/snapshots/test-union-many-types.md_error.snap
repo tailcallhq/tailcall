@@ -1,0 +1,14 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Union AllTypes defines more than 64 types that is not supported",
+    "trace": [
+      "Query",
+      "allTypes"
+    ],
+    "description": null
+  }
+]
