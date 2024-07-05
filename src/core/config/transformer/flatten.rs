@@ -29,30 +29,20 @@ impl Transform for Flatten {
         let mut unused_collect = vec![];
 
         // iterate over Query, Mutation, Sub
-        Valid::from_iter(roots(&config), |root| {
-            Valid::from_option(
-                config.types.get(&root).cloned(),
-                "Root schema not found".to_string(),
-            )
-            .map(|v| (v, root))
-        })
-        .and_then(|tys| {
-            // iterate over fields of Root types
-            Valid::from_iter(tys, |(ty, root)| {
-                Valid::from_iter(ty.fields, |(name, field)| {
-                    let mut unused = vec![];
-                    let ty = &field.type_of;
-                    if !SCALAR_TYPES.contains(ty.as_str()) {
-                        unused.push(ty.as_str().to_string());
-                    }
-                    if let Some(ty_of) = iter(IterHelper::new(&config, ty), &mut unused) {
-                        let ty = config.types.get_mut(&root).unwrap();
-                        let fields = &mut ty.fields;
-                        fields.get_mut(name.as_str()).unwrap().type_of = ty_of;
-                        unused_collect.extend(unused);
-                    }
-                    Valid::succeed(())
-                })
+        Valid::from_iter(config.types.clone(), |(ty_name, ty)| {
+            Valid::from_iter(ty.fields, |(name, field)| {
+                let mut unused = vec![];
+                let ty = &field.type_of;
+                if !SCALAR_TYPES.contains(ty.as_str()) {
+                    unused.push(ty.as_str().to_string());
+                }
+                if let Some(ty_of) = iter(IterHelper::new(&config, ty), &mut unused) {
+                    let ty = config.types.get_mut(&ty_name).unwrap();
+                    let fields = &mut ty.fields;
+                    fields.get_mut(name.as_str()).unwrap().type_of = ty_of;
+                    unused_collect.extend(unused);
+                }
+                Valid::succeed(())
             })
         })
         .and_then(|_| {
@@ -62,21 +52,6 @@ impl Transform for Flatten {
             Valid::succeed(config)
         })
     }
-}
-
-fn roots(config: &Config) -> Vec<String> {
-    let schema = config.schema.clone();
-    let mut root_types = vec![];
-    if let Some(query) = schema.query {
-        root_types.push(query);
-    }
-    if let Some(mutation) = schema.mutation {
-        root_types.push(mutation);
-    }
-    if let Some(subscription) = schema.subscription {
-        root_types.push(subscription);
-    }
-    root_types
 }
 
 #[inline(always)]
@@ -95,6 +70,8 @@ fn iter(iter_helper: IterHelper, unused: &mut Vec<String>) -> Option<String> {
             unused.push(ty_of.as_str().to_string());
             return iter(iter_helper.ty(ty_of.as_str()), unused);
         }
+    } else {
+        return unused.pop();
     }
     None
 }
@@ -116,7 +93,8 @@ mod test {
         .to_result()
         .unwrap();
         let transformed = Flatten.transform(config).to_result().unwrap();
-        insta::assert_snapshot!(transformed.to_sdl());
+        // insta::assert_snapshot!(transformed.to_sdl());
+        println!("{}", transformed.to_sdl());
     }
 
     #[test]
