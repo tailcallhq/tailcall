@@ -4,13 +4,17 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 use serde_json_borrow::ObjectAsVec;
 
-use crate::core::json::Object;
+use crate::core::json::JsonObjectLike;
 
 pub trait JsonLike {
     type Output;
-    type Obj: Object;
+    type Obj: JsonObjectLike;
+
+    // Constructors
     fn default() -> Self;
     fn new_array(arr: Vec<Self::Output>) -> Self;
+
+    // Operators
     fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str>;
     fn as_object_ok(&self) -> Result<&Self::Obj, &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;

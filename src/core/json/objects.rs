@@ -3,50 +3,33 @@ use serde_json_borrow::{ObjectAsVec, Value};
 
 use crate::core::json::JsonLike;
 
-pub trait Object {
-    type Value: JsonLike;
-    // TODO: Should return a reference to the value
-    fn get_val(&self, key: &str) -> Option<Self::Value>;
-    fn insert_val(&mut self, key: &str, value: Self::Value);
+pub trait JsonObjectLike {
+    type Value<'a>: JsonLike
+    where
+        Self: 'a;
+    fn get<'a>(&'a self, key: &'a str) -> Option<&Self::Value<'a>>;
 }
 
-impl Object for serde_json::Map<String, serde_json::Value> {
-    type Value = serde_json::Value;
+impl JsonObjectLike for serde_json::Map<String, serde_json::Value> {
+    type Value<'a> = serde_json::Value;
 
-    fn get_val(&self, key: &str) -> Option<Self::Value> {
-        self.get(key).cloned()
-    }
-
-    fn insert_val(&mut self, key: &str, value: Self::Value) {
-        self.insert(key.to_string(), value);
+    fn get<'a>(&'a self, key: &'a str) -> Option<&Self::Value<'a>> {
+        self.get(key)
     }
 }
 
-impl<V: JsonLike + Clone> Object for IndexMap<async_graphql_value::Name, V> {
-    type Value = V;
+impl<V: JsonLike + Clone> JsonObjectLike for IndexMap<async_graphql_value::Name, V> {
+    type Value<'a> = V where V: 'a;
 
-    fn get_val(&self, key: &str) -> Option<Self::Value> {
-        self.get(&async_graphql_value::Name::new(key)).cloned()
-    }
-
-    fn insert_val(&mut self, key: &str, value: Self::Value) {
-        self.insert(async_graphql_value::Name::new(key), value);
+    fn get<'a>(&'a self, key: &'a str) -> Option<&Self::Value<'a>> {
+        self.get(&async_graphql_value::Name::new(key))
     }
 }
 
-impl<'a> Object for ObjectAsVec<'a> {
-    type Value = Value<'a>;
+impl<'x> JsonObjectLike for ObjectAsVec<'x> {
+    type Value<'a> = Value<'a> where 'x: 'a;
 
-    fn get_val(&self, key: &str) -> Option<Self::Value> {
-        self.clone()
-            .into_vec()
-            .into_iter()
-            .find(|(k, _)| k == key)
-            .map(|(_, v)| v)
-    }
-
-    fn insert_val(&mut self, _key: &str, _value: Self::Value) {
-        todo!()
-        // self.insert(key, value);
+    fn get<'a>(&'a self, key: &'a str) -> Option<&'a Self::Value<'a>> {
+        self.get(key)
     }
 }

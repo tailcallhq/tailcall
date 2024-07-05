@@ -13,7 +13,7 @@ use crate::core::jit::model::{ExecutionPlan, FieldId};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::SynthBorrow;
-use crate::core::json::{JsonLike, Object};
+use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::Validator;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
@@ -74,7 +74,7 @@ impl JsonPlaceholder {
             let id = user
                 .as_object_ok()
                 .ok()
-                .and_then(|user| user.get_val("id"))
+                .and_then(|user| user.get("id"))
                 .and_then(|u| u.as_u64_ok().ok());
             if let Some(id) = id {
                 map.insert(id, user);
@@ -87,7 +87,7 @@ impl JsonPlaceholder {
                 let user_id = post
                     .as_object_ok()
                     .ok()
-                    .and_then(|post| post.get_val("userId"))
+                    .and_then(|post| post.get("userId"))
                     .and_then(|u| u.as_u64_ok().ok());
 
                 if let Some(user_id) = user_id {
