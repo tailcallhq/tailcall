@@ -59,6 +59,7 @@ impl ExecutionSpec {
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
         let mut sdl_error = false;
+        let mut preset = false; // enable preset transformer
 
         while let Some(node) = children.next() {
             match node {
@@ -97,6 +98,7 @@ impl ExecutionSpec {
                                     if a.contains("skip") && b.ends_with("true") {
                                         runner = Some(Annotation::Skip);
                                     }
+                                    preset = a.contains("preset") && b.ends_with("true");
                                 }
                                 _ => {
                                     return Err(anyhow!(
@@ -262,6 +264,7 @@ impl ExecutionSpec {
 
             check_identity,
             sdl_error,
+            preset,
         };
 
         anyhow::Ok(spec)

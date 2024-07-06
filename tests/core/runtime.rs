@@ -36,6 +36,8 @@ pub struct ExecutionSpec {
 
     pub check_identity: bool,
     pub sdl_error: bool,
+    // Enable preset transformer
+    pub preset: bool,
 }
 
 #[derive(Clone, Debug)]
