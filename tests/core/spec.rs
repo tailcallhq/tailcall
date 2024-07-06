@@ -14,7 +14,7 @@ use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::reader::ConfigReader;
-use tailcall::core::config::transformer::{Required, Preset};
+use tailcall::core::config::transformer::{Preset, Required};
 use tailcall::core::config::{Config, ConfigModule, Source};
 use tailcall::core::http::handle_request;
 use tailcall::core::merge_right::MergeRight;
@@ -248,23 +248,17 @@ async fn test_spec(spec: ExecutionSpec) {
     .collect();
 
     // merged: Run merged specs
-    let merged =
-        server
-            .iter()
-            .fold(ConfigModule::default(), |acc, c| acc.merge_right(c.clone()));
+    let merged = server
+        .iter()
+        .fold(ConfigModule::default(), |acc, c| acc.merge_right(c.clone()));
     let merged = if spec.preset {
         // Apply preset transformers to the configuration
-        merged
-        .transform(Preset::default())
+        merged.transform(Preset::default())
     } else {
         // Apply required transformers to the configuration
-        merged
-        .transform(Required)
+        merged.transform(Required)
     };
-    let merged = merged
-        .to_result()
-        .unwrap()
-        .to_sdl();
+    let merged = merged.to_result().unwrap().to_sdl();
 
     let formatter = tailcall_prettier::format(merged, &Parser::Gql)
         .await
