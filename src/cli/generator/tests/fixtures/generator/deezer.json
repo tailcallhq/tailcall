@@ -1,0 +1,63 @@
+{
+  "inputs": [
+    {
+      "curl": {
+        "src": "https://api.deezer.com/track/3135556",
+        "fieldName": "track"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://api.deezer.com/album/302127",
+        "fieldName": "album"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://api.deezer.com/artist/27",
+        "fieldName": "artist"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://api.deezer.com/playlist/908622995",
+        "fieldName": "playlist"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://api.deezer.com/chart",
+        "fieldName": "chart"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://api.deezer.com/editorial",
+        "fieldName": "editorial"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://api.deezer.com/user/2529",
+        "fieldName": "user"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://api.deezer.com/search?q=eminem",
+        "fieldName": "search"
+      }
+    }
+  ],
+  "preset": {
+    "mergeType": 1,
+    "consolidateURL": 0.5
+  },
+  "output": {
+    "path": "./output.graphql",
+    "format": "graphQL"
+  },
+  "schema": {
+    "query": "Query"
+  }
+}

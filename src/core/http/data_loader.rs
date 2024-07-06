@@ -76,7 +76,11 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             for key in &keys[1..] {
                 let request = key.to_request();
                 let url = request.url();
-                first_url.query_pairs_mut().extend_pairs(url.query_pairs());
+                let pairs: Vec<_> = url
+                    .query_pairs()
+                    .filter(|(key, _)| group_by.path().contains(&key.to_string()))
+                    .collect();
+                first_url.query_pairs_mut().extend_pairs(pairs);
             }
 
             let res = self
