@@ -141,10 +141,7 @@ impl<A> Headers<A> {
 }
 
 impl Headers<UnResolved> {
-    pub fn resolve(
-        self,
-        reader_context: &ConfigReaderContext,
-    ) -> anyhow::Result<Headers<Resolved>> {
+    pub fn resolve(self, reader_context: &ConfigReaderContext) -> Result<Headers<Resolved>, Error> {
         // Resolve the header values with mustache template.
         let resolved_headers = if let Some(headers_inner) = self.0 {
             let mut resolved_headers = BTreeMap::new();

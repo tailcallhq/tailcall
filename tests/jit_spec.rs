@@ -6,11 +6,12 @@ mod tests {
     use tailcall::core::app_context::AppContext;
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
+    use tailcall::core::error::Error;
     use tailcall::core::jit::{ConstValueExecutor, Request};
     use tailcall::core::rest::EndpointSet;
     use tailcall::core::valid::Validator;
 
-    async fn new_executor(request: &Request<Value>) -> anyhow::Result<ConstValueExecutor> {
+    async fn new_executor(request: &Request<Value>) -> Result<ConstValueExecutor, Error> {
         let sdl = tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
         let config = Config::from_sdl(&sdl).to_result()?;
         let blueprint = Blueprint::try_from(&ConfigModule::from(config))?;

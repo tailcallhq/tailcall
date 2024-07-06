@@ -1,4 +1,3 @@
-use anyhow::Result;
 use clap::Parser;
 use convert_case::{Case, Casing};
 use dotenvy::dotenv;
@@ -9,9 +8,10 @@ use crate::cli::command::{Cli, Command};
 use crate::cli::{self, update_checker};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
+use crate::core::error::Error;
 use crate::core::runtime::TargetRuntime;
 
-pub async fn run() -> Result<()> {
+pub async fn run() -> Result<(), Error> {
     if let Ok(path) = dotenv() {
         tracing::info!("Env file: {:?} loaded", path);
     }
@@ -33,7 +33,11 @@ pub async fn run() -> Result<()> {
     run_command(cli, config_reader, runtime).await
 }
 
-async fn run_command(cli: Cli, config_reader: ConfigReader, runtime: TargetRuntime) -> Result<()> {
+async fn run_command(
+    cli: Cli,
+    config_reader: ConfigReader,
+    runtime: TargetRuntime,
+) -> Result<(), Error> {
     match cli.command {
         Command::Start { file_paths } => {
             start::start_command(file_paths, &config_reader).await?;

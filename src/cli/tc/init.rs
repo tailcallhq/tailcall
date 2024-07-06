@@ -1,15 +1,17 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use anyhow::Result;
-
 use super::helpers::{FILE_NAME, JSON_FILE_NAME, YML_FILE_NAME};
 use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
 use crate::core::config::{Config, Expr, Field, RootSchema, Source, Type};
+use crate::core::error;
 use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
 
-pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
+pub(super) async fn init_command(
+    runtime: TargetRuntime,
+    folder_path: &str,
+) -> Result<(), error::Error> {
     create_directory(folder_path).await?;
 
     let selection = select_prompt(
@@ -52,7 +54,7 @@ fn default_graphqlrc() -> serde_yaml::Value {
 async fn confirm_and_write_yml(
     runtime: TargetRuntime,
     yml_file_path: impl AsRef<Path>,
-) -> Result<()> {
+) -> Result<(), error::file::Error> {
     let yml_file_path = yml_file_path.as_ref().display().to_string();
 
     let mut final_graphqlrc = default_graphqlrc();
@@ -97,7 +99,7 @@ async fn create_main(
     runtime: TargetRuntime,
     folder_path: impl AsRef<Path>,
     source: Source,
-) -> Result<()> {
+) -> Result<(), error::Error> {
     let config = main_config();
 
     let content = match source {

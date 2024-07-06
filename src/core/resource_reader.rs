@@ -42,7 +42,7 @@ impl From<String> for Resource {
 
 #[async_trait::async_trait]
 pub trait Reader {
-    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead>;
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> Result<FileRead, Error>;
 }
 
 #[derive(Clone)]
@@ -57,7 +57,7 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
             let resource: Resource = path.into();
             let resource_path = resource.to_string();
             self.read_file(resource)
-                .map_err(|_| Error::File(file::Error::FileReadFailed(x.to_string())))
+                .map_err(|_| Error::File(file::Error::FileReadFailed(resource_path)))
         }))
         .await;
 

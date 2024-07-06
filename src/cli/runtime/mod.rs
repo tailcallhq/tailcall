@@ -13,7 +13,7 @@ use crate::core::blueprint::Blueprint;
 use crate::core::cache::InMemoryCache;
 use crate::core::runtime::TargetRuntime;
 use crate::core::worker::{Command, Event};
-use crate::core::{blueprint, EnvIO, FileIO, HttpIO, WorkerIO};
+use crate::core::{blueprint, error, EnvIO, FileIO, HttpIO, WorkerIO};
 
 // Provides access to env in native rust environment
 fn init_env() -> Arc<dyn EnvIO> {
@@ -89,7 +89,7 @@ pub async fn confirm_and_write(
     runtime: TargetRuntime,
     path: &str,
     content: &[u8],
-) -> anyhow::Result<()> {
+) -> Result<(), error::file::Error> {
     let file_exists = fs::metadata(path).is_ok();
 
     if file_exists {
@@ -107,7 +107,7 @@ pub async fn confirm_and_write(
     Ok(())
 }
 
-pub async fn create_directory(folder_path: &str) -> anyhow::Result<()> {
+pub async fn create_directory(folder_path: &str) -> Result<(), error::file::Error> {
     let folder_exists = fs::metadata(folder_path).is_ok();
 
     if !folder_exists {
@@ -128,6 +128,9 @@ pub async fn create_directory(folder_path: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn select_prompt<T: std::fmt::Display>(message: &str, options: Vec<T>) -> anyhow::Result<T> {
+pub fn select_prompt<T: std::fmt::Display>(
+    message: &str,
+    options: Vec<T>,
+) -> Result<T, error::file::Error> {
     Ok(Select::new(message, options).prompt()?)
 }

@@ -185,6 +185,7 @@ pub mod file {
     use std::string::FromUtf8Error;
 
     use derive_more::From;
+    use inquire::InquireError;
 
     #[derive(From, thiserror::Error, Debug)]
     pub enum Error {
@@ -228,6 +229,12 @@ pub mod file {
         #[error("Cloudflare Worker Execution Error : {0}")]
         #[from(ignore)]
         Cloudflare(String),
+
+        #[error("Inquire Error")]
+        Inquire(InquireError),
+
+        #[error("Serde yaml Error")]
+        SerdeYaml(serde_yaml::Error),
     }
 }
 

@@ -251,7 +251,6 @@ mod test {
     }
 
     mod http {
-        use anyhow::Result;
         use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
         use hyper::body::Bytes;
         use reqwest::Client;
@@ -259,7 +258,7 @@ mod test {
 
         use super::cacache_manager::CaCacheManager;
         use crate::core::http::Response;
-        use crate::core::HttpIO;
+        use crate::core::{error, HttpIO};
 
         #[derive(Clone)]
         pub struct NativeHttpTest {
@@ -281,7 +280,10 @@ mod test {
         #[async_trait::async_trait]
         impl HttpIO for NativeHttpTest {
             #[allow(clippy::blocks_in_conditions)]
-            async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+            async fn execute(
+                &self,
+                request: reqwest::Request,
+            ) -> Result<Response<Bytes>, error::http::Error> {
                 let response = self.client.execute(request).await;
                 Ok(Response::from_reqwest(
                     response?
@@ -303,6 +305,7 @@ mod test {
         use crate::cli::generator::Generator;
         use crate::core::blueprint::Blueprint;
         use crate::core::config::{self, ConfigModule};
+        use crate::core::error::Error;
         use crate::core::generator::Generator as ConfigGenerator;
 
         pub fn run_config_generator_spec(path: &Path) -> datatest_stable::Result<()> {
@@ -314,7 +317,7 @@ mod test {
             })
         }
 
-        async fn run_test(path: &str) -> anyhow::Result<()> {
+        async fn run_test(path: &str) -> Result<(), Error> {
             let mut runtime = crate::cli::runtime::init(&Blueprint::default());
             runtime.http = Arc::new(NativeHttpTest::default());
 
