@@ -1071,9 +1071,12 @@ mod tests {
                 .to_result()
                 .unwrap_err()
                 .to_string(),
-            "Validation Error
-• Union BigUnion defines more than 64 types that is not supported
-"
+            format!(
+                "Validation Error
+• Union BigUnion defines more than {} types that is not supported
+",
+                usize::BITS
+            )
         );
     }
 

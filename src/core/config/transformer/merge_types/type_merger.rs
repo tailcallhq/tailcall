@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
@@ -35,8 +35,8 @@ impl Default for TypeMerger {
 
 impl TypeMerger {
     fn merger(&self, mut merge_counter: u32, mut config: Config) -> Config {
-        let mut type_to_merge_type_mapping = HashMap::new();
-        let mut similar_type_group_list: Vec<HashSet<String>> = vec![];
+        let mut type_to_merge_type_mapping = BTreeMap::new();
+        let mut similar_type_group_list: Vec<BTreeSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
         let mut stat_gen = Similarity::new(&config);
@@ -50,7 +50,7 @@ impl TypeMerger {
                     continue;
                 }
 
-                let mut similar_type_set = HashSet::new();
+                let mut similar_type_set = BTreeSet::new();
                 similar_type_set.insert(type_name_1.to_string());
 
                 for type_name_2 in mergeable_types.iter().skip(i + 1) {

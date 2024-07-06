@@ -45,19 +45,19 @@ impl FieldId {
 }
 
 #[derive(Clone)]
-pub struct Field<A: Clone> {
+pub struct Field<A> {
     pub id: FieldId,
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
     pub args: Vec<Arg>,
-    pub refs: Option<A>,
+    pub extensions: Option<A>,
 }
 
 const EMPTY_VEC: &Vec<Field<Children>> = &Vec::new();
 impl Field<Children> {
     pub fn children(&self) -> &Vec<Field<Children>> {
-        match &self.refs {
+        match &self.extensions {
             Some(Children(children)) => children,
             _ => EMPTY_VEC,
         }
@@ -66,7 +66,7 @@ impl Field<Children> {
 
 impl Field<Parent> {
     fn parent(&self) -> Option<&FieldId> {
-        self.refs.as_ref().map(|Parent(id)| id)
+        self.extensions.as_ref().map(|Parent(id)| id)
     }
 
     fn into_children(self, fields: &[Field<Parent>]) -> Field<Children> {
@@ -91,7 +91,7 @@ impl Field<Parent> {
             ir: self.ir,
             type_of: self.type_of,
             args: self.args,
-            refs,
+            extensions: refs,
         }
     }
 }
@@ -108,8 +108,8 @@ impl<A: Debug + Clone> Debug for Field<A> {
         if !self.args.is_empty() {
             debug_struct.field("args", &self.args);
         }
-        if self.refs.is_some() {
-            debug_struct.field("refs", &self.refs);
+        if self.extensions.is_some() {
+            debug_struct.field("refs", &self.extensions);
         }
         debug_struct.finish()
     }
@@ -146,7 +146,7 @@ impl ExecutionPlan {
         let field_children = fields
             .clone()
             .into_iter()
-            .filter(|f| f.refs.is_none())
+            .filter(|f| f.extensions.is_none())
             .map(|f| f.into_children(&fields))
             .collect::<Vec<_>>();
 

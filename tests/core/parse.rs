@@ -11,10 +11,10 @@ use async_graphql_value::ConstValue;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
 use tailcall::cli::javascript;
+use tailcall::core::app_context::AppContext;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::config::{ConfigModule, Source};
-use tailcall::core::http::AppContext;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::worker::{Command, Event};
 use tailcall::core::{EnvIO, WorkerIO};
@@ -87,6 +87,7 @@ impl ExecutionSpec {
                             let _ = children.next();
                         }
                     } else if heading.depth == 2 {
+                        // TODO: use frontmatter parsing instead of handle it as heading?
                         if let Some(Node::Text(expect)) = heading.children.first() {
                             let split = expect.value.splitn(2, ':').collect::<Vec<&str>>();
                             match split[..] {

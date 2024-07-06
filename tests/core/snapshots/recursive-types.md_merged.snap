@@ -4,6 +4,27 @@ expression: formatter
 ---
 schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
+  mutation: Mutation
+}
+
+input ConnectionInput {
+  type: String
+  user: UserInput
+}
+
+input UserInput {
+  connections: [ConnectionInput] @http(path: "/connections/{{.value.id}}")
+  id: Int!
+  name: String
+}
+
+type Connection {
+  type: String
+  user: User
+}
+
+type Mutation {
+  createUser(user: UserInput): User @http(body: "{{.args.user}}", method: "POST", path: "/user")
 }
 
 type Query {
@@ -11,7 +32,7 @@ type Query {
 }
 
 type User {
-  friend: User @http(path: "/friends/1")
-  id: Int
+  connections: [Connection] @http(path: "/connections/{{.value.id}}")
+  id: Int!
   name: String
 }

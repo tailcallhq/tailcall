@@ -183,7 +183,7 @@ mod test {
     fn should_generate_config_from_configs() -> Result<(), Error> {
         let cfg_module = Generator::default()
             .inputs(vec![Input::Config {
-                schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
+                schema: std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?,
                 source: crate::core::config::Source::GraphQL,
             }])
             .generate(true)?;
@@ -220,7 +220,7 @@ mod test {
 
         // Config input
         let config_input = Input::Config {
-            schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
+            schema: std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?,
             source: crate::core::config::Source::GraphQL,
         };
 

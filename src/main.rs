@@ -9,9 +9,6 @@ use tailcall::core::tracing::default_tracing_tailcall;
 use tailcall::core::Errata;
 use tracing::subscriber::DefaultGuard;
 
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
-
 thread_local! {
     static TRACING_GUARD: Cell<Option<DefaultGuard>> = const { Cell::new(None) };
 }

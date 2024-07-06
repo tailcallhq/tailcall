@@ -9,12 +9,14 @@ use colored::Colorize;
 use futures_util::future::join_all;
 use hyper::{Body, Request};
 use serde::{Deserialize, Serialize};
+use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::reader::ConfigReader;
+use tailcall::core::config::transformer::Required;
 use tailcall::core::config::{Config, ConfigModule, Source};
 use tailcall::core::error::Error;
-use tailcall::core::http::{handle_request, AppContext};
+use tailcall::core::http::handle_request;
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::print_schema::print_schema;
 use tailcall::core::valid::{Cause, ValidationError, Validator};
@@ -249,7 +251,8 @@ async fn test_spec(spec: ExecutionSpec) {
     let merged = server
         .iter()
         .fold(ConfigModule::default(), |acc, c| acc.merge_right(c.clone()))
-        .normalize_default()
+        // Apply required transformers to the configuration
+        .transform(Required)
         .to_result()
         .unwrap()
         .to_sdl();

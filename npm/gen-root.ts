@@ -18,9 +18,20 @@ const options = parse<ICLI>({
 })
 
 async function getBuildDefinitions(): Promise<string[]> {
-  const ciYMLPath = resolve(__dirname, "../.github/workflows/ci.yml")
+  const ciYMLPath = resolve(__dirname, "../.github/workflows/build_matrix.yml")
   const ciYML = await fs.readFile(ciYMLPath, "utf8").then(yml.parse)
-  return ciYML.jobs.release.strategy.matrix.build
+  const steps = ciYML.jobs["setup-matrix"].steps
+
+  for (const step of steps) {
+    const matrix = step?.with?.matrix
+
+    if (matrix) {
+      // Parse yaml again since matrix is defined as string inside setup-matrix
+      return yml.parse(matrix).build
+    }
+  }
+
+  throw new Error("Cannot find matrix definition in workflow file")
 }
 
 async function genServerPackage(buildDefinitions: string[]) {

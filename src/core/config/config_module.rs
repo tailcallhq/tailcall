@@ -2,66 +2,96 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::sync::Arc;
 
-use derive_getters::Getters;
 use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
-use super::transformer::{AmbiguousType, NestedUnions, UnionInputType};
 use crate::core::config::Config;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::rest::{EndpointSet, Unchecked};
-use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::{Valid, Validator};
+use crate::core::Transform;
 
 /// A wrapper on top of Config that contains all the resolved extensions and
 /// computed values.
-#[derive(Clone, Debug, Default, Getters)]
+#[derive(Clone, Debug, Default, MergeRight)]
 pub struct ConfigModule {
-    config: Config,
     extensions: Extensions,
+    cache: Cache,
+}
+
+/// A cache that store resolved input, output and interface types so that it's
+/// not computed again and again.
+#[derive(Clone, Debug, Default)]
+struct Cache {
+    config: Config,
     input_types: HashSet<String>,
     output_types: HashSet<String>,
     interface_types: HashSet<String>,
 }
 
-impl MergeRight for ConfigModule {
+impl From<Config> for Cache {
+    fn from(value: Config) -> Self {
+        let input_types = value.input_types();
+        let output_types = value.output_types();
+        let interface_types = value.interface_types();
+
+        Cache {
+            config: value,
+            input_types: input_types.clone(),
+            output_types: output_types.clone(),
+            interface_types: interface_types.clone(),
+        }
+    }
+}
+
+impl MergeRight for Cache {
     fn merge_right(self, other: Self) -> Self {
-        ConfigModule::new(
-            self.config.merge_right(other.config),
-            self.extensions.merge_right(other.extensions),
-        )
+        Cache::from(self.config.merge_right(other.config))
     }
 }
 
 impl ConfigModule {
     pub fn new(config: Config, extensions: Extensions) -> Self {
-        let input_types = config.input_types();
-        let output_types = config.output_types();
-        let interface_types = config.interface_types();
-
-        ConfigModule {
-            config,
-            extensions,
-            input_types,
-            output_types,
-            interface_types,
-        }
+        ConfigModule { cache: Cache::from(config), extensions }
     }
 
-    /// Normalizes current config with default preset
-    pub fn normalize_default(self) -> Valid<Self, String> {
-        // TODO: migrate to preset. That will change many snapshots in repo
-        let transformer = NestedUnions
-            .pipe(UnionInputType)
-            .pipe(AmbiguousType::default());
-        let ConfigModule { config, extensions, .. } = self;
+    pub fn set_extensions(mut self, extensions: Extensions) -> Self {
+        self.extensions = extensions;
+        self
+    }
 
+    pub fn merge_extensions(mut self, extensions: Extensions) -> Self {
+        self.extensions = self.extensions.merge_right(extensions);
+        self
+    }
+
+    pub fn config(&self) -> &Config {
+        &self.cache.config
+    }
+
+    pub fn extensions(&self) -> &Extensions {
+        &self.extensions
+    }
+
+    pub fn input_types(&self) -> &HashSet<String> {
+        &self.cache.input_types
+    }
+
+    pub fn output_types(&self) -> &HashSet<String> {
+        &self.cache.output_types
+    }
+
+    pub fn interface_types(&self) -> &HashSet<String> {
+        &self.cache.interface_types
+    }
+
+    pub fn transform<T: Transform<Value = Config>>(self, transformer: T) -> Valid<Self, T::Error> {
         transformer
-            .transform(config)
-            .map(|config| ConfigModule::new(config, extensions))
+            .transform(self.cache.config)
+            .map(|config| ConfigModule::new(config, self.extensions))
     }
 }
 
@@ -131,22 +161,12 @@ impl MergeRight for FileDescriptorSet {
 impl Deref for ConfigModule {
     type Target = Config;
     fn deref(&self) -> &Self::Target {
-        &self.config
+        self.config()
     }
 }
 
 impl From<Config> for ConfigModule {
     fn from(config: Config) -> Self {
-        let input_types = config.input_types();
-        let output_types = config.output_types();
-        let interface_types = config.interface_types();
-
-        ConfigModule {
-            config,
-            input_types,
-            output_types,
-            interface_types,
-            ..Default::default()
-        }
+        ConfigModule { cache: Cache::from(config), ..Default::default() }
     }
 }
