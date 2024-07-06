@@ -15,12 +15,12 @@ use tailcall::cli::javascript;
 use tailcall::core::app_context::AppContext;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::cache::InMemoryCache;
+use tailcall::core::config::transformer::Preset;
 use tailcall::core::config::{ConfigModule, Source};
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::valid::Validator;
 use tailcall::core::worker::{Command, Event};
 use tailcall::core::{EnvIO, WorkerIO};
-use tailcall::core::config::transformer::Preset;
 
 use super::file::File;
 use super::http::Http;
@@ -279,7 +279,11 @@ impl ExecutionSpec {
         http: Arc<Http>,
     ) -> Arc<AppContext> {
         let config = if self.preset {
-            config.to_owned().transform(Preset::default()).to_result().unwrap()
+            config
+                .to_owned()
+                .transform(Preset::default())
+                .to_result()
+                .unwrap()
         } else {
             config.to_owned()
         };
