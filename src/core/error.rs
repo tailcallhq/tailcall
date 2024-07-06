@@ -2,7 +2,6 @@ use std::str::Utf8Error;
 use std::string::FromUtf8Error;
 
 use derive_more::From;
-use inquire::InquireError;
 use opentelemetry::metrics::MetricsError;
 use opentelemetry::trace::TraceError;
 use prost_reflect::DescriptorError;
@@ -13,7 +12,6 @@ use super::grpc::error::Error as GrpcError;
 use super::ir;
 use super::rest::error::Error as RestError;
 use super::valid::ValidationError;
-use crate::cli::generator::source::UnsupportedFileFormat;
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
@@ -113,9 +111,6 @@ pub enum Error {
     #[error("Worker Error")]
     Worker(worker::Error),
 
-    #[error("Inquire Error")]
-    Inquire(InquireError),
-
     #[error("IRError {0}")]
     IRError(ir::Error),
 
@@ -165,7 +160,7 @@ pub enum Error {
     Headers(headers::Error),
 
     #[error("Unsupported File Format")]
-    UnsupportedFileFormat(UnsupportedFileFormat),
+    UnsupportedFileFormat,
 
     #[error("Failed to match type_name")]
     TypenameMatchFailed,
@@ -179,13 +174,16 @@ pub enum Error {
     #[error("CLI Error : {0}")]
     #[from(ignore)]
     CLI(String),
+
+    #[error("Inquire Error : {0}")]
+    #[from(ignore)]
+    Inquire(String),
 }
 
 pub mod file {
     use std::string::FromUtf8Error;
 
     use derive_more::From;
-    use inquire::InquireError;
 
     #[derive(From, thiserror::Error, Debug)]
     pub enum Error {
@@ -230,8 +228,9 @@ pub mod file {
         #[from(ignore)]
         Cloudflare(String),
 
-        #[error("Inquire Error")]
-        Inquire(InquireError),
+        #[error("Inquire Error : {0}")]
+        #[from(ignore)]
+        Inquire(String),
 
         #[error("Serde yaml Error")]
         SerdeYaml(serde_yaml::Error),
