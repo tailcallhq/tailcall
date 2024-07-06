@@ -3,10 +3,15 @@ use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
+use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
+use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
+use tailcall_typedefs_common::input_definition::InputDefinition;
+use tailcall_typedefs_common::scalar_definition::ScalarDefinition;
+use tailcall_typedefs_common::ServiceDocumentBuilder;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
@@ -1004,6 +1009,61 @@ impl Config {
         }
 
         set
+    }
+
+    pub fn graphql_schema() -> ServiceDocument {
+        // Multiple structs may contain a field of the same type when creating directive
+        // definitions. To avoid generating the same GraphQL type multiple times,
+        // this hash set is used to track visited types and ensure no duplicates are
+        // generated.
+        let mut generated_types: HashSet<String> = HashSet::new();
+        let generated_types = &mut generated_types;
+
+        let builder = ServiceDocumentBuilder::new();
+        builder
+            .add_directive(AddField::directive_definition(generated_types))
+            .add_directive(Alias::directive_definition(generated_types))
+            .add_directive(Cache::directive_definition(generated_types))
+            .add_directive(Call::directive_definition(generated_types))
+            .add_directive(Expr::directive_definition(generated_types))
+            .add_directive(GraphQL::directive_definition(generated_types))
+            .add_directive(Grpc::directive_definition(generated_types))
+            .add_directive(Http::directive_definition(generated_types))
+            .add_directive(JS::directive_definition(generated_types))
+            .add_directive(Link::directive_definition(generated_types))
+            .add_directive(Modify::directive_definition(generated_types))
+            .add_directive(Omit::directive_definition(generated_types))
+            .add_directive(Protected::directive_definition(generated_types))
+            .add_directive(Server::directive_definition(generated_types))
+            .add_directive(Tag::directive_definition(generated_types))
+            .add_directive(Telemetry::directive_definition(generated_types))
+            .add_directive(Upstream::directive_definition(generated_types))
+            .add_input(GraphQL::input_definition())
+            .add_input(Grpc::input_definition())
+            .add_input(Http::input_definition())
+            .add_input(Expr::input_definition())
+            .add_input(JS::input_definition())
+            .add_input(Modify::input_definition())
+            .add_input(Cache::input_definition())
+            .add_input(Telemetry::input_definition())
+            .add_scalar(scalar::Bytes::scalar_definition())
+            .add_scalar(scalar::Date::scalar_definition())
+            .add_scalar(scalar::Email::scalar_definition())
+            .add_scalar(scalar::Empty::scalar_definition())
+            .add_scalar(scalar::Int128::scalar_definition())
+            .add_scalar(scalar::Int16::scalar_definition())
+            .add_scalar(scalar::Int32::scalar_definition())
+            .add_scalar(scalar::Int64::scalar_definition())
+            .add_scalar(scalar::Int8::scalar_definition())
+            .add_scalar(scalar::JSON::scalar_definition())
+            .add_scalar(scalar::PhoneNumber::scalar_definition())
+            .add_scalar(scalar::UInt128::scalar_definition())
+            .add_scalar(scalar::UInt16::scalar_definition())
+            .add_scalar(scalar::UInt32::scalar_definition())
+            .add_scalar(scalar::UInt64::scalar_definition())
+            .add_scalar(scalar::UInt8::scalar_definition())
+            .add_scalar(scalar::Url::scalar_definition())
+            .build()
     }
 }
 

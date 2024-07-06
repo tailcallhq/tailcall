@@ -18,7 +18,7 @@ The @alias directive indicates that aliases of one enum value.
 """
 directive @alias(
   options: [String!]
-) on ENUM_VALUE_DEFINITION
+) on ENUM_VALUE
 
 """
 The @cache operator enables caching for the query, field or type it is applied to.
@@ -820,6 +820,9 @@ enum HttpVersion {
   HTTP2
 }
 
+"""
+Output format for prometheus data
+"""
 enum PrometheusFormat {
   text
   protobuf

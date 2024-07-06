@@ -61,7 +61,7 @@ pub fn expand_directive_definition(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         impl tailcall_typedefs_common::directive_definition::DirectiveDefinition for #struct_identifier {
             fn directive_definition(generated_types: &mut std::collections::HashSet<String>) -> Vec<async_graphql::parser::types::TypeSystemDefinition> {
-                let schemars = Self::into_schemars();
+                let schemars = tailcall_typedefs_common::into_schemars::<Self>();
                 let attr = tailcall_typedefs_common::directive_definition::Attrs {
                     name: stringify!(#struct_identifier),
                     repeatable: #is_repeatable,
@@ -83,7 +83,7 @@ pub fn expand_scalar_definition(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         impl tailcall_typedefs_common::scalar_definition::ScalarDefinition for #struct_identifier {
             fn scalar_definition() -> async_graphql::parser::types::TypeSystemDefinition {
-                let schemars = Self::into_schemars();
+                let schemars = tailcall_typedefs_common::into_schemars::<Self>();
                 tailcall_typedefs_common::scalar_definition::into_scalar_definition(schemars, stringify!(#struct_identifier))
             }
         }
@@ -99,7 +99,7 @@ pub fn expand_input_definition(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         impl tailcall_typedefs_common::input_definition::InputDefinition for #struct_identifier {
             fn input_definition() -> async_graphql::parser::types::TypeSystemDefinition {
-                let schemars = Self::into_schemars();
+                let schemars = tailcall_typedefs_common::into_schemars::<Self>();
                 tailcall_typedefs_common::input_definition::into_input_definition(schemars.schema, stringify!(#struct_identifier))
             }
         }

@@ -3,10 +3,6 @@ name = "tailcall-typedefs-common"
 version = "0.1.0"
 edition = "2021"
 
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-async-graphql-parser = "7.0.6"
-async-graphql-value = "7.0.6"
-schemars = "0.8.17"
+async-graphql = { workspace = true }
+schemars = { version = "0.8.17" }

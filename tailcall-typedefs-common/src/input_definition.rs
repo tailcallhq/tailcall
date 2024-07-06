@@ -1,24 +1,15 @@
-use async_graphql_parser::types::{
+use async_graphql::parser::types::{
     BaseType, InputObjectType, InputValueDefinition, Type, TypeDefinition, TypeKind,
     TypeSystemDefinition,
 };
-use async_graphql_parser::Positioned;
-use async_graphql_value::Name;
+use async_graphql::{Name, Positioned};
 use schemars::schema::{
-    ArrayValidation, InstanceType, ObjectValidation, RootSchema, Schema, SchemaObject, SingleOrVec,
+    ArrayValidation, InstanceType, ObjectValidation, Schema, SchemaObject, SingleOrVec,
 };
-use schemars::JsonSchema;
 
 use crate::common::{first_char_to_upper, get_description, pos};
 
 pub trait InputDefinition {
-    fn into_schemars() -> RootSchema
-    where
-        Self: JsonSchema,
-    {
-        schemars::schema_for!(Self)
-    }
-
     fn input_definition() -> TypeSystemDefinition;
 }
 
@@ -38,9 +29,10 @@ pub fn into_input_definition(schema: SchemaObject, name: &str) -> TypeSystemDefi
 
 pub fn into_input_value_definition(schema: &SchemaObject) -> Vec<Positioned<InputValueDefinition>> {
     let mut arguments_type = vec![];
-    if let Some(sub_schemas) = schema.subschemas.clone() {
-        if let Some(one_of) = sub_schemas.one_of {
-            for schema in one_of {
+    if let Some(subschema) = schema.subschemas.clone() {
+        let list = subschema.any_of.or(subschema.all_of).or(subschema.one_of);
+        if let Some(list) = list {
+            for schema in list {
                 let schema_object = schema.into_object();
                 arguments_type.extend(build_arguments_type(&schema_object));
             }
@@ -65,7 +57,10 @@ fn build_arguments_type(schema: &SchemaObject) -> Vec<Positioned<InputValueDefin
             let definition = pos(InputValueDefinition {
                 description: description.map(|inner| pos(inner.to_owned())),
                 name: pos(Name::new(&name)),
-                ty: pos(determine_input_type_from_schema(name, property.clone())),
+                ty: pos(determine_input_value_type_from_schema(
+                    name,
+                    property.clone(),
+                )),
                 default_value: None,
                 directives: Vec::new(),
             });
@@ -77,7 +72,7 @@ fn build_arguments_type(schema: &SchemaObject) -> Vec<Positioned<InputValueDefin
     arguments
 }
 
-fn determine_input_type_from_schema(mut name: String, schema: SchemaObject) -> Type {
+fn determine_input_value_type_from_schema(mut name: String, schema: SchemaObject) -> Type {
     first_char_to_upper(&mut name);
     if let Some(instance_type) = &schema.instance_type {
         match instance_type {
@@ -148,14 +143,14 @@ fn determine_type_from_arr_valid(name: String, array_valid: &ArrayValidation) ->
         match items {
             SingleOrVec::Single(schema) => Type {
                 nullable: true,
-                base: BaseType::List(Box::new(determine_input_type_from_schema(
+                base: BaseType::List(Box::new(determine_input_value_type_from_schema(
                     name,
                     schema.clone().into_object(),
                 ))),
             },
             SingleOrVec::Vec(schemas) => Type {
                 nullable: true,
-                base: BaseType::List(Box::new(determine_input_type_from_schema(
+                base: BaseType::List(Box::new(determine_input_value_type_from_schema(
                     name,
                     schemas[0].clone().into_object(),
                 ))),

@@ -6,7 +6,6 @@ use std::process::exit;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use gen_gql_schema::update_gql;
 use schemars::schema::{RootSchema, Schema};
 use schemars::Map;
 use serde_json::{json, Value};
@@ -17,6 +16,7 @@ use tailcall::core::tracing::default_tracing_for_name;
 use tailcall::core::FileIO;
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
+static GRAPHQL_SCHEMA_FILE: &str = "../generated/.tailcallrc.graphql";
 
 #[tokio::main]
 async fn main() {
@@ -75,6 +75,19 @@ async fn mode_fix() -> Result<()> {
 
     update_json(file_io.clone()).await?;
     update_gql(file_io.clone()).await?;
+    Ok(())
+}
+
+async fn update_gql(file_io: Arc<dyn FileIO>) -> Result<()> {
+    let doc = gen_gql_schema::build_service_document();
+
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(GRAPHQL_SCHEMA_FILE);
+    file_io
+        .write(
+            path.to_str().ok_or(anyhow!("Unable to determine path"))?,
+            tailcall::core::document::print(doc).as_bytes(),
+        )
+        .await?;
     Ok(())
 }
 

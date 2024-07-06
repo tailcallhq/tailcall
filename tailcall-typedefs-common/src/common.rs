@@ -1,28 +1,11 @@
-use async_graphql_parser::{Pos, Positioned};
-use schemars::schema::{Schema, SchemaObject};
+use async_graphql::{Pos, Positioned};
+use schemars::schema::SchemaObject;
 
 pub fn get_description(schema: &SchemaObject) -> Option<&String> {
     schema
         .metadata
         .as_ref()
         .and_then(|metadata| metadata.description.as_ref())
-}
-
-pub fn extract_enum_values(obj: &Schema) -> Option<Vec<String>> {
-    match obj {
-        Schema::Object(schema_object) => {
-            if let Some(enum_values) = &schema_object.enum_values {
-                return Some(
-                    enum_values
-                        .iter()
-                        .map(|val| val.to_string())
-                        .collect::<Vec<String>>(),
-                );
-            }
-            None
-        }
-        _ => None,
-    }
 }
 
 pub fn first_char_to_upper(name: &mut String) {

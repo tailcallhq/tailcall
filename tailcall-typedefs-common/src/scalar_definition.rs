@@ -1,18 +1,10 @@
-use async_graphql_parser::types::{TypeDefinition, TypeKind, TypeSystemDefinition};
-use async_graphql_value::Name;
+use async_graphql::parser::types::{TypeDefinition, TypeKind, TypeSystemDefinition};
+use async_graphql::Name;
 use schemars::schema::{RootSchema, SchemaObject};
-use schemars::JsonSchema;
 
 use crate::common::{get_description, pos};
 
 pub trait ScalarDefinition {
-    fn into_schemars() -> RootSchema
-    where
-        Self: JsonSchema,
-    {
-        schemars::schema_for!(Self)
-    }
-
     fn scalar_definition() -> TypeSystemDefinition;
 }
 

@@ -1,24 +1,14 @@
 use std::collections::{BTreeMap, HashSet};
 
-use async_graphql_parser::types::{DirectiveLocation, TypeSystemDefinition};
-use async_graphql_value::Name;
+use async_graphql::parser::types::{DirectiveLocation, TypeSystemDefinition};
+use async_graphql::Name;
 use schemars::schema::{RootSchema, Schema, SchemaObject};
-use schemars::JsonSchema;
 
-use crate::common::{
-    extract_enum_values, first_char_to_lower, first_char_to_upper, get_description, pos,
-};
-use crate::enum_definition::into_enum_definition;
+use crate::common::{first_char_to_lower, first_char_to_upper, get_description, pos};
+use crate::enum_definition::{into_enum_definition, into_enum_value};
 use crate::input_definition::{into_input_definition, into_input_value_definition};
 
 pub trait DirectiveDefinition {
-    fn into_schemars() -> RootSchema
-    where
-        Self: JsonSchema,
-    {
-        schemars::schema_for!(Self)
-    }
-
     fn directive_definition(generated_types: &mut HashSet<String>) -> Vec<TypeSystemDefinition>;
 }
 
@@ -35,7 +25,7 @@ pub fn from_directive_location(str: DirectiveLocation) -> String {
         DirectiveLocation::Schema => String::from("SCHEMA"),
         DirectiveLocation::Object => String::from("OBJECT"),
         DirectiveLocation::FieldDefinition => String::from("FIELD_DEFINITION"),
-        DirectiveLocation::EnumValue => String::from("ENUM_VALUE_DEFINITION"),
+        DirectiveLocation::EnumValue => String::from("ENUM_VALUE"),
         _ => String::from("FIELD_DEFINITION"),
     }
 }
@@ -64,8 +54,10 @@ pub fn into_directive_definition(
         if generated_types.contains(&name) {
             continue;
         }
-        let enum_values = extract_enum_values(&schema);
-        if enum_values.is_some() {
+        // the definition could either be an enum or a type
+        // we don't know which one is it, so we first try to get an EnumValue
+        // if into_enum_value return Some we can be sure it's an Enum
+        if let Some(enum_values) = into_enum_value(&schema) {
             service_doc_definitions.push(into_enum_definition(enum_values, &name));
             generated_types.insert(name.to_string());
         } else {
@@ -85,7 +77,7 @@ pub fn into_directive_definition(
     };
 
     let directve_definition =
-        TypeSystemDefinition::Directive(pos(async_graphql_parser::types::DirectiveDefinition {
+        TypeSystemDefinition::Directive(pos(async_graphql::parser::types::DirectiveDefinition {
             description: description.map(|inner| pos(inner.clone())),
             name: pos(Name::new(name)),
             arguments: into_input_value_definition(&schema),

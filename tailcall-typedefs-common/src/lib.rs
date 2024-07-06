@@ -1,10 +1,18 @@
-use async_graphql_parser::types::{ServiceDocument, TypeSystemDefinition};
-
+use async_graphql::parser::types::{ServiceDocument, TypeSystemDefinition};
+use schemars::schema::RootSchema;
+use schemars::JsonSchema;
 mod common;
 pub mod directive_definition;
 mod enum_definition;
 pub mod input_definition;
 pub mod scalar_definition;
+
+pub fn into_schemars<T>() -> RootSchema
+where
+    T: JsonSchema,
+{
+    schemars::schema_for!(T)
+}
 
 pub struct ServiceDocumentBuilder {
     definitions: Vec<TypeSystemDefinition>,
