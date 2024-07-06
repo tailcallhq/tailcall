@@ -21,7 +21,7 @@ pub trait PathString {
 /// PathValue trait provides a method for accessing values from JSON-like
 /// structure it returns raw value.
 pub trait PathValue {
-    fn path_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<Cow<'_, RawValue<'a>>>;
+    fn path_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<RawValue<'a>>;
 }
 
 ///
@@ -67,7 +67,7 @@ pub enum RawValue<'a> {
 }
 
 impl<'a, Ctx: ResolverContextLike> PathValue for EvalContext<'a, Ctx> {
-    fn path_value<'b, T: AsRef<str>>(&'b self, path: &[T]) -> Option<Cow<'b, RawValue<'b>>> {
+    fn path_value<'b, T: AsRef<str>>(&'b self, path: &[T]) -> Option<RawValue<'b>> {
         let ctx = self;
 
         if path.is_empty() {
@@ -76,24 +76,22 @@ impl<'a, Ctx: ResolverContextLike> PathValue for EvalContext<'a, Ctx> {
 
         if path.len() == 1 {
             return match path[0].as_ref() {
-                "value" => Some(Cow::Owned(RawValue::Value(ctx.path_value(&[] as &[T])?))),
-                "args" => Some(Cow::Owned(RawValue::Arg(ctx.path_arg::<&str>(&[])?))),
-                "vars" => Some(Cow::Owned(RawValue::Vars(Cow::Borrowed(ctx.vars())))),
+                "value" => Some(RawValue::Value(ctx.path_value(&[] as &[T])?)),
+                "args" => Some(RawValue::Arg(ctx.path_arg::<&str>(&[])?)),
+                "vars" => Some(RawValue::Vars(Cow::Borrowed(ctx.vars()))),
                 _ => None,
             };
         }
 
         path.split_first()
             .and_then(move |(head, tail)| match head.as_ref() {
-                "value" => Some(Cow::Owned(RawValue::Value(ctx.path_value(tail)?))),
-                "args" => Some(Cow::Owned(RawValue::Arg(ctx.path_arg(tail)?))),
-                "headers" => Some(Cow::Owned(RawValue::Headers(Cow::Borrowed(
+                "value" => Some(RawValue::Value(ctx.path_value(tail)?)),
+                "args" => Some(RawValue::Arg(ctx.path_arg(tail)?)),
+                "headers" => Some(RawValue::Headers(Cow::Borrowed(
                     ctx.header(tail[0].as_ref())?,
-                )))),
-                "vars" => Some(Cow::Owned(RawValue::Var(Cow::Borrowed(
-                    ctx.var(tail[0].as_ref())?,
-                )))),
-                "env" => Some(Cow::Owned(RawValue::Env(ctx.env_var(tail[0].as_ref())?))),
+                ))),
+                "vars" => Some(RawValue::Var(Cow::Borrowed(ctx.var(tail[0].as_ref())?))),
+                "env" => Some(RawValue::Env(ctx.env_var(tail[0].as_ref())?)),
                 _ => None,
             })
     }

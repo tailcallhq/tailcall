@@ -37,7 +37,7 @@ impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
             .iter()
             .flat_map(|segment| match segment {
                 Segment::Literal(text) => Some(RawValue::Var(Cow::Owned(text.into())).to_owned()),
-                Segment::Expression(parts) => in_value.path_value(parts).map(|a| a.into_owned()),
+                Segment::Expression(parts) => in_value.path_value(parts),
             })
             .collect::<Vec<_>>()
     }
