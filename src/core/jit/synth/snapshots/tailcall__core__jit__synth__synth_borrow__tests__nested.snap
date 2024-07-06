@@ -1,0 +1,18 @@
+---
+source: src/core/jit/synth/synth_borrow.rs
+expression: val
+---
+{
+  "posts": [
+    {
+      "id": 1,
+      "title": "Some Title",
+      "user": null
+    },
+    {
+      "id": 2,
+      "title": "Not Some Title",
+      "user": null
+    }
+  ]
+}

@@ -299,7 +299,7 @@ mod tests {
     fn test_json_placeholder() {
         let synth: Rc<SynthBorrow> =
             JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
-        let val = synth.synthesize().unwrap();
+        let val = synth.synthesize();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }
