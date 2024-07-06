@@ -1,8 +1,8 @@
 use super::helpers::log_endpoint_set;
+use crate::cli::error::Error;
 use crate::cli::fmt::Fmt;
 use crate::cli::server::Server;
 use crate::core::config::reader::ConfigReader;
-use crate::core::error::Error;
 
 pub(super) async fn start_command(
     file_paths: Vec<String>,

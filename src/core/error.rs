@@ -13,7 +13,6 @@ use super::grpc::error::Error as GrpcError;
 use super::ir;
 use super::rest::error::Error as RestError;
 use super::valid::ValidationError;
-use crate::cli::error::Error as CLIError;
 use crate::cli::generator::source::UnsupportedFileFormat;
 
 #[derive(From, thiserror::Error, Debug)]
@@ -114,9 +113,6 @@ pub enum Error {
     #[error("Worker Error")]
     Worker(worker::Error),
 
-    #[error("CLI Error")]
-    CLI(CLIError),
-
     #[error("Inquire Error")]
     Inquire(InquireError),
 
@@ -179,6 +175,10 @@ pub enum Error {
 
     #[error("Failed to find corresponding type for value")]
     MissingTypeForValue,
+
+    #[error("CLI Error : {0}")]
+    #[from(ignore)]
+    CLI(String),
 }
 
 pub mod file {
@@ -329,11 +329,11 @@ pub mod worker {
         #[error("Hyper Header To Str Error")]
         HyperHeaderStr(hyper::header::ToStrError),
 
-        #[error("CLI Error")]
-        CLI(crate::cli::error::Error),
-
         #[error("JS Runtime Stopped Error")]
         JsRuntimeStopped,
+
+        #[error("CLI Error : {0}")]
+        CLI(String),
     }
 }
 

@@ -94,8 +94,8 @@ impl WorkerIO<Event, Command> for Runtime {
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
-                    init_rt(script)?;
-                    call(name, event).map_err(worker::Error::from)
+                    let _ = init_rt(script).map_err(|e| worker::Error::CLI(e.to_string()));
+                    call(name, event).map_err(|e| worker::Error::CLI(e.to_string()))
                 })
                 .await
                 .map_err(|_| worker::Error::ExecutionFailed)?
@@ -118,10 +118,10 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
-                    init_rt(script)?;
+                    let _ = init_rt(script).map_err(|e| worker::Error::CLI(e.to_string()));
                     execute_inner(name, value)
                         .map(Some)
-                        .map_err(worker::Error::from)
+                        .map_err(|e| worker::Error::CLI(e.to_string()))
                 })
                 .await
                 .map_err(|_| worker::Error::ExecutionFailed)?

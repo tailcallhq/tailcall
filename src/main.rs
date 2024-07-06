@@ -32,6 +32,7 @@ fn run_blocking() -> Result<(), Error> {
         .enable_all()
         .build()?;
     rt.block_on(async { tailcall::cli::run().await })
+        .map_err(|e| Error::CLI(e.to_string()))
 }
 
 fn main() -> Result<(), Error> {

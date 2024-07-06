@@ -5,10 +5,10 @@ use dotenvy::dotenv;
 use super::helpers::TRACKER;
 use super::{check, gen, init, start};
 use crate::cli::command::{Cli, Command};
+use crate::cli::error::Error;
 use crate::cli::{self, update_checker};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
-use crate::core::error::Error;
 use crate::core::runtime::TargetRuntime;
 
 pub async fn run() -> Result<(), Error> {

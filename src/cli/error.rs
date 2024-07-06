@@ -7,8 +7,8 @@ use opentelemetry::metrics::MetricsError;
 use opentelemetry::trace::TraceError;
 use tokio::task::JoinError;
 
-use crate::core::rest;
 use crate::core::valid::ValidationError;
+use crate::core::{error, rest};
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
@@ -95,6 +95,9 @@ pub enum Error {
 
     #[error("Validation Error : {0}")]
     Validation(ValidationError<std::string::String>),
+
+    #[error("Core Error")]
+    CoreError(error::Error),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
