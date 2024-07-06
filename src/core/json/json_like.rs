@@ -2,55 +2,69 @@ use std::collections::HashMap;
 
 use async_graphql_value::ConstValue;
 
-pub trait JsonLike {
+pub trait JsonLike<'json> {
     type Output;
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str>;
-    fn as_str_ok(&self) -> Result<&str, &str>;
-    fn as_string_ok(&self) -> Result<&String, &str>;
-    fn as_i64_ok(&self) -> Result<i64, &str>;
-    fn as_u64_ok(&self) -> Result<u64, &str>;
-    fn as_f64_ok(&self) -> Result<f64, &str>;
-    fn as_bool_ok(&self) -> Result<bool, &str>;
-    fn as_null_ok(&self) -> Result<(), &str>;
-    fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str>;
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output>;
-    fn get_key(&self, path: &str) -> Option<&Self::Output>;
-    fn new(value: &Self::Output) -> &Self;
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>>;
+    fn as_array_ok(&'json self) -> Result<&'json Vec<Self::Output>, &str>;
+    fn as_str_ok(&'json self) -> Result<&'json str, &str>;
+    fn as_string_ok(&'json self) -> Result<&'json String, &str>;
+    fn as_i64_ok(&'json self) -> Result<i64, &str>;
+    fn as_u64_ok(&'json self) -> Result<u64, &str>;
+    fn as_f64_ok(&'json self) -> Result<f64, &str>;
+    fn as_bool_ok(&'json self) -> Result<bool, &str>;
+    fn as_null_ok(&'json self) -> Result<(), &str>;
+    fn as_option_ok(&'json self) -> Result<Option<&'json Self::Output>, &str>;
+    fn get_path<T: AsRef<str>>(&'json self, path: &'json [T]) -> Option<&'json Self::Output>;
+    fn get_key(&'json self, path: &'json str) -> Option<&'json Self::Output>;
+    fn new(value: &'json Self::Output) -> &'json Self;
+    fn group_by(&'json self, path: &'json [String]) -> HashMap<String, Vec<&'json Self::Output>>;
 }
 
-impl JsonLike for serde_json::Value {
+impl<'json> JsonLike<'json> for serde_json::Value {
     type Output = serde_json::Value;
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
+
+    fn as_array_ok(&'json self) -> Result<&'json Vec<Self::Output>, &str> {
         self.as_array().ok_or("expected array")
     }
-    fn as_str_ok(&self) -> Result<&str, &str> {
+
+    fn as_str_ok(&'json self) -> Result<&'json str, &str> {
         self.as_str().ok_or("expected str")
     }
-    fn as_i64_ok(&self) -> Result<i64, &str> {
+
+    fn as_string_ok(&'json self) -> Result<&'json String, &str> {
+        match self {
+            serde_json::Value::String(s) => Ok(s),
+            _ => Err("expected string"),
+        }
+    }
+
+    fn as_i64_ok(&'json self) -> Result<i64, &str> {
         self.as_i64().ok_or("expected i64")
     }
-    fn as_u64_ok(&self) -> Result<u64, &str> {
+
+    fn as_u64_ok(&'json self) -> Result<u64, &str> {
         self.as_u64().ok_or("expected u64")
     }
-    fn as_f64_ok(&self) -> Result<f64, &str> {
+
+    fn as_f64_ok(&'json self) -> Result<f64, &str> {
         self.as_f64().ok_or("expected f64")
     }
-    fn as_bool_ok(&self) -> Result<bool, &str> {
+
+    fn as_bool_ok(&'json self) -> Result<bool, &str> {
         self.as_bool().ok_or("expected bool")
     }
-    fn as_null_ok(&self) -> Result<(), &str> {
+
+    fn as_null_ok(&'json self) -> Result<(), &str> {
         self.as_null().ok_or("expected null")
     }
 
-    fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str> {
+    fn as_option_ok(&'json self) -> Result<Option<&'json Self::Output>, &str> {
         match self {
             serde_json::Value::Null => Ok(None),
             _ => Ok(Some(self)),
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output> {
+    fn get_path<T: AsRef<str>>(&'json self, path: &'json [T]) -> Option<&'json Self::Output> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -65,90 +79,82 @@ impl JsonLike for serde_json::Value {
         Some(val)
     }
 
-    fn new(value: &Self::Output) -> &Self {
-        value
-    }
-
-    fn get_key(&self, path: &str) -> Option<&Self::Output> {
+    fn get_key(&'json self, path: &'json str) -> Option<&'json Self::Output> {
         match self {
             serde_json::Value::Object(map) => map.get(path),
             _ => None,
         }
     }
 
-    fn as_string_ok(&self) -> Result<&String, &str> {
-        match self {
-            serde_json::Value::String(s) => Ok(s),
-            _ => Err("expected string"),
-        }
+    fn new(value: &'json Self::Output) -> &'json Self {
+        value
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+    fn group_by(&'json self, path: &'json [String]) -> HashMap<String, Vec<&'json Self::Output>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
 }
 
-impl JsonLike for async_graphql::Value {
+impl<'json> JsonLike<'json> for async_graphql::Value {
     type Output = async_graphql::Value;
 
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
+    fn as_array_ok(&'json self) -> Result<&'json Vec<Self::Output>, &str> {
         match self {
             ConstValue::List(seq) => Ok(seq),
             _ => Err("array"),
         }
     }
 
-    fn as_str_ok(&self) -> Result<&str, &str> {
+    fn as_str_ok(&'json self) -> Result<&'json str, &str> {
         match self {
             ConstValue::String(s) => Ok(s),
             _ => Err("str"),
         }
     }
 
-    fn as_i64_ok(&self) -> Result<i64, &str> {
+    fn as_i64_ok(&'json self) -> Result<i64, &str> {
         match self {
             ConstValue::Number(n) => n.as_i64().ok_or("expected i64"),
             _ => Err("i64"),
         }
     }
 
-    fn as_u64_ok(&self) -> Result<u64, &str> {
+    fn as_u64_ok(&'json self) -> Result<u64, &str> {
         match self {
             ConstValue::Number(n) => n.as_u64().ok_or("expected u64"),
             _ => Err("u64"),
         }
     }
 
-    fn as_f64_ok(&self) -> Result<f64, &str> {
+    fn as_f64_ok(&'json self) -> Result<f64, &str> {
         match self {
             ConstValue::Number(n) => n.as_f64().ok_or("expected f64"),
             _ => Err("f64"),
         }
     }
 
-    fn as_bool_ok(&self) -> Result<bool, &str> {
+    fn as_bool_ok(&'json self) -> Result<bool, &str> {
         match self {
             ConstValue::Boolean(b) => Ok(*b),
             _ => Err("bool"),
         }
     }
-
-    fn as_null_ok(&self) -> Result<(), &str> {
+    fn as_null_ok(&'json self) -> Result<(), &str> {
         match self {
             ConstValue::Null => Ok(()),
             _ => Err("null"),
         }
     }
 
-    fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str> {
+    fn as_option_ok(&'json self) -> Result<Option<&'json Self::Output>, &str> {
         match self {
             ConstValue::Null => Ok(None),
             _ => Ok(Some(self)),
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output> {
+    fn get_path<T: AsRef<str>>(&'json self, path: &'json [T]) -> Option<&'json Self::Output> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -163,24 +169,24 @@ impl JsonLike for async_graphql::Value {
         Some(val)
     }
 
-    fn new(value: &Self::Output) -> &Self {
+    fn new(value: &'json Self::Output) -> &'json Self {
         value
     }
 
-    fn get_key(&self, path: &str) -> Option<&Self::Output> {
+    fn get_key(&'json self, path: &'json str) -> Option<&'json Self::Output> {
         match self {
             ConstValue::Object(map) => map.get(&async_graphql::Name::new(path)),
             _ => None,
         }
     }
-    fn as_string_ok(&self) -> Result<&String, &str> {
+    fn as_string_ok(&'json self) -> Result<&'json String, &str> {
         match self {
             ConstValue::String(s) => Ok(s),
             _ => Err("expected string"),
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+    fn group_by(&'json self, path: &'json [String]) -> HashMap<String, Vec<&'json Self::Output>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
@@ -188,7 +194,7 @@ impl JsonLike for async_graphql::Value {
 
 // Highly micro-optimized and benchmarked version of get_path_all
 // Any further changes should be verified with benchmarks
-pub fn gather_path_matches<'a, J: JsonLike>(
+pub fn gather_path_matches<'a, J: JsonLike<'a>>(
     root: &'a J,
     path: &'a [String],
     mut vector: Vec<(&'a J, &'a J)>,
@@ -210,7 +216,7 @@ pub fn gather_path_matches<'a, J: JsonLike>(
     vector
 }
 
-pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
+pub fn group_by_key<'a, J: JsonLike<'a>>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
     let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
     for (key, value) in src {
         // Need to handle number and string keys
