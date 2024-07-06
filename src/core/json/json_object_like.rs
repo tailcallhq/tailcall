@@ -4,7 +4,7 @@ use serde_json_borrow::{ObjectAsVec, Value};
 use crate::core::json::JsonLike;
 
 pub trait JsonObjectLike {
-    type Value<'a>: JsonLike
+    type Value<'a>: JsonLike<'a>
     where
         Self: 'a;
     fn get<'a>(&'a self, key: &'a str) -> Option<&Self::Value<'a>>;
@@ -18,7 +18,9 @@ impl JsonObjectLike for serde_json::Map<String, serde_json::Value> {
     }
 }
 
-impl<V: JsonLike + Clone> JsonObjectLike for IndexMap<async_graphql_value::Name, V> {
+impl<V: for<'json> JsonLike<'json> + Clone> JsonObjectLike
+    for IndexMap<async_graphql_value::Name, V>
+{
     type Value<'a> = V where V: 'a;
 
     fn get<'a>(&'a self, key: &'a str) -> Option<&Self::Value<'a>> {

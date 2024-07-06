@@ -18,7 +18,7 @@ pub trait JsonLike<'json> {
     fn as_array_ok(&'json self) -> Result<&'json Vec<Self::Output>, &str>;
     fn as_object_ok(&'json self) -> Result<&'json Self::Obj, &str>;
     fn as_str_ok(&'json self) -> Result<&'json str, &str>;
-    fn as_string_ok(&'json self) -> Result<&'json String, &str>;
+    fn as_string_ok(&'json self) -> Result<&'json str, &str>;
     fn as_i64_ok(&'json self) -> Result<i64, &str>;
     fn as_u64_ok(&'json self) -> Result<u64, &str>;
     fn as_f64_ok(&'json self) -> Result<f64, &str>;
@@ -35,7 +35,6 @@ impl<'json> JsonLike<'json> for serde_json::Value {
     type Output = serde_json::Value;
     type Obj = serde_json::Map<String, Self::Output>;
 
-
     fn as_array_ok(&'json self) -> Result<&'json Vec<Self::Output>, &str> {
         self.as_array().ok_or("expected array")
     }
@@ -44,7 +43,7 @@ impl<'json> JsonLike<'json> for serde_json::Value {
         self.as_str().ok_or("expected str")
     }
 
-    fn as_string_ok(&'json self) -> Result<&'json String, &str> {
+    fn as_string_ok(&'json self) -> Result<&'json str, &str> {
         match self {
             serde_json::Value::String(s) => Ok(s),
             _ => Err("expected string"),
@@ -209,7 +208,7 @@ impl<'json> JsonLike<'json> for async_graphql::Value {
             _ => None,
         }
     }
-    fn as_string_ok(&'json self) -> Result<&'json String, &str> {
+    fn as_string_ok(&'json self) -> Result<&'json str, &str> {
         match self {
             ConstValue::String(s) => Ok(s),
             _ => Err("expected string"),
@@ -237,7 +236,7 @@ impl<'json> JsonLike<'json> for async_graphql::Value {
     }
 }
 
-impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
+impl<'ctx> JsonLike<'ctx> for serde_json_borrow::Value<'ctx> {
     type Output = serde_json_borrow::Value<'ctx>;
     type Obj = ObjectAsVec<'ctx>;
 
@@ -270,7 +269,7 @@ impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
         }
     }
 
-    fn as_string_ok(&self) -> Result<&str, &str> {
+    fn as_string_ok(&'ctx self) -> Result<&'ctx str, &str> {
         match self {
             serde_json_borrow::Value::Str(s) => Ok(s.as_ref()),
             _ => Err("expected string"),
@@ -331,7 +330,7 @@ impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
         value
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+    fn group_by(&'ctx self, path: &'ctx [String]) -> HashMap<String, Vec<&'ctx Self::Output>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
