@@ -17,8 +17,10 @@ use tailcall::core::blueprint::Blueprint;
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::config::{ConfigModule, Source};
 use tailcall::core::runtime::TargetRuntime;
+use tailcall::core::valid::Validator;
 use tailcall::core::worker::{Command, Event};
 use tailcall::core::{EnvIO, WorkerIO};
+use tailcall::core::config::transformer::Preset;
 
 use super::file::File;
 use super::http::Http;
@@ -276,7 +278,12 @@ impl ExecutionSpec {
         env: HashMap<String, String>,
         http: Arc<Http>,
     ) -> Arc<AppContext> {
-        let blueprint = Blueprint::try_from(config).unwrap();
+        let config = if self.preset {
+            config.to_owned().transform(Preset::default()).to_result().unwrap()
+        } else {
+            config.to_owned()
+        };
+        let blueprint = Blueprint::try_from(&config).unwrap();
         let script = blueprint.server.script.clone();
 
         let http2_only = http.clone();
