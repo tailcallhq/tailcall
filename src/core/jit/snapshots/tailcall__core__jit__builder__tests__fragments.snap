@@ -1,6 +1,6 @@
 ---
 source: src/core/jit/builder.rs
-expression: plan
+expression: plan.into_children()
 ---
 [
     Field {
@@ -22,7 +22,7 @@ expression: plan
             },
         ],
         refs: Some(
-            Children(
+            Nested(
                 [
                     Field {
                         id: 1,

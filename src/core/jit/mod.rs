@@ -7,6 +7,7 @@ mod synth;
 use builder::*;
 use model::*;
 use store::*;
+
 mod context;
 mod error;
 mod exec_const;
@@ -21,3 +22,4 @@ pub use error::*;
 pub use exec_const::*;
 pub use request::*;
 pub use response::*;
+pub use synth::*;

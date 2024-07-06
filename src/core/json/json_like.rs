@@ -1,10 +1,22 @@
 use std::collections::HashMap;
 
 use async_graphql_value::ConstValue;
+use indexmap::IndexMap;
+use serde_json_borrow::ObjectAsVec;
+
+use crate::core::json::JsonObjectLike;
 
 pub trait JsonLike<'json> {
     type Output;
+    type Obj: JsonObjectLike;
+
+    // Constructors
+    fn default() -> Self;
+    fn new_array(arr: Vec<Self::Output>) -> Self;
+
+    // Operators
     fn as_array_ok(&'json self) -> Result<&'json Vec<Self::Output>, &str>;
+    fn as_object_ok(&'json self) -> Result<&'json Self::Obj, &str>;
     fn as_str_ok(&'json self) -> Result<&'json str, &str>;
     fn as_string_ok(&'json self) -> Result<&'json String, &str>;
     fn as_i64_ok(&'json self) -> Result<i64, &str>;
@@ -21,6 +33,8 @@ pub trait JsonLike<'json> {
 
 impl<'json> JsonLike<'json> for serde_json::Value {
     type Output = serde_json::Value;
+    type Obj = serde_json::Map<String, Self::Output>;
+
 
     fn as_array_ok(&'json self) -> Result<&'json Vec<Self::Output>, &str> {
         self.as_array().ok_or("expected array")
@@ -94,10 +108,26 @@ impl<'json> JsonLike<'json> for serde_json::Value {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
+
+    fn as_object_ok(&self) -> Result<&Self::Obj, &str> {
+        match self {
+            serde_json::Value::Object(obj) => Ok(obj),
+            _ => Err("expected object"),
+        }
+    }
+
+    fn default() -> Self::Output {
+        Default::default()
+    }
+
+    fn new_array(arr: Vec<Self::Output>) -> Self::Output {
+        serde_json::Value::Array(arr)
+    }
 }
 
 impl<'json> JsonLike<'json> for async_graphql::Value {
     type Output = async_graphql::Value;
+    type Obj = IndexMap<async_graphql::Name, Self::Output>;
 
     fn as_array_ok(&'json self) -> Result<&'json Vec<Self::Output>, &str> {
         match self {
@@ -190,6 +220,121 @@ impl<'json> JsonLike<'json> for async_graphql::Value {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
+
+    fn as_object_ok(&'json self) -> Result<&'json Self::Obj, &str> {
+        match self {
+            ConstValue::Object(obj) => Ok(obj),
+            _ => Err("expected object"),
+        }
+    }
+
+    fn default() -> Self::Output {
+        Default::default()
+    }
+
+    fn new_array(arr: Vec<Self::Output>) -> Self::Output {
+        ConstValue::List(arr)
+    }
+}
+
+impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
+    type Output = serde_json_borrow::Value<'ctx>;
+    type Obj = ObjectAsVec<'ctx>;
+
+    fn default() -> Self::Output {
+        serde_json_borrow::Value::Null
+    }
+
+    fn new_array(arr: Vec<Self::Output>) -> Self::Output {
+        serde_json_borrow::Value::Array(arr)
+    }
+
+    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
+        match self {
+            serde_json_borrow::Value::Array(arr) => Ok(arr),
+            _ => Err("expected array"),
+        }
+    }
+
+    fn as_object_ok(&self) -> Result<&Self::Obj, &str> {
+        match self {
+            serde_json_borrow::Value::Object(obj) => Ok(obj),
+            _ => Err("expected object"),
+        }
+    }
+
+    fn as_str_ok(&self) -> Result<&str, &str> {
+        match self {
+            serde_json_borrow::Value::Str(s) => Ok(s),
+            _ => Err("expected string"),
+        }
+    }
+
+    fn as_string_ok(&self) -> Result<&str, &str> {
+        match self {
+            serde_json_borrow::Value::Str(s) => Ok(s.as_ref()),
+            _ => Err("expected string"),
+        }
+    }
+
+    fn as_i64_ok(&self) -> Result<i64, &str> {
+        match self {
+            serde_json_borrow::Value::Number(n) => Ok(n.as_i64().ok_or("expected i64")?),
+            _ => Err("expected i64"),
+        }
+    }
+
+    fn as_u64_ok(&self) -> Result<u64, &str> {
+        match self {
+            serde_json_borrow::Value::Number(n) => Ok(n.as_u64().ok_or("expected u64")?),
+            _ => Err("expected u64"),
+        }
+    }
+
+    fn as_f64_ok(&self) -> Result<f64, &str> {
+        match self {
+            serde_json_borrow::Value::Number(n) => Ok(n.as_f64().ok_or("expected f64")?),
+            _ => Err("expected f64"),
+        }
+    }
+
+    fn as_bool_ok(&self) -> Result<bool, &str> {
+        match self {
+            serde_json_borrow::Value::Bool(b) => Ok(*b),
+            _ => Err("expected bool"),
+        }
+    }
+
+    fn as_null_ok(&self) -> Result<(), &str> {
+        match self {
+            serde_json_borrow::Value::Null => Ok(()),
+            _ => Err("expected null"),
+        }
+    }
+
+    fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str> {
+        match self {
+            serde_json_borrow::Value::Null => Ok(None),
+            _ => Ok(Some(self)),
+        }
+    }
+
+    fn get_path<T: AsRef<str>>(&self, _path: &[T]) -> Option<&Self::Output> {
+        todo!()
+    }
+
+    fn get_key(&self, _path: &str) -> Option<&Self::Output> {
+        todo!()
+    }
+
+    fn new(value: &Self::Output) -> &Self {
+        value
+    }
+
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+        let src = gather_path_matches(self, path, vec![]);
+        group_by_key(src)
+    }
 }
 
 // Highly micro-optimized and benchmarked version of get_path_all
@@ -222,7 +367,7 @@ pub fn group_by_key<'a, J: JsonLike<'a>>(src: Vec<(&'a J, &'a J)>) -> HashMap<St
         // Need to handle number and string keys
         let key_str = key
             .as_string_ok()
-            .cloned()
+            .map(|v| v.to_string())
             .or_else(|_| key.as_f64_ok().map(|a| a.to_string()));
 
         if let Ok(key) = key_str {
@@ -238,7 +383,6 @@ pub fn group_by_key<'a, J: JsonLike<'a>>(src: Vec<(&'a J, &'a J)>) -> HashMap<St
 
 #[cfg(test)]
 mod tests {
-
     use pretty_assertions::assert_eq;
     use serde_json::json;
 

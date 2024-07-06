@@ -3,13 +3,13 @@ use indexmap::IndexMap;
 
 use super::super::Result;
 use super::Synthesizer;
-use crate::core::jit::model::{Children, Field};
+use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::{DataPath, ExecutionPlan};
 use crate::core::json::JsonLike;
 
 pub struct Synth {
-    selection: Vec<Field<Children>>,
+    selection: Vec<Field<Nested>>,
     store: Store<Result<Value>>,
 }
 
@@ -37,7 +37,7 @@ impl Synth {
     #[inline(always)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Nested>,
         parent: Option<&'b Value>,
         data_path: &DataPath,
     ) -> Result<Value> {
@@ -86,7 +86,7 @@ impl Synth {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Nested>,
         parent: &'b Value,
         data_path: &'b DataPath,
     ) -> Result<Value> {
@@ -154,6 +154,7 @@ impl Synthesizer for SynthConst {
 
 #[cfg(test)]
 mod tests {
+    use std::rc::Rc;
 
     use async_graphql::Value;
 
@@ -326,7 +327,8 @@ mod tests {
 
     #[test]
     fn test_json_placeholder() {
-        let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
+        let synth: Rc<Synth> =
+            JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
         let val = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }

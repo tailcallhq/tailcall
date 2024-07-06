@@ -1,11 +1,11 @@
 use serde_json_borrow::{ObjectAsVec, Value};
 
-use crate::core::jit::model::{Children, Field};
+use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::ExecutionPlan;
 
 pub struct SynthBorrow<'a> {
-    selection: Vec<Field<Children>>,
+    selection: Vec<Field<Nested>>,
     store: Store<Value<'a>>,
 }
 
@@ -14,6 +14,7 @@ impl<'a> SynthBorrow<'a> {
         Self { selection: plan.into_children(), store }
     }
 
+    #[allow(unused)]
     pub fn synthesize(&self) -> Value {
         let mut data = ObjectAsVec::default();
 
@@ -26,14 +27,16 @@ impl<'a> SynthBorrow<'a> {
     }
 
     /// checks if type_of is an array and value is an array
+    #[allow(unused)]
     fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
         type_of.is_list() == value.is_array()
     }
 
     #[inline(always)]
+    #[allow(unused)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Nested>,
         parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Value {
@@ -77,7 +80,7 @@ impl<'a> SynthBorrow<'a> {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Nested>,
         parent: &'b Value,
         index: Option<usize>,
     ) -> Value {
@@ -121,6 +124,7 @@ impl<'a> SynthBorrow<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::rc::Rc;
 
     use serde_json_borrow::Value;
 
@@ -191,9 +195,9 @@ mod tests {
                         Data::Single(serde_json::from_str(USER1).unwrap()),
                         Data::Single(serde_json::from_str(USER2).unwrap()),
                     ]
-                        .into_iter()
-                        .enumerate()
-                        .collect(),
+                    .into_iter()
+                    .enumerate()
+                    .collect(),
                 ),
                 TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
             }
@@ -293,8 +297,9 @@ mod tests {
 
     #[test]
     fn test_json_placeholder() {
-        let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
-        let val = synth.synthesize().unwrap();
+        let synth: Rc<SynthBorrow> =
+            JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
+        let val = synth.synthesize();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }
