@@ -29,7 +29,7 @@ impl<A> RawValueEval<A> {
 
 impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
     type In = A;
-    type Out = Vec<RawValue<'a>>; // FIX THIS, can't use Cow
+    type Out = Vec<RawValue<'a>>;
 
     fn eval(&self, mustache: &Mustache, in_value: &'a Self::In) -> Self::Out {
         mustache

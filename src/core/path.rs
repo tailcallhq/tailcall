@@ -66,8 +66,8 @@ pub enum RawValue<'a> {
     Env(Cow<'a, str>),
 }
 
-impl<'a, Ctx: ResolverContextLike> PathValue for EvalContext<'a, Ctx> {
-    fn path_value<'b, T: AsRef<str>>(&'b self, path: &[T]) -> Option<RawValue<'b>> {
+impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
+    fn to_raw_value<T: AsRef<str>>(&self, path: &[T]) -> Option<RawValue<'_>> {
         let ctx = self;
 
         if path.is_empty() {
@@ -97,52 +97,45 @@ impl<'a, Ctx: ResolverContextLike> PathValue for EvalContext<'a, Ctx> {
     }
 }
 
+impl<'a, Ctx: ResolverContextLike> PathValue for EvalContext<'a, Ctx> {
+    fn path_value<'b, T: AsRef<str>>(&'b self, path: &[T]) -> Option<RawValue<'b>> {
+        self.to_raw_value(path)
+    }
+}
+
 impl<'a, Ctx: ResolverContextLike> PathString for EvalContext<'a, Ctx> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
-        let ctx = self;
-
-        if path.is_empty() {
-            return None;
-        }
-
-        if path.len() == 1 {
-            return match path[0].as_ref() {
-                "value" => convert_value(ctx.path_value(&[] as &[T])?),
-                "args" => Some(json!(ctx.path_arg::<&str>(&[])?).to_string().into()),
-                "vars" => Some(json!(ctx.vars()).to_string().into()),
-                _ => None,
-            };
-        }
-
-        path.split_first()
-            .and_then(move |(head, tail)| match head.as_ref() {
-                "value" => convert_value(ctx.path_value(tail)?),
-                "args" => convert_value(ctx.path_arg(tail)?),
-                "headers" => ctx.header(tail[0].as_ref()).map(|v| v.into()),
-                "vars" => ctx.var(tail[0].as_ref()).map(|v| v.into()),
-                "env" => ctx.env_var(tail[0].as_ref()),
-                _ => None,
-            })
+        self.to_raw_value(path).and_then(|value| match value {
+            RawValue::Arg(arg) => {
+                if path.len() == 1 {
+                    Some(json!(arg).to_string().into())
+                } else {
+                    convert_value(arg)
+                }
+            }
+            RawValue::Env(env) => Some(env),
+            RawValue::Headers(headers) => Some(headers),
+            RawValue::Var(var) => Some(var),
+            RawValue::Vars(vars) => Some(json!(vars).to_string().into()),
+            RawValue::Value(value) => convert_value(value),
+        })
     }
 }
 
 impl<'a, Ctx: ResolverContextLike> PathGraphql for EvalContext<'a, Ctx> {
     fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
-        let ctx = self;
-
         if path.len() < 2 {
             return None;
         }
 
-        path.split_first()
-            .and_then(|(head, tail)| match head.as_ref() {
-                "value" => Some(ctx.path_value(tail)?.to_string()),
-                "args" => Some(ctx.path_arg(tail)?.to_string()),
-                "headers" => ctx.header(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
-                "vars" => ctx.var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
-                "env" => ctx.env_var(tail[0].as_ref()).map(|v| format!(r#""{v}""#)),
-                _ => None,
-            })
+        self.to_raw_value(path).and_then(|value| match value {
+            RawValue::Value(val) => Some(val.to_string()),
+            RawValue::Arg(arg) => Some(arg.to_string()),
+            RawValue::Headers(header) => Some(format!(r#""{header}""#)),
+            RawValue::Var(var) => Some(format!(r#""{var}""#)),
+            RawValue::Env(env) => Some(format!(r#""{env}""#)),
+            _ => None,
+        })
     }
 }
 
