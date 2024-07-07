@@ -40,7 +40,7 @@ impl RequestTemplate {
             return Ok(url);
         }
 
-        // evaluates mustache template and returns the values evaluated mustache
+        // evaluates mustache template and returns the values evaluated by mustache
         // template.
         let raw_eval = RawValueEval::new();
 
