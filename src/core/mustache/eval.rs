@@ -36,7 +36,9 @@ impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
             .segments()
             .iter()
             .flat_map(|segment| match segment {
-                Segment::Literal(text) => Some(RawValue::Var(Cow::Owned(text.into())).to_owned()),
+                Segment::Literal(text) => Some(RawValue::Arg(Cow::Owned(
+                    async_graphql::Value::String(text.to_owned()),
+                ))),
                 Segment::Expression(parts) => in_value.path_value(parts),
             })
             .collect::<Vec<_>>()
