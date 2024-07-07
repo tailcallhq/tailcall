@@ -16,7 +16,11 @@ pub enum Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.to_string())
+        match self {
+            Error::StdFmt(_) => write!(f, "Std Fmt Error"),
+            Error::IO(_) => write!(f, "Std IO Error"),
+            Error::FilenameNotResolved => write!(f, "Failed to resolve filename"),
+        }
     }
 }
 

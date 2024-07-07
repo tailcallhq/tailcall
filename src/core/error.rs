@@ -371,25 +371,63 @@ pub mod cache {
 
 impl Display for file::Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.to_string())
+        match self {
+            file::Error::NotFound => write!(f, "No such file or directory (os error 2)"),
+            file::Error::NoPermission => write!(f, "No permission to access the file"),
+            file::Error::AccessDenied => write!(f, "Access denied"),
+            file::Error::InvalidFormat => write!(f, "Invalid file format"),
+            file::Error::InvalidFilePath => write!(f, "Invalid file path"),
+            file::Error::InvalidOsString => write!(f, "Invalid OS string"),
+            file::Error::FileReadFailed(path) => write!(f, "Failed to read file: {}", path),
+            file::Error::FileWriteFailed(path) => write!(f, "Failed to write file: {}", path),
+            file::Error::StdIO(_) => write!(f, "Std IO Error"),
+            file::Error::Utf8(_) => write!(f, "Utf8 Error"),
+            file::Error::LambdaFileWriteNotSupported => {
+                write!(f, "File writing not supported on Lambda.")
+            }
+            file::Error::ExecutionSpecFileWriteFailed => {
+                write!(f, "Cannot write to a file in an execution spec")
+            }
+            file::Error::Cloudflare(error) => {
+                write!(f, "Cloudflare Worker Execution Error: {}", error)
+            }
+            file::Error::Inquire(error) => write!(f, "Inquire Error: {}", error),
+            file::Error::SerdeYaml(_) => write!(f, "Serde yaml Error"),
+        }
     }
 }
 
 impl Display for worker::Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.to_string())
+        match self {
+            worker::Error::InitializationFailed => write!(f, "Failed to initialize worker"),
+            worker::Error::ExecutionFailed => write!(f, "Worker execution error"),
+            worker::Error::Communication => write!(f, "Worker communication error"),
+            worker::Error::SerdeJson(_) => write!(f, "Serde Json Error"),
+            worker::Error::RequestCloneFailed => write!(f, "Request Clone Failed"),
+            worker::Error::HyperHeaderStr(_) => write!(f, "Hyper Header To Str Error"),
+            worker::Error::JsRuntimeStopped => write!(f, "JS Runtime Stopped Error"),
+            worker::Error::CLI(msg) => write!(f, "CLI Error: {}", msg),
+        }
     }
 }
 
 impl Display for graphql::Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.to_string())
+        match self {
+            graphql::Error::SerdeJson(_) => write!(f, "Serde Json Error"),
+            graphql::Error::Http(_) => write!(f, "HTTP Error"),
+        }
     }
 }
 
 impl Display for cache::Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.to_string())
+        match self {
+            cache::Error::SerdeJson(_) => write!(f, "Serde Json Error"),
+            cache::Error::Worker(error) => write!(f, "Worker Error: {}", error),
+            cache::Error::Kv(error) => write!(f, "Kv Error: {}", error),
+        }
     }
 }
 

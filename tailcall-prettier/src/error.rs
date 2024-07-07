@@ -27,7 +27,16 @@ pub enum Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.to_string())
+        match self {
+            Error::IO(_) => write!(f, "Std IO Error"),
+            Error::Join(_) => write!(f, "Join Error"),
+            Error::FromUtf8(_) => write!(f, "From Utf8 Error"),
+            Error::PrettierFormattingFailed(msg) => {
+                write!(f, "Prettier formatting failed: {}", msg)
+            }
+            Error::FileExtensionNotFound => write!(f, "No file extension found"),
+            Error::UnsupportedFiletype => write!(f, "Unsupported file type"),
+        }
     }
 }
 

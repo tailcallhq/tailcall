@@ -50,7 +50,24 @@ pub enum Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.to_string())
+        match self {
+            Error::SerdeJsonError(e) => write!(f, "Serde Json Error: {}", e),
+            Error::ProstEncodeError(_) => write!(f, "Prost Encode Error"),
+            Error::ProstDecodeError(_) => write!(f, "Prost Decode Error"),
+            Error::EmptyResponse => write!(f, "Empty Response"),
+            Error::MessageNotResolved => write!(f, "Couldn't resolve message"),
+            Error::DescriptorPoolError(_) => write!(f, "Descriptor pool error"),
+            Error::ProtoxParseError(_) => write!(f, "Protox Parse Error"),
+            Error::MissingMethod(method) => write!(f, "Couldn't find method {}", method.name),
+            Error::MissingListField => write!(f, "Unable to find list field on type"),
+            Error::MissingField(field) => write!(f, "Field not found : {}", field),
+            Error::MissingService(service) => {
+                write!(f, "Couldn't find definitions for service {}", service)
+            }
+            Error::InputParsingFailed(input_type) => {
+                write!(f, "Failed to parse input according to type {}", input_type)
+            }
+        }
     }
 }
 
