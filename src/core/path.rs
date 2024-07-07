@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
 
 use serde_json::json;
 
@@ -60,7 +59,6 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
 pub enum RawValue<'a> {
     Value(Cow<'a, async_graphql::Value>),
     Arg(Cow<'a, async_graphql::Value>),
-    Vars(Cow<'a, BTreeMap<String, String>>),
     Var(Cow<'a, str>),
     Headers(Cow<'a, str>),
     Env(Cow<'a, str>),
@@ -78,7 +76,7 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
             return match path[0].as_ref() {
                 "value" => Some(RawValue::Value(ctx.path_value(&[] as &[T])?)),
                 "args" => Some(RawValue::Arg(ctx.path_arg::<&str>(&[])?)),
-                "vars" => Some(RawValue::Vars(Cow::Borrowed(ctx.vars()))),
+                "vars" => Some(RawValue::Var(Cow::Owned(json!(ctx.vars()).to_string()))),
                 _ => None,
             };
         }
@@ -116,7 +114,6 @@ impl<'a, Ctx: ResolverContextLike> PathString for EvalContext<'a, Ctx> {
             RawValue::Env(env) => Some(env),
             RawValue::Headers(headers) => Some(headers),
             RawValue::Var(var) => Some(var),
-            RawValue::Vars(vars) => Some(json!(vars).to_string().into()),
             RawValue::Value(value) => convert_value(value),
         })
     }
@@ -128,13 +125,12 @@ impl<'a, Ctx: ResolverContextLike> PathGraphql for EvalContext<'a, Ctx> {
             return None;
         }
 
-        self.to_raw_value(path).and_then(|value| match value {
-            RawValue::Value(val) => Some(val.to_string()),
-            RawValue::Arg(arg) => Some(arg.to_string()),
-            RawValue::Headers(header) => Some(format!(r#""{header}""#)),
-            RawValue::Var(var) => Some(format!(r#""{var}""#)),
-            RawValue::Env(env) => Some(format!(r#""{env}""#)),
-            _ => None,
+        self.to_raw_value(path).map(|value| match value {
+            RawValue::Value(val) => val.to_string(),
+            RawValue::Arg(arg) => arg.to_string(),
+            RawValue::Headers(header) => format!(r#""{header}""#),
+            RawValue::Var(var) => format!(r#""{var}""#),
+            RawValue::Env(env) => format!(r#""{env}""#),
         })
     }
 }
