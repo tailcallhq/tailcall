@@ -327,13 +327,13 @@ mod tests {
                 async_graphql_value::Name::new("existing"),
                 async_graphql::Value::String("nested-test".into()),
             );
-
             assert_eq!(
                 EVAL_CTX.raw_value(&["args", "nested"]),
                 Some(RawValue::Arg(Cow::Borrowed(&async_graphql::Value::Object(
                     expected
                 ))))
             );
+
             assert_eq!(EVAL_CTX.raw_value(&["args", "missing"]), None);
             assert_eq!(EVAL_CTX.raw_value(&["args", "nested", "missing"]), None);
 
