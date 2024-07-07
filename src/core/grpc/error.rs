@@ -1,49 +1,57 @@
-use derive_more::From;
+use std::fmt::Display;
+
+use derive_more::{From, DebugCustom};
 use prost_reflect::DescriptorError;
 use serde_json;
 
 use crate::core::blueprint::GrpcMethod;
 
-#[derive(From, thiserror::Error, Debug)]
+#[derive(From, DebugCustom)]
 pub enum Error {
-    #[error("Serde Json Error : {0}")]
+    #[debug(fmt = "Serde Json Error : {}", _0)]
     SerdeJsonError(serde_json::Error),
 
-    #[error("Prost Encode Error")]
+    #[debug(fmt = "Prost Encode Error")]
     ProstEncodeError(prost::EncodeError),
 
-    #[error("Prost Decode Error")]
+    #[debug(fmt = "Prost Decode Error")]
     ProstDecodeError(prost::DecodeError),
 
-    #[error("Empty Response")]
+    #[debug(fmt = "Empty Response")]
     EmptyResponse,
 
-    #[error("Couldn't resolve message")]
+    #[debug(fmt = "Couldn't resolve message")]
     MessageNotResolved,
 
-    #[error("Descriptor pool error")]
+    #[debug(fmt = "Descriptor pool error")]
     DescriptorPoolError(DescriptorError),
 
-    #[error("Protox Parse Error")]
+    #[debug(fmt = "Protox Parse Error")]
     ProtoxParseError(protox_parse::ParseError),
 
-    #[error("Couldn't find method {}", ._0.name)]
+    #[debug(fmt = "Couldn't find method {}", ._0.name)]
     MissingMethod(GrpcMethod),
 
-    #[error("Unable to find list field on type")]
+    #[debug(fmt = "Unable to find list field on type")]
     MissingListField,
 
-    #[error("Field not found : {0}")]
+    #[debug(fmt = "Field not found : {}", _0)]
     #[from(ignore)]
     MissingField(String),
 
-    #[error("Couldn't find definitions for service {0}")]
+    #[debug(fmt = "Couldn't find definitions for service {}", _0)]
     #[from(ignore)]
     MissingService(String),
 
-    #[error("Failed to parse input according to type {0}")]
+    #[debug(fmt = "Failed to parse input according to type {}", _0)]
     #[from(ignore)]
     InputParsingFailed(String),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

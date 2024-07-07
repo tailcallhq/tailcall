@@ -1,27 +1,35 @@
 use std::string::FromUtf8Error;
 
-use derive_more::From;
+use derive_more::{From, DebugCustom};
 use tokio::task::JoinError;
+use std::fmt::Display;
 
-#[derive(From, thiserror::Error, Debug)]
+
+#[derive(From, DebugCustom)]
 pub enum Error {
-    #[error("Std IO Error")]
+    #[debug(fmt = "Std IO Error")]
     IO(std::io::Error),
 
-    #[error("Join Error")]
+    #[debug(fmt = "Join Error")]
     Join(JoinError),
 
-    #[error("From Utf8 Error")]
+    #[debug(fmt = "From Utf8 Error")]
     FromUtf8(FromUtf8Error),
 
-    #[error("Prettier formatting failed: {0}")]
+    #[debug(fmt = "Prettier formatting failed: {}", _0)]
     PrettierFormattingFailed(String),
 
-    #[error("No file extension found")]
+    #[debug(fmt = "No file extension found")]
     FileExtensionNotFound,
 
-    #[error("Unsupported file type")]
+    #[debug(fmt = "Unsupported file type")]
     UnsupportedFiletype,
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

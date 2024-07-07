@@ -1,6 +1,7 @@
+use std::fmt::Display;
 use std::string::FromUtf8Error;
 
-use derive_more::From;
+use derive_more::{From, DebugCustom};
 use inquire::InquireError;
 use opentelemetry::logs::LogError;
 use opentelemetry::metrics::MetricsError;
@@ -10,94 +11,100 @@ use tokio::task::JoinError;
 use crate::core::valid::ValidationError;
 use crate::core::{error, rest};
 
-#[derive(From, thiserror::Error, Debug)]
+#[derive(From, DebugCustom)]
 pub enum Error {
-    #[error("Metrics Error")]
+    #[debug(fmt = "Metrics Error")]
     Metrics(MetricsError),
 
-    #[error("Rest Error")]
+    #[debug(fmt = "Rest Error")]
     Rest(rest::error::Error),
 
-    #[error("Serde Json Error")]
+    #[debug(fmt = "Serde Json Error")]
     SerdeJson(serde_json::Error),
 
-    #[error("IO Error")]
+    #[debug(fmt = "IO Error")]
     IO(std::io::Error),
 
-    #[error("Telemetry Trace Error : {0}")]
+    #[debug(fmt = "Telemetry Trace Error : {}", _0)]
     TelemetryTrace(String),
 
-    #[error("Failed to send message")]
+    #[debug(fmt = "Failed to send message")]
     MessageSendFailure,
 
-    #[error("Hyper Error")]
+    #[debug(fmt = "Hyper Error")]
     Hyper(hyper::Error),
 
-    #[error("Rustls Error")]
+    #[debug(fmt = "Rustls Error")]
     Rustls(rustls::Error),
 
-    #[error("Join Error")]
+    #[debug(fmt = "Join Error")]
     Join(JoinError),
 
-    #[error("Opentelemetry Global Error")]
+    #[debug(fmt = "Opentelemetry Global Error")]
     OpentelemetryGlobal(opentelemetry::global::Error),
 
-    #[error("Trace Error")]
+    #[debug(fmt = "Trace Error")]
     Trace(TraceError),
 
-    #[error("Log Error")]
+    #[debug(fmt = "Log Error")]
     Log(LogError),
 
-    #[error("Utf8 Error")]
+    #[debug(fmt = "Utf8 Error")]
     Utf8(FromUtf8Error),
 
-    #[error("Inquire Error")]
+    #[debug(fmt = "Inquire Error")]
     Inquire(InquireError),
 
-    #[error("Serde Yaml Error")]
+    #[debug(fmt = "Serde Yaml Error")]
     SerdeYaml(serde_yaml::Error),
 
-    #[error("Invalid Header Name")]
+    #[debug(fmt = "Invalid Header Name")]
     InvalidHeaderName(hyper::header::InvalidHeaderName),
 
-    #[error("Invalid Header Value")]
+    #[debug(fmt = "Invalid Header Value")]
     InvalidHeaderValue(hyper::header::InvalidHeaderValue),
 
-    #[error("rquickjs Error")]
+    #[debug(fmt = "rquickjs Error")]
     RQuickjs(rquickjs::Error),
 
-    #[error("Trying to reinitialize an already initialized QuickJS runtime")]
+    #[debug(fmt = "Trying to reinitialize an already initialized QuickJS runtime")]
     ReinitializeQuickjsRuntime,
 
-    #[error("Runtime not initialized")]
+    #[debug(fmt = "Runtime not initialized")]
     RuntimeNotInitialized,
 
-    #[error("Deserialize Failed")]
+    #[debug(fmt = "Deserialize Failed")]
     DeserializeFailed,
 
-    #[error("Not a function error")]
+    #[debug(fmt = "Not a function error")]
     InvalidFunction,
 
-    #[error("Init Process Observer Error")]
+    #[debug(fmt = "Init Process Observer Error")]
     InitProcessObserver,
 
-    #[error("JS Runtime is stopped")]
+    #[debug(fmt = "JS Runtime is stopped")]
     JsRuntimeStopped,
 
-    #[error("Rustls internal error")]
+    #[debug(fmt = "Rustls internal error")]
     RustlsInternal,
 
-    #[error("Reqwest middleware error")]
+    #[debug(fmt = "Reqwest middleware error")]
     ReqwestMiddleware(reqwest_middleware::Error),
 
-    #[error("Reqwest error")]
+    #[debug(fmt = "Reqwest error")]
     Reqwest(reqwest::Error),
 
-    #[error("Validation Error : {0}")]
+    #[debug(fmt = "Validation Error : {}", _0)]
     Validation(ValidationError<std::string::String>),
 
-    #[error("Core Error")]
+    #[debug(fmt = "Core Error")]
     CoreError(error::Error),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

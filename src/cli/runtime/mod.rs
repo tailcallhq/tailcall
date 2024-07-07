@@ -95,7 +95,8 @@ pub async fn confirm_and_write(
     if file_exists {
         let confirm = Confirm::new(&format!("Do you want to overwrite the file {path}?"))
             .with_default(false)
-            .prompt().map_err(|e| error::file::Error::Inquire(e.to_string()))?;
+            .prompt()
+            .map_err(|e| error::file::Error::Inquire(e.to_string()))?;
 
         if !confirm {
             return Ok(());
@@ -116,7 +117,8 @@ pub async fn create_directory(folder_path: &str) -> Result<(), error::file::Erro
             folder_path
         ))
         .with_default(false)
-        .prompt().map_err(|e| error::file::Error::Inquire(e.to_string()))?;
+        .prompt()
+        .map_err(|e| error::file::Error::Inquire(e.to_string()))?;
 
         if confirm {
             fs::create_dir_all(folder_path)?;
@@ -132,5 +134,7 @@ pub fn select_prompt<T: std::fmt::Display>(
     message: &str,
     options: Vec<T>,
 ) -> Result<T, error::file::Error> {
-    Ok(Select::new(message, options).prompt().map_err(|e| error::file::Error::Inquire(e.to_string()))?)
+    Ok(Select::new(message, options)
+        .prompt()
+        .map_err(|e| error::file::Error::Inquire(e.to_string()))?)
 }

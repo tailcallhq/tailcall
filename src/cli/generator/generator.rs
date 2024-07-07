@@ -61,7 +61,8 @@ impl Generator {
                 .as_str(),
             )
             .with_default(false)
-            .prompt().map_err(|e| Error::Inquire(e.to_string()))?;
+            .prompt()
+            .map_err(|e| Error::Inquire(e.to_string()))?;
             if !should_overwrite {
                 return Ok(false);
             }
@@ -71,7 +72,7 @@ impl Generator {
 
     async fn read(&self) -> Result<Config<Resolved>, Error> {
         let config_path = &self.config_path;
-        let source = ConfigSource::detect(config_path).map_err(|_|Error::UnsupportedFileFormat)?;
+        let source = ConfigSource::detect(config_path).map_err(|_| Error::UnsupportedFileFormat)?;
         let config_content = self.runtime.file.read(config_path).await?;
 
         let config: Config = match source {

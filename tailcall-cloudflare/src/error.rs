@@ -1,34 +1,42 @@
 use std::string::FromUtf8Error;
 
-use derive_more::From;
+use derive_more::{From, DebugCustom};
 use tailcall::core::error;
+use std::fmt::Display;
 
-#[derive(From, thiserror::Error, Debug)]
+
+#[derive(From, DebugCustom)]
 pub enum Error {
-    #[error("Worker Error")]
+    #[debug(fmt = "Worker Error")]
     Worker(worker::Error),
 
-    #[error("File {0} was not found in bucket")]
+    #[debug(fmt = "File {} was not found in bucket", _0)]
     MissingFileInBucket(String),
 
-    #[error("BUCKET var is not set")]
+    #[debug(fmt = "BUCKET var is not set")]
     BucketVarNotSet,
 
-    #[error("Hyper Error")]
+    #[debug(fmt = "Hyper Error")]
     Hyper(hyper::Error),
 
-    #[error("FromUtf8 Error")]
+    #[debug(fmt = "FromUtf8 Error")]
     FromUtf8(FromUtf8Error),
 
-    #[error("Unsupported HTTP method: {0}")]
+    #[debug(fmt = "Unsupported HTTP method: {}", _0)]
     #[from(ignore)]
     UnsupportedHttpMethod(String),
 
-    #[error("Hyper HTTP Error")]
+    #[debug(fmt = "Hyper HTTP Error")]
     HyperHttp(hyper::http::Error),
 
-    #[error("Core Error")]
+    #[debug(fmt = "Core Error")]
     Core(error::Error),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

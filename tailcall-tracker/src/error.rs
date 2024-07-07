@@ -1,19 +1,27 @@
-use derive_more::From;
+use derive_more::{From, DebugCustom};
 use reqwest::header::InvalidHeaderValue;
+use std::fmt::Display;
 
-#[derive(From, thiserror::Error, Debug)]
+
+#[derive(From, DebugCustom)]
 pub enum Error {
-    #[error("Reqwest Error")]
+    #[debug(fmt = "Reqwest Error")]
     Reqwest(reqwest::Error),
 
-    #[error("Invalid Header Value")]
+    #[debug(fmt = "Invalid Header Value")]
     InvalidHeaderValue(InvalidHeaderValue),
 
-    #[error("Serde JSON Error")]
+    #[debug(fmt = "Serde JSON Error")]
     SerdeJson(serde_json::Error),
 
-    #[error("Url Parser Error")]
+    #[debug(fmt = "Url Parser Error")]
     UrlParser(url::ParseError),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

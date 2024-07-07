@@ -1,77 +1,84 @@
 use std::path::Path;
+use std::fmt::Display;
 
-use derive_more::From;
+use derive_more::{From, DebugCustom};
 use markdown::mdast::{Heading, Node};
 use tailcall::core::config::UnsupportedConfigFormat;
 
-#[derive(From, thiserror::Error, Debug)]
+#[derive(From, DebugCustom)]
 pub enum Error {
-    #[error("Unexpected code block with no specific language in {:?}", _0)]
+    #[debug(fmt = "Unexpected code block with no specific language in {:?}", _0)]
     NoSpecificLanguage(Box<Path>),
 
-    #[error("Unexpected number of {0} blocks in {:?} (only one is allowed)", _1)]
+    #[debug(fmt = "Unexpected number of {0} blocks in {:?} (only one is allowed)", _1)]
     UnexpectedNumberOfBlocks(String, Box<Path>),
 
-    #[error(
+    #[debug(fmt = 
         "Unexpected language in {0} block in {:?} (only JSON and YAML are supported)",
         _1
     )]
     #[from(ignore)]
     UnexpectedLanguage(String, Box<Path>),
 
-    #[error("Serde JSON Error")]
+    #[debug(fmt = "Serde JSON Error")]
     SerdeJson(serde_json::Error),
 
-    #[error("Serde YAML Error")]
+    #[debug(fmt = "Serde YAML Error")]
     SerdeYaml(serde_yaml::Error),
 
-    #[error("Unexpected content of level {0} heading in {:?}: {:#?}", _1, _2)]
+    #[debug(fmt = "Unexpected content of level {0} heading in {:?}: {:#?}", _1, _2)]
     UnexpectedHeadingContent(String, Box<Path>, Heading),
 
-    #[error("Unexpected content of code in {:?}: {:#?}", _0, _1)]
+    #[debug(fmt = "Unexpected content of code in {:?}: {:#?}", _0, _1)]
     UnexpectedCodeContent(Box<Path>, Option<String>),
 
-    #[error("Unexpected double-declaration of {0} in {:?}", _1)]
+    #[debug(fmt = "Unexpected double-declaration of {0} in {:?}", _1)]
     #[from(ignore)]
     UnexpectedDoubleDeclaration(String, Box<Path>),
 
-    #[error("Unexpected {0} annotation {:?} in {:?}", _1, _2)]
+    #[debug(fmt = "Unexpected {0} annotation {:?} in {:?}", _1, _2)]
     UnexpectedAnnotation(String, String, Box<Path>),
 
-    #[error("Unexpected level {0} heading in {:?}: {:#?}", _1, _2)]
+    #[debug(fmt = "Unexpected level {0} heading in {:?}: {:#?}", _1, _2)]
     #[from(ignore)]
     UnexpectedHeadingLevel(String, Box<Path>, Heading),
 
-    #[error("Unsupported Config Format {:?}", _0)]
+    #[debug(fmt = "Unsupported Config Format {:?}", _0)]
     UnsupportedConfigFormat(UnsupportedConfigFormat),
 
-    #[error("Unexpected component {:?} in {:?}: {:#?}", _0, _1, _2)]
+    #[debug(fmt = "Unexpected component {:?} in {:?}: {:#?}", _0, _1, _2)]
     UnexpectedComponent(String, Box<Path>, Option<String>),
 
-    #[error("Unexpected node in {:?}: {:#?}", _0, _1)]
+    #[debug(fmt = "Unexpected node in {:?}: {:#?}", _0, _1)]
     #[from(ignore)]
     UnexpectedNode(Box<Path>, Node),
 
-    #[error(
+    #[debug(fmt = 
         "Unexpected blocks in {:?}: You must define a GraphQL Config in an execution test.",
         _0
     )]
     #[from(ignore)]
     UnexpectedBlocks(Box<Path>),
 
-    #[error("{0}")]
+    #[debug(fmt = "{0}")]
     TailcallPrettier(String),
 
-    #[error("{0}")]
+    #[debug(fmt = "{0}")]
     #[from(ignore)]
     Execution(String),
 
-    #[error("{0}")]
+    #[debug(fmt = "{0}")]
     #[from(ignore)]
     Validation(String),
 
-    #[error("Std IO Error")]
+    #[debug(fmt = "Std IO Error")]
     StdIO(std::io::Error),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

@@ -1,27 +1,35 @@
 use std::env::VarError;
+use std::fmt::Display;
 
-use derive_more::From;
+
+use derive_more::{From, DebugCustom};
 use hyper::header::InvalidHeaderValue;
 use opentelemetry::trace::TraceError;
 use tracing::subscriber::SetGlobalDefaultError;
 
-#[derive(From, thiserror::Error, Debug)]
+#[derive(From, DebugCustom)]
 pub enum Error {
-    #[error("Hyper Error")]
+    #[debug(fmt = "Hyper Error")]
     Hyper(hyper::Error),
 
-    #[error("Set Global Default Error")]
+    #[debug(fmt = "Set Global Default Error")]
     SetGlobalDefault(SetGlobalDefaultError),
 
-    #[error("Trace Error")]
+    #[debug(fmt = "Trace Error")]
     Trace(TraceError),
 
-    #[error("Failed to instantiate OTLP provider")]
+    #[debug(fmt = "Failed to instantiate OTLP provider")]
     OltpProviderInstantiationFailed,
 
-    #[error("Var Error")]
+    #[debug(fmt = "Var Error")]
     Var(VarError),
 
-    #[error("Invalid header value")]
+    #[debug(fmt = "Invalid header value")]
     InvalidHeaderValue(InvalidHeaderValue),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }

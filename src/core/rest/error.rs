@@ -7,65 +7,69 @@ use derive_more::{DebugCustom, From};
 use serde_json;
 
 use crate::core::valid::ValidationError;
+use std::fmt::Display;
 
-#[derive(From, thiserror::Error, DebugCustom)]
+
+#[derive(From, DebugCustom)]
 pub enum Error {
-    #[error("Unexpected Named Type: {}", 0.to_string())]
+    #[debug(fmt = "Unexpected Named Type: {}", 0.to_string())]
     #[from(ignore)]
     UnexpectedNamedType(Name),
 
-    #[error("Unexpected Type: {}, expected a named type like String, Float, Boolean etc.", 0.to_string())]
+    #[debug(fmt = "Unexpected Type: {}, expected a named type like String, Float, Boolean etc.", 0.to_string())]
     UnexpectedType(Type),
 
-    #[error("Serde Json Error")]
+    #[debug(fmt = "Serde Json Error")]
     SerdeJsonError(serde_json::Error),
 
-    #[error("{msg}: {directive:?}")]
     #[debug(fmt = "{msg}: {directive:?}")]
     Missing { msg: String, directive: Directive },
 
-    #[error("Method not provided in the directive")]
     #[debug(fmt = "Method not provided in the directive")]
     MissingMethod,
 
-    #[error("Path not provided in the directive")]
     #[debug(fmt = "Path not provided in the directive")]
     MissingPath,
 
-    #[error("Undefined query param: {0}")]
+    #[debug(fmt = "Undefined query param: {}", _0)]
     UndefinedQueryParam(String),
 
-    #[error("Parse Integer Error")]
+    #[debug(fmt = "Parse Integer Error")]
     ParseIntegerError(ParseIntError),
 
-    #[error("Parse Float Error")]
+    #[debug(fmt = "Parse Float Error")]
     ParseFloatingPointError(ParseFloatError),
 
-    #[error("Parse Boolean Error")]
+    #[debug(fmt = "Parse Boolean Error")]
     ParseBooleanError(ParseBoolError),
 
-    #[error("Undefined param : {key} in {input}")]
     #[debug(fmt = "Undefined param : {key} in {input}")]
     UndefinedParam { key: String, input: String },
 
-    #[error("Validation Error : {0}")]
+    #[debug(fmt = "Validation Error : {}", _0)]
     ValidationError(ValidationError<std::string::String>),
 
-    #[error("Async Graphql Parser Error")]
+    #[debug(fmt = "Async Graphql Parser Error")]
     AsyncgraphqlParserError(async_graphql::parser::Error),
 
-    #[error("Hyper HTTP Invalid URI Error")]
+    #[debug(fmt = "Hyper HTTP Invalid URI Error")]
     HyperHttpInvalidUri(hyper::http::uri::InvalidUri),
 
-    #[error("Hyper HTTP Error")]
+    #[debug(fmt = "Hyper HTTP Error")]
     HyperHttpError(hyper::http::Error),
 
-    #[error("Hyper Error")]
+    #[debug(fmt = "Hyper Error")]
     HyperError(hyper::Error),
 
-    #[error("Server Error")]
+    #[debug(fmt = "Server Error")]
     #[from(ignore)]
     ServerError(String),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
