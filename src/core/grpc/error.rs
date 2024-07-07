@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use derive_more::{From, DebugCustom};
+use derive_more::{DebugCustom, From};
 use prost_reflect::DescriptorError;
 use serde_json;
 

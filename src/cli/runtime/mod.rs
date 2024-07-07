@@ -134,7 +134,7 @@ pub fn select_prompt<T: std::fmt::Display>(
     message: &str,
     options: Vec<T>,
 ) -> Result<T, error::file::Error> {
-    Ok(Select::new(message, options)
+    Select::new(message, options)
         .prompt()
-        .map_err(|e| error::file::Error::Inquire(e.to_string()))?)
+        .map_err(|e| error::file::Error::Inquire(e.to_string()))
 }

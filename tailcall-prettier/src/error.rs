@@ -1,9 +1,8 @@
+use std::fmt::Display;
 use std::string::FromUtf8Error;
 
-use derive_more::{From, DebugCustom};
+use derive_more::{DebugCustom, From};
 use tokio::task::JoinError;
-use std::fmt::Display;
-
 
 #[derive(From, DebugCustom)]
 pub enum Error {

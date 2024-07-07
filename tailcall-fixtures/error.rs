@@ -1,6 +1,6 @@
-use derive_more::{From, DebugCustom};
 use std::fmt::Display;
 
+use derive_more::{DebugCustom, From};
 
 #[derive(From, DebugCustom)]
 pub enum Error {

@@ -1,7 +1,7 @@
-use derive_more::{From, DebugCustom};
-use reqwest::header::InvalidHeaderValue;
 use std::fmt::Display;
 
+use derive_more::{DebugCustom, From};
+use reqwest::header::InvalidHeaderValue;
 
 #[derive(From, DebugCustom)]
 pub enum Error {
