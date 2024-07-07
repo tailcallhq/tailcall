@@ -39,7 +39,7 @@ impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
                 Segment::Literal(text) => Some(RawValue::Arg(Cow::Owned(
                     async_graphql::Value::String(text.to_owned()),
                 ))),
-                Segment::Expression(parts) => in_value.path_value(parts),
+                Segment::Expression(parts) => in_value.raw_value(parts),
             })
             .collect::<Vec<_>>()
     }

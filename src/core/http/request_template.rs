@@ -42,7 +42,7 @@ impl RequestTemplate {
 
         // evaluates mustache template and returns the values evaluated by mustache
         // template.
-        let raw_eval = RawValueEval::new();
+        let raw_eval = RawValueEval::default();
 
         let extra_qp = self.query.iter().filter_map(|(key, value)| {
             let parsed_values = raw_eval.eval(value, ctx);
@@ -285,7 +285,7 @@ mod tests {
     }
 
     impl PathValue for Context {
-        fn path_value<'a, T: AsRef<str>>(
+        fn raw_value<'a, T: AsRef<str>>(
             &'a self,
             path: &[T],
         ) -> Option<crate::core::path::RawValue<'a>> {

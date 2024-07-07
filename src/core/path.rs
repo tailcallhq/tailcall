@@ -20,7 +20,7 @@ pub trait PathString {
 /// PathValue trait provides a method for accessing values from JSON-like
 /// structure it returns raw value.
 pub trait PathValue {
-    fn path_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<RawValue<'a>>;
+    fn raw_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<RawValue<'a>>;
 }
 
 ///
@@ -55,7 +55,7 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum RawValue<'a> {
     Value(Cow<'a, async_graphql::Value>),
     Arg(Cow<'a, async_graphql::Value>),
@@ -96,7 +96,7 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
 }
 
 impl<'a, Ctx: ResolverContextLike> PathValue for EvalContext<'a, Ctx> {
-    fn path_value<'b, T: AsRef<str>>(&'b self, path: &[T]) -> Option<RawValue<'b>> {
+    fn raw_value<'b, T: AsRef<str>>(&'b self, path: &[T]) -> Option<RawValue<'b>> {
         self.to_raw_value(path)
     }
 }
@@ -152,7 +152,7 @@ mod tests {
 
         use crate::core::http::RequestContext;
         use crate::core::ir::{EvalContext, ResolverContextLike};
-        use crate::core::path::{PathGraphql, PathString};
+        use crate::core::path::{PathGraphql, PathString, PathValue, RawValue};
         use crate::core::EnvIO;
 
         struct Env {
@@ -260,6 +260,134 @@ mod tests {
 
         static EVAL_CTX: Lazy<EvalContext<'static, MockGraphqlContext>> =
             Lazy::new(|| EvalContext::new(&REQ_CTX, &MockGraphqlContext));
+
+        #[test]
+        fn path_to_value() {
+            let mut map = IndexMap::default();
+            map.insert(
+                async_graphql_value::Name::new("number"),
+                async_graphql::Value::Number(serde_json::Number::from(2)),
+            );
+            map.insert(
+                async_graphql_value::Name::new("str"),
+                async_graphql::Value::String("str-test".into()),
+            );
+            map.insert(
+                async_graphql_value::Name::new("bool"),
+                async_graphql::Value::Boolean(true),
+            );
+            let mut nested_map = IndexMap::default();
+            nested_map.insert(
+                async_graphql_value::Name::new("existing"),
+                async_graphql::Value::String("nested-test".into()),
+            );
+            map.insert(
+                async_graphql_value::Name::new("nested"),
+                async_graphql::Value::Object(nested_map),
+            );
+
+            // value
+            assert_eq!(
+                EVAL_CTX.raw_value(&["value", "bool"]),
+                Some(RawValue::Value(Cow::Borrowed(
+                    &async_graphql::Value::Boolean(true)
+                )))
+            );
+            assert_eq!(
+                EVAL_CTX.raw_value(&["value", "number"]),
+                Some(RawValue::Value(Cow::Borrowed(
+                    &async_graphql::Value::Number(serde_json::Number::from(2))
+                )))
+            );
+            assert_eq!(
+                EVAL_CTX.raw_value(&["value", "str"]),
+                Some(RawValue::Value(Cow::Borrowed(
+                    &async_graphql::Value::String("str-test".into())
+                )))
+            );
+            assert_eq!(EVAL_CTX.raw_value(&["value", "missing"]), None);
+            assert_eq!(EVAL_CTX.raw_value(&["value", "nested", "missing"]), None);
+            assert_eq!(
+                EVAL_CTX.raw_value(&["value"]),
+                Some(RawValue::Value(Cow::Borrowed(
+                    &async_graphql::Value::Object(map.clone()),
+                )))
+            );
+
+            // args
+            assert_eq!(
+                EVAL_CTX.raw_value(&["args", "root"]),
+                Some(RawValue::Arg(Cow::Borrowed(&async_graphql::Value::String(
+                    "root-test".into()
+                ),)))
+            );
+
+            let mut expected = IndexMap::new();
+            expected.insert(
+                async_graphql_value::Name::new("existing"),
+                async_graphql::Value::String("nested-test".into()),
+            );
+
+            assert_eq!(
+                EVAL_CTX.raw_value(&["args", "nested"]),
+                Some(RawValue::Arg(Cow::Borrowed(&async_graphql::Value::Object(
+                    expected
+                ))))
+            );
+            assert_eq!(EVAL_CTX.raw_value(&["args", "missing"]), None);
+            assert_eq!(EVAL_CTX.raw_value(&["args", "nested", "missing"]), None);
+
+            let mut expected = IndexMap::new();
+            let mut nested_map = IndexMap::new();
+            nested_map.insert(
+                async_graphql_value::Name::new("existing"),
+                async_graphql::Value::String("nested-test".into()),
+            );
+            expected.insert(
+                async_graphql_value::Name::new("nested"),
+                async_graphql::Value::Object(nested_map),
+            );
+            expected.insert(
+                async_graphql_value::Name::new("root"),
+                async_graphql::Value::String("root-test".into()),
+            );
+            assert_eq!(
+                EVAL_CTX.raw_value(&["args"]),
+                Some(RawValue::Arg(Cow::Borrowed(&async_graphql::Value::Object(
+                    expected
+                ))))
+            );
+
+            // headers
+            assert_eq!(
+                EVAL_CTX.raw_value(&["headers", "x-existing"]),
+                Some(RawValue::Headers(Cow::Borrowed("header")))
+            );
+            assert_eq!(EVAL_CTX.raw_value(&["headers", "x-missing"]), None);
+
+            // vars
+            assert_eq!(
+                EVAL_CTX.raw_value(&["vars", "existing"]),
+                Some(RawValue::Var(Cow::Borrowed("var")))
+            );
+            assert_eq!(EVAL_CTX.raw_value(&["vars", "missing"]), None);
+            assert_eq!(
+                EVAL_CTX.raw_value(&["vars"]),
+                Some(RawValue::Var(Cow::Borrowed(r#"{"existing":"var"}"#)))
+            );
+
+            // envs
+            assert_eq!(
+                EVAL_CTX.raw_value(&["env", "existing"]),
+                Some(RawValue::Env(Cow::Borrowed("env")))
+            );
+            assert_eq!(EVAL_CTX.raw_value(&["env", "x-missing"]), None);
+
+            // other value types
+            assert_eq!(EVAL_CTX.raw_value(&["foo", "key"]), None);
+            assert_eq!(EVAL_CTX.raw_value(&["bar", "key"]), None);
+            assert_eq!(EVAL_CTX.raw_value(&["baz", "key"]), None);
+        }
 
         #[test]
         fn path_to_string() {

@@ -23,7 +23,7 @@ impl Default for Context {
 }
 
 impl PathValue for Context {
-    fn path_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<RawValue<'a>> {
+    fn raw_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<RawValue<'a>> {
         self.value.get_path(path).map(|a| {
             let p = async_graphql::Value::from_json(a.clone()).unwrap();
             RawValue::Arg(Cow::Owned(p))
