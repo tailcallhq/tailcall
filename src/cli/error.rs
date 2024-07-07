@@ -107,4 +107,6 @@ impl Display for Error {
     }
 }
 
+impl std::error::Error for Error {}
+
 pub type Result<A> = std::result::Result<A, Error>;

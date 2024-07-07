@@ -405,4 +405,6 @@ impl Display for cache::Error {
     }
 }
 
+impl std::error::Error for Error {}
+
 pub type Result<A, E> = std::result::Result<A, E>;
