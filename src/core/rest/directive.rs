@@ -215,7 +215,10 @@ mod tests {
         let query = generate_query_with_directive(&query, DEFAULT_QUERY_PARAM);
         let directive = query_to_directive(&query);
         // Will panic
-        Rest::try_from(&directive).unwrap();
+        match Rest::try_from(&directive) {
+            Ok(_) => panic!("Test should have failed but it succeeded"),
+            Err(e) => panic!("{}", e),
+        }
     }
 
     #[test]
@@ -226,6 +229,9 @@ mod tests {
         let query = generate_query_with_directive(&query, DEFAULT_QUERY_PARAM);
         let directive = query_to_directive(&query);
         // Will panic
-        Rest::try_from(&directive).unwrap();
+        match Rest::try_from(&directive) {
+            Ok(_) => panic!("Test should have failed but it succeeded"),
+            Err(e) => panic!("{}", e),
+        }
     }
 }
