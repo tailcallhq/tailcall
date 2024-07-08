@@ -287,7 +287,12 @@ impl ExecutionSpec {
         } else {
             config.to_owned()
         };
-        let blueprint = Blueprint::try_from(&config).unwrap();
+        let mut blueprint = Blueprint::try_from(&config).unwrap();
+
+        if cfg!(feature = "force_jit") {
+            blueprint.server.enable_jit = true;
+        }
+
         let script = blueprint.server.script.clone();
 
         let http2_only = http.clone();
