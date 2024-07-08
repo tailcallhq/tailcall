@@ -23,7 +23,7 @@ pub struct Server {
     /// independently, resulting is significantly better performance in most
     /// cases.
     #[serde(default, skip_serializing_if = "is_default", rename = "enableJIT")]
-    enable_jit: Option<bool>,
+    pub enable_jit: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `apolloTracing` exposes GraphQL query performance data, including
