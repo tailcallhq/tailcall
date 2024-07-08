@@ -3,7 +3,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::core::generator::from_openapi_spec;
+use tailcall::core::generator::{Generator, Input};
 
 #[derive(Serialize, Deserialize)]
 struct OpenAPIFixture {
@@ -25,7 +25,10 @@ pub fn run_open_api_to_config_spec(path: &Path) -> datatest_stable::Result<()> {
 
 fn test_spec(snapshot_name: &str, content: String) -> anyhow::Result<()> {
     let spec = oas3::from_reader(content.as_bytes())?;
-    let config = from_openapi_spec("Query", spec);
+    let config = Generator::default()
+        .inputs(vec![Input::OpenAPI { spec }])
+        .generate(true)?;
+
     insta::assert_snapshot!(snapshot_name, config.to_sdl());
     Ok(())
 }

@@ -8,7 +8,6 @@ mod openapi;
 mod proto;
 
 pub use from_json::{FromJsonGenerator, RequestSample};
-pub use from_openapi::from_openapi_spec;
 pub use generator::{Generator, Input};
 
 use crate::core::counter::{Count, Counter};

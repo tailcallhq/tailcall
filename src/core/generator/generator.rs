@@ -6,8 +6,9 @@ use serde_json::Value;
 use url::Url;
 
 use super::from_proto::from_proto;
-use super::{from_openapi_spec, FromJsonGenerator, NameGenerator, RequestSample};
+use super::{FromJsonGenerator, NameGenerator, RequestSample};
 use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
+use crate::core::generator::from_openapi::FromOpenAPIGenerator;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::transform::{Transform, TransformerOps};
@@ -87,6 +88,13 @@ impl Generator {
         Ok(config)
     }
 
+    /// Generates the configuration from the OpenAPI spec.
+    fn generate_from_openapi(&self, spec: OpenApiV3Spec) -> anyhow::Result<Config> {
+        Ok(FromOpenAPIGenerator::new(self.operation_name.clone(), spec)
+            .generate()
+            .to_result()?)
+    }
+
     /// Generated the actual configuratio from provided samples.
     pub fn generate(&self, use_transformers: bool) -> anyhow::Result<ConfigModule> {
         let mut config: Config = Config::default();
@@ -109,8 +117,7 @@ impl Generator {
                         .merge_right(self.generate_from_proto(proto_input, &self.operation_name)?);
                 }
                 Input::OpenAPI { spec } => {
-                    config =
-                        config.merge_right(from_openapi_spec(&self.operation_name, spec.clone()))
+                    config = config.merge_right(self.generate_from_openapi(spec.clone())?)
                 }
             }
         }

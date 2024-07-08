@@ -4,7 +4,7 @@ use crate::core::config::Config;
 use crate::core::generator::json;
 use crate::core::generator::openapi::QueryGenerator;
 use crate::core::transform::{Transform, TransformerOps};
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::Valid;
 
 pub struct FromOpenAPIGenerator {
     query: String,
@@ -27,15 +27,4 @@ impl Transform for FromOpenAPIGenerator {
             .pipe(QueryGenerator::new(self.query.as_str(), &self.spec))
             .transform(value)
     }
-}
-
-pub fn from_openapi_spec(query: &str, spec: OpenApiV3Spec) -> Config {
-    let config = Config::default();
-    let final_config = FromOpenAPIGenerator::new(query.to_string(), spec)
-        .transform(config)
-        .to_result();
-    final_config.unwrap_or_else(|e| {
-        tracing::warn!("Failed to generate config from OpenAPI spec: {}", e);
-        Config::default()
-    })
 }
