@@ -4,13 +4,13 @@ use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::ExecutionPlan;
 
-pub struct SynthBorrow<'a, ParsedValue: Clone, Input: Clone> {
-    selection: Vec<Field<Children<ParsedValue, Input>, ParsedValue, Input>>,
+pub struct SynthBorrow<'a> {
+    selection: Vec<Field<Children>>,
     store: Store<Value<'a>>,
 }
 
-impl<'a, ParsedValue: Clone, Input: Clone> SynthBorrow<'a, ParsedValue, Input> {
-    pub fn new(plan: ExecutionPlan<ParsedValue, Input>, store: Store<Value<'a>>) -> Self {
+impl<'a> SynthBorrow<'a> {
+    pub fn new(plan: ExecutionPlan, store: Store<Value<'a>>) -> Self {
         Self { selection: plan.into_children(), store }
     }
 
@@ -33,7 +33,7 @@ impl<'a, ParsedValue: Clone, Input: Clone> SynthBorrow<'a, ParsedValue, Input> {
     #[inline(always)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Children<ParsedValue, Input>, ParsedValue, Input>,
+        node: &'b Field<Children>,
         parent: Option<&'b Value>,
         index: Option<usize>,
     ) -> Value {
@@ -77,7 +77,7 @@ impl<'a, ParsedValue: Clone, Input: Clone> SynthBorrow<'a, ParsedValue, Input> {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Children<ParsedValue, Input>, ParsedValue, Input>,
+        node: &'b Field<Children>,
         parent: &'b Value,
         index: Option<usize>,
     ) -> Value {
@@ -86,7 +86,15 @@ impl<'a, ParsedValue: Clone, Input: Clone> SynthBorrow<'a, ParsedValue, Input> {
                 let mut ans = ObjectAsVec::default();
                 let children = node.children();
 
-                if let Some(children) = children {
+                if children.is_empty() {
+                    let val = obj.get(node.name.as_str());
+                    // if it's a leaf node, then push the value
+                    if let Some(val) = val {
+                        ans.insert(node.name.as_str(), val.to_owned());
+                    } else {
+                        return Value::Null;
+                    }
+                } else {
                     for child in children {
                         let val = obj.get(child.name.as_str());
                         if let Some(val) = val {
@@ -94,14 +102,6 @@ impl<'a, ParsedValue: Clone, Input: Clone> SynthBorrow<'a, ParsedValue, Input> {
                         } else {
                             ans.insert(child.name.as_str(), self.iter(child, None, index));
                         }
-                    }
-                } else {
-                    let val = obj.get(node.name.as_str());
-                    // if it's a leaf node, then push the value
-                    if let Some(val) = val {
-                        ans.insert(node.name.as_str(), val.to_owned());
-                    } else {
-                        return Value::Null;
                     }
                 }
                 Value::Object(ans)
@@ -126,7 +126,7 @@ mod tests {
 
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
-    use crate::core::jit::builder::{Builder, ConstBuilder};
+    use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
@@ -207,7 +207,7 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
 
-        let builder = ConstBuilder::new(&Blueprint::try_from(&config).unwrap(), doc);
+        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build().unwrap();
 
         let store = store
