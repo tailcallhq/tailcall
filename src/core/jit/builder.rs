@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
 use async_graphql::parser::types::{
-    DocumentOperations, ExecutableDocument, OperationType, Selection, SelectionSet,
+    DocumentOperations, ExecutableDocument, FragmentDefinition, OperationType, Selection,
+    SelectionSet,
 };
+use async_graphql::Positioned;
 
 use super::model::*;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
@@ -27,57 +29,87 @@ impl Builder {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn iter(
         &self,
         selection: &SelectionSet,
         type_of: &str,
         refs: Option<Parent>,
+        fragments: &HashMap<&str, &FragmentDefinition>,
     ) -> Vec<Field<Parent>> {
         let mut fields = vec![];
         for selection in &selection.items {
-            if let Selection::Field(gql_field) = &selection.node {
-                let field_name = gql_field.node.name.node.as_str();
-                let field_args = gql_field
-                    .node
-                    .arguments
-                    .iter()
-                    .map(|(k, v)| (k.node.as_str().to_string(), v.node.to_owned()))
-                    .collect::<HashMap<_, _>>();
+            match &selection.node {
+                Selection::Field(Positioned { node: gql_field, .. }) => {
+                    let field_name = gql_field.name.node.as_str();
+                    let field_args = gql_field
+                        .arguments
+                        .iter()
+                        .map(|(k, v)| (k.node.as_str().to_string(), v.node.to_owned()))
+                        .collect::<HashMap<_, _>>();
 
-                if let Some(field_def) = self.index.get_field(type_of, field_name) {
-                    let mut args = vec![];
-                    for (arg_name, value) in field_args {
-                        if let Some(arg) = field_def.get_arg(&arg_name) {
-                            let type_of = arg.of_type.clone();
-                            let id = ArgId::new(self.arg_id.next());
-                            let name = arg_name.clone();
-                            let default_value = arg
-                                .default_value
-                                .as_ref()
-                                .and_then(|v| v.to_owned().try_into().ok());
-                            args.push(Arg { id, name, type_of, value: Some(value), default_value });
+                    if let Some(field_def) = self.index.get_field(type_of, field_name) {
+                        let mut args = vec![];
+                        for (arg_name, value) in field_args {
+                            if let Some(arg) = field_def.get_arg(&arg_name) {
+                                let type_of = arg.of_type.clone();
+                                let id = ArgId::new(self.arg_id.next());
+                                let name = arg_name.clone();
+                                let default_value = arg
+                                    .default_value
+                                    .as_ref()
+                                    .and_then(|v| v.to_owned().try_into().ok());
+                                args.push(Arg {
+                                    id,
+                                    name,
+                                    type_of,
+                                    value: Some(value),
+                                    default_value,
+                                });
+                            }
                         }
+
+                        let type_of = match field_def {
+                            QueryField::Field((field_def, _)) => field_def.of_type.clone(),
+                            QueryField::InputField(field_def) => field_def.of_type.clone(),
+                        };
+
+                        let id = FieldId::new(self.field_id.next());
+                        let child_fields = self.iter(
+                            &gql_field.selection_set.node,
+                            type_of.name(),
+                            Some(Parent::new(id.clone())),
+                            fragments,
+                        );
+                        let name = field_name.to_owned();
+                        let ir = match field_def {
+                            QueryField::Field((field_def, _)) => field_def.resolver.clone(),
+                            _ => None,
+                        };
+                        fields.push(Field {
+                            id,
+                            name,
+                            ir,
+                            type_of,
+                            args,
+                            extensions: refs.clone(),
+                        });
+                        fields = fields.merge_right(child_fields);
                     }
-
-                    let type_of = match field_def {
-                        QueryField::Field((field_def, _)) => field_def.of_type.clone(),
-                        QueryField::InputField(field_def) => field_def.of_type.clone(),
-                    };
-
-                    let id = FieldId::new(self.field_id.next());
-                    let child_fields = self.iter(
-                        &gql_field.node.selection_set.node,
-                        type_of.name(),
-                        Some(Parent::new(id.clone())),
-                    );
-                    let name = field_name.to_owned();
-                    let ir = match field_def {
-                        QueryField::Field((field_def, _)) => field_def.resolver.clone(),
-                        _ => None,
-                    };
-                    fields.push(Field { id, name, ir, type_of, args, refs: refs.clone() });
-                    fields = fields.merge_right(child_fields);
                 }
+                Selection::FragmentSpread(Positioned { node: fragment_spread, .. }) => {
+                    if let Some(fragment) =
+                        fragments.get(fragment_spread.fragment_name.node.as_str())
+                    {
+                        fields.extend(self.iter(
+                            &fragment.selection_set.node,
+                            fragment.type_condition.node.on.node.as_str(),
+                            refs.clone(),
+                            fragments,
+                        ));
+                    }
+                }
+                _ => {}
             }
         }
 
@@ -94,10 +126,10 @@ impl Builder {
 
     pub fn build(&self) -> Result<ExecutionPlan, String> {
         let mut fields = Vec::new();
+        let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
-        for fragment in self.document.fragments.values() {
-            let on_type = fragment.node.type_condition.node.on.node.as_str();
-            fields.extend(self.iter(&fragment.node.selection_set.node, on_type, None));
+        for (name, fragment) in self.document.fragments.iter() {
+            fragments.insert(name.as_str(), &fragment.node);
         }
 
         match &self.document.operations {
@@ -106,7 +138,7 @@ impl Builder {
                     "Root Operation type not defined for {}",
                     single.node.ty
                 ))?;
-                fields.extend(self.iter(&single.node.selection_set.node, name, None));
+                fields.extend(self.iter(&single.node.selection_set.node, name, None, &fragments));
             }
             DocumentOperations::Multiple(multiple) => {
                 for single in multiple.values() {
@@ -114,7 +146,12 @@ impl Builder {
                         "Root Operation type not defined for {}",
                         single.node.ty
                     ))?;
-                    fields.extend(self.iter(&single.node.selection_set.node, name, None));
+                    fields.extend(self.iter(
+                        &single.node.selection_set.node,
+                        name,
+                        None,
+                        &fragments,
+                    ));
                 }
             }
         }
