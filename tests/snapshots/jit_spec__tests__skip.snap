@@ -3,48 +3,46 @@ source: tests/jit_spec.rs
 expression: data
 ---
 {
-  "data": {
-    "users": [
-      {
-        "id": 1,
-        "email": "Sincere@april.biz"
-      },
-      {
-        "id": 2,
-        "email": "Shanna@melissa.tv"
-      },
-      {
-        "id": 3,
-        "email": "Nathan@yesenia.net"
-      },
-      {
-        "id": 4,
-        "email": "Julianne.OConner@kory.org"
-      },
-      {
-        "id": 5,
-        "email": "Lucio_Hettinger@annie.ca"
-      },
-      {
-        "id": 6,
-        "email": "Karley_Dach@jasper.info"
-      },
-      {
-        "id": 7,
-        "email": "Telly.Hoeger@billy.biz"
-      },
-      {
-        "id": 8,
-        "email": "Sherwood@rosamond.me"
-      },
-      {
-        "id": 9,
-        "email": "Chaim_McDermott@dana.io"
-      },
-      {
-        "id": 10,
-        "email": "Rey.Padberg@karina.biz"
-      }
-    ]
-  }
+  "users": [
+    {
+      "id": 1,
+      "email": "Sincere@april.biz"
+    },
+    {
+      "id": 2,
+      "email": "Shanna@melissa.tv"
+    },
+    {
+      "id": 3,
+      "email": "Nathan@yesenia.net"
+    },
+    {
+      "id": 4,
+      "email": "Julianne.OConner@kory.org"
+    },
+    {
+      "id": 5,
+      "email": "Lucio_Hettinger@annie.ca"
+    },
+    {
+      "id": 6,
+      "email": "Karley_Dach@jasper.info"
+    },
+    {
+      "id": 7,
+      "email": "Telly.Hoeger@billy.biz"
+    },
+    {
+      "id": 8,
+      "email": "Sherwood@rosamond.me"
+    },
+    {
+      "id": 9,
+      "email": "Chaim_McDermott@dana.io"
+    },
+    {
+      "id": 10,
+      "email": "Rey.Padberg@karina.biz"
+    }
+  ]
 }
