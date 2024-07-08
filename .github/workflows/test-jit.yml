@@ -6,8 +6,6 @@ on:
       - main
   pull_request:
     types: [opened, reopened, synchronize]
-permissions:
-  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -57,6 +55,7 @@ jobs:
           RUST_BACKTRACE: 0
 
       - name: Show Test Output
+        if: ${{ failure() }}
         run: cat execution_spec_output.txt
 
       - name: Create Commit Comment
