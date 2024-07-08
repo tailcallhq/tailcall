@@ -217,6 +217,9 @@ cli = [
 # We generally want to interface via CLI and have V8 enabled, while running tests.
 default = ["cli", "js"]
 
+# Feature flag to force JIT engine inside integration tests
+force_jit = []
+
 
 [workspace]
 members = [
