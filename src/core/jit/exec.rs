@@ -20,9 +20,9 @@ pub struct Executor<Synth, IRExec> {
     exec: IRExec,
 }
 
-impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec>
+impl<'a, Input, Output, Error, Synth, Exec> Executor<Synth, Exec>
 where
-    Output: JsonLike<Output = Output> + Debug,
+    Output: JsonLike<Output<'a> = Output> + Sized + Debug,
     Synth: Synthesizer<Value = Result<Output, Error>>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
@@ -55,7 +55,7 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: JsonLike<Output = Output> + Debug,
+    Output: JsonLike<Output<'a> = Output> + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
     fn new(

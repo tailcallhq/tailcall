@@ -7,34 +7,41 @@ use serde_json_borrow::ObjectAsVec;
 use crate::core::json::JsonObjectLike;
 
 pub trait JsonLike {
-    type Output;
+    // TODO: rename Output to something else as its also used in inputs.
+    type Output<'a>
+    where
+        Self: 'a;
+
+    type Input;
+
     type Obj: JsonObjectLike;
 
     // Constructors
     fn default() -> Self;
-    fn new_array(arr: Vec<Self::Output>) -> Self;
+    fn new_array(arr: Vec<Self::Input>) -> Self;
+    fn new(value: &Self::Input) -> &Self;
 
     // Operators
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str>;
-    fn as_object_ok(&self) -> Result<&Self::Obj, &str>;
-    fn as_str_ok(&self) -> Result<&str, &str>;
-    fn as_string_ok(&self) -> Result<&str, &str>;
-    fn as_i64_ok(&self) -> Result<i64, &str>;
-    fn as_u64_ok(&self) -> Result<u64, &str>;
-    fn as_f64_ok(&self) -> Result<f64, &str>;
-    fn as_bool_ok(&self) -> Result<bool, &str>;
-    fn as_null_ok(&self) -> Result<(), &str>;
-    fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str>;
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output>;
-    fn get_key(&self, path: &str) -> Option<&Self::Output>;
-    fn new(value: &Self::Output) -> &Self;
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>>;
+    fn as_array_ok<'a>(&'a self) -> Result<&Vec<Self::Output<'a>>, &str>;
+    fn as_object_ok<'a>(&'a self) -> Result<&Self::Obj, &str>;
+    fn as_str_ok<'a>(&'a self) -> Result<&str, &str>;
+    fn as_string_ok<'a>(&'a self) -> Result<&str, &str>;
+    fn as_i64_ok<'a>(&'a self) -> Result<i64, &str>;
+    fn as_u64_ok<'a>(&'a self) -> Result<u64, &str>;
+    fn as_f64_ok<'a>(&'a self) -> Result<f64, &str>;
+    fn as_bool_ok<'a>(&'a self) -> Result<bool, &str>;
+    fn as_null_ok<'a>(&'a self) -> Result<(), &str>;
+    fn as_option_ok<'a>(&'a self) -> Result<Option<&Self::Output<'a>>, &str>;
+    fn get_path<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<&Self::Output<'a>>;
+    fn get_key<'a>(&'a self, path: &str) -> Option<&Self::Output<'a>>;
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output<'a>>>;
 }
 
 impl JsonLike for serde_json::Value {
-    type Output = serde_json::Value;
-    type Obj = serde_json::Map<String, Self::Output>;
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
+    type Output<'a> = serde_json::Value;
+    type Input = serde_json::Value;
+    type Obj = serde_json::Map<String, Self::Output<'static>>;
+    fn as_array_ok<'a>(&'a self) -> Result<&Vec<Self::Output<'a>>, &str> {
         self.as_array().ok_or("expected array")
     }
     fn as_str_ok(&self) -> Result<&str, &str> {
@@ -56,14 +63,14 @@ impl JsonLike for serde_json::Value {
         self.as_null().ok_or("expected null")
     }
 
-    fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str> {
+    fn as_option_ok<'a>(&'a self) -> Result<Option<&Self::Output<'a>>, &str> {
         match self {
             serde_json::Value::Null => Ok(None),
             _ => Ok(Some(self)),
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output> {
+    fn get_path<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<&Self::Output<'a>> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -78,11 +85,11 @@ impl JsonLike for serde_json::Value {
         Some(val)
     }
 
-    fn new(value: &Self::Output) -> &Self {
+    fn new<'a>(value: &'a Self::Output<'a>) -> &'a Self {
         value
     }
 
-    fn get_key(&self, path: &str) -> Option<&Self::Output> {
+    fn get_key<'a>(&'a self, path: &str) -> Option<&Self::Output<'a>> {
         match self {
             serde_json::Value::Object(map) => map.get(path),
             _ => None,
@@ -96,7 +103,7 @@ impl JsonLike for serde_json::Value {
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output<'a>>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
@@ -108,20 +115,21 @@ impl JsonLike for serde_json::Value {
         }
     }
 
-    fn default() -> Self::Output {
+    fn default() -> Self {
         Default::default()
     }
 
-    fn new_array(arr: Vec<Self::Output>) -> Self::Output {
+    fn new_array<'a>(arr: Vec<Self::Output<'a>>) -> Self {
         serde_json::Value::Array(arr)
     }
 }
 
 impl JsonLike for async_graphql::Value {
-    type Output = async_graphql::Value;
-    type Obj = IndexMap<async_graphql::Name, Self::Output>;
+    type Output<'a> = async_graphql::Value;
+    type Input = async_graphql::Value;
+    type Obj = IndexMap<async_graphql::Name, async_graphql::Value>;
 
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
+    fn as_array_ok<'a>(&'a self) -> Result<&Vec<Self::Output<'a>>, &str> {
         match self {
             ConstValue::List(seq) => Ok(seq),
             _ => Err("array"),
@@ -170,14 +178,14 @@ impl JsonLike for async_graphql::Value {
         }
     }
 
-    fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str> {
+    fn as_option_ok<'a>(&'a self) -> Result<Option<&Self::Output<'a>>, &str> {
         match self {
             ConstValue::Null => Ok(None),
             _ => Ok(Some(self)),
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output> {
+    fn get_path<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<&Self::Output<'a>> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -192,11 +200,11 @@ impl JsonLike for async_graphql::Value {
         Some(val)
     }
 
-    fn new(value: &Self::Output) -> &Self {
+    fn new<'a>(value: &'a Self::Output<'a>) -> &'a Self {
         value
     }
 
-    fn get_key(&self, path: &str) -> Option<&Self::Output> {
+    fn get_key<'a>(&'a self, path: &str) -> Option<&Self::Output<'a>> {
         match self {
             ConstValue::Object(map) => map.get(&async_graphql::Name::new(path)),
             _ => None,
@@ -209,7 +217,7 @@ impl JsonLike for async_graphql::Value {
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output<'a>>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
@@ -221,28 +229,30 @@ impl JsonLike for async_graphql::Value {
         }
     }
 
-    fn default() -> Self::Output {
+    fn default() -> Self {
         Default::default()
     }
 
-    fn new_array(arr: Vec<Self::Output>) -> Self::Output {
+    fn new_array<'a>(arr: Vec<Self::Output<'a>>) -> Self {
         ConstValue::List(arr)
     }
 }
 
 impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
-    type Output = serde_json_borrow::Value<'ctx>;
+    type Output<'a> = serde_json_borrow::Value<'a> where 'ctx: 'a;
+    type Input = serde_json_borrow::Value<'ctx>;
+
     type Obj = ObjectAsVec<'ctx>;
 
-    fn default() -> Self::Output {
+    fn default() -> Self {
         serde_json_borrow::Value::Null
     }
 
-    fn new_array(arr: Vec<Self::Output>) -> Self::Output {
+    fn new_array(arr: Vec<Self::Input>) -> Self {
         serde_json_borrow::Value::Array(arr)
     }
 
-    fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
+    fn as_array_ok<'a>(&'a self) -> Result<&Vec<Self::Output<'a>>, &str> {
         match self {
             serde_json_borrow::Value::Array(arr) => Ok(arr),
             _ => Err("expected array"),
@@ -305,26 +315,26 @@ impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
         }
     }
 
-    fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str> {
+    fn as_option_ok<'a>(&'a self) -> Result<Option<&Self::Output<'a>>, &str> {
         match self {
             serde_json_borrow::Value::Null => Ok(None),
             _ => Ok(Some(self)),
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, _path: &[T]) -> Option<&Self::Output> {
+    fn get_path<'a, T: AsRef<str>>(&'a self, _path: &[T]) -> Option<&Self::Output<'a>> {
         todo!()
     }
 
-    fn get_key(&self, _path: &str) -> Option<&Self::Output> {
+    fn get_key<'a>(&'a self, _path: &str) -> Option<&Self::Output<'a>> {
         todo!()
     }
 
-    fn new(value: &Self::Output) -> &Self {
+    fn new<'a>(value: &'a Self::Input) -> &'a Self {
         value
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output<'a>>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }

@@ -20,12 +20,12 @@ use crate::core::valid::Validator;
 /// and benchmarks.
 pub struct JsonPlaceholder;
 
-pub trait SynthExt<Value: JsonLike<Output = Value>> {
+pub trait SynthExt<'a, Value: JsonLike<Output<'a> = Value>> {
     fn init(plan: ExecutionPlan, data: Vec<(FieldId, Data<Value>)>) -> Self;
-    fn synthesize(&'static self) -> jit::Result<Value>;
+    fn synthesize(&'a self) -> jit::Result<Value>;
 }
 
-impl SynthExt<ConstValue> for Synth {
+impl<'a> SynthExt<'a, ConstValue> for Synth {
     fn init(plan: ExecutionPlan, data: Vec<(FieldId, Data<ConstValue>)>) -> Self {
         let store = data
             .into_iter()
@@ -37,12 +37,12 @@ impl SynthExt<ConstValue> for Synth {
         Synth::new(plan, store)
     }
 
-    fn synthesize(&'static self) -> jit::Result<ConstValue> {
+    fn synthesize(&'a self) -> jit::Result<ConstValue> {
         self.synthesize()
     }
 }
-impl SynthExt<serde_json_borrow::Value<'static>> for SynthBorrow<'static> {
-    fn init(plan: ExecutionPlan, data: Vec<(FieldId, Data<BorrowedValue<'static>>)>) -> Self {
+impl<'a> SynthExt<'a, serde_json_borrow::Value<'a>> for SynthBorrow<'a> {
+    fn init(plan: ExecutionPlan, data: Vec<(FieldId, Data<BorrowedValue<'a>>)>) -> Self {
         let store = data
             .into_iter()
             .fold(Store::new(), |mut store, (id, data)| {
@@ -52,7 +52,7 @@ impl SynthExt<serde_json_borrow::Value<'static>> for SynthBorrow<'static> {
         SynthBorrow::new(plan, store)
     }
 
-    fn synthesize(&'static self) -> jit::Result<BorrowedValue<'static>> {
+    fn synthesize(&'a self) -> jit::Result<BorrowedValue<'a>> {
         Ok(self.synthesize())
     }
 }
@@ -116,7 +116,10 @@ impl JsonPlaceholder {
         builder.build().unwrap()
     }
 
-    fn data<'a, Value: JsonLike<Output = Value> + Deserialize<'a> + Clone + 'static>(
+    fn data<
+        'a,
+        Value: JsonLike<Input = Value, Output<'a> = Value> + Deserialize<'a> + Clone + 'static,
+    >(
         plan: &ExecutionPlan,
         data: TestData<Value>,
     ) -> Vec<(FieldId, Data<Value>)> {
@@ -141,8 +144,8 @@ impl JsonPlaceholder {
 
     pub fn init<
         'a,
-        Value: JsonLike<Output = Value> + Deserialize<'a> + Clone + 'static,
-        T: SynthExt<Value>,
+        Value: JsonLike<Input = Value, Output<'a> = Value> + Deserialize<'a> + Clone + 'static,
+        T: SynthExt<'a, Value>,
     >(
         query: &str,
     ) -> Rc<T> {
