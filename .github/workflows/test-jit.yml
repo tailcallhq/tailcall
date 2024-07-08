@@ -57,7 +57,8 @@ jobs:
         env:
           RUST_BACKTRACE: 0
 
-      - name: Create Commit Comment
-        uses: peter-evans/commit-comment@v3
+      - name: "Upload Artifact"
+        uses: actions/upload-artifact@v4
         with:
-          body-path: execution_spec_output.txt
+          name: output
+          path: execution_spec_output.txt
