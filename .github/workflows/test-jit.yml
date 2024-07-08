@@ -17,7 +17,7 @@ jobs:
     uses: ./.github/workflows/build_matrix.yml
 
   test:
-    name: Run Tests on ${{ matrix.build }}
+    name: Run JIT tests on ${{ matrix.build }}
     runs-on: ${{ matrix.os || '-latest' }}
     needs: setup_build_matrix
     strategy:
