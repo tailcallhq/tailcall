@@ -126,7 +126,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_arguments_default_value() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new("query {user2 {id name}}");
+        let request = Request::new("query {post {id title}}");
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
