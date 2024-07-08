@@ -18,6 +18,12 @@ use crate::core::merge_right::MergeRight;
 /// comprehensive set of server configurations. It dictates how the server
 /// behaves and helps tune tailcall for various use-cases.
 pub struct Server {
+    // The `enableJIT` option activates Just-In-Time (JIT) compilation. When set to true, it
+    // optimizes execution of each incoming request independently, resulting in significantly
+    // better performance in most cases.
+    #[serde(default, skip_serializing_if = "is_default", rename = "enableJIT")]
+    pub enable_jit: Option<bool>,
+
     #[serde(default, skip_serializing_if = "is_default")]
     /// `apolloTracing` exposes GraphQL query performance data, including
     /// execution time of queries and individual resolvers.
@@ -210,6 +216,9 @@ impl Server {
 
     pub fn get_dedupe(&self) -> bool {
         self.dedupe.unwrap_or(false)
+    }
+    pub fn enable_jit(&self) -> bool {
+        self.enable_jit.unwrap_or(false)
     }
 }
 
