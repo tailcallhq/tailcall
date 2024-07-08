@@ -240,12 +240,9 @@ mod tests {
         let doc = async_graphql::parser::parse_query(query).unwrap();
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
+        let vars = Variables::new();
 
-        let builder = Builder::new(
-            &Blueprint::try_from(&config).unwrap(),
-            doc,
-            Variables::new(),
-        );
+        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc, &vars);
         let plan = builder.build().unwrap();
 
         let store = store

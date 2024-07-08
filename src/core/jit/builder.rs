@@ -13,19 +13,19 @@ use crate::core::jit::Variables;
 use crate::core::json::JsonLike;
 use crate::core::merge_right::MergeRight;
 
-pub struct Builder {
+pub struct Builder<'a> {
     pub index: Index,
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: ExecutableDocument,
-    variables: Variables<async_graphql_value::ConstValue>,
+    variables: &'a Variables<async_graphql_value::ConstValue>,
 }
 
-impl Builder {
+impl<'a> Builder<'a> {
     pub fn new(
         blueprint: &Blueprint,
         document: ExecutableDocument,
-        variables: Variables<async_graphql_value::ConstValue>,
+        variables: &'a Variables<async_graphql_value::ConstValue>,
     ) -> Self {
         let index = blueprint.index();
         Self {
@@ -45,15 +45,9 @@ impl Builder {
                 _ => continue,
             };
 
+            // here we skip iff it is a constant variable i.e., false.
             if let Some(condition_input) = directive.node.get_argument("if") {
                 let condition = match &condition_input.node {
-                    async_graphql_value::Value::Variable(name) => {
-                        let st = name.as_str();
-                        self.variables
-                            .get(st)
-                            .and_then(|v| v.as_bool_ok().ok())
-                            .unwrap_or_default()
-                    }
                     async_graphql_value::Value::String(st) => self
                         .variables
                         .get(st)
@@ -223,10 +217,8 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-
-        Builder::new(&blueprint, document, Variables::new())
-            .build()
-            .unwrap()
+        let vars = Variables::new();
+        Builder::new(&blueprint, document, &vars).build().unwrap()
     }
 
     #[tokio::test]
