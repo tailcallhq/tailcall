@@ -35,5 +35,5 @@ Starts a transfer request to move funds within your balance platform, or send fu
 
 To use this endpoint, you need an additional role for your API credential and transfers must be enabled for the source balance account. Your Adyen contact will set these up for you.
   """
-  postTransfers(WWW-Authenticate: String): TransferOld @http(baseURL: "https://balanceplatform-api-test.adyen.com/btl/v1", method: "POST", path: "/transfers", query: [{key: "WWW-Authenticate", value: "{{.args.WWW-Authenticate}}"}])
+  postTransfers(wwwAuthenticate: String): TransferOld @http(baseURL: "https://balanceplatform-api-test.adyen.com/btl/v1", method: "POST", path: "/transfers", query: [{key: "wwwAuthenticate", value: "{{.args.wwwAuthenticate}}"}])
 }

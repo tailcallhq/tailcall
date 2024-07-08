@@ -198,7 +198,7 @@ impl<'a> Transform for SingleQueryGenerator<'a> {
                     })
                     .map(|(param, (is_list, name))| {
                         (
-                            param.name,
+                            param.name.to_case(Case::Camel),
                             Arg {
                                 type_of: name,
                                 list: is_list,
