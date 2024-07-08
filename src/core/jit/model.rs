@@ -2,6 +2,8 @@ use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::model::IR;
 
+type FieldChildren<ParsedValue, Input> = Field<Children<ParsedValue, Input>, ParsedValue, Input>;
+
 #[derive(Debug, Clone)]
 pub struct Arg<ParsedValue, Input> {
     pub id: ArgId,
@@ -54,34 +56,16 @@ pub struct Field<A: Clone, ParsedValue: Clone, Input: Clone> {
     pub extensions: Option<A>,
 }
 
-impl<ParsedValue: Clone, Input: Clone> Field<Children<ParsedValue, Input>, ParsedValue, Input> {
-    #[allow(clippy::type_complexity)]
-    pub fn children(
-        &self,
-    ) -> Option<&Vec<Field<Children<ParsedValue, Input>, ParsedValue, Input>>> {
+impl<ParsedValue: Clone, Input: Clone> FieldChildren<ParsedValue, Input> {
+    pub fn children(&self) -> Option<&Vec<FieldChildren<ParsedValue, Input>>> {
         self.extensions.as_ref().map(|Children(children)| children)
     }
 
-    pub fn children_iter(
-        &self,
-    ) -> impl Iterator<Item = &Field<Children<ParsedValue, Input>, ParsedValue, Input>> {
-        ChildrenIter(self.children().map(|children| children.iter()))
-    }
-}
-
-#[allow(clippy::type_complexity)]
-pub struct ChildrenIter<'a, ParsedValue: Clone, Input: Clone>(
-    Option<std::slice::Iter<'a, Field<Children<ParsedValue, Input>, ParsedValue, Input>>>,
-);
-
-impl<'a, ParsedValue: Clone, Input: Clone> Iterator for ChildrenIter<'a, ParsedValue, Input> {
-    type Item = &'a Field<Children<ParsedValue, Input>, ParsedValue, Input>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match &mut self.0 {
-            Some(iter) => iter.next(),
-            None => None,
-        }
+    pub fn children_iter(&self) -> impl Iterator<Item = &FieldChildren<ParsedValue, Input>> {
+        self.children()
+            .map(|children| children.iter())
+            .into_iter()
+            .flatten()
     }
 }
 
@@ -93,7 +77,7 @@ impl<ParsedValue: Clone, Input: Clone> Field<Parent, ParsedValue, Input> {
     fn into_children(
         self,
         fields: &[Field<Parent, ParsedValue, Input>],
-    ) -> Field<Children<ParsedValue, Input>, ParsedValue, Input> {
+    ) -> FieldChildren<ParsedValue, Input> {
         let mut children = Vec::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
