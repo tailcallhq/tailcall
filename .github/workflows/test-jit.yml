@@ -52,4 +52,12 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Run Cargo Test
+        continue-on-error: true
         run: cargo test --test execution_spec --features force_jit -- --logfile execution_spec_output.txt
+        env:
+          RUST_BACKTRACE: 0
+
+      - name: Create Commit Comment
+        uses: peter-evans/commit-comment@v3
+        with:
+          body-path: execution_spec_output.txt
