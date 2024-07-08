@@ -1,5 +1,5 @@
-use async_graphql::{Name, Value};
-use async_graphql_value::ConstValue;
+use async_graphql::Name;
+use async_graphql_value::{ConstValue, Value};
 use indexmap::IndexMap;
 
 use super::super::Result;
@@ -11,19 +11,19 @@ use crate::core::json::JsonLike;
 
 pub struct Synth {
     selection:
-        Vec<Field<Children<async_graphql_value::Value, Value>, async_graphql_value::Value, Value>>,
-    store: Store<Result<Value>>,
+        Vec<Field<Children<Value, ConstValue>, Value, ConstValue>>,
+    store: Store<Result<ConstValue>>,
 }
 
 impl Synth {
     pub fn new(
-        plan: ExecutionPlan<async_graphql_value::Value, Value>,
-        store: Store<Result<Value>>,
+        plan: ExecutionPlan<Value, ConstValue>,
+        store: Store<Result<ConstValue>>,
     ) -> Self {
         Self { selection: plan.into_children(), store }
     }
 
-    pub fn synthesize(&self) -> Result<Value> {
+    pub fn synthesize(&self) -> Result<ConstValue> {
         let mut data = IndexMap::default();
 
         for child in self.selection.iter() {
@@ -31,11 +31,11 @@ impl Synth {
             data.insert(Name::new(child.name.as_str()), val);
         }
 
-        Ok(Value::Object(data))
+        Ok(ConstValue::Object(data))
     }
 
     /// checks if type_of is an array and value is an array
-    fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
+    fn is_array(type_of: &crate::core::blueprint::Type, value: &ConstValue) -> bool {
         type_of.is_list() == value.as_array_ok().is_ok()
     }
 
@@ -43,19 +43,19 @@ impl Synth {
     fn iter<'b>(
         &'b self,
         node: &'b Field<
-            Children<async_graphql_value::Value, Value>,
-            async_graphql_value::Value,
+            Children<Value, ConstValue>,
             Value,
+            ConstValue,
         >,
-        parent: Option<&'b Value>,
+        parent: Option<&'b ConstValue>,
         data_path: &DataPath,
-    ) -> Result<Value> {
+    ) -> Result<ConstValue> {
         // TODO: this implementation prefer parent value over value in the store
         // that's opposite to the way async_graphql engine works in tailcall
         match parent {
             Some(parent) => {
                 if !Self::is_array(&node.type_of, parent) {
-                    return Ok(Value::Null);
+                    return Ok(ConstValue::Null);
                 }
                 self.iter_inner(node, parent, data_path)
             }
@@ -71,7 +71,7 @@ impl Synth {
                                 Data::Multiple(v) => {
                                     data = &v[index];
                                 }
-                                _ => return Ok(Value::Null),
+                                _ => return Ok(ConstValue::Null),
                             }
                         }
 
@@ -79,14 +79,14 @@ impl Synth {
                             Data::Single(val) => self.iter(node, Some(&val.clone()?), data_path),
                             _ => {
                                 // TODO: should bailout instead of returning Null
-                                Ok(Value::Null)
+                                Ok(ConstValue::Null)
                             }
                         }
                     }
                     None => {
                         // IR exists, so there must be a value.
                         // if there is no value then we must return Null
-                        Ok(Value::Null)
+                        Ok(ConstValue::Null)
                     }
                 }
             }
@@ -96,15 +96,15 @@ impl Synth {
     fn iter_inner<'b>(
         &'b self,
         node: &'b Field<
-            Children<async_graphql_value::Value, Value>,
-            async_graphql_value::Value,
+            Children<Value, ConstValue>,
             Value,
+            ConstValue,
         >,
-        parent: &'b Value,
+        parent: &'b ConstValue,
         data_path: &'b DataPath,
-    ) -> Result<Value> {
+    ) -> Result<ConstValue> {
         match parent {
-            Value::Object(obj) => {
+            ConstValue::Object(obj) => {
                 let mut ans = IndexMap::default();
                 let children = node.children();
 
@@ -129,18 +129,18 @@ impl Synth {
                     if let Some(val) = val {
                         ans.insert(Name::new(node.name.as_str()), val.to_owned());
                     } else {
-                        return Ok(Value::Null);
+                        return Ok(ConstValue::Null);
                     }
                 }
-                Ok(Value::Object(ans))
+                Ok(ConstValue::Object(ans))
             }
-            Value::List(arr) => {
+            ConstValue::List(arr) => {
                 let mut ans = vec![];
                 for (i, val) in arr.iter().enumerate() {
                     let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
                     ans.push(val)
                 }
-                Ok(Value::List(ans))
+                Ok(ConstValue::List(ans))
             }
             val => Ok(val.clone()), // cloning here would be cheaper than cloning whole value
         }
@@ -148,17 +148,17 @@ impl Synth {
 }
 
 pub struct SynthConst {
-    plan: ExecutionPlan<async_graphql_value::Value, Value>,
+    plan: ExecutionPlan<Value, ConstValue>,
 }
 
 impl SynthConst {
-    pub fn new(plan: ExecutionPlan<async_graphql_value::Value, ConstValue>) -> Self {
+    pub fn new(plan: ExecutionPlan<Value, ConstValue>) -> Self {
         Self { plan }
     }
 }
 
 impl Synthesizer for SynthConst {
-    type Value = Result<Value>;
+    type Value = Result<ConstValue>;
 
     fn synthesize(self, store: Store<Self::Value>) -> Self::Value {
         Synth::new(self.plan, store).synthesize()

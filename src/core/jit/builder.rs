@@ -5,7 +5,7 @@ use async_graphql::parser::types::{
     SelectionSet,
 };
 use async_graphql::Positioned;
-use async_graphql_value::ConstValue;
+use async_graphql_value::{ConstValue, Value};
 
 use super::model::*;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
@@ -24,8 +24,8 @@ where
     fn from_parsed_value(value: ParsedValue) -> Option<Self>;
 }
 
-impl FromParsedValue<async_graphql_value::Value> for ConstValue {
-    fn from_parsed_value(value: async_graphql_value::Value) -> Option<Self> {
+impl FromParsedValue<Value> for ConstValue {
+    fn from_parsed_value(value: Value) -> Option<Self> {
         value.into_const()
     }
 }
@@ -55,7 +55,7 @@ impl ConstBuilder {
         type_of: &str,
         refs: Option<Parent>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Parent, async_graphql_value::Value, async_graphql::Value>> {
+    ) -> Vec<Field<Parent, Value, ConstValue>> {
         let mut fields = vec![];
         for selection in &selection.items {
             match &selection.node {
@@ -73,9 +73,7 @@ impl ConstBuilder {
                                 if let Some(default_value) = arg_value.default_value.as_ref() {
                                     if !field_args.contains_key(arg_name) {
                                         if let Ok(default_value) =
-                                            async_graphql_value::Value::from_json(
-                                                default_value.clone(),
-                                            )
+                                            Value::from_json(default_value.clone())
                                         {
                                             field_args.insert(
                                                 dbg!(arg_name.clone()),
@@ -163,8 +161,8 @@ impl ConstBuilder {
     }
 }
 
-impl Builder<async_graphql_value::Value, ConstValue> for ConstBuilder {
-    fn build(&self) -> Result<ExecutionPlan<async_graphql_value::Value, ConstValue>, String> {
+impl Builder<Value, ConstValue> for ConstBuilder {
+    fn build(&self) -> Result<ExecutionPlan<Value, ConstValue>, String> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
@@ -212,9 +210,7 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(
-        query: impl AsRef<str>,
-    ) -> ExecutionPlan<async_graphql_value::Value, async_graphql::Value> {
+    fn plan(query: impl AsRef<str>) -> ExecutionPlan<Value, ConstValue> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();

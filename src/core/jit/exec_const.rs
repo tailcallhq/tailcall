@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_graphql::Value;
+use async_graphql_value::{ConstValue, Value};
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
@@ -13,16 +13,16 @@ use crate::core::ir::EvalContext;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
-    plan: ExecutionPlan<async_graphql_value::Value, Value>,
+    plan: ExecutionPlan<Value, ConstValue>,
     app_ctx: Arc<AppContext>,
 }
 
 impl ConstValueExecutor {
-    pub fn new(request: &Request<Value>, app_ctx: Arc<AppContext>) -> Result<Self> {
+    pub fn new(request: &Request<ConstValue>, app_ctx: Arc<AppContext>) -> Result<Self> {
         Ok(Self { plan: request.try_new(&app_ctx.blueprint)?, app_ctx })
     }
 
-    pub async fn execute(self, request: Request<Value>) -> Response<Value, Error> {
+    pub async fn execute(self, request: Request<ConstValue>) -> Response<ConstValue, Error> {
         let ctx = RequestContext::from(self.app_ctx.as_ref());
         let exec = ConstValueExec::new(ctx);
         let plan = self.plan;
@@ -45,15 +45,15 @@ impl ConstValueExec {
 
 #[async_trait::async_trait]
 impl IRExecutor for ConstValueExec {
-    type Input = Value;
-    type Output = Value;
+    type Input = ConstValue;
+    type Output = ConstValue;
     type Error = Error;
 
     async fn execute<'a>(
         &'a self,
         ir: &'a IR,
         ctx: &'a Context<'a, Self::Input, Self::Output>,
-    ) -> Result<Value> {
+    ) -> Result<Self::Output> {
         let req_context = &self.req_context;
         let mut ctx = EvalContext::new(req_context, ctx);
         Ok(ir.eval(&mut ctx).await?)

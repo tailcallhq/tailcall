@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use async_graphql_value::{ConstValue, Value};
 use derive_setters::Setters;
 use serde::Deserialize;
 
@@ -8,24 +9,24 @@ use crate::core::blueprint::Blueprint;
 use crate::core::jit::builder::Builder;
 
 #[derive(Debug, Deserialize, Setters)]
-pub struct Request<Value> {
+pub struct Request<V> {
     #[serde(default)]
     pub query: String,
     #[serde(default, rename = "operationName")]
     pub operation_name: Option<String>,
     #[serde(default)]
-    pub variables: HashMap<String, Value>,
+    pub variables: HashMap<String, V>,
     #[serde(default)]
-    pub extensions: HashMap<String, Value>,
+    pub extensions: HashMap<String, V>,
 }
 
-impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
+impl From<async_graphql::Request> for Request<ConstValue> {
     fn from(value: async_graphql::Request) -> Self {
         Self {
             query: value.query,
             operation_name: value.operation_name,
             variables: match value.variables.into_value() {
-                async_graphql_value::ConstValue::Object(val) => {
+                ConstValue::Object(val) => {
                     HashMap::from_iter(val.into_iter().map(|(k, v)| (k.to_string(), v)))
                 }
                 _ => HashMap::new(),
@@ -35,11 +36,11 @@ impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
     }
 }
 
-impl<Value> Request<Value> {
+impl<V> Request<V> {
     pub fn try_new(
         &self,
         blueprint: &Blueprint,
-    ) -> Result<ExecutionPlan<async_graphql_value::Value, async_graphql::Value>> {
+    ) -> Result<ExecutionPlan<Value, ConstValue>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = ConstBuilder::new(blueprint, doc);
         builder.build().map_err(Error::BuildError)

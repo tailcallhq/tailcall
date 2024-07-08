@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use async_graphql::{Name, SelectionField, ServerError};
+use async_graphql_value::ConstValue;
 use derive_getters::Getters;
 
 use super::Request;
@@ -11,7 +13,7 @@ pub struct Context<'a, Input, Output> {
     request: &'a Request<Input>,
     value: Option<&'a Output>,
     args: Option<&'a indexmap::IndexMap<&'a str, Input>>,
-    arg_const_value: Option<Arc<indexmap::IndexMap<async_graphql::Name, async_graphql::Value>>>,
+    arg_const_value: Option<Arc<indexmap::IndexMap<Name, ConstValue>>>,
 }
 
 impl<'a, Input, Output> Clone for Context<'a, Input, Output> {
@@ -41,12 +43,12 @@ impl<'a, Input, Output> Context<'a, Input, Output> {
 
     pub fn with_args(&self, args: &'a indexmap::IndexMap<&str, Input>) -> Self
     where
-        async_graphql::Value: From<Input>,
+        ConstValue: From<Input>,
         Input: Clone,
     {
         let mut map = indexmap::IndexMap::new();
         for (key, value) in args.iter() {
-            map.insert(async_graphql::Name::new(key), value.clone().into());
+            map.insert(Name::new(key), value.clone().into());
         }
         Self {
             request: self.request,
@@ -57,16 +59,16 @@ impl<'a, Input, Output> Context<'a, Input, Output> {
     }
 }
 
-impl<'a> ResolverContextLike for Context<'a, async_graphql::Value, async_graphql::Value> {
-    fn value(&self) -> Option<&async_graphql::Value> {
+impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
+    fn value(&self) -> Option<&ConstValue> {
         self.value
     }
 
-    fn args(&self) -> Option<&indexmap::IndexMap<async_graphql::Name, async_graphql::Value>> {
+    fn args(&self) -> Option<&indexmap::IndexMap<Name, ConstValue>> {
         self.arg_const_value.as_ref().map(Arc::as_ref)
     }
 
-    fn field(&self) -> Option<async_graphql::SelectionField> {
+    fn field(&self) -> Option<SelectionField> {
         todo!()
     }
 
@@ -74,7 +76,7 @@ impl<'a> ResolverContextLike for Context<'a, async_graphql::Value, async_graphql
         todo!()
     }
 
-    fn add_error(&self, _error: async_graphql::ServerError) {
+    fn add_error(&self, _error: ServerError) {
         todo!()
     }
 }
