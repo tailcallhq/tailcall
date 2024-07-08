@@ -15,9 +15,11 @@ mod response;
 // NOTE: Only used in tests and benchmarks
 mod builder;
 pub mod common;
+mod graphql_executor;
 
 // Public Exports
 pub use error::*;
 pub use exec_const::*;
+pub use graphql_executor::*;
 pub use request::*;
 pub use response::*;
