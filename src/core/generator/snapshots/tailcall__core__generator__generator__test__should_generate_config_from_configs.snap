@@ -6,27 +6,52 @@ schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://jsonp
   query: Query
 }
 
+type Album {
+  id: Int!
+  photos: [Photo] @http(path: "/albums/{{.value.id}}/photos?_limit=3")
+  title: Int
+  userId: Int!
+}
+
+type Comment {
+  body: String!
+  email: String!
+  id: Int!
+  name: String!
+  title: String! @expr(body: "{{.value.email}}: {{.value.name}}")
+}
+
+type Photo {
+  albumId: Int!
+  combinedId: String! @expr(body: "Album: {{.value.albumId}}, photo: {{.value.id}}")
+  id: Int!
+  title: String!
+}
+
 type Post {
   body: String!
+  comments: [Comment] @http(path: "/posts/{{.value.id}}/comments")
   id: Int!
   title: String!
   user: User @http(path: "/users/{{.value.userId}}")
   userId: Int!
+  users: [User] @http(path: "/users")
 }
 
 type Query {
   post(id: Int!): Post @http(path: "/posts/{{.args.id}}")
-  posts: [Post] @http(path: "/posts")
+  posts: [Post] @http(path: "/posts?_limit=11")
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
   user2(id: Int = 1): User @http(path: "/users/{{.args.id}}")
   users: [User] @http(path: "/users")
 }
 
 type User {
+  albums: [Album] @http(path: "/users/{{.value.id}}/albums?_limit=2")
+  blog: String @expr(body: "https://test.blog/users/website/{{.value.username}}")
   email: String!
   id: Int!
   name: String!
   phone: String
   username: String!
-  website: String @expr(body: "/users/website/{{.value.username}}")
 }

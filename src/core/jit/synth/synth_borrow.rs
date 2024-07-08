@@ -22,9 +22,7 @@ impl<'a, ParsedValue: Clone, Input: Clone> SynthBorrow<'a, ParsedValue, Input> {
             data.insert(child.name.as_str(), val);
         }
 
-        let mut output = ObjectAsVec::default();
-        output.insert("data", Value::Object(data));
-        Value::Object(output)
+        Value::Object(data)
     }
 
     /// checks if type_of is an array and value is an array
@@ -61,17 +59,7 @@ impl<'a, ParsedValue: Clone, Input: Clone> SynthBorrow<'a, ParsedValue, Input> {
                                 }
                                 self.iter(node, Some(val), None)
                             }
-                            Data::Multiple(list) => {
-                                if let Some(i) = index {
-                                    match list.get(i) {
-                                        Some(val) => self.iter(node, Some(val), None),
-                                        None => Value::Null,
-                                    }
-                                } else {
-                                    Value::Null
-                                }
-                            }
-                            Data::Pending => {
+                            _ => {
                                 // TODO: should bailout instead of returning Null
                                 Value::Null
                             }
@@ -198,10 +186,15 @@ mod tests {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
-                TestData::UsersData => Data::Multiple(vec![
-                    serde_json::from_str(USER1).unwrap(),
-                    serde_json::from_str(USER2).unwrap(),
-                ]),
+                TestData::UsersData => Data::Multiple(
+                    vec![
+                        Data::Single(serde_json::from_str(USER1).unwrap()),
+                        Data::Single(serde_json::from_str(USER2).unwrap()),
+                    ]
+                        .into_iter()
+                        .enumerate()
+                        .collect(),
+                ),
                 TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
             }
         }
@@ -219,8 +212,8 @@ mod tests {
 
         let store = store
             .into_iter()
-            .fold(Store::new(plan.size()), |mut store, (id, data)| {
-                store.set(id, data);
+            .fold(Store::new(), |mut store, (id, data)| {
+                store.set_data(id, data);
                 store
             });
 
@@ -301,7 +294,7 @@ mod tests {
     #[test]
     fn test_json_placeholder() {
         let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
-        let val = synth.synthesize();
+        let val = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }

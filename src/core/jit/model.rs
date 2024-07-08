@@ -51,7 +51,7 @@ pub struct Field<A: Clone, ParsedValue: Clone, Input: Clone> {
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
     pub args: Vec<Arg<ParsedValue, Input>>,
-    pub refs: Option<A>,
+    pub extensions: Option<A>,
 }
 
 impl<ParsedValue: Clone, Input: Clone> Field<Children<ParsedValue, Input>, ParsedValue, Input> {
@@ -59,7 +59,7 @@ impl<ParsedValue: Clone, Input: Clone> Field<Children<ParsedValue, Input>, Parse
     pub fn children(
         &self,
     ) -> Option<&Vec<Field<Children<ParsedValue, Input>, ParsedValue, Input>>> {
-        self.refs.as_ref().map(|Children(children)| children)
+        self.extensions.as_ref().map(|Children(children)| children)
     }
 
     pub fn children_iter(
@@ -87,7 +87,7 @@ impl<'a, ParsedValue: Clone, Input: Clone> Iterator for ChildrenIter<'a, ParsedV
 
 impl<ParsedValue: Clone, Input: Clone> Field<Parent, ParsedValue, Input> {
     fn parent(&self) -> Option<&FieldId> {
-        self.refs.as_ref().map(|Parent(id)| id)
+        self.extensions.as_ref().map(|Parent(id)| id)
     }
 
     fn into_children(
@@ -115,7 +115,7 @@ impl<ParsedValue: Clone, Input: Clone> Field<Parent, ParsedValue, Input> {
             ir: self.ir,
             type_of: self.type_of,
             args: self.args,
-            refs,
+            extensions: refs,
         }
     }
 }
@@ -134,8 +134,8 @@ impl<A: Debug + Clone, ParsedValue: Clone + Debug, Input: Clone + Debug> Debug
         if !self.args.is_empty() {
             debug_struct.field("args", &self.args);
         }
-        if self.refs.is_some() {
-            debug_struct.field("refs", &self.refs);
+        if self.extensions.is_some() {
+            debug_struct.field("refs", &self.extensions);
         }
         debug_struct.finish()
     }
@@ -174,7 +174,7 @@ impl<ParsedValue: Clone, Input: Clone> ExecutionPlan<ParsedValue, Input> {
         let field_children = fields
             .clone()
             .into_iter()
-            .filter(|f| f.refs.is_none())
+            .filter(|f| f.extensions.is_none())
             .map(|f| f.into_children(&fields))
             .collect::<Vec<_>>();
 
