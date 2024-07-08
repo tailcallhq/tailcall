@@ -267,5 +267,5 @@ harness = false
 
 [[test]]
 name = "json_to_config_spec"
-path = "src/core/generator/tests/json_to_config_spec.rs"
+path = "src/core/generator/tests/config_gen.rs"
 harness = false
