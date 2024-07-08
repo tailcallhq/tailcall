@@ -55,7 +55,7 @@ jobs:
           RUST_BACKTRACE: 0
 
       - name: Show Test Output
-        if: ${{ failure() }}
+        if: ${{ always() }}
         run: cat execution_spec_output.txt
 
       - name: Create Commit Comment
