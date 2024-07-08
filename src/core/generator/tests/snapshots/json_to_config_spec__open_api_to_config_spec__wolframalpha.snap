@@ -1,0 +1,12 @@
+---
+source: src/core/generator/tests/open_api_to_config_spec.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  getWolframAlphaResults(input: String!): String @http(baseURL: "https://www.wolframalpha.com", path: "/api/v1/llm-api", query: [{key: "input", value: "{{.args.input}}"}])
+  getWolframCloudResults(input: String!): String @http(baseURL: "https://www.wolframalpha.com", path: "/api/v1/cloud-plugin", query: [{key: "input", value: "{{.args.input}}"}])
+}

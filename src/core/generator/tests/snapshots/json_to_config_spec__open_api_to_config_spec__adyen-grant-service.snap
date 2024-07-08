@@ -1,0 +1,18 @@
+---
+source: src/core/generator/tests/open_api_to_config_spec.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  """
+  Returns a list of grants with status and outstanding balances.
+  """
+  getGrants(counterpartyAccountHolderId: String): CapitalGrants @http(baseURL: "https://balanceplatform-api-test.adyen.com/btl/v3", path: "/grants", query: [{key: "counterpartyAccountHolderId", value: "{{.args.counterpartyAccountHolderId}}"}])
+  """
+  Returns the details of a capital account specified in the path.
+  """
+  getGrantsId(id: String!): CapitalGrant @http(baseURL: "https://balanceplatform-api-test.adyen.com/btl/v3", path: "/grants/{{.args.id}}")
+}

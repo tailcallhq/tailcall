@@ -152,7 +152,7 @@ convert_case = "0.6.0"
 #  Adding deserialization support for extensions using a custom `deserialize_extensions` function.
 #  Introducing `ObjectOrFalse` enum for schema properties.
 #  Modifying existing structs to incorporate these changes, such as `Components`, `Parameter`, and `Schema`.
-oas3 = { git = "https://github.com/tailcallhq/oas3-rs", branch = "spotify" }
+oas3 = "0.8.1"
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
 tailcall-tracker = { path = "tailcall-tracker", optional = true }

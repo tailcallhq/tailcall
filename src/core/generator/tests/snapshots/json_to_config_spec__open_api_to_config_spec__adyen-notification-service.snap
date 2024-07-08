@@ -1,0 +1,34 @@
+---
+source: src/core/generator/tests/open_api_to_config_spec.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  """
+  Creates a subscription to notifications informing you of events on your platform. After the subscription is created, the events specified in the configuration will be sent to the URL specified in the configuration. Subscriptions must be configured on a per-event basis (as opposed to, for example, a per-account holder basis), so all event notifications of a marketplace and of a given type will be sent to the same endpoint(s). A marketplace may have multiple endpoints if desired; an event notification may be sent to as many or as few different endpoints as configured.
+  """
+  postCreateNotificationConfiguration: GetNotificationConfigurationResponse @http(baseURL: "https://cal-test.adyen.com/cal/services/Notification/v2", method: "POST", path: "/createNotificationConfiguration")
+  """
+  Deletes an existing notification subscription configuration. After the subscription is deleted, no further event notifications will be sent to the URL defined in the subscription.
+  """
+  postDeleteNotificationConfigurations: GenericResponse @http(baseURL: "https://cal-test.adyen.com/cal/services/Notification/v2", method: "POST", path: "/deleteNotificationConfigurations")
+  """
+  Returns the details of the configuration of a notification subscription.
+  """
+  postGetNotificationConfiguration: GetNotificationConfigurationResponse @http(baseURL: "https://cal-test.adyen.com/cal/services/Notification/v2", method: "POST", path: "/getNotificationConfiguration")
+  """
+  Returns the details of the configurations of all of the notification subscriptions in the platform of the executing user.
+  """
+  postGetNotificationConfigurationList: GetNotificationConfigurationListResponse @http(baseURL: "https://cal-test.adyen.com/cal/services/Notification/v2", method: "POST", path: "/getNotificationConfigurationList")
+  """
+  Tests an existing notification subscription configuration. For each event type specified, a test notification will be generated and sent to the URL configured in the subscription specified.
+  """
+  postTestNotificationConfiguration: TestNotificationConfigurationResponse @http(baseURL: "https://cal-test.adyen.com/cal/services/Notification/v2", method: "POST", path: "/testNotificationConfiguration")
+  """
+  Updates an existing notification subscription configuration. If you are updating the event types, you must provide all event types, otherwise the previous event type configuration will be overwritten.
+  """
+  postUpdateNotificationConfiguration: GetNotificationConfigurationResponse @http(baseURL: "https://cal-test.adyen.com/cal/services/Notification/v2", method: "POST", path: "/updateNotificationConfiguration")
+}

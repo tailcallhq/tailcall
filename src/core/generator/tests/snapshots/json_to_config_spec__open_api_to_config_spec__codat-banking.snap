@@ -1,0 +1,42 @@
+---
+source: src/core/generator/tests/open_api_to_config_spec.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  """
+  Gets a specified bank account for a given company
+  """
+  getAccount(accountId: String!, companyId: String!, connectionId: String!): Account @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/banking-accounts/{{.args.accountId}}")
+  """
+  Gets a specified bank transaction for a given company
+  """
+  getTransaction: Transaction @http(baseURL: "https://api.codat.io", path: "/companies/{companyId}/connections/{connectionId}/data/banking-transactions/{transactionId}")
+  """
+  Gets a specified bank transaction category for a given company
+  """
+  getTransactionCategory: TransactionCategory @http(baseURL: "https://api.codat.io", path: "/companies/{companyId}/connections/{connectionId}/data/banking-transactionCategories/{transactionCategoryId}")
+  """
+  Gets a list of balances for a bank account including end-of-day batch balance or running balances per transaction.
+  """
+  listAccountBalances(companyId: String!, connectionId: String!, orderBy: String, page: Int!, pageSize: Int, query: String): AccountBalances @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/banking-accountBalances", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  Gets a list of all bank accounts of the SMB, with rich data like balances, account numbers and institutions holdingthe accounts.
+  """
+  listAccounts(companyId: String!, connectionId: String!, orderBy: String, page: Int!, pageSize: Int, query: String): Accounts @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/banking-accounts", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  Gets a list of transactions incurred by a company across all bank accounts.
+  """
+  listBankTransactions(orderBy: String, page: Int!, pageSize: Int, query: String): Transactions @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/data/banking-transactions", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  Gets a list of hierarchical categories associated with a transaction for greater contextual meaning to transactionactivity.
+  """
+  listTransactionCategories(orderBy: String, page: Int!, pageSize: Int, query: String): TransactionCategories @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/banking-transactionCategories", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  Gets a list of transactions incurred by a bank account.
+  """
+  listTransactions(orderBy: String, page: Int!, pageSize: Int, query: String): Transactions @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/banking-transactions", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+}

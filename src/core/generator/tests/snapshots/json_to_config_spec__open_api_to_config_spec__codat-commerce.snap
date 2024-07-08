@@ -1,0 +1,58 @@
+---
+source: src/core/generator/tests/open_api_to_config_spec.rs
+expression: config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  """
+  Retrieve information about the company, as seen in the commerce platform.
+
+This may include information like addresses, tax registration details and social media or website information.
+  """
+  getCompanyInfo: CompanyInfo @http(baseURL: "https://api.codat.io", path: "/companies/{companyId}/connections/{connectionId}/data/commerce-info")
+  """
+  This endpoint returns a lits of tax rates from the commerce platform, including tax rate names and values. This supports the mapping of tax rates from the commerce platform to the accounting platform.
+  """
+  getTaxComponents: TaxComponents @http(baseURL: "https://api.codat.io", path: "/companies/{companyId}/connections/{connectionId}/data/commerce-taxComponents")
+  """
+  List all commerce customers for the given company and data connection
+  """
+  listCustomers(orderBy: String, page: Int!, pageSize: Int, query: String): Customers @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/commerce-customers", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  List commerce disputes
+  """
+  listDisputes(orderBy: String, page: Int!, pageSize: Int, query: String): Disputes @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/commerce-disputes", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  Retrieve a list of locations as seen in the commerce platform.
+
+A `location` is a geographic place at which stocks of products may be held, or from where orders were placed.
+  """
+  listLocations: LocationsResponse @http(baseURL: "https://api.codat.io", path: "/companies/{companyId}/connections/{connectionId}/data/commerce-locations")
+  """
+  Get a list of orders placed or held on the linked commerce platform
+  """
+  listOrders(orderBy: String, page: Int!, pageSize: Int, query: String): Orders @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/commerce-orders", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  Retrieve a list of payment methods, such as card, cash or other online payment methods, as held in the linked commerce platform.
+  """
+  listPaymentMethods(orderBy: String, page: Int!, pageSize: Int, query: String): PaymentMethods @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/commerce-paymentMethods", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  List commerce payments for the given company & data connection.
+  """
+  listPayments(orderBy: String, page: Int!, pageSize: Int, query: String): Payments @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/commerce-payments", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  Product categories are used to classify a group of products together, either by type (eg "Furniture"), or sometimes by tax profile.
+  """
+  listProductCategories(orderBy: String, page: Int!, pageSize: Int, query: String): ProductCategories @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/commerce-productCategories", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  The Products data type provides the company's product inventory, and includes the price and quantity of all products, and product variants, available for sale.
+  """
+  listProducts(orderBy: String, page: Int!, pageSize: Int, query: String): Products @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/commerce-products", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+  """
+  Details of all financial transactions recorded in the commerce or point of sale system are added to the Transactions data type. For example, payments, service charges, and fees.
+  """
+  listTransactions(orderBy: String, page: Int!, pageSize: Int, query: String): Transactions @http(baseURL: "https://api.codat.io", path: "/companies/{{.args.companyId}}/connections/{{.args.connectionId}}/data/commerce-transactions", query: [{key: "orderBy", value: "{{.args.orderBy}}"}, {key: "page", value: "{{.args.page}}"}, {key: "pageSize", value: "{{.args.pageSize}}"}, {key: "query", value: "{{.args.query}}"}])
+}

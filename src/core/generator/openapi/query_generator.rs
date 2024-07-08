@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, HashSet};
+use std::str::FromStr;
 
 use convert_case::{Case, Casing};
-use oas3::spec::{ObjectOrReference, PathItem, SchemaType};
+use mime::{Mime};
+use oas3::spec::{ObjectOrReference, PathItem, SchemaType, SchemaTypeSet};
 use oas3::{OpenApiV3Spec, Schema};
 
 use crate::core::config::{Arg, Config, Field, Http, KeyValue, Type};
@@ -51,19 +53,23 @@ fn name_from_ref_path<T>(obj_or_ref: &ObjectOrReference<T>) -> Option<String> {
     }
 }
 
-fn schema_type_to_string(typ: &SchemaType) -> String {
+fn schema_type_to_string(typ: &SchemaTypeSet) -> String {
     match typ {
-        x @ (SchemaType::Boolean | SchemaType::String | SchemaType::Array | SchemaType::Object) => {
+        SchemaTypeSet::Single(
+            x @ (SchemaType::Boolean | SchemaType::String | SchemaType::Array | SchemaType::Object),
+        ) => {
             format!("{x:?}")
         }
-        SchemaType::Integer | SchemaType::Number => "Int".into(),
+        SchemaTypeSet::Single(SchemaType::Integer | SchemaType::Number) => "Int".into(),
+        x => unreachable!("encountered: {x:?}"),
     }
 }
 
-fn schema_to_primitive_type(typ: &SchemaType) -> Option<String> {
+fn schema_to_primitive_type(typ: &SchemaTypeSet) -> Option<String> {
     match typ {
-        SchemaType::Array | SchemaType::Object => None,
-        x => Some(schema_type_to_string(x)),
+        SchemaTypeSet::Single(SchemaType::Array | SchemaType::Object) => None,
+        x @ SchemaTypeSet::Single(_) => Some(schema_type_to_string(x)),
+        _ => unreachable!(),
     }
 }
 
@@ -83,7 +89,7 @@ impl<'a> SingleQueryGenerator<'a> {
     fn get_schema_type(&self, schema: Schema, name: Option<String>) -> anyhow::Result<TypeName> {
         Ok(if let Some(element) = schema.items {
             let inner_schema = element.resolve(self.spec)?;
-            if inner_schema.schema_type == Some(SchemaType::String)
+            if inner_schema.schema_type == Some(SchemaTypeSet::Single(SchemaType::String))
                 && !inner_schema.enum_values.is_empty()
             {
                 TypeName::ListOf(Box::new(TypeName::Name(unknown_type())))
@@ -94,13 +100,14 @@ impl<'a> SingleQueryGenerator<'a> {
             } else {
                 TypeName::ListOf(Box::new(self.get_schema_type(inner_schema, None)?))
             }
-        } else if schema.schema_type == Some(SchemaType::String) && !schema.enum_values.is_empty() {
+        } else if schema.schema_type == Some(SchemaTypeSet::Single(SchemaType::String))
+            && !schema.enum_values.is_empty()
+        {
             TypeName::Name(unknown_type())
         } else if let Some(
-            typ @ (SchemaType::Integer
-            | SchemaType::String
-            | SchemaType::Number
-            | SchemaType::Boolean),
+            typ @ SchemaTypeSet::Single(
+                SchemaType::Integer | SchemaType::String | SchemaType::Number | SchemaType::Boolean,
+            ),
         ) = schema.schema_type
         {
             TypeName::Name(schema_type_to_string(&typ))
@@ -141,35 +148,56 @@ impl<'a> Transform for SingleQueryGenerator<'a> {
             format!("skipping {path}: no operation found"),
         )
         .and_then(|(method, operation)| {
-            let Some((_, first_response)) = operation.responses.first_key_value() else {
+            let Some((_, first_response)) = operation
+                .responses
+                .as_ref()
+                .and_then(|responses| responses.first_key_value())
+            else {
                 return Valid::fail(format!("skipping {path}: no sample response found"));
             };
             let Ok(response) = first_response.resolve(self.spec) else {
                 return Valid::fail(format!("skipping {path}: no sample response found"));
             };
 
-            let Some(output_type) = response
-                .content
-                .first_key_value()
-                .map(|(_, v)| v)
-                .cloned()
-                .and_then(|v| v.schema)
+            let Some(Ok(output_type)) =
+                response
+                    .content
+                    .first_key_value()
+                    .and_then(|(content_type, v)| {
+                        let mime = Mime::from_str(content_type.as_str()).unwrap();
+                        if mime.eq(&mime::TEXT_PLAIN) {
+                            Some(Ok(TypeName::Name("String".to_string())))
+                        } else {
+                            let obj_or_ref = v.schema.as_ref()?;
+                            Some(
+                                obj_or_ref
+                                    .resolve(self.spec)
+                                    .map_err(|err| err.to_string())
+                                    .and_then(|schema| {
+                                        self.get_schema_type(
+                                            schema,
+                                            name_from_ref_path(obj_or_ref),
+                                        )
+                                        .map_err(|err| err.to_string())
+                                    }),
+                            )
+                        }
+                    })
             else {
                 return Valid::fail(format!("skipping {path}: unable to detect output type"));
             };
+
+            let (is_list, name) = output_type.into_tuple();
 
             let args = Valid::from_iter::<(String, Arg)>(operation.parameters.iter(), |param| {
                 let result = param
                     .resolve(self.spec)
                     .map_err(|err| err.to_string())
                     .and_then(|param| {
-                        self.get_schema_type(
-                            param.schema.clone().unwrap(),
-                            param.param_type.clone(),
-                        )
-                        .map_err(|err| err.to_string())
-                        .map(TypeName::into_tuple)
-                        .map(|type_tuple| (param, type_tuple))
+                        self.get_schema_type(param.schema.clone().unwrap(), None)
+                            .map_err(|err| err.to_string())
+                            .map(TypeName::into_tuple)
+                            .map(|type_tuple| (param, type_tuple))
                     })
                     .map(|(param, (is_list, name))| {
                         (
@@ -193,20 +221,6 @@ impl<'a> Transform for SingleQueryGenerator<'a> {
 
             let args: BTreeMap<String, Arg> = match args.to_result() {
                 Ok(args) => args.into_iter().collect(),
-                Err(err) => return Valid::fail(err.to_string()),
-            };
-
-            let type_tuple = output_type
-                .resolve(self.spec)
-                .map_err(|err| err.to_string())
-                .and_then(|schema| {
-                    self.get_schema_type(schema, name_from_ref_path(&output_type))
-                        .map_err(|err| err.to_string())
-                })
-                .map(TypeName::into_tuple);
-
-            let (is_list, name) = match type_tuple {
-                Ok((is_list, name)) => (is_list, name),
                 Err(err) => return Valid::fail(err.to_string()),
             };
 
@@ -274,9 +288,14 @@ impl<'a> Transform for QueryGenerator<'a> {
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         config.types.insert(self.query.to_string(), Type::default());
-        let path_iter = self.spec.paths.clone().into_iter();
+        let path_iter = self
+            .spec
+            .paths
+            .clone()
+            .into_iter()
+            .flat_map(|x| x.into_iter());
 
-        Valid::from_iter(path_iter, |(path, path_item)| {
+        let result = Valid::from_iter(path_iter, |(path, path_item)| {
             SingleQueryGenerator {
                 query: self.query,
                 path,
@@ -289,6 +308,10 @@ impl<'a> Transform for QueryGenerator<'a> {
                 config = new_config;
             })
         });
+
+        if let Err(err) = result.to_result() {
+            tracing::debug!("Config generation encountered following errors: {err:?}");
+        }
 
         Valid::succeed(config)
     }
