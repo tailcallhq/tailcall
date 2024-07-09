@@ -6,14 +6,14 @@ pub trait JsonT {
     type Output;
     type Input;
 
-    fn array_ok(value: &Self::Input) -> Result<&Vec<Self::Output>, &str>;
-    fn str_ok(value: &Self::Input) -> Result<&str, &str>;
-    fn i64_ok(value: &Self::Input) -> Result<i64, &str>;
-    fn u64_ok(value: &Self::Input) -> Result<u64, &str>;
-    fn f64_ok(value: &Self::Input) -> Result<f64, &str>;
-    fn bool_ok(value: &Self::Input) -> Result<bool, &str>;
-    fn null_ok(value: &Self::Input) -> Result<(), &str>;
-    fn option_ok(value: &Self::Input) -> Result<Option<&Self::Output>, &str>;
+    fn array_ok(value: &Self::Input) -> Option<&Vec<Self::Output>>;
+    fn str_ok(value: &Self::Input) -> Option<&str>;
+    fn i64_ok(value: &Self::Input) -> Option<i64>;
+    fn u64_ok(value: &Self::Input) -> Option<u64>;
+    fn f64_ok(value: &Self::Input) -> Option<f64>;
+    fn bool_ok(value: &Self::Input) -> Option<bool>;
+    fn null_ok(value: &Self::Input) -> Option<()>;
+    fn option_ok(value: &Self::Input) -> Option<Option<&Self::Output>>;
     fn get_path<'a, T: AsRef<str>>(value: &'a Self::Input, path: &'a [T]) -> Option<&'a Self::Output>;
     fn get_key<'a>(value: &'a Self::Input, path: &'a str) -> Option<&'a Self::Output>;
     fn new(value: &Self::Output) -> &Self;
@@ -24,38 +24,38 @@ impl JsonT for serde_json::Value {
     type Output = serde_json::Value;
     type Input = serde_json::Value;
 
-    fn array_ok(value: &Self::Input) -> Result<&Vec<Self::Output>, &str> {
-        value.as_array().ok_or("expected array")
+    fn array_ok(value: &Self::Input) -> Option<&Vec<Self::Output>> {
+        value.as_array()
     }
 
-    fn str_ok(value: &Self::Input) -> Result<&str, &str> {
-        value.as_str().ok_or("expected str")
+    fn str_ok(value: &Self::Input) -> Option<&str> {
+        value.as_str()
     }
 
-    fn i64_ok(value: &Self::Input) -> Result<i64, &str> {
-        value.as_i64().ok_or("expected i64")
+    fn i64_ok(value: &Self::Input) -> Option<i64> {
+        value.as_i64()
     }
 
-    fn u64_ok(value: &Self::Input) -> Result<u64, &str> {
-        value.as_u64().ok_or("expected u64")
+    fn u64_ok(value: &Self::Input) -> Option<u64> {
+        value.as_u64()
     }
 
-    fn f64_ok(value: &Self::Input) -> Result<f64, &str> {
-        value.as_f64().ok_or("expected f64")
+    fn f64_ok(value: &Self::Input) -> Option<f64> {
+        value.as_f64()
     }
 
-    fn bool_ok(value: &Self::Input) -> Result<bool, &str> {
-        value.as_bool().ok_or("expected bool")
+    fn bool_ok(value: &Self::Input) -> Option<bool> {
+        value.as_bool()
     }
 
-    fn null_ok(value: &Self::Input) -> Result<(), &str> {
-        value.as_null().ok_or("expected null")
+    fn null_ok(value: &Self::Input) -> Option<()> {
+        value.as_null()
     }
 
-    fn option_ok(value: &Self::Input) -> Result<Option<&Self::Output>, &str> {
+    fn option_ok(value: &Self::Input) -> Option<Option<&Self::Output>> {
         match value {
-            serde_json::Value::Null => Ok(None),
-            _ => Ok(Some(value)),
+            serde_json::Value::Null => Some(None),
+            value => Some(Some(value)),
         }
     }
 
@@ -97,6 +97,6 @@ mod tests {
         let value = Value::Array(vec![Value::Null]);
         let result = <Value as JsonT>::array_ok(&value);
 
-        assert_eq!(result, Ok(&vec![Value::Null]));
+        assert_eq!(result, Some(&vec![Value::Null]));
     }
 }
