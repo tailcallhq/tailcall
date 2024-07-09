@@ -267,7 +267,7 @@ mod tests {
             let mut map = IndexMap::default();
             map.insert(
                 async_graphql_value::Name::new("number"),
-                async_graphql::Value::Number(serde_json::Number::from(2)),
+                async_graphql::Value::Number(2.into()),
             );
             map.insert(
                 async_graphql_value::Name::new("str"),
@@ -297,7 +297,7 @@ mod tests {
             assert_eq!(
                 EVAL_CTX.raw_value(&["value", "number"]),
                 Some(RawValue::Value(Cow::Borrowed(
-                    &async_graphql::Value::Number(serde_json::Number::from(2))
+                    &async_graphql::Value::Number(2.into())
                 )))
             );
             assert_eq!(
