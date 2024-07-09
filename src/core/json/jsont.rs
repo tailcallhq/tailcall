@@ -129,15 +129,116 @@ pub fn group_by_key<'a, J: JsonT>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, V
 
 #[cfg(test)]
 mod tests {
-    use serde_json::Value;
 
-    use super::JsonT;
+    use pretty_assertions::assert_eq;
+    use serde_json::json;
+
+    use crate::core::json::group_by_key;
+    use crate::core::json::json_like::gather_path_matches;
 
     #[test]
-    fn test_array_ok() {
-        let value = Value::Array(vec![Value::Null]);
-        let result = <Value as JsonT>::array_ok(&value);
+    fn test_gather_path_matches() {
+        let input = json!([
+            {"id": "1"},
+            {"id": "2"},
+            {"id": "3"}
+        ]);
 
-        assert_eq!(result, Some(&vec![Value::Null]));
+        let actual =
+            serde_json::to_value(gather_path_matches(&input, &["id".into()], vec![])).unwrap();
+
+        let expected = json!(
+            [
+              ["1", {"id": "1"}],
+              ["2", {"id": "2"}],
+              ["3", {"id": "3"}],
+            ]
+        );
+
+        assert_eq!(actual, expected)
+    }
+
+    #[test]
+    fn test_gather_path_matches_nested() {
+        let input = json!({
+            "data": [
+                {"user": {"id": "1"}},
+                {"user": {"id": "2"}},
+                {"user": {"id": "3"}},
+                {"user": [
+                    {"id": "4"},
+                    {"id": "5"}
+                    ]
+                },
+            ]
+        });
+
+        let actual = serde_json::to_value(gather_path_matches(
+            &input,
+            &["data".into(), "user".into(), "id".into()],
+            vec![],
+        ))
+            .unwrap();
+
+        let expected = json!(
+            [
+              ["1", {"id": "1"}],
+              ["2", {"id": "2"}],
+              ["3", {"id": "3"}],
+              ["4", {"id": "4"}],
+              ["5", {"id": "5"}],
+
+            ]
+        );
+
+        assert_eq!(actual, expected)
+    }
+
+    #[test]
+    fn test_group_by_key() {
+        let arr = vec![
+            (json!("1"), json!({"id": "1"})),
+            (json!("2"), json!({"id": "2"})),
+            (json!("2"), json!({"id": "2"})),
+            (json!("3"), json!({"id": "3"})),
+        ];
+        let input: Vec<(&serde_json::Value, &serde_json::Value)> =
+            arr.iter().map(|a| (&a.0, &a.1)).collect();
+
+        let actual = serde_json::to_value(group_by_key(input)).unwrap();
+
+        let expected = json!(
+            {
+                "1": [{"id": "1"}],
+                "2": [{"id": "2"}, {"id": "2"}],
+                "3": [{"id": "3"}],
+            }
+        );
+
+        assert_eq!(actual, expected)
+    }
+
+    #[test]
+    fn test_group_by_numeric_key() {
+        let arr = vec![
+            (json!(1), json!({"id": 1})),
+            (json!(2), json!({"id": 2})),
+            (json!(2), json!({"id": 2})),
+            (json!(3), json!({"id": 3})),
+        ];
+        let input: Vec<(&serde_json::Value, &serde_json::Value)> =
+            arr.iter().map(|a| (&a.0, &a.1)).collect();
+
+        let actual = serde_json::to_value(group_by_key(input)).unwrap();
+
+        let expected = json!(
+            {
+                "1": [{"id": 1}],
+                "2": [{"id": 2}, {"id": 2}],
+                "3": [{"id": 3}],
+            }
+        );
+
+        assert_eq!(actual, expected)
     }
 }
