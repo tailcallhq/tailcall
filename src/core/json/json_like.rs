@@ -2,9 +2,19 @@ use std::collections::HashMap;
 
 use async_graphql_value::ConstValue;
 
+use crate::core::json::json_object_like::JsonObjectLike;
+
 pub trait JsonLike {
     type Output;
+    type Obj: JsonObjectLike;
+
+    // Constructors
+    fn default() -> Self;
+    fn new_array(arr: Vec<Self::Output>) -> Self;
+
+    // Operators
     fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str>;
+    fn as_object_ok(&self) -> Result<&Self::Obj, &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;
     fn as_string_ok(&self) -> Result<&String, &str>;
     fn as_i64_ok(&self) -> Result<i64, &str>;
@@ -21,6 +31,8 @@ pub trait JsonLike {
 
 impl JsonLike for serde_json::Value {
     type Output = serde_json::Value;
+    type Obj = serde_json::Map<String, serde_json::Value>;
+
     fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
         self.as_array().ok_or("expected array")
     }
@@ -87,10 +99,26 @@ impl JsonLike for serde_json::Value {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
+
+    fn default() -> Self {
+        Self::Null
+    }
+
+    fn new_array(arr: Vec<Self::Output>) -> Self {
+        Self::Array(arr)
+    }
+
+    fn as_object_ok(&self) -> Result<&Self::Obj, &str> {
+        match self {
+            serde_json::Value::Object(map) => Ok(map),
+            _ => Err("expected object"),
+        }
+    }
 }
 
 impl JsonLike for async_graphql::Value {
     type Output = async_graphql::Value;
+    type Obj = indexmap::IndexMap<async_graphql::Name, async_graphql::Value>;
 
     fn as_array_ok(&self) -> Result<&Vec<Self::Output>, &str> {
         match self {
@@ -183,6 +211,21 @@ impl JsonLike for async_graphql::Value {
     fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
+    }
+
+    fn default() -> Self {
+        Default::default()
+    }
+
+    fn new_array(arr: Vec<Self::Output>) -> Self {
+        ConstValue::List(arr)
+    }
+
+    fn as_object_ok(&self) -> Result<&Self::Obj, &str> {
+        match self {
+            ConstValue::Object(map) => Ok(map),
+            _ => Err("expected object"),
+        }
     }
 }
 
