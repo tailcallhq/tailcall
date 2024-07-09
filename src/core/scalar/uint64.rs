@@ -1,9 +1,10 @@
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
+use tailcall_macros::ScalarDefinition;
 
 /// Represents unsigned integer type 64bit size as string
-#[derive(JsonSchema, Default)]
+#[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct UInt64(pub u64);
 
 impl super::Scalar for UInt64 {

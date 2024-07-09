@@ -1,0 +1,65 @@
+name: Test JIT
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup_build_matrix:
+    name: Outputs matrix used for cross compilation
+    uses: ./.github/workflows/build_matrix.yml
+
+  test:
+    name: Run JIT tests on ${{ matrix.build }}
+    runs-on: ${{ matrix.os || '-latest' }}
+    needs: setup_build_matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        build:
+          - darwin-arm64
+        include:
+          - build: darwin-arm64
+            os: macos-latest
+            rust: stable
+            target: aarch64-apple-darwin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.0"
+      - name: Install Prettier
+        run: npm i -g prettier
+
+      - name: Install Rust Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install Cross compilation toolchain
+        uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Run Cargo Test
+        run: cargo test --test execution_spec --features force_jit -- --logfile execution_spec_output.txt
+        env:
+          RUST_BACKTRACE: 0
+
+      - name: Show Test Output
+        if: ${{ always() }}
+        run: cat execution_spec_output.txt
+
+      - name: Create Commit Comment
+        if: ${{ failure() }}
+        uses: peter-evans/commit-comment@v3
+        with:
+          body-path: execution_spec_output.txt

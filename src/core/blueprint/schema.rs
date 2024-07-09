@@ -30,44 +30,35 @@ fn validate_type_has_resolvers(
     types: &BTreeMap<String, Type>,
     visited: &mut HashSet<String>,
 ) -> Valid<(), String> {
-    if visited.contains(name) {
+    if ty.scalar() || visited.contains(name) {
         return Valid::succeed(());
     }
 
     visited.insert(name.to_string());
 
     Valid::from_iter(ty.fields.iter(), |(name, field)| {
-        validate_field_has_resolver(name, field, types, ty, visited)
+        validate_field_has_resolver(name, field, types, visited)
     })
     .trace(name)
     .unit()
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn validate_field_has_resolver(
     name: &str,
     field: &Field,
     types: &BTreeMap<String, Type>,
-    parent_ty: &Type,
     visited: &mut HashSet<String>,
 ) -> Valid<(), String> {
     Valid::<(), String>::fail("No resolver has been found in the schema".to_owned())
         .when(|| {
-            if types.get(&field.type_of).eq(&Some(parent_ty)) {
-                return true;
-            }
             if !field.has_resolver() {
                 let type_name = &field.type_of;
                 if let Some(ty) = types.get(type_name) {
-                    if ty.scalar() {
-                        return true;
-                    }
                     let res = validate_type_has_resolvers(type_name, ty, types, visited);
                     return !res.is_succeed();
-                } else {
-                    // It's a Scalar
-                    return true;
                 }
+
+                return true;
             }
             false
         })
