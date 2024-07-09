@@ -9,25 +9,13 @@ pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
         return Valid::succeed(None);
     };
 
-    match body {
-        Value::String(body) => {
-            if let Ok(mustache) = Mustache::parse(body) {
-                Valid::succeed(Some(RequestBody {
-                    mustache: Some(mustache),
-                    value: body.to_string(),
-                }))
-            } else {
-                Valid::succeed(Some(RequestBody {
-                    value: body.to_string(),
-                    ..Default::default()
-                }))
-            }
-        }
-        value => Valid::succeed(Some(RequestBody {
-            value: value.to_string(),
-            ..Default::default()
-        })),
+    let mut req_body = RequestBody::default();
+
+    let value = body.to_string();
+    if let Ok(mustache) = Mustache::parse(&value) {
+        req_body = req_body.mustache(Some(mustache));
     }
+    Valid::succeed(Some(req_body.value(value)))
 }
 
 #[cfg(test)]

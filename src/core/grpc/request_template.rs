@@ -28,7 +28,7 @@ pub struct RequestTemplate {
     pub operation_type: GraphQLOperationType,
 }
 
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, Setters)]
 pub struct RequestBody {
     pub mustache: Option<Mustache>,
     pub value: String,
