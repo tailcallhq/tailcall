@@ -174,7 +174,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             to_operation(&method, file_descriptor_set)
                 .fuse(to_url(grpc, &method, config_module))
                 .fuse(helpers::headers::to_mustache_headers(&grpc.headers))
-                .fuse(helpers::body::to_body(grpc.body.clone()))
+                .fuse(helpers::body::to_body(grpc.body.as_ref()))
                 .into()
         })
         .and_then(|(operation, url, headers, body)| {

@@ -5,7 +5,6 @@ use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
-use serde_json::Value;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -32,7 +31,7 @@ pub struct RequestTemplate {
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct RequestBody {
     pub mustache: Option<Mustache>,
-    pub value: Value,
+    pub value: String,
 }
 
 impl RequestBody {

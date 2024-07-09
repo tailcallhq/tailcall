@@ -4,26 +4,29 @@ use crate::core::grpc::request_template::RequestBody;
 use crate::core::mustache::Mustache;
 use crate::core::valid::Valid;
 
-pub fn to_body(body: Option<Value>) -> Valid<Option<RequestBody>, String> {
+pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
     let Some(body) = body else {
         return Valid::succeed(None);
     };
 
     match body {
         Value::String(body) => {
-            if let Ok(mustache) = Mustache::parse(&body) {
+            if let Ok(mustache) = Mustache::parse(body) {
                 Valid::succeed(Some(RequestBody {
                     mustache: Some(mustache),
-                    value: Value::String(body),
+                    value: body.to_string(),
                 }))
             } else {
                 Valid::succeed(Some(RequestBody {
-                    value: Value::String(body),
+                    value: body.to_string(),
                     ..Default::default()
                 }))
             }
         }
-        value => Valid::succeed(Some(RequestBody { value, ..Default::default() })),
+        value => Valid::succeed(Some(RequestBody {
+            value: value.to_string(),
+            ..Default::default()
+        })),
     }
 }
 
@@ -43,13 +46,13 @@ mod tests {
 
     #[test]
     fn body_parse_success() {
-        let result = to_body(Some(serde_json::Value::String("content".to_string())));
+        let result = to_body(Some(&serde_json::Value::String("content".to_string())));
 
         assert_eq!(
             result,
             Valid::succeed(Some(RequestBody {
                 mustache: Some(Mustache::parse("content").unwrap()),
-                value: serde_json::Value::String("content".to_string())
+                value: "content".to_string()
             }))
         );
     }
