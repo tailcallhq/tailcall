@@ -9,6 +9,10 @@ schema
   query: Query
 }
 
+input NewsInput {
+  id: Int
+}
+
 type News {
   body: String
   id: Int
@@ -18,4 +22,7 @@ type News {
 
 type Query {
   newsById: News! @grpc(body: {id: 2}, method: "news.NewsService.GetNews")
+  newsByIdMustache(news: NewsInput!): News! @grpc(body: "{{.args.news}}", method: "news.NewsService.GetNews")
+  newsByIdMustacheAndJson(news: NewsInput!): News!
+    @grpc(body: {id: "{{.args.news.id}}"}, method: "news.NewsService.GetNews")
 }

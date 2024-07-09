@@ -29,10 +29,16 @@ type News {
   title: String
 }
 
+input NewsInput {
+  id: Int
+}
+
 scalar PhoneNumber
 
 type Query {
   newsById: News!
+  newsByIdMustache(news: NewsInput!): News!
+  newsByIdMustacheAndJson(news: NewsInput!): News!
 }
 
 scalar UInt128

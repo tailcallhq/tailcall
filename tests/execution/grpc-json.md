@@ -46,6 +46,13 @@ schema
 
 type Query {
   newsById: News! @grpc(method: "news.NewsService.GetNews", body: {id: 2})
+  newsByIdMustache(news: NewsInput!): News! @grpc(method: "news.NewsService.GetNews", body: "{{.args.news}}")
+  newsByIdMustacheAndJson(news: NewsInput!): News!
+    @grpc(method: "news.NewsService.GetNews", body: {id: "{{.args.news.id}}"})
+}
+
+input NewsInput {
+  id: Int
 }
 
 type News {
@@ -70,4 +77,14 @@ type News {
   url: http://localhost:8080/graphql
   body:
     query: query { newsById { id } }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: "query { newsByIdMustache(news: {id: 2}) { id } }"
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: "query { newsByIdMustacheAndJson(news: {id: 2}) { id } }"
 ```
