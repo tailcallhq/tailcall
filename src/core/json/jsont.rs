@@ -78,9 +78,53 @@ impl JsonT for serde_json::Value {
         value
     }
 
-    fn group_by<'a>(_value: &'a Self, _path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
-        todo!()
+    fn group_by<'a>(value: &'a Self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
+        let src = gather_path_matches(value, path, vec![]);
+        group_by_key(src)
     }
+}
+
+// Highly micro-optimized and benchmarked version of get_path_all
+// Any further changes should be verified with benchmarks
+pub fn gather_path_matches<'a, J: JsonT>(
+    root: &'a J,
+    path: &'a [String],
+    mut vector: Vec<(&'a J, &'a J)>,
+) -> Vec<(&'a J, &'a J)> {
+    if let Some(root) = <J as JsonT>::array_ok(root) {
+        for value in root {
+            vector = gather_path_matches(J::new(value), path, vector);
+        }
+    } else if let Some((key, tail)) = path.split_first() {
+        if let Some(value) = <J as JsonT>::get_key(root, key) {
+            if tail.is_empty() {
+                vector.push((J::new(value), root));
+            } else {
+                vector = gather_path_matches(J::new(value), tail, vector);
+            }
+        }
+    }
+
+    vector
+}
+
+pub fn group_by_key<'a, J: JsonT>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
+    let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
+    for (key, value) in src {
+        // Need to handle number and string keys
+        let key_str = <J as JsonT>::str_ok(key)
+            .map(|v| v.to_string())
+            .or_else(|| <J as JsonT>::i64_ok(key).map(|v| v.to_string()));
+
+        if let Some(key) = key_str {
+            if let Some(values) = map.get_mut(&key) {
+                values.push(value);
+            } else {
+                map.insert(key, vec![value]);
+            }
+        }
+    }
+    map
 }
 
 #[cfg(test)]
