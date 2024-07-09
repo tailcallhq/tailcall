@@ -33,19 +33,16 @@ impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
     type Out = Option<RawValue<'a>>;
 
     fn eval(&self, mustache: &Mustache, in_value: &'a Self::In) -> Self::Out {
-        let parsed_values: Vec<RawValue> = mustache
+        mustache
             .segments()
             .iter()
-            .flat_map(|segment| match segment {
+            .filter_map(|segment| match segment {
                 Segment::Literal(text) => Some(RawValue::Arg(Cow::Owned(
                     async_graphql::Value::String(text.to_owned()),
                 ))),
                 Segment::Expression(parts) => in_value.raw_value(parts),
             })
-            .collect::<Vec<_>>();
-
-        // Return the first value if there is any, otherwise return None
-        parsed_values.into_iter().next()
+            .next() // Return the first value that is found
     }
 }
 
