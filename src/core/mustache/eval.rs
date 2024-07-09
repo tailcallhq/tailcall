@@ -10,7 +10,8 @@ pub trait Eval<'a> {
     fn eval(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out;
 }
 
-/// RawValue parses the mustace template and uses ctx to return raw values.
+/// RawValue parses the mustace template and uses ctx to retrive the values for
+/// templates.
 pub struct RawValueEval<A> {
     _marker: std::marker::PhantomData<A>,
 }
