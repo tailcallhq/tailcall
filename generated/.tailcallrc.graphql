@@ -693,6 +693,11 @@ input Batch {
   maxSize: Int
 }
 
+input HttpCache {
+  enable: Boolean!
+  size: Int!
+}
+
 input Proxy {
   url: String!
 }
@@ -835,10 +840,6 @@ input Http {
   added to the URL.
   """
   query: [KeyValue]
-}
-input HttpCache {
-  enable: Boolean!
-  size: Int!
 }
 
 """

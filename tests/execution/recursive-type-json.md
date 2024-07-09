@@ -75,4 +75,3 @@
   body:
     query: query { user { name id friend { name id friend { name id } } } }
 ```
-
