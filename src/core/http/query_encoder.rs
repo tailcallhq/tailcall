@@ -23,8 +23,8 @@ impl QueryEncoder {
                 RawValue::Arg(arg) => self.encoding_strategy.encode(key, arg),
                 RawValue::Value(val) => self.encoding_strategy.encode(key, val),
                 RawValue::Env(env_var) => Some(format!("{}={}", key, env_var)),
-                RawValue::Headers(headers_value) => Some(format!("{}={}", key, headers_value)),
                 RawValue::Var(var) => Some(format!("{}={}", key, var)),
+                _ => None,
             }
         } else {
             None
