@@ -95,6 +95,18 @@ Head out to [docs] to learn about other powerful tailcall features.
 
 [docs]: https://tailcall.run/docs
 
+### Benchmarks
+
+Throughput comparison of various GraphQL solutions for a N + 1 query:
+
+```graphql
+query {posts {title body user {name}}}
+```
+
+![Throughput Histogram](https://raw.githubusercontent.com/tailcallhq/graphql-benchmarks/main/assets/req_sec_histogram1.png)
+
+Check out detailed benchmarks on our benchmarking [repository](https://github.com/tailcallhq/graphql-benchmarks).
+
 ### Contributing
 
 Your contributions are invaluable! Kindly go through our [contribution guidelines] if you are a first time contributor.
