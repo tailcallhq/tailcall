@@ -61,37 +61,20 @@ impl ConstBuilder {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
                     let field_name = gql_field.name.node.as_str();
-                    let mut field_args = gql_field
+                    let request_args = gql_field
                         .arguments
                         .iter()
                         .map(|(k, v)| (k.node.as_str().to_string(), v.node.to_owned()))
                         .collect::<HashMap<_, _>>();
 
                     if let Some(field_def) = self.index.get_field(type_of, field_name) {
-                        if let QueryField::Field((_, args)) = field_def {
-                            for (arg_name, arg_value) in args {
-                                if let Some(default_value) = arg_value.default_value.as_ref() {
-                                    if !field_args.contains_key(arg_name) {
-                                        if let Ok(default_value) =
-                                            Value::from_json(default_value.clone())
-                                        {
-                                            field_args.insert(
-                                                dbg!(arg_name.clone()),
-                                                dbg!(default_value),
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        let mut args = vec![];
-                        for (arg_name, value) in field_args {
-                            if let Some(arg) = field_def.get_arg(&arg_name) {
-                                let type_of = arg.of_type.clone();
+                        let mut args = Vec::with_capacity(request_args.len());
+                        if let QueryField::Field((_, schema_args)) = field_def {
+                            for (arg_name, arg_value) in schema_args {
+                                let type_of = arg_value.of_type.clone();
                                 let id = ArgId::new(self.arg_id.next());
                                 let name = arg_name.clone();
-                                let default_value = arg
+                                let default_value = arg_value
                                     .default_value
                                     .as_ref()
                                     .and_then(|v| v.to_owned().try_into().ok());
@@ -99,7 +82,8 @@ impl ConstBuilder {
                                     id,
                                     name,
                                     type_of,
-                                    value: Some(value),
+                                    // TODO: handle errors for non existing request_args without the default
+                                    value: request_args.get(arg_name).cloned(),
                                     default_value,
                                 });
                             }
@@ -131,6 +115,8 @@ impl ConstBuilder {
                             extensions: refs.clone(),
                         });
                         fields = fields.merge_right(child_fields);
+                    } else {
+                        // TODO: error if the field is not found in the schema
                     }
                 }
                 Selection::FragmentSpread(Positioned { node: fragment_spread, .. }) => {
