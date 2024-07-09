@@ -2,6 +2,9 @@
 
 use std::collections::HashMap;
 
+use async_graphql_value::ConstValue;
+use serde_json::Value;
+
 pub trait JsonT {
     fn array_ok(value: &Self) -> Option<&Vec<Self>>
     where
@@ -15,11 +18,10 @@ pub trait JsonT {
     fn option_ok(value: &Self) -> Option<Option<&Self>>;
     fn get_path<'a, T: AsRef<str>>(value: &'a Self, path: &'a [T]) -> Option<&'a Self>;
     fn get_key<'a>(value: &'a Self, path: &'a str) -> Option<&'a Self>;
-    fn new(value: &Self) -> &Self;
     fn group_by<'a>(value: &'a Self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>>;
 }
 
-impl JsonT for serde_json::Value {
+impl JsonT for Value {
     fn array_ok(value: &Self) -> Option<&Vec<Self>> {
         value.as_array()
     }
@@ -74,10 +76,6 @@ impl JsonT for serde_json::Value {
         value.get(path)
     }
 
-    fn new(value: &Self) -> &Self {
-        value
-    }
-
     fn group_by<'a>(value: &'a Self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
         let src = gather_path_matches(value, path, vec![]);
         group_by_key(src)
@@ -93,14 +91,14 @@ pub fn gather_path_matches<'a, J: JsonT>(
 ) -> Vec<(&'a J, &'a J)> {
     if let Some(root) = <J as JsonT>::array_ok(root) {
         for value in root {
-            vector = gather_path_matches(J::new(value), path, vector);
+            vector = gather_path_matches(value, path, vector);
         }
     } else if let Some((key, tail)) = path.split_first() {
         if let Some(value) = <J as JsonT>::get_key(root, key) {
             if tail.is_empty() {
-                vector.push((J::new(value), root));
+                vector.push((value, root));
             } else {
-                vector = gather_path_matches(J::new(value), tail, vector);
+                vector = gather_path_matches(value, tail, vector);
             }
         }
     }
@@ -125,6 +123,94 @@ pub fn group_by_key<'a, J: JsonT>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, V
         }
     }
     map
+}
+
+impl JsonT for async_graphql::Value {
+    fn array_ok(value: &Self) -> Option<&Vec<Self>>
+    where
+        Self: Sized,
+    {
+        match value {
+            ConstValue::List(arr) => Some(arr),
+            _ => None,
+        }
+    }
+
+    fn str_ok(value: &Self) -> Option<&str> {
+        match value {
+            ConstValue::String(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    fn i64_ok(value: &Self) -> Option<i64> {
+        match value {
+            ConstValue::Number(n) => n.as_i64(),
+            _ => None,
+        }
+    }
+
+    fn u64_ok(value: &Self) -> Option<u64> {
+        match value {
+            ConstValue::Number(n) => n.as_u64(),
+            _ => None,
+        }
+    }
+
+    fn f64_ok(value: &Self) -> Option<f64> {
+        match value {
+            ConstValue::Number(n) => n.as_f64(),
+            _ => None,
+        }
+    }
+
+    fn bool_ok(value: &Self) -> Option<bool> {
+        match value {
+            ConstValue::Boolean(b) => Some(*b),
+            _ => None,
+        }
+    }
+
+    fn null_ok(value: &Self) -> Option<()> {
+        match value {
+            ConstValue::Null => Some(()),
+            _ => None,
+        }
+    }
+
+    fn option_ok(value: &Self) -> Option<Option<&Self>> {
+        match value {
+            ConstValue::Null => Some(None),
+            _ => Some(Some(value)),
+        }
+    }
+
+    fn get_path<'a, T: AsRef<str>>(value: &'a Self, path: &'a [T]) -> Option<&'a Self> {
+        let mut val = value;
+        for token in path {
+            val = match val {
+                ConstValue::List(arr) => {
+                    let index = token.as_ref().parse::<usize>().ok()?;
+                    arr.get(index)?
+                }
+                ConstValue::Object(map) => map.get(token.as_ref())?,
+                _ => return None,
+            };
+        }
+        Some(val)
+    }
+
+    fn get_key<'a>(value: &'a Self, path: &'a str) -> Option<&'a Self> {
+        match value {
+            ConstValue::Object(map) => map.get(path),
+            _ => None,
+        }
+    }
+
+    fn group_by<'a>(value: &'a Self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
+        let src = gather_path_matches(value, path, vec![]);
+        group_by_key(src)
+    }
 }
 
 #[cfg(test)]
@@ -178,7 +264,7 @@ mod tests {
             &["data".into(), "user".into(), "id".into()],
             vec![],
         ))
-            .unwrap();
+        .unwrap();
 
         let expected = json!(
             [
