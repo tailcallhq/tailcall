@@ -5,6 +5,7 @@ use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
 use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
+use serde_json::Value;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
 
@@ -23,9 +24,25 @@ static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc"
 pub struct RequestTemplate {
     pub url: Mustache,
     pub headers: MustacheHeaders,
-    pub body: Option<Mustache>,
+    pub body: Option<RequestBody>,
     pub operation: ProtobufOperation,
     pub operation_type: GraphQLOperationType,
+}
+
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct RequestBody {
+    pub mustache: Option<Mustache>,
+    pub value: Value,
+}
+
+impl RequestBody {
+    pub fn render<C: PathString>(&self, ctx: &C) -> String {
+        if let Some(mustache) = &self.mustache {
+            mustache.render(ctx)
+        } else {
+            self.value.to_string()
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -123,7 +140,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
 
-    use super::RequestTemplate;
+    use super::{RequestBody, RequestTemplate};
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
@@ -237,7 +254,10 @@ mod tests {
             url: Mustache::parse("http://localhost:3000/").unwrap(),
             headers: vec![],
             operation: get_protobuf_op().await,
-            body: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
+            body: Some(RequestBody {
+                mustache: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
+                value: Default::default(),
+            }),
             operation_type: GraphQLOperationType::Query,
         };
         let ctx = Context::default();
@@ -254,7 +274,10 @@ mod tests {
             url: Mustache::parse("http://localhost:3000/").unwrap(),
             headers: vec![],
             operation: get_protobuf_op().await,
-            body: Some(Mustache::parse(body_str).unwrap()),
+            body: Some(RequestBody {
+                mustache: Some(Mustache::parse(body_str).unwrap()),
+                value: Default::default(),
+            }),
             operation_type: GraphQLOperationType::Query,
         }
     }
