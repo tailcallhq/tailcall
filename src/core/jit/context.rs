@@ -1,3 +1,4 @@
+use async_graphql::parser::types::OperationType;
 use derive_getters::Getters;
 
 use super::Request;
@@ -40,7 +41,15 @@ impl<'a> ResolverContextLike for Context<'a, async_graphql::Value, async_graphql
     }
 
     fn is_query(&self) -> bool {
-        todo!()
+        self.request
+            .document
+            .as_ref()
+            .map_or(false, |exec_document| {
+                exec_document
+                    .operations
+                    .iter()
+                    .any(|(_, operation)| operation.node.ty == OperationType::Query)
+            })
     }
 
     fn add_error(&self, _error: async_graphql::ServerError) {

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use async_graphql::parser::types::ExecutableDocument;
 use derive_setters::Setters;
 use serde::Deserialize;
 
@@ -16,10 +17,13 @@ pub struct Request<Value> {
     pub variables: HashMap<String, Value>,
     #[serde(default)]
     pub extensions: HashMap<String, Value>,
+    #[serde(default)]
+    pub document: Option<ExecutableDocument>,
 }
 
 impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
-    fn from(value: async_graphql::Request) -> Self {
+    fn from(mut value: async_graphql::Request) -> Self {
+        let executable_doc = value.parsed_query().ok().cloned();
         Self {
             query: value.query,
             operation_name: value.operation_name,
@@ -30,6 +34,7 @@ impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
                 _ => HashMap::new(),
             },
             extensions: value.extensions,
+            document: executable_doc,
         }
     }
 }
@@ -49,6 +54,7 @@ impl<A> Request<A> {
             operation_name: None,
             variables: HashMap::new(),
             extensions: HashMap::new(),
+            document: async_graphql::parser::parse_query(query).ok(),
         }
     }
 }
