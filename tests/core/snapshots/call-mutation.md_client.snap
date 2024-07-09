@@ -23,11 +23,11 @@ scalar Int8
 scalar JSON
 
 type Mutation {
-  attachPostToFirstUser(postId: Int, userId: Int): User
+  attachPostToFirstUser(postId: Int!): User
   attachPostToUser(postId: Int!, userId: Int!): User
-  insertMockedPost(input: PostInput): Post
+  insertMockedPost: Post
   insertPost(input: PostInput): Post
-  insertPostToFirstUser(input: PostInputWithoutUserId, userId: Int): Post
+  insertPostToFirstUser(input: PostInputWithoutUserId): Post
   insertPostToUser(input: PostInputWithoutUserId!, userId: Int!): Post
 }
 
@@ -72,7 +72,7 @@ scalar Url
 type User {
   id: Int
   name: String
-  posts(userId: Int): [Post]
+  posts: [Post]
 }
 
 schema {
