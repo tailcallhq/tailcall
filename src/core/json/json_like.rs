@@ -6,15 +6,16 @@ use crate::core::json::json_object_like::JsonObjectLike;
 
 pub trait JsonLike {
     type Json;
-    type Obj: JsonObjectLike;
+    type JsonObject: JsonObjectLike;
 
     // Constructors
     fn default() -> Self;
     fn new_array(arr: Vec<Self::Json>) -> Self;
+    fn new(value: &Self::Json) -> &Self;
 
     // Operators
     fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str>;
-    fn as_object_ok(&self) -> Result<&Self::Obj, &str>;
+    fn as_object_ok(&self) -> Result<&Self::JsonObject, &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;
     fn as_string_ok(&self) -> Result<&String, &str>;
     fn as_i64_ok(&self) -> Result<i64, &str>;
@@ -25,13 +26,12 @@ pub trait JsonLike {
     fn as_option_ok(&self) -> Result<Option<&Self::Json>, &str>;
     fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Json>;
     fn get_key(&self, path: &str) -> Option<&Self::Json>;
-    fn new(value: &Self::Json) -> &Self;
     fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Json>>;
 }
 
 impl JsonLike for serde_json::Value {
     type Json = serde_json::Value;
-    type Obj = serde_json::Map<String, serde_json::Value>;
+    type JsonObject = serde_json::Map<String, serde_json::Value>;
 
     fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str> {
         self.as_array().ok_or("expected array")
@@ -108,7 +108,7 @@ impl JsonLike for serde_json::Value {
         Self::Array(arr)
     }
 
-    fn as_object_ok(&self) -> Result<&Self::Obj, &str> {
+    fn as_object_ok(&self) -> Result<&Self::JsonObject, &str> {
         match self {
             serde_json::Value::Object(map) => Ok(map),
             _ => Err("expected object"),
@@ -118,7 +118,7 @@ impl JsonLike for serde_json::Value {
 
 impl JsonLike for async_graphql::Value {
     type Json = async_graphql::Value;
-    type Obj = indexmap::IndexMap<async_graphql::Name, async_graphql::Value>;
+    type JsonObject = indexmap::IndexMap<async_graphql::Name, async_graphql::Value>;
 
     fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str> {
         match self {
@@ -221,7 +221,7 @@ impl JsonLike for async_graphql::Value {
         ConstValue::List(arr)
     }
 
-    fn as_object_ok(&self) -> Result<&Self::Obj, &str> {
+    fn as_object_ok(&self) -> Result<&Self::JsonObject, &str> {
         match self {
             ConstValue::Object(map) => Ok(map),
             _ => Err("expected object"),
