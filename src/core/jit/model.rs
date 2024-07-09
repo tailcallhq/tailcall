@@ -2,15 +2,28 @@ use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::model::IR;
 
-type FieldChildren<ParsedValue, Input> = Field<Children<ParsedValue, Input>, ParsedValue, Input>;
-
 #[derive(Debug, Clone)]
-pub struct Arg<ParsedValue, Input> {
+pub struct Arg<Input> {
     pub id: ArgId,
     pub name: String,
     pub type_of: crate::core::blueprint::Type,
-    pub value: Option<ParsedValue>,
+    pub value: Option<Input>,
     pub default_value: Option<Input>,
+}
+
+impl<Input> Arg<Input> {
+    pub fn map_value<Output, Error>(
+        self,
+        map: impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<Arg<Output>, Error> {
+        Ok(Arg {
+            id: self.id,
+            name: self.name,
+            type_of: self.type_of,
+            value: self.value.map(&map).transpose()?,
+            default_value: self.default_value.map(&map).transpose()?,
+        })
+    }
 }
 
 #[derive(Clone)]
@@ -47,21 +60,38 @@ impl FieldId {
 }
 
 #[derive(Clone)]
-pub struct Field<A: Clone, ParsedValue: Clone, Input: Clone> {
+// TODO: do we need Clone constraints?
+pub struct Field<A: Clone, Input: Clone> {
     pub id: FieldId,
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
-    pub args: Vec<Arg<ParsedValue, Input>>,
+    pub args: Vec<Arg<Input>>,
     pub extensions: Option<A>,
 }
 
-impl<ParsedValue: Clone, Input: Clone> FieldChildren<ParsedValue, Input> {
-    pub fn children(&self) -> Option<&Vec<FieldChildren<ParsedValue, Input>>> {
+impl<A: Clone, Input: Clone> Field<A, Input> {
+    pub fn map_args<Output: Clone, Error>(
+        self,
+        map: impl Fn(Arg<Input>) -> Result<Arg<Output>, Error>,
+    ) -> Result<Field<A, Output>, Error> {
+        Ok(Field {
+            id: self.id,
+            name: self.name,
+            ir: self.ir,
+            type_of: self.type_of,
+            extensions: self.extensions,
+            args: self.args.into_iter().map(map).collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+impl<Input: Clone> Field<Children<Input>, Input> {
+    pub fn children(&self) -> Option<&Vec<Field<Children<Input>, Input>>> {
         self.extensions.as_ref().map(|Children(children)| children)
     }
 
-    pub fn children_iter(&self) -> impl Iterator<Item = &FieldChildren<ParsedValue, Input>> {
+    pub fn children_iter(&self) -> impl Iterator<Item = &Field<Children<Input>, Input>> {
         self.children()
             .map(|children| children.iter())
             .into_iter()
@@ -69,15 +99,12 @@ impl<ParsedValue: Clone, Input: Clone> FieldChildren<ParsedValue, Input> {
     }
 }
 
-impl<ParsedValue: Clone, Input: Clone> Field<Parent, ParsedValue, Input> {
+impl<Input: Clone> Field<Parent, Input> {
     fn parent(&self) -> Option<&FieldId> {
         self.extensions.as_ref().map(|Parent(id)| id)
     }
 
-    fn into_children(
-        self,
-        fields: &[Field<Parent, ParsedValue, Input>],
-    ) -> FieldChildren<ParsedValue, Input> {
+    fn into_children(self, fields: &[Field<Parent, Input>]) -> Field<Children<Input>, Input> {
         let mut children = Vec::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
@@ -104,9 +131,7 @@ impl<ParsedValue: Clone, Input: Clone> Field<Parent, ParsedValue, Input> {
     }
 }
 
-impl<A: Debug + Clone, ParsedValue: Clone + Debug, Input: Clone + Debug> Debug
-    for Field<A, ParsedValue, Input>
-{
+impl<A: Debug + Clone, Input: Clone + Debug> Debug for Field<A, Input> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut debug_struct = f.debug_struct("Field");
         debug_struct.field("id", &self.id);
@@ -143,18 +168,16 @@ impl Debug for Parent {
 }
 
 #[derive(Clone, Debug)]
-pub struct Children<ParsedValue: Clone, Input: Clone>(
-    Vec<Field<Children<ParsedValue, Input>, ParsedValue, Input>>,
-);
+pub struct Children<Input: Clone>(Vec<Field<Children<Input>, Input>>);
 
 #[derive(Clone, Debug)]
-pub struct ExecutionPlan<ParsedValue: Clone, Input: Clone> {
-    parent: Vec<Field<Parent, ParsedValue, Input>>,
-    children: Vec<Field<Children<ParsedValue, Input>, ParsedValue, Input>>,
+pub struct ExecutionPlan<Input: Clone> {
+    parent: Vec<Field<Parent, Input>>,
+    children: Vec<Field<Children<Input>, Input>>,
 }
 
-impl<ParsedValue: Clone, Input: Clone> ExecutionPlan<ParsedValue, Input> {
-    pub fn new(fields: Vec<Field<Parent, ParsedValue, Input>>) -> Self {
+impl<Input: Clone> ExecutionPlan<Input> {
+    pub fn new(fields: Vec<Field<Parent, Input>>) -> Self {
         let field_children = fields
             .clone()
             .into_iter()
@@ -165,26 +188,23 @@ impl<ParsedValue: Clone, Input: Clone> ExecutionPlan<ParsedValue, Input> {
         Self { parent: fields, children: field_children }
     }
 
-    pub fn as_children(&self) -> &[Field<Children<ParsedValue, Input>, ParsedValue, Input>] {
+    pub fn as_children(&self) -> &[Field<Children<Input>, Input>] {
         &self.children
     }
 
-    pub fn into_children(self) -> Vec<Field<Children<ParsedValue, Input>, ParsedValue, Input>> {
+    pub fn into_children(self) -> Vec<Field<Children<Input>, Input>> {
         self.children
     }
 
-    pub fn as_parent(&self) -> &[Field<Parent, ParsedValue, Input>] {
+    pub fn as_parent(&self) -> &[Field<Parent, Input>] {
         &self.parent
     }
 
-    pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent, ParsedValue, Input>> {
+    pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent, Input>> {
         self.parent.iter().find(|field| field.id == id)
     }
 
-    pub fn find_field_path<S: AsRef<str>>(
-        &self,
-        path: &[S],
-    ) -> Option<&Field<Parent, ParsedValue, Input>> {
+    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Parent, Input>> {
         match path.split_first() {
             None => None,
             Some((name, path)) => {

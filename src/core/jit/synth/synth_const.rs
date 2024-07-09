@@ -1,5 +1,5 @@
 use async_graphql::Name;
-use async_graphql_value::{ConstValue, Value};
+use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::super::Result;
@@ -10,16 +10,12 @@ use crate::core::jit::{DataPath, ExecutionPlan};
 use crate::core::json::JsonLike;
 
 pub struct Synth {
-    selection:
-        Vec<Field<Children<Value, ConstValue>, Value, ConstValue>>,
+    selection: Vec<Field<Children<ConstValue>, ConstValue>>,
     store: Store<Result<ConstValue>>,
 }
 
 impl Synth {
-    pub fn new(
-        plan: ExecutionPlan<Value, ConstValue>,
-        store: Store<Result<ConstValue>>,
-    ) -> Self {
+    pub fn new(plan: ExecutionPlan<ConstValue>, store: Store<Result<ConstValue>>) -> Self {
         Self { selection: plan.into_children(), store }
     }
 
@@ -42,11 +38,7 @@ impl Synth {
     #[inline(always)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<
-            Children<Value, ConstValue>,
-            Value,
-            ConstValue,
-        >,
+        node: &'b Field<Children<ConstValue>, ConstValue>,
         parent: Option<&'b ConstValue>,
         data_path: &DataPath,
     ) -> Result<ConstValue> {
@@ -95,11 +87,7 @@ impl Synth {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<
-            Children<Value, ConstValue>,
-            Value,
-            ConstValue,
-        >,
+        node: &'b Field<Children<ConstValue>, ConstValue>,
         parent: &'b ConstValue,
         data_path: &'b DataPath,
     ) -> Result<ConstValue> {
@@ -148,11 +136,11 @@ impl Synth {
 }
 
 pub struct SynthConst {
-    plan: ExecutionPlan<Value, ConstValue>,
+    plan: ExecutionPlan<ConstValue>,
 }
 
 impl SynthConst {
-    pub fn new(plan: ExecutionPlan<Value, ConstValue>) -> Self {
+    pub fn new(plan: ExecutionPlan<ConstValue>) -> Self {
         Self { plan }
     }
 }
@@ -171,13 +159,13 @@ mod tests {
     use async_graphql::Value;
 
     use super::Synth;
-    use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
-    use crate::core::jit::builder::{Builder, ConstBuilder};
+    use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
     use crate::core::valid::Validator;
+    use crate::core::{blueprint::Blueprint, jit::input_resolver::InputResolver};
 
     const POSTS: &str = r#"
         [
@@ -253,8 +241,10 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
 
-        let builder = ConstBuilder::new(&Blueprint::try_from(&config).unwrap(), doc);
+        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build().unwrap();
+        let input_resolver = InputResolver::new(plan);
+        let plan = input_resolver.resolve_input().unwrap();
 
         let store = store
             .into_iter()

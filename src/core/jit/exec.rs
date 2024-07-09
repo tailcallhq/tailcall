@@ -10,28 +10,26 @@ use super::context::Context;
 use super::synth::Synthesizer;
 use super::{Children, DataPath, ExecutionPlan, Field, Request, Response, Store};
 use crate::core::ir::model::IR;
-use crate::core::jit::builder::FromParsedValue;
 use crate::core::json::JsonLike;
 
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
-pub struct Executor<Synth, IRExec, ParsedValue: Clone, Input: Clone> {
-    plan: ExecutionPlan<ParsedValue, Input>,
+pub struct Executor<Synth, IRExec, Input: Clone> {
+    plan: ExecutionPlan<Input>,
     synth: Synth,
     exec: IRExec,
 }
 
-impl<ParsedValue, Input, Output, Error, Synth, Exec> Executor<Synth, Exec, ParsedValue, Input>
+impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec, Input>
 where
     Output: JsonLike<Output = Output> + Default + Clone + Debug,
-    Input: Clone + FromParsedValue<ParsedValue> + Debug,
-    ParsedValue: Clone,
+    Input: Clone + Debug,
     Synth: Synthesizer<Value = Result<Output, Error>>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
     ConstValue: From<Input>,
 {
-    pub fn new(plan: ExecutionPlan<ParsedValue, Input>, synth: Synth, exec: Exec) -> Self {
+    pub fn new(plan: ExecutionPlan<Input>, synth: Synth, exec: Exec) -> Self {
         Self { plan, synth, exec }
     }
 
@@ -51,25 +49,25 @@ where
 }
 
 #[derive(Getters)]
-struct ExecutorInner<'a, ParsedValue: Clone, Input: Clone, Output: Clone, Error, Exec> {
+struct ExecutorInner<'a, Input: Clone, Output: Clone, Error, Exec> {
     request: Request<Input>,
     store: Arc<Mutex<Store<Result<Output, Error>>>>,
-    plan: ExecutionPlan<ParsedValue, Input>,
+    plan: ExecutionPlan<Input>,
     ir_exec: &'a Exec,
 }
 
-impl<'a, ParsedValue: Clone, Input, Output, Error, Exec>
-    ExecutorInner<'a, ParsedValue, Input, Output, Error, Exec>
+impl<'a, Input, Output, Error, Exec>
+    ExecutorInner<'a, Input, Output, Error, Exec>
 where
     Output: JsonLike<Output = Output> + Default + Clone + Debug,
-    Input: Clone + FromParsedValue<ParsedValue> + Debug,
+    Input: Clone + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
     ConstValue: From<Input>,
 {
     fn new(
         request: Request<Input>,
         store: Arc<Mutex<Store<Result<Output, Error>>>>,
-        plan: ExecutionPlan<ParsedValue, Input>,
+        plan: ExecutionPlan<Input>,
         ir_exec: &'a Exec,
     ) -> Self {
         Self { request, store, plan, ir_exec }
@@ -83,8 +81,7 @@ where
                 let name = arg.name.as_str();
                 let value: Option<Input> = arg
                     .value
-                    .as_ref()
-                    .and_then(|value| Input::from_parsed_value(value.clone()))
+                    .clone()
                     .or_else(|| arg.default_value.clone());
 
                 if let Some(value) = value {
@@ -102,7 +99,7 @@ where
 
     async fn execute<'b>(
         &'b self,
-        field: &'b Field<Children<ParsedValue, Input>, ParsedValue, Input>,
+        field: &'b Field<Children<Input>, Input>,
         ctx: &'b Context<'b, Input, Output>,
         data_path: DataPath,
     ) -> Result<(), Error> {

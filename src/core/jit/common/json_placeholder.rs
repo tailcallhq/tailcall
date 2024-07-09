@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use async_graphql::Value;
 
-use crate::core::blueprint::Blueprint;
+use crate::core::{blueprint::Blueprint, jit::input_resolver::InputResolver};
 use crate::core::config::{Config, ConfigModule};
-use crate::core::jit::builder::{Builder, ConstBuilder};
+use crate::core::jit::builder::Builder;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
 use crate::core::json::JsonLike;
@@ -61,7 +61,7 @@ impl JsonPlaceholder {
             .collect();
 
         let config = ConfigModule::from(Config::from_sdl(Self::CONFIG).to_result().unwrap());
-        let builder = ConstBuilder::new(
+        let builder = Builder::new(
             &Blueprint::try_from(&config).unwrap(),
             async_graphql::parser::parse_query(query).unwrap(),
         );
@@ -81,6 +81,10 @@ impl JsonPlaceholder {
             store.set_data(id, data);
             store
         });
+
+        let input_resolver = InputResolver::new(plan);
+
+        let plan = input_resolver.resolve_input().unwrap();
 
         Synth::new(plan, store)
     }

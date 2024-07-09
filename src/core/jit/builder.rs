@@ -5,39 +5,23 @@ use async_graphql::parser::types::{
     SelectionSet,
 };
 use async_graphql::Positioned;
-use async_graphql_value::{ConstValue, Value};
+use async_graphql_value::Value;
 
-use super::model::*;
+use super::{model::*, BuildError};
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::ExecutionPlan;
 use crate::core::merge_right::MergeRight;
 
-pub trait Builder<ParsedValue: Clone, Input: Clone> {
-    fn build(&self) -> Result<ExecutionPlan<ParsedValue, Input>, String>;
-}
-
-pub trait FromParsedValue<ParsedValue>
-where
-    Self: Sized,
-{
-    fn from_parsed_value(value: ParsedValue) -> Option<Self>;
-}
-
-impl FromParsedValue<Value> for ConstValue {
-    fn from_parsed_value(value: Value) -> Option<Self> {
-        value.into_const()
-    }
-}
-
-pub struct ConstBuilder {
+pub struct Builder {
     pub index: Index,
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: ExecutableDocument,
 }
 
-impl ConstBuilder {
+// TODO: make generic over Value (Input) type
+impl Builder {
     pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
         let index = blueprint.index();
         Self {
@@ -49,13 +33,13 @@ impl ConstBuilder {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn iter(
+    fn iter(
         &self,
         selection: &SelectionSet,
         type_of: &str,
         refs: Option<Parent>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Parent, Value, ConstValue>> {
+    ) -> Vec<Field<Parent, Value>> {
         let mut fields = vec![];
         for selection in &selection.items {
             match &selection.node {
@@ -138,17 +122,15 @@ impl ConstBuilder {
         fields
     }
 
-    pub fn get_type(&self, ty: OperationType) -> Option<&str> {
+    fn get_type(&self, ty: OperationType) -> Option<&str> {
         match ty {
             OperationType::Query => Some(self.index.get_query()),
             OperationType::Mutation => self.index.get_mutation(),
             OperationType::Subscription => None,
         }
     }
-}
 
-impl Builder<Value, ConstValue> for ConstBuilder {
-    fn build(&self) -> Result<ExecutionPlan<Value, ConstValue>, String> {
+    pub fn build(&self) -> Result<ExecutionPlan<Value>, BuildError> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
@@ -158,18 +140,16 @@ impl Builder<Value, ConstValue> for ConstBuilder {
 
         match &self.document.operations {
             DocumentOperations::Single(single) => {
-                let name = self.get_type(single.node.ty).ok_or(format!(
-                    "Root Operation type not defined for {}",
-                    single.node.ty
-                ))?;
+                let name = self
+                    .get_type(single.node.ty)
+                    .ok_or(BuildError::RootOperationTypeNotDefined { operation: single.node.ty })?;
                 fields.extend(self.iter(&single.node.selection_set.node, name, None, &fragments));
             }
             DocumentOperations::Multiple(multiple) => {
                 for single in multiple.values() {
-                    let name = self.get_type(single.node.ty).ok_or(format!(
-                        "Root Operation type not defined for {}",
-                        single.node.ty
-                    ))?;
+                    let name = self.get_type(single.node.ty).ok_or(
+                        BuildError::RootOperationTypeNotDefined { operation: single.node.ty },
+                    )?;
                     fields.extend(self.iter(
                         &single.node.selection_set.node,
                         name,
@@ -191,17 +171,17 @@ mod tests {
     use super::*;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::Config;
-    use crate::core::jit::builder::ConstBuilder;
+    use crate::core::jit::builder::Builder;
     use crate::core::valid::Validator;
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>) -> ExecutionPlan<Value, ConstValue> {
+    fn plan(query: impl AsRef<str>) -> ExecutionPlan<Value> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
 
-        ConstBuilder::new(&blueprint, document).build().unwrap()
+        Builder::new(&blueprint, document).build().unwrap()
     }
 
     #[tokio::test]

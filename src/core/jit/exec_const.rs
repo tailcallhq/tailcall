@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_graphql_value::{ConstValue, Value};
+use async_graphql_value::ConstValue;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
@@ -13,7 +13,7 @@ use crate::core::ir::EvalContext;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
-    plan: ExecutionPlan<Value, ConstValue>,
+    plan: ExecutionPlan<ConstValue>,
     app_ctx: Arc<AppContext>,
 }
 

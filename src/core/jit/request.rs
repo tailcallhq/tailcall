@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
-use async_graphql_value::{ConstValue, Value};
+use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use serde::Deserialize;
 
-use super::{ConstBuilder, Error, ExecutionPlan, Result};
+use super::{input_resolver::InputResolver, Builder, ExecutionPlan, Result};
 use crate::core::blueprint::Blueprint;
-use crate::core::jit::builder::Builder;
 
 #[derive(Debug, Deserialize, Setters)]
 pub struct Request<V> {
@@ -37,13 +36,13 @@ impl From<async_graphql::Request> for Request<ConstValue> {
 }
 
 impl<V> Request<V> {
-    pub fn try_new(
-        &self,
-        blueprint: &Blueprint,
-    ) -> Result<ExecutionPlan<Value, ConstValue>> {
+    pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan<ConstValue>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
-        let builder = ConstBuilder::new(blueprint, doc);
-        builder.build().map_err(Error::BuildError)
+        let builder = Builder::new(blueprint, doc);
+        let plan = builder.build()?;
+        let input_resolver = InputResolver::new(plan);
+
+        Ok(input_resolver.resolve_input()?)
     }
 }
 
