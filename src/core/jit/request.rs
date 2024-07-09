@@ -17,7 +17,7 @@ pub struct Request<Value> {
     pub variables: HashMap<String, Value>,
     #[serde(default)]
     pub extensions: HashMap<String, Value>,
-    #[serde(default)]
+    #[serde(skip)]
     pub document: Option<ExecutableDocument>,
 }
 
