@@ -290,8 +290,9 @@ mod tests {
             path: &[T],
         ) -> Option<crate::core::path::RawValue<'a>> {
             self.value.get_path(path).map(|a| {
-                let p = async_graphql::Value::from_json(a.clone()).unwrap();
-                RawValue::Arg(Cow::Owned(p))
+                RawValue::Arg(Cow::Owned(
+                    async_graphql::Value::from_json(a.clone()).unwrap(),
+                ))
             })
         }
     }

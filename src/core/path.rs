@@ -18,7 +18,8 @@ pub trait PathString {
 }
 
 /// PathValue trait provides a method for accessing values from JSON-like
-/// structure it returns raw value.
+/// structure, the returned value is wrapped with RawValue enum, delegating
+/// encoding to the client of this method.
 pub trait PathValue {
     fn raw_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<RawValue<'a>>;
 }
