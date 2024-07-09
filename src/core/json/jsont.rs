@@ -5,19 +5,42 @@ use std::collections::HashMap;
 use async_graphql_value::ConstValue;
 use serde_json::Value;
 
+/// A trait for JSON-like objects
+/// This trait is used to abstract over different JSON-like objects
 pub trait JsonT {
+    /// Get the array if the value is an array
     fn array_ok(value: &Self) -> Option<&Vec<Self>>
     where
         Self: Sized;
+
+    /// Get the string if the value is a string
     fn str_ok(value: &Self) -> Option<&str>;
+
+    /// Get the i64 if the value is an i64
     fn i64_ok(value: &Self) -> Option<i64>;
+
+    /// Get the u64 if the value is a u64
     fn u64_ok(value: &Self) -> Option<u64>;
+
+    /// Get the f64 if the value is an f64
     fn f64_ok(value: &Self) -> Option<f64>;
+
+    /// Get the bool if the value is a bool
     fn bool_ok(value: &Self) -> Option<bool>;
+
+    /// Get the null if the value is a null
     fn null_ok(value: &Self) -> Option<()>;
+
+    /// Get the option if the value is a null
     fn option_ok(value: &Self) -> Option<Option<&Self>>;
+
+    /// Get the value at a path
     fn get_path<'a, T: AsRef<str>>(value: &'a Self, path: &'a [T]) -> Option<&'a Self>;
+
+    /// Get the value at a key
     fn get_key<'a>(value: &'a Self, path: &'a str) -> Option<&'a Self>;
+
+    /// Group the values by a path
     fn group_by<'a>(value: &'a Self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>>;
 }
 
