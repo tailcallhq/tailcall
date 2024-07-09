@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use anyhow::Result;
+use dashmap::DashMap;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;
@@ -15,7 +16,6 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall_http_cache::HttpCacheManager;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
-use dashmap::DashMap;
 
 use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
@@ -196,22 +196,19 @@ pub struct ConcurrentHttp {
 
 impl ConcurrentHttp {
     pub fn new(http: Box<dyn HttpIO>) -> Self {
-        ConcurrentHttp {
-            http,
-            map: Default::default(),
-        }
+        ConcurrentHttp { http, map: Default::default() }
     }
 }
 
 #[async_trait::async_trait]
 impl HttpIO for ConcurrentHttp {
-    async fn execute(&self,  mut request: reqwest::Request) -> Result<Response<Bytes>> {
+    async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
         let thread_id = std::thread::current().id();
         if let Some(http) = self.map.get(&thread_id) {
             http.value().execute(request).await
-        }  else {
+        } else {
             let new_http = self.http.cl();
-            let ret =new_http.execute(request).await;
+            let ret = new_http.execute(request).await;
             self.map.insert(thread_id, new_http);
             ret
         }

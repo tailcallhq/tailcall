@@ -6,8 +6,7 @@ use std::fs;
 use std::hash::Hash;
 use std::sync::Arc;
 
-pub use http::NativeHttp;
-pub use http::ConcurrentHttp;
+pub use http::{ConcurrentHttp, NativeHttp};
 use inquire::{Confirm, Select};
 
 use crate::core::blueprint::Blueprint;
@@ -56,9 +55,7 @@ fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
         &blueprint.upstream,
         &blueprint.telemetry,
     ));
-    Arc::new(ConcurrentHttp::new(
-        http
-    ))
+    Arc::new(ConcurrentHttp::new(http))
 }
 
 // Provides access to http in native rust environment

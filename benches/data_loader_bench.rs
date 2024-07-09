@@ -29,7 +29,7 @@ impl HttpIO for MockHttpClient {
 
     fn cl(&self) -> Box<dyn HttpIO> {
         Box::new(self.clone())
-            }
+    }
 }
 
 struct Env {}
