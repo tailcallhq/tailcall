@@ -70,6 +70,7 @@ type News {
   response:
     status: 200
     textBody: \0\0\0\0#\x08\x02\x12\x06Note 2\x1a\tContent 2\"\x0cPost image 2
+  expectedHits: 3
 ```
 
 ```yml @test

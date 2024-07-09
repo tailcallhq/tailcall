@@ -34,13 +34,14 @@ mod tests {
 
     #[test]
     fn body_parse_success() {
-        let result = to_body(Some(&serde_json::Value::String("content".to_string())));
+        let value = serde_json::Value::String("content".to_string());
+        let result = to_body(Some(&value));
 
         assert_eq!(
             result,
             Valid::succeed(Some(RequestBody {
-                mustache: Some(Mustache::parse("content").unwrap()),
-                value: "content".to_string()
+                mustache: Some(Mustache::parse(value.to_string().as_str()).unwrap()),
+                value: value.to_string()
             }))
         );
     }
