@@ -14,7 +14,8 @@ pub trait JsonLike {
     fn as_null_ok(&self) -> Result<(), &str>;
     fn as_option_ok(&self) -> Result<Option<&Self::Output>, &str>;
     fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Output>;
-    fn get_key(&self, path: &str) -> Option<&Self::Output>;
+    fn
+    get_key(&self, path: &str) -> Option<&Self::Output>;
     fn new(value: &Self::Output) -> &Self;
     fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output>>;
 }
