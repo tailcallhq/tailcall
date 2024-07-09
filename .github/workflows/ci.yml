@@ -146,7 +146,7 @@ jobs:
       - name: Run Cargo Test
         if: matrix.test != 'false'
         # TODO: run llvm-cov only for single build since other builds are not sent to codecov anyway
-        run: cargo llvm-cov --workspace ${{ matrix.features || '--all-features' }} --lcov --target ${{ matrix.target }} --output-path lcov.info
+        run: cargo llvm-cov --workspace ${{ matrix.features }} --lcov --target ${{ matrix.target }} --output-path lcov.info
 
       - name: Upload Coverage to Codecov
         if: matrix.build == 'darwin-arm64'
