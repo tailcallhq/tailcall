@@ -34,9 +34,9 @@ impl Builder {
         &self,
         selection: &SelectionSet,
         type_of: &str,
-        refs: Option<Parent>,
+        exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Parent>> {
+    ) -> Vec<Field<Flat>> {
         let mut fields = vec![];
         for selection in &selection.items {
             match &selection.node {
@@ -78,7 +78,7 @@ impl Builder {
                         let child_fields = self.iter(
                             &gql_field.selection_set.node,
                             type_of.name(),
-                            Some(Parent::new(id.clone())),
+                            Some(Flat::new(id.clone())),
                             fragments,
                         );
                         let name = field_name.to_owned();
@@ -92,7 +92,7 @@ impl Builder {
                             ir,
                             type_of,
                             args,
-                            extensions: refs.clone(),
+                            extensions: exts.clone(),
                         });
                         fields = fields.merge_right(child_fields);
                     }
@@ -104,7 +104,7 @@ impl Builder {
                         fields.extend(self.iter(
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
-                            refs.clone(),
+                            exts.clone(),
                             fragments,
                         ));
                     }
@@ -189,7 +189,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[tokio::test]
@@ -214,7 +214,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -240,7 +240,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -260,7 +260,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -279,7 +279,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -294,7 +294,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -313,7 +313,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -331,6 +331,6 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 }
