@@ -70,9 +70,77 @@ pub fn convert_value(value: &async_graphql::Value) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use async_graphql::Value;
 
     use super::*;
+
+    #[test]
+    fn test_encode_comma_separated_arg() {
+        let encoder = QueryEncoder { encoding_strategy: EncodingStrategy::CommaSeparated };
+        let values = Value::List(vec![
+            Value::Number(12.into()),
+            Value::Number(42.into()),
+            Value::Number(13.into()),
+        ]);
+        let arg_raw_value = Some(RawValue::Arg(Cow::Borrowed(&values)));
+
+        let actual = encoder.encode("key", arg_raw_value);
+        let expected = Some("key=12,42,13".to_string());
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_encode_repeated_key_value_arg() {
+        let encoder = QueryEncoder { encoding_strategy: EncodingStrategy::RepeatedKey };
+        let values = Value::List(vec![
+            Value::Number(12.into()),
+            Value::Number(42.into()),
+            Value::Number(13.into()),
+        ]);
+        let arg_raw_value = Some(RawValue::Arg(Cow::Borrowed(&values)));
+
+        let actual = encoder.encode("key", arg_raw_value);
+        let expected = Some("key=12&key=42&key=13".to_string());
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_encode_env_var() {
+        let encoder = QueryEncoder::default();
+        let raw_value = Some(RawValue::Env("env_value".into()));
+
+        let actual = encoder.encode("key", raw_value);
+        let expected = Some("key=env_value".to_string());
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_encode_var() {
+        let encoder = QueryEncoder::default();
+        let raw_value = Some(RawValue::Var("var_value".into()));
+
+        let actual = encoder.encode("key", raw_value);
+        let expected = Some("key=var_value".to_string());
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_encode_none() {
+        let encoder = QueryEncoder::default();
+        let raw_value: Option<RawValue> = None;
+
+        let actual = encoder.encode("key", raw_value);
+        let expected = None;
+
+        assert_eq!(actual, expected);
+    }
+
     #[test]
     fn test_encode_comma_separated_strategy() {
         let key = "ids";
