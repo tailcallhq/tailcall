@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, RwLock, Weak};
 
 use futures_util::Future;
 use tokio::sync::broadcast;
@@ -15,7 +15,7 @@ impl<A: Send + Sync + Clone> Value for A {}
 /// Allows deduplication of async operations based on a key.
 pub struct Dedupe<Key, Value> {
     /// Cache storage for the operations.
-    cache: Arc<Mutex<HashMap<Key, State<Value>>>>,
+    cache: Arc<RwLock<HashMap<Key, State<Value>>>>,
     /// Initial size of the multi-producer, multi-consumer channel.
     size: usize,
     /// When enabled allows the operations to be cached forever.
@@ -48,7 +48,7 @@ enum Step<Value> {
 
 impl<K: Key, V: Value> Dedupe<K, V> {
     pub fn new(size: usize, persist: bool) -> Self {
-        Self { cache: Arc::new(Mutex::new(HashMap::new())), size, persist }
+        Self { cache: Arc::new(RwLock::new(HashMap::new())), size, persist }
     }
 
     pub async fn dedupe<'a, Fn, Fut>(&'a self, key: &'a K, or_else: Fn) -> V
@@ -71,7 +71,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                 },
                 Step::Init(tx) => {
                     let value = or_else().await;
-                    let mut guard = self.cache.lock().unwrap();
+                    let mut guard = self.cache.write().unwrap();
                     if self.persist {
                         guard.insert(key.to_owned(), State::Ready(value.clone()));
                     } else {
@@ -87,7 +87,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
     }
 
     fn step(&self, key: &K) -> Step<V> {
-        let mut this = self.cache.lock().unwrap();
+        let mut this = self.cache.write().unwrap();
 
         if let Some(state) = this.get(key) {
             match state {
@@ -299,7 +299,7 @@ mod tests {
             call_2: bool,
         }
 
-        let status = Arc::new(Mutex::new(Status { call_1: false, call_2: false }));
+        let status = Arc::new(RwLock::new(Status { call_1: false, call_2: false }));
 
         let cache = Arc::new(Dedupe::<u64, ()>::new(100, true));
         let cache_1 = cache.clone();
@@ -354,7 +354,7 @@ mod tests {
             call_2: bool,
         }
 
-        let status = Arc::new(Mutex::new(Status { call_1: false, call_2: false }));
+        let status = Arc::new(RwLock::new(Status { call_1: false, call_2: false }));
 
         let cache = Arc::new(Dedupe::<u64, ()>::new(100, true));
         let cache_1 = cache.clone();
