@@ -312,7 +312,7 @@ mod tests {
             cache_1
                 .dedupe(&1, move || async move {
                     sleep(Duration::from_millis(100)).await;
-                    status_1.lock().unwrap().call_1 = true;
+                    status_1.write().unwrap().call_1 = true;
                 })
                 .await
         });
@@ -325,7 +325,7 @@ mod tests {
             cache_2
                 .dedupe(&1, move || async move {
                     sleep(Duration::from_millis(120)).await;
-                    status_2.lock().unwrap().call_2 = true;
+                    status_2.write().unwrap().call_2 = true;
                 })
                 .await
         });
@@ -339,7 +339,7 @@ mod tests {
         sleep(Duration::from_millis(300)).await;
 
         // Task 1 should still have completed because others are dependent on it.
-        let actual = status.lock().unwrap().deref().to_owned();
+        let actual = status.write().unwrap().deref().to_owned();
         assert_eq!(actual, Status { call_1: true, call_2: false })
     }
 
@@ -367,7 +367,7 @@ mod tests {
             cache_1
                 .dedupe(&1, move || async move {
                     sleep(Duration::from_millis(100)).await;
-                    status_1.lock().unwrap().call_1 = true;
+                    status_1.write().unwrap().call_1 = true;
                 })
                 .await
         });
@@ -377,7 +377,7 @@ mod tests {
             cache_2
                 .dedupe(&1, move || async move {
                     sleep(Duration::from_millis(150)).await;
-                    status_2.lock().unwrap().call_2 = true;
+                    status_2.write().unwrap().call_2 = true;
                 })
                 .await
         });
@@ -392,7 +392,7 @@ mod tests {
         sleep(Duration::from_millis(300)).await;
 
         // No task should have completed
-        let actual = status.lock().unwrap().deref().to_owned();
+        let actual = status.write().unwrap().deref().to_owned();
         assert_eq!(actual, Status { call_1: false, call_2: false })
     }
 }
