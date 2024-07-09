@@ -29,10 +29,10 @@ impl<A> RawValueEval<A> {
 
 impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
     type In = A;
-    type Out = Vec<RawValue<'a>>;
+    type Out = Option<RawValue<'a>>;
 
     fn eval(&self, mustache: &Mustache, in_value: &'a Self::In) -> Self::Out {
-        mustache
+        let parsed_values: Vec<RawValue> = mustache
             .segments()
             .iter()
             .flat_map(|segment| match segment {
@@ -41,7 +41,10 @@ impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
                 ))),
                 Segment::Expression(parts) => in_value.raw_value(parts),
             })
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+
+        // Return the first value if there is any, otherwise return None
+        parsed_values.into_iter().next()
     }
 }
 

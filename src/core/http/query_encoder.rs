@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::core::path::RawValue;
 
 /// Defines different strategies for encoding query parameters.
@@ -19,39 +17,37 @@ pub struct QueryEncoder {
 }
 
 impl QueryEncoder {
-    pub fn encode(&self, key: &str, value: &[RawValue]) -> Option<String> {
-        if value.is_empty() {
-            return None;
-        }
-
-        match &value[0] {
-            RawValue::Arg(arg) => self.encoding_strategy.encode(key, Cow::Borrowed(arg)),
-            RawValue::Value(val) => self.encoding_strategy.encode(key, Cow::Borrowed(val)),
-            RawValue::Env(env_var) => Some(format!("{}={}", key, env_var)),
-            RawValue::Headers(headers_value) => Some(format!("{}={}", key, headers_value)),
-            RawValue::Var(var) => Some(format!("{}={}", key, var)),
+    pub fn encode(&self, key: &str, raw_value: Option<RawValue>) -> Option<String> {
+        if let Some(value) = raw_value {
+            match &value {
+                RawValue::Arg(arg) => self.encoding_strategy.encode(key, arg),
+                RawValue::Value(val) => self.encoding_strategy.encode(key, val),
+                RawValue::Env(env_var) => Some(format!("{}={}", key, env_var)),
+                RawValue::Headers(headers_value) => Some(format!("{}={}", key, headers_value)),
+                RawValue::Var(var) => Some(format!("{}={}", key, var)),
+            }
+        } else {
+            None
         }
     }
 }
 
 impl EncodingStrategy {
-    pub fn encode(&self, key: &str, value: Cow<'_, async_graphql::Value>) -> Option<String> {
+    pub fn encode(&self, key: &str, value: &async_graphql::Value) -> Option<String> {
         match self {
-            EncodingStrategy::CommaSeparated => match &*value {
+            EncodingStrategy::CommaSeparated => match value {
                 async_graphql::Value::List(list) if !list.is_empty() => {
-                    let encoded_values: Vec<String> = list
-                        .iter()
-                        .filter_map(|val| convert_value(Cow::Borrowed(val)))
-                        .collect();
+                    let encoded_values: Vec<String> =
+                        list.iter().filter_map(convert_value).collect();
                     Some(format!("{}={}", key, encoded_values.join(",")))
                 }
                 _ => convert_value(value).map(|val| format!("{}={}", key, val)),
             },
-            EncodingStrategy::RepeatedKey => match &*value {
+            EncodingStrategy::RepeatedKey => match value {
                 async_graphql::Value::List(list) if !list.is_empty() => {
                     let encoded_values: Vec<String> = list
                         .iter()
-                        .filter_map(|val| self.encode(key, Cow::Borrowed(val)))
+                        .filter_map(|val| self.encode(key, val))
                         .collect();
                     Some(encoded_values.join("&"))
                 }
@@ -61,8 +57,8 @@ impl EncodingStrategy {
     }
 }
 
-pub fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<String> {
-    match &*value {
+pub fn convert_value(value: &async_graphql::Value) -> Option<String> {
+    match value {
         async_graphql::Value::String(s) => Some(s.to_string()),
         async_graphql::Value::Number(n) => Some(n.to_string()),
         async_graphql::Value::Boolean(b) => Some(b.to_string()),
@@ -85,7 +81,7 @@ mod tests {
         ]);
         let strategy = EncodingStrategy::CommaSeparated;
 
-        let actual = strategy.encode(key, Cow::Owned(values));
+        let actual = strategy.encode(key, &values);
         let expected = Some("ids=1,2,3".to_string());
 
         assert_eq!(actual, expected);
@@ -101,7 +97,7 @@ mod tests {
         ]);
         let strategy = EncodingStrategy::RepeatedKey;
 
-        let actual = strategy.encode(key, Cow::Owned(values));
+        let actual = strategy.encode(key, &values);
         let expected = Some("ids=1&ids=2&ids=3".to_string());
 
         assert_eq!(actual, expected);
@@ -117,7 +113,7 @@ mod tests {
         ]);
         let strategy = EncodingStrategy::CommaSeparated;
 
-        let actual = strategy.encode(key, Cow::Owned(values));
+        let actual = strategy.encode(key, &values);
         let expected = Some("values=string,42,true".to_string());
 
         assert_eq!(actual, expected);
@@ -133,7 +129,7 @@ mod tests {
         ]);
         let strategy = EncodingStrategy::RepeatedKey;
 
-        let actual = strategy.encode(key, Cow::Owned(values));
+        let actual = strategy.encode(key, &values);
         let expected = Some("values=string&values=42&values=true".to_string());
 
         assert_eq!(actual, expected);
@@ -145,7 +141,7 @@ mod tests {
         let values = Value::List(vec![]);
         let strategy = EncodingStrategy::CommaSeparated;
 
-        let actual = strategy.encode(key, Cow::Owned(values));
+        let actual = strategy.encode(key, &values);
         let expected: Option<String> = None;
 
         assert_eq!(actual, expected);
@@ -157,7 +153,7 @@ mod tests {
         let values = Value::List(vec![]);
         let strategy = EncodingStrategy::RepeatedKey;
 
-        let actual = strategy.encode(key, Cow::Owned(values));
+        let actual = strategy.encode(key, &values);
         let expected: Option<String> = None;
 
         assert_eq!(actual, expected);
@@ -169,7 +165,7 @@ mod tests {
         let values = Value::List(vec![Value::String("value".to_string())]);
         let strategy = EncodingStrategy::CommaSeparated;
 
-        let actual = strategy.encode(key, Cow::Owned(values));
+        let actual = strategy.encode(key, &values);
         let expected = Some("single=value".to_string());
 
         assert_eq!(actual, expected);
@@ -181,7 +177,7 @@ mod tests {
         let values = Value::List(vec![Value::String("value".to_string())]);
         let strategy = EncodingStrategy::RepeatedKey;
 
-        let actual = strategy.encode(key, Cow::Owned(values));
+        let actual = strategy.encode(key, &values);
         let expected = Some("single=value".to_string());
 
         assert_eq!(actual, expected);

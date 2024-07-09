@@ -42,11 +42,11 @@ impl RequestTemplate {
 
         // evaluates mustache template and returns the values evaluated by mustache
         // template.
-        let raw_eval = RawValueEval::default();
+        let mustache_eval = RawValueEval::default();
 
         let extra_qp = self.query.iter().filter_map(|(key, value)| {
-            let parsed_values = raw_eval.eval(value, ctx);
-            self.query_encoder.encode(key, &parsed_values)
+            let parsed_value = mustache_eval.eval(value, ctx);
+            self.query_encoder.encode(key, parsed_value)
         });
 
         let base_qp = url
