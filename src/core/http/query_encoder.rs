@@ -11,8 +11,10 @@ pub enum EncodingStrategy {
     RepeatedKey,
 }
 
+/// It's responsible for encoding the query values.
 #[derive(Default, Debug, Clone)]
 pub struct QueryEncoder {
+    /// It uses encoding strategy to encode list query paramm.
     encoding_strategy: EncodingStrategy,
 }
 
