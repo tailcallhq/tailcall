@@ -100,7 +100,15 @@ Head out to [docs] to learn about other powerful tailcall features.
 Throughput comparison of various GraphQL solutions for a N + 1 query:
 
 ```graphql
-query {posts {title body user {name}}}
+query {
+  posts {
+    title
+    body
+    user {
+      name
+    }
+  }
+}
 ```
 
 ![Throughput Histogram](https://raw.githubusercontent.com/tailcallhq/graphql-benchmarks/main/assets/req_sec_histogram1.png)

@@ -1,6 +1,6 @@
 ---
 source: src/core/jit/builder.rs
-expression: plan
+expression: plan.into_nested()
 ---
 [
     Field {
@@ -8,16 +8,16 @@ expression: plan
         name: "posts",
         ir: "Some(..)",
         type_of: [Post],
-        refs: Some(
-            Children(
+        extensions: Some(
+            Nested(
                 [
                     Field {
                         id: 1,
                         name: "user",
                         ir: "Some(..)",
                         type_of: User,
-                        refs: Some(
-                            Children(
+                        extensions: Some(
+                            Nested(
                                 [
                                     Field {
                                         id: 2,

@@ -1,6 +1,6 @@
 ---
 source: src/core/jit/builder.rs
-expression: plan
+expression: plan.into_nested()
 ---
 [
     Field {
@@ -52,8 +52,8 @@ expression: plan
                 default_value: None,
             },
         ],
-        refs: Some(
-            Children(
+        extensions: Some(
+            Nested(
                 [
                     Field {
                         id: 1,
