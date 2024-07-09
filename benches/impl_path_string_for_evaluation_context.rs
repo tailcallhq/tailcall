@@ -24,6 +24,7 @@ use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 use tailcall_http_cache::HttpCacheManager;
 
+#[derive(Clone)]
 struct Http {
     client: ClientWithMiddleware,
     http2_only: bool,
@@ -76,6 +77,10 @@ impl HttpIO for Http {
         }
         let resp = self.client.execute(request).await?;
         Response::from_reqwest(resp).await
+    }
+
+    fn cl(&self) -> Box<dyn HttpIO> {
+        Box::new(self.clone())
     }
 }
 

@@ -125,6 +125,10 @@ pub mod test {
             )
             .await
         }
+
+        fn cl(&self) -> Box<dyn HttpIO> {
+            Box::new(self.clone())
+        }
     }
 
     #[derive(Clone)]

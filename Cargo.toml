@@ -22,6 +22,7 @@ tracing = "0.1.40"
 lazy_static = "1.4.0"
 serde_json = { version = "1.0.116", features = ["preserve_order"] }
 serde = { version = "1.0.200", features = ["derive"] }
+dashmap = "6.0.1"
 
 
 [dependencies]
@@ -164,6 +165,7 @@ pathdiff = "0.2.1"
 num = "0.4.3"
 indenter = "0.3.3"
 derive_more = "0.99.18"
+dashmap = { workspace = true }
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }

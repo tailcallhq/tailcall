@@ -129,4 +129,8 @@ impl HttpIO for Http {
 
         Ok(response)
     }
+
+    fn cl(&self) -> Box<dyn HttpIO> {
+        Box::new(self.clone())
+    }
 }

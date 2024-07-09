@@ -60,6 +60,7 @@ mod tests {
     use crate::core::runtime::TargetRuntime;
     use crate::core::HttpIO;
 
+    #[derive(Clone)]
     enum TestScenario {
         SuccessWithoutGrpcStatus,
         SuccessWithOkGrpcStatus,
@@ -67,6 +68,7 @@ mod tests {
         Error,
     }
 
+    #[derive(Clone)]
     struct TestHttp {
         scenario: TestScenario,
     }
@@ -99,6 +101,10 @@ mod tests {
                     body: Bytes::default(),
                 }),
             }
+        }
+
+        fn cl(&self) -> Box<dyn HttpIO> {
+            Box::new(self.clone())
         }
     }
     async fn prepare_args(

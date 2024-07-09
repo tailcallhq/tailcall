@@ -61,6 +61,9 @@ pub trait HttpIO: Sync + Send + 'static {
         &self,
         request: reqwest::Request,
     ) -> anyhow::Result<Response<hyper::body::Bytes>>;
+
+    /// clone new HttpIO instance
+    fn cl(&self) -> Box<dyn HttpIO>;
 }
 
 #[async_trait::async_trait]

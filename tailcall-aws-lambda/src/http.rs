@@ -38,6 +38,10 @@ impl HttpIO for LambdaHttp {
         tracing::info!("{} {}", req_str, res.status.as_u16());
         Ok(res)
     }
+
+    fn cl(&self) -> Box<dyn HttpIO> {
+        Box::new(self.clone())
+    }
 }
 
 pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {

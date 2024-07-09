@@ -15,6 +15,7 @@ use reqwest::Client;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall_http_cache::HttpCacheManager;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+use dashmap::DashMap;
 
 use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
@@ -182,8 +183,44 @@ impl HttpIO for NativeHttp {
         )
         .await?)
     }
+
+    fn cl(&self) -> Box<dyn HttpIO> {
+        Box::new(self.clone())
+    }
 }
 
+pub struct ConcurrentHttp {
+    http: Box<dyn HttpIO>,
+    map: DashMap<std::thread::ThreadId, Box<dyn HttpIO>>,
+}
+
+impl ConcurrentHttp {
+    pub fn new(http: Box<dyn HttpIO>) -> Self {
+        ConcurrentHttp {
+            http,
+            map: Default::default(),
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl HttpIO for ConcurrentHttp {
+    async fn execute(&self,  mut request: reqwest::Request) -> Result<Response<Bytes>> {
+        let thread_id = std::thread::current().id();
+        if let Some(http) = self.map.get(&thread_id) {
+            http.value().execute(request).await
+        }  else {
+            let new_http = self.http.cl();
+            let ret =new_http.execute(request).await;
+            self.map.insert(thread_id, new_http);
+            ret
+        }
+    }
+
+    fn cl(&self) -> Box<dyn HttpIO> {
+        unreachable!()
+    }
+}
 #[cfg(test)]
 mod tests {
     use reqwest::Method;
