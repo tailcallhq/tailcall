@@ -21,8 +21,8 @@ impl Default for Context {
     }
 }
 impl PathString for Context {
-    fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
-        self.value.path_string(parts)
+    fn path_string<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<Cow<'a, str>> {
+        self.value.path_string(path)
     }
 }
 impl HasHeaders for Context {

@@ -5,13 +5,35 @@ use std::collections::HashMap;
 use async_graphql_value::ConstValue;
 use serde_json::Value;
 
+use crate::core::json::JsonObjectLike;
+
 /// A trait for JSON-like objects
 /// This trait is used to abstract over different JSON-like objects
 pub trait JsonT {
+    type JsonObject: JsonObjectLike;
+
+    // Constructors
+
+    /// Create a default value
+    fn default() -> Self;
+
+    /// Create a new array
+    fn new_array(arr: Vec<Self>) -> Self
+    where
+        Self: Sized;
+
+    /// Create a new value
+    fn new(value: &Self) -> &Self;
+
+    // Operators
+
     /// Get the array if the value is an array
     fn array_ok(value: &Self) -> Option<&Vec<Self>>
     where
         Self: Sized;
+
+    /// Get the object if the value is an object
+    fn object_ok(value: &Self) -> Option<&Self::JsonObject>;
 
     /// Get the string if the value is a string
     fn str_ok(value: &Self) -> Option<&str>;
@@ -45,8 +67,29 @@ pub trait JsonT {
 }
 
 impl JsonT for Value {
+    type JsonObject = serde_json::Map<String, Value>;
+
+    fn default() -> Self {
+        Default::default()
+    }
+
+    fn new_array(arr: Vec<Self>) -> Self {
+        Value::Array(arr)
+    }
+
+    fn new(value: &Self) -> &Self {
+        value
+    }
+
     fn array_ok(value: &Self) -> Option<&Vec<Self>> {
         value.as_array()
+    }
+
+    fn object_ok(value: &Self) -> Option<&Self::JsonObject> {
+        match value {
+            Value::Object(map) => Some(map),
+            _ => None,
+        }
     }
 
     fn str_ok(value: &Self) -> Option<&str> {
@@ -149,12 +192,33 @@ pub fn group_by_key<'a, J: JsonT>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, V
 }
 
 impl JsonT for async_graphql::Value {
+    type JsonObject = indexmap::IndexMap<async_graphql::Name, async_graphql::Value>;
+
+    fn default() -> Self {
+        Default::default()
+    }
+
+    fn new_array(arr: Vec<Self>) -> Self {
+        ConstValue::List(arr)
+    }
+
+    fn new(value: &Self) -> &Self {
+        value
+    }
+
     fn array_ok(value: &Self) -> Option<&Vec<Self>>
     where
         Self: Sized,
     {
         match value {
             ConstValue::List(arr) => Some(arr),
+            _ => None,
+        }
+    }
+
+    fn object_ok(value: &Self) -> Option<&Self::JsonObject> {
+        match value {
+            ConstValue::Object(map) => Some(map),
             _ => None,
         }
     }
@@ -242,8 +306,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    use crate::core::json::group_by_key;
-    use crate::core::json::json_like::gather_path_matches;
+    use super::*;
 
     #[test]
     fn test_gather_path_matches() {
