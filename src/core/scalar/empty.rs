@@ -1,9 +1,10 @@
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
+use tailcall_macros::ScalarDefinition;
 
 /// Empty scalar type represents an empty value.
-#[derive(JsonSchema, Default)]
+#[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct Empty {
     #[allow(dead_code)]
     #[serde(rename = "Empty")]

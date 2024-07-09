@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
+use tailcall_macros::DirectiveDefinition;
 
 use super::merge_key_value_vecs;
 use crate::core::config::headers::Headers;
@@ -10,8 +11,18 @@ use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    DirectiveDefinition,
 )]
+#[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The `@server` directive, when applied at the schema level, offers a
