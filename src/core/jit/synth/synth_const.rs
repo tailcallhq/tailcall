@@ -5,23 +5,40 @@ use super::super::Result;
 use super::Synthesizer;
 use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
-use crate::core::jit::{DataPath, ExecutionPlan};
+use crate::core::jit::{DataPath, ExecutionPlan, Variables};
 use crate::core::json::JsonLike;
 
 pub struct Synth {
     selection: Vec<Field<Children>>,
     store: Store<Result<Value>>,
+    variables: Variables<async_graphql_value::ConstValue>,
 }
 
 impl Synth {
-    pub fn new(plan: ExecutionPlan, store: Store<Result<Value>>) -> Self {
-        Self { selection: plan.into_children(), store }
+    pub fn new(
+        plan: ExecutionPlan,
+        store: Store<Result<Value>>,
+        variables: Variables<async_graphql_value::ConstValue>,
+    ) -> Self {
+        Self { selection: plan.into_children(), store, variables }
+    }
+
+    #[inline(always)]
+    fn include<T>(&self, field: &Field<T>) -> bool {
+        if let Some(include) = &field.include {
+            include.include(&self.variables)
+        } else {
+            true
+        }
     }
 
     pub fn synthesize(&self) -> Result<Value> {
         let mut data = IndexMap::default();
 
         for child in self.selection.iter() {
+            if !self.include(child) {
+                continue;
+            }
             let val = self.iter(child, None, &DataPath::new())?;
             data.insert(Name::new(child.name.as_str()), val);
         }
@@ -90,32 +107,40 @@ impl Synth {
         parent: &'b Value,
         data_path: &'b DataPath,
     ) -> Result<Value> {
+        let include = self.include(node);
+
         match parent {
             Value::Object(obj) => {
                 let mut ans = IndexMap::default();
                 let children = node.children();
-
-                if children.is_empty() {
-                    let val = obj.get(node.name.as_str());
-                    // if it's a leaf node, then push the value
-                    if let Some(val) = val {
-                        ans.insert(Name::new(node.name.as_str()), val.to_owned());
-                    } else {
-                        return Ok(Value::Null);
-                    }
-                } else {
-                    for child in children {
-                        let val = obj.get(child.name.as_str());
+                if include {
+                    if children.is_empty() {
+                        let val = obj.get(node.name.as_str());
+                        // if it's a leaf node, then push the value
                         if let Some(val) = val {
-                            ans.insert(
-                                Name::new(child.name.as_str()),
-                                self.iter_inner(child, val, data_path)?,
-                            );
+                            ans.insert(Name::new(node.name.as_str()), val.to_owned());
                         } else {
-                            ans.insert(
-                                Name::new(child.name.as_str()),
-                                self.iter(child, None, data_path)?,
-                            );
+                            return Ok(Value::Null);
+                        }
+                    } else {
+                        for child in children {
+                            // all checks for skip must occur in `iter_inner`
+                            // and include be checked before calling `iter` or recursing.
+                            let include = self.include(child);
+                            if include {
+                                let val = obj.get(child.name.as_str());
+                                if let Some(val) = val {
+                                    ans.insert(
+                                        Name::new(child.name.as_str()),
+                                        self.iter_inner(child, val, data_path)?,
+                                    );
+                                } else {
+                                    ans.insert(
+                                        Name::new(child.name.as_str()),
+                                        self.iter(child, None, data_path)?,
+                                    );
+                                }
+                            }
                         }
                     }
                 }
@@ -123,9 +148,11 @@ impl Synth {
             }
             Value::List(arr) => {
                 let mut ans = vec![];
-                for (i, val) in arr.iter().enumerate() {
-                    let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
-                    ans.push(val)
+                if include {
+                    for (i, val) in arr.iter().enumerate() {
+                        let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
+                        ans.push(val)
+                    }
                 }
                 Ok(Value::List(ans))
             }
@@ -146,15 +173,19 @@ impl SynthConst {
 
 impl Synthesizer for SynthConst {
     type Value = Result<Value>;
+    type Variable = Value;
 
-    fn synthesize(self, store: Store<Self::Value>) -> Self::Value {
-        Synth::new(self.plan, store).synthesize()
+    fn synthesize(
+        self,
+        store: Store<Self::Value>,
+        variables: Variables<Self::Variable>,
+    ) -> Self::Value {
+        Synth::new(self.plan, store, variables).synthesize()
     }
 }
 
 #[cfg(test)]
 mod tests {
-
     use async_graphql::Value;
 
     use super::Synth;
@@ -240,9 +271,8 @@ mod tests {
         let doc = async_graphql::parser::parse_query(query).unwrap();
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
-        let vars = Variables::new();
 
-        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc, &vars);
+        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build().unwrap();
 
         let store = store
@@ -251,8 +281,8 @@ mod tests {
                 store.set_data(id, data.map(Ok));
                 store
             });
-
-        let synth = Synth::new(plan, store);
+        let vars = Variables::new();
+        let synth = Synth::new(plan, store, vars);
         let val = synth.synthesize().unwrap();
 
         serde_json::to_string_pretty(&val).unwrap()

@@ -9,35 +9,31 @@ use async_graphql::Positioned;
 use super::model::*;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
-use crate::core::jit::Variables;
-use crate::core::json::JsonLike;
 use crate::core::merge_right::MergeRight;
 
-pub struct Builder<'a> {
+pub struct Builder {
     pub index: Index,
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: ExecutableDocument,
-    variables: &'a Variables<async_graphql_value::ConstValue>,
 }
 
-impl<'a> Builder<'a> {
-    pub fn new(
-        blueprint: &Blueprint,
-        document: ExecutableDocument,
-        variables: &'a Variables<async_graphql_value::ConstValue>,
-    ) -> Self {
+impl Builder {
+    pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
         let index = blueprint.index();
         Self {
             document,
             index,
             arg_id: Counter::default(),
             field_id: Counter::default(),
-            variables,
         }
     }
 
-    fn skip(&self, directives: &[Positioned<async_graphql::parser::types::Directive>]) -> bool {
+    #[inline(always)]
+    fn include(
+        &self,
+        directives: &[Positioned<async_graphql::parser::types::Directive>],
+    ) -> Option<Include> {
         for directive in directives {
             let include = match &*directive.node.name.node {
                 "skip" => false,
@@ -47,24 +43,14 @@ impl<'a> Builder<'a> {
 
             // here we skip iff it is a constant variable i.e., false.
             if let Some(condition_input) = directive.node.get_argument("if") {
-                let condition = match &condition_input.node {
-                    async_graphql_value::Value::String(st) => self
-                        .variables
-                        .get(st)
-                        .and_then(|v| v.as_bool_ok().ok())
-                        .unwrap_or_default(),
-                    async_graphql_value::Value::Boolean(b) => *b,
-                    _ => false,
-                };
-                if condition != include {
-                    return true;
-                }
+                return Some(Include { value: condition_input.node.to_owned(), include });
             }
         }
-        false
+        None
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[inline(always)]
     fn iter(
         &self,
         selection: &SelectionSet,
@@ -76,11 +62,7 @@ impl<'a> Builder<'a> {
         for selection in &selection.items {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
-                    // If the field is skipped then,
-                    // we don't include that in the plan
-                    if self.skip(&gql_field.directives) {
-                        continue;
-                    }
+                    let include = self.include(&gql_field.directives);
 
                     let field_name = gql_field.name.node.as_str();
                     let field_args = gql_field
@@ -132,6 +114,7 @@ impl<'a> Builder<'a> {
                             name,
                             ir,
                             type_of,
+                            include,
                             args,
                             extensions: refs.clone(),
                         });
@@ -157,6 +140,7 @@ impl<'a> Builder<'a> {
         fields
     }
 
+    #[inline(always)]
     fn get_type(&self, ty: OperationType) -> Option<&str> {
         match ty {
             OperationType::Query => Some(self.index.get_query()),
@@ -165,6 +149,7 @@ impl<'a> Builder<'a> {
         }
     }
 
+    #[inline(always)]
     pub fn build(&self) -> Result<ExecutionPlan, String> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
@@ -217,8 +202,7 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        let vars = Variables::new();
-        Builder::new(&blueprint, document, &vars).build().unwrap()
+        Builder::new(&blueprint, document).build().unwrap()
     }
 
     #[tokio::test]

@@ -1,6 +1,8 @@
 use std::fmt::{Debug, Formatter};
 
 use crate::core::ir::model::IR;
+use crate::core::jit::Variables;
+use crate::core::json::JsonLike;
 
 #[derive(Debug, Clone)]
 pub struct Arg {
@@ -50,8 +52,37 @@ pub struct Field<A> {
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
+    pub include: Option<Include>,
     pub args: Vec<Arg>,
     pub extensions: Option<A>,
+}
+
+#[derive(Clone)]
+pub struct Include {
+    pub value: async_graphql_value::Value,
+    pub include: bool,
+}
+
+impl Include {
+    #[inline(always)]
+    pub fn include<Value: JsonLike>(&self, variables: &Variables<Value>) -> bool {
+        let condition = match &self.value {
+            async_graphql_value::Value::Variable(name) => {
+                let st = name.as_str();
+                variables
+                    .get(st)
+                    .and_then(|v| v.as_bool_ok().ok())
+                    .unwrap_or_default()
+            }
+            async_graphql_value::Value::String(st) => variables
+                .get(st)
+                .and_then(|v| v.as_bool_ok().ok())
+                .unwrap_or_default(),
+            async_graphql_value::Value::Boolean(b) => *b,
+            _ => false,
+        };
+        condition == self.include
+    }
 }
 
 const EMPTY_VEC: &Vec<Field<Children>> = &Vec::new();
@@ -90,6 +121,7 @@ impl Field<Parent> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
+            include: self.include,
             args: self.args,
             extensions: refs,
         }

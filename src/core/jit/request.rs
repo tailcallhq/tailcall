@@ -49,10 +49,10 @@ impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
     }
 }
 
-impl Request<async_graphql_value::ConstValue> {
+impl<Value> Request<Value> {
     pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
-        let builder = Builder::new(blueprint, doc, &self.variables);
+        let builder = Builder::new(blueprint, doc);
         builder.build().map_err(Error::BuildError)
     }
 }
