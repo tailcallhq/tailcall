@@ -24,8 +24,15 @@ scalar JSON
 
 scalar PhoneNumber
 
+type Post {
+  id: Int!
+  title: String!
+  user: User
+  userId: Int!
+}
+
 type Query {
-  user(id: Int!): User
+  posts: [Post]
 }
 
 scalar UInt128
@@ -41,9 +48,9 @@ scalar UInt8
 scalar Url
 
 type User {
-  friend: User
   id: Int!
   name: String!
+  username: String!
 }
 
 schema {

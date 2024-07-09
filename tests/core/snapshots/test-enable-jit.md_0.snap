@@ -1,0 +1,28 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "posts": [
+        {
+          "id": 11,
+          "user": {
+            "name": "foo"
+          }
+        },
+        {
+          "id": 3,
+          "user": {
+            "name": "bar"
+          }
+        }
+      ]
+    }
+  }
+}

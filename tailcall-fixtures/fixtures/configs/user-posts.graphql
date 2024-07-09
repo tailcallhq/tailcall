@@ -27,3 +27,4 @@ type Post {
   body: String!
   user: User @http(path: "/users/{{.value.userId}}")
 }
+

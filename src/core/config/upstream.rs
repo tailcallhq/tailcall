@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
+use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
 use crate::core::is_default;
 use crate::core::macros::MergeRight;
@@ -51,7 +52,10 @@ pub struct Proxy {
     Default,
     schemars::JsonSchema,
     MergeRight,
+    DirectiveDefinition,
+    InputDefinition,
 )]
+#[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase", default)]
 /// The `upstream` directive allows you to control various aspects of the
