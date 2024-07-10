@@ -166,6 +166,7 @@ mod tests {
     use crate::core::jit::input_resolver::InputResolver;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
+    use crate::core::jit::variables::Variables;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -245,7 +246,7 @@ mod tests {
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build().unwrap();
         let input_resolver = InputResolver::new(plan);
-        let plan = input_resolver.resolve_input().unwrap();
+        let plan = input_resolver.resolve_input(&Variables::default()).unwrap();
 
         let store = store
             .into_iter()

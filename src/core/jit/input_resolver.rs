@@ -1,5 +1,6 @@
 use async_graphql_value::{ConstValue, Value};
 
+use super::variables::Variables;
 use super::{ExecutionPlan, ResolveInputError};
 
 /// Trait to represent conversion from some dynamic type (with variables)
@@ -9,17 +10,24 @@ use super::{ExecutionPlan, ResolveInputError};
 pub trait InputResolvable {
     type Output;
 
-    fn resolve(self) -> Result<Self::Output, ResolveInputError>;
+    fn resolve(
+        self,
+        variables: &Variables<Self::Output>,
+    ) -> Result<Self::Output, ResolveInputError>;
 }
 
 impl InputResolvable for Value {
     type Output = ConstValue;
 
     // TODO:
-    // - implement resolve based on variables
     // - provide default values
-    fn resolve(self) -> Result<Self::Output, ResolveInputError> {
-        self.into_const().ok_or(ResolveInputError)
+    fn resolve(self, variables: &Variables<ConstValue>) -> Result<Self::Output, ResolveInputError> {
+        self.into_const_with(|name| {
+            variables
+                .get(&name)
+                .cloned()
+                .ok_or_else(|| ResolveInputError::VariableIsNotFound(name.to_string()))
+        })
     }
 }
 
@@ -41,7 +49,10 @@ where
     Output: Clone,
     Input: InputResolvable<Output = Output>,
 {
-    pub fn resolve_input(&self) -> Result<ExecutionPlan<Output>, ResolveInputError> {
+    pub fn resolve_input(
+        &self,
+        variables: &Variables<Output>,
+    ) -> Result<ExecutionPlan<Output>, ResolveInputError> {
         let new_fields = self
             .plan
             .as_parent()
@@ -49,7 +60,7 @@ where
             .map(|field| {
                 field
                     .clone()
-                    .map_args(|arg| arg.map_value(|value| value.resolve()))
+                    .map_args(|arg| arg.map_value(|value| value.resolve(variables)))
             })
             .collect::<Result<_, _>>()?;
 

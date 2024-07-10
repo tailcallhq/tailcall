@@ -8,6 +8,7 @@ use crate::core::jit::builder::Builder;
 use crate::core::jit::input_resolver::InputResolver;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
+use crate::core::jit::variables::Variables;
 use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
 
@@ -85,7 +86,7 @@ impl JsonPlaceholder {
 
         let input_resolver = InputResolver::new(plan);
 
-        let plan = input_resolver.resolve_input().unwrap();
+        let plan = input_resolver.resolve_input(&Variables::default()).unwrap();
 
         Synth::new(plan, store)
     }
