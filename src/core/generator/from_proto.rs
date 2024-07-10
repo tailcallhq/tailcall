@@ -6,6 +6,7 @@ use prost_reflect::prost_types::field_descriptor_proto::Label;
 use prost_reflect::prost_types::{
     DescriptorProto, EnumDescriptorProto, FileDescriptorSet, ServiceDescriptorProto, SourceCodeInfo,
 };
+use serde_json::Value;
 
 use super::graphql_type::{GraphQLType, Unparsed};
 use super::proto::comments_builder::CommentsBuilder;
@@ -355,7 +356,7 @@ impl Context {
                         default_value: None,
                     };
 
-                    body = Some(format!("{{{{.args.{key}}}}}"));
+                    body = Some(Value::String(format!("{{{{.args.{key}}}}}")));
                     cfg_field.args.insert(key, val);
                 }
 

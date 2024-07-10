@@ -22,19 +22,23 @@ scalar Int8
 
 scalar JSON
 
-scalar PhoneNumber
-
-type Post {
-  body: String!
-  id: Int!
-  title: String!
-  user: User
-  userId: Int!
+type News {
+  body: String
+  id: Int
+  postImage: String
+  title: String
 }
 
+input NewsInput {
+  id: Int
+}
+
+scalar PhoneNumber
+
 type Query {
-  posts: [Post]
-  user(id: Int!): User
+  newsById: News!
+  newsByIdMustache(news: NewsInput!): News!
+  newsByIdMustacheAndJson(news: NewsInput!): News!
 }
 
 scalar UInt128
@@ -48,15 +52,6 @@ scalar UInt64
 scalar UInt8
 
 scalar Url
-
-type User {
-  email: String!
-  id: Int!
-  name: String!
-  phone: String
-  username: String!
-  website: String
-}
 
 schema {
   query: Query
