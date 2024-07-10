@@ -8,7 +8,7 @@ use tailcall::core::endpoint::Endpoint;
 use tailcall::core::has_headers::HasHeaders;
 use tailcall::core::http::RequestTemplate;
 use tailcall::core::json::JsonLike;
-use tailcall::core::path::{PathString, PathValue, RawValue};
+use tailcall::core::path::{PathString, PathValue, ValueString};
 
 #[derive(Setters)]
 struct Context {
@@ -23,9 +23,9 @@ impl Default for Context {
 }
 
 impl PathValue for Context {
-    fn raw_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<RawValue<'a>> {
+    fn raw_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<ValueString<'a>> {
         self.value.get_path(path).map(|a| {
-            RawValue::Value(Cow::Owned(
+            ValueString::Value(Cow::Owned(
                 async_graphql::Value::from_json(a.clone()).unwrap(),
             ))
         })

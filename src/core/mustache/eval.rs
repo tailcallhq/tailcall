@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use super::{Mustache, Segment};
-use crate::core::path::{PathGraphql, PathString, PathValue, RawValue};
+use crate::core::path::{PathGraphql, PathString, PathValue, ValueString};
 
 pub trait Eval<'a> {
     type In;
@@ -30,14 +30,14 @@ impl<A> RawValueEval<A> {
 
 impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
     type In = A;
-    type Out = Option<RawValue<'a>>;
+    type Out = Option<ValueString<'a>>;
 
     fn eval(&self, mustache: &Mustache, in_value: &'a Self::In) -> Self::Out {
         mustache
             .segments()
             .iter()
             .filter_map(|segment| match segment {
-                Segment::Literal(text) => Some(RawValue::Value(Cow::Owned(
+                Segment::Literal(text) => Some(ValueString::Value(Cow::Owned(
                     async_graphql::Value::String(text.to_owned()),
                 ))),
                 Segment::Expression(parts) => in_value.raw_value(parts),

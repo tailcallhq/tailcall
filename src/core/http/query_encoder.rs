@@ -1,4 +1,4 @@
-use crate::core::path::RawValue;
+use crate::core::path::ValueString;
 
 /// Defines different strategies for encoding query parameters.
 #[derive(Default, Debug, Clone)]
@@ -12,11 +12,11 @@ pub enum QueryEncoder {
 }
 
 impl QueryEncoder {
-    pub fn encode(&self, key: &str, raw_value: Option<RawValue>) -> Option<String> {
+    pub fn encode(&self, key: &str, raw_value: Option<ValueString>) -> Option<String> {
         if let Some(value) = raw_value {
             match &value {
-                RawValue::Value(val) => self.encode_const_value(key, val),
-                RawValue::Literal(val) => Some(format!("{}={}", key, val)),
+                ValueString::Value(val) => self.encode_const_value(key, val),
+                ValueString::String(val) => Some(format!("{}={}", key, val)),
             }
         } else {
             None
@@ -71,7 +71,7 @@ mod tests {
             Value::Number(42.into()),
             Value::Number(13.into()),
         ]);
-        let arg_raw_value = Some(RawValue::Value(Cow::Borrowed(&values)));
+        let arg_raw_value = Some(ValueString::Value(Cow::Borrowed(&values)));
 
         let actual = encoder.encode("key", arg_raw_value);
         let expected = Some("key=12,42,13".to_string());
@@ -87,7 +87,7 @@ mod tests {
             Value::Number(42.into()),
             Value::Number(13.into()),
         ]);
-        let arg_raw_value = Some(RawValue::Value(Cow::Borrowed(&values)));
+        let arg_raw_value = Some(ValueString::Value(Cow::Borrowed(&values)));
 
         let actual = encoder.encode("key", arg_raw_value);
         let expected = Some("key=12&key=42&key=13".to_string());
@@ -98,7 +98,7 @@ mod tests {
     #[test]
     fn test_encode_env_var() {
         let encoder = QueryEncoder::default();
-        let raw_value = Some(RawValue::Literal("env_value".into()));
+        let raw_value = Some(ValueString::String("env_value".into()));
 
         let actual = encoder.encode("key", raw_value);
         let expected = Some("key=env_value".to_string());
@@ -109,7 +109,7 @@ mod tests {
     #[test]
     fn test_encode_var() {
         let encoder = QueryEncoder::default();
-        let raw_value = Some(RawValue::Literal("var_value".into()));
+        let raw_value = Some(ValueString::String("var_value".into()));
 
         let actual = encoder.encode("key", raw_value);
         let expected = Some("key=var_value".to_string());
@@ -120,7 +120,7 @@ mod tests {
     #[test]
     fn test_encode_none() {
         let encoder = QueryEncoder::default();
-        let raw_value: Option<RawValue> = None;
+        let raw_value: Option<ValueString> = None;
 
         let actual = encoder.encode("key", raw_value);
         let expected = None;

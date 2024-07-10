@@ -270,7 +270,7 @@ mod tests {
     use crate::core::has_headers::HasHeaders;
     use crate::core::json::JsonLike;
     use crate::core::mustache::Mustache;
-    use crate::core::path::{PathString, PathValue, RawValue};
+    use crate::core::path::{PathString, PathValue, ValueString};
 
     #[derive(Setters)]
     struct Context {
@@ -288,9 +288,9 @@ mod tests {
         fn raw_value<'a, T: AsRef<str>>(
             &'a self,
             path: &[T],
-        ) -> Option<crate::core::path::RawValue<'a>> {
+        ) -> Option<crate::core::path::ValueString<'a>> {
             self.value.get_path(path).map(|a| {
-                RawValue::Value(Cow::Owned(
+                ValueString::Value(Cow::Owned(
                     async_graphql::Value::from_json(a.clone()).unwrap(),
                 ))
             })
