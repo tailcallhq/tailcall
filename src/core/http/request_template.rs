@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 use derive_setters::Setters;
@@ -12,8 +13,8 @@ use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
-use crate::core::mustache::{Eval, Mustache, ValueStringEval};
-use crate::core::path::{PathString, PathValue};
+use crate::core::mustache::{Eval, Mustache, Segment};
+use crate::core::path::{PathString, PathValue, ValueString};
 
 /// RequestTemplate is an extension of a Mustache template.
 /// Various parts of the template can be written as a mustache template.
@@ -253,6 +254,34 @@ impl<Ctx: PathString + HasHeaders + PathValue> CacheKey<Ctx> for RequestTemplate
         url.hash(state);
 
         Some(IoId::new(hasher.finish()))
+    }
+}
+
+/// ValueStringEval parses the mustache template and uses ctx to retrieve the
+/// values for templates.
+
+struct ValueStringEval<A>(std::marker::PhantomData<A>);
+impl<A> Default for ValueStringEval<A> {
+    fn default() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+impl<'a, A: PathValue> Eval<'a> for ValueStringEval<A> {
+    type In = A;
+    type Out = Option<ValueString<'a>>;
+
+    fn eval(&self, mustache: &Mustache, in_value: &'a Self::In) -> Self::Out {
+        mustache
+            .segments()
+            .iter()
+            .filter_map(|segment| match segment {
+                Segment::Literal(text) => Some(ValueString::Value(Cow::Owned(
+                    async_graphql::Value::String(text.to_owned()),
+                ))),
+                Segment::Expression(parts) => in_value.raw_value(parts),
+            })
+            .next() // Return the first value that is found
     }
 }
 

@@ -1,36 +1,11 @@
-use std::borrow::Cow;
-
 use super::{Mustache, Segment};
-use crate::core::path::{PathGraphql, PathString, PathValue, ValueString};
+use crate::core::path::{PathGraphql, PathString};
 
 pub trait Eval<'a> {
     type In;
     type Out;
 
     fn eval(&'a self, mustache: &'a Mustache, in_value: &'a Self::In) -> Self::Out;
-}
-
-/// RawValue parses the mustace template and uses ctx to retrive the values for
-/// templates.
-#[derive(Default)]
-pub struct ValueStringEval<A>(std::marker::PhantomData<A>);
-
-impl<'a, A: PathValue> Eval<'a> for ValueStringEval<A> {
-    type In = A;
-    type Out = Option<ValueString<'a>>;
-
-    fn eval(&self, mustache: &Mustache, in_value: &'a Self::In) -> Self::Out {
-        mustache
-            .segments()
-            .iter()
-            .filter_map(|segment| match segment {
-                Segment::Literal(text) => Some(ValueString::Value(Cow::Owned(
-                    async_graphql::Value::String(text.to_owned()),
-                ))),
-                Segment::Expression(parts) => in_value.raw_value(parts),
-            })
-            .next() // Return the first value that is found
-    }
 }
 
 pub struct PathStringEval<A>(std::marker::PhantomData<A>);
