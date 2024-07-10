@@ -13,7 +13,7 @@ pub trait JsonLike {
     fn new(value: &Self::Json) -> &Self;
 
     // Operators
-    fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str>;
+    fn as_array_ok(&self) -> Result<&[Self::Json], &str>;
     fn as_object_ok(&self) -> Result<&Self::JsonObject, &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;
     fn as_i64_ok(&self) -> Result<i64, &str>;
@@ -43,7 +43,7 @@ impl<A: JsonT> JsonLike for A {
         <A as JsonT>::new(value)
     }
 
-    fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str> {
+    fn as_array_ok(&self) -> Result<&[Self::Json], &str> {
         <A as JsonT>::array_ok(self).ok_or("Not an array")
     }
 

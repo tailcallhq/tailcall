@@ -1,4 +1,5 @@
 use indexmap::IndexMap;
+use serde_json_borrow::{ObjectAsVec, Value as BorrowedValue};
 
 use crate::core::json::JsonLike;
 
@@ -22,5 +23,13 @@ impl<V: JsonLike + Clone> JsonObjectLike for IndexMap<async_graphql_value::Name,
 
     fn get<'a>(&'a self, key: &'a str) -> Option<&Self::Value<'a>> {
         self.get(&async_graphql_value::Name::new(key))
+    }
+}
+
+impl<'x> JsonObjectLike for ObjectAsVec<'x> {
+    type Value<'a> = BorrowedValue<'a> where 'x: 'a;
+
+    fn get<'a>(&'a self, key: &'a str) -> Option<&'a Self::Value<'a>> {
+        self.get(key)
     }
 }

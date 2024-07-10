@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use async_graphql_value::ConstValue;
 use serde_json::Value;
+use serde_json_borrow::{ObjectAsVec, Value as BorrowedValue};
 
 use crate::core::json::JsonObjectLike;
 
@@ -28,7 +29,7 @@ pub trait JsonT {
     // Operators
 
     /// Get the array if the value is an array
-    fn array_ok(value: &Self) -> Option<&Vec<Self>>
+    fn array_ok(value: &Self) -> Option<&[Self]>
     where
         Self: Sized;
 
@@ -81,8 +82,11 @@ impl JsonT for Value {
         value
     }
 
-    fn array_ok(value: &Self) -> Option<&Vec<Self>> {
-        value.as_array()
+    fn array_ok(value: &Self) -> Option<&[Self]> {
+        match value {
+            Value::Array(arr) => Some(arr),
+            _ => None,
+        }
     }
 
     fn object_ok(value: &Self) -> Option<&Self::JsonObject> {
@@ -206,7 +210,7 @@ impl JsonT for async_graphql::Value {
         value
     }
 
-    fn array_ok(value: &Self) -> Option<&Vec<Self>>
+    fn array_ok(value: &Self) -> Option<&[Self]>
     where
         Self: Sized,
     {
@@ -297,6 +301,88 @@ impl JsonT for async_graphql::Value {
     fn group_by<'a>(value: &'a Self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
         let src = gather_path_matches(value, path, vec![]);
         group_by_key(src)
+    }
+}
+
+impl<'ctx> JsonT for BorrowedValue<'ctx> {
+    type JsonObject = ObjectAsVec<'ctx>;
+
+    fn default() -> Self {
+        BorrowedValue::Null
+    }
+
+    fn new_array(arr: Vec<Self>) -> Self
+    where
+        Self: Sized,
+    {
+        BorrowedValue::Array(arr)
+    }
+
+    fn new(value: &Self) -> &Self {
+        value
+    }
+
+    fn array_ok(value: &Self) -> Option<&[Self]>
+    where
+        Self: Sized,
+    {
+        match value {
+            BorrowedValue::Array(arr) => Some(arr),
+            _ => None,
+        }
+    }
+
+    fn object_ok(value: &Self) -> Option<&Self::JsonObject> {
+        match value {
+            BorrowedValue::Object(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    fn str_ok(value: &Self) -> Option<&str> {
+        value.as_str()
+    }
+
+    fn i64_ok(value: &Self) -> Option<i64> {
+        value.as_i64()
+    }
+
+    fn u64_ok(value: &Self) -> Option<u64> {
+        value.as_u64()
+    }
+
+    fn f64_ok(value: &Self) -> Option<f64> {
+        value.as_f64()
+    }
+
+    fn bool_ok(value: &Self) -> Option<bool> {
+        value.as_bool()
+    }
+
+    fn null_ok(value: &Self) -> Option<()> {
+        match value {
+            BorrowedValue::Null => Some(()),
+            _ => None,
+        }
+    }
+
+    fn option_ok(value: &Self) -> Option<Option<&Self>> {
+        match value {
+            BorrowedValue::Null => Some(None),
+            value => Some(Some(value)),
+        }
+    }
+
+    fn get_path<'a, T: AsRef<str>>(value: &'a Self, path: &'a [T]) -> Option<&'a Self> {
+        todo!()
+    }
+
+    fn get_key<'a>(value: &'a Self, path: &'a str) -> Option<&'a Self> {
+        todo!()
+    }
+
+    fn group_by<'a>(value: &'a Self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
+        todo!()
     }
 }
 

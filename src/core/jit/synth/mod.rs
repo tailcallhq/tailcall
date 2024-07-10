@@ -1,7 +1,7 @@
-// mod synth_borrow;
+mod synth_borrow;
 mod synth_const;
 
-// pub use synth_borrow::SynthBorrow;
+pub use synth_borrow::SynthBorrow;
 pub use synth_const::{Synth, SynthConst};
 
 use super::Store;
