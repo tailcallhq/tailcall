@@ -61,13 +61,13 @@ impl FieldId {
 
 #[derive(Clone)]
 // TODO: do we need Clone constraints?
-pub struct Field<A: Clone, Input: Clone> {
+pub struct Field<Extensions: Clone, Input: Clone> {
     pub id: FieldId,
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
     pub args: Vec<Arg<Input>>,
-    pub extensions: Option<A>,
+    pub extensions: Option<Extensions>,
 }
 
 impl<A: Clone, Input: Clone> Field<A, Input> {
@@ -86,38 +86,38 @@ impl<A: Clone, Input: Clone> Field<A, Input> {
     }
 }
 
-impl<Input: Clone> Field<Children<Input>, Input> {
-    pub fn children(&self) -> Option<&Vec<Field<Children<Input>, Input>>> {
-        self.extensions.as_ref().map(|Children(children)| children)
+impl<Input: Clone> Field<Nested<Input>, Input> {
+    pub fn nested(&self) -> Option<&Vec<Field<Nested<Input>, Input>>> {
+        self.extensions.as_ref().map(|Nested(nested)| nested)
     }
 
-    pub fn children_iter(&self) -> impl Iterator<Item = &Field<Children<Input>, Input>> {
-        self.children()
-            .map(|children| children.iter())
+    pub fn nested_iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
+        self.nested()
+            .map(|nested| nested.iter())
             .into_iter()
             .flatten()
     }
 }
 
-impl<Input: Clone> Field<Parent, Input> {
+impl<Input: Clone> Field<Flat, Input> {
     fn parent(&self) -> Option<&FieldId> {
-        self.extensions.as_ref().map(|Parent(id)| id)
+        self.extensions.as_ref().map(|Flat(id)| id)
     }
 
-    fn into_children(self, fields: &[Field<Parent, Input>]) -> Field<Children<Input>, Input> {
+    fn into_nested(self, fields: &[Field<Flat, Input>]) -> Field<Nested<Input>, Input> {
         let mut children = Vec::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
                 if *id == self.id {
-                    children.push(field.to_owned().into_children(fields));
+                    children.push(field.to_owned().into_nested(fields));
                 }
             }
         }
 
-        let refs = if children.is_empty() {
+        let extensions = if children.is_empty() {
             None
         } else {
-            Some(Children(children))
+            Some(Nested(children))
         };
 
         Field {
@@ -126,7 +126,7 @@ impl<Input: Clone> Field<Parent, Input> {
             ir: self.ir,
             type_of: self.type_of,
             args: self.args,
-            extensions: refs,
+            extensions,
         }
     }
 }
@@ -144,74 +144,75 @@ impl<A: Debug + Clone, Input: Clone + Debug> Debug for Field<A, Input> {
             debug_struct.field("args", &self.args);
         }
         if self.extensions.is_some() {
-            debug_struct.field("refs", &self.extensions);
+            debug_struct.field("extensions", &self.extensions);
         }
         debug_struct.finish()
     }
 }
 
+/// Stores field relationships in a flat structure where each field links to its
+/// parent.
 #[derive(Clone)]
-pub struct Parent(FieldId);
+pub struct Flat(FieldId);
 
-impl Parent {
+impl Flat {
     pub fn new(id: FieldId) -> Self {
-        Parent(id)
+        Flat(id)
     }
     pub fn as_id(&self) -> &FieldId {
         &self.0
     }
 }
-impl Debug for Parent {
+impl Debug for Flat {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Parent({:?})", self.0)
+        write!(f, "Flat({:?})", self.0)
     }
 }
 
+/// Store field relationships in a nested structure like a tree where each field
+/// links to its children.
 #[derive(Clone, Debug)]
-pub struct Children<Input: Clone>(Vec<Field<Children<Input>, Input>>);
+pub struct Nested<Input: Clone>(Vec<Field<Nested<Input>, Input>>);
 
 #[derive(Clone, Debug)]
 pub struct ExecutionPlan<Input: Clone> {
-    parent: Vec<Field<Parent, Input>>,
-    children: Vec<Field<Children<Input>, Input>>,
+    flat: Vec<Field<Flat, Input>>,
+    nested: Vec<Field<Nested<Input>, Input>>,
 }
 
 impl<Input: Clone> ExecutionPlan<Input> {
-    pub fn new(fields: Vec<Field<Parent, Input>>) -> Self {
-        let field_children = fields
+    pub fn new(fields: Vec<Field<Flat, Input>>) -> Self {
+        let nested = fields
             .clone()
             .into_iter()
             .filter(|f| f.extensions.is_none())
-            .map(|f| f.into_children(&fields))
+            .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        Self { parent: fields, children: field_children }
+        Self { flat: fields, nested }
     }
 
-    pub fn as_children(&self) -> &[Field<Children<Input>, Input>] {
-        &self.children
+    pub fn as_nested(&self) -> &[Field<Nested<Input>, Input>] {
+        &self.nested
     }
 
-    pub fn into_children(self) -> Vec<Field<Children<Input>, Input>> {
-        self.children
+    pub fn into_nested(self) -> Vec<Field<Nested<Input>, Input>> {
+        self.nested
     }
 
-    pub fn as_parent(&self) -> &[Field<Parent, Input>] {
-        &self.parent
+    pub fn as_parent(&self) -> &[Field<Flat, Input>] {
+        &self.flat
     }
 
-    pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent, Input>> {
-        self.parent.iter().find(|field| field.id == id)
+    pub fn find_field(&self, id: FieldId) -> Option<&Field<Flat, Input>> {
+        self.flat.iter().find(|field| field.id == id)
     }
 
-    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Parent, Input>> {
+    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Flat, Input>> {
         match path.split_first() {
             None => None,
             Some((name, path)) => {
-                let field = self
-                    .parent
-                    .iter()
-                    .find(|field| field.name == name.as_ref())?;
+                let field = self.flat.iter().find(|field| field.name == name.as_ref())?;
                 if path.is_empty() {
                     Some(field)
                 } else {
@@ -222,6 +223,6 @@ impl<Input: Clone> ExecutionPlan<Input> {
     }
 
     pub fn size(&self) -> usize {
-        self.parent.len()
+        self.flat.len()
     }
 }

@@ -4,19 +4,19 @@ use indexmap::IndexMap;
 
 use super::super::Result;
 use super::Synthesizer;
-use crate::core::jit::model::{Children, Field};
+use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::{DataPath, ExecutionPlan};
 use crate::core::json::JsonLike;
 
 pub struct Synth {
-    selection: Vec<Field<Children<ConstValue>, ConstValue>>,
+    selection: Vec<Field<Nested<ConstValue>, ConstValue>>,
     store: Store<Result<ConstValue>>,
 }
 
 impl Synth {
     pub fn new(plan: ExecutionPlan<ConstValue>, store: Store<Result<ConstValue>>) -> Self {
-        Self { selection: plan.into_children(), store }
+        Self { selection: plan.into_nested(), store }
     }
 
     pub fn synthesize(&self) -> Result<ConstValue> {
@@ -38,7 +38,7 @@ impl Synth {
     #[inline(always)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Children<ConstValue>, ConstValue>,
+        node: &'b Field<Nested<ConstValue>, ConstValue>,
         parent: Option<&'b ConstValue>,
         data_path: &DataPath,
     ) -> Result<ConstValue> {
@@ -87,14 +87,14 @@ impl Synth {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Children<ConstValue>, ConstValue>,
+        node: &'b Field<Nested<ConstValue>, ConstValue>,
         parent: &'b ConstValue,
         data_path: &'b DataPath,
     ) -> Result<ConstValue> {
         match parent {
             ConstValue::Object(obj) => {
                 let mut ans = IndexMap::default();
-                let children = node.children();
+                let children = node.nested();
 
                 if let Some(children) = children {
                     for child in children {
