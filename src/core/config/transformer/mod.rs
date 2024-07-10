@@ -7,6 +7,8 @@ mod preset;
 mod required;
 mod tree_shake;
 mod union_input_type;
+mod linter;
+
 
 pub use ambiguous_type::{AmbiguousType, Resolution};
 pub use consolidate_url::ConsolidateURL;
@@ -17,3 +19,4 @@ pub use preset::Preset;
 pub use required::Required;
 pub use tree_shake::TreeShake;
 pub use union_input_type::UnionInputType;
+pub use linter::Linter;
