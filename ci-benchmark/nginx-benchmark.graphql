@@ -1,5 +1,5 @@
 schema
-  @server(port: 8000, dedupe: false)
+  @server(port: 8000, dedupe: true)
   @upstream(
     baseURL: "http://jsonplaceholder.typicode.com"
     poolMaxIdlePerHost: 200

@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::{Arc, RwLock, Weak};
+use std::sync::{Arc, RwLock};
 
+use dashmap::DashMap;
 use futures_util::Future;
 use tokio::sync::broadcast;
 
@@ -15,7 +15,7 @@ impl<A: Send + Sync + Clone> Value for A {}
 /// Allows deduplication of async operations based on a key.
 pub struct Dedupe<Key, Value> {
     /// Cache storage for the operations.
-    cache: Arc<RwLock<HashMap<Key, State<Value>>>>,
+    cache: Arc<RwLock<DashMap<Key, State<Value>>>>,
     /// Initial size of the multi-producer, multi-consumer channel.
     size: usize,
     /// When enabled allows the operations to be cached forever.
@@ -29,7 +29,7 @@ enum State<Value> {
 
     /// Means that the operation is in progress and the result can be sent via
     /// the stored sender whenever it's available in the future.
-    Pending(Weak<broadcast::Sender<Value>>),
+    Pending(Arc<broadcast::Sender<Value>>),
 }
 
 /// Represents the next steps
@@ -48,7 +48,7 @@ enum Step<Value> {
 
 impl<K: Key, V: Value> Dedupe<K, V> {
     pub fn new(size: usize, persist: bool) -> Self {
-        Self { cache: Arc::new(RwLock::new(HashMap::new())), size, persist }
+        Self { cache: Arc::new(RwLock::new(DashMap::new())), size, persist }
     }
 
     pub async fn dedupe<'a, Fn, Fut>(&'a self, key: &'a K, or_else: Fn) -> V
@@ -57,7 +57,7 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         Fut: Future<Output = V>,
     {
         loop {
-            let value = match self.step(key) {
+            let value = match self.step(key).await {
                 Step::Return(value) => value,
                 Step::Await(mut rx) => match rx.recv().await {
                     Ok(value) => value,
@@ -71,11 +71,11 @@ impl<K: Key, V: Value> Dedupe<K, V> {
                 },
                 Step::Init(tx) => {
                     let value = or_else().await;
-                    let mut guard = self.cache.write().unwrap();
+                    let lock = self.cache.read().unwrap();
                     if self.persist {
-                        guard.insert(key.to_owned(), State::Ready(value.clone()));
+                        lock.insert(key.clone(), State::Ready(value.clone()));
                     } else {
-                        guard.remove(key);
+                        lock.remove(key);
                     }
                     let _ = tx.send(value.clone());
                     value
@@ -86,17 +86,13 @@ impl<K: Key, V: Value> Dedupe<K, V> {
         }
     }
 
-    fn step(&self, key: &K) -> Step<V> {
-        let mut this = self.cache.write().unwrap();
-
-        if let Some(state) = this.get(key) {
-            match state {
+    async fn step(&self, key: &K) -> Step<V> {
+        let lock = self.cache.write().unwrap();
+        if let Some(state) = lock.get(key) {
+            match state.value() {
                 State::Ready(value) => return Step::Return(value.clone()),
                 State::Pending(tx) => {
-                    // We can upgrade from Weak to Arc only in case when
-                    // original tx is still alive
-                    // otherwise we will create in the code below
-                    if let Some(tx) = tx.upgrade() {
+                    if let Some(tx) = Arc::downgrade(tx).upgrade() {
                         return Step::Await(tx.subscribe());
                     }
                 }
@@ -105,11 +101,8 @@ impl<K: Key, V: Value> Dedupe<K, V> {
 
         let (tx, _) = broadcast::channel(self.size);
         let tx = Arc::new(tx);
-        // Store a Weak version of tx and pass actual tx to further handling
-        // to control if tx is still alive and will be able to handle the request.
-        // Only single `strong` reference to tx should exist so we can
-        // understand when the execution is still alive and we'll get the response
-        this.insert(key.to_owned(), State::Pending(Arc::downgrade(&tx)));
+        lock.insert(key.clone(), State::Pending(tx.clone()));
+
         Step::Init(tx)
     }
 }
@@ -136,6 +129,7 @@ impl<K: Key, V: Value, E: Value> DedupeResult<K, V, E> {
 mod tests {
     use std::ops::Deref;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::RwLock;
     use std::time::Duration;
 
     use assert_eq;
