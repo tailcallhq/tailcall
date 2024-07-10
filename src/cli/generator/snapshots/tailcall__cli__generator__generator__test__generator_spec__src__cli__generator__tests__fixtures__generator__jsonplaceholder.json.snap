@@ -1,0 +1,81 @@
+---
+source: src/cli/generator/generator.rs
+expression: config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Address {
+  city: String
+  geo: Geo
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type Company {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type Geo {
+  lat: String
+  lng: String
+}
+
+type Photo {
+  albumId: Int
+  id: Int
+  thumbnailUrl: String
+  title: String
+  url: String
+}
+
+type Post {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
+type PostComment {
+  body: String
+  email: String
+  id: Int
+  name: String
+  postId: Int
+}
+
+type Query {
+  comment(p1: Int!): PostComment @http(path: "/comments/{{.args.p1}}")
+  comments: [PostComment] @http(path: "/comments")
+  photo(p1: Int!): Photo @http(path: "/photos/{{.args.p1}}")
+  photos: [Photo] @http(path: "/photos")
+  post(p1: Int!): Post @http(path: "/posts/{{.args.p1}}")
+  postComments(postId: Int): [PostComment] @http(path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
+  posts: [Post] @http(path: "/posts")
+  todo(p1: Int!): Todo @http(path: "/todos/{{.args.p1}}")
+  todos: [Todo] @http(path: "/todos")
+  user(p1: Int!): User @http(path: "/users/{{.args.p1}}")
+  users: [User] @http(path: "/users")
+}
+
+type Todo {
+  completed: Boolean
+  id: Int
+  title: String
+  userId: Int
+}
+
+type User {
+  address: Address
+  company: Company
+  email: String
+  id: Int
+  name: String
+  phone: String
+  username: String
+  website: String
+}

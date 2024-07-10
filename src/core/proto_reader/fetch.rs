@@ -11,6 +11,7 @@ use serde_json::json;
 use crate::core::blueprint::GrpcMethod;
 use crate::core::config::ConfigReaderContext;
 use crate::core::grpc::protobuf::ProtobufSet;
+use crate::core::grpc::request_template::RequestBody;
 use crate::core::grpc::RequestTemplate;
 use crate::core::mustache::Mustache;
 use crate::core::runtime::TargetRuntime;
@@ -133,7 +134,10 @@ impl GrpcReflection {
                 HeaderName::from_static("content-type"),
                 Mustache::parse("application/grpc+proto")?,
             )],
-            body: Mustache::parse(body.to_string().as_str()).ok(),
+            body: Some(RequestBody {
+                mustache: Mustache::parse(body.to_string().as_str()).ok(),
+                value: Default::default(),
+            }),
             operation: operation.clone(),
             operation_type: Default::default(),
         };

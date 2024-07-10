@@ -11,14 +11,14 @@ directive @addField(
   Path of the data where the field should point to
   """
   path: [String!]
-) repeatable  on OBJECT
+) repeatable on OBJECT
 
 """
 The @alias directive indicates that aliases of one enum value.
 """
 directive @alias(
   options: [String!]
-) on ENUM_VALUE_DEFINITION
+) on ENUM_VALUE
 
 """
 The @cache operator enables caching for the query, field or type it is applied to.
@@ -109,7 +109,7 @@ directive @grpc(
   or use Mustache template for dynamic parameters. These parameters will be added in 
   the body in `protobuf` format.
   """
-  body: String
+  body: JSON
   """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
@@ -213,7 +213,7 @@ directive @link(
   The type of the link. It can be `Config`, or `Protobuf`.
   """
   type: LinkType
-) repeatable  on SCHEMA
+) repeatable on SCHEMA
 
 directive @modify(
   name: String
@@ -250,6 +250,7 @@ directive @server(
   as nonce-based APIs.
   """
   dedupe: Boolean
+  enableJIT: Boolean
   """
   `globalResponseTimeout` sets the maximum query duration before termination, acting 
   as a safeguard against long-running queries.
@@ -427,43 +428,128 @@ directive @upstream(
   userAgent: String
 ) on SCHEMA
 
-input Apollo {
-  """
-  Setting `apiKey` for Apollo.
-  """
-  apiKey: String!
-  """
-  Setting `graphRef` for Apollo in the format <graphId>@<variant>.
-  """
-  graphRef: String!
-  """
-  Setting `platform` for Apollo.
-  """
-  platform: String
-  """
-  Setting `userVersion` for Apollo.
-  """
-  userVersion: String
-  """
-  Setting `version` for Apollo.
-  """
-  version: String
-}
-input Batch {
-  delay: Int!
-  headers: [String!]
-  maxSize: Int
-}
 """
-The @cache operator enables caching for the query, field or type it is applied to.
+Represents list of bytes
 """
-input Cache {
+scalar Bytes
+
+"""
+A date string, such as 2007-12-03, is compliant with the full-date format outlined 
+in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile 
+of the ISO 8601 standard for the representation of dates and times using the Gregorian 
+calendar.
+"""
+scalar Date
+
+"""
+field whose value conforms to the standard internet email address format as specified 
+in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+"""
+scalar Email
+
+"""
+Empty scalar type represents an empty value.
+"""
+scalar Empty
+
+"""
+Represents signed integer type 128 bit size as string
+"""
+scalar Int128
+
+"""
+Represents signed integer type 16bit size
+"""
+scalar Int16
+
+"""
+Represents signed integer type 32bit size
+"""
+scalar Int32
+
+"""
+Represents signed integer type 64bit size as string
+"""
+scalar Int64
+
+"""
+Represents signed integer type 8bit size
+"""
+scalar Int8
+
+"""
+The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ 
+ECMA-404.pdf).
+"""
+scalar JSON
+
+"""
+A field whose value conforms to the standard E.164 format as specified in E.164 specification 
+(https://en.wikipedia.org/wiki/E.164).
+"""
+scalar PhoneNumber
+
+"""
+Represents unsigned integer type 128bit size as string
+"""
+scalar UInt128
+
+"""
+Represents unsigned integer type 16bit size
+"""
+scalar UInt16
+
+"""
+Represents unsigned integer type 32bit size
+"""
+scalar UInt32
+
+"""
+Represents unsigned integer type 64bit size as string
+"""
+scalar UInt64
+
+"""
+Represents unsigned integer type 8bit size
+"""
+scalar UInt8
+
+"""
+A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), 
+and it uses real JavaScript URL objects.
+"""
+scalar Url
+
+"""
+Provides the ability to refer to a field defined in the root Query or Mutation.
+"""
+input Step {
   """
-  Specifies the duration, in milliseconds, of how long the value has to be stored in 
-  the cache.
+  The arguments that will override the actual arguments of the field.
   """
-  maxAge: Int!
+  args: JSON
+  """
+  The name of the field on the `Mutation` type that you want to call.
+  """
+  mutation: String
+  """
+  The name of the field on the `Query` type that you want to call.
+  """
+  query: String
 }
+
+input KeyValue {
+  key: String!
+  value: String!
+}
+
+input Schema {
+  Obj: JSON
+  Arr: Schema
+  Opt: Schema
+  Enum: [String!]
+}
+
 """
 Type to configure Cross-Origin Resource Sharing (CORS) for a server.
 """
@@ -510,17 +596,105 @@ input Cors {
   """
   vary: [String!]
 }
-enum Encoding {
-  ApplicationJson
-  ApplicationXWwwFormUrlencoded
+
+input Headers {
+  """
+  `cacheControl` sends `Cache-Control` headers in responses when activated. The `max-age` 
+  value is the least of the values received from upstream services. @default `false`.
+  """
+  cacheControl: Boolean
+  """
+  `cors` allows Cross-Origin Resource Sharing (CORS) for a server.
+  """
+  cors: Cors
+  """
+  `headers` are key-value pairs included in every server response. Useful for setting 
+  headers like `Access-Control-Allow-Origin` for cross-origin requests or additional 
+  headers for downstream services.
+  """
+  custom: [KeyValue]
+  """
+  `experimental` allows the use of `X-*` experimental headers in the response. @default 
+  `[]`.
+  """
+  experimental: [String!]
+  """
+  `setCookies` when enabled stores `set-cookie` headers and all the response will be 
+  sent with the headers.
+  """
+  setCookies: Boolean
 }
-"""
-The `@expr` operators allows you to specify an expression that can evaluate to a 
-value. The expression can be a static value or built form a Mustache template. schema.
-"""
-input Expr {
-  body: JSON
+
+input ScriptOptions {
+  timeout: Int
 }
+
+input Apollo {
+  """
+  Setting `apiKey` for Apollo.
+  """
+  apiKey: String!
+  """
+  Setting `graphRef` for Apollo in the format <graphId>@<variant>.
+  """
+  graphRef: String!
+  """
+  Setting `platform` for Apollo.
+  """
+  platform: String
+  """
+  Setting `userVersion` for Apollo.
+  """
+  userVersion: String
+  """
+  Setting `version` for Apollo.
+  """
+  version: String
+}
+
+"""
+Output the opentelemetry data to otlp collector
+"""
+input OtlpExporter {
+  headers: [KeyValue]
+  url: String!
+}
+
+"""
+Output the telemetry metrics data to prometheus server
+"""
+input PrometheusExporter {
+  format: PrometheusFormat
+  path: String!
+}
+
+"""
+Output the opentelemetry data to the stdout. Mostly used for debug purposes
+"""
+input StdoutExporter {
+  """
+  Output to stdout in pretty human-readable format
+  """
+  pretty: Boolean!
+}
+
+input TelemetryExporter {
+  stdout: StdoutExporter
+  otlp: OtlpExporter
+  prometheus: PrometheusExporter
+  apollo: Apollo
+}
+
+input Batch {
+  delay: Int!
+  headers: [String!]
+  maxSize: Int
+}
+
+input Proxy {
+  url: String!
+}
+
 """
 The @graphQL operator allows to specify GraphQL API server request to fetch data 
 from.
@@ -554,6 +728,7 @@ input GraphQL {
   """
   name: String!
 }
+
 """
 The @grpc operator indicates that a field or node is backed by a gRPC API.For instance, 
 if you add the @grpc operator to the `users` field of the Query type with a service 
@@ -579,7 +754,7 @@ input Grpc {
   or use Mustache template for dynamic parameters. These parameters will be added in 
   the body in `protobuf` format.
   """
-  body: String
+  body: JSON
   """
   The `headers` parameter allows you to customize the headers of the HTTP request made 
   by the `@grpc` operator. It is used by specifying a key-value map of header names 
@@ -591,33 +766,7 @@ input Grpc {
   """
   method: String!
 }
-input Headers {
-  """
-  `cacheControl` sends `Cache-Control` headers in responses when activated. The `max-age` 
-  value is the least of the values received from upstream services. @default `false`.
-  """
-  cacheControl: Boolean
-  """
-  `cors` allows Cross-Origin Resource Sharing (CORS) for a server.
-  """
-  cors: Cors
-  """
-  `headers` are key-value pairs included in every server response. Useful for setting 
-  headers like `Access-Control-Allow-Origin` for cross-origin requests or additional 
-  headers for downstream services.
-  """
-  custom: [KeyValue]
-  """
-  `experimental` allows the use of `X-*` experimental headers in the response. @default 
-  `[]`.
-  """
-  experimental: [String!]
-  """
-  `setCookies` when enabled stores `set-cookie` headers and all the response will be 
-  sent with the headers.
-  """
-  setCookies: Boolean
-}
+
 """
 The @http operator indicates that a field or node is backed by a REST API.For instance, 
 if you add the @http operator to the `users` field of the Query type with a path 
@@ -685,96 +834,35 @@ input Http {
   """
   query: [KeyValue]
 }
-enum HttpVersion {
-  HTTP1
-  HTTP2
+
+"""
+The `@expr` operators allows you to specify an expression that can evaluate to a 
+value. The expression can be a static value or built form a Mustache template. schema.
+"""
+input Expr {
+  body: JSON
 }
+
 input JS {
   name: String!
 }
-input KeyValue {
-  key: String!
-  value: String!
-}
-enum LinkType {
-  Config
-  Protobuf
-  Script
-  Cert
-  Key
-  Operation
-  Htpasswd
-  Jwks
-  Grpc
-}
-enum Method {
-  GET
-  POST
-  PUT
-  PATCH
-  DELETE
-  HEAD
-  OPTIONS
-  CONNECT
-  TRACE
-}
+
 input Modify {
   name: String
   omit: Boolean
 }
+
 """
-Output the opentelemetry data to otlp collector
+The @cache operator enables caching for the query, field or type it is applied to.
 """
-input OtlpExporter {
-  headers: [KeyValue]
-  url: String!
+input Cache {
+  """
+  Specifies the duration, in milliseconds, of how long the value has to be stored in 
+  the cache.
+  """
+  maxAge: Int!
 }
-"""
-Output the telemetry metrics data to prometheus server
-"""
-input PrometheusExporter {
-  format: PrometheusFormat
-  path: String!
-}
-"""
-Output format for prometheus data
-"""
-enum PrometheusFormat {
-  text
-  protobuf
-}
-input Proxy {
-  url: String!
-}
-input ScriptOptions {
-  timeout: Int
-}
-"""
-Output the opentelemetry data to the stdout. Mostly used for debug purposes
-"""
-input StdoutExporter {
-  """
-  Output to stdout in pretty human-readable format
-  """
-  pretty: Boolean!
-}
-"""
-Provides the ability to refer to a field defined in the root Query or Mutation.
-"""
-input Step {
-  """
-  The arguments that will override the actual arguments of the field.
-  """
-  args: JSON
-  """
-  The name of the field on the `Mutation` type that you want to call.
-  """
-  mutation: String
-  """
-  The name of the field on the `Query` type that you want to call.
-  """
-  query: String
-}
+
 """
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
 the observability of your GraphQL services powered by Tailcall.  By leveraging this 
@@ -790,83 +878,45 @@ input Telemetry {
   """
   requestHeaders: [String!]
 }
-input TelemetryExporter {
-  stdout: StdoutExporter
-  otlp: OtlpExporter
-  prometheus: PrometheusExporter
-  apollo: Apollo
+
+enum Encoding {
+  ApplicationJson
+  ApplicationXWwwFormUrlencoded
 }
-input Schema {
-  Obj: JSON
-  Arr: Schema
-  Opt: Schema
-  Enum: [String!]
+
+enum Method {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  HEAD
+  OPTIONS
+  CONNECT
+  TRACE
 }
+
+enum LinkType {
+  Config
+  Protobuf
+  Script
+  Cert
+  Key
+  Operation
+  Htpasswd
+  Jwks
+  Grpc
+}
+
+enum HttpVersion {
+  HTTP1
+  HTTP2
+}
+
 """
-Represents list of bytes
+Output format for prometheus data
 """
-scalar Bytes
-"""
-A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.
-"""
-scalar Date
-"""
-field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
-"""
-scalar Email
-"""
-Empty scalar type represents an empty value.
-"""
-scalar Empty
-"""
-Represents signed integer type 128 bit size as string
-"""
-scalar Int128
-"""
-Represents signed integer type 16bit size
-"""
-scalar Int16
-"""
-Represents signed integer type 32bit size
-"""
-scalar Int32
-"""
-Represents signed integer type 64bit size as string
-"""
-scalar Int64
-"""
-Represents signed integer type 8bit size
-"""
-scalar Int8
-"""
-The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ ECMA-404.pdf).
-"""
-scalar JSON
-"""
-A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
-"""
-scalar PhoneNumber
-"""
-Represents unsigned integer type 128bit size as string
-"""
-scalar UInt128
-"""
-Represents unsigned integer type 16bit size
-"""
-scalar UInt16
-"""
-Represents unsigned integer type 32bit size
-"""
-scalar UInt32
-"""
-Represents unsigned integer type 64bit size as string
-"""
-scalar UInt64
-"""
-Represents unsigned integer type 8bit size
-"""
-scalar UInt8
-"""
-A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
-"""
-scalar Url
+enum PrometheusFormat {
+  text
+  protobuf
+}

@@ -27,7 +27,7 @@ scalar PhoneNumber
 type Post {
   id: Int!
   title: String!
-  user(id: Int): User
+  user: User
   userId: Int!
 }
 

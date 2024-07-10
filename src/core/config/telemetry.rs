@@ -1,5 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
 use super::KeyValue;
 use crate::core::config::{Apollo, ConfigReaderContext};
@@ -67,7 +68,19 @@ pub enum TelemetryExporter {
     Apollo(Apollo),
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The @telemetry directive facilitates seamless integration with
