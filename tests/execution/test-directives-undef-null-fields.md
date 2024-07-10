@@ -22,7 +22,7 @@ type User {
 type Query {
   userAccessHeadersVars(id: ID!): User
     @http(path: "/user/{{.args.id}}/{{.headers.garbage}}/{{.vars.garbage}}", baseURL: "http://localhost:8080")
-  userListArg(id: ID): User @http(path: "/user/{{.args.id}}", baseURL: "http://localhost:8080")
+  userListArg(id: [ID]): User @http(path: "/user/{{.args.id}}", baseURL: "http://localhost:8080")
   userNullableArg(id: ID): User @http(path: "/user/{{.args.id}}", baseURL: "http://localhost:8080")
   userUndefinedArg(id: ID): User @http(path: "/user/{{.args.uid}}", baseURL: "http://localhost:8080")
 }
