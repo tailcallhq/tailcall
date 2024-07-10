@@ -12,23 +12,10 @@ pub trait Eval<'a> {
 
 /// RawValue parses the mustace template and uses ctx to retrive the values for
 /// templates.
-pub struct RawValueEval<A> {
-    _marker: std::marker::PhantomData<A>,
-}
+#[derive(Default)]
+pub struct ValueStringEval<A>(std::marker::PhantomData<A>);
 
-impl<A> Default for RawValueEval<A> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<A> RawValueEval<A> {
-    pub fn new() -> Self {
-        Self { _marker: std::marker::PhantomData }
-    }
-}
-
-impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
+impl<'a, A: PathValue> Eval<'a> for ValueStringEval<A> {
     type In = A;
     type Out = Option<ValueString<'a>>;
 

@@ -12,7 +12,7 @@ use crate::core::endpoint::Endpoint;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
 use crate::core::ir::model::{CacheKey, IoId};
-use crate::core::mustache::{Eval, Mustache, RawValueEval};
+use crate::core::mustache::{Eval, Mustache, ValueStringEval};
 use crate::core::path::{PathString, PathValue};
 
 /// RequestTemplate is an extension of a Mustache template.
@@ -42,7 +42,7 @@ impl RequestTemplate {
 
         // evaluates mustache template and returns the values evaluated by mustache
         // template.
-        let mustache_eval = RawValueEval::default();
+        let mustache_eval = ValueStringEval::default();
 
         let extra_qp = self.query.iter().filter_map(|(key, value)| {
             let parsed_value = mustache_eval.eval(value, ctx);
