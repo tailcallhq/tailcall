@@ -1,8 +1,31 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
+use serde::Deserialize;
+
 use crate::core::ir::model::IR;
-use crate::core::jit::Variables;
 use crate::core::json::JsonLike;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Variables<Value>(HashMap<String, Value>);
+
+impl<Value> Default for Variables<Value> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Value> Variables<Value> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        self.0.get(key)
+    }
+    pub fn insert(&mut self, key: String, value: Value) {
+        self.0.insert(key, value);
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Arg {

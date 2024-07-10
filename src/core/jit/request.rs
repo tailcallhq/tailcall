@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 use super::{Builder, Error, ExecutionPlan, Result};
 use crate::core::blueprint::Blueprint;
+use crate::core::jit::model::Variables;
 
 #[derive(Debug, Deserialize, Setters, Clone)]
 pub struct Request<Value> {
@@ -18,31 +19,19 @@ pub struct Request<Value> {
     pub extensions: HashMap<String, Value>,
 }
 
-#[derive(Default, Debug, Deserialize, Clone)]
-pub struct Variables<Value>(HashMap<String, Value>);
-
-impl<Value> Variables<Value> {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-    pub fn get(&self, key: &str) -> Option<&Value> {
-        self.0.get(key)
-    }
-    pub fn insert(&mut self, key: String, value: Value) {
-        self.0.insert(key, value);
-    }
-}
-
 impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
     fn from(value: async_graphql::Request) -> Self {
         Self {
             query: value.query,
             operation_name: value.operation_name,
             variables: match value.variables.into_value() {
-                async_graphql_value::ConstValue::Object(val) => Variables(HashMap::from_iter(
-                    val.into_iter().map(|(k, v)| (k.to_string(), v)),
-                )),
-                _ => Variables(HashMap::new()),
+                async_graphql_value::ConstValue::Object(val) => {
+                    let mut vars = Variables::default();
+                    val.into_iter()
+                        .for_each(|(k, v)| vars.insert(k.to_string(), v));
+                    vars
+                }
+                _ => Variables::default(),
             },
             extensions: value.extensions,
         }
@@ -62,7 +51,7 @@ impl<A> Request<A> {
         Self {
             query: query.to_string(),
             operation_name: None,
-            variables: Variables::new(),
+            variables: Variables::default(),
             extensions: HashMap::new(),
         }
     }
