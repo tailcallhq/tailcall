@@ -19,7 +19,7 @@ impl QueryEncoder {
                 RawValue::Value(val) => self.encode_const_value(key, val),
                 RawValue::Env(env_var) => Some(format!("{}={}", key, env_var)),
                 RawValue::Var(var) => Some(format!("{}={}", key, var)),
-                _ => None,
+                RawValue::Headers(header) => Some(format!("{}={}", key, header)),
             }
         } else {
             None
