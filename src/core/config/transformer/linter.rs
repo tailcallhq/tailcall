@@ -25,8 +25,88 @@ impl Transform for Linter {
     }
 }
 
+fn populate_map<T>(key: String, val: T, map: &mut BTreeMap<String, T>) -> Valid<(), String> {
+    if map.contains_key(&key) {
+        return Valid::fail(format!("Duplicate key: {}", key));
+    }
+    map.insert(key, val);
+    Valid::succeed(())
+}
+
+fn populate_set<T: std::fmt::Debug + Ord>(val: T, set: &mut BTreeSet<T>) -> Valid<(), String> {
+    if set.contains(&val) {
+        return Valid::fail(format!("Duplicate value: {:?}", val));
+    }
+    set.insert(val);
+    Valid::succeed(())
+}
+
+fn resolve_enum(mut config: Config) -> Valid<Config, String> {
+    let mut resolved_enums = BTreeMap::new();
+
+    Valid::from_iter(config.enums.clone(), |(mut enum_name, mut enum_)| {
+        let mut resolved_vals = BTreeSet::new();
+        Valid::from_iter(enum_.variants.clone(), |mut enum_val| {
+            enum_val.name = enum_val.name.to_uppercase();
+            populate_set(enum_val, &mut resolved_vals)
+        })
+        .and_then(|_| {
+            enum_.variants = resolved_vals;
+            enum_name = enum_name.to_pascal_case();
+            populate_map(enum_name, enum_, &mut resolved_enums)
+        })
+    })
+    .and_then(|_| {
+        config.enums = resolved_enums;
+        Valid::succeed(config)
+    })
+
+    /*    // Handle Enums and Enum Values
+    for (mut enum_name, mut enum_) in config.enums {
+        let mut resolved_vals = BTreeSet::new();
+
+        for mut enum_val in enum_.variants {
+            enum_val.name = enum_val.name.to_uppercase();
+            resolved_vals.insert(enum_val);
+        }
+        enum_.variants = resolved_vals;
+
+        enum_name = enum_name.to_pascal_case();
+        resolved_enums.insert(enum_name, enum_);
+    }
+    config.enums = resolved_enums;
+
+    Valid::succeed(config)*/
+}
+
 fn resolve_types_and_fields(mut config: Config) -> Valid<Config, String> {
-    // Handle Types
+    let mut resolved_types = BTreeMap::new();
+
+    Valid::from_iter(config.types.clone(), |(mut type_name, mut type_)| {
+        let mut resolved_fields = BTreeMap::new();
+        Valid::from_iter(type_.fields.clone(), |(mut field_name, mut field)| {
+            field.type_of = field.type_of.to_pascal_case();
+            Valid::from_iter(field.args.iter_mut(), |(_, arg)| {
+                arg.type_of = arg.type_of.to_pascal_case();
+                Valid::succeed(())
+            })
+            .and_then(|_| {
+                field_name = field_name.to_camel_case();
+                populate_map(field_name, field, &mut resolved_fields)
+            })
+        })
+        .and_then(|_| {
+            type_.fields = resolved_fields;
+            type_name = type_name.to_pascal_case();
+            populate_map(type_name, type_, &mut resolved_types)
+        })
+    })
+    .and_then(|_| {
+        config.types = resolved_types;
+        Valid::succeed(config)
+    })
+
+    /*    // Handle Types
     let mut resolved_types = BTreeMap::new();
     for (mut type_name, mut type_) in config.types {
         // Handle Fields
@@ -52,27 +132,7 @@ fn resolve_types_and_fields(mut config: Config) -> Valid<Config, String> {
     // Insert resolved types
     config.types = resolved_types;
 
-    Valid::succeed(config)
-}
-
-fn resolve_enum(mut config: Config) -> Valid<Config, String> {
-    let mut resolved_enums = BTreeMap::new();
-    // Handle Enums and Enum Values
-    for (mut enum_name, mut enum_) in config.enums {
-        let mut resolved_vals = BTreeSet::new();
-
-        for mut enum_val in enum_.variants {
-            enum_val.name = enum_val.name.to_uppercase();
-            resolved_vals.insert(enum_val);
-        }
-        enum_.variants = resolved_vals;
-
-        enum_name = enum_name.to_pascal_case();
-        resolved_enums.insert(enum_name, enum_);
-    }
-    config.enums = resolved_enums;
-
-    Valid::succeed(config)
+    Valid::succeed(config)*/
 }
 
 #[cfg(test)]
