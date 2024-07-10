@@ -119,7 +119,7 @@ impl Generator {
                         url: url.parse()?,
                         response: serde_json::from_str(&response.content)?,
                         field_name,
-                        route
+                        route,
                     });
                 }
                 Source::Proto { src } => {

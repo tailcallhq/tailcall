@@ -66,17 +66,17 @@ impl<'a> HttpDirectiveGenerator<'a> {
             let mut segments_vars: HashMap<usize, &str> = HashMap::new();
             let route_segments = route.split('/').filter(|s| !s.is_empty());
 
-            for (i, segment) in route_segments.enumerate() {
+            for (segment_pos, segment) in route_segments.enumerate() {
                 if let Some(variable) = segment.strip_prefix("$") {
-                    segments_vars.insert(i, variable);
+                    segments_vars.insert(segment_pos, variable);
                 }
             }
 
             if let Some(segments) = self.url.path_segments() {
                 let mut arg_index = 1;
-                for (i, segment) in segments.enumerate() {
-                    if segments_vars.get(&i).is_none() {
-                        mustache_compatible_url.push_str("/");
+                for (segment_pos, segment) in segments.enumerate() {
+                    if segments_vars.contains_key(&segment_pos) {
+                        mustache_compatible_url.push('/');
                         mustache_compatible_url.push_str(segment);
                         continue;
                     }
@@ -104,29 +104,28 @@ impl<'a> HttpDirectiveGenerator<'a> {
             // identifiers.
             // Case 2: If there are an odd number of segments, there's an even number of
             // identifiers, and the last segment isn't counted.
-            if let Some(url_segemnts) = self.url.path_segments() {
-                let mut url_segemnts = url_segemnts.peekable();
+            if let Some(url_segment) = self.url.path_segments() {
+                let mut peekable_url_segments = url_segment.peekable();
                 // This heuristic assumption make sure we don't count these segments if they
                 // exist so that the above property hold :
                 // Case 1: v1/albums/wpa
                 // Case 2: api/v1/albums/wpa
                 // Case 3: api/albums/wpa
                 let api_version_regex = Regex::new(r"v[0-9]+").unwrap();
-                while let Some(first_segment) = url_segemnts.peek() {
+                while let Some(first_segment) = peekable_url_segments.peek() {
                     if api_version_regex.is_match(first_segment) || first_segment.starts_with("api")
                     {
-                        mustache_compatible_url.push_str("/");
+                        mustache_compatible_url.push('/');
                         mustache_compatible_url.push_str(first_segment);
-                        url_segemnts.next();
+                        peekable_url_segments.next();
                     } else {
                         break;
                     }
                 }
 
                 let mut arg_index = 1;
-                let mut current_segemnt_index = 0;
-                for segment in url_segemnts {
-                    if current_segemnt_index % 2 == 1 {
+                for (segment_pos, segment) in peekable_url_segments.enumerate() {
+                    if segment_pos % 2 == 1 {
                         let arg_key = format!("p{}", arg_index);
                         let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
                         mustache_compatible_url.push_str(placeholder.as_str());
@@ -140,11 +139,9 @@ impl<'a> HttpDirectiveGenerator<'a> {
                             },
                         );
                     } else {
-                        mustache_compatible_url.push_str("/");
+                        mustache_compatible_url.push('/');
                         mustache_compatible_url.push_str(segment);
                     }
-
-                    current_segemnt_index += 1;
                 }
             }
         }
@@ -179,7 +176,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
     }
 
     fn deterime_arg_type_from_route_segment(segment: &str) -> String {
-        let is_digits = segment.chars().all(|item| item.is_digit(10));
+        let is_digits = segment.chars().all(|item| item.is_ascii_digit());
         if is_digits {
             return String::from("Int");
         }

@@ -14,6 +14,7 @@ pub struct QueryGenerator<'a> {
 }
 
 impl<'a> QueryGenerator<'a> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         is_json_list: bool,
         url: &'a Url,

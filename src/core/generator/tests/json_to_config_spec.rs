@@ -43,7 +43,7 @@ fn test_spec(path: &Path, url: Url, body: Value, route: Option<String>) -> anyho
             url,
             response: body,
             field_name: "f1".to_string(),
-            route: route,
+            route,
         }])
         .generate(true)?;
 
