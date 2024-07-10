@@ -231,6 +231,6 @@
     "name": "ci: test-jit",
     "color": "F9D0C4",
     "description": "Run all integration tests for the JIT optimized engine",
-    "aliases": ["ci:lint"]
+    "aliases": ["ci:test-jit"]
   }
 ]
