@@ -1,0 +1,81 @@
+{
+  "inputs": [
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/posts/1",
+        "fieldName": "post"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/users/1",
+        "fieldName": "user"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/users",
+        "fieldName": "users"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/posts",
+        "fieldName": "posts"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/comments",
+        "fieldName": "comments"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/comments/1",
+        "fieldName": "comment"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/photos",
+        "fieldName": "photos"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/photos/1",
+        "fieldName": "photo"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/todos",
+        "fieldName": "todos"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/todos/1",
+        "fieldName": "todo"
+      }
+    },
+    {
+      "curl": {
+        "src": "https://jsonplaceholder.typicode.com/comments?postId=1",
+        "fieldName": "postComments"
+      }
+    }
+  ],
+  "preset": {
+    "mergeType": 1,
+    "consolidateURL": 0.5
+  },
+  "output": {
+    "path": "./output.graphql",
+    "format": "graphQL"
+  },
+  "schema": {
+    "query": "Query"
+  }
+}

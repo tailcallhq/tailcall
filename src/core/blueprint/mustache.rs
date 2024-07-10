@@ -154,9 +154,14 @@ impl FieldDefinition {
                 )
                 .and_then(|_| {
                     if let Some(body) = &req_template.body {
-                        Valid::from_iter(body.expression_segments(), |parts| {
-                            parts_validator.validate(parts, true).trace("body")
-                        })
+                        if let Some(mustache) = &body.mustache {
+                            Valid::from_iter(mustache.expression_segments(), |parts| {
+                                parts_validator.validate(parts, true).trace("body")
+                            })
+                        } else {
+                            // TODO: needs review
+                            Valid::succeed(Default::default())
+                        }
                     } else {
                         Valid::succeed(Default::default())
                     }
