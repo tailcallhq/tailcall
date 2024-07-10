@@ -21,10 +21,15 @@ pub struct Request<Value> {
     pub document: Option<ExecutableDocument>,
 }
 
-impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
-    fn from(mut value: async_graphql::Request) -> Self {
-        let executable_doc = value.parsed_query().ok().cloned();
-        Self {
+impl TryFrom<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
+    type Error = Error;
+    fn try_from(mut value: async_graphql::Request) -> Result<Self> {
+        let executable_doc = value
+            .parsed_query()
+            .map_err(|e| Error::BuildError(e.to_string()))?
+            .clone();
+
+        Ok(Self {
             query: value.query,
             operation_name: value.operation_name,
             variables: match value.variables.into_value() {
@@ -34,8 +39,8 @@ impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
                 _ => HashMap::new(),
             },
             extensions: value.extensions,
-            document: executable_doc,
-        }
+            document: Some(executable_doc),
+        })
     }
 }
 
@@ -48,13 +53,14 @@ impl<Value> Request<Value> {
 }
 
 impl<A> Request<A> {
-    pub fn new(query: &str) -> Self {
-        Self {
+    pub fn new(query: &str) -> Result<Self> {
+        let document = async_graphql::parser::parse_query(query)?;
+        Ok(Self {
             query: query.to_string(),
             operation_name: None,
             variables: HashMap::new(),
             extensions: HashMap::new(),
-            document: async_graphql::parser::parse_query(query).ok(),
-        }
+            document: Some(document),
+        })
     }
 }

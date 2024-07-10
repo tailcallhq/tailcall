@@ -67,7 +67,7 @@ mod test {
 
     #[test]
     fn is_query_should_return_true_when_input_is_query_type() {
-        let request: Request<ConstValue> = Request::new("query {posts {id title}}");
+        let request: Request<ConstValue> = Request::new("query {posts {id title}}").unwrap();
         let ctx: Context<ConstValue, ConstValue> = Context::new(&request);
         assert!(ctx.is_query())
     }
@@ -75,7 +75,7 @@ mod test {
     #[test]
     fn is_query_should_return_false_when_input_is_mutation_type() {
         let request: Request<ConstValue> =
-            Request::new("mutation {createPost(input: {title: \"New Post\"}) {id title}}");
+            Request::new("mutation {createPost(input: {title: \"New Post\"}) {id title}}").unwrap();
         let ctx: Context<ConstValue, ConstValue> = Context::new(&request);
         assert!(!ctx.is_query())
     }

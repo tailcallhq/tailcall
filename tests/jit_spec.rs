@@ -23,7 +23,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new("query {posts {id title}}");
+        let request = Request::new("query {posts {id title}}").unwrap();
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
@@ -34,7 +34,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_nested() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new("query {posts {title userId user {id name blog} }}");
+        let request = Request::new("query {posts {title userId user {id name blog} }}").unwrap();
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
@@ -47,7 +47,8 @@ mod tests {
         //  NOTE: This test makes a real HTTP call
         let request = Request::new(
             "query {posts { id user { id albums { id photos { id title combinedId } } } }}",
-        );
+        )
+        .unwrap();
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
@@ -74,7 +75,8 @@ mod tests {
               }
             }
         "#,
-        );
+        )
+        .unwrap();
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
@@ -104,7 +106,8 @@ mod tests {
               }
             }
         "#,
-        );
+        )
+        .unwrap();
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;

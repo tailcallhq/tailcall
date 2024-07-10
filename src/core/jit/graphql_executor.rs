@@ -21,7 +21,12 @@ impl JITExecutor {
 
 impl Executor for JITExecutor {
     fn execute(&self, request: async_graphql::Request) -> impl Future<Output = Response> + Send {
-        let request = jit::Request::from(request);
+        let request = jit::Request::try_from(request);
+
+        let request = match request {
+            Ok(req) => req,
+            Err(_) => todo!(),
+        };
 
         match ConstValueExecutor::new(&request, self.app_ctx.clone()) {
             Ok(exec) => {
