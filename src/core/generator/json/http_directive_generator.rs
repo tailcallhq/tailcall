@@ -75,7 +75,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
             if let Some(segments) = self.url.path_segments() {
                 let mut arg_index = 1;
                 for (segment_pos, segment) in segments.enumerate() {
-                    if segments_vars.contains_key(&segment_pos) {
+                    if !segments_vars.contains_key(&segment_pos) {
                         mustache_compatible_url.push('/');
                         mustache_compatible_url.push_str(segment);
                         continue;
