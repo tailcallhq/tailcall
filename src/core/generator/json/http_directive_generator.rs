@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use regex::Regex;
 use url::Url;
@@ -50,36 +50,105 @@ impl<'a> UrlUtility<'a> {
 
 pub struct HttpDirectiveGenerator<'a> {
     url: &'a Url,
+    route: Option<&'a String>,
     http: Http,
 }
 
 impl<'a> HttpDirectiveGenerator<'a> {
-    pub fn new(url: &'a Url) -> Self {
-        Self { url, http: Http::default() }
+    pub fn new(url: &'a Url, route: Option<&'a String>) -> Self {
+        Self { url, route, http: Http::default() }
     }
 
     fn add_path_variables(&mut self, field: &mut Field) {
-        let re = Regex::new(r"/(\d+)").unwrap();
-        let mut arg_index = 1;
-        let path_url = self.url.path();
+        let mut mustache_compatible_url = String::new();
 
-        let mustache_compatible_url = re.replace_all(path_url, |_: &regex::Captures| {
-            let arg_key = format!("p{}", arg_index);
-            let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
+        if let Some(route) = self.route {
+            let mut segments_vars: HashMap<usize, &str> = HashMap::new();
+            let route_segments = route.split('/').filter(|s| !s.is_empty());
 
-            let arg = Arg {
-                type_of: "Int".to_string(),
-                required: true,
-                ..Default::default()
-            };
+            for (i, segment) in route_segments.enumerate() {
+                if let Some(variable) = segment.strip_prefix("$") {
+                    segments_vars.insert(i, variable);
+                }
+            }
 
-            field.args.insert(arg_key, arg);
+            if let Some(segments) = self.url.path_segments() {
+                let mut arg_index = 1;
+                for (i, segment) in segments.enumerate() {
+                    if segments_vars.get(&i).is_none() {
+                        mustache_compatible_url.push_str("/");
+                        mustache_compatible_url.push_str(segment);
+                        continue;
+                    }
 
-            arg_index += 1;
-            placeholder
-        });
+                    let arg_key = format!("p{}", arg_index);
+                    let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
+                    mustache_compatible_url.push_str(placeholder.as_str());
+                    arg_index += 1;
+                    field.args.insert(
+                        arg_key,
+                        Arg {
+                            type_of: Self::deterime_arg_type_from_route_segment(segment),
+                            required: true,
+                            ..Default::default()
+                        },
+                    );
+                }
+            }
+        } else {
+            // For best-effort detection, we're going to assume these properties:
+            // REST route usually starts with a static segment followed by an
+            // identifier segment, e.g., albums/wpa.
+            // We can determine a valid route by counting the total number of segments:
+            // Case 1: If there are an even number of segments, there's an odd number of
+            // identifiers.
+            // Case 2: If there are an odd number of segments, there's an even number of
+            // identifiers, and the last segment isn't counted.
+            if let Some(url_segemnts) = self.url.path_segments() {
+                let mut url_segemnts = url_segemnts.peekable();
+                // This heuristic assumption make sure we don't count these segments if they
+                // exist so that the above property hold :
+                // Case 1: v1/albums/wpa
+                // Case 2: api/v1/albums/wpa
+                // Case 3: api/albums/wpa
+                let api_version_regex = Regex::new(r"v[0-9]+").unwrap();
+                while let Some(first_segment) = url_segemnts.peek() {
+                    if api_version_regex.is_match(first_segment) || first_segment.starts_with("api")
+                    {
+                        mustache_compatible_url.push_str("/");
+                        mustache_compatible_url.push_str(first_segment);
+                        url_segemnts.next();
+                    } else {
+                        break;
+                    }
+                }
 
-        // add path in http directive.
+                let mut arg_index = 1;
+                let mut current_segemnt_index = 0;
+                for segment in url_segemnts {
+                    if current_segemnt_index % 2 == 1 {
+                        let arg_key = format!("p{}", arg_index);
+                        let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
+                        mustache_compatible_url.push_str(placeholder.as_str());
+                        arg_index += 1;
+                        field.args.insert(
+                            arg_key,
+                            Arg {
+                                type_of: Self::deterime_arg_type_from_route_segment(segment),
+                                required: true,
+                                ..Default::default()
+                            },
+                        );
+                    } else {
+                        mustache_compatible_url.push_str("/");
+                        mustache_compatible_url.push_str(segment);
+                    }
+
+                    current_segemnt_index += 1;
+                }
+            }
+        }
+
         self.http.path = mustache_compatible_url.to_string();
     }
 
@@ -108,13 +177,27 @@ impl<'a> HttpDirectiveGenerator<'a> {
 
         self.http
     }
+
+    fn deterime_arg_type_from_route_segment(segment: &str) -> String {
+        let is_digits = segment.chars().all(|item| item.is_digit(10));
+        if is_digits {
+            return String::from("Int");
+        }
+
+        String::from("String")
+    }
 }
 
 #[cfg(test)]
 mod test {
+    use std::collections::BTreeMap;
+
     use url::Url;
 
-    use crate::core::generator::json::http_directive_generator::UrlUtility;
+    use crate::core::config::{Arg, Field};
+    use crate::core::generator::json::http_directive_generator::{
+        HttpDirectiveGenerator, UrlUtility,
+    };
 
     #[test]
     fn test_new_url_query_parser() {
@@ -168,5 +251,66 @@ mod test {
         let url = Url::parse("http://example.com/path").unwrap();
         let parser = UrlUtility::new(&url);
         assert_eq!(parser.get_query_params().len(), 0);
+    }
+
+    #[test]
+    fn test_variable_detection_with_route_provided() {
+        let url = Url::parse("http://example.com/v1/albums/wpa/photos/2").unwrap();
+        let route = Some("/v1/albums/$album_name/photos/$id".to_string());
+        let mut http_directive_gen = HttpDirectiveGenerator::new(&url, route.as_ref());
+        let mut actual_field = Field { list: false, ..Default::default() };
+        http_directive_gen.add_path_variables(&mut actual_field);
+
+        let mut expected_field = Field { list: false, args: BTreeMap::new(), ..Default::default() };
+
+        expected_field.args.insert(
+            "p1".to_string(),
+            Arg {
+                type_of: "String".to_string(),
+                required: true,
+                ..Default::default()
+            },
+        );
+
+        expected_field.args.insert(
+            "p2".to_string(),
+            Arg {
+                type_of: "Int".to_string(),
+                required: true,
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(actual_field, expected_field);
+    }
+
+    #[test]
+    fn test_variable_detection_with_best_effort() {
+        let url = Url::parse("http://example.com/v22/api/albums/wpa22/photos/2/delete").unwrap();
+        let mut http_directive_gen = HttpDirectiveGenerator::new(&url, None);
+        let mut actual_field = Field { list: false, ..Default::default() };
+        http_directive_gen.add_path_variables(&mut actual_field);
+
+        let mut expected_field = Field { list: false, args: BTreeMap::new(), ..Default::default() };
+
+        expected_field.args.insert(
+            "p1".to_string(),
+            Arg {
+                type_of: "String".to_string(),
+                required: true,
+                ..Default::default()
+            },
+        );
+
+        expected_field.args.insert(
+            "p2".to_string(),
+            Arg {
+                type_of: "Int".to_string(),
+                required: true,
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(actual_field, expected_field);
     }
 }

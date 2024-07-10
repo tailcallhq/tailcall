@@ -59,6 +59,7 @@ pub enum Source<Status = UnResolved> {
         src: Location<Status>,
         headers: Headers<Status>,
         field_name: String,
+        route: Option<String>,
     },
     Proto {
         src: Location<Status>,
@@ -177,10 +178,15 @@ impl Source<UnResolved> {
         reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, field_name, headers } => {
+            Source::Curl { src, field_name, headers, route } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 let resolved_headers = headers.resolve(reader_context)?;
-                Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
+                Ok(Source::Curl {
+                    src: resolved_path,
+                    field_name,
+                    headers: resolved_headers,
+                    route,
+                })
             }
             Source::Proto { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -290,6 +296,7 @@ mod tests {
                 src: location("https://example.com"),
                 headers: to_headers(headers),
                 field_name: "test".to_string(),
+                route: None,
             },
         }]);
         let actual = serde_json::to_string_pretty(&config).unwrap();

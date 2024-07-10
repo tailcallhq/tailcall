@@ -10,11 +10,18 @@ pub struct QueryGenerator<'a> {
     url: &'a Url,
     query: &'a str,
     field_name: &'a str,
+    route: Option<&'a String>,
 }
 
 impl<'a> QueryGenerator<'a> {
-    pub fn new(is_json_list: bool, url: &'a Url, query: &'a str, field_name: &'a str) -> Self {
-        Self { is_json_list, url, query, field_name }
+    pub fn new(
+        is_json_list: bool,
+        url: &'a Url,
+        query: &'a str,
+        field_name: &'a str,
+        route: Option<&'a String>,
+    ) -> Self {
+        Self { is_json_list, url, query, field_name, route }
     }
 }
 
@@ -27,7 +34,7 @@ impl OperationGenerator for QueryGenerator<'_> {
         };
 
         // generate required http directive.
-        let http_directive_gen = HttpDirectiveGenerator::new(self.url);
+        let http_directive_gen = HttpDirectiveGenerator::new(self.url, self.route);
         field.http = Some(http_directive_gen.generate_http_directive(&mut field));
 
         // if type is already present, then append the new field to it else create one.
@@ -53,7 +60,7 @@ mod test {
     #[test]
     fn test_list_json_query_generator() -> anyhow::Result<()> {
         let url = Url::parse("http://example.com/path").unwrap();
-        let query_generator = QueryGenerator::new(true, &url, "Query", "f1");
+        let query_generator = QueryGenerator::new(true, &url, "Query", "f1", None);
         let config = query_generator
             .generate("T1", Default::default())
             .to_result()?;
@@ -64,7 +71,7 @@ mod test {
     #[test]
     fn test_query_generator() -> anyhow::Result<()> {
         let url = Url::parse("http://example.com/path").unwrap();
-        let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
+        let query_generator = QueryGenerator::new(false, &url, "Query", "f1", None);
         let config = query_generator
             .generate("T1", Default::default())
             .to_result()?;
@@ -75,7 +82,7 @@ mod test {
     #[test]
     fn test_query_generator_with_query_params() -> anyhow::Result<()> {
         let url = Url::parse("http://example.com/path?q=12&is_verified=true").unwrap();
-        let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
+        let query_generator = QueryGenerator::new(false, &url, "Query", "f1", None);
         let config = query_generator
             .generate("T1", Default::default())
             .to_result()?;
@@ -86,7 +93,7 @@ mod test {
     #[test]
     fn test_query_generator_with_path_variables() -> anyhow::Result<()> {
         let url = Url::parse("http://example.com/users/12").unwrap();
-        let query_generator = QueryGenerator::new(false, &url, "Query", "f1");
+        let query_generator = QueryGenerator::new(false, &url, "Query", "f1", None);
         let config = query_generator
             .generate("T1", Default::default())
             .to_result()?;

@@ -10,7 +10,8 @@ expression: actual
         "headers": {
           "user-agent": "tailcall-v1"
         },
-        "fieldName": "test"
+        "fieldName": "test",
+        "route": null
       }
     }
   ],

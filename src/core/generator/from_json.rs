@@ -12,11 +12,17 @@ pub struct RequestSample {
     url: Url,
     response: Value,
     field_name: String,
+    route: Option<String>,
 }
 
 impl RequestSample {
-    pub fn new(url: Url, resp: Value, field_name: &str) -> Self {
-        Self { url, response: resp, field_name: field_name.to_string() }
+    pub fn new(url: Url, resp: Value, field_name: &str, route: Option<String>) -> Self {
+        Self {
+            url,
+            response: resp,
+            field_name: field_name.to_string(),
+            route,
+        }
     }
 }
 
@@ -55,6 +61,7 @@ impl Transform for FromJsonGenerator<'_> {
                 &sample.url,
                 query,
                 field_name,
+                sample.route.as_ref(),
             );
 
             // these transformations are required in order to generate a base config.
@@ -83,6 +90,7 @@ mod tests {
     #[derive(Deserialize)]
     struct JsonFixture {
         url: String,
+        route: Option<String>,
         body: serde_json::Value,
     }
 
@@ -108,6 +116,7 @@ mod tests {
                 parsed_content.url.parse()?,
                 parsed_content.body,
                 &field_name_generator.next(),
+                parsed_content.route,
             ));
         }
 

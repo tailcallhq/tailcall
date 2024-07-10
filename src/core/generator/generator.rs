@@ -30,6 +30,7 @@ pub enum Input {
         url: Url,
         response: Value,
         field_name: String,
+        route: Option<String>,
     },
     Proto(ProtoMetadata),
     Config {
@@ -93,9 +94,13 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                Input::Json { url, response, field_name } => {
-                    let request_sample =
-                        RequestSample::new(url.to_owned(), response.to_owned(), field_name);
+                Input::Json { url, response, field_name, route } => {
+                    let request_sample = RequestSample::new(
+                        url.to_owned(),
+                        response.to_owned(),
+                        field_name,
+                        route.to_owned(),
+                    );
                     config = config.merge_right(
                         self.generate_from_json(&type_name_generator, &[request_sample])?,
                     );
@@ -154,6 +159,7 @@ mod test {
     struct JsonFixture {
         url: String,
         body: serde_json::Value,
+        route: Option<String>,
     }
 
     fn parse_json(path: &str) -> JsonFixture {
@@ -199,6 +205,7 @@ mod test {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
                 field_name: "f1".to_string(),
+                route: parsed_content.route,
             }])
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
@@ -229,6 +236,7 @@ mod test {
             url: parsed_content.url.parse()?,
             response: parsed_content.body,
             field_name: "f1".to_string(),
+            route: parsed_content.route,
         };
 
         // Combine inputs
@@ -257,6 +265,7 @@ mod test {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
                 field_name: field_name_generator.next(),
+                route: parsed_content.route,
             });
         }
 

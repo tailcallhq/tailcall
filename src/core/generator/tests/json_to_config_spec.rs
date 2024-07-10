@@ -10,6 +10,7 @@ use url::Url;
 struct JsonFixture {
     url: String,
     body: Value,
+    route: Option<String>,
 }
 
 datatest_stable::harness!(
@@ -19,29 +20,30 @@ datatest_stable::harness!(
 );
 
 pub fn run_json_to_config_spec(path: &Path) -> datatest_stable::Result<()> {
-    let (url, body) = load_json(path)?;
+    let (url, body, route) = load_json(path)?;
     let parsed_url = Url::parse(url.as_str()).unwrap_or_else(|_| {
         panic!(
             "Failed to parse the url. url: {}, test file: {:?}",
             url, path
         )
     });
-    test_spec(path, parsed_url, body)?;
+    test_spec(path, parsed_url, body, route)?;
     Ok(())
 }
 
-fn load_json(path: &Path) -> anyhow::Result<(String, Value)> {
+fn load_json(path: &Path) -> anyhow::Result<(String, Value, Option<String>)> {
     let contents = fs::read_to_string(path)?;
     let json_data: JsonFixture = serde_json::from_str(&contents).unwrap();
-    Ok((json_data.url, json_data.body))
+    Ok((json_data.url, json_data.body, json_data.route))
 }
 
-fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {
+fn test_spec(path: &Path, url: Url, body: Value, route: Option<String>) -> anyhow::Result<()> {
     let config = Generator::default()
         .inputs(vec![Input::Json {
             url,
             response: body,
             field_name: "f1".to_string(),
+            route: route,
         }])
         .generate(true)?;
 

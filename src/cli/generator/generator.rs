@@ -101,7 +101,7 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src, field_name, headers: resolved_headers } => {
+                Source::Curl { src, field_name, headers: resolved_headers, route } => {
                     let url = src.0;
                     let mut request = reqwest::Request::new(reqwest::Method::GET, url.parse()?);
                     if let Some(headers_inner) = resolved_headers.headers() {
@@ -119,6 +119,7 @@ impl Generator {
                         url: url.parse()?,
                         response: serde_json::from_str(&response.content)?,
                         field_name,
+                        route
                     });
                 }
                 Source::Proto { src } => {
