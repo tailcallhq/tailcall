@@ -23,6 +23,9 @@ lazy_static = "1.4.0"
 serde_json = { version = "1.0.116", features = ["preserve_order"] }
 serde = { version = "1.0.200", features = ["derive"] }
 
+[profile.dev]
+debug = 0
+
 
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
@@ -247,7 +250,7 @@ similar.opt-level = 3
 opt-level = 3
 codegen-units = 1
 panic = 'abort'
-lto = 'fat'
+lto = true
 debug = false
 incremental = false
 overflow-checks = false
