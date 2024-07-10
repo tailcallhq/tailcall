@@ -99,17 +99,11 @@ impl<'a> HttpDirectiveGenerator<'a> {
             // For best-effort detection, we're going to assume these properties:
             // REST route usually starts with a static segment followed by an
             // identifier segment, e.g., albums/wpa.
-            // We can determine a valid route by counting the total number of segments:
-            // Case 1: If there are an even number of segments, there's an odd number of
-            // identifiers.
-            // Case 2: If there are an odd number of segments, there's an even number of
-            // identifiers, and the last segment isn't counted.
+            // We can determine a valid route by counting the total number of segments.
             if let Some(url_segment) = self.url.path_segments() {
                 let mut peekable_url_segments = url_segment.peekable();
-                // This heuristic assumption make sure we don't count these segments if they
-                // exist so that the above property hold :
                 // Case 1: v1/albums/wpa
-                // Case 2: api/v1/albums/wpa
+                // Case 2: v1/api/albums/wpa
                 // Case 3: api/albums/wpa
                 let api_version_regex = Regex::new(r"v[0-9]+").unwrap();
                 while let Some(first_segment) = peekable_url_segments.peek() {
