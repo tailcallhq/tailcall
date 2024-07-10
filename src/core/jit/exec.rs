@@ -15,7 +15,7 @@ use crate::core::json::JsonLike;
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
-pub struct Executor<Synth, IRExec, Input: Clone> {
+pub struct Executor<Synth, IRExec, Input> {
     plan: ExecutionPlan<Input>,
     synth: Synth,
     exec: IRExec,
@@ -23,7 +23,7 @@ pub struct Executor<Synth, IRExec, Input: Clone> {
 
 impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec, Input>
 where
-    Output: JsonLike<Json = Output> + Default + Clone + Debug,
+    Output: JsonLike<Json = Output> + Debug,
     Input: Clone + Debug,
     Synth: Synthesizer<Value = Result<Output, Error>>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
@@ -49,17 +49,16 @@ where
 }
 
 #[derive(Getters)]
-struct ExecutorInner<'a, Input: Clone, Output: Clone, Error, Exec> {
+struct ExecutorInner<'a, Input, Output, Error, Exec> {
     request: Request<Input>,
     store: Arc<Mutex<Store<Result<Output, Error>>>>,
     plan: ExecutionPlan<Input>,
     ir_exec: &'a Exec,
 }
 
-impl<'a, Input, Output, Error, Exec>
-    ExecutorInner<'a, Input, Output, Error, Exec>
+impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: JsonLike<Json = Output> + Default + Clone + Debug,
+    Output: JsonLike<Json = Output> + Debug,
     Input: Clone + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
     ConstValue: From<Input>,

@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use async_graphql::Value;
 
-use crate::core::{blueprint::Blueprint, jit::input_resolver::InputResolver};
+use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
+use crate::core::jit::input_resolver::InputResolver;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
 use crate::core::json::JsonLike;

@@ -4,7 +4,8 @@ use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use serde::Deserialize;
 
-use super::{input_resolver::InputResolver, Builder, ExecutionPlan, Result};
+use super::input_resolver::InputResolver;
+use super::{Builder, ExecutionPlan, Result};
 use crate::core::blueprint::Blueprint;
 
 #[derive(Debug, Deserialize, Setters)]

@@ -60,8 +60,7 @@ impl FieldId {
 }
 
 #[derive(Clone)]
-// TODO: do we need Clone constraints?
-pub struct Field<Extensions: Clone, Input: Clone> {
+pub struct Field<Extensions, Input> {
     pub id: FieldId,
     pub name: String,
     pub ir: Option<IR>,
@@ -70,11 +69,11 @@ pub struct Field<Extensions: Clone, Input: Clone> {
     pub extensions: Option<Extensions>,
 }
 
-impl<A: Clone, Input: Clone> Field<A, Input> {
-    pub fn map_args<Output: Clone, Error>(
+impl<Extensions, Input> Field<Extensions, Input> {
+    pub fn map_args<Output, Error>(
         self,
         map: impl Fn(Arg<Input>) -> Result<Arg<Output>, Error>,
-    ) -> Result<Field<A, Output>, Error> {
+    ) -> Result<Field<Extensions, Output>, Error> {
         Ok(Field {
             id: self.id,
             name: self.name,
@@ -86,7 +85,7 @@ impl<A: Clone, Input: Clone> Field<A, Input> {
     }
 }
 
-impl<Input: Clone> Field<Nested<Input>, Input> {
+impl<Input> Field<Nested<Input>, Input> {
     pub fn nested(&self) -> Option<&Vec<Field<Nested<Input>, Input>>> {
         self.extensions.as_ref().map(|Nested(nested)| nested)
     }
@@ -99,12 +98,15 @@ impl<Input: Clone> Field<Nested<Input>, Input> {
     }
 }
 
-impl<Input: Clone> Field<Flat, Input> {
+impl<Input> Field<Flat, Input> {
     fn parent(&self) -> Option<&FieldId> {
         self.extensions.as_ref().map(|Flat(id)| id)
     }
 
-    fn into_nested(self, fields: &[Field<Flat, Input>]) -> Field<Nested<Input>, Input> {
+    fn into_nested(self, fields: &[Field<Flat, Input>]) -> Field<Nested<Input>, Input>
+    where
+        Input: Clone,
+    {
         let mut children = Vec::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
@@ -131,7 +133,7 @@ impl<Input: Clone> Field<Flat, Input> {
     }
 }
 
-impl<A: Debug + Clone, Input: Clone + Debug> Debug for Field<A, Input> {
+impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut debug_struct = f.debug_struct("Field");
         debug_struct.field("id", &self.id);
@@ -172,16 +174,19 @@ impl Debug for Flat {
 /// Store field relationships in a nested structure like a tree where each field
 /// links to its children.
 #[derive(Clone, Debug)]
-pub struct Nested<Input: Clone>(Vec<Field<Nested<Input>, Input>>);
+pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
 #[derive(Clone, Debug)]
-pub struct ExecutionPlan<Input: Clone> {
+pub struct ExecutionPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     nested: Vec<Field<Nested<Input>, Input>>,
 }
 
-impl<Input: Clone> ExecutionPlan<Input> {
-    pub fn new(fields: Vec<Field<Flat, Input>>) -> Self {
+impl<Input> ExecutionPlan<Input> {
+    pub fn new(fields: Vec<Field<Flat, Input>>) -> Self
+    where
+        Input: Clone,
+    {
         let nested = fields
             .clone()
             .into_iter()

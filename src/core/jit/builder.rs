@@ -7,7 +7,8 @@ use async_graphql::parser::types::{
 use async_graphql::Positioned;
 use async_graphql_value::Value;
 
-use super::{model::*, BuildError};
+use super::model::*;
+use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::ExecutionPlan;
@@ -66,7 +67,8 @@ impl Builder {
                                     id,
                                     name,
                                     type_of,
-                                    // TODO: handle errors for non existing request_args without the default
+                                    // TODO: handle errors for non existing request_args without the
+                                    // default
                                     value: request_args.get(arg_name).cloned(),
                                     default_value,
                                 });

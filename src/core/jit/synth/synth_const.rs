@@ -159,13 +159,14 @@ mod tests {
     use async_graphql::Value;
 
     use super::Synth;
+    use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JsonPlaceholder;
+    use crate::core::jit::input_resolver::InputResolver;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
     use crate::core::valid::Validator;
-    use crate::core::{blueprint::Blueprint, jit::input_resolver::InputResolver};
 
     const POSTS: &str = r#"
         [
