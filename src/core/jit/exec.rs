@@ -82,6 +82,7 @@ where
                 let value: Option<Input> = arg
                     .value
                     .clone()
+                    // TODO: default value resolution should happen in the InputResolver
                     .or_else(|| arg.default_value.clone());
 
                 if let Some(value) = value {
@@ -91,7 +92,7 @@ where
                     todo!()
                 }
             }
-            let ctx = ctx.with_args(dbg!(&arg_map));
+            let ctx = ctx.with_args(arg_map);
             self.execute(field, &ctx, DataPath::new()).await
         }))
         .await;

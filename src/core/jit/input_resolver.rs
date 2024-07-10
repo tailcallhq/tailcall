@@ -2,6 +2,9 @@ use async_graphql_value::{ConstValue, Value};
 
 use super::{ExecutionPlan, ResolveInputError};
 
+/// Trait to represent conversion from some dynamic type (with variables)
+/// to the resolved variant based on the additional provided info.
+/// E.g. conversion from [async_graphql_value::Value] -> [async_graphql_value::ConstValue]
 pub trait InputResolvable {
     type Output;
 
@@ -19,6 +22,8 @@ impl InputResolvable for Value {
     }
 }
 
+/// Transforms [ExecutionPlan] values the way that all the input values
+/// are transformed to const variant with the help of [InputResolvable] trait
 pub struct InputResolver<Input: Clone> {
     plan: ExecutionPlan<Input>,
 }
