@@ -2,7 +2,7 @@ use crate::core::path::RawValue;
 
 /// Defines different strategies for encoding query parameters.
 #[derive(Default, Debug, Clone)]
-pub enum EncodingStrategy {
+pub enum QueryEncoder {
     /// Encodes the query list as key=value1,value2,value3,...
     CommaSeparated,
     /// Encodes the query list by repeating the key for each value:
@@ -11,19 +11,12 @@ pub enum EncodingStrategy {
     RepeatedKey,
 }
 
-/// It's responsible for encoding the query values.
-#[derive(Default, Debug, Clone)]
-pub struct QueryEncoder {
-    /// It uses encoding strategy to encode list query paramm.
-    encoding_strategy: EncodingStrategy,
-}
-
 impl QueryEncoder {
     pub fn encode(&self, key: &str, raw_value: Option<RawValue>) -> Option<String> {
         if let Some(value) = raw_value {
             match &value {
-                RawValue::Arg(arg) => self.encoding_strategy.encode(key, arg),
-                RawValue::Value(val) => self.encoding_strategy.encode(key, val),
+                RawValue::Arg(arg) => self.encode_const_value(key, arg),
+                RawValue::Value(val) => self.encode_const_value(key, val),
                 RawValue::Env(env_var) => Some(format!("{}={}", key, env_var)),
                 RawValue::Var(var) => Some(format!("{}={}", key, var)),
                 _ => None,
@@ -32,12 +25,9 @@ impl QueryEncoder {
             None
         }
     }
-}
-
-impl EncodingStrategy {
-    pub fn encode(&self, key: &str, value: &async_graphql::Value) -> Option<String> {
+    fn encode_const_value(&self, key: &str, value: &async_graphql::Value) -> Option<String> {
         match self {
-            EncodingStrategy::CommaSeparated => match value {
+            QueryEncoder::CommaSeparated => match value {
                 async_graphql::Value::List(list) if !list.is_empty() => {
                     let encoded_values: Vec<String> =
                         list.iter().filter_map(convert_value).collect();
@@ -45,11 +35,11 @@ impl EncodingStrategy {
                 }
                 _ => convert_value(value).map(|val| format!("{}={}", key, val)),
             },
-            EncodingStrategy::RepeatedKey => match value {
+            QueryEncoder::RepeatedKey => match value {
                 async_graphql::Value::List(list) if !list.is_empty() => {
                     let encoded_values: Vec<String> = list
                         .iter()
-                        .filter_map(|val| self.encode(key, val))
+                        .filter_map(|val| self.encode_const_value(key, val))
                         .collect();
                     Some(encoded_values.join("&"))
                 }
@@ -78,7 +68,7 @@ mod tests {
 
     #[test]
     fn test_encode_comma_separated_arg() {
-        let encoder = QueryEncoder { encoding_strategy: EncodingStrategy::CommaSeparated };
+        let encoder = QueryEncoder::CommaSeparated;
         let values = Value::List(vec![
             Value::Number(12.into()),
             Value::Number(42.into()),
@@ -94,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_encode_repeated_key_value_arg() {
-        let encoder = QueryEncoder { encoding_strategy: EncodingStrategy::RepeatedKey };
+        let encoder = QueryEncoder::RepeatedKey;
         let values = Value::List(vec![
             Value::Number(12.into()),
             Value::Number(42.into()),
@@ -149,9 +139,9 @@ mod tests {
             Value::String("2".to_string()),
             Value::String("3".to_string()),
         ]);
-        let strategy = EncodingStrategy::CommaSeparated;
+        let strategy = QueryEncoder::CommaSeparated;
 
-        let actual = strategy.encode(key, &values);
+        let actual = strategy.encode_const_value(key, &values);
         let expected = Some("ids=1,2,3".to_string());
 
         assert_eq!(actual, expected);
@@ -165,9 +155,9 @@ mod tests {
             Value::String("2".to_string()),
             Value::String("3".to_string()),
         ]);
-        let strategy = EncodingStrategy::RepeatedKey;
+        let strategy = QueryEncoder::RepeatedKey;
 
-        let actual = strategy.encode(key, &values);
+        let actual = strategy.encode_const_value(key, &values);
         let expected = Some("ids=1&ids=2&ids=3".to_string());
 
         assert_eq!(actual, expected);
@@ -181,9 +171,9 @@ mod tests {
             Value::Number(42.into()),
             Value::Boolean(true),
         ]);
-        let strategy = EncodingStrategy::CommaSeparated;
+        let strategy = QueryEncoder::CommaSeparated;
 
-        let actual = strategy.encode(key, &values);
+        let actual = strategy.encode_const_value(key, &values);
         let expected = Some("values=string,42,true".to_string());
 
         assert_eq!(actual, expected);
@@ -197,9 +187,9 @@ mod tests {
             Value::Number(42.into()),
             Value::Boolean(true),
         ]);
-        let strategy = EncodingStrategy::RepeatedKey;
+        let strategy = QueryEncoder::RepeatedKey;
 
-        let actual = strategy.encode(key, &values);
+        let actual = strategy.encode_const_value(key, &values);
         let expected = Some("values=string&values=42&values=true".to_string());
 
         assert_eq!(actual, expected);
@@ -209,9 +199,9 @@ mod tests {
     fn test_encode_empty_list_comma_separated() {
         let key = "empty";
         let values = Value::List(vec![]);
-        let strategy = EncodingStrategy::CommaSeparated;
+        let strategy = QueryEncoder::CommaSeparated;
 
-        let actual = strategy.encode(key, &values);
+        let actual = strategy.encode_const_value(key, &values);
         let expected: Option<String> = None;
 
         assert_eq!(actual, expected);
@@ -221,9 +211,9 @@ mod tests {
     fn test_encode_empty_list_repeated_key() {
         let key = "empty";
         let values = Value::List(vec![]);
-        let strategy = EncodingStrategy::RepeatedKey;
+        let strategy = QueryEncoder::RepeatedKey;
 
-        let actual = strategy.encode(key, &values);
+        let actual = strategy.encode_const_value(key, &values);
         let expected: Option<String> = None;
 
         assert_eq!(actual, expected);
@@ -233,9 +223,9 @@ mod tests {
     fn test_encode_single_value_comma_separated() {
         let key = "single";
         let values = Value::List(vec![Value::String("value".to_string())]);
-        let strategy = EncodingStrategy::CommaSeparated;
+        let strategy = QueryEncoder::CommaSeparated;
 
-        let actual = strategy.encode(key, &values);
+        let actual = strategy.encode_const_value(key, &values);
         let expected = Some("single=value".to_string());
 
         assert_eq!(actual, expected);
@@ -245,9 +235,9 @@ mod tests {
     fn test_encode_single_value_repeated_key() {
         let key = "single";
         let values = Value::List(vec![Value::String("value".to_string())]);
-        let strategy = EncodingStrategy::RepeatedKey;
+        let strategy = QueryEncoder::RepeatedKey;
 
-        let actual = strategy.encode(key, &values);
+        let actual = strategy.encode_const_value(key, &values);
         let expected = Some("single=value".to_string());
 
         assert_eq!(actual, expected);

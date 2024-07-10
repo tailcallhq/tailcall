@@ -3,7 +3,7 @@ pub use data_loader::*;
 pub use data_loader_request::*;
 use headers::HeaderValue;
 pub use method::Method;
-pub use query_encoder::EncodingStrategy;
+pub use query_encoder::QueryEncoder;
 pub use request_context::RequestContext;
 pub use request_handler::{handle_request, API_URL_PREFIX};
 pub use request_template::RequestTemplate;
