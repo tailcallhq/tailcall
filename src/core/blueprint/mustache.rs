@@ -71,7 +71,7 @@ impl<'a> MustachePartsValidator<'a> {
                 // constructing a HashMap since we'd have 3-4 arguments at max in
                 // most cases
                 if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
-                    if arg.of_type.is_list() {
+                    if !is_query && arg.of_type.is_list() {
                         return Valid::fail(format!("can't use list type '{tail}' here"));
                     }
 
@@ -236,7 +236,7 @@ mod test {
     }
 
     #[test]
-    fn test_fail_validation_list_arguments_for_non_query_type() {
+    fn test_should_not_allow_list_arguments_for_path_variable() {
         let (config, field_def) = initialize_test_config_and_field();
 
         let parts_validator =
