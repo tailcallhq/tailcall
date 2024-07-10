@@ -56,3 +56,27 @@ impl<'a> ResolverContextLike for Context<'a, async_graphql::Value, async_graphql
         todo!()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use async_graphql_value::ConstValue;
+
+    use super::Context;
+    use crate::core::ir::ResolverContextLike;
+    use crate::core::jit::Request;
+
+    #[test]
+    fn is_query_should_return_true_when_input_is_query_type() {
+        let request: Request<ConstValue> = Request::new("query {posts {id title}}");
+        let ctx: Context<ConstValue, ConstValue> = Context::new(&request);
+        assert!(ctx.is_query())
+    }
+
+    #[test]
+    fn is_query_should_return_false_when_input_is_mutation_type() {
+        let request: Request<ConstValue> =
+            Request::new("mutation {createPost(input: {title: \"New Post\"}) {id title}}");
+        let ctx: Context<ConstValue, ConstValue> = Context::new(&request);
+        assert!(!ctx.is_query())
+    }
+}
