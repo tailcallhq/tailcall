@@ -23,7 +23,7 @@ pub fn benchmark_from_json_method(c: &mut Criterion) {
         url: request_url.parse().unwrap(),
         response: reqs[0].clone(),
         field_name: "f1".to_string(),
-        route: Some("/users"),
+        route: Some("/users".to_string()),
     }];
 
     let config_generator = Generator::default().inputs(cfg_gen_reqs);
