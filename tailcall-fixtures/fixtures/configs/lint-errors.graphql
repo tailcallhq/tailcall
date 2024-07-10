@@ -1,31 +1,29 @@
-schema
-@server(port: 8000, hostname: "0.0.0.0") {
-    query: Query
+schema @server(port: 8000, hostname: "0.0.0.0") {
+  query: Query
 }
 
 type Query {
-    posts: [posT] @http(path: "/posts?_limit=11")
-    users: [uSer] @http(path: "/users")
-    user(type: foo): uSer @http(path: "/users/1")
+  posts: [posT] @http(path: "/posts?_limit=11")
+  users: [uSer] @http(path: "/users")
+  user(type: foo): uSer @http(path: "/users/1")
 }
 
 enum foo {
-    bar
-    baz
+  bar
+  baz
 }
 
 type uSer {
-    ID: Int!
-    name: String!
-    username: String!
+  ID: Int!
+  name: String!
+  username: String!
 }
 
 type posT {
-    id: Int!
-    userId: Int!
-    title: String!
-    body: String!
-    user: uSer @http(path: "/users/{{.value.userId}}")
-    users: [uSer] @http(path: "/users")
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  user: uSer @http(path: "/users/{{.value.userId}}")
+  users: [uSer] @http(path: "/users")
 }
-
