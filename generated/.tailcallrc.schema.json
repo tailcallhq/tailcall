@@ -608,11 +608,7 @@
           }
         },
         "body": {
-          "description": "This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format.",
-          "type": [
-            "string",
-            "null"
-          ]
+          "description": "This refers to the arguments of your gRPC call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added in the body in `protobuf` format."
         },
         "headers": {
           "description": "The `headers` parameter allows you to customize the headers of the HTTP request made by the `@grpc` operator. It is used by specifying a key-value map of header names and their values. Note: content-type is automatically set to application/grpc",
