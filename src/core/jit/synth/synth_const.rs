@@ -3,13 +3,13 @@ use indexmap::IndexMap;
 
 use super::super::Result;
 use super::Synthesizer;
-use crate::core::jit::model::{Children, Field};
+use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::{DataPath, ExecutionPlan, Variables};
 use crate::core::json::JsonLike;
 
 pub struct Synth {
-    selection: Vec<Field<Children>>,
+    selection: Vec<Field<Nested>>,
     store: Store<Result<Value>>,
     variables: Variables<async_graphql_value::ConstValue>,
 }
@@ -20,7 +20,7 @@ impl Synth {
         store: Store<Result<Value>>,
         variables: Variables<async_graphql_value::ConstValue>,
     ) -> Self {
-        Self { selection: plan.into_children(), store, variables }
+        Self { selection: plan.into_nested(), store, variables }
     }
 
     #[inline(always)]
@@ -54,7 +54,7 @@ impl Synth {
     #[inline(always)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Nested>,
         parent: Option<&'b Value>,
         data_path: &DataPath,
     ) -> Result<Value> {
@@ -103,7 +103,7 @@ impl Synth {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Children>,
+        node: &'b Field<Nested>,
         parent: &'b Value,
         data_path: &'b DataPath,
     ) -> Result<Value> {
@@ -112,7 +112,7 @@ impl Synth {
         match parent {
             Value::Object(obj) => {
                 let mut ans = IndexMap::default();
-                let children = node.children();
+                let children = node.nested();
                 if include {
                     if children.is_empty() {
                         let val = obj.get(node.name.as_str());

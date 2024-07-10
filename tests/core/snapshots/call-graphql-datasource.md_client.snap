@@ -28,7 +28,7 @@ type Post {
   body: String!
   id: Int!
   title: String!
-  user(id: Int): User
+  user: User
   userId: Int!
 }
 

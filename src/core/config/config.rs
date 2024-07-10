@@ -3,9 +3,15 @@ use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
+use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall_macros::{DirectiveDefinition, InputDefinition};
+use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
+use tailcall_typedefs_common::input_definition::InputDefinition;
+use tailcall_typedefs_common::scalar_definition::ScalarDefinition;
+use tailcall_typedefs_common::ServiceDocumentBuilder;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
@@ -128,8 +134,18 @@ impl Type {
 }
 
 #[derive(
-    Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    DirectiveDefinition,
 )]
+#[directive_definition(locations = "Object")]
 #[serde(deny_unknown_fields)]
 /// Used to represent an identifier for a type. Typically used via only by the
 /// configuration generators to provide additional information about the type.
@@ -138,7 +154,19 @@ pub struct Tag {
     pub id: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "Object,FieldDefinition")]
 /// The @cache operator enables caching for the query, field or type it is
 /// applied to.
 #[serde(rename_all = "camelCase")]
@@ -150,8 +178,18 @@ pub struct Cache {
 }
 
 #[derive(
-    Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema, MergeRight,
+    Clone,
+    Debug,
+    Deserialize,
+    Serialize,
+    PartialEq,
+    Eq,
+    Default,
+    schemars::JsonSchema,
+    MergeRight,
+    DirectiveDefinition,
 )]
+#[directive_definition(locations = "Object,FieldDefinition")]
 pub struct Protected {}
 
 #[derive(
@@ -175,7 +213,10 @@ pub struct RootSchema {
     pub subscription: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DirectiveDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 /// Used to omit a field from public consumption.
 pub struct Omit {}
@@ -358,12 +399,34 @@ impl Field {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition", lowercase_name)]
 pub struct JS {
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 pub struct Modify {
     #[serde(default, skip_serializing_if = "is_default")]
@@ -439,12 +502,26 @@ pub struct Variant {
     Ord,
     schemars::JsonSchema,
     MergeRight,
+    DirectiveDefinition,
 )]
+#[directive_definition(locations = "EnumValue")]
 pub struct Alias {
     pub options: BTreeSet<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///
@@ -518,7 +595,18 @@ pub struct Http {
 ///
 /// Provides the ability to refer to multiple fields in the Query or
 /// Mutation root.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 pub struct Call {
     /// Steps are composed together to form a call.
     /// If you have multiple steps, the output of the previous step is passed as
@@ -544,7 +632,19 @@ pub struct Step {
     pub args: BTreeMap<String, Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    InputDefinition,
+    DirectiveDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 /// The @grpc operator indicates that a field or node is backed by a gRPC API.
@@ -565,7 +665,7 @@ pub struct Grpc {
     /// This refers to the arguments of your gRPC call. You can pass it as a
     /// static object or use Mustache template for dynamic parameters. These
     /// parameters will be added in the body in `protobuf` format.
-    pub body: Option<String>,
+    pub body: Option<Value>,
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
@@ -580,7 +680,19 @@ pub struct Grpc {
     pub method: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 /// The @graphQL operator allows to specify GraphQL API server request to fetch
 /// data from.
@@ -633,7 +745,18 @@ impl Display for GraphQLOperationType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 /// The `@expr` operators allows you to specify an expression that can evaluate
 /// to a value. The expression can be a static value or built form a Mustache
@@ -642,7 +765,10 @@ pub struct Expr {
     pub body: Value,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DirectiveDefinition,
+)]
+#[directive_definition(repeatable, locations = "Object")]
 #[serde(deny_unknown_fields)]
 /// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 pub struct AddField {
@@ -883,6 +1009,61 @@ impl Config {
         }
 
         set
+    }
+
+    pub fn graphql_schema() -> ServiceDocument {
+        // Multiple structs may contain a field of the same type when creating directive
+        // definitions. To avoid generating the same GraphQL type multiple times,
+        // this hash set is used to track visited types and ensure no duplicates are
+        // generated.
+        let mut generated_types: HashSet<String> = HashSet::new();
+        let generated_types = &mut generated_types;
+
+        let builder = ServiceDocumentBuilder::new();
+        builder
+            .add_directive(AddField::directive_definition(generated_types))
+            .add_directive(Alias::directive_definition(generated_types))
+            .add_directive(Cache::directive_definition(generated_types))
+            .add_directive(Call::directive_definition(generated_types))
+            .add_directive(Expr::directive_definition(generated_types))
+            .add_directive(GraphQL::directive_definition(generated_types))
+            .add_directive(Grpc::directive_definition(generated_types))
+            .add_directive(Http::directive_definition(generated_types))
+            .add_directive(JS::directive_definition(generated_types))
+            .add_directive(Link::directive_definition(generated_types))
+            .add_directive(Modify::directive_definition(generated_types))
+            .add_directive(Omit::directive_definition(generated_types))
+            .add_directive(Protected::directive_definition(generated_types))
+            .add_directive(Server::directive_definition(generated_types))
+            .add_directive(Tag::directive_definition(generated_types))
+            .add_directive(Telemetry::directive_definition(generated_types))
+            .add_directive(Upstream::directive_definition(generated_types))
+            .add_input(GraphQL::input_definition())
+            .add_input(Grpc::input_definition())
+            .add_input(Http::input_definition())
+            .add_input(Expr::input_definition())
+            .add_input(JS::input_definition())
+            .add_input(Modify::input_definition())
+            .add_input(Cache::input_definition())
+            .add_input(Telemetry::input_definition())
+            .add_scalar(scalar::Bytes::scalar_definition())
+            .add_scalar(scalar::Date::scalar_definition())
+            .add_scalar(scalar::Email::scalar_definition())
+            .add_scalar(scalar::Empty::scalar_definition())
+            .add_scalar(scalar::Int128::scalar_definition())
+            .add_scalar(scalar::Int16::scalar_definition())
+            .add_scalar(scalar::Int32::scalar_definition())
+            .add_scalar(scalar::Int64::scalar_definition())
+            .add_scalar(scalar::Int8::scalar_definition())
+            .add_scalar(scalar::JSON::scalar_definition())
+            .add_scalar(scalar::PhoneNumber::scalar_definition())
+            .add_scalar(scalar::UInt128::scalar_definition())
+            .add_scalar(scalar::UInt16::scalar_definition())
+            .add_scalar(scalar::UInt32::scalar_definition())
+            .add_scalar(scalar::UInt64::scalar_definition())
+            .add_scalar(scalar::UInt8::scalar_definition())
+            .add_scalar(scalar::Url::scalar_definition())
+            .build()
     }
 }
 

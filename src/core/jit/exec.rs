@@ -7,7 +7,7 @@ use futures_util::future::join_all;
 
 use super::context::Context;
 use super::synth::Synthesizer;
-use super::{Children, DataPath, ExecutionPlan, Field, Request, Response, Store};
+use super::{DataPath, ExecutionPlan, Field, Nested, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
@@ -22,7 +22,7 @@ pub struct Executor<Synth, IRExec> {
 
 impl<Input: Clone, Output, Error, Synth, Exec> Executor<Synth, Exec>
 where
-    Output: JsonLike<Output = Output> + Debug,
+    Output: JsonLike<Json = Output> + Debug,
     Synth: Synthesizer<Value = Result<Output, Error>, Variable = Input>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
@@ -56,7 +56,7 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: JsonLike<Output = Output> + Debug,
+    Output: JsonLike<Json = Output> + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
     fn new(
@@ -69,7 +69,7 @@ where
     }
 
     async fn init(&mut self) {
-        join_all(self.plan.as_children().iter().map(|field| async {
+        join_all(self.plan.as_nested().iter().map(|field| async {
             let ctx = Context::new(&self.request);
             self.execute(field, &ctx, DataPath::new()).await
         }))
@@ -78,7 +78,7 @@ where
 
     async fn execute<'b>(
         &'b self,
-        field: &'b Field<Children>,
+        field: &'b Field<Nested>,
         ctx: &'b Context<'b, Input, Output>,
         data_path: DataPath,
     ) -> Result<(), Error> {
@@ -91,7 +91,7 @@ where
                 if field.type_of.is_list() {
                     // Check if the value is an array
                     if let Ok(array) = value.as_array_ok() {
-                        join_all(field.children().iter().map(|field| {
+                        join_all(field.nested().iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
                                 let ctx = ctx.with_value(value);
                                 let data_path = data_path.clone().with_index(index);
@@ -107,7 +107,7 @@ where
                 // TODO: Validate if the value is an Object
                 // Has to be an Object, we don't do anything while executing if its a Scalar
                 else {
-                    join_all(field.children().iter().map(|child| {
+                    join_all(field.nested().iter().map(|child| {
                         let ctx = ctx.with_value(value);
                         let data_path = data_path.clone();
                         async move { self.execute(child, &ctx, data_path).await }
