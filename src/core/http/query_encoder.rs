@@ -15,11 +15,8 @@ impl QueryEncoder {
     pub fn encode(&self, key: &str, raw_value: Option<RawValue>) -> Option<String> {
         if let Some(value) = raw_value {
             match &value {
-                RawValue::Arg(arg) => self.encode_const_value(key, arg),
                 RawValue::Value(val) => self.encode_const_value(key, val),
-                RawValue::Env(env_var) => Some(format!("{}={}", key, env_var)),
-                RawValue::Var(var) => Some(format!("{}={}", key, var)),
-                RawValue::Headers(header) => Some(format!("{}={}", key, header)),
+                RawValue::Literal(val) => Some(format!("{}={}", key, val)),
             }
         } else {
             None
@@ -74,7 +71,7 @@ mod tests {
             Value::Number(42.into()),
             Value::Number(13.into()),
         ]);
-        let arg_raw_value = Some(RawValue::Arg(Cow::Borrowed(&values)));
+        let arg_raw_value = Some(RawValue::Value(Cow::Borrowed(&values)));
 
         let actual = encoder.encode("key", arg_raw_value);
         let expected = Some("key=12,42,13".to_string());
@@ -90,7 +87,7 @@ mod tests {
             Value::Number(42.into()),
             Value::Number(13.into()),
         ]);
-        let arg_raw_value = Some(RawValue::Arg(Cow::Borrowed(&values)));
+        let arg_raw_value = Some(RawValue::Value(Cow::Borrowed(&values)));
 
         let actual = encoder.encode("key", arg_raw_value);
         let expected = Some("key=12&key=42&key=13".to_string());
@@ -101,7 +98,7 @@ mod tests {
     #[test]
     fn test_encode_env_var() {
         let encoder = QueryEncoder::default();
-        let raw_value = Some(RawValue::Env("env_value".into()));
+        let raw_value = Some(RawValue::Literal("env_value".into()));
 
         let actual = encoder.encode("key", raw_value);
         let expected = Some("key=env_value".to_string());
@@ -112,7 +109,7 @@ mod tests {
     #[test]
     fn test_encode_var() {
         let encoder = QueryEncoder::default();
-        let raw_value = Some(RawValue::Var("var_value".into()));
+        let raw_value = Some(RawValue::Literal("var_value".into()));
 
         let actual = encoder.encode("key", raw_value);
         let expected = Some("key=var_value".to_string());

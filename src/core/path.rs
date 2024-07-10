@@ -59,10 +59,7 @@ fn convert_value(value: Cow<'_, async_graphql::Value>) -> Option<Cow<'_, str>> {
 #[derive(Clone, Debug, PartialEq)]
 pub enum RawValue<'a> {
     Value(Cow<'a, async_graphql::Value>),
-    Arg(Cow<'a, async_graphql::Value>),
-    Var(Cow<'a, str>),
-    Headers(Cow<'a, str>),
-    Env(Cow<'a, str>),
+    Literal(Cow<'a, str>),
 }
 
 impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
@@ -76,8 +73,8 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
         if path.len() == 1 {
             return match path[0].as_ref() {
                 "value" => Some(RawValue::Value(ctx.path_value(&[] as &[T])?)),
-                "args" => Some(RawValue::Arg(ctx.path_arg::<&str>(&[])?)),
-                "vars" => Some(RawValue::Var(Cow::Owned(json!(ctx.vars()).to_string()))),
+                "args" => Some(RawValue::Value(ctx.path_arg::<&str>(&[])?)),
+                "vars" => Some(RawValue::Literal(Cow::Owned(json!(ctx.vars()).to_string()))),
                 _ => None,
             };
         }
@@ -85,12 +82,12 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
         path.split_first()
             .and_then(move |(head, tail)| match head.as_ref() {
                 "value" => Some(RawValue::Value(ctx.path_value(tail)?)),
-                "args" => Some(RawValue::Arg(ctx.path_arg(tail)?)),
-                "headers" => Some(RawValue::Headers(Cow::Borrowed(
+                "args" => Some(RawValue::Value(ctx.path_arg(tail)?)),
+                "headers" => Some(RawValue::Literal(Cow::Borrowed(
                     ctx.header(tail[0].as_ref())?,
                 ))),
-                "vars" => Some(RawValue::Var(Cow::Borrowed(ctx.var(tail[0].as_ref())?))),
-                "env" => Some(RawValue::Env(ctx.env_var(tail[0].as_ref())?)),
+                "vars" => Some(RawValue::Literal(Cow::Borrowed(ctx.var(tail[0].as_ref())?))),
+                "env" => Some(RawValue::Literal(ctx.env_var(tail[0].as_ref())?)),
                 _ => None,
             })
     }
@@ -105,16 +102,7 @@ impl<'a, Ctx: ResolverContextLike> PathValue for EvalContext<'a, Ctx> {
 impl<'a, Ctx: ResolverContextLike> PathString for EvalContext<'a, Ctx> {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
         self.to_raw_value(path).and_then(|value| match value {
-            RawValue::Arg(arg) => {
-                if path.len() == 1 {
-                    Some(json!(arg).to_string().into())
-                } else {
-                    convert_value(arg)
-                }
-            }
-            RawValue::Env(env) => Some(env),
-            RawValue::Headers(headers) => Some(headers),
-            RawValue::Var(var) => Some(var),
+            RawValue::Literal(env) => Some(env),
             RawValue::Value(value) => convert_value(value),
         })
     }
@@ -128,10 +116,7 @@ impl<'a, Ctx: ResolverContextLike> PathGraphql for EvalContext<'a, Ctx> {
 
         self.to_raw_value(path).map(|value| match value {
             RawValue::Value(val) => val.to_string(),
-            RawValue::Arg(arg) => arg.to_string(),
-            RawValue::Headers(header) => format!(r#""{header}""#),
-            RawValue::Var(var) => format!(r#""{var}""#),
-            RawValue::Env(env) => format!(r#""{env}""#),
+            RawValue::Literal(val) => format!(r#""{val}""#),
         })
     }
 }
@@ -318,9 +303,9 @@ mod tests {
             // args
             assert_eq!(
                 EVAL_CTX.raw_value(&["args", "root"]),
-                Some(RawValue::Arg(Cow::Borrowed(&async_graphql::Value::String(
-                    "root-test".into()
-                ),)))
+                Some(RawValue::Value(Cow::Borrowed(
+                    &async_graphql::Value::String("root-test".into()),
+                )))
             );
 
             let mut expected = IndexMap::new();
@@ -330,9 +315,9 @@ mod tests {
             );
             assert_eq!(
                 EVAL_CTX.raw_value(&["args", "nested"]),
-                Some(RawValue::Arg(Cow::Borrowed(&async_graphql::Value::Object(
-                    expected
-                ))))
+                Some(RawValue::Value(Cow::Borrowed(
+                    &async_graphql::Value::Object(expected)
+                )))
             );
 
             assert_eq!(EVAL_CTX.raw_value(&["args", "missing"]), None);
@@ -354,33 +339,33 @@ mod tests {
             );
             assert_eq!(
                 EVAL_CTX.raw_value(&["args"]),
-                Some(RawValue::Arg(Cow::Borrowed(&async_graphql::Value::Object(
-                    expected
-                ))))
+                Some(RawValue::Value(Cow::Borrowed(
+                    &async_graphql::Value::Object(expected)
+                )))
             );
 
             // headers
             assert_eq!(
                 EVAL_CTX.raw_value(&["headers", "x-existing"]),
-                Some(RawValue::Headers(Cow::Borrowed("header")))
+                Some(RawValue::Literal(Cow::Borrowed("header")))
             );
             assert_eq!(EVAL_CTX.raw_value(&["headers", "x-missing"]), None);
 
             // vars
             assert_eq!(
                 EVAL_CTX.raw_value(&["vars", "existing"]),
-                Some(RawValue::Var(Cow::Borrowed("var")))
+                Some(RawValue::Literal(Cow::Borrowed("var")))
             );
             assert_eq!(EVAL_CTX.raw_value(&["vars", "missing"]), None);
             assert_eq!(
                 EVAL_CTX.raw_value(&["vars"]),
-                Some(RawValue::Var(Cow::Borrowed(r#"{"existing":"var"}"#)))
+                Some(RawValue::Literal(Cow::Borrowed(r#"{"existing":"var"}"#)))
             );
 
             // envs
             assert_eq!(
                 EVAL_CTX.raw_value(&["env", "existing"]),
-                Some(RawValue::Env(Cow::Borrowed("env")))
+                Some(RawValue::Literal(Cow::Borrowed("env")))
             );
             assert_eq!(EVAL_CTX.raw_value(&["env", "x-missing"]), None);
 

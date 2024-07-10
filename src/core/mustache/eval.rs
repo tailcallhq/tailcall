@@ -37,7 +37,7 @@ impl<'a, A: PathValue> Eval<'a> for RawValueEval<A> {
             .segments()
             .iter()
             .filter_map(|segment| match segment {
-                Segment::Literal(text) => Some(RawValue::Arg(Cow::Owned(
+                Segment::Literal(text) => Some(RawValue::Value(Cow::Owned(
                     async_graphql::Value::String(text.to_owned()),
                 ))),
                 Segment::Expression(parts) => in_value.raw_value(parts),
