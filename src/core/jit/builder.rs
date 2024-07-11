@@ -42,23 +42,15 @@ impl Conditions {
     }
 
     fn into_variable_tuple(self) -> (Option<Variable>, Option<Variable>) {
-        let include = || {
-            let condition = self.include?;
-            match condition {
-                Condition::Variable(var) => Some(var),
-                _ => None,
-            }
+        let comp = |condition| match condition? {
+            Condition::Variable(var) => Some(var),
+            _ => None,
         };
 
-        let skip = || {
-            let condition = self.skip?;
-            match condition {
-                Condition::Variable(var) => Some(var),
-                _ => None,
-            }
-        };
+        let include = comp(self.include);
+        let skip = comp(self.skip);
 
-        (include(), skip())
+        (include, skip)
     }
 }
 
@@ -88,43 +80,31 @@ impl Builder {
         let mut conditions = Conditions { skip: None, include: None };
 
         for directive in directives {
-            match &*directive.node.name.node {
-                "skip" => {
-                    if let Some(condition_input) = directive.node.get_argument("if") {
-                        let value = &condition_input.node;
-                        let skip = match value {
-                            Value::Variable(var) => {
-                                Condition::Variable(Variable::new(var.as_str()))
-                            }
-                            Value::Boolean(bool) => {
-                                if *bool {
-                                    Condition::Skip
-                                } else {
-                                    Condition::Include
-                                }
-                            }
-                            _ => Condition::Include,
-                        };
-                        conditions.skip = Some(skip);
+            let cond = |value: &Value, skip: bool, mut conditions: Conditions| {
+                let condition = match value {
+                    Value::Variable(var) => Condition::Variable(Variable::new(var.as_str())),
+                    Value::Boolean(bool) => {
+                        if *bool == skip {
+                            Condition::Skip
+                        } else {
+                            Condition::Include
+                        }
                     }
+                    _ => Condition::Include,
+                };
+                if skip {
+                    conditions.skip = Some(condition);
+                } else {
+                    conditions.include = Some(condition);
                 }
-                "include" => {
+                conditions
+            };
+
+            match &*directive.node.name.node {
+                "skip" | "include" => {
                     if let Some(condition_input) = directive.node.get_argument("if") {
                         let value = &condition_input.node;
-                        let include = match value {
-                            Value::Variable(var) => {
-                                Condition::Variable(Variable::new(var.as_str()))
-                            }
-                            Value::Boolean(bool) => {
-                                if *bool {
-                                    Condition::Include
-                                } else {
-                                    Condition::Skip
-                                }
-                            }
-                            _ => Condition::Include,
-                        };
-                        conditions.include = Some(include);
+                        conditions = cond(value, &*directive.node.name.node == "skip", conditions);
                     }
                 }
                 _ if conditions.include.is_some() && conditions.skip.is_some() => break,
