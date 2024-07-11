@@ -15,12 +15,12 @@ pub struct Synth {
 
 impl Synth {
     pub fn new(plan: ExecutionPlan, store: Store<Result<Value>>) -> Self {
-        let a = plan
+        let selection = plan
             .into_nested()
             .into_iter()
             .flat_map(|(_, f)| f)
             .collect();
-        Self { selection: a, store }
+        Self { selection, store }
     }
 
     pub fn synthesize(&self) -> Result<Value> {
