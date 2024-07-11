@@ -7,6 +7,7 @@ use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
+use crate::core::jit::Variables;
 use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
 
@@ -82,6 +83,7 @@ impl JsonPlaceholder {
             store
         });
 
-        Synth::new(plan, store)
+        let vars = Variables::new();
+        Synth::new(plan, store, vars)
     }
 }
