@@ -6,8 +6,7 @@ use derive_setters::Setters;
 use serde::Deserialize;
 
 use super::input_resolver::InputResolver;
-use super::variables::Variables;
-use super::{Builder, ExecutionPlan, Result};
+use super::{Builder, ExecutionPlan, Result, Variables};
 use crate::core::blueprint::Blueprint;
 
 #[derive(Debug, Deserialize, Setters)]

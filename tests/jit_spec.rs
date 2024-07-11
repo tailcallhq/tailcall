@@ -6,8 +6,7 @@ mod tests {
     use tailcall::core::app_context::AppContext;
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
-    use tailcall::core::jit::variables::Variables;
-    use tailcall::core::jit::{ConstValueExecutor, Request};
+    use tailcall::core::jit::{ConstValueExecutor, Request, Variables};
     use tailcall::core::rest::EndpointSet;
     use tailcall::core::valid::Validator;
 

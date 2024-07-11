@@ -17,11 +17,11 @@ mod response;
 mod builder;
 pub mod common;
 mod graphql_executor;
-pub mod variables;
 
 // Public Exports
 pub use error::*;
 pub use exec_const::*;
 pub use graphql_executor::*;
+pub use model::Variables;
 pub use request::*;
 pub use response::*;

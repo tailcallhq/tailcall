@@ -1,7 +1,6 @@
 use async_graphql_value::{ConstValue, Value};
 
-use super::variables::Variables;
-use super::{ExecutionPlan, ResolveInputError};
+use super::{ExecutionPlan, ResolveInputError, Variables};
 
 /// Trait to represent conversion from some dynamic type (with variables)
 /// to the resolved variant based on the additional provided info.
