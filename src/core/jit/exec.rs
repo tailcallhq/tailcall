@@ -20,10 +20,10 @@ pub struct Executor<Synth, IRExec> {
     exec: IRExec,
 }
 
-impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec>
+impl<Input: Clone, Output, Error, Synth, Exec> Executor<Synth, Exec>
 where
     Output: JsonLike<Json = Output> + Debug,
-    Synth: Synthesizer<Value = Result<Output, Error>>,
+    Synth: Synthesizer<Value = Result<Output, Error>, Variable = Input>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
     pub fn new(plan: ExecutionPlan, synth: Synth, exec: Exec) -> Self {
@@ -40,8 +40,9 @@ where
     }
 
     pub async fn execute(self, request: Request<Input>) -> Response<Output, Error> {
+        let vars = request.variables.clone();
         let store = self.execute_inner(request).await;
-        Response::new(self.synth.synthesize(store))
+        Response::new(self.synth.synthesize(store, vars))
     }
 }
 
