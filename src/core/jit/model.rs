@@ -155,16 +155,17 @@ impl ExecutionPlan {
             .flat_map(|(_, fields)| fields)
             .collect();
 
-        let mut nested = vec![];
-
-        for (op, flat_fields) in fields {
-            let nested_fields = flat_fields
-                .into_iter()
-                .filter(|f| f.extensions.is_none())
-                .map(|f| f.into_nested(&flat))
-                .collect();
-            nested.push((op, nested_fields));
-        }
+        let nested = fields
+            .into_iter()
+            .map(|(op, flat_fields)| {
+                let nested_fields = flat_fields
+                    .into_iter()
+                    .filter(|f| f.extensions.is_none())
+                    .map(|f| f.into_nested(&flat))
+                    .collect();
+                (op, nested_fields)
+            })
+            .collect();
 
         Self { flat, nested }
     }
