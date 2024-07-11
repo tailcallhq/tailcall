@@ -99,9 +99,9 @@ impl Variable {
 pub enum Ignore {
     #[default]
     Never, // Default
-    Always,                // If a literal is used.
-    WhenSkip(Variable),    // when @skip is used
-    WhenInclude(Variable), // when @include is used
+    Always,              // If a literal is used.
+    SkipIf(Variable),    // when @skip is used
+    IncludeIf(Variable), // when @include is used
 }
 
 impl Ignore {
@@ -109,8 +109,8 @@ impl Ignore {
     pub fn new(include: bool, value: &Value) -> Self {
         if include {
             match value {
-                Value::Variable(var) => Ignore::WhenInclude(Variable::new(var.as_str())),
-                Value::String(st) => Ignore::WhenInclude(Variable::new(st.as_str())),
+                Value::Variable(var) => Ignore::IncludeIf(Variable::new(var.as_str())),
+                Value::String(st) => Ignore::IncludeIf(Variable::new(st.as_str())),
                 Value::Boolean(bool) => {
                     if *bool {
                         Ignore::Never
@@ -122,8 +122,8 @@ impl Ignore {
             }
         } else {
             match value {
-                Value::Variable(var) => Ignore::WhenSkip(Variable::new(var.as_str())),
-                Value::String(st) => Ignore::WhenSkip(Variable::new(st.as_str())),
+                Value::Variable(var) => Ignore::SkipIf(Variable::new(var.as_str())),
+                Value::String(st) => Ignore::SkipIf(Variable::new(st.as_str())),
                 Value::Boolean(bool) => {
                     if *bool {
                         Ignore::Always
@@ -144,10 +144,10 @@ impl Ignore {
         match self {
             Ignore::Never => false,
             Ignore::Always => true,
-            Ignore::WhenSkip(var) => variables
+            Ignore::SkipIf(var) => variables
                 .get(&var.0)
                 .map_or(skip, |v| v.as_bool_ok().unwrap_or(!skip)),
-            Ignore::WhenInclude(var) => !variables
+            Ignore::IncludeIf(var) => !variables
                 .get(&var.0)
                 .map_or(skip, |v| v.as_bool_ok().unwrap_or(skip)),
         }
