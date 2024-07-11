@@ -25,7 +25,7 @@ impl TryFrom<async_graphql::Request> for Request<async_graphql_value::ConstValue
     fn try_from(mut value: async_graphql::Request) -> Result<Self> {
         let executable_doc = value
             .parsed_query()
-            .map_err(|e| Error::BuildError(e.to_string()))?
+            .map_err(Error::ServerError)?
             .clone();
 
         Ok(Self {
