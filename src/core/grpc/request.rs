@@ -102,10 +102,6 @@ mod tests {
                 }),
             }
         }
-
-        fn cl(&self) -> Box<dyn HttpIO> {
-            Box::new(self.clone())
-        }
     }
     async fn prepare_args(
         test_http: TestHttp,

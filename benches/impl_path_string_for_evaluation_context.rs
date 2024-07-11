@@ -78,10 +78,6 @@ impl HttpIO for Http {
         let resp = self.client.execute(request).await?;
         Response::from_reqwest(resp).await
     }
-
-    fn cl(&self) -> Box<dyn HttpIO> {
-        Box::new(self.clone())
-    }
 }
 
 struct Env {}

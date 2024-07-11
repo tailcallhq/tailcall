@@ -1,4 +1,8 @@
+use std::borrow::Borrow;
 use std::time::Duration;
+use std::thread_local;
+use std::sync::{OnceLock, Arc};
+use std::cell::RefCell;
 
 use anyhow::Result;
 use dashmap::DashMap;
@@ -19,7 +23,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::HttpIO;
 use crate::core::blueprint::telemetry::Telemetry;
-use crate::core::blueprint::Upstream;
+use crate::core::blueprint::{Blueprint, Upstream};
 use crate::core::http::Response;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
@@ -183,39 +187,31 @@ impl HttpIO for NativeHttp {
         )
         .await?)
     }
+}
 
-    fn cl(&self) -> Box<dyn HttpIO> {
-        Box::new(self.clone())
-    }
+thread_local! {
+    pub static HTTP: RefCell<Arc<dyn HttpIO>> = panic!("!");
 }
 
 pub struct ConcurrentHttp {
-    http: Box<dyn HttpIO>,
-    map: DashMap<std::thread::ThreadId, Box<dyn HttpIO>>,
 }
 
 impl ConcurrentHttp {
-    pub fn new(http: Box<dyn HttpIO>) -> Self {
-        ConcurrentHttp { http, map: Default::default() }
+    pub fn new(blueprint: &Blueprint) -> ConcurrentHttp {
+        HTTP.set(
+            Arc::new(NativeHttp::init(
+                &blueprint.upstream,
+                &blueprint.telemetry,
+            ))
+         );
+         ConcurrentHttp {}
     }
 }
 
 #[async_trait::async_trait]
 impl HttpIO for ConcurrentHttp {
     async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
-        let thread_id = std::thread::current().id();
-        if let Some(http) = self.map.get(&thread_id) {
-            http.value().execute(request).await
-        } else {
-            let new_http = self.http.cl();
-            let ret = new_http.execute(request).await;
-            self.map.insert(thread_id, new_http);
-            ret
-        }
-    }
-
-    fn cl(&self) -> Box<dyn HttpIO> {
-        unreachable!()
+        HTTP.with_borrow(|x| x.clone()).execute(request).await
     }
 }
 #[cfg(test)]

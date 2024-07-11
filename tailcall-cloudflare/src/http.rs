@@ -46,10 +46,6 @@ impl HttpIO for CloudflareHttp {
         tracing::info!("{} {} {}", method, url, res.status.as_u16());
         Ok(res)
     }
-
-    fn cl(&self) -> Box<dyn HttpIO> {
-        Box::new(self.clone())
-    }
 }
 
 pub async fn to_response(response: hyper::Response<hyper::Body>) -> Result<worker::Response> {

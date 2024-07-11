@@ -51,11 +51,7 @@ fn init_resolver_worker_io(
 
 // Provides access to http in native rust environment
 fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
-    let http = Box::new(http::NativeHttp::init(
-        &blueprint.upstream,
-        &blueprint.telemetry,
-    ));
-    Arc::new(ConcurrentHttp::new(http))
+    Arc::new(ConcurrentHttp::new(blueprint))
 }
 
 // Provides access to http in native rust environment

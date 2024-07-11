@@ -26,10 +26,6 @@ impl HttpIO for MockHttpClient {
     async fn execute(&self, _req: Request) -> anyhow::Result<Response<Bytes>> {
         Ok(Response::empty())
     }
-
-    fn cl(&self) -> Box<dyn HttpIO> {
-        Box::new(self.clone())
-    }
 }
 
 struct Env {}
