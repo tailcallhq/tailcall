@@ -1,11 +1,9 @@
-use std::borrow::Borrow;
-use std::time::Duration;
-use std::thread_local;
-use std::sync::{OnceLock, Arc};
 use std::cell::RefCell;
+use std::sync::{Arc};
+use std::thread_local;
+use std::time::Duration;
 
 use anyhow::Result;
-use dashmap::DashMap;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
 use once_cell::sync::Lazy;
@@ -193,18 +191,15 @@ thread_local! {
     pub static HTTP: RefCell<Arc<dyn HttpIO>> = panic!("!");
 }
 
-pub struct ConcurrentHttp {
-}
+pub struct ConcurrentHttp {}
 
 impl ConcurrentHttp {
     pub fn new(blueprint: &Blueprint) -> ConcurrentHttp {
-        HTTP.set(
-            Arc::new(NativeHttp::init(
-                &blueprint.upstream,
-                &blueprint.telemetry,
-            ))
-         );
-         ConcurrentHttp {}
+        HTTP.set(Arc::new(NativeHttp::init(
+            &blueprint.upstream,
+            &blueprint.telemetry,
+        )));
+        ConcurrentHttp {}
     }
 }
 
