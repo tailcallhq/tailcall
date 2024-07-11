@@ -163,4 +163,16 @@ mod tests {
 
         insta::assert_json_snapshot!(data);
     }
+
+    #[tokio::test]
+    async fn test_query_alias() {
+        //  NOTE: This test makes a real HTTP call
+        let request =
+            Request::new("query {user1: user(id: 1) {id name} user2: user(id: 2) {id name}}");
+        let executor = new_executor(&request).await.unwrap();
+        let response = executor.execute(request).await;
+        let data = response.data;
+
+        insta::assert_json_snapshot!(data);
+    }
 }
