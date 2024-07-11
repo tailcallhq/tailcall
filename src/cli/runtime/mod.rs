@@ -53,15 +53,17 @@ fn init_resolver_worker_io(
 fn init_http(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
         &blueprint.upstream,
-        &blueprint.telemetry,
+        false,
+        blueprint.telemetry.export.is_some(),
     ))
 }
 
 // Provides access to http in native rust environment
 fn init_http2_only(blueprint: &Blueprint) -> Arc<dyn HttpIO> {
     Arc::new(http::NativeHttp::init(
-        &blueprint.upstream.clone().http2_only(true),
-        &blueprint.telemetry,
+        &blueprint.upstream,
+        true,
+        blueprint.telemetry.export.is_some(),
     ))
 }
 

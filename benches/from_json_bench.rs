@@ -8,7 +8,7 @@ use tailcall::core::HttpIO;
 pub fn benchmark_from_json_method(c: &mut Criterion) {
     let tokio_runtime = tokio::runtime::Runtime::new().unwrap();
 
-    let native_http = NativeHttp::init(&Default::default(), &Default::default());
+    let native_http = NativeHttp::init(&Default::default(), false, false);
     let request_url = String::from("http://jsonplaceholder.typicode.com/users");
 
     let mut reqs = Vec::with_capacity(1);

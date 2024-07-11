@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -17,7 +18,6 @@ use tailcall_http_cache::HttpCacheManager;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::HttpIO;
-use crate::core::blueprint::telemetry::Telemetry;
 use crate::core::blueprint::Upstream;
 use crate::core::http::Response;
 
@@ -67,25 +67,33 @@ fn get_response_status(response: &reqwest_middleware::Result<reqwest::Response>)
     KeyValue::new(HTTP_RESPONSE_STATUS_CODE, status_code as i64)
 }
 
+thread_local! {
+    static HTTP_CLIENT: RefCell<Option<ClientWithMiddleware>> = Default::default();
+}
+
 #[derive(Clone)]
-pub struct NativeHttp {
-    client: ClientWithMiddleware,
-    http2_only: bool,
-    enable_telemetry: bool,
+pub struct HttpClient {
+    upstream: Upstream,
 }
 
-impl Default for NativeHttp {
-    fn default() -> Self {
-        Self {
-            client: ClientBuilder::new(Client::new()).build(),
-            http2_only: false,
-            enable_telemetry: false,
-        }
+impl HttpClient {
+    pub fn init(upstream: Upstream) -> Self {
+        Self { upstream }
     }
-}
 
-impl NativeHttp {
-    pub fn init(upstream: &Upstream, telemetry: &Telemetry) -> Self {
+    pub fn get_client(&self) -> ClientWithMiddleware {
+        HTTP_CLIENT.with(|rc| {
+            if rc.borrow().is_none() {
+                let client = Self::build_client(&self.upstream);
+                *rc.borrow_mut() = Some(client.clone());
+                client
+            } else {
+                rc.borrow().clone().unwrap()
+            }
+        })
+    }
+
+    fn build_client(upstream: &Upstream) -> ClientWithMiddleware {
         let mut builder = Client::builder()
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
             .timeout(Duration::from_secs(upstream.timeout))
@@ -119,10 +127,23 @@ impl NativeHttp {
                 options: HttpCacheOptions::default(),
             }))
         }
+
+        client.build()
+    }
+}
+
+pub struct NativeHttp {
+    client: HttpClient,
+    http2_only: bool,
+    enable_telemetry: bool,
+}
+
+impl NativeHttp {
+    pub fn init(upstream: &Upstream, http2_only: bool, enable_telemetry: bool) -> Self {
         Self {
-            client: client.build(),
-            http2_only: upstream.http2_only,
-            enable_telemetry: telemetry.export.is_some(),
+            http2_only,
+            client: HttpClient::init(upstream.clone()),
+            enable_telemetry,
         }
     }
 }
@@ -165,7 +186,7 @@ impl HttpIO for NativeHttp {
             request.version()
         );
         tracing::debug!("request: {:?}", request);
-        let response = self.client.execute(request).await;
+        let response = self.client.get_client().execute(request).await;
         tracing::debug!("response: {:?}", response);
 
         req_counter.update(&response);
@@ -211,7 +232,7 @@ mod tests {
             then.status(200).body("Hello");
         });
 
-        let native_http = NativeHttp::init(&Default::default(), &Default::default());
+        let native_http = NativeHttp::init(&Default::default(), false, false);
         let port = server.port();
         // Build a GET request to the mock server
         let request_url = format!("http://localhost:{}/test", port);
@@ -253,7 +274,7 @@ mod tests {
         });
 
         let upstream = Upstream { http_cache: 2, ..Default::default() };
-        let native_http = NativeHttp::init(&upstream, &Default::default());
+        let native_http = NativeHttp::init(&upstream, false, false);
         let port = server.port();
 
         let url1 = format!("http://localhost:{}/test-1", port);
