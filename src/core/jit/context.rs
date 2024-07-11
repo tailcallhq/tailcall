@@ -75,7 +75,7 @@ mod test {
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
     fn setup(query: &str) -> (Request<ConstValue>, ExecutionPlan) {
-        let request: Request<ConstValue> = Request::try_from(query).unwrap();
+        let request: Request<ConstValue> = Request::new(query);
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let plan = request.try_new(&blueprint).unwrap();
@@ -96,5 +96,57 @@ mod test {
         let ctx: Context<ConstValue, ConstValue> =
             Context::new(&req).with_query(plan.as_nested()[0].0 == OperationType::Query);
         assert!(!ctx.is_query())
+    }
+
+    #[test]
+    fn should_identify_query_and_mutation_operations() {
+        let query = r#"
+        query UserPosts {
+            posts {
+                 id
+              userId
+              title
+            }
+            users {
+              name
+              id
+            }
+          }
+          
+          mutation CreatePost {
+            createPost(post: {
+              userId: 1,
+              title: "test-12",
+              body: "test-12",
+            }) {
+              id
+              userId
+              title
+              body
+            }
+          }
+        "#;
+
+        let (req, plan) = setup(query);
+
+        let mut ctx: Context<ConstValue, ConstValue> = Context::new(&req);
+
+        // let plans = plan.as_nested();
+        let mut plans = plan.as_nested().to_owned();
+        plans.sort_by_key(|(op, _)| match op {
+            OperationType::Query => 0,
+            OperationType::Mutation => 1,
+            _ => 3,
+        });
+
+        assert!(plans.len() == 2);
+
+        // query
+        ctx = ctx.with_query(plans[0].0 == OperationType::Query);
+        assert!(ctx.is_query());
+
+        // mutation
+        ctx = ctx.with_query(plans[1].0 == OperationType::Query);
+        assert!(!ctx.is_query());
     }
 }

@@ -23,7 +23,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::try_from("query {posts {id title}}").unwrap();
+        let request = Request::new("query {posts {id title}}");
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
@@ -34,8 +34,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_nested() {
         //  NOTE: This test makes a real HTTP call
-        let request =
-            Request::try_from("query {posts {title userId user {id name blog} }}").unwrap();
+        let request = Request::new("query {posts {title userId user {id name blog} }}");
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
@@ -46,10 +45,9 @@ mod tests {
     #[tokio::test]
     async fn test_executor_nested_list() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::try_from(
+        let request = Request::new(
             "query {posts { id user { id albums { id photos { id title combinedId } } } }}",
-        )
-        .unwrap();
+        );
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
@@ -60,7 +58,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_fragments() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::try_from(
+        let request = Request::new(
             r#"
             fragment UserPII on User {
               name
@@ -76,8 +74,7 @@ mod tests {
               }
             }
         "#,
-        )
-        .unwrap();
+        );
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
@@ -88,7 +85,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_fragments_nested() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::try_from(
+        let request = Request::new(
             r#"
             fragment UserPII on User {
               name
@@ -107,8 +104,7 @@ mod tests {
               }
             }
         "#,
-        )
-        .unwrap();
+        );
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;

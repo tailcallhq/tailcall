@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use async_graphql::parser::types::ExecutableDocument;
 use derive_setters::Setters;
 use serde::Deserialize;
 
@@ -17,15 +16,11 @@ pub struct Request<Value> {
     pub variables: HashMap<String, Value>,
     #[serde(default)]
     pub extensions: HashMap<String, Value>,
-    pub document: ExecutableDocument,
 }
 
-impl TryFrom<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
-    type Error = Error;
-    fn try_from(mut value: async_graphql::Request) -> Result<Self> {
-        let executable_doc = value.parsed_query().map_err(Error::ServerError)?.to_owned();
-
-        Ok(Self {
+impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
+    fn from(value: async_graphql::Request) -> Self {
+        Self {
             query: value.query,
             operation_name: value.operation_name,
             variables: match value.variables.into_value() {
@@ -35,28 +30,25 @@ impl TryFrom<async_graphql::Request> for Request<async_graphql_value::ConstValue
                 _ => HashMap::new(),
             },
             extensions: value.extensions,
-            document: executable_doc,
-        })
+        }
     }
 }
 
 impl<Value> Request<Value> {
     pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan> {
-        let builder = Builder::new(blueprint, self.document.clone());
+        let document = async_graphql::parser::parse_query(&self.query)?;
+        let builder = Builder::new(blueprint, document);
         builder.build().map_err(Error::BuildError)
     }
 }
 
-impl<A> TryFrom<&str> for Request<A> {
-    type Error = Error;
-    fn try_from(query: &str) -> std::result::Result<Self, Self::Error> {
-        let document = async_graphql::parser::parse_query(query)?;
-        Ok(Self {
+impl<A> Request<A> {
+    pub fn new(query: &str) -> Self {
+        Self {
             query: query.to_string(),
             operation_name: None,
             variables: HashMap::new(),
             extensions: HashMap::new(),
-            document,
-        })
+        }
     }
 }
