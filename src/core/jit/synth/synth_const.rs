@@ -127,6 +127,8 @@ impl Synth {
         let include = self.include(node);
 
         match parent {
+            // scalar values should be returned as is
+            val if node.is_scalar => Ok(val.clone()),
             ConstValue::Object(obj) => {
                 let mut ans = IndexMap::default();
                 if include {
