@@ -1,8 +1,37 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use async_graphql::parser::types::OperationType;
+use serde::Deserialize;
 
 use crate::core::ir::model::IR;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Variables<Value>(HashMap<String, Value>);
+
+impl<Value> Default for Variables<Value> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Value> Variables<Value> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        self.0.get(key)
+    }
+    pub fn insert(&mut self, key: String, value: Value) {
+        self.0.insert(key, value);
+    }
+}
+
+impl<V> FromIterator<(String, V)> for Variables<V> {
+    fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Arg {
@@ -52,8 +81,39 @@ pub struct Field<Extensions> {
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
+    pub skip: Option<Variable>,
+    pub include: Option<Variable>,
     pub args: Vec<Arg>,
     pub extensions: Option<Extensions>,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub struct Variable(String);
+
+impl Variable {
+    pub fn new(name: String) -> Self {
+        Variable(name)
+    }
+}
+
+impl<A> Field<A> {
+    #[inline(always)]
+    pub fn skip(&self, variables: &Variables<async_graphql_value::ConstValue>) -> bool {
+        let eval = |variable_option: Option<&Variable>,
+                    variables: &Variables<async_graphql_value::ConstValue>,
+                    default: bool| {
+            match variable_option {
+                Some(Variable(name)) => variables.get(name).map_or(default, |value| match value {
+                    async_graphql_value::ConstValue::Boolean(b) => *b,
+                    _ => default,
+                }),
+                None => default,
+            }
+        };
+        let skip = eval(self.skip.as_ref(), variables, false);
+        let include = eval(self.include.as_ref(), variables, true);
+
+        skip == include
+    }
 }
 
 const EMPTY_VEC: &Vec<Field<Nested>> = &Vec::new();
@@ -92,6 +152,8 @@ impl Field<Flat> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
+            skip: self.skip,
+            include: self.include,
             args: self.args,
             extensions,
         }

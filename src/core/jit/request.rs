@@ -5,15 +5,16 @@ use serde::Deserialize;
 
 use super::{Builder, Error, ExecutionPlan, Result};
 use crate::core::blueprint::Blueprint;
+use crate::core::jit::model::Variables;
 
-#[derive(Debug, Deserialize, Setters)]
+#[derive(Debug, Deserialize, Setters, Clone)]
 pub struct Request<Value> {
     #[serde(default)]
     pub query: String,
     #[serde(default, rename = "operationName")]
     pub operation_name: Option<String>,
     #[serde(default)]
-    pub variables: HashMap<String, Value>,
+    pub variables: Variables<Value>,
     #[serde(default)]
     pub extensions: HashMap<String, Value>,
 }
@@ -25,9 +26,9 @@ impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
             operation_name: value.operation_name,
             variables: match value.variables.into_value() {
                 async_graphql_value::ConstValue::Object(val) => {
-                    HashMap::from_iter(val.into_iter().map(|(k, v)| (k.to_string(), v)))
+                    Variables::from_iter(val.into_iter().map(|(name, val)| (name.to_string(), val)))
                 }
-                _ => HashMap::new(),
+                _ => Variables::default(),
             },
             extensions: value.extensions,
         }
@@ -47,7 +48,7 @@ impl<A> Request<A> {
         Self {
             query: query.to_string(),
             operation_name: None,
-            variables: HashMap::new(),
+            variables: Variables::default(),
             extensions: HashMap::new(),
         }
     }
