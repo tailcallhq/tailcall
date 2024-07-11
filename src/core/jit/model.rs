@@ -105,7 +105,7 @@ pub enum Ignore {
 
 impl Ignore {
     #[inline(always)]
-    pub fn check    <Value: JsonLike>(&self, variables: &Variables<Value>) -> bool {
+    pub fn check<Value: JsonLike>(&self, variables: &Variables<Value>) -> bool {
         // Do not skip by default
         let skip = false;
 
