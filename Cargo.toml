@@ -22,7 +22,6 @@ tracing = "0.1.40"
 lazy_static = "1.4.0"
 serde_json = { version = "1.0.116", features = ["preserve_order"] }
 serde = { version = "1.0.200", features = ["derive"] }
-dashmap = "6.0.1"
 
 
 [dependencies]
