@@ -10,7 +10,10 @@ pub enum BuildError {
 
 #[derive(Error, Debug, Clone)]
 #[error("Cannot resolve the input value")]
-pub struct ResolveInputError;
+pub enum ResolveInputError {
+    #[error("Variable `{0}` is not defined")]
+    VariableIsNotFound(String),
+}
 
 #[derive(Debug, Clone, Error)]
 pub enum Error {

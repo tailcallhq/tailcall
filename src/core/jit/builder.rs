@@ -87,7 +87,11 @@ impl Builder {
                             Some(Flat::new(id.clone())),
                             fragments,
                         );
-                        let name = field_name.to_owned();
+                        let name = gql_field
+                            .alias
+                            .as_ref()
+                            .map(|alias| alias.node.to_string())
+                            .unwrap_or(field_name.to_string());
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
