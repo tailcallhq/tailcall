@@ -138,7 +138,10 @@ impl Builder {
                     "Root Operation type not defined for {}",
                     single.node.ty
                 ))?;
-                fields.extend(self.iter(&single.node.selection_set.node, name, None, &fragments));
+                fields.push((
+                    single.node.ty,
+                    self.iter(&single.node.selection_set.node, name, None, &fragments),
+                ));
             }
             DocumentOperations::Multiple(multiple) => {
                 for single in multiple.values() {
@@ -146,11 +149,9 @@ impl Builder {
                         "Root Operation type not defined for {}",
                         single.node.ty
                     ))?;
-                    fields.extend(self.iter(
-                        &single.node.selection_set.node,
-                        name,
-                        None,
-                        &fragments,
+                    fields.push((
+                        single.node.ty,
+                        self.iter(&single.node.selection_set.node, name, None, &fragments),
                     ));
                 }
             }
@@ -189,7 +190,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_nested());
+        insta::assert_debug_snapshot!(plan);
     }
 
     #[tokio::test]

@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Formatter};
 
+use async_graphql::parser::types::OperationType;
+
 use crate::core::ir::model::IR;
 
 #[derive(Debug, Clone)]
@@ -142,26 +144,36 @@ pub struct Nested(Vec<Field<Nested>>);
 #[derive(Clone, Debug)]
 pub struct ExecutionPlan {
     flat: Vec<Field<Flat>>,
-    nested: Vec<Field<Nested>>,
+    nested: Vec<(OperationType, Vec<Field<Nested>>)>,
 }
 
 impl ExecutionPlan {
-    pub fn new(fields: Vec<Field<Flat>>) -> Self {
-        let nested = fields
+    pub fn new(fields: Vec<(OperationType, Vec<Field<Flat>>)>) -> Self {
+        let flat: Vec<Field<Flat>> = fields
             .clone()
             .into_iter()
-            .filter(|f| f.extensions.is_none())
-            .map(|f| f.into_nested(&fields))
-            .collect::<Vec<_>>();
+            .flat_map(|(_, fields)| fields)
+            .collect();
 
-        Self { flat: fields, nested }
+        let mut nested = vec![];
+
+        for (op, flat_fields) in fields {
+            let nested_fields = flat_fields
+                .into_iter()
+                .filter(|f| f.extensions.is_none())
+                .map(|f| f.into_nested(&flat))
+                .collect();
+            nested.push((op, nested_fields));
+        }
+
+        Self { flat, nested }
     }
 
-    pub fn as_nested(&self) -> &[Field<Nested>] {
+    pub fn as_nested(&self) -> &[(OperationType, Vec<Field<Nested>>)] {
         &self.nested
     }
 
-    pub fn into_nested(self) -> Vec<Field<Nested>> {
+    pub fn into_nested(self) -> Vec<(OperationType, Vec<Field<Nested>>)> {
         self.nested
     }
 

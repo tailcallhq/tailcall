@@ -2,6 +2,7 @@ use std::fmt::Debug;
 use std::mem;
 use std::sync::{Arc, Mutex};
 
+use async_graphql::parser::types::OperationType;
 use derive_getters::Getters;
 use futures_util::future::join_all;
 
@@ -68,11 +69,15 @@ where
     }
 
     async fn init(&mut self) {
-        join_all(self.plan.as_nested().iter().map(|field| async {
-            let ctx = Context::new(&self.request);
-            self.execute(field, &ctx, DataPath::new()).await
-        }))
-        .await;
+        for (op, fields) in self.plan.as_nested() {
+            let is_query = *op == OperationType::Query;
+            let ctx = Context::new(&self.request).with_query(is_query);
+
+            let tasks = fields
+                .iter()
+                .map(|field| self.execute(field, &ctx, DataPath::new()));
+            join_all(tasks).await;
+        }
     }
 
     async fn execute<'b>(
