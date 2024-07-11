@@ -97,20 +97,19 @@ impl Variable {
 impl<A> Field<A> {
     #[inline(always)]
     pub fn skip(&self, variables: &Variables<async_graphql_value::ConstValue>) -> bool {
-        let skip = match &self.skip {
-            Some(Variable(name)) => variables.get(name).map_or(false, |value| match value {
-                async_graphql_value::ConstValue::Boolean(b) => *b,
-                _ => false,
-            }),
-            None => false,
+        let eval = |variable_option: Option<&Variable>,
+                    variables: &Variables<async_graphql_value::ConstValue>,
+                    default: bool| {
+            match variable_option {
+                Some(Variable(name)) => variables.get(name).map_or(default, |value| match value {
+                    async_graphql_value::ConstValue::Boolean(b) => *b,
+                    _ => default,
+                }),
+                None => default,
+            }
         };
-        let include = match &self.include {
-            Some(Variable(name)) => variables.get(name).map_or(true, |value| match value {
-                async_graphql_value::ConstValue::Boolean(b) => *b,
-                _ => true,
-            }),
-            None => true,
-        };
+        let skip = eval(self.skip.as_ref(), variables, false);
+        let include = eval(self.include.as_ref(), variables, true);
 
         skip == include
     }

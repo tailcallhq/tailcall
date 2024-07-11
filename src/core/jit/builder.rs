@@ -28,17 +28,7 @@ impl Conditions {
     // If include is always false xor skip is always true, then we can skip the
     // field
     fn is_const_skip(&self) -> bool {
-        let skip = self
-            .skip
-            .as_ref()
-            .map(|v| *v == Condition::Skip)
-            .unwrap_or(false);
-        let include = self
-            .include
-            .as_ref()
-            .map(|v| *v == Condition::Skip)
-            .unwrap_or(false);
-        skip ^ include
+        matches!(self.skip, Some(Condition::Skip)) ^ matches!(self.include, Some(Condition::Skip))
     }
 
     fn into_variable_tuple(self) -> (Option<Variable>, Option<Variable>) {
