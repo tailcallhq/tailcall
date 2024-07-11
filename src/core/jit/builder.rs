@@ -5,6 +5,7 @@ use async_graphql::parser::types::{
     SelectionSet,
 };
 use async_graphql::Positioned;
+use async_graphql_value::Value;
 
 use super::model::*;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
@@ -42,7 +43,32 @@ impl Builder {
             };
 
             if let Some(condition_input) = directive.node.get_argument("if") {
-                return Ignore::new(include, &condition_input.node);
+                let value = &condition_input.node;
+                return if include {
+                    match value {
+                        Value::Variable(var) => Ignore::IncludeIf(Variable::new(var.as_str())),
+                        Value::Boolean(bool) => {
+                            if *bool {
+                                Ignore::Never
+                            } else {
+                                Ignore::Always
+                            }
+                        }
+                        _ => Ignore::default(),
+                    }
+                } else {
+                    match value {
+                        Value::Variable(var) => Ignore::SkipIf(Variable::new(var.as_str())),
+                        Value::Boolean(bool) => {
+                            if *bool {
+                                Ignore::Always
+                            } else {
+                                Ignore::Never
+                            }
+                        }
+                        _ => Ignore::default(),
+                    }
+                };
             }
         }
         // we never ignore by default

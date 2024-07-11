@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use async_graphql_value::Value;
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
@@ -105,39 +104,8 @@ pub enum Ignore {
 }
 
 impl Ignore {
-    #[inline]
-    pub fn new(include: bool, value: &Value) -> Self {
-        if include {
-            match value {
-                Value::Variable(var) => Ignore::IncludeIf(Variable::new(var.as_str())),
-                Value::String(st) => Ignore::IncludeIf(Variable::new(st.as_str())),
-                Value::Boolean(bool) => {
-                    if *bool {
-                        Ignore::Never
-                    } else {
-                        Ignore::Always
-                    }
-                }
-                _ => Ignore::default(),
-            }
-        } else {
-            match value {
-                Value::Variable(var) => Ignore::SkipIf(Variable::new(var.as_str())),
-                Value::String(st) => Ignore::SkipIf(Variable::new(st.as_str())),
-                Value::Boolean(bool) => {
-                    if *bool {
-                        Ignore::Always
-                    } else {
-                        Ignore::Never
-                    }
-                }
-                _ => Ignore::default(),
-            }
-        }
-    }
-
     #[inline(always)]
-    pub fn ignore<Value: JsonLike>(&self, variables: &Variables<Value>) -> bool {
+    pub fn check    <Value: JsonLike>(&self, variables: &Variables<Value>) -> bool {
         // Do not skip by default
         let skip = false;
 
