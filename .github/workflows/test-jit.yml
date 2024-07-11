@@ -5,7 +5,7 @@ on:
     branches:
       - main
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, synchronize, labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,6 +20,7 @@ jobs:
     name: Run JIT tests on ${{ matrix.build }}
     runs-on: ${{ matrix.os || '-latest' }}
     needs: setup_build_matrix
+    if: "${{ contains(github.event.pull_request.labels.*.name, 'ci: test-jit') || github.event_name == 'push' }}"
     strategy:
       fail-fast: false
       matrix:
