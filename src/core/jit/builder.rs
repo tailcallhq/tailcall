@@ -190,7 +190,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan);
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[tokio::test]
