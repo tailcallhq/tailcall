@@ -7,8 +7,7 @@ mod tests {
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
     use tailcall::core::http::RequestContext;
-    use tailcall::core::jit::variables::Variables;
-    use tailcall::core::jit::{ConstValueExecutor, Error, Request, Response};
+    use tailcall::core::jit::{ConstValueExecutor, Error, Request, Response, Variables};
     use tailcall::core::rest::EndpointSet;
     use tailcall::core::valid::Validator;
 

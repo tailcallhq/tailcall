@@ -166,7 +166,7 @@ mod tests {
     use crate::core::jit::input_resolver::InputResolver;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
-    use crate::core::jit::variables::Variables;
+    use crate::core::jit::Variables;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"

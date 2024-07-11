@@ -8,7 +8,7 @@ use crate::core::jit::builder::Builder;
 use crate::core::jit::input_resolver::InputResolver;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
-use crate::core::jit::variables::Variables;
+use crate::core::jit::Variables;
 use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
 
