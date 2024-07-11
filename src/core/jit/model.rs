@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
+use async_graphql_value::Value;
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
@@ -75,36 +76,75 @@ pub struct Field<Extensions> {
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
-    pub include: Option<Include>,
+    pub ignore: Ignore,
     pub args: Vec<Arg>,
     pub extensions: Option<Extensions>,
 }
+#[derive(Clone, Debug)]
+pub struct Variable(String);
 
-#[derive(Clone)]
-pub struct Include {
-    pub value: async_graphql_value::Value,
-    pub include: bool,
+impl Variable {
+    pub fn new(name: &str) -> Self {
+        Variable(name.to_string())
+    }
 }
 
-impl Include {
-    #[inline(always)]
-    pub fn include<Value: JsonLike>(&self, variables: &Variables<Value>) -> bool {
-        let condition = match &self.value {
-            async_graphql_value::Value::Variable(name) => {
-                let st = name.as_str();
-                variables
-                    .get(st)
-                    .and_then(|v| v.as_bool_ok().ok())
-                    .unwrap_or_default()
+#[derive(Debug, Default, Clone, strum_macros::Display)]
+pub enum Ignore {
+    #[default]
+    Never, // Default
+    Always,                // If a literal is used.
+    WhenSkip(Variable),    // when @skip is used
+    WhenInclude(Variable), // when @include is used
+}
+
+impl Ignore {
+    #[inline]
+    pub fn new(include: bool, value: &Value) -> Self {
+        if include {
+            match value {
+                Value::Variable(var) => Ignore::WhenInclude(Variable::new(var.as_str())),
+                Value::String(st) => Ignore::WhenInclude(Variable::new(st.as_str())),
+                Value::Boolean(bool) => {
+                    if *bool {
+                        Ignore::Never
+                    } else {
+                        Ignore::Always
+                    }
+                }
+                _ => Ignore::default(),
             }
-            async_graphql_value::Value::String(st) => variables
-                .get(st)
-                .and_then(|v| v.as_bool_ok().ok())
-                .unwrap_or_default(),
-            async_graphql_value::Value::Boolean(b) => *b,
-            _ => false,
-        };
-        condition == self.include
+        } else {
+            match value {
+                Value::Variable(var) => Ignore::WhenSkip(Variable::new(var.as_str())),
+                Value::String(st) => Ignore::WhenSkip(Variable::new(st.as_str())),
+                Value::Boolean(bool) => {
+                    if *bool {
+                        Ignore::Always
+                    } else {
+                        Ignore::Never
+                    }
+                }
+                _ => Ignore::default(),
+            }
+        }
+    }
+
+    #[inline(always)]
+    pub fn ignore<Value: JsonLike>(&self, variables: &Variables<Value>) -> bool {
+        // Do not skip by default
+        let skip = false;
+
+        match self {
+            Ignore::Never => false,
+            Ignore::Always => true,
+            Ignore::WhenSkip(var) => variables
+                .get(&var.0)
+                .map_or(skip, |v| v.as_bool_ok().unwrap_or(!skip)),
+            Ignore::WhenInclude(var) => !variables
+                .get(&var.0)
+                .map_or(skip, |v| v.as_bool_ok().unwrap_or(skip)),
+        }
     }
 }
 
@@ -144,7 +184,7 @@ impl Field<Flat> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
-            include: self.include,
+            ignore: self.ignore,
             args: self.args,
             extensions,
         }

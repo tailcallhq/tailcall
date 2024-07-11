@@ -118,9 +118,10 @@ mod tests {
             r#"
                 query ($skipName: Boolean!){
                   users {
-                    id
+                    id @skip(if: true)
                     name @skip(if: $skipName)
                     email @include(if: $skipName)
+                    username @include(if: false)
                   }
                 }
         "#,

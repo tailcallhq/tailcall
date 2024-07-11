@@ -33,7 +33,7 @@ impl Builder {
     fn include(
         &self,
         directives: &[Positioned<async_graphql::parser::types::Directive>],
-    ) -> Option<Include> {
+    ) -> Ignore {
         for directive in directives {
             let include = match &*directive.node.name.node {
                 "skip" => false,
@@ -41,12 +41,12 @@ impl Builder {
                 _ => continue,
             };
 
-            // here we skip iff it is a constant variable i.e., false.
             if let Some(condition_input) = directive.node.get_argument("if") {
-                return Some(Include { value: condition_input.node.to_owned(), include });
+                return Ignore::new(include, &condition_input.node);
             }
         }
-        None
+        // we never ignore by default
+        Ignore::default()
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -62,7 +62,7 @@ impl Builder {
         for selection in &selection.items {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
-                    let include = self.include(&gql_field.directives);
+                    let ignore = self.include(&gql_field.directives);
 
                     let field_name = gql_field.name.node.as_str();
                     let field_args = gql_field
@@ -114,7 +114,7 @@ impl Builder {
                             name,
                             ir,
                             type_of,
-                            include,
+                            ignore,
                             args,
                             extensions: exts.clone(),
                         });

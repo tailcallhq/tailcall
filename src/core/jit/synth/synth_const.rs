@@ -25,11 +25,7 @@ impl Synth {
 
     #[inline(always)]
     fn include<T>(&self, field: &Field<T>) -> bool {
-        if let Some(include) = &field.include {
-            include.include(&self.variables)
-        } else {
-            true
-        }
+        !field.ignore.ignore(&self.variables)
     }
 
     pub fn synthesize(&self) -> Result<Value> {
