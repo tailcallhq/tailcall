@@ -28,6 +28,12 @@ impl<Value> Variables<Value> {
     }
 }
 
+impl<V> FromIterator<(String, V)> for Variables<V> {
+    fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Arg {
     pub id: ArgId,

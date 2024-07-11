@@ -26,10 +26,7 @@ impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
             operation_name: value.operation_name,
             variables: match value.variables.into_value() {
                 async_graphql_value::ConstValue::Object(val) => {
-                    let mut vars = Variables::default();
-                    val.into_iter()
-                        .for_each(|(k, v)| vars.insert(k.to_string(), v));
-                    vars
+                    Variables::from_iter(val.into_iter().map(|(name, val)| (name.to_string(), val)))
                 }
                 _ => Variables::default(),
             },
