@@ -131,8 +131,8 @@ mod test {
 
         let mut ctx: Context<ConstValue, ConstValue> = Context::new(&req);
 
-        // let plans = plan.as_nested();
         let mut plans = plan.as_nested().to_owned();
+        // sort it to avoid the flaky tests.
         plans.sort_by_key(|(op, _)| match op {
             OperationType::Query => 0,
             OperationType::Mutation => 1,
