@@ -17,8 +17,7 @@ pub struct Request<Value> {
     pub variables: HashMap<String, Value>,
     #[serde(default)]
     pub extensions: HashMap<String, Value>,
-    #[serde(skip)]
-    pub document: Option<ExecutableDocument>,
+    pub document: ExecutableDocument,
 }
 
 impl TryFrom<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
@@ -39,28 +38,28 @@ impl TryFrom<async_graphql::Request> for Request<async_graphql_value::ConstValue
                 _ => HashMap::new(),
             },
             extensions: value.extensions,
-            document: Some(executable_doc),
+            document: executable_doc,
         })
     }
 }
 
 impl<Value> Request<Value> {
     pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan> {
-        let doc = async_graphql::parser::parse_query(&self.query)?;
-        let builder = Builder::new(blueprint, doc);
+        let builder = Builder::new(blueprint, self.document.clone());
         builder.build().map_err(Error::BuildError)
     }
 }
 
-impl<A> Request<A> {
-    pub fn new(query: &str) -> Result<Self> {
+impl<A> TryFrom<&str> for Request<A> {
+    type Error = Error;
+    fn try_from(query: &str) -> std::result::Result<Self, Self::Error> {
         let document = async_graphql::parser::parse_query(query)?;
         Ok(Self {
             query: query.to_string(),
             operation_name: None,
             variables: HashMap::new(),
             extensions: HashMap::new(),
-            document: Some(document),
+            document,
         })
     }
 }

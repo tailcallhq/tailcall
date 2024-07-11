@@ -43,13 +43,9 @@ impl<'a> ResolverContextLike for Context<'a, async_graphql::Value, async_graphql
     fn is_query(&self) -> bool {
         self.request
             .document
-            .as_ref()
-            .map_or(false, |exec_document| {
-                exec_document
-                    .operations
-                    .iter()
-                    .any(|(_, operation)| operation.node.ty == OperationType::Query)
-            })
+            .operations
+            .iter()
+            .any(|(_, op)| op.node.ty == OperationType::Query)
     }
 
     fn add_error(&self, _error: async_graphql::ServerError) {
@@ -67,7 +63,7 @@ mod test {
 
     #[test]
     fn is_query_should_return_true_when_input_is_query_type() {
-        let request: Request<ConstValue> = Request::new("query {posts {id title}}").unwrap();
+        let request: Request<ConstValue> = Request::try_from("query {posts {id title}}").unwrap();
         let ctx: Context<ConstValue, ConstValue> = Context::new(&request);
         assert!(ctx.is_query())
     }
@@ -75,7 +71,8 @@ mod test {
     #[test]
     fn is_query_should_return_false_when_input_is_mutation_type() {
         let request: Request<ConstValue> =
-            Request::new("mutation {createPost(input: {title: \"New Post\"}) {id title}}").unwrap();
+            Request::try_from("mutation {createPost(input: {title: \"New Post\"}) {id title}}")
+                .unwrap();
         let ctx: Context<ConstValue, ConstValue> = Context::new(&request);
         assert!(!ctx.is_query())
     }

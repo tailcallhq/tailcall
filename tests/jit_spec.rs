@@ -23,7 +23,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new("query {posts {id title}}").unwrap();
+        let request = Request::try_from("query {posts {id title}}").unwrap();
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
@@ -34,7 +34,8 @@ mod tests {
     #[tokio::test]
     async fn test_executor_nested() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new("query {posts {title userId user {id name blog} }}").unwrap();
+        let request =
+            Request::try_from("query {posts {title userId user {id name blog} }}").unwrap();
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;
         let data = response.data;
@@ -45,7 +46,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_nested_list() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new(
+        let request = Request::try_from(
             "query {posts { id user { id albums { id photos { id title combinedId } } } }}",
         )
         .unwrap();
@@ -59,7 +60,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_fragments() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new(
+        let request = Request::try_from(
             r#"
             fragment UserPII on User {
               name
@@ -87,7 +88,7 @@ mod tests {
     #[tokio::test]
     async fn test_executor_fragments_nested() {
         //  NOTE: This test makes a real HTTP call
-        let request = Request::new(
+        let request = Request::try_from(
             r#"
             fragment UserPII on User {
               name
