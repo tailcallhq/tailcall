@@ -5,7 +5,6 @@ pub enum Error {
     #[from(ignore)]
     BuildError(String),
     ParseError(async_graphql::parser::Error),
-    ServerError(async_graphql::ServerError),
     IR(crate::core::ir::Error),
 }
 
