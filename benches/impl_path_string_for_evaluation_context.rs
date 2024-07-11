@@ -24,7 +24,6 @@ use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 use tailcall_http_cache::HttpCacheManager;
 
-#[derive(Clone)]
 struct Http {
     client: ClientWithMiddleware,
     http2_only: bool,
