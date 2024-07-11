@@ -25,7 +25,7 @@ impl Synth {
 
     #[inline(always)]
     fn include<T>(&self, field: &Field<T>) -> bool {
-        !field.ignore.check(&self.variables)
+        !field.skip(&self.variables)
     }
 
     pub fn synthesize(&self) -> Result<Value> {

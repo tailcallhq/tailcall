@@ -12,6 +12,56 @@ use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::merge_right::MergeRight;
 
+#[derive(PartialEq)]
+enum Condition {
+    Skip,
+    Include,
+    Variable(Variable),
+}
+
+struct Conditions {
+    skip: Option<Condition>,
+    include: Option<Condition>,
+}
+
+impl Conditions {
+    // If include is always false xor skip is always true, then we can skip the
+    // field
+    fn is_const_skip(&self) -> bool {
+        let skip = self
+            .skip
+            .as_ref()
+            .map(|v| *v == Condition::Skip)
+            .unwrap_or(false);
+        let include = self
+            .include
+            .as_ref()
+            .map(|v| *v == Condition::Skip)
+            .unwrap_or(false);
+        skip ^ include
+    }
+
+    fn into_variable_tuple(self) -> (Option<Variable>, Option<Variable>) {
+        let include = || {
+            let condition = self.include?;
+            match condition {
+                Condition::Variable(var) => Some(var),
+                _ => None,
+            }
+        };
+
+        let skip = || {
+            let condition = self.skip?;
+            match condition {
+                Condition::Variable(var) => Some(var),
+                _ => None,
+            }
+        };
+
+        (include(), skip())
+    }
+}
+
 pub struct Builder {
     pub index: Index,
     pub arg_id: Counter<usize>,
@@ -34,45 +84,54 @@ impl Builder {
     fn include(
         &self,
         directives: &[Positioned<async_graphql::parser::types::Directive>],
-    ) -> Ignore {
-        for directive in directives {
-            let include = match &*directive.node.name.node {
-                "skip" => false,
-                "include" => true,
-                _ => continue,
-            };
+    ) -> Conditions {
+        let mut conditions = Conditions { skip: None, include: None };
 
-            if let Some(condition_input) = directive.node.get_argument("if") {
-                let value = &condition_input.node;
-                return if include {
-                    match value {
-                        Value::Variable(var) => Ignore::IncludeIf(Variable::new(var.as_str())),
-                        Value::Boolean(bool) => {
-                            if *bool {
-                                Ignore::Never
-                            } else {
-                                Ignore::Always
+        for directive in directives {
+            match &*directive.node.name.node {
+                "skip" => {
+                    if let Some(condition_input) = directive.node.get_argument("if") {
+                        let value = &condition_input.node;
+                        let skip = match value {
+                            Value::Variable(var) => {
+                                Condition::Variable(Variable::new(var.as_str()))
                             }
-                        }
-                        _ => Ignore::default(),
-                    }
-                } else {
-                    match value {
-                        Value::Variable(var) => Ignore::SkipIf(Variable::new(var.as_str())),
-                        Value::Boolean(bool) => {
-                            if *bool {
-                                Ignore::Always
-                            } else {
-                                Ignore::Never
+                            Value::Boolean(bool) => {
+                                if *bool {
+                                    Condition::Skip
+                                } else {
+                                    Condition::Include
+                                }
                             }
-                        }
-                        _ => Ignore::default(),
+                            _ => Condition::Include,
+                        };
+                        conditions.skip = Some(skip);
                     }
-                };
+                }
+                "include" => {
+                    if let Some(condition_input) = directive.node.get_argument("if") {
+                        let value = &condition_input.node;
+                        let include = match value {
+                            Value::Variable(var) => {
+                                Condition::Variable(Variable::new(var.as_str()))
+                            }
+                            Value::Boolean(bool) => {
+                                if *bool {
+                                    Condition::Include
+                                } else {
+                                    Condition::Skip
+                                }
+                            }
+                            _ => Condition::Include,
+                        };
+                        conditions.include = Some(include);
+                    }
+                }
+                _ if conditions.include.is_some() && conditions.skip.is_some() => break,
+                _ => (),
             }
         }
-        // we never ignore by default
-        Ignore::default()
+        conditions
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -88,7 +147,15 @@ impl Builder {
         for selection in &selection.items {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
-                    let ignore = self.include(&gql_field.directives);
+                    let conditions = self.include(&gql_field.directives);
+
+                    // if include is always false xor skip is always true,
+                    // then we can skip the field from the plan
+                    if conditions.is_const_skip() {
+                        continue;
+                    }
+
+                    let (include, skip) = conditions.into_variable_tuple();
 
                     let field_name = gql_field.name.node.as_str();
                     let field_args = gql_field
@@ -140,7 +207,8 @@ impl Builder {
                             name,
                             ir,
                             type_of,
-                            ignore,
+                            skip,
+                            include,
                             args,
                             extensions: exts.clone(),
                         });

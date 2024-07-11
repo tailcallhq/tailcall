@@ -4,7 +4,6 @@ use std::fmt::{Debug, Formatter};
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
-use crate::core::json::JsonLike;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
@@ -81,11 +80,12 @@ pub struct Field<Extensions> {
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
-    pub ignore: Ignore,
+    pub skip: Option<Variable>,
+    pub include: Option<Variable>,
     pub args: Vec<Arg>,
     pub extensions: Option<Extensions>,
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Variable(String);
 
 impl Variable {
@@ -94,31 +94,25 @@ impl Variable {
     }
 }
 
-#[derive(Debug, Default, Clone, strum_macros::Display)]
-pub enum Ignore {
-    #[default]
-    Never, // Default
-    Always,              // If a literal is used.
-    SkipIf(Variable),    // when @skip is used
-    IncludeIf(Variable), // when @include is used
-}
-
-impl Ignore {
+impl<A> Field<A> {
     #[inline(always)]
-    pub fn check<Value: JsonLike>(&self, variables: &Variables<Value>) -> bool {
-        // Do not skip by default
-        let skip = false;
+    pub fn skip(&self, variables: &Variables<async_graphql_value::ConstValue>) -> bool {
+        let skip = match &self.skip {
+            Some(Variable(name)) => variables.get(name).map_or(false, |value| match value {
+                async_graphql_value::ConstValue::Boolean(b) => *b,
+                _ => false,
+            }),
+            None => false,
+        };
+        let include = match &self.include {
+            Some(Variable(name)) => variables.get(name).map_or(true, |value| match value {
+                async_graphql_value::ConstValue::Boolean(b) => *b,
+                _ => true,
+            }),
+            None => true,
+        };
 
-        match self {
-            Ignore::Never => false,
-            Ignore::Always => true,
-            Ignore::SkipIf(var) => variables
-                .get(&var.0)
-                .map_or(skip, |v| v.as_bool_ok().unwrap_or(!skip)),
-            Ignore::IncludeIf(var) => !variables
-                .get(&var.0)
-                .map_or(skip, |v| v.as_bool_ok().unwrap_or(skip)),
-        }
+        skip == include
     }
 }
 
@@ -158,7 +152,8 @@ impl Field<Flat> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
-            ignore: self.ignore,
+            skip: self.skip,
+            include: self.include,
             args: self.args,
             extensions,
         }
