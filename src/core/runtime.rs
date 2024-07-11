@@ -9,6 +9,7 @@ use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};
 /// The TargetRuntime struct unifies the available runtime-specific
 /// IO implementations. This is used to reduce piping IO structs all
 /// over the codebase.
+
 #[derive(Clone)]
 pub struct TargetRuntime {
     /// HTTP client for making standard HTTP requests.
