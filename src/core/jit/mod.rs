@@ -17,6 +17,7 @@ mod response;
 mod builder;
 pub mod common;
 mod graphql_executor;
+pub mod variables;
 
 // Public Exports
 pub use error::*;

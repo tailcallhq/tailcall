@@ -14,17 +14,19 @@ use crate::core::ir::EvalContext;
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
     plan: ExecutionPlan<ConstValue>,
-    app_ctx: Arc<AppContext>,
 }
 
 impl ConstValueExecutor {
     pub fn new(request: &Request<ConstValue>, app_ctx: Arc<AppContext>) -> Result<Self> {
-        Ok(Self { plan: request.try_new(&app_ctx.blueprint)?, app_ctx })
+        Ok(Self { plan: request.try_new(&app_ctx.blueprint)? })
     }
 
-    pub async fn execute(self, request: Request<ConstValue>) -> Response<ConstValue, Error> {
-        let ctx = RequestContext::from(self.app_ctx.as_ref());
-        let exec = ConstValueExec::new(ctx);
+    pub async fn execute(
+        self,
+        req_ctx: &RequestContext,
+        request: Request<ConstValue>,
+    ) -> Response<ConstValue, Error> {
+        let exec = ConstValueExec::new(req_ctx);
         let plan = self.plan;
         // TODO: drop the clones in plan
         let synth = SynthConst::new(plan.clone());
@@ -33,18 +35,18 @@ impl ConstValueExecutor {
     }
 }
 
-struct ConstValueExec {
-    req_context: RequestContext,
+struct ConstValueExec<'a> {
+    req_context: &'a RequestContext,
 }
 
-impl ConstValueExec {
-    pub fn new(ctx: RequestContext) -> Self {
+impl<'a> ConstValueExec<'a> {
+    pub fn new(ctx: &'a RequestContext) -> Self {
         Self { req_context: ctx }
     }
 }
 
 #[async_trait::async_trait]
-impl IRExecutor for ConstValueExec {
+impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
     type Input = ConstValue;
     type Output = ConstValue;
     type Error = Error;
