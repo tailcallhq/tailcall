@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::sync::{Arc};
+use std::sync::Arc;
 use std::thread_local;
 use std::time::Duration;
 
