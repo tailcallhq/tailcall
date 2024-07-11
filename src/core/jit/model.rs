@@ -89,8 +89,8 @@ pub struct Field<Extensions> {
 pub struct Variable(String);
 
 impl Variable {
-    pub fn new(name: &str) -> Self {
-        Variable(name.to_string())
+    pub fn new(name: String) -> Self {
+        Variable(name)
     }
 }
 

@@ -116,11 +116,11 @@ mod tests {
         //  NOTE: This test makes a real HTTP call
         let mut request = Request::new(
             r#"
-                query ($skip: Boolean!){
+                query ($TRUE: Boolean!){
                   users {
                     id @skip(if: true)
-                    name @skip(if: $skip)
-                    email @include(if: $skip)
+                    name @skip(if: $TRUE)
+                    email @include(if: $TRUE)
                     username @include(if: false)
                     phone @skip(if: false) @include(if: true)
                   }
@@ -129,7 +129,7 @@ mod tests {
         );
         request
             .variables
-            .insert("skip".to_string(), Value::Boolean(true));
+            .insert("TRUE".to_string(), Value::Boolean(true));
 
         let executor = new_executor(&request).await.unwrap();
         let response = executor.execute(request).await;

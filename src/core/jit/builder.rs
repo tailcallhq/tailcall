@@ -1,8 +1,9 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 
 use async_graphql::parser::types::{
-    DocumentOperations, ExecutableDocument, FragmentDefinition, OperationType, Selection,
-    SelectionSet,
+    Directive, DocumentOperations, ExecutableDocument, FragmentDefinition, OperationType,
+    Selection, SelectionSet,
 };
 use async_graphql::Positioned;
 use async_graphql_value::Value;
@@ -67,41 +68,39 @@ impl Builder {
         &self,
         directives: &[Positioned<async_graphql::parser::types::Directive>],
     ) -> Conditions {
-        let mut conditions = Conditions { skip: None, include: None };
-
-        for directive in directives {
-            let cond = |value: &Value, skip: bool, mut conditions: Conditions| {
-                let condition = match value {
-                    Value::Variable(var) => Condition::Variable(Variable::new(var.as_str())),
+        fn get_condition(dir: &Directive) -> Option<Condition> {
+            let arg = dir.get_argument("if").map(|pos| &pos.node);
+            let is_skip = dir.name.node.as_str() == "skip";
+            match arg {
+                None => None,
+                Some(value) => match value {
                     Value::Boolean(bool) => {
-                        if *bool == skip {
+                        let condition = if is_skip ^ bool {
                             Condition::Skip
                         } else {
                             Condition::Include
-                        }
+                        };
+                        Some(condition)
                     }
-                    _ => Condition::Include,
-                };
-                if skip {
-                    conditions.skip = Some(condition);
-                } else {
-                    conditions.include = Some(condition);
-                }
-                conditions
-            };
-
-            match &*directive.node.name.node {
-                "skip" | "include" => {
-                    if let Some(condition_input) = directive.node.get_argument("if") {
-                        let value = &condition_input.node;
-                        conditions = cond(value, &*directive.node.name.node == "skip", conditions);
+                    Value::Variable(var) => {
+                        Some(Condition::Variable(Variable::new(var.deref().to_owned())))
                     }
-                }
-                _ if conditions.include.is_some() && conditions.skip.is_some() => break,
-                _ => (),
+                    _ => None,
+                },
             }
         }
-        conditions
+        Conditions {
+            skip: directives
+                .iter()
+                .find(|d| d.node.name.node.as_str() == "skip")
+                .map(|d| &d.node)
+                .and_then(get_condition),
+            include: directives
+                .iter()
+                .find(|d| d.node.name.node.as_str() == "include")
+                .map(|d| &d.node)
+                .and_then(get_condition),
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
