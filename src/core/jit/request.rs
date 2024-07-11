@@ -23,7 +23,7 @@ pub struct Request<Value> {
 impl TryFrom<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
     type Error = Error;
     fn try_from(mut value: async_graphql::Request) -> Result<Self> {
-        let executable_doc = value.parsed_query().map_err(Error::ServerError)?.clone();
+        let executable_doc = value.parsed_query().map_err(Error::ServerError)?.to_owned();
 
         Ok(Self {
             query: value.query,
