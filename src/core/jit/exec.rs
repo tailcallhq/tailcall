@@ -69,10 +69,9 @@ where
     }
 
     async fn init(&mut self) {
-        for (op, fields) in self.plan.as_nested() {
-            let is_query = *op == OperationType::Query;
-            let ctx = Context::new(&self.request).with_query(is_query);
-
+        for (operation_type, fields) in self.plan.as_nested() {
+            let ctx =
+                Context::new(&self.request).with_query(*operation_type == OperationType::Query);
             let tasks = fields
                 .iter()
                 .map(|field| self.execute(field, &ctx, DataPath::new()));
