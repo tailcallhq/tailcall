@@ -15,8 +15,8 @@ use crate::core::merge_right::MergeRight;
 
 #[derive(PartialEq)]
 enum Condition {
-    Skip,
-    Include,
+    True,
+    False,
     Variable(Variable),
 }
 
@@ -26,10 +26,9 @@ struct Conditions {
 }
 
 impl Conditions {
-    // If include is always false xor skip is always true, then we can skip the
-    // field
+    /// Checks if the field should be skipped always
     fn is_const_skip(&self) -> bool {
-        matches!(self.skip, Some(Condition::Skip)) ^ matches!(self.include, Some(Condition::Skip))
+        matches!(self.skip, Some(Condition::True)) ^ matches!(self.include, Some(Condition::True))
     }
 
     fn into_variable_tuple(self) -> (Option<Variable>, Option<Variable>) {
@@ -70,15 +69,15 @@ impl Builder {
     ) -> Conditions {
         fn get_condition(dir: &Directive) -> Option<Condition> {
             let arg = dir.get_argument("if").map(|pos| &pos.node);
-            let is_skip = dir.name.node.as_str() == "skip";
+            let is_include = dir.name.node.as_str() == "include";
             match arg {
                 None => None,
                 Some(value) => match value {
                     Value::Boolean(bool) => {
-                        let condition = if is_skip ^ bool {
-                            Condition::Skip
+                        let condition = if is_include ^ bool {
+                            Condition::True
                         } else {
-                            Condition::Include
+                            Condition::False
                         };
                         Some(condition)
                     }
