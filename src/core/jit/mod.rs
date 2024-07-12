@@ -22,6 +22,5 @@ mod graphql_executor;
 pub use error::*;
 pub use exec_const::*;
 pub use graphql_executor::*;
-pub use model::Variables;
 pub use request::*;
 pub use response::*;

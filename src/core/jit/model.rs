@@ -15,7 +15,7 @@ pub struct Arg<Input> {
 }
 
 impl<Input> Arg<Input> {
-    pub fn map_value<Output, Error>(
+    pub fn try_map<Output, Error>(
         self,
         map: impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<Arg<Output>, Error> {
@@ -95,9 +95,9 @@ pub struct Field<Extensions, Input> {
 }
 
 impl<Extensions, Input> Field<Extensions, Input> {
-    pub fn map_args<Output, Error>(
+    pub fn try_map<Output, Error>(
         self,
-        map: impl Fn(Arg<Input>) -> Result<Arg<Output>, Error>,
+        map: impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<Field<Extensions, Output>, Error> {
         Ok(Field {
             id: self.id,
@@ -105,7 +105,11 @@ impl<Extensions, Input> Field<Extensions, Input> {
             ir: self.ir,
             type_of: self.type_of,
             extensions: self.extensions,
-            args: self.args.into_iter().map(map).collect::<Result<_, _>>()?,
+            args: self
+                .args
+                .into_iter()
+                .map(|arg| arg.try_map(&map))
+                .collect::<Result<_, _>>()?,
         })
     }
 }

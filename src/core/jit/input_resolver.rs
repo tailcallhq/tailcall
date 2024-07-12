@@ -56,11 +56,7 @@ where
             .plan
             .as_parent()
             .iter()
-            .map(|field| {
-                field
-                    .clone()
-                    .map_args(|arg| arg.map_value(|value| value.resolve(variables)))
-            })
+            .map(|field| field.clone().try_map(|value| value.resolve(variables)))
             .collect::<Result<_, _>>()?;
 
         Ok(ExecutionPlan::new(new_fields))

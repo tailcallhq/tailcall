@@ -7,7 +7,7 @@ mod tests {
     use tailcall::core::blueprint::Blueprint;
     use tailcall::core::config::{Config, ConfigModule};
     use tailcall::core::http::RequestContext;
-    use tailcall::core::jit::{ConstValueExecutor, Error, Request, Response, Variables};
+    use tailcall::core::jit::{ConstValueExecutor, Error, Request, Response};
     use tailcall::core::rest::EndpointSet;
     use tailcall::core::valid::Validator;
 
@@ -176,7 +176,7 @@ mod tests {
         };
 
         let request = Request::new(query);
-        let request = request.variables(Variables::from_iter([("id".into(), ConstValue::from(1))]));
+        let request = request.variables([("id".into(), ConstValue::from(1))]);
         let response = executor.run(request).await.unwrap();
         let data = response.data;
 

@@ -2,14 +2,13 @@ use std::collections::HashMap;
 use std::ops::DerefMut;
 
 use async_graphql_value::ConstValue;
-use derive_setters::Setters;
 use serde::Deserialize;
 
 use super::input_resolver::InputResolver;
 use super::{Builder, ExecutionPlan, Result, Variables};
 use crate::core::blueprint::Blueprint;
 
-#[derive(Debug, Deserialize, Setters)]
+#[derive(Debug, Deserialize)]
 pub struct Request<V> {
     #[serde(default)]
     pub query: String,
@@ -56,5 +55,9 @@ impl<A> Request<A> {
             variables: Variables::default(),
             extensions: HashMap::new(),
         }
+    }
+
+    pub fn variables(self, vars: impl IntoIterator<Item = (String, A)>) -> Self {
+        Self { variables: Variables::from_iter(vars), ..self }
     }
 }
