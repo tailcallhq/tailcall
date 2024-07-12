@@ -1,9 +1,12 @@
-use std::cell::RefCell;
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+use std::thread::ThreadId;
 use std::time::Duration;
 
 use anyhow::Result;
 use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
 use hyper::body::Bytes;
+use lazy_static::lazy_static;
 use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
 use opentelemetry::trace::SpanKind;
@@ -67,8 +70,9 @@ fn get_response_status(response: &reqwest_middleware::Result<reqwest::Response>)
     KeyValue::new(HTTP_RESPONSE_STATUS_CODE, status_code as i64)
 }
 
-thread_local! {
-    static HTTP_CLIENT: RefCell<Option<ClientWithMiddleware>> = Default::default();
+lazy_static! {
+    static ref HTTP_CLIENTS: RwLock<HashMap<ThreadId, Arc<ClientWithMiddleware>>> =
+        Default::default();
 }
 
 #[derive(Clone)]
@@ -81,15 +85,29 @@ impl HttpClient {
         Self { upstream }
     }
 
-    pub fn get_client(&self) -> ClientWithMiddleware {
-        HTTP_CLIENT.with_borrow_mut(|rc| {
+    pub fn get_client(&self) -> Arc<ClientWithMiddleware> {
+        let clients = HTTP_CLIENTS.read().unwrap();
+        let thread_id = std::thread::current().id();
+        let client = clients.get(&thread_id);
+        if let Some(client) = client {
+            client.clone()
+        } else {
+            drop(clients);
+            let mut clients = HTTP_CLIENTS.write().unwrap();
+            let client = Self::build_client(&self.upstream);
+            let client = Arc::new(client);
+            clients.insert(thread_id, client.clone());
+            drop(clients);
+            client
+        }
+        /*HTTP_CLIENT.with_borrow_mut(|rc| {
             if rc.is_none() {
                 *rc = Some(Self::build_client(&self.upstream));
                 rc.clone().unwrap()
             } else {
                 rc.take().unwrap()
             }
-        })
+        })*/
     }
 
     fn build_client(upstream: &Upstream) -> ClientWithMiddleware {
@@ -156,10 +174,10 @@ impl HttpIO for NativeHttp {
         err,
         fields(
             otel.name = "upstream_request",
-            otel.kind = ?SpanKind::Client,
-            url.full = %request.url(),
-            http.request.method = %request.method(),
-            network.protocol.version = ?request.version()
+            otel.kind = ? SpanKind::Client,
+            url.full = % request.url(),
+            http.request.method = % request.method(),
+            network.protocol.version = ? request.version()
         )
     )]
     async fn execute(&self, mut request: reqwest::Request) -> Result<Response<Bytes>> {
