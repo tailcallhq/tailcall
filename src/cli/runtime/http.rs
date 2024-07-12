@@ -82,15 +82,7 @@ impl HttpClient {
     }
 
     pub fn get_client(&self) -> ClientWithMiddleware {
-        HTTP_CLIENT.with(|rc| {
-            if rc.borrow().is_none() {
-                let client = Self::build_client(&self.upstream);
-                *rc.borrow_mut() = Some(client.clone());
-                client
-            } else {
-                rc.borrow().clone().unwrap()
-            }
-        })
+        return Self::build_client(&self.upstream);
     }
 
     fn build_client(upstream: &Upstream) -> ClientWithMiddleware {
