@@ -455,12 +455,12 @@ mod tests {
         let test_var = Variable::new("ssdd.dev".to_string());
 
         let test_cases = vec![
-            // don't ignore
+            // ignore
             (Condition::True, Condition::True, true),
             (Condition::True, Condition::False, true),
             (Condition::True, Condition::Variable(test_var.clone()), true),
             (Condition::False, Condition::False, true),
-            // ignore
+            // don't ignore
             (Condition::False, Condition::True, false),
             (
                 Condition::False,
