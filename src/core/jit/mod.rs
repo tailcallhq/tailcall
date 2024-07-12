@@ -23,3 +23,4 @@ pub use exec_const::*;
 pub use graphql_executor::*;
 pub use request::*;
 pub use response::*;
+pub use synth::*;
