@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -19,7 +20,6 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use super::HttpIO;
 use crate::core::blueprint::Upstream;
 use crate::core::http::Response;
-use dashmap::DashMap;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -67,20 +67,32 @@ fn get_response_status(response: &reqwest_middleware::Result<reqwest::Response>)
     KeyValue::new(HTTP_RESPONSE_STATUS_CODE, status_code as i64)
 }
 
+thread_local! {
+    static HTTP_CLIENT: RefCell<Option<ClientWithMiddleware>> = Default::default();
+}
+
 #[derive(Clone)]
 pub struct HttpClient {
     upstream: Upstream,
-    pub clients: DashMap<std::thread::ThreadId, ClientWithMiddleware>,
 }
 
 impl HttpClient {
     pub fn init(upstream: Upstream) -> Self {
-        Self { upstream, clients: Default::default() }
+        Self { upstream }
     }
 
-    fn build_client(&self) -> ClientWithMiddleware {
-        let upstream = &self.upstream;
+    pub fn get_client(&self) -> ClientWithMiddleware {
+        HTTP_CLIENT.with_borrow_mut(|rc| {
+            if rc.is_none() {
+                *rc = Some(Self::build_client(&self.upstream));
+                rc.clone().unwrap()
+            } else {
+                rc.take().unwrap()
+            }
+        })
+    }
 
+    fn build_client(upstream: &Upstream) -> ClientWithMiddleware {
         let mut builder = Client::builder()
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
             .timeout(Duration::from_secs(upstream.timeout))
@@ -119,7 +131,6 @@ impl HttpClient {
     }
 }
 
-#[derive(Clone)]
 pub struct NativeHttp {
     client: HttpClient,
     http2_only: bool,
@@ -174,49 +185,22 @@ impl HttpIO for NativeHttp {
             request.version()
         );
         tracing::debug!("request: {:?}", request);
+        let response = self.client.get_client().execute(request).await;
+        tracing::debug!("response: {:?}", response);
 
-        let thread_id = std::thread::current().id();
-        if self.client.clients.contains_key(&thread_id) {
-            let client = self.client.clients.get(&thread_id).unwrap();
+        req_counter.update(&response);
 
-            let response = client.clone().execute(request).await;
-            tracing::debug!("response: {:?}", response);
-
-            req_counter.update(&response);
-
-            if self.enable_telemetry {
-                let status_code = get_response_status(&response);
-                tracing::Span::current().set_attribute(status_code.key, status_code.value);
-            }
-
-            return Ok(Response::from_reqwest(
-                    response?
-                    .error_for_status()
-                    .map_err(|err| err.without_url())?,
-            )
-                .await?);
-        } else {
-            let client = self.client.build_client();
-            let response = client.execute(request).await;
-
-            self.client.clients.insert(thread_id, client);
-            tracing::debug!("response: {:?}", response);
-
-            req_counter.update(&response);
-
-            if self.enable_telemetry {
-                let status_code = get_response_status(&response);
-                tracing::Span::current().set_attribute(status_code.key, status_code.value);
-            }
-
-            return Ok(Response::from_reqwest(
-                    response?
-                    .error_for_status()
-                    .map_err(|err| err.without_url())?,
-            )
-                .await?);
+        if self.enable_telemetry {
+            let status_code = get_response_status(&response);
+            tracing::Span::current().set_attribute(status_code.key, status_code.value);
         }
 
+        Ok(Response::from_reqwest(
+            response?
+                .error_for_status()
+                .map_err(|err| err.without_url())?,
+        )
+        .await?)
     }
 }
 
@@ -224,6 +208,7 @@ impl HttpIO for NativeHttp {
 mod tests {
     use reqwest::Method;
     use tokio;
+
     use super::*;
     use crate::core::http::Response;
 

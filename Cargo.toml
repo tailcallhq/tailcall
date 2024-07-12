@@ -164,7 +164,6 @@ pathdiff = "0.2.1"
 num = "0.4.3"
 indenter = "0.3.3"
 derive_more = "0.99.18"
-dashmap = "6.0.1"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
