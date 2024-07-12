@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -20,6 +19,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use super::HttpIO;
 use crate::core::blueprint::Upstream;
 use crate::core::http::Response;
+use dashmap::DashMap;
 
 static HTTP_CLIENT_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
     let meter = opentelemetry::global::meter("http_request");
@@ -67,29 +67,25 @@ fn get_response_status(response: &reqwest_middleware::Result<reqwest::Response>)
     KeyValue::new(HTTP_RESPONSE_STATUS_CODE, status_code as i64)
 }
 
-thread_local! {
-    static HTTP_CLIENT: RefCell<Option<ClientWithMiddleware>> = Default::default();
-}
-
 #[derive(Clone)]
 pub struct HttpClient {
     upstream: Upstream,
+    clients: DashMap<std::thread::ThreadId, ClientWithMiddleware>,
 }
 
 impl HttpClient {
     pub fn init(upstream: Upstream) -> Self {
-        Self { upstream }
+        Self { upstream, clients: Default::default() }
     }
 
-    pub fn get_client(&self) -> ClientWithMiddleware {
-        HTTP_CLIENT.with_borrow_mut(|rc| {
-            if rc.is_none() {
-                *rc = Some(Self::build_client(&self.upstream));
-                rc.clone().unwrap()
-            } else {
-                rc.take().unwrap()
-            }
-        })
+    pub fn get_client(&self, thread_id: std::thread::ThreadId) -> ClientWithMiddleware {
+        if self.clients.contains_key(&thread_id) {
+            return self.clients.get(&thread_id).unwrap().to_owned();
+        }
+
+        let client = Self::build_client(&self.upstream);
+        self.clients.insert(thread_id, client.clone());
+        client
     }
 
     fn build_client(upstream: &Upstream) -> ClientWithMiddleware {
@@ -185,7 +181,7 @@ impl HttpIO for NativeHttp {
             request.version()
         );
         tracing::debug!("request: {:?}", request);
-        let response = self.client.get_client().execute(request).await;
+        let response = self.client.get_client(std::thread::current().id()).execute(request).await;
         tracing::debug!("response: {:?}", response);
 
         req_counter.update(&response);
