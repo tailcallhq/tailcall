@@ -16,7 +16,7 @@ pub trait JsonT {
     // Constructors
 
     /// Create a default value
-    fn default() -> Self;
+    fn null() -> Self;
 
     /// Create a new array
     fn new_array(arr: Vec<Self>) -> Self
@@ -70,7 +70,7 @@ pub trait JsonT {
 impl JsonT for Value {
     type JsonObject = serde_json::Map<String, Value>;
 
-    fn default() -> Self {
+    fn null() -> Self {
         Default::default()
     }
 
@@ -198,7 +198,7 @@ pub fn group_by_key<'a, J: JsonT>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, V
 impl JsonT for async_graphql::Value {
     type JsonObject = indexmap::IndexMap<async_graphql::Name, async_graphql::Value>;
 
-    fn default() -> Self {
+    fn null() -> Self {
         Default::default()
     }
 
@@ -307,7 +307,7 @@ impl JsonT for async_graphql::Value {
 impl<'ctx> JsonT for BorrowedValue<'ctx> {
     type JsonObject = ObjectAsVec<'ctx>;
 
-    fn default() -> Self {
+    fn null() -> Self {
         BorrowedValue::Null
     }
 

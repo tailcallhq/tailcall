@@ -102,10 +102,10 @@ impl JsonPlaceholder {
                     if let Some(user) = user_map.get(&user_id) {
                         user.to_owned().to_owned().to_owned()
                     } else {
-                        Value::default()
+                        Value::null()
                     }
                 } else {
-                    Value::default()
+                    Value::null()
                 }
             })
             .map(Data::Single)

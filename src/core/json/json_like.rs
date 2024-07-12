@@ -32,7 +32,7 @@ impl<A: JsonT> JsonLike for A {
     type JsonObject = A::JsonObject;
 
     fn default() -> Self {
-        A::default()
+        A::null()
     }
 
     fn new_array(arr: Vec<Self::Json>) -> Self {
