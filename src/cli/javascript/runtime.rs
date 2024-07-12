@@ -5,6 +5,7 @@ use std::thread;
 use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
+use crate::core::error::worker;
 use crate::core::worker::{Command, Event, WorkerRequest};
 use crate::core::{blueprint, WorkerIO};
 
@@ -82,37 +83,49 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    async fn call(&self, name: &str, event: Event) -> anyhow::Result<Option<Command>> {
+    async fn call(
+        &self,
+        name: &str,
+        event: Event,
+    ) -> crate::core::Result<Option<Command>, worker::Error> {
         let script = self.script.clone();
         let name = name.to_string(); // TODO
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    call(name, event)
+                    call(name, event).map_err(worker::Error::from)
                 })
-                .await?
+                .await
+                .map_err(|_| worker::Error::ExecutionFailed)?
         } else {
-            anyhow::bail!("JS Runtime is stopped")
+            Err(worker::Error::JsRuntimeStopped)
         }
     }
 }
 
 #[async_trait::async_trait]
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
-    async fn call(&self, name: &str, input: ConstValue) -> anyhow::Result<Option<ConstValue>> {
+    async fn call(
+        &self,
+        name: &str,
+        input: ConstValue,
+    ) -> crate::core::Result<Option<ConstValue>, worker::Error> {
         let script = self.script.clone();
         let name = name.to_string();
-        let value = serde_json::to_string(&input)?;
+        let value = serde_json::to_string(&input).map_err(worker::Error::from)?;
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    execute_inner(name, value).map(Some)
+                    execute_inner(name, value)
+                        .map(Some)
+                        .map_err(worker::Error::from)
                 })
-                .await?
+                .await
+                .map_err(|_| worker::Error::ExecutionFailed)?
         } else {
-            anyhow::bail!("JS Runtime is stopped")
+            Err(worker::Error::JsRuntimeStopped)
         }
     }
 }

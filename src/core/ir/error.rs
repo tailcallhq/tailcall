@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql::{ErrorExtensions, Value as ConstValue};
 use thiserror::Error;
 
-use crate::core::auth;
+use crate::core::{auth, error};
 #[derive(Debug, Error, Clone)]
 pub enum Error {
     #[error("IOException: {0}")]
@@ -28,6 +28,9 @@ pub enum Error {
 
     #[error("Authentication Failure: {0}")]
     AuthError(auth::error::Error),
+
+    #[error("Worker Error: {0}")]
+    WorkerError(String),
 }
 
 impl ErrorExtensions for Error {
@@ -85,5 +88,11 @@ impl From<anyhow::Error> for Error {
             Ok(err) => err,
             Err(err) => Error::IOException(err.to_string()),
         }
+    }
+}
+
+impl From<error::worker::Error> for Error {
+    fn from(value: error::worker::Error) -> Self {
+        Error::WorkerError(value.to_string())
     }
 }
