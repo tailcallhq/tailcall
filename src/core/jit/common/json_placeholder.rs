@@ -84,10 +84,10 @@ impl JsonPlaceholder {
             store
         });
 
+        let vars = Variables::new();
         let input_resolver = InputResolver::new(plan);
 
-        let plan = input_resolver.resolve_input(&Variables::default()).unwrap();
-
-        Synth::new(plan, store)
+        let plan = input_resolver.resolve_input(&vars).unwrap();
+        Synth::new(plan, store, vars)
     }
 }

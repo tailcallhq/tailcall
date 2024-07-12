@@ -1,9 +1,37 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
+use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Variables<Value>(HashMap<String, Value>);
+
+impl<Value> Default for Variables<Value> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Value> Variables<Value> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        self.0.get(key)
+    }
+    pub fn insert(&mut self, key: String, value: Value) {
+        self.0.insert(key, value);
+    }
+}
+
+impl<V> FromIterator<(String, V)> for Variables<V> {
+    fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Arg<Input> {
@@ -44,28 +72,6 @@ impl ArgId {
     }
 }
 
-/// Variables store
-#[derive(Debug, Deserialize)]
-pub struct Variables<Input>(HashMap<String, Input>);
-
-impl<Input> Variables<Input> {
-    pub fn get(&self, name: &str) -> Option<&Input> {
-        self.0.get(name)
-    }
-}
-
-impl<Input> Default for Variables<Input> {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
-
-impl<Input> FromIterator<(String, Input)> for Variables<Input> {
-    fn from_iter<T: IntoIterator<Item = (String, Input)>>(iter: T) -> Self {
-        Self(HashMap::from_iter(iter))
-    }
-}
-
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct FieldId(usize);
 
@@ -90,8 +96,40 @@ pub struct Field<Extensions, Input> {
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
+    pub skip: Option<Variable>,
+    pub include: Option<Variable>,
     pub args: Vec<Arg<Input>>,
     pub extensions: Option<Extensions>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Variable(String);
+
+impl Variable {
+    pub fn new(name: String) -> Self {
+        Variable(name)
+    }
+}
+
+impl<Extensions, Input> Field<Extensions, Input> {
+    #[inline(always)]
+    pub fn skip(&self, variables: &Variables<ConstValue>) -> bool {
+        let eval = |variable_option: Option<&Variable>,
+                    variables: &Variables<ConstValue>,
+                    default: bool| {
+            match variable_option {
+                Some(Variable(name)) => variables.get(name).map_or(default, |value| match value {
+                    ConstValue::Boolean(b) => *b,
+                    _ => default,
+                }),
+                None => default,
+            }
+        };
+        let skip = eval(self.skip.as_ref(), variables, false);
+        let include = eval(self.include.as_ref(), variables, true);
+
+        skip == include
+    }
 }
 
 impl<Extensions, Input> Field<Extensions, Input> {
@@ -105,6 +143,8 @@ impl<Extensions, Input> Field<Extensions, Input> {
             ir: self.ir,
             type_of: self.type_of,
             extensions: self.extensions,
+            skip: self.skip,
+            include: self.include,
             args: self
                 .args
                 .into_iter()
@@ -156,6 +196,8 @@ impl<Input> Field<Flat, Input> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
+            skip: self.skip,
+            include: self.include,
             args: self.args,
             extensions,
         }

@@ -25,7 +25,7 @@ impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec, Input>
 where
     Output: JsonLike<Json = Output> + Debug,
     Input: Clone + Debug,
-    Synth: Synthesizer<Value = Result<Output, Error>>,
+    Synth: Synthesizer<Value = Result<Output, Error>, Variable = Input>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
     ConstValue: From<Input>,
 {
@@ -43,8 +43,9 @@ where
     }
 
     pub async fn execute(self, request: Request<Input>) -> Response<Output, Error> {
+        let vars = request.variables.clone();
         let store = self.execute_inner(request).await;
-        Response::new(self.synth.synthesize(store))
+        Response::new(self.synth.synthesize(store, vars))
     }
 }
 

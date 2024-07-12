@@ -8,7 +8,7 @@ use super::input_resolver::InputResolver;
 use super::{Builder, ExecutionPlan, Result, Variables};
 use crate::core::blueprint::Blueprint;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Request<V> {
     #[serde(default)]
     pub query: String,
@@ -47,17 +47,17 @@ impl Request<ConstValue> {
     }
 }
 
-impl<A> Request<A> {
+impl<V> Request<V> {
     pub fn new(query: &str) -> Self {
         Self {
             query: query.to_string(),
             operation_name: None,
-            variables: Variables::default(),
+            variables: Variables::new(),
             extensions: HashMap::new(),
         }
     }
 
-    pub fn variables(self, vars: impl IntoIterator<Item = (String, A)>) -> Self {
+    pub fn variables(self, vars: impl IntoIterator<Item = (String, V)>) -> Self {
         Self { variables: Variables::from_iter(vars), ..self }
     }
 }
