@@ -13,7 +13,7 @@ use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::merge_right::MergeRight;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, strum_macros::Display)]
 enum Condition {
     True,
     False,
@@ -21,18 +21,35 @@ enum Condition {
 }
 
 struct Conditions {
-    skip: Option<Condition>,
-    include: Option<Condition>,
+    skip: Condition,
+    include: Condition,
 }
 
 impl Conditions {
     /// Checks if the field should be skipped always
     fn is_const_skip(&self) -> bool {
-        matches!(self.skip, Some(Condition::True)) ^ matches!(self.include, Some(Condition::True))
+        // Truth Table
+        // skip | include | ignore
+        // T   |    T    |   T
+        // T   |    F    |   T
+        // F   |    T    |   F
+        // F   |    F    |   T
+        //
+        // Logical expression:
+        //     say skip = p, include = q
+        // (p V ~q)
+
+        // so instead of a normalizing variables,
+        // we can just check for the above condition
+
+        matches!(
+            (&self.skip, &self.include),
+            (Condition::True, _) | (Condition::False, Condition::False)
+        )
     }
 
     fn into_variable_tuple(self) -> (Option<Variable>, Option<Variable>) {
-        let comp = |condition| match condition? {
+        let comp = |condition| match condition {
             Condition::Variable(var) => Some(var),
             _ => None,
         };
@@ -67,24 +84,28 @@ impl Builder {
         &self,
         directives: &[Positioned<async_graphql::parser::types::Directive>],
     ) -> Conditions {
-        fn get_condition(dir: &Directive) -> Option<Condition> {
+        fn get_condition(dir: &Directive) -> Condition {
             let arg = dir.get_argument("if").map(|pos| &pos.node);
             let is_include = dir.name.node.as_str() == "include";
+            let default = if is_include {
+                Condition::True
+            } else {
+                Condition::False
+            };
             match arg {
-                None => None,
+                None => default,
                 Some(value) => match value {
                     Value::Boolean(bool) => {
-                        let condition = if is_include ^ bool {
+                        if *bool {
                             Condition::True
                         } else {
                             Condition::False
-                        };
-                        Some(condition)
+                        }
                     }
                     Value::Variable(var) => {
-                        Some(Condition::Variable(Variable::new(var.deref().to_owned())))
+                        Condition::Variable(Variable::new(var.deref().to_owned()))
                     }
-                    _ => None,
+                    _ => default,
                 },
             }
         }
@@ -93,12 +114,14 @@ impl Builder {
                 .iter()
                 .find(|d| d.node.name.node.as_str() == "skip")
                 .map(|d| &d.node)
-                .and_then(get_condition),
+                .map(get_condition)
+                .unwrap_or(Condition::False),
             include: directives
                 .iter()
                 .find(|d| d.node.name.node.as_str() == "include")
                 .map(|d| &d.node)
-                .and_then(get_condition),
+                .map(get_condition)
+                .unwrap_or(Condition::True),
         }
     }
 
@@ -419,5 +442,53 @@ mod tests {
         "#,
         );
         insta::assert_debug_snapshot!(plan.into_nested());
+    }
+
+    #[test]
+    fn test_condition() {
+        // cases:
+        // skip | include | ignore
+        // T  |    T    |   T
+        // T  |    F    |   T
+        // T  |    V    |   T
+        // F  |    F    |   T
+        // F  |    T    |   F
+        // F  |    V    |   F
+        // V  |    T    |   F
+        // V  |    F    |   F
+
+        let test_var = Variable::new("ssdd.dev".to_string());
+
+        let test_cases = vec![
+            // don't ignore
+            (Condition::True, Condition::True, true),
+            (Condition::True, Condition::False, true),
+            (Condition::True, Condition::Variable(test_var.clone()), true),
+            (Condition::False, Condition::False, true),
+            // ignore
+            (Condition::False, Condition::True, false),
+            (
+                Condition::False,
+                Condition::Variable(test_var.clone()),
+                false,
+            ),
+            (
+                Condition::Variable(test_var.clone()),
+                Condition::True,
+                false,
+            ),
+            (Condition::Variable(test_var), Condition::False, false),
+        ];
+
+        for (skip, include, expected) in test_cases {
+            let conditions = Conditions { skip, include };
+            assert_eq!(
+                conditions.is_const_skip(),
+                expected,
+                "Failed for skip: {}, include: {}",
+                conditions.skip,
+                conditions.include
+            );
+        }
     }
 }
