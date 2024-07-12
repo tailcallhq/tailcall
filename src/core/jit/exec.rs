@@ -22,7 +22,7 @@ pub struct Executor<Synth, IRExec> {
 
 impl<Input: Clone, Output, Error, Synth, Exec> Executor<Synth, Exec>
 where
-    Output: JsonLike<Json = Output> + Debug,
+    Output: JsonLike + Debug,
     Synth: Synthesizer<Value = Result<Output, Error>, Variable = Input>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
@@ -56,7 +56,7 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: JsonLike<Json = Output> + Debug,
+    Output: JsonLike + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
     fn new(
@@ -90,7 +90,7 @@ where
                 // Check if the field expects a list
                 if field.type_of.is_list() {
                     // Check if the value is an array
-                    if let Ok(array) = value.as_array_ok() {
+                    if let Ok(array) = value.as_slice_ok() {
                         join_all(field.nested().iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
                                 let ctx = ctx.with_value(value);

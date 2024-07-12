@@ -2,19 +2,15 @@ use std::collections::HashMap;
 
 use async_graphql_value::ConstValue;
 
-use crate::core::json::json_object_like::JsonObjectLike;
-
 pub trait JsonLike {
-    type Json;
-    type JsonObject: JsonObjectLike;
+    type JsonObject;
 
-    // Constructors
-    fn default() -> Self;
-    fn new_array(arr: Vec<Self::Json>) -> Self;
-    fn new(value: &Self::Json) -> &Self;
+    fn null() -> Self;
 
     // Operators
-    fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str>;
+    fn as_slice_ok(&self) -> Result<&[Self], &str>
+    where
+        Self: Sized;
     fn as_object_ok(&self) -> Result<&Self::JsonObject, &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;
     fn as_string_ok(&self) -> Result<&String, &str>;
@@ -23,18 +19,19 @@ pub trait JsonLike {
     fn as_f64_ok(&self) -> Result<f64, &str>;
     fn as_bool_ok(&self) -> Result<bool, &str>;
     fn as_null_ok(&self) -> Result<(), &str>;
-    fn as_option_ok(&self) -> Result<Option<&Self::Json>, &str>;
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Json>;
-    fn get_key(&self, path: &str) -> Option<&Self::Json>;
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Json>>;
+    fn as_option_ok(&self) -> Result<Option<&Self>, &str>;
+    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self>;
+    fn get_key(&self, path: &str) -> Option<&Self>;
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>>;
 }
 
 impl JsonLike for serde_json::Value {
-    type Json = serde_json::Value;
     type JsonObject = serde_json::Map<String, serde_json::Value>;
 
-    fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str> {
-        self.as_array().ok_or("expected array")
+    fn as_slice_ok(&self) -> Result<&[Self], &str> {
+        self.as_array()
+            .map(|a| a.as_slice())
+            .ok_or("expected array")
     }
     fn as_str_ok(&self) -> Result<&str, &str> {
         self.as_str().ok_or("expected str")
@@ -55,14 +52,14 @@ impl JsonLike for serde_json::Value {
         self.as_null().ok_or("expected null")
     }
 
-    fn as_option_ok(&self) -> Result<Option<&Self::Json>, &str> {
+    fn as_option_ok(&self) -> Result<Option<&Self>, &str> {
         match self {
             serde_json::Value::Null => Ok(None),
             _ => Ok(Some(self)),
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Json> {
+    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -77,11 +74,7 @@ impl JsonLike for serde_json::Value {
         Some(val)
     }
 
-    fn new(value: &Self::Json) -> &Self {
-        value
-    }
-
-    fn get_key(&self, path: &str) -> Option<&Self::Json> {
+    fn get_key(&self, path: &str) -> Option<&Self> {
         match self {
             serde_json::Value::Object(map) => map.get(path),
             _ => None,
@@ -95,17 +88,13 @@ impl JsonLike for serde_json::Value {
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Json>> {
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
 
-    fn default() -> Self {
+    fn null() -> Self {
         Self::Null
-    }
-
-    fn new_array(arr: Vec<Self::Json>) -> Self {
-        Self::Array(arr)
     }
 
     fn as_object_ok(&self) -> Result<&Self::JsonObject, &str> {
@@ -117,10 +106,9 @@ impl JsonLike for serde_json::Value {
 }
 
 impl JsonLike for async_graphql::Value {
-    type Json = async_graphql::Value;
     type JsonObject = indexmap::IndexMap<async_graphql::Name, async_graphql::Value>;
 
-    fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str> {
+    fn as_slice_ok(&self) -> Result<&[Self], &str> {
         match self {
             ConstValue::List(seq) => Ok(seq),
             _ => Err("array"),
@@ -169,14 +157,14 @@ impl JsonLike for async_graphql::Value {
         }
     }
 
-    fn as_option_ok(&self) -> Result<Option<&Self::Json>, &str> {
+    fn as_option_ok(&self) -> Result<Option<&Self>, &str> {
         match self {
             ConstValue::Null => Ok(None),
             _ => Ok(Some(self)),
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Json> {
+    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -191,11 +179,7 @@ impl JsonLike for async_graphql::Value {
         Some(val)
     }
 
-    fn new(value: &Self::Json) -> &Self {
-        value
-    }
-
-    fn get_key(&self, path: &str) -> Option<&Self::Json> {
+    fn get_key(&self, path: &str) -> Option<&Self> {
         match self {
             ConstValue::Object(map) => map.get(&async_graphql::Name::new(path)),
             _ => None,
@@ -208,17 +192,13 @@ impl JsonLike for async_graphql::Value {
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Json>> {
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
 
-    fn default() -> Self {
+    fn null() -> Self {
         Default::default()
-    }
-
-    fn new_array(arr: Vec<Self::Json>) -> Self {
-        ConstValue::List(arr)
     }
 
     fn as_object_ok(&self) -> Result<&Self::JsonObject, &str> {
@@ -236,16 +216,16 @@ pub fn gather_path_matches<'a, J: JsonLike>(
     path: &'a [String],
     mut vector: Vec<(&'a J, &'a J)>,
 ) -> Vec<(&'a J, &'a J)> {
-    if let Ok(root) = root.as_array_ok() {
+    if let Ok(root) = root.as_slice_ok() {
         for value in root {
-            vector = gather_path_matches(J::new(value), path, vector);
+            vector = gather_path_matches(value, path, vector);
         }
     } else if let Some((key, tail)) = path.split_first() {
         if let Some(value) = root.get_key(key) {
             if tail.is_empty() {
-                vector.push((J::new(value), root));
+                vector.push((value, root));
             } else {
-                vector = gather_path_matches(J::new(value), tail, vector);
+                vector = gather_path_matches(value, tail, vector);
             }
         }
     }

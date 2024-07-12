@@ -44,7 +44,7 @@ impl Synth {
 
     /// checks if type_of is an array and value is an array
     fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
-        type_of.is_list() == value.as_array_ok().is_ok()
+        type_of.is_list() == value.as_slice_ok().is_ok()
     }
 
     #[inline(always)]
