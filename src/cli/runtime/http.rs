@@ -70,7 +70,7 @@ fn get_response_status(response: &reqwest_middleware::Result<reqwest::Response>)
 #[derive(Clone)]
 pub struct HttpClient {
     upstream: Upstream,
-    clients: DashMap<std::thread::ThreadId, ClientWithMiddleware>,
+    pub clients: DashMap<std::thread::ThreadId, ClientWithMiddleware>,
 }
 
 impl HttpClient {
@@ -78,18 +78,9 @@ impl HttpClient {
         Self { upstream, clients: Default::default() }
     }
 
-    pub fn get_client(&self, thread_id: std::thread::ThreadId) -> ClientWithMiddleware {
-        if self.clients.contains_key(&thread_id) {
-            println!("hit");
-            return self.clients.get(&thread_id).unwrap().to_owned();
-        }
+    fn build_client(&self) -> ClientWithMiddleware {
+        let upstream = &self.upstream;
 
-        let client = Self::build_client(&self.upstream);
-        self.clients.insert(thread_id, client.clone());
-        client
-    }
-
-    fn build_client(upstream: &Upstream) -> ClientWithMiddleware {
         let mut builder = Client::builder()
             .tcp_keepalive(Some(Duration::from_secs(upstream.tcp_keep_alive)))
             .timeout(Duration::from_secs(upstream.timeout))
@@ -183,22 +174,49 @@ impl HttpIO for NativeHttp {
             request.version()
         );
         tracing::debug!("request: {:?}", request);
-        let response = self.client.get_client(std::thread::current().id()).execute(request).await;
-        tracing::debug!("response: {:?}", response);
 
-        req_counter.update(&response);
+        let thread_id = std::thread::current().id();
+        if self.client.clients.contains_key(&thread_id) {
+            let client = self.client.clients.get(&thread_id).unwrap();
 
-        if self.enable_telemetry {
-            let status_code = get_response_status(&response);
-            tracing::Span::current().set_attribute(status_code.key, status_code.value);
+            let response = client.clone().execute(request).await;
+            tracing::debug!("response: {:?}", response);
+
+            req_counter.update(&response);
+
+            if self.enable_telemetry {
+                let status_code = get_response_status(&response);
+                tracing::Span::current().set_attribute(status_code.key, status_code.value);
+            }
+
+            return Ok(Response::from_reqwest(
+                    response?
+                    .error_for_status()
+                    .map_err(|err| err.without_url())?,
+            )
+                .await?);
+        } else {
+            let client = self.client.build_client();
+            let response = client.execute(request).await;
+
+            self.client.clients.insert(thread_id, client);
+            tracing::debug!("response: {:?}", response);
+
+            req_counter.update(&response);
+
+            if self.enable_telemetry {
+                let status_code = get_response_status(&response);
+                tracing::Span::current().set_attribute(status_code.key, status_code.value);
+            }
+
+            return Ok(Response::from_reqwest(
+                    response?
+                    .error_for_status()
+                    .map_err(|err| err.without_url())?,
+            )
+                .await?);
         }
 
-        Ok(Response::from_reqwest(
-            response?
-                .error_for_status()
-                .map_err(|err| err.without_url())?,
-        )
-        .await?)
     }
 }
 
