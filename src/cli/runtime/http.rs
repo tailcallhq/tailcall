@@ -80,6 +80,7 @@ impl HttpClient {
 
     pub fn get_client(&self, thread_id: std::thread::ThreadId) -> ClientWithMiddleware {
         if self.clients.contains_key(&thread_id) {
+            println!("hit");
             return self.clients.get(&thread_id).unwrap().to_owned();
         }
 
@@ -127,6 +128,7 @@ impl HttpClient {
     }
 }
 
+#[derive(Clone)]
 pub struct NativeHttp {
     client: HttpClient,
     http2_only: bool,
@@ -204,7 +206,6 @@ impl HttpIO for NativeHttp {
 mod tests {
     use reqwest::Method;
     use tokio;
-
     use super::*;
     use crate::core::http::Response;
 
