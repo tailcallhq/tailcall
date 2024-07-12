@@ -7,7 +7,8 @@ use serde_json::json;
 use tailcall::core::endpoint::Endpoint;
 use tailcall::core::has_headers::HasHeaders;
 use tailcall::core::http::RequestTemplate;
-use tailcall::core::path::PathString;
+use tailcall::core::json::JsonLike;
+use tailcall::core::path::{PathString, PathValue, ValueString};
 
 #[derive(Setters)]
 struct Context {
@@ -20,6 +21,17 @@ impl Default for Context {
         Self { value: serde_json::Value::Null, headers: HeaderMap::new() }
     }
 }
+
+impl PathValue for Context {
+    fn raw_value<'a, T: AsRef<str>>(&'a self, path: &[T]) -> Option<ValueString<'a>> {
+        self.value.get_path(path).map(|a| {
+            ValueString::Value(Cow::Owned(
+                async_graphql::Value::from_json(a.clone()).unwrap(),
+            ))
+        })
+    }
+}
+
 impl PathString for Context {
     fn path_string<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<Cow<'a, str>> {
         self.value.path_string(path)
