@@ -4,7 +4,6 @@ use std::ops::DerefMut;
 use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
-use super::input_resolver::InputResolver;
 use super::{Builder, ExecutionPlan, Result, Variables};
 use crate::core::blueprint::Blueprint;
 
@@ -37,13 +36,9 @@ impl Request<ConstValue> {
     pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan<ConstValue>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = Builder::new(blueprint, doc);
-        let plan = builder.build()?;
-        let input_resolver = InputResolver::new(plan);
+        let plan = builder.build(&self.variables)?;
 
-        // TODO: operation from [ExecutableDocument] could contain definitions for
-        // default values of arguments. That info should be passed to
-        // [InputResolver] to resolve defaults properly
-        Ok(input_resolver.resolve_input(&self.variables)?)
+        Ok(plan)
     }
 }
 

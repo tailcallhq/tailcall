@@ -5,7 +5,6 @@ use async_graphql::Value;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
-use crate::core::jit::input_resolver::InputResolver;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::Variables;
@@ -67,7 +66,8 @@ impl JsonPlaceholder {
             &Blueprint::try_from(&config).unwrap(),
             async_graphql::parser::parse_query(query).unwrap(),
         );
-        let plan = builder.build().unwrap();
+        let vars = Variables::new();
+        let plan = builder.build(&vars).unwrap();
         let posts_id = plan.find_field_path(&["posts"]).unwrap().id.to_owned();
         let users_id = plan
             .find_field_path(&["posts", "user"])
@@ -83,11 +83,6 @@ impl JsonPlaceholder {
             store.set_data(id, data);
             store
         });
-
-        let vars = Variables::new();
-        let input_resolver = InputResolver::new(plan);
-
-        let plan = input_resolver.resolve_input(&vars).unwrap();
         Synth::new(plan, store, vars)
     }
 }

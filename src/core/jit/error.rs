@@ -6,6 +6,8 @@ use thiserror::Error;
 pub enum BuildError {
     #[error("Root Operation type not defined for {operation}")]
     RootOperationTypeNotDefined { operation: OperationType },
+    #[error("ResolveInputError: {0}")]
+    ResolveInputError(#[from] ResolveInputError),
 }
 
 #[derive(Error, Debug, Clone)]
@@ -19,8 +21,6 @@ pub enum ResolveInputError {
 pub enum Error {
     #[error("Build error: {0}")]
     BuildError(#[from] BuildError),
-    #[error("ResolveInputError: {0}")]
-    ResolveInputError(#[from] ResolveInputError),
     #[error("ParseError: {0}")]
     ParseError(#[from] async_graphql::parser::Error),
     #[error("IR: {0}")]

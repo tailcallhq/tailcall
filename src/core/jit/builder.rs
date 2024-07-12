@@ -6,8 +6,9 @@ use async_graphql::parser::types::{
     Selection, SelectionSet,
 };
 use async_graphql::Positioned;
-use async_graphql_value::Value;
+use async_graphql_value::{ConstValue, Value};
 
+use super::input_resolver::InputResolver;
 use super::model::*;
 use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
@@ -223,7 +224,10 @@ impl Builder {
     }
 
     #[inline(always)]
-    pub fn build(&self) -> Result<ExecutionPlan<Value>, BuildError> {
+    pub fn build(
+        &self,
+        variables: &Variables<ConstValue>,
+    ) -> Result<ExecutionPlan<ConstValue>, BuildError> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
@@ -253,7 +257,13 @@ impl Builder {
             }
         }
 
-        Ok(ExecutionPlan::new(fields))
+        let plan = ExecutionPlan::new(fields);
+        // TODO: operation from [ExecutableDocument] could contain definitions for
+        // default values of arguments. That info should be passed to
+        // [InputResolver] to resolve defaults properly
+        let input_resolver = InputResolver::new(plan);
+
+        Ok(input_resolver.resolve_input(variables)?)
     }
 }
 
@@ -269,11 +279,14 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>) -> ExecutionPlan<Value> {
+    fn plan(
+        query: impl AsRef<str>,
+        variables: &Variables<ConstValue>,
+    ) -> ExecutionPlan<ConstValue> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        Builder::new(&blueprint, document).build().unwrap()
+        Builder::new(&blueprint, document).build(variables).unwrap()
     }
 
     #[tokio::test]
@@ -284,6 +297,7 @@ mod tests {
                 posts { user { id name } }
             }
         "#,
+            &Variables::new(),
         );
         insta::assert_debug_snapshot!(plan.into_nested());
     }
@@ -296,6 +310,7 @@ mod tests {
                 posts { user { id name } }
             }
         "#,
+            &Variables::new(),
         );
 
         assert_eq!(plan.size(), 4)
@@ -309,6 +324,7 @@ mod tests {
                 posts { user { id } }
             }
         "#,
+            &Variables::new(),
         );
         insta::assert_debug_snapshot!(plan.into_nested());
     }
@@ -335,6 +351,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
         insta::assert_debug_snapshot!(plan.into_nested());
     }
@@ -355,6 +372,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
         insta::assert_debug_snapshot!(plan.into_nested());
     }
@@ -374,6 +392,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
         insta::assert_debug_snapshot!(plan.into_nested());
     }
@@ -389,6 +408,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::from_iter([("id".into(), ConstValue::from(1))]),
         );
         insta::assert_debug_snapshot!(plan.into_nested());
     }
@@ -408,6 +428,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
         insta::assert_debug_snapshot!(plan.into_nested());
     }
@@ -426,6 +447,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
         insta::assert_debug_snapshot!(plan.into_nested());
     }

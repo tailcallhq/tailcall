@@ -171,7 +171,7 @@ mod tests {
             Ok(_) => panic!("Should fail with unresolved variable"),
             Err(err) => assert_eq!(
                 err.to_string(),
-                "ResolveInputError: Variable `id` is not defined"
+                "Build error: ResolveInputError: Variable `id` is not defined"
             ),
         };
 
