@@ -84,28 +84,23 @@ impl Builder {
         &self,
         directives: &[Positioned<async_graphql::parser::types::Directive>],
     ) -> Conditions {
-        fn get_condition(dir: &Directive) -> Condition {
+        fn get_condition(dir: &Directive) -> Option<Condition> {
             let arg = dir.get_argument("if").map(|pos| &pos.node);
-            let is_include = dir.name.node.as_str() == "include";
-            let default = if is_include {
-                Condition::True
-            } else {
-                Condition::False
-            };
             match arg {
-                None => default,
+                None => None,
                 Some(value) => match value {
                     Value::Boolean(bool) => {
-                        if *bool {
+                        let condition = if *bool {
                             Condition::True
                         } else {
                             Condition::False
-                        }
+                        };
+                        Some(condition)
                     }
                     Value::Variable(var) => {
-                        Condition::Variable(Variable::new(var.deref().to_owned()))
+                        Some(Condition::Variable(Variable::new(var.deref().to_owned())))
                     }
-                    _ => default,
+                    _ => None,
                 },
             }
         }
@@ -114,13 +109,13 @@ impl Builder {
                 .iter()
                 .find(|d| d.node.name.node.as_str() == "skip")
                 .map(|d| &d.node)
-                .map(get_condition)
+                .and_then(get_condition)
                 .unwrap_or(Condition::False),
             include: directives
                 .iter()
                 .find(|d| d.node.name.node.as_str() == "include")
                 .map(|d| &d.node)
-                .map(get_condition)
+                .and_then(get_condition)
                 .unwrap_or(Condition::True),
         }
     }
