@@ -420,4 +420,30 @@ mod tests {
         );
         insta::assert_debug_snapshot!(plan.into_nested());
     }
+    #[test]
+    fn test_skip_include() {
+        // In case of skip and include
+        // let's say include = p and skip = q
+        // then the field should be included if p xor q is true
+
+        let plan = plan(
+            r#"
+            query {
+                posts {
+                    id
+                    title
+                    user @skip(if: true) { # should not be considered as a field
+                        id
+                        name
+                    }
+                }
+                users {
+                 id @skip(if: false) @include(if: true) # should appear
+                 name @skip(if: false) @include(if: false) # should not appear
+                }
+            }
+        "#,
+        );
+        insta::assert_debug_snapshot!(plan.into_nested());
+    }
 }

@@ -188,7 +188,6 @@ mod tests {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
-    use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::Variables;
@@ -263,7 +262,11 @@ mod tests {
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn init(query: &str, store: Vec<(FieldId, Data<Value>)>) -> String {
+    fn init(
+        query: &str,
+        store: Vec<(FieldId, Data<Value>)>,
+        variables: Variables<Value>,
+    ) -> String {
         let doc = async_graphql::parser::parse_query(query).unwrap();
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
@@ -277,8 +280,7 @@ mod tests {
                 store.set_data(id, data.map(Ok));
                 store
             });
-        let vars = Variables::new();
-        let synth = Synth::new(plan, store, vars);
+        let synth = Synth::new(plan, store, variables);
         let val = synth.synthesize().unwrap();
 
         serde_json::to_string_pretty(&val).unwrap()
@@ -295,6 +297,7 @@ mod tests {
             }
         "#,
             store,
+            Default::default(),
         );
         insta::assert_snapshot!(val);
     }
@@ -310,6 +313,7 @@ mod tests {
             }
         "#,
             store,
+            Default::default(),
         );
         insta::assert_snapshot!(val);
     }
@@ -328,6 +332,7 @@ mod tests {
             }
         "#,
             store,
+            Default::default(),
         );
         insta::assert_snapshot!(val);
     }
@@ -348,14 +353,44 @@ mod tests {
             }
         "#,
             store,
+            Default::default(),
         );
         insta::assert_snapshot!(val)
     }
 
     #[test]
-    fn test_json_placeholder() {
-        let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
-        let val = synth.synthesize().unwrap();
-        insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
+    fn test_multiple_nested_skipped() {
+        let vars = Variables::from_iter(vec![
+            ("skip".to_string(), Value::Boolean(true)),
+            ("include".to_string(), Value::Boolean(false)),
+        ]);
+
+        let store = vec![
+            (FieldId::new(0), TestData::Posts.into_value()),
+            (FieldId::new(3), TestData::UsersData.into_value()),
+            (FieldId::new(6), TestData::Users.into_value()),
+        ];
+
+        let val = init(
+            r#"
+            query($skip: Boolean!, $include: Boolean!) {
+                posts {
+                    id
+                    title
+                    user @skip(if: $skip) { # skip nested
+                        id
+                        name
+                    }
+                }
+                users {
+                 id @include(if: $skip) # include=true
+                 name @skip(if: $include) @include(if: $include) # skip=false, include=false
+                }
+            }
+        "#,
+            store,
+            vars,
+        );
+        insta::assert_snapshot!(val)
     }
 }

@@ -3,7 +3,10 @@ use tailcall::core::jit::common::JsonPlaceholder;
 
 pub fn bench_synth_nested(c: &mut Criterion) {
     c.bench_function("synth_nested", |b| {
-        let synth = JsonPlaceholder::init("{ posts { id title user { id name } } }");
+        let synth = JsonPlaceholder::init(
+            "{ posts { id title user { id name } } }",
+            Default::default(),
+        );
         b.iter(|| {
             let a = synth.synthesize();
             drop(a);
