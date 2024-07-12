@@ -13,7 +13,6 @@ pub trait JsonLike {
         Self: Sized;
     fn as_object_ok(&self) -> Result<&Self::JsonObject, &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;
-    fn as_string_ok(&self) -> Result<&String, &str>;
     fn as_i64_ok(&self) -> Result<i64, &str>;
     fn as_u64_ok(&self) -> Result<u64, &str>;
     fn as_f64_ok(&self) -> Result<f64, &str>;
@@ -78,13 +77,6 @@ impl JsonLike for serde_json::Value {
         match self {
             serde_json::Value::Object(map) => map.get(path),
             _ => None,
-        }
-    }
-
-    fn as_string_ok(&self) -> Result<&String, &str> {
-        match self {
-            serde_json::Value::String(s) => Ok(s),
-            _ => Err("expected string"),
         }
     }
 
@@ -185,12 +177,6 @@ impl JsonLike for async_graphql::Value {
             _ => None,
         }
     }
-    fn as_string_ok(&self) -> Result<&String, &str> {
-        match self {
-            ConstValue::String(s) => Ok(s),
-            _ => Err("expected string"),
-        }
-    }
 
     fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
         let src = gather_path_matches(self, path, vec![]);
@@ -238,8 +224,8 @@ pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String
     for (key, value) in src {
         // Need to handle number and string keys
         let key_str = key
-            .as_string_ok()
-            .cloned()
+            .as_str_ok()
+            .map(|a| a.to_string())
             .or_else(|_| key.as_f64_ok().map(|a| a.to_string()));
 
         if let Ok(key) = key_str {
