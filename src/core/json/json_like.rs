@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use async_graphql_value::ConstValue;
+use serde_json_borrow::ObjectAsVec;
 
 use crate::core::json::json_object_like::JsonObjectLike;
 
@@ -17,7 +18,6 @@ pub trait JsonLike {
     fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str>;
     fn as_object_ok(&self) -> Result<&Self::JsonObject, &str>;
     fn as_str_ok(&self) -> Result<&str, &str>;
-    fn as_string_ok(&self) -> Result<&String, &str>;
     fn as_i64_ok(&self) -> Result<i64, &str>;
     fn as_u64_ok(&self) -> Result<u64, &str>;
     fn as_f64_ok(&self) -> Result<f64, &str>;
@@ -85,13 +85,6 @@ impl JsonLike for serde_json::Value {
         match self {
             serde_json::Value::Object(map) => map.get(path),
             _ => None,
-        }
-    }
-
-    fn as_string_ok(&self) -> Result<&String, &str> {
-        match self {
-            serde_json::Value::String(s) => Ok(s),
-            _ => Err("expected string"),
         }
     }
 
@@ -201,12 +194,6 @@ impl JsonLike for async_graphql::Value {
             _ => None,
         }
     }
-    fn as_string_ok(&self) -> Result<&String, &str> {
-        match self {
-            ConstValue::String(s) => Ok(s),
-            _ => Err("expected string"),
-        }
-    }
 
     fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Json>> {
         let src = gather_path_matches(self, path, vec![]);
@@ -229,9 +216,102 @@ impl JsonLike for async_graphql::Value {
     }
 }
 
+impl<'ctx> JsonLike for serde_json_borrow::Value<'ctx> {
+    type Json = serde_json_borrow::Value<'ctx>;
+    type JsonObject = ObjectAsVec<'ctx>;
+
+    fn default() -> Self::Json {
+        serde_json_borrow::Value::Null
+    }
+
+    fn new_array(arr: Vec<Self::Json>) -> Self::Json {
+        serde_json_borrow::Value::Array(arr)
+    }
+
+    fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str> {
+        match self {
+            serde_json_borrow::Value::Array(arr) => Ok(arr),
+            _ => Err("expected array"),
+        }
+    }
+
+    fn as_object_ok(&self) -> Result<&Self::JsonObject, &str> {
+        match self {
+            serde_json_borrow::Value::Object(obj) => Ok(obj),
+            _ => Err("expected object"),
+        }
+    }
+
+    fn as_str_ok(&self) -> Result<&str, &str> {
+        match self {
+            serde_json_borrow::Value::Str(s) => Ok(s),
+            _ => Err("expected string"),
+        }
+    }
+
+    fn as_i64_ok(&self) -> Result<i64, &str> {
+        match self {
+            serde_json_borrow::Value::Number(n) => Ok(n.as_i64().ok_or("expected i64")?),
+            _ => Err("expected i64"),
+        }
+    }
+
+    fn as_u64_ok(&self) -> Result<u64, &str> {
+        match self {
+            serde_json_borrow::Value::Number(n) => Ok(n.as_u64().ok_or("expected u64")?),
+            _ => Err("expected u64"),
+        }
+    }
+
+    fn as_f64_ok(&self) -> Result<f64, &str> {
+        match self {
+            serde_json_borrow::Value::Number(n) => Ok(n.as_f64().ok_or("expected f64")?),
+            _ => Err("expected f64"),
+        }
+    }
+
+    fn as_bool_ok(&self) -> Result<bool, &str> {
+        match self {
+            serde_json_borrow::Value::Bool(b) => Ok(*b),
+            _ => Err("expected bool"),
+        }
+    }
+
+    fn as_null_ok(&self) -> Result<(), &str> {
+        match self {
+            serde_json_borrow::Value::Null => Ok(()),
+            _ => Err("expected null"),
+        }
+    }
+
+    fn as_option_ok(&self) -> Result<Option<&Self::Json>, &str> {
+        match self {
+            serde_json_borrow::Value::Null => Ok(None),
+            _ => Ok(Some(self)),
+        }
+    }
+
+    fn get_path<T: AsRef<str>>(&self, _path: &[T]) -> Option<&Self::Json> {
+        todo!()
+    }
+
+    fn get_key(&self, _path: &str) -> Option<&Self::Json> {
+        todo!()
+    }
+
+    fn new(value: &Self::Json) -> &Self {
+        value
+    }
+
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Json>> {
+        let src = gather_path_matches(self, path, vec![]);
+        group_by_key(src)
+    }
+}
+
 // Highly micro-optimized and benchmarked version of get_path_all
 // Any further changes should be verified with benchmarks
-pub fn gather_path_matches<'a, J: JsonLike>(
+fn gather_path_matches<'a, J: JsonLike>(
     root: &'a J,
     path: &'a [String],
     mut vector: Vec<(&'a J, &'a J)>,
@@ -253,13 +333,13 @@ pub fn gather_path_matches<'a, J: JsonLike>(
     vector
 }
 
-pub fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
+fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
     let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
     for (key, value) in src {
         // Need to handle number and string keys
         let key_str = key
-            .as_string_ok()
-            .cloned()
+            .as_str_ok()
+            .map(|v| v.to_string())
             .or_else(|_| key.as_f64_ok().map(|a| a.to_string()));
 
         if let Ok(key) = key_str {
