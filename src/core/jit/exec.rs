@@ -9,7 +9,7 @@ use super::context::Context;
 use super::synth::Synthesizer;
 use super::{DataPath, ExecutionPlan, Field, Nested, Request, Response, Store};
 use crate::core::ir::model::IR;
-use crate::core::json::JsonLike;
+use crate::core::json::{JsonArrayLike, JsonLike};
 
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
@@ -90,9 +90,9 @@ where
                 // Check if the field expects a list
                 if field.type_of.is_list() {
                     // Check if the value is an array
-                    if let Ok(array) = value.as_slice_ok() {
+                    if let Ok(array) = value.as_array_ok() {
                         join_all(field.nested().iter().map(|field| {
-                            join_all(array.iter().enumerate().map(|(index, value)| {
+                            join_all(array.as_vec().iter().enumerate().map(|(index, value)| {
                                 let ctx = ctx.with_value(value);
                                 let data_path = data_path.clone().with_index(index);
                                 async move { self.execute(field, &ctx, data_path).await }
