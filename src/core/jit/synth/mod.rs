@@ -8,7 +8,7 @@ use super::{Store, Variables};
 use crate::core::json::JsonLike;
 pub trait Synthesizer {
     type Value;
-    type Variable: JsonLike;
+    type Variable: for<'a> JsonLike<'a>;
     fn synthesize(
         self,
         store: Store<Self::Value>,
