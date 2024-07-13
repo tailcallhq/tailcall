@@ -3,18 +3,25 @@ use std::collections::HashMap;
 use super::{JsonArrayLike, JsonLike, JsonObjectLike};
 
 // SerdeValue
-impl JsonObjectLike for serde_json::Map<String, serde_json::Value> {
-    type Value<'a> = serde_json::Value;
-    fn get_key<'a>(&'a self, key: &str) -> Option<&Self::Value<'a>> {
+impl<'a> JsonObjectLike<'a> for serde_json::Map<String, serde_json::Value> {
+    type Value = serde_json::Value;
+    fn get_key(&'a self, key: &str) -> Option<&serde_json::Value> {
         self.get(key)
     }
 }
 
-impl JsonLike for serde_json::Value {
-    type JsonObject<'a> = serde_json::Map<String, serde_json::Value>;
-    type JsonArray<'a> = Vec<serde_json::Value>;
+impl<'a> JsonArrayLike<'a> for Vec<serde_json::Value> {
+    type Value = serde_json::Value;
+    fn as_vec(&'a self) -> &'a Vec<serde_json::Value> {
+        self
+    }
+}
 
-    fn as_array_ok<'a>(&'a self) -> Result<&Self::JsonArray<'a>, &str> {
+impl<'a> JsonLike<'a> for serde_json::Value {
+    type JsonObject = serde_json::Map<String, serde_json::Value>;
+    type JsonArray = Vec<serde_json::Value>;
+
+    fn as_array_ok(&self) -> Result<&Self::JsonArray, &str> {
         self.as_array().ok_or("expected array")
     }
     fn as_str_ok(&self) -> Result<&str, &str> {
@@ -65,7 +72,7 @@ impl JsonLike for serde_json::Value {
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
+    fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&Self>> {
         let src = super::gather_path_matches(self, path, vec![]);
         super::group_by_key(src)
     }
@@ -74,20 +81,10 @@ impl JsonLike for serde_json::Value {
         Self::Null
     }
 
-    fn as_object_ok<'a>(&'a self) -> Result<&Self::JsonObject<'a>, &str> {
+    fn as_object_ok(&self) -> Result<&Self::JsonObject, &str> {
         match self {
             serde_json::Value::Object(map) => Ok(map),
             _ => Err("expected object"),
         }
-    }
-}
-
-impl JsonArrayLike for Vec<serde_json::Value> {
-    type Value<'a> = serde_json::Value
-    where
-        Self: 'a;
-
-    fn as_vec<'a>(&'a self) -> &'a Vec<&Self::Value<'a>> {
-        todo!()
     }
 }

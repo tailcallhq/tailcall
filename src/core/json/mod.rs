@@ -6,22 +6,19 @@ mod serde;
 
 use std::collections::HashMap;
 
-pub use borrow::*;
-pub use graphql::*;
 pub use json_like::*;
 pub use json_schema::*;
-pub use serde::*;
 
 // Highly micro-optimized and benchmarked version of get_path_all
 // Any further changes should be verified with benchmarks
-fn gather_path_matches<'a, J: JsonLike>(
+pub fn gather_path_matches<'a, J: JsonLike<'a>>(
     root: &'a J,
     path: &'a [String],
     mut vector: Vec<(&'a J, &'a J)>,
 ) -> Vec<(&'a J, &'a J)>
 where
-    J::JsonObject<'a>: JsonObjectLike<Value<'a> = J>,
-    J::JsonArray<'a>: JsonArrayLike<Value<'a> = J>,
+    J::JsonObject: JsonObjectLike<'a>,
+    J::JsonArray: JsonArrayLike<'a>,
 {
     if let Ok(root) = root.as_array_ok() {
         for value in root.as_vec().iter() {
@@ -40,7 +37,7 @@ where
     vector
 }
 
-fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
+fn group_by_key<'a, J: JsonLike<'a>>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
     let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
     for (key, value) in src {
         // Need to handle number and string keys

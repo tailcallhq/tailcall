@@ -199,7 +199,7 @@ mod tests {
     }
 
     impl crate::core::path::PathString for Context {
-        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+        fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'_, str>> {
             self.value.path_string(parts)
         }
     }

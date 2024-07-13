@@ -6,19 +6,25 @@ use indexmap::IndexMap;
 
 use super::*;
 
-// ConstValue
-impl<V: JsonLike + Clone> JsonObjectLike for IndexMap<async_graphql_value::Name, V> {
-    type Value<'a> = V where V: 'a;
-    fn get_key<'a>(&'a self, key: &str) -> Option<&Self::Value<'a>> {
-        self.get(&async_graphql_value::Name::new(key))
+impl<'a, Value: JsonLike<'a> + Clone> JsonObjectLike<'a> for IndexMap<Name, Value> {
+    type Value = Value;
+    fn get_key(&'a self, key: &str) -> Option<&Self::Value> {
+        self.get(&Name::new(key))
     }
 }
 
-impl JsonLike for ConstValue {
-    type JsonObject<'a> = IndexMap<Name, ConstValue>;
-    type JsonArray<'a> = Vec<ConstValue>;
+impl<'a> JsonArrayLike<'a> for Vec<ConstValue> {
+    type Value = ConstValue;
+    fn as_vec(&'a self) -> &'a Vec<Self::Value> {
+        self
+    }
+}
 
-    fn as_array_ok<'a>(&'a self) -> Result<&Self::JsonArray<'a>, &str> {
+impl<'a> JsonLike<'a> for ConstValue {
+    type JsonObject = IndexMap<Name, ConstValue>;
+    type JsonArray = Vec<ConstValue>;
+
+    fn as_array_ok(&'a self) -> Result<&Self::JsonArray, &str> {
         match self {
             ConstValue::List(seq) => Ok(seq),
             _ => Err("array"),
@@ -96,7 +102,7 @@ impl JsonLike for ConstValue {
         }
     }
 
-    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
+    fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
@@ -105,17 +111,10 @@ impl JsonLike for ConstValue {
         Default::default()
     }
 
-    fn as_object_ok<'a>(&'a self) -> Result<&Self::JsonObject<'a>, &str> {
+    fn as_object_ok(&'a self) -> Result<&Self::JsonObject, &str> {
         match self {
             ConstValue::Object(map) => Ok(map),
             _ => Err("expected object"),
         }
-    }
-}
-
-impl JsonArrayLike for Vec<ConstValue> {
-    type Value<'a> = ConstValue;
-    fn as_vec<'a>(&'a self) -> &'a Vec<&Self::Value<'a>> {
-        todo!()
     }
 }
