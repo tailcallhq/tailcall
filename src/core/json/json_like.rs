@@ -12,9 +12,15 @@ pub trait JsonLike {
     type JsonObject: JsonObjectLike;
 
     // Constructors
-    fn default() -> Self;
-    fn new_array(arr: Vec<Self::Json>) -> Self;
-    fn new(value: &Self::Json) -> &Self;
+    fn null() -> Self
+    where
+        Self: Sized;
+    fn new_array(arr: Vec<Self::Json>) -> Self
+    where
+        Self: Sized;
+    fn new(value: &Self::Json) -> &Self
+    where
+        Self: Sized;
 
     // Operators
     fn as_array_ok(&self) -> Result<&Vec<Self::Json>, &str>;
@@ -95,7 +101,7 @@ impl JsonLike for serde_json::Value {
         group_by_key(src)
     }
 
-    fn default() -> Self {
+    fn null() -> Self {
         Self::Null
     }
 
@@ -201,7 +207,7 @@ impl JsonLike for async_graphql::Value {
         group_by_key(src)
     }
 
-    fn default() -> Self {
+    fn null() -> Self {
         Default::default()
     }
 
@@ -221,7 +227,7 @@ impl<'ctx> JsonLike for BorrowedValue<'ctx> {
     type Json = BorrowedValue<'ctx>;
     type JsonObject = ObjectAsVec<'ctx>;
 
-    fn default() -> Self {
+    fn null() -> Self {
         Self::Null
     }
 
@@ -314,7 +320,7 @@ impl<'ctx> JsonLike for SimdBorrowedValue<'ctx> {
     type Json = SimdBorrowedValue<'ctx>;
     type JsonObject = SimdObject<'ctx>;
 
-    fn default() -> Self {
+    fn null() -> Self {
         Self::Static(StaticNode::Null)
     }
 
