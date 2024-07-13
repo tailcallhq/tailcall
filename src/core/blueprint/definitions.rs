@@ -264,7 +264,7 @@ fn update_args<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(_, field, _typ, name), _| {
-            // TODO! assert type name
+            // TODO: assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
                 Valid::succeed(InputFieldDefinition {
                     name: name.clone(),
