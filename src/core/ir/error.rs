@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use async_graphql::{ErrorExtensions, Value as ConstValue};
 use thiserror::Error;
+use derive_more::From;
 
-use crate::core::{auth, error};
-#[derive(Debug, Error, Clone)]
+use crate::core::{auth, error::worker};
+#[derive(From, Debug, Error, Clone)]
 pub enum Error {
     #[error("IOException: {0}")]
     IOException(String),
@@ -21,15 +22,18 @@ pub enum Error {
     APIValidationError(Vec<String>),
 
     #[error("ExprEvalError: {0}")]
+    #[from(ignore)]
     ExprEvalError(String),
 
     #[error("DeserializeError: {0}")]
+    #[from(ignore)]
     DeserializeError(String),
 
     #[error("Authentication Failure: {0}")]
     AuthError(auth::error::Error),
 
     #[error("Worker Error: {0}")]
+    #[from(ignore)]
     WorkerError(String),
 }
 
@@ -52,11 +56,6 @@ impl ErrorExtensions for Error {
     }
 }
 
-impl From<auth::error::Error> for Error {
-    fn from(value: auth::error::Error) -> Self {
-        Error::AuthError(value)
-    }
-}
 
 impl<'a> From<crate::core::valid::ValidationError<&'a str>> for Error {
     fn from(value: crate::core::valid::ValidationError<&'a str>) -> Self {
@@ -91,8 +90,8 @@ impl From<anyhow::Error> for Error {
     }
 }
 
-impl From<error::worker::Error> for Error {
-    fn from(value: error::worker::Error) -> Self {
+impl From<worker::Error> for Error {
+    fn from(value: worker::Error) -> Self {
         Error::WorkerError(value.to_string())
     }
 }
