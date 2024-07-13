@@ -94,7 +94,7 @@ impl WorkerIO<Event, Command> for Runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    call(name, event).map_err(worker::Error::from)
+                    call(name, event)
                 })
                 .await?
         } else {
@@ -119,7 +119,6 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
                     init_rt(script)?;
                     execute_inner(name, value)
                         .map(Some)
-                        .map_err(worker::Error::from)
                 })
                 .await?
         } else {
@@ -150,50 +149,35 @@ fn prepare_args<'js>(ctx: &Ctx<'js>, req: WorkerRequest) -> rquickjs::Result<(Va
     Ok((object.into_value(),))
 }
 
-fn call(name: String, event: Event) -> anyhow::Result<Option<Command>> {
+fn call(name: String, event: Event) -> worker::Result<Option<Command>> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
-        let runtime = cell
-            .get_mut()
-            .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
+        let runtime = cell.get_mut().ok_or(worker::Error::RuntimeNotInitialized)?;
         runtime.0.with(|ctx| match event {
             Event::Request(req) => {
-                let fn_as_value = ctx
-                    .globals()
-                    .get::<&str, Function>(name.as_str())
-                    .map_err(|_| anyhow::anyhow!("globalThis not initialized"))?;
+                let fn_as_value = ctx.globals().get::<&str, Function>(name.as_str())?;
 
-                let function = fn_as_value
-                    .as_function()
-                    .ok_or(anyhow::anyhow!("`{name}` is not a function"))?;
+                let function = fn_as_value.as_function().ok_or(worker::Error::InvalidFunction(name))?;
 
                 let args = prepare_args(&ctx, req)?;
                 let command: Option<Value> = function.call(args).ok();
                 command
                     .map(|output| Command::from_js(&ctx, output))
                     .transpose()
-                    .map_err(|e| anyhow::anyhow!("deserialize failed: {e}"))
+                    .map_err(|e| worker::Error::DeserializeFailed(e.to_string()))
             }
         })
     })
 }
 
-fn execute_inner(name: String, value: String) -> anyhow::Result<ConstValue> {
+fn execute_inner(name: String, value: String) -> worker::Result<ConstValue> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
-        let runtime = cell
-            .get_mut()
-            .ok_or(anyhow::anyhow!("JS runtime not initialized"))?;
+        let runtime = cell.get_mut().ok_or(worker::Error::RuntimeNotInitialized)?;
         runtime.0.with(|ctx| {
-            let fn_as_value = ctx
-                .globals()
-                .get::<_, rquickjs::Function>(&name)
-                .map_err(|_| anyhow::anyhow!("globalThis not initialized"))?;
+            let fn_as_value = ctx.globals().get::<_, rquickjs::Function>(&name)?;
 
-            let function = fn_as_value
-                .as_function()
-                .ok_or(anyhow::anyhow!("`{}` is not a function", name))?;
-            let val: String = function.call((value, ))
-                .map_err(|_| anyhow::anyhow!("unable to parse value from js function: {} maybe because it's not returning a string?", name,))?;
-            Ok::<_, anyhow::Error>(serde_json::from_str(&val)?)
+            let function = fn_as_value.as_function().ok_or(worker::Error::InvalidFunction(name))?;
+            let val: String = function.call((value,))?;
+            Ok::<_, worker::Error>(serde_json::from_str(&val)?)
         })
     })
 }

@@ -38,6 +38,20 @@ pub mod worker {
         #[debug(fmt = "Join Error : {}", _0)]
         Join(JoinError),
 
+        #[debug(fmt = "Runtime not initialized")]
+        RuntimeNotInitialized,
+
+        #[debug(fmt = "{} is not a function", _0)]
+        #[from(ignore)]
+        InvalidFunction(String),
+
+        #[debug(fmt = "Rquickjs Error: {}", _0)]
+        Rquickjs(rquickjs::Error),
+
+        #[debug(fmt = "Deserialize Failed: {}", _0)]
+        #[from(ignore)]
+        DeserializeFailed(String),
+
         #[debug(fmt = "Error : {}", _0)]
         Anyhow(anyhow::Error),
     }
@@ -55,7 +69,11 @@ impl Display for worker::Error {
             worker::Error::HyperHeaderStr(error) => write!(f, "Hyper Header To Str Error: {}", error),
             worker::Error::JsRuntimeStopped => write!(f, "JS Runtime Stopped Error"),
             worker::Error::CLI(msg) => write!(f, "CLI Error: {}", msg),            
-            worker::Error::Join(error) => write!(f, "Join Error: {}", error),
+            worker::Error::Join(error) => write!(f, "Join Error: {}", error),            
+            worker::Error::RuntimeNotInitialized => write!(f, "Runtime not initialized"),
+            worker::Error::InvalidFunction(function_name) => write!(f, "{} is not a function", function_name),
+            worker::Error::Rquickjs(error) => write!(f, "Rquickjs error: {}", error),
+            worker::Error::DeserializeFailed(error) => write!(f, "Deserialize Failed: {}", error),
             worker::Error::Anyhow(msg) => write!(f, "Error: {}", msg),
         }
     }
