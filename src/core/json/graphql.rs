@@ -16,60 +16,50 @@ impl<'a, Value: JsonLike<'a> + Clone> JsonObjectLike<'a> for IndexMap<Name, Valu
 impl<'a> JsonLike<'a> for ConstValue {
     type JsonObject = IndexMap<Name, ConstValue>;
 
-    fn as_array_ok(&'a self) -> Result<&'a Vec<Self>, &str> {
+    fn as_array(&'a self) -> Option<&'a Vec<Self>> {
         match self {
-            ConstValue::List(seq) => Ok(seq),
-            _ => Err("array"),
+            ConstValue::List(seq) => Some(seq),
+            _ => None,
         }
     }
 
-    fn as_str_ok(&self) -> Result<&str, &str> {
+    fn as_str(&'a self) -> Option<&'a str> {
         match self {
-            ConstValue::String(s) => Ok(s),
-            _ => Err("str"),
+            ConstValue::String(s) => Some(s),
+            _ => None,
         }
     }
 
-    fn as_i64_ok(&self) -> Result<i64, &str> {
+    fn as_i64(&'a self) -> Option<i64> {
         match self {
-            ConstValue::Number(n) => n.as_i64().ok_or("expected i64"),
-            _ => Err("i64"),
+            ConstValue::Number(n) => n.as_i64(),
+            _ => None,
         }
     }
 
-    fn as_u64_ok(&self) -> Result<u64, &str> {
+    fn as_u64(&'a self) -> Option<u64> {
         match self {
-            ConstValue::Number(n) => n.as_u64().ok_or("expected u64"),
-            _ => Err("u64"),
+            ConstValue::Number(n) => n.as_u64(),
+            _ => None,
         }
     }
 
-    fn as_f64_ok(&self) -> Result<f64, &str> {
+    fn as_f64(&'a self) -> Option<f64> {
         match self {
-            ConstValue::Number(n) => n.as_f64().ok_or("expected f64"),
-            _ => Err("f64"),
+            ConstValue::Number(n) => n.as_f64(),
+            _ => None,
         }
     }
 
-    fn as_bool_ok(&self) -> Result<bool, &str> {
+    fn as_bool(&'a self) -> Option<bool> {
         match self {
-            ConstValue::Boolean(b) => Ok(*b),
-            _ => Err("bool"),
+            ConstValue::Boolean(b) => Some(*b),
+            _ => None,
         }
     }
 
-    fn as_null_ok(&self) -> Result<(), &str> {
-        match self {
-            ConstValue::Null => Ok(()),
-            _ => Err("null"),
-        }
-    }
-
-    fn as_option_ok(&self) -> Result<Option<&Self>, &str> {
-        match self {
-            ConstValue::Null => Ok(None),
-            _ => Ok(Some(self)),
-        }
+    fn is_null(&'a self) -> bool {
+        matches!(self, ConstValue::Null)
     }
 
     fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self> {
@@ -103,10 +93,10 @@ impl<'a> JsonLike<'a> for ConstValue {
         Default::default()
     }
 
-    fn as_object_ok(&'a self) -> Result<&Self::JsonObject, &str> {
+    fn as_object(&'a self) -> Option<&'a Self::JsonObject> {
         match self {
-            ConstValue::Object(map) => Ok(map),
-            _ => Err("expected object"),
+            ConstValue::Object(map) => Some(map),
+            _ => None,
         }
     }
 }

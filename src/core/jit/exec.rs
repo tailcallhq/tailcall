@@ -90,7 +90,7 @@ where
                 // Check if the field expects a list
                 if field.type_of.is_list() {
                     // Check if the value is an array
-                    if let Ok(array) = value.as_array_ok() {
+                    if let Some(array) = value.as_array() {
                         join_all(field.nested().iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
                                 let ctx = ctx.with_value(value); // Output::JsonArray::Value

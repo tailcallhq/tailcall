@@ -11,7 +11,7 @@ pub struct Bytes(pub String);
 
 impl super::Scalar for Bytes {
     fn validate(&self) -> fn(&ConstValue) -> bool {
-        |value| value.as_str_ok().is_ok()
+        |value| value.as_str().is_some()
     }
 
     fn schema(&self) -> Schema {
