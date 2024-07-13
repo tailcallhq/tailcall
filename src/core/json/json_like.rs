@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+/// A trait for objects that can be used as JSON values
 pub trait JsonLike<'a>: Sized {
     type JsonObject: JsonObjectLike<'a, Value = Self>;
 
@@ -21,6 +22,7 @@ pub trait JsonLike<'a>: Sized {
     fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>>;
 }
 
+/// A trait for objects that can be used as JSON objects
 pub trait JsonObjectLike<'a> {
     type Value;
     fn get_key(&'a self, key: &str) -> Option<&Self::Value>;
