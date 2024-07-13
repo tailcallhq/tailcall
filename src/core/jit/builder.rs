@@ -220,6 +220,7 @@ impl Builder {
             fragments.insert(name.as_str(), &fragment.node);
         }
 
+       // A GraphQL request can contain only one operation at a time.
         let operation_type = match &self.document.operations {
             DocumentOperations::Single(single) => {
                 let name = self.get_type(single.node.ty).ok_or(format!(
