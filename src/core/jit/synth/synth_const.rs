@@ -6,13 +6,34 @@ use super::super::Result;
 use super::Synthesizer;
 use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
-use crate::core::jit::{DataPath, ExecutionPlan, Variables};
+use crate::core::jit::{DataPath, ExecutionPlan, Variable, Variables};
 use crate::core::json::JsonLike;
 
 pub struct Synth {
     selection: Vec<Field<Nested<ConstValue>, ConstValue>>,
     store: Store<Result<ConstValue>>,
     variables: Variables<ConstValue>,
+}
+
+impl<Extensions, Input> Field<Extensions, Input> {
+    #[inline(always)]
+    pub fn skip(&self, variables: &Variables<ConstValue>) -> bool {
+        let eval = |variable_option: Option<&Variable>,
+                    variables: &Variables<ConstValue>,
+                    default: bool| {
+            match variable_option.map(|a| a.as_str()) {
+                Some(name) => variables.get(name).map_or(default, |value| match value {
+                    ConstValue::Boolean(b) => *b,
+                    _ => default,
+                }),
+                None => default,
+            }
+        };
+        let skip = eval(self.skip.as_ref(), variables, false);
+        let include = eval(self.include.as_ref(), variables, true);
+
+        skip == include
+    }
 }
 
 impl Synth {

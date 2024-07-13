@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
@@ -109,26 +108,11 @@ impl Variable {
     pub fn new(name: String) -> Self {
         Variable(name)
     }
-}
-
-impl<Extensions, Input> Field<Extensions, Input> {
-    #[inline(always)]
-    pub fn skip(&self, variables: &Variables<ConstValue>) -> bool {
-        let eval = |variable_option: Option<&Variable>,
-                    variables: &Variables<ConstValue>,
-                    default: bool| {
-            match variable_option {
-                Some(Variable(name)) => variables.get(name).map_or(default, |value| match value {
-                    ConstValue::Boolean(b) => *b,
-                    _ => default,
-                }),
-                None => default,
-            }
-        };
-        let skip = eval(self.skip.as_ref(), variables, false);
-        let include = eval(self.include.as_ref(), variables, true);
-
-        skip == include
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+    pub fn into_string(self) -> String {
+        self.0
     }
 }
 
