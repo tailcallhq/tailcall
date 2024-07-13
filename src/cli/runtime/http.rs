@@ -80,9 +80,7 @@ impl HttpClient {
 
     pub fn get_client(&self, thread_id: std::thread::ThreadId) -> ClientWithMiddleware {
         if self.clients.contains_key(&thread_id) {
-            let val = self.clients.get(&thread_id).unwrap().clone();
-            self.clients.remove(&thread_id);
-            return val;
+            return self.clients.get(&thread_id).unwrap().to_owned();
         }
 
         let client = Self::build_client(&self.upstream);
