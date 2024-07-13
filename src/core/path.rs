@@ -3,7 +3,6 @@ use std::borrow::Cow;
 use serde_json::json;
 
 use crate::core::ir::{EvalContext, ResolverContextLike};
-use crate::core::json::JsonLike;
 
 ///
 /// The path module provides a trait for accessing values from a JSON-like
@@ -33,10 +32,22 @@ pub trait PathGraphql {
 
 impl PathString for serde_json::Value {
     fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
-        self.get_path(path).map(|a| match a {
+        let mut val = self;
+        for token in path {
+            val = match val {
+                serde_json::Value::Array(arr) => {
+                    let index = token.as_ref().parse::<usize>().ok()?;
+                    arr.get(index)?
+                }
+                serde_json::Value::Object(map) => map.get(token.as_ref())?,
+                _ => return None,
+            };
+        }
+        let val = match val {
             serde_json::Value::String(s) => Cow::Borrowed(s.as_str()),
-            _ => Cow::Owned(a.to_string()),
-        })
+            _ => Cow::Owned(val.to_string()),
+        };
+        Some(val)
     }
 }
 

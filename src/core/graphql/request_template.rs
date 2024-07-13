@@ -177,7 +177,14 @@ mod tests {
 
     impl PathGraphql for Context {
         fn path_graphql<T: AsRef<str>>(&self, path: &[T]) -> Option<String> {
-            self.value.get_path(path).map(|v| v.to_string())
+            self.value
+                .get_path(
+                    &path
+                        .iter()
+                        .map(|v| v.as_ref().to_string())
+                        .collect::<Vec<_>>(),
+                )
+                .map(|v| v.to_string())
         }
     }
 

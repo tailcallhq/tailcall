@@ -318,11 +318,18 @@ mod tests {
             &'a self,
             path: &[T],
         ) -> Option<crate::core::path::ValueString<'a>> {
-            self.value.get_path(path).map(|a| {
-                ValueString::Value(Cow::Owned(
-                    async_graphql::Value::from_json(a.clone()).unwrap(),
-                ))
-            })
+            self.value
+                .get_path(
+                    &path
+                        .iter()
+                        .map(|v| v.as_ref().to_string())
+                        .collect::<Vec<_>>(),
+                )
+                .map(|a| {
+                    ValueString::Value(Cow::Owned(
+                        async_graphql::Value::from_json(a.clone()).unwrap(),
+                    ))
+                })
         }
     }
 

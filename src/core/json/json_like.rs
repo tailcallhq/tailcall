@@ -32,7 +32,7 @@ pub trait JsonLike {
     fn as_bool_ok(&self) -> Result<bool, &str>;
     fn as_null_ok(&self) -> Result<(), &str>;
     fn as_option_ok(&self) -> Result<Option<&Self::Json>, &str>;
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Json>;
+    fn get_path(&self, path: &[String]) -> Option<&Self::Json>;
     fn get_key(&self, path: &str) -> Option<&Self::Json>;
     fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Json>>;
 }
@@ -70,15 +70,15 @@ impl JsonLike for serde_json::Value {
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Json> {
+    fn get_path(&self, path: &[String]) -> Option<&Self::Json> {
         let mut val = self;
         for token in path {
             val = match val {
                 serde_json::Value::Array(arr) => {
-                    let index = token.as_ref().parse::<usize>().ok()?;
+                    let index = token.parse::<usize>().ok()?;
                     arr.get(index)?
                 }
-                serde_json::Value::Object(map) => map.get(token.as_ref())?,
+                serde_json::Value::Object(map) => map.get(token.as_str())?,
                 _ => return None,
             };
         }
@@ -177,15 +177,15 @@ impl JsonLike for async_graphql::Value {
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self::Json> {
+    fn get_path(&self, path: &[String]) -> Option<&Self::Json> {
         let mut val = self;
         for token in path {
             val = match val {
                 ConstValue::List(seq) => {
-                    let index = token.as_ref().parse::<usize>().ok()?;
+                    let index = token.parse::<usize>().ok()?;
                     seq.get(index)?
                 }
-                ConstValue::Object(map) => map.get(token.as_ref())?,
+                ConstValue::Object(map) => map.get(token.as_str())?,
                 _ => return None,
             };
         }
@@ -302,7 +302,7 @@ impl<'ctx> JsonLike for BorrowedValue<'ctx> {
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, _path: &[T]) -> Option<&Self::Json> {
+    fn get_path(&self, _path: &[String]) -> Option<&Self::Json> {
         todo!()
     }
 
@@ -395,7 +395,7 @@ impl<'ctx> JsonLike for SimdBorrowedValue<'ctx> {
         }
     }
 
-    fn get_path<T: AsRef<str>>(&self, _path: &[T]) -> Option<&Self::Json> {
+    fn get_path(&self, _path: &[String]) -> Option<&Self::Json> {
         todo!()
     }
 
