@@ -563,7 +563,7 @@ dependencies = [
  "futures-util",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "itoa",
  "matchit",
  "memchr",
@@ -2265,7 +2265,7 @@ dependencies = [
  "crossbeam-utils",
  "form_urlencoded",
  "futures-util",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "lazy_static",
  "levenshtein",
  "log",
@@ -2280,9 +2280,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "0.14.29"
+version = "0.14.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f361cde2f109281a220d4307746cdfd5ee3f410da58a70377762396775634b33"
+checksum = "a152ddd61dfaec7273fe8419ab357f33aee0d914c5f4efbf0d96fa749eea5ec9"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -2295,7 +2295,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -2329,7 +2329,7 @@ checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
 dependencies = [
  "futures-util",
  "http 0.2.12",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "rustls 0.21.12",
  "tokio",
  "tokio-rustls 0.24.1",
@@ -2343,7 +2343,7 @@ checksum = "399c78f9338483cb7e630c8474b07268983c6bd5acee012e4211f9f7bb21b070"
 dependencies = [
  "futures-util",
  "http 0.2.12",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "log",
  "rustls 0.22.4",
  "rustls-native-certs",
@@ -2358,7 +2358,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbb958482e8c7be4bc3cf272a766a2b0bf1a6755e7a6ae777f017a31d11b13b1"
 dependencies = [
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "pin-project-lite",
  "tokio",
  "tokio-io-timeout",
@@ -4283,7 +4283,7 @@ dependencies = [
  "h2",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "hyper-rustls 0.24.2",
  "ipnet",
  "js-sys",
@@ -5169,7 +5169,7 @@ dependencies = [
  "http-cache-reqwest",
  "http-cache-semantics",
  "httpmock",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "hyper-rustls 0.25.0",
  "indenter",
  "indexmap 2.2.6",
@@ -5257,7 +5257,7 @@ dependencies = [
  "async-graphql-value",
  "async-trait",
  "dotenvy",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "lambda_http",
  "lambda_runtime",
  "reqwest",
@@ -5276,7 +5276,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "console_error_panic_hook",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "lazy_static",
  "protox",
  "reqwest",
@@ -5387,7 +5387,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "http-body-util",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "hyper-util",
  "once_cell",
  "opentelemetry 0.23.0",
@@ -5730,7 +5730,7 @@ dependencies = [
  "h2",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
@@ -5796,7 +5796,7 @@ dependencies = [
  "futures-util",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "opentelemetry 0.23.0",
  "pin-project-lite",
  "tonic",
