@@ -17,50 +17,39 @@ impl<'a> JsonLike<'a> for Value<'a> {
         Value::Null
     }
 
-    fn as_array_ok(&'a self) -> Result<&'a Vec<Self>, &str> {
+    fn as_array(&self) -> Option<&Vec<Value>> {
         match self {
-            Value::Array(array) => Ok(array),
-            _ => Err("expected array"),
+            Value::Array(array) => Some(array),
+            _ => None,
         }
     }
 
-    fn as_object_ok(&'a self) -> Result<&Self::JsonObject, &str> {
-        self.as_object().ok_or("expected object")
+    fn as_object(&'a self) -> Option<&Self::JsonObject> {
+        self.as_object()
     }
-
-    fn as_str_ok(&'a self) -> Result<&str, &str> {
-        self.as_str().ok_or("expected str")
+    
+    fn as_str(&'a self) -> Option<&str> {
+        self.as_str()
     }
-
-    fn as_i64_ok(&'a self) -> Result<i64, &str> {
-        self.as_i64().ok_or("expected i64")
+    
+    fn as_i64(&'a self) -> Option<i64> {
+        self.as_i64()
     }
-
-    fn as_u64_ok(&'a self) -> Result<u64, &str> {
-        self.as_u64().ok_or("expected u64")
+    
+    fn as_u64(&'a self) -> Option<u64> {
+        self.as_u64()
     }
-
-    fn as_f64_ok(&'a self) -> Result<f64, &str> {
-        self.as_f64().ok_or("expected f64")
+    
+    fn as_f64(&'a self) -> Option<f64> {
+        self.as_f64()
     }
-
-    fn as_bool_ok(&'a self) -> Result<bool, &str> {
-        self.as_bool().ok_or("expected bool")
+    
+    fn as_bool(&'a self) -> Option<bool> {
+        self.as_bool()
     }
-
-    fn as_null_ok(&'a self) -> Result<(), &str> {
-        if self.is_null() {
-            Ok(())
-        } else {
-            Err("expected null")
-        }
-    }
-
-    fn as_option_ok(&'a self) -> Result<Option<&Self>, &str> {
-        match self {
-            Value::Null => Ok(None),
-            _ => Ok(Some(self)),
-        }
+    
+    fn is_null(&'a self) -> bool {
+        self.is_null()
     }
 
     fn get_path<T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self> {
