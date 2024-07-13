@@ -211,7 +211,7 @@ pub struct OperationPlan {
 }
 
 impl OperationPlan {
-    pub fn new(fields: Vec<Field<Flat>>) -> Self {
+    pub fn new(fields: Vec<Field<Flat>>, operation_type: OperationType) -> Self {
         let nested = fields
             .clone()
             .into_iter()
@@ -219,7 +219,7 @@ impl OperationPlan {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        Self { flat: fields, nested, operation_type: OperationType::Query }
+        Self { flat: fields, nested, operation_type }
     }
 
     pub fn is_query(&self) -> bool {

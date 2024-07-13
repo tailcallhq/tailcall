@@ -220,15 +220,17 @@ impl Builder {
             fragments.insert(name.as_str(), &fragment.node);
         }
 
-        match &self.document.operations {
+        let operation_type = match &self.document.operations {
             DocumentOperations::Single(single) => {
                 let name = self.get_type(single.node.ty).ok_or(format!(
                     "Root Operation type not defined for {}",
                     single.node.ty
                 ))?;
                 fields.extend(self.iter(&single.node.selection_set.node, name, None, &fragments));
+                single.node.ty
             }
             DocumentOperations::Multiple(multiple) => {
+                let mut operation_type = OperationType::Query;
                 for single in multiple.values() {
                     let name = self.get_type(single.node.ty).ok_or(format!(
                         "Root Operation type not defined for {}",
@@ -240,11 +242,13 @@ impl Builder {
                         None,
                         &fragments,
                     ));
+                    operation_type = single.node.ty;
                 }
+                operation_type
             }
-        }
+        };
 
-        Ok(OperationPlan::new(fields))
+        Ok(OperationPlan::new(fields, operation_type))
     }
 }
 
