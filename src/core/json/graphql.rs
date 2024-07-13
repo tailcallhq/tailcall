@@ -13,18 +13,10 @@ impl<'a, Value: JsonLike<'a> + Clone> JsonObjectLike<'a> for IndexMap<Name, Valu
     }
 }
 
-impl<'a> JsonArrayLike<'a> for Vec<ConstValue> {
-    type Value = ConstValue;
-    fn as_vec(&'a self) -> &'a Vec<Self::Value> {
-        self
-    }
-}
-
 impl<'a> JsonLike<'a> for ConstValue {
     type JsonObject = IndexMap<Name, ConstValue>;
-    type JsonArray = Vec<ConstValue>;
 
-    fn as_array_ok(&'a self) -> Result<&Self::JsonArray, &str> {
+    fn as_array_ok(&'a self) -> Result<&'a Vec<Self>, &str> {
         match self {
             ConstValue::List(seq) => Ok(seq),
             _ => Err("array"),

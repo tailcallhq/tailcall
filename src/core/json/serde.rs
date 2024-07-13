@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use super::{JsonArrayLike, JsonLike, JsonObjectLike};
+use super::{JsonLike, JsonObjectLike};
 
-// SerdeValue
 impl<'a> JsonObjectLike<'a> for serde_json::Map<String, serde_json::Value> {
     type Value = serde_json::Value;
     fn get_key(&'a self, key: &str) -> Option<&serde_json::Value> {
@@ -10,18 +9,10 @@ impl<'a> JsonObjectLike<'a> for serde_json::Map<String, serde_json::Value> {
     }
 }
 
-impl<'a> JsonArrayLike<'a> for Vec<serde_json::Value> {
-    type Value = serde_json::Value;
-    fn as_vec(&'a self) -> &'a Vec<serde_json::Value> {
-        self
-    }
-}
-
 impl<'a> JsonLike<'a> for serde_json::Value {
     type JsonObject = serde_json::Map<String, serde_json::Value>;
-    type JsonArray = Vec<serde_json::Value>;
 
-    fn as_array_ok(&self) -> Result<&Self::JsonArray, &str> {
+    fn as_array_ok(&'a self) -> Result<&'a Vec<Self>, &str> {
         self.as_array().ok_or("expected array")
     }
     fn as_str_ok(&self) -> Result<&str, &str> {

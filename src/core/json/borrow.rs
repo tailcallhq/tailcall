@@ -1,6 +1,6 @@
 use serde_json_borrow::{ObjectAsVec, Value};
 
-use super::{gather_path_matches, group_by_key, JsonArrayLike, JsonLike, JsonObjectLike};
+use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike};
 
 // BorrowedValue
 impl<'a> JsonObjectLike<'a> for ObjectAsVec<'a> {
@@ -10,22 +10,14 @@ impl<'a> JsonObjectLike<'a> for ObjectAsVec<'a> {
     }
 }
 
-impl<'a> JsonArrayLike<'a> for Vec<Value<'a>> {
-    type Value = Value<'a>;
-    fn as_vec(&'a self) -> &'a Vec<Value> {
-        self
-    }
-}
-
 impl<'a> JsonLike<'a> for Value<'a> {
     type JsonObject = ObjectAsVec<'a>;
-    type JsonArray = Vec<Value<'a>>;
 
     fn null() -> Self {
         Value::Null
     }
 
-    fn as_array_ok(&'a self) -> Result<&Self::JsonArray, &str> {
+    fn as_array_ok(&'a self) -> Result<&'a Vec<Self>, &str> {
         match self {
             Value::Array(array) => Ok(array),
             _ => Err("expected array"),

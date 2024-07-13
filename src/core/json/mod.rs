@@ -18,10 +18,9 @@ pub fn gather_path_matches<'a, J: JsonLike<'a>>(
 ) -> Vec<(&'a J, &'a J)>
 where
     J::JsonObject: JsonObjectLike<'a>,
-    J::JsonArray: JsonArrayLike<'a>,
 {
     if let Ok(root) = root.as_array_ok() {
-        for value in root.as_vec().iter() {
+        for value in root.iter() {
             vector = gather_path_matches(value, path, vector);
         }
     } else if let Some((key, tail)) = path.split_first() {

@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
-pub trait JsonLike<'a> {
+pub trait JsonLike<'a>: Sized {
     type JsonObject: JsonObjectLike<'a, Value = Self>;
-    type JsonArray: JsonArrayLike<'a, Value = Self>;
 
     // Constructors
     fn null() -> Self;
 
     // Operators
-    fn as_array_ok(&'a self) -> Result<&Self::JsonArray, &str>;
+    fn as_array_ok(&'a self) -> Result<&'a Vec<Self>, &str>;
     fn as_object_ok(&'a self) -> Result<&Self::JsonObject, &str>;
     fn as_str_ok(&'a self) -> Result<&str, &str>;
     fn as_i64_ok(&'a self) -> Result<i64, &str>;
@@ -25,11 +24,6 @@ pub trait JsonLike<'a> {
 pub trait JsonObjectLike<'a> {
     type Value;
     fn get_key(&'a self, key: &str) -> Option<&Self::Value>;
-}
-
-pub trait JsonArrayLike<'a> {
-    type Value;
-    fn as_vec(&'a self) -> &'a Vec<Self::Value>;
 }
 
 #[cfg(test)]

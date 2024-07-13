@@ -283,7 +283,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_grpc_cache_key_collision() {
-        let tmpls = [
+        let arr = [
             r#"{ "name": "test" }"#,
             r#"{ "name": "test1" }"#,
             r#"{ "name1": "test" }"#,
@@ -292,7 +292,7 @@ mod tests {
 
         let ctx = Context::default();
         let tmpl_set: HashSet<_> =
-            futures_util::future::join_all(tmpls.iter().cloned().zip(std::iter::repeat(&ctx)).map(
+            futures_util::future::join_all(arr.iter().cloned().zip(std::iter::repeat(&ctx)).map(
                 |(body_str, ctx)| async {
                     let tmpl = request_template_with_body(body_str).await;
                     tmpl.cache_key(ctx)
@@ -302,6 +302,6 @@ mod tests {
             .into_iter()
             .collect();
 
-        assert_eq!(tmpls.len(), tmpl_set.len());
+        assert_eq!(arr.len(), tmpl_set.len());
     }
 }
