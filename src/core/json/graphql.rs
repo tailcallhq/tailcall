@@ -1,78 +1,80 @@
-use std::collections::HashMap;
-
+use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike};
 use async_graphql::Name;
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
+use std::collections::HashMap;
 
-use super::*;
-
+// Implementation for JsonObjectLike for IndexMap<Name, Value>
 impl<'a, Value: JsonLike<'a> + Clone> JsonObjectLike<'a> for IndexMap<Name, Value> {
     type Value = Value;
+
     fn get_key(&'a self, key: &str) -> Option<&Self::Value> {
         self.get(&Name::new(key))
     }
 }
 
+// Implementation for JsonLike for ConstValue
 impl<'a> JsonLike<'a> for ConstValue {
     type JsonObject = IndexMap<Name, ConstValue>;
 
-    fn as_array_ok(&'a self) -> Result<&'a Vec<Self>, &str> {
+    fn null() -> Self {
+        ConstValue::Null
+    }
+
+    fn as_array(&'a self) -> Option<&'a Vec<Self>> {
         match self {
-            ConstValue::List(seq) => Ok(seq),
-            _ => Err("array"),
+            ConstValue::List(seq) => Some(seq),
+            _ => None,
         }
     }
 
-    fn as_str_ok(&self) -> Result<&str, &str> {
+    fn as_object(&'a self) -> Option<&Self::JsonObject> {
         match self {
-            ConstValue::String(s) => Ok(s),
-            _ => Err("str"),
+            ConstValue::Object(map) => Some(map),
+            _ => None,
         }
     }
 
-    fn as_i64_ok(&self) -> Result<i64, &str> {
+    fn as_str(&self) -> Option<&str> {
         match self {
-            ConstValue::Number(n) => n.as_i64().ok_or("expected i64"),
-            _ => Err("i64"),
+            ConstValue::String(s) => Some(s),
+            _ => None,
         }
     }
 
-    fn as_u64_ok(&self) -> Result<u64, &str> {
+    fn as_i64(&self) -> Option<i64> {
         match self {
-            ConstValue::Number(n) => n.as_u64().ok_or("expected u64"),
-            _ => Err("u64"),
+            ConstValue::Number(n) => n.as_i64(),
+            _ => None,
         }
     }
 
-    fn as_f64_ok(&self) -> Result<f64, &str> {
+    fn as_u64(&self) -> Option<u64> {
         match self {
-            ConstValue::Number(n) => n.as_f64().ok_or("expected f64"),
-            _ => Err("f64"),
+            ConstValue::Number(n) => n.as_u64(),
+            _ => None,
         }
     }
 
-    fn as_bool_ok(&self) -> Result<bool, &str> {
+    fn as_f64(&self) -> Option<f64> {
         match self {
-            ConstValue::Boolean(b) => Ok(*b),
-            _ => Err("bool"),
+            ConstValue::Number(n) => n.as_f64(),
+            _ => None,
         }
     }
 
-    fn as_null_ok(&self) -> Result<(), &str> {
+    fn as_bool(&self) -> Option<bool> {
         match self {
-            ConstValue::Null => Ok(()),
-            _ => Err("null"),
+            ConstValue::Boolean(b) => Some(*b),
+            _ => None,
         }
     }
 
-    fn as_option_ok(&self) -> Result<Option<&Self>, &str> {
-        match self {
-            ConstValue::Null => Ok(None),
-            _ => Ok(Some(self)),
-        }
+    fn is_null(&self) -> bool {
+        matches!(self, ConstValue::Null)
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self> {
+    fn get_path<T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -80,16 +82,16 @@ impl<'a> JsonLike<'a> for ConstValue {
                     let index = token.as_ref().parse::<usize>().ok()?;
                     seq.get(index)?
                 }
-                ConstValue::Object(map) => map.get(token.as_ref())?,
+                ConstValue::Object(map) => map.get(&Name::new(token.as_ref()))?,
                 _ => return None,
             };
         }
         Some(val)
     }
 
-    fn get_key(&self, path: &str) -> Option<&Self> {
+    fn get_key(&'a self, path: &'a str) -> Option<&Self> {
         match self {
-            ConstValue::Object(map) => map.get(&async_graphql::Name::new(path)),
+            ConstValue::Object(map) => map.get(&Name::new(path)),
             _ => None,
         }
     }
@@ -97,16 +99,5 @@ impl<'a> JsonLike<'a> for ConstValue {
     fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
-    }
-
-    fn null() -> Self {
-        Default::default()
-    }
-
-    fn as_object_ok(&'a self) -> Result<&Self::JsonObject, &str> {
-        match self {
-            ConstValue::Object(map) => Ok(map),
-            _ => Err("expected object"),
-        }
     }
 }

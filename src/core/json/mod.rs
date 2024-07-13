@@ -19,8 +19,8 @@ pub fn gather_path_matches<'a, J: JsonLike<'a>>(
 where
     J::JsonObject: JsonObjectLike<'a>,
 {
-    if let Ok(root) = root.as_array_ok() {
-        for value in root.iter() {
+    if let Some(root_array) = root.as_array() {
+        for value in root_array.iter() {
             vector = gather_path_matches(value, path, vector);
         }
     } else if let Some((key, tail)) = path.split_first() {
@@ -39,13 +39,13 @@ where
 fn group_by_key<'a, J: JsonLike<'a>>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
     let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
     for (key, value) in src {
-        // Need to handle number and string keys
+        // Handle number and string keys
         let key_str = key
-            .as_str_ok()
+            .as_str()
             .map(|a| a.to_string())
-            .or_else(|_| key.as_f64_ok().map(|a| a.to_string()));
+            .or_else(|| key.as_f64().map(|a| a.to_string()));
 
-        if let Ok(key) = key_str {
+        if let Some(key) = key_str {
             if let Some(values) = map.get_mut(&key) {
                 values.push(value);
             } else {

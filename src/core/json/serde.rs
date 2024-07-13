@@ -12,33 +12,32 @@ impl<'a> JsonObjectLike<'a> for serde_json::Map<String, serde_json::Value> {
 impl<'a> JsonLike<'a> for serde_json::Value {
     type JsonObject = serde_json::Map<String, serde_json::Value>;
 
-    fn as_array_ok(&'a self) -> Result<&'a Vec<Self>, &str> {
-        self.as_array().ok_or("expected array")
-    }
-    fn as_str_ok(&self) -> Result<&str, &str> {
-        self.as_str().ok_or("expected str")
-    }
-    fn as_i64_ok(&self) -> Result<i64, &str> {
-        self.as_i64().ok_or("expected i64")
-    }
-    fn as_u64_ok(&self) -> Result<u64, &str> {
-        self.as_u64().ok_or("expected u64")
-    }
-    fn as_f64_ok(&self) -> Result<f64, &str> {
-        self.as_f64().ok_or("expected f64")
-    }
-    fn as_bool_ok(&self) -> Result<bool, &str> {
-        self.as_bool().ok_or("expected bool")
-    }
-    fn as_null_ok(&self) -> Result<(), &str> {
-        self.as_null().ok_or("expected null")
+    fn as_array(&'a self) -> Option<&'a Vec<Self>> {
+        self.as_array()
     }
 
-    fn as_option_ok(&self) -> Result<Option<&Self>, &str> {
-        match self {
-            serde_json::Value::Null => Ok(None),
-            _ => Ok(Some(self)),
-        }
+    fn as_str(&self) -> Option<&str> {
+        self.as_str()
+    }
+
+    fn as_i64(&self) -> Option<i64> {
+        self.as_i64()
+    }
+
+    fn as_u64(&self) -> Option<u64> {
+        self.as_u64()
+    }
+
+    fn as_f64(&self) -> Option<f64> {
+        self.as_f64()
+    }
+
+    fn as_bool(&self) -> Option<bool> {
+        self.as_bool()
+    }
+
+    fn is_null(&self) -> bool {
+        self.is_null()
     }
 
     fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self> {
@@ -72,10 +71,7 @@ impl<'a> JsonLike<'a> for serde_json::Value {
         Self::Null
     }
 
-    fn as_object_ok(&self) -> Result<&Self::JsonObject, &str> {
-        match self {
-            serde_json::Value::Object(map) => Ok(map),
-            _ => Err("expected object"),
-        }
+    fn as_object(&self) -> Option<&Self::JsonObject> {
+        self.as_object()
     }
 }
