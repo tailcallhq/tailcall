@@ -280,6 +280,7 @@ mod tests {
             }
         "#,
         );
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -293,6 +294,7 @@ mod tests {
         "#,
         );
 
+        assert!(plan.is_query());
         assert_eq!(plan.size(), 4)
     }
 
@@ -305,6 +307,8 @@ mod tests {
             }
         "#,
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -331,6 +335,8 @@ mod tests {
             }
         "#,
         );
+
+        assert!(!plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -351,6 +357,8 @@ mod tests {
             }
         "#,
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -370,6 +378,8 @@ mod tests {
             }
         "#,
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -385,6 +395,8 @@ mod tests {
             }
         "#,
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -404,6 +416,8 @@ mod tests {
             }
         "#,
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -422,6 +436,8 @@ mod tests {
             }
         "#,
         );
+
+        assert!(!plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 }
