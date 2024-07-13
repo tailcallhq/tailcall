@@ -7,6 +7,9 @@ use url::Url;
 
 use crate::core::runtime::TargetRuntime;
 
+use super::error::file;
+use super::Error;
+
 /// Response of a file read operation
 #[derive(Debug)]
 pub struct FileRead {
@@ -40,14 +43,14 @@ impl From<String> for Resource {
 
 #[async_trait::async_trait]
 pub trait Reader {
-    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead>;
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> Result<FileRead, Error>;
 }
 
 #[derive(Clone)]
 pub struct ResourceReader<A>(A);
 
 impl<A: Reader + Send + Sync> ResourceReader<A> {
-    pub async fn read_files<T>(&self, paths: &[T]) -> anyhow::Result<Vec<FileRead>>
+    pub async fn read_files<T>(&self, paths: &[T]) -> Result<Vec<FileRead>, Error>
     where
         T: Into<Resource> + Clone + Send,
     {
@@ -55,14 +58,14 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
             let resource: Resource = path.into();
             let resource_path = resource.to_string();
             self.read_file(resource)
-                .map_err(|e| e.context(resource_path))
+                .map_err(|_| Error::File(file::Error::FileReadFailed(resource_path)))
         }))
         .await;
 
-        files.into_iter().collect::<anyhow::Result<Vec<_>>>()
+        files.into_iter().collect::<Result<Vec<_>, Error>>()
     }
 
-    pub async fn read_file<T>(&self, path: T) -> anyhow::Result<FileRead>
+    pub async fn read_file<T>(&self, path: T) -> Result<FileRead, Error>
     where
         T: Into<Resource> + Send,
     {
@@ -100,7 +103,7 @@ impl Direct {
 #[async_trait::async_trait]
 impl Reader for Direct {
     /// Reads a file from the filesystem or from an HTTP URL
-    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> Result<FileRead, Error> {
         let content = match file.into() {
             Resource::RawPath(file_path) => {
                 // Is an HTTP URL
@@ -154,7 +157,7 @@ impl Cached {
 #[async_trait::async_trait]
 impl Reader for Cached {
     /// Reads a file from the filesystem or from an HTTP URL with cache
-    async fn read<T: Into<Resource> + Send>(&self, file: T) -> anyhow::Result<FileRead> {
+    async fn read<T: Into<Resource> + Send>(&self, file: T) -> Result<FileRead, Error> {
         // check cache
         let resource: Resource = file.into();
         let file_path = resource.to_string();

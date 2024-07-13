@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use anyhow::anyhow;
 use async_std::task::spawn_local;
-use tailcall::core::FileIO;
+use tailcall::core::{error::file, FileIO};
 use worker::Env;
 
 use crate::to_anyhow;
@@ -48,20 +48,28 @@ async fn put(bucket: Rc<worker::Bucket>, path: String, value: Vec<u8>) -> anyhow
 
 #[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+    async fn write<'a>(
+        &'a self,
+        path: &'a str,
+        content: &'a [u8],
+    ) -> Result<(), file::Error> {
         let content = content.to_vec();
         let bucket = self.bucket.clone();
         let path_cloned = path.to_string();
-        spawn_local(put(bucket, path_cloned, content)).await?;
+        let _ = spawn_local(put(bucket, path_cloned, content))
+            .await
+            .map_err(|e| file::Error::Cloudflare(e.to_string()));
         tracing::info!("File write: {} ... ok", path);
         Ok(())
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+    async fn read<'a>(&'a self, path: &'a str) -> Result<String, file::Error> {
         let bucket = self.bucket.clone();
         let path_cloned = path.to_string();
-        let content = spawn_local(get(bucket, path_cloned)).await?;
+        let content = spawn_local(get(bucket, path_cloned))
+            .await
+            .map_err(|e| file::Error::Cloudflare(e.to_string()));
         tracing::info!("File read: {} ... ok", path);
-        Ok(content)
+        content
     }
 }

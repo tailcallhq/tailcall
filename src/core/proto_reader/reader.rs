@@ -9,6 +9,7 @@ use protox::file::{FileResolver, GoogleFileResolver};
 use crate::core::proto_reader::fetch::GrpcReflection;
 use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::runtime::TargetRuntime;
+use crate::core::Error;
 
 pub struct ProtoReader {
     reader: ResourceReader<Cached>,
@@ -140,9 +141,9 @@ impl ProtoReader {
             src.to_string()
         }
     }
-    fn check_package(proto: &FileDescriptorProto) -> anyhow::Result<()> {
+    fn check_package(proto: &FileDescriptorProto) -> Result<(), Error> {
         if proto.package.is_none() {
-            anyhow::bail!("Package name is required");
+            return Err(Error::PackageNameNotFound);
         }
         Ok(())
     }
@@ -158,6 +159,7 @@ mod test_proto_config {
 
     use crate::core::proto_reader::ProtoReader;
     use crate::core::resource_reader::{Cached, ResourceReader};
+    use crate::core::Error;
 
     #[tokio::test]
     async fn test_resolve() {
@@ -171,7 +173,7 @@ mod test_proto_config {
     }
 
     #[tokio::test]
-    async fn test_nested_imports() -> Result<()> {
+    async fn test_nested_imports() -> Result<(), Error> {
         let test_dir = Path::new(protobuf::SELF);
         let test_file = protobuf::NESTED_0;
 

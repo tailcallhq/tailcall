@@ -13,7 +13,7 @@ use tailcall::cli;
 use tailcall::core::config::Config;
 use tailcall::core::scalar::CUSTOM_SCALARS;
 use tailcall::core::tracing::default_tracing_for_name;
-use tailcall::core::FileIO;
+use tailcall::core::{Error, FileIO};
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 static GRAPHQL_SCHEMA_FILE: &str = "../generated/.tailcallrc.graphql";
@@ -50,22 +50,18 @@ async fn main() {
     }
 }
 
-async fn mode_check() -> Result<()> {
+async fn mode_check() -> Result<(), Error> {
     let json_schema = get_file_path();
     let rt = cli::runtime::init(&Default::default());
     let file_io = rt.file;
     let content = file_io
-        .read(
-            json_schema
-                .to_str()
-                .ok_or(anyhow!("Unable to determine path"))?,
-        )
+    .read(json_schema.to_str().ok_or(Error::PathDeterminationFailed)?)
         .await?;
     let content = serde_json::from_str::<Value>(&content)?;
     let schema = get_updated_json().await?;
     match content.eq(&schema) {
         true => Ok(()),
-        false => Err(anyhow!("Schema mismatch")),
+        false => Err(Error::SchemaMismatch),
     }
 }
 
@@ -78,7 +74,7 @@ async fn mode_fix() -> Result<()> {
     Ok(())
 }
 
-async fn update_gql(file_io: Arc<dyn FileIO>) -> Result<()> {
+async fn update_gql(file_io: Arc<dyn FileIO>) -> Result<(), Error> {
     let doc = gen_gql_schema::build_service_document();
 
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(GRAPHQL_SCHEMA_FILE);
@@ -91,13 +87,13 @@ async fn update_gql(file_io: Arc<dyn FileIO>) -> Result<()> {
     Ok(())
 }
 
-async fn update_json(file_io: Arc<dyn FileIO>) -> Result<()> {
+async fn update_json(file_io: Arc<dyn FileIO>) -> Result<(), Error> {
     let path = get_file_path();
     let schema = serde_json::to_string_pretty(&get_updated_json().await?)?;
     tracing::info!("Updating JSON Schema: {}", path.to_str().unwrap());
     file_io
         .write(
-            path.to_str().ok_or(anyhow!("Unable to determine path"))?,
+            path.to_str().ok_or(Error::PathDeterminationFailed)?,
             schema.as_bytes(),
         )
         .await?;

@@ -13,7 +13,7 @@ use crate::core::blueprint::Blueprint;
 use crate::core::cache::InMemoryCache;
 use crate::core::runtime::TargetRuntime;
 use crate::core::worker::{Command, Event};
-use crate::core::{blueprint, EnvIO, FileIO, HttpIO, WorkerIO};
+use crate::core::{blueprint, error, EnvIO, FileIO, HttpIO, WorkerIO};
 
 // Provides access to env in native rust environment
 fn init_env() -> Arc<dyn EnvIO> {
@@ -89,7 +89,7 @@ pub async fn confirm_and_write(
     runtime: TargetRuntime,
     path: &str,
     content: &[u8],
-) -> anyhow::Result<()> {
+) -> Result<(), error::Error> {
     let file_exists = fs::metadata(path).is_ok();
 
     if file_exists {

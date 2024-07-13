@@ -17,6 +17,7 @@ use reqwest::{Client, Request};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
+use tailcall::core::error::file;
 use tailcall::core::http::{RequestContext, Response};
 use tailcall::core::ir::{EvalContext, ResolverContextLike};
 use tailcall::core::path::PathString;
@@ -90,11 +91,11 @@ impl EnvIO for Env {
 struct File;
 #[async_trait]
 impl FileIO for File {
-    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
+    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> Result<(), file::Error> {
         unimplemented!("Not needed for this bench")
     }
 
-    async fn read<'a>(&'a self, _: &'a str) -> anyhow::Result<String> {
+    async fn read<'a>(&'a self, _: &'a str) -> Result<String, file::Error> {
         unimplemented!("Not needed for this bench")
     }
 }
