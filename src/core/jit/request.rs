@@ -33,7 +33,7 @@ impl From<async_graphql::Request> for Request<ConstValue> {
 }
 
 impl Request<ConstValue> {
-    pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan<ConstValue>> {
+    pub fn create_plan(&self, blueprint: &Blueprint) -> Result<ExecutionPlan<ConstValue>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = Builder::new(blueprint, doc);
         let plan = builder.build(&self.variables)?;

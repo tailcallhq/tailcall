@@ -18,7 +18,7 @@ pub struct ConstValueExecutor {
 
 impl ConstValueExecutor {
     pub fn new(request: &Request<ConstValue>, app_ctx: Arc<AppContext>) -> Result<Self> {
-        Ok(Self { plan: request.try_new(&app_ctx.blueprint)? })
+        Ok(Self { plan: request.create_plan(&app_ctx.blueprint)? })
     }
 
     pub async fn execute(
