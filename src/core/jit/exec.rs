@@ -2,7 +2,6 @@ use std::fmt::Debug;
 use std::mem;
 use std::sync::{Arc, Mutex};
 
-use async_graphql_value::ConstValue;
 use derive_getters::Getters;
 use futures_util::future::join_all;
 
@@ -27,7 +26,6 @@ where
     Input: Clone + Debug,
     Synth: Synthesizer<Value = Result<Output, Error>, Variable = Input>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
-    ConstValue: From<Input>,
 {
     pub fn new(plan: ExecutionPlan<Input>, synth: Synth, exec: Exec) -> Self {
         Self { plan, synth, exec }
@@ -62,7 +60,6 @@ where
     Output: for<'i> JsonLike<'i> + Debug,
     Input: Clone + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
-    ConstValue: From<Input>,
 {
     fn new(
         request: Request<Input>,
