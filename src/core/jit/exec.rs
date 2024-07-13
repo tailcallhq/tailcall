@@ -22,7 +22,7 @@ pub struct Executor<Synth, IRExec> {
 
 impl<Input: Clone, Output, Error, Synth, Exec> Executor<Synth, Exec>
 where
-    Output: JsonLike<Json = Output> + Debug,
+    Output: for<'a> JsonLike<'a> + Debug,
     Synth: Synthesizer<Value = Result<Output, Error>, Variable = Input>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
@@ -56,7 +56,7 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: JsonLike<Json = Output> + Debug,
+    Output: for<'i> JsonLike<'i> + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
     fn new(
@@ -93,7 +93,7 @@ where
                     if let Ok(array) = value.as_array_ok() {
                         join_all(field.nested().iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
-                                let ctx = ctx.with_value(value);
+                                let ctx = ctx.with_value(value); // Output::JsonArray::Value
                                 let data_path = data_path.clone().with_index(index);
                                 async move { self.execute(field, &ctx, data_path).await }
                             }))
