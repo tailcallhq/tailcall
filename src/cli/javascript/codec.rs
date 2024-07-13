@@ -246,8 +246,7 @@ mod test {
     #[test]
     fn test_from_js_response() {
         let js_response = create_test_response().unwrap();
-        let response: worker::Result<crate::core::http::Response<Bytes>> =
-            js_response.try_into();
+        let response: worker::Result<crate::core::http::Response<Bytes>> = js_response.try_into();
         assert!(response.is_ok());
         let response = response.unwrap();
         assert_eq!(response.status, reqwest::StatusCode::OK);

@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use async_graphql::{ErrorExtensions, Value as ConstValue};
-use thiserror::Error;
 use derive_more::From;
+use thiserror::Error;
 
-use crate::core::{auth, error::worker};
+use crate::core::auth;
+use crate::core::error::worker;
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     #[error("IOException: {0}")]
@@ -55,7 +56,6 @@ impl ErrorExtensions for Error {
         })
     }
 }
-
 
 impl<'a> From<crate::core::valid::ValidationError<&'a str>> for Error {
     fn from(value: crate::core::valid::ValidationError<&'a str>) -> Self {

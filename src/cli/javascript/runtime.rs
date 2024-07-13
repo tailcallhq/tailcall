@@ -83,11 +83,7 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    async fn call(
-        &self,
-        name: &str,
-        event: Event,
-    ) -> worker::Result<Option<Command>> {
+    async fn call(&self, name: &str, event: Event) -> worker::Result<Option<Command>> {
         let script = self.script.clone();
         let name = name.to_string(); // TODO
         if let Some(runtime) = &self.tokio_runtime {
@@ -105,11 +101,7 @@ impl WorkerIO<Event, Command> for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
-    async fn call(
-        &self,
-        name: &str,
-        input: ConstValue,
-    ) -> worker::Result<Option<ConstValue>> {
+    async fn call(&self, name: &str, input: ConstValue) -> worker::Result<Option<ConstValue>> {
         let script = self.script.clone();
         let name = name.to_string();
         let value = serde_json::to_string(&input)?;
@@ -117,8 +109,7 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    execute_inner(name, value)
-                        .map(Some)
+                    execute_inner(name, value).map(Some)
                 })
                 .await?
         } else {
@@ -156,7 +147,9 @@ fn call(name: String, event: Event) -> worker::Result<Option<Command>> {
             Event::Request(req) => {
                 let fn_as_value = ctx.globals().get::<&str, Function>(name.as_str())?;
 
-                let function = fn_as_value.as_function().ok_or(worker::Error::InvalidFunction(name))?;
+                let function = fn_as_value
+                    .as_function()
+                    .ok_or(worker::Error::InvalidFunction(name))?;
 
                 let args = prepare_args(&ctx, req)?;
                 let command: Option<Value> = function.call(args).ok();
@@ -175,7 +168,9 @@ fn execute_inner(name: String, value: String) -> worker::Result<ConstValue> {
         runtime.0.with(|ctx| {
             let fn_as_value = ctx.globals().get::<_, rquickjs::Function>(&name)?;
 
-            let function = fn_as_value.as_function().ok_or(worker::Error::InvalidFunction(name))?;
+            let function = fn_as_value
+                .as_function()
+                .ok_or(worker::Error::InvalidFunction(name))?;
             let val: String = function.call((value,))?;
             Ok::<_, worker::Error>(serde_json::from_str(&val)?)
         })
