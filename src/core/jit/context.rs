@@ -8,21 +8,34 @@ use crate::core::ir::ResolverContextLike;
 pub struct Context<'a, Input, Output> {
     request: &'a Request<Input>,
     value: Option<&'a Output>,
+    is_query: bool,
 }
 
 impl<'a, Input, Output> Clone for Context<'a, Input, Output> {
     fn clone(&self) -> Self {
-        Self { request: self.request, value: self.value }
+        Self {
+            request: self.request,
+            value: self.value,
+            is_query: self.is_query,
+        }
     }
 }
 
 impl<'a, Input, Output> Context<'a, Input, Output> {
     pub fn new(request: &'a Request<Input>) -> Self {
-        Self { request, value: None }
+        Self { request, value: None, is_query: false }
     }
 
     pub fn with_value(&self, value: &'a Output) -> Self {
-        Self { request: self.request, value: Some(value) }
+        Self {
+            request: self.request,
+            value: Some(value),
+            is_query: self.is_query,
+        }
+    }
+
+    pub fn with_is_query(&self, is_query: bool) -> Self {
+        Self { request: self.request, value: self.value, is_query }
     }
 }
 
@@ -40,7 +53,7 @@ impl<'a> ResolverContextLike for Context<'a, async_graphql::Value, async_graphql
     }
 
     fn is_query(&self) -> bool {
-        todo!()
+        self.is_query
     }
 
     fn add_error(&self, _error: async_graphql::ServerError) {

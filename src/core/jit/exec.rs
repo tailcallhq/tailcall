@@ -7,7 +7,7 @@ use futures_util::future::join_all;
 
 use super::context::Context;
 use super::synth::Synthesizer;
-use super::{DataPath, ExecutionPlan, Field, Nested, Request, Response, Store};
+use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
@@ -15,7 +15,7 @@ use crate::core::json::JsonLike;
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
 pub struct Executor<Synth, IRExec> {
-    plan: ExecutionPlan,
+    plan: OperationPlan,
     synth: Synth,
     exec: IRExec,
 }
@@ -26,7 +26,7 @@ where
     Synth: Synthesizer<Value = Result<Output, Error>, Variable = Input>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
-    pub fn new(plan: ExecutionPlan, synth: Synth, exec: Exec) -> Self {
+    pub fn new(plan: OperationPlan, synth: Synth, exec: Exec) -> Self {
         Self { plan, synth, exec }
     }
 
@@ -50,7 +50,7 @@ where
 struct ExecutorInner<'a, Input, Output, Error, Exec> {
     request: Request<Input>,
     store: Arc<Mutex<Store<Result<Output, Error>>>>,
-    plan: ExecutionPlan,
+    plan: OperationPlan,
     ir_exec: &'a Exec,
 }
 
@@ -62,17 +62,20 @@ where
     fn new(
         request: Request<Input>,
         store: Arc<Mutex<Store<Result<Output, Error>>>>,
-        plan: ExecutionPlan,
+        plan: OperationPlan,
         ir_exec: &'a Exec,
     ) -> Self {
         Self { request, store, plan, ir_exec }
     }
 
     async fn init(&mut self) {
-        join_all(self.plan.as_nested().iter().map(|field| async {
-            let ctx = Context::new(&self.request);
-            self.execute(field, &ctx, DataPath::new()).await
-        }))
+        let ctx = Context::new(&self.request).with_is_query(self.plan.is_query());
+        join_all(
+            self.plan
+                .as_nested()
+                .iter()
+                .map(|field| async { self.execute(field, &ctx, DataPath::new()).await }),
+        )
         .await;
     }
 

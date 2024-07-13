@@ -5,7 +5,7 @@ use super::super::Result;
 use super::Synthesizer;
 use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
-use crate::core::jit::{DataPath, ExecutionPlan, Variables};
+use crate::core::jit::{DataPath, OperationPlan, Variables};
 use crate::core::json::JsonLike;
 
 pub struct Synth {
@@ -16,7 +16,7 @@ pub struct Synth {
 
 impl Synth {
     pub fn new(
-        plan: ExecutionPlan,
+        plan: OperationPlan,
         store: Store<Result<Value>>,
         variables: Variables<async_graphql_value::ConstValue>,
     ) -> Self {
@@ -158,11 +158,11 @@ impl Synth {
 }
 
 pub struct SynthConst {
-    plan: ExecutionPlan,
+    plan: OperationPlan,
 }
 
 impl SynthConst {
-    pub fn new(plan: ExecutionPlan) -> Self {
+    pub fn new(plan: OperationPlan) -> Self {
         Self { plan }
     }
 }

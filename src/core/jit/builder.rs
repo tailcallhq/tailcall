@@ -212,7 +212,7 @@ impl Builder {
     }
 
     #[inline(always)]
-    pub fn build(&self) -> Result<ExecutionPlan, String> {
+    pub fn build(&self) -> Result<OperationPlan, String> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
@@ -244,7 +244,7 @@ impl Builder {
             }
         }
 
-        Ok(ExecutionPlan::new(fields))
+        Ok(OperationPlan::new(fields))
     }
 }
 
@@ -260,7 +260,7 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>) -> ExecutionPlan {
+    fn plan(query: impl AsRef<str>) -> OperationPlan {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();

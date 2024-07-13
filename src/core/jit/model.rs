@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
+use async_graphql::parser::types::OperationType;
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
@@ -203,12 +204,13 @@ impl Debug for Flat {
 pub struct Nested(Vec<Field<Nested>>);
 
 #[derive(Clone, Debug)]
-pub struct ExecutionPlan {
+pub struct OperationPlan {
     flat: Vec<Field<Flat>>,
+    operation_type: OperationType,
     nested: Vec<Field<Nested>>,
 }
 
-impl ExecutionPlan {
+impl OperationPlan {
     pub fn new(fields: Vec<Field<Flat>>) -> Self {
         let nested = fields
             .clone()
@@ -217,7 +219,11 @@ impl ExecutionPlan {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        Self { flat: fields, nested }
+        Self { flat: fields, nested, operation_type: OperationType::Query }
+    }
+
+    pub fn is_query(&self) -> bool {
+        self.operation_type == OperationType::Query
     }
 
     pub fn as_nested(&self) -> &[Field<Nested>] {

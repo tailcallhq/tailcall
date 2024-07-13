@@ -5,7 +5,7 @@ use async_graphql::Value;
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
 use super::synth::SynthConst;
-use super::{Error, ExecutionPlan, Request, Response, Result};
+use super::{Error, OperationPlan, Request, Response, Result};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
@@ -13,7 +13,7 @@ use crate::core::ir::EvalContext;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
-    plan: ExecutionPlan,
+    plan: OperationPlan,
     app_ctx: Arc<AppContext>,
 }
 
