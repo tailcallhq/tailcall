@@ -19,7 +19,7 @@ impl super::Scalar for Date {
     fn validate(&self) -> fn(&ConstValue) -> bool {
         |value| {
             if let Some(date_str) = value.as_str() {
-                if let Ok(_) = DateTime::parse_from_rfc3339(date_str) {
+                if DateTime::parse_from_rfc3339(date_str).is_ok() {
                     return true;
                 }
             }
