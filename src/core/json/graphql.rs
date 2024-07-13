@@ -96,7 +96,7 @@ impl<'a> JsonLike<'a> for ConstValue {
     fn as_object(&'a self) -> Option<&'a Self::JsonObject> {
         match self {
             ConstValue::Object(map) => Some(map),
-            _ => None
+            _ => None,
         }
     }
 }

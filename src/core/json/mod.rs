@@ -40,7 +40,10 @@ fn group_by_key<'a, J: JsonLike<'a>>(src: Vec<(&'a J, &'a J)>) -> HashMap<String
     let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
     for (key, value) in src {
         // Need to handle number and string keys
-        let key_str = key.as_str().map(|a| a.to_string()).or_else(|| key.as_f64().map(|a| a.to_string()));
+        let key_str = key
+            .as_str()
+            .map(|a| a.to_string())
+            .or_else(|| key.as_f64().map(|a| a.to_string()));
 
         if let Some(key) = key_str {
             if let Some(values) = map.get_mut(&key) {

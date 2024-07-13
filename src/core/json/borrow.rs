@@ -27,27 +27,27 @@ impl<'a> JsonLike<'a> for Value<'a> {
     fn as_object(&'a self) -> Option<&Self::JsonObject> {
         self.as_object()
     }
-    
+
     fn as_str(&'a self) -> Option<&str> {
         self.as_str()
     }
-    
+
     fn as_i64(&'a self) -> Option<i64> {
         self.as_i64()
     }
-    
+
     fn as_u64(&'a self) -> Option<u64> {
         self.as_u64()
     }
-    
+
     fn as_f64(&'a self) -> Option<f64> {
         self.as_f64()
     }
-    
+
     fn as_bool(&'a self) -> Option<bool> {
         self.as_bool()
     }
-    
+
     fn is_null(&'a self) -> bool {
         self.is_null()
     }
