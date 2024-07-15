@@ -3,15 +3,9 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::Synthesizer;
-use crate::core::jit::{
-    model::{Field, Nested},
-    Error,
-};
-use crate::core::jit::{
-    store::{Data, Store},
-    Variable,
-};
-use crate::core::jit::{DataPath, ExecutionPlan, Variables};
+use crate::core::jit::model::{Field, Nested};
+use crate::core::jit::store::{Data, Store};
+use crate::core::jit::{DataPath, Error, ExecutionPlan, Variable, Variables};
 use crate::core::json::JsonLike;
 
 pub struct Synth {

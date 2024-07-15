@@ -12,6 +12,8 @@ use super::{DataPath, ExecutionPlan, Field, Nested, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
+type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Positioned<Error>>>>>;
+
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
@@ -36,8 +38,7 @@ where
         &self,
         request: Request<Input>,
     ) -> Store<Result<Output, Positioned<Error>>> {
-        let store: Arc<Mutex<Store<Result<Output, Positioned<Error>>>>> =
-            Arc::new(Mutex::new(Store::new()));
+        let store = Arc::new(Mutex::new(Store::new()));
         let mut ctx = ExecutorInner::new(request, store.clone(), self.plan.to_owned(), &self.exec);
         ctx.init().await;
 
@@ -55,7 +56,7 @@ where
 #[derive(Getters)]
 struct ExecutorInner<'a, Input, Output, Error, Exec> {
     request: Request<Input>,
-    store: Arc<Mutex<Store<Result<Output, Positioned<Error>>>>>,
+    store: SharedStore<Output, Error>,
     plan: ExecutionPlan<Input>,
     ir_exec: &'a Exec,
 }
@@ -68,7 +69,7 @@ where
 {
     fn new(
         request: Request<Input>,
-        store: Arc<Mutex<Store<Result<Output, Positioned<Error>>>>>,
+        store: SharedStore<Output, Error>,
         plan: ExecutionPlan<Input>,
         ir_exec: &'a Exec,
     ) -> Self {

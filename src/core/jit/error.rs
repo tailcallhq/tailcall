@@ -1,4 +1,5 @@
-use async_graphql::{parser::types::OperationType, ErrorExtensions};
+use async_graphql::parser::types::OperationType;
+use async_graphql::ErrorExtensions;
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
