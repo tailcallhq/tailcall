@@ -4,7 +4,7 @@ use std::ops::DerefMut;
 use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
-use super::{Builder, ExecutionPlan, Result, Variables};
+use super::{Builder, OperationPlan, Result, Variables};
 use crate::core::blueprint::Blueprint;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -33,7 +33,7 @@ impl From<async_graphql::Request> for Request<ConstValue> {
 }
 
 impl Request<ConstValue> {
-    pub fn create_plan(&self, blueprint: &Blueprint) -> Result<ExecutionPlan<ConstValue>> {
+    pub fn create_plan(&self, blueprint: &Blueprint) -> Result<OperationPlan<ConstValue>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = Builder::new(blueprint, doc);
         let plan = builder.build(&self.variables)?;

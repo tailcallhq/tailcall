@@ -1,6 +1,6 @@
 use async_graphql_value::{ConstValue, Value};
 
-use super::{ExecutionPlan, ResolveInputError, Variables};
+use super::{OperationPlan, ResolveInputError, Variables};
 
 /// Trait to represent conversion from some dynamic type (with variables)
 /// to the resolved variant based on the additional provided info.
@@ -30,14 +30,14 @@ impl InputResolvable for Value {
     }
 }
 
-/// Transforms [ExecutionPlan] values the way that all the input values
+/// Transforms [OperationPlan] values the way that all the input values
 /// are transformed to const variant with the help of [InputResolvable] trait
 pub struct InputResolver<Input> {
-    plan: ExecutionPlan<Input>,
+    plan: OperationPlan<Input>,
 }
 
 impl<Input> InputResolver<Input> {
-    pub fn new(plan: ExecutionPlan<Input>) -> Self {
+    pub fn new(plan: OperationPlan<Input>) -> Self {
         Self { plan }
     }
 }
@@ -51,7 +51,7 @@ where
     pub fn resolve_input(
         &self,
         variables: &Variables<Output>,
-    ) -> Result<ExecutionPlan<Output>, ResolveInputError> {
+    ) -> Result<OperationPlan<Output>, ResolveInputError> {
         let new_fields = self
             .plan
             .as_parent()
@@ -59,6 +59,6 @@ where
             .map(|field| field.clone().try_map(|value| value.resolve(variables)))
             .collect::<Result<_, _>>()?;
 
-        Ok(ExecutionPlan::new(new_fields, self.plan.operation_type()))
+        Ok(OperationPlan::new(new_fields, self.plan.operation_type()))
     }
 }

@@ -13,7 +13,7 @@ use super::model::*;
 use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
-use crate::core::jit::model::ExecutionPlan;
+use crate::core::jit::model::OperationPlan;
 use crate::core::merge_right::MergeRight;
 
 #[derive(PartialEq, strum_macros::Display)]
@@ -245,7 +245,7 @@ impl Builder {
     pub fn build(
         &self,
         variables: &Variables<ConstValue>,
-    ) -> Result<ExecutionPlan<ConstValue>, BuildError> {
+    ) -> Result<OperationPlan<ConstValue>, BuildError> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
@@ -280,7 +280,7 @@ impl Builder {
             }
         };
 
-        let plan = ExecutionPlan::new(fields, operation_type);
+        let plan = OperationPlan::new(fields, operation_type);
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly
@@ -305,7 +305,7 @@ mod tests {
     fn plan(
         query: impl AsRef<str>,
         variables: &Variables<ConstValue>,
-    ) -> ExecutionPlan<ConstValue> {
+    ) -> OperationPlan<ConstValue> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();

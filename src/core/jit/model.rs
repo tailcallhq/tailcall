@@ -233,13 +233,13 @@ impl Debug for Flat {
 pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
 #[derive(Clone, Debug)]
-pub struct ExecutionPlan<Input> {
+pub struct OperationPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
 }
 
-impl<Input> ExecutionPlan<Input> {
+impl<Input> OperationPlan<Input> {
     pub fn new(fields: Vec<Field<Flat, Input>>, operation_type: OperationType) -> Self
     where
         Input: Clone,
