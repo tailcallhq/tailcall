@@ -26,7 +26,7 @@ impl JsonPlaceholder {
 
         let user_map = users.iter().fold(HashMap::new(), |mut map, user| {
             let id = if let Value::Object(user) = user {
-                user.get("id").and_then(|u| u.as_u64_ok().ok())
+                user.get("id").and_then(|u| u.as_u64())
             } else {
                 None
             };
@@ -41,7 +41,7 @@ impl JsonPlaceholder {
             .iter()
             .map(|post| {
                 let user_id = if let Value::Object(post) = post {
-                    post.get("userId").and_then(|u| u.as_u64_ok().ok())
+                    post.get("userId").and_then(|u| u.as_u64())
                 } else {
                     None
                 };

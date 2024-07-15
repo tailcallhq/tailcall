@@ -8,15 +8,14 @@ pub trait JsonLike<'a>: Sized {
     fn null() -> Self;
 
     // Operators
-    fn as_array_ok(&'a self) -> Result<&'a Vec<Self>, &str>;
-    fn as_object_ok(&'a self) -> Result<&Self::JsonObject, &str>;
-    fn as_str_ok(&'a self) -> Result<&str, &str>;
-    fn as_i64_ok(&'a self) -> Result<i64, &str>;
-    fn as_u64_ok(&'a self) -> Result<u64, &str>;
-    fn as_f64_ok(&'a self) -> Result<f64, &str>;
-    fn as_bool_ok(&'a self) -> Result<bool, &str>;
-    fn as_null_ok(&'a self) -> Result<(), &str>;
-    fn as_option_ok(&'a self) -> Result<Option<&Self>, &str>;
+    fn as_array(&'a self) -> Option<&'a Vec<Self>>;
+    fn as_object(&'a self) -> Option<&Self::JsonObject>;
+    fn as_str(&'a self) -> Option<&str>;
+    fn as_i64(&'a self) -> Option<i64>;
+    fn as_u64(&'a self) -> Option<u64>;
+    fn as_f64(&'a self) -> Option<f64>;
+    fn as_bool(&'a self) -> Option<bool>;
+    fn is_null(&'a self) -> bool;
     fn get_path<T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self>;
     fn get_key(&'a self, path: &'a str) -> Option<&Self>;
     fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>>;
