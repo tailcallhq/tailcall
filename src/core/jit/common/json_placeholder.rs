@@ -8,7 +8,7 @@ use crate::core::jit::builder::Builder;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::Variables;
-use crate::core::json::{JsonLike, JsonLikeOwned};
+use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::Validator;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
@@ -40,7 +40,7 @@ impl JsonPlaceholder {
         let users: HashMap<_, _> = posts
             .iter()
             .map(|post| {
-                let user_id = post.as_object().and_then(|v| post.get_key("userId")).and_then(|u| u.as_u64());
+                let user_id = post.as_object().and_then(|v| v.get_key("userId")).and_then(|u| u.as_u64());
 
                 if let Some(user_id) = user_id {
                     if let Some(user) = user_map.get(&user_id) {
