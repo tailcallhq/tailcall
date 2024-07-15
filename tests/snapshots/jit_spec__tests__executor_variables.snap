@@ -1,0 +1,10 @@
+---
+source: tests/jit_spec.rs
+expression: data
+---
+{
+  "user": {
+    "id": 1,
+    "name": "Leanne Graham"
+  }
+}

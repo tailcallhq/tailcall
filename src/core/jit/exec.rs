@@ -14,19 +14,20 @@ use crate::core::json::JsonLike;
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
-pub struct Executor<Synth, IRExec> {
-    plan: ExecutionPlan,
+pub struct Executor<Synth, IRExec, Input> {
+    plan: ExecutionPlan<Input>,
     synth: Synth,
     exec: IRExec,
 }
 
-impl<Input: Clone, Output, Error, Synth, Exec> Executor<Synth, Exec>
+impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec, Input>
 where
     Output: for<'a> JsonLike<'a> + Debug,
+    Input: Clone + Debug,
     Synth: Synthesizer<Value = Result<Output, Error>, Variable = Input>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
-    pub fn new(plan: ExecutionPlan, synth: Synth, exec: Exec) -> Self {
+    pub fn new(plan: ExecutionPlan<Input>, synth: Synth, exec: Exec) -> Self {
         Self { plan, synth, exec }
     }
 
@@ -50,19 +51,20 @@ where
 struct ExecutorInner<'a, Input, Output, Error, Exec> {
     request: Request<Input>,
     store: Arc<Mutex<Store<Result<Output, Error>>>>,
-    plan: ExecutionPlan,
+    plan: ExecutionPlan<Input>,
     ir_exec: &'a Exec,
 }
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
     Output: for<'i> JsonLike<'i> + Debug,
+    Input: Clone + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
     fn new(
         request: Request<Input>,
         store: Arc<Mutex<Store<Result<Output, Error>>>>,
-        plan: ExecutionPlan,
+        plan: ExecutionPlan<Input>,
         ir_exec: &'a Exec,
     ) -> Self {
         Self { request, store, plan, ir_exec }
@@ -71,6 +73,23 @@ where
     async fn init(&mut self) {
         join_all(self.plan.as_nested().iter().map(|field| async {
             let ctx = Context::new(&self.request);
+            let mut arg_map = indexmap::IndexMap::new();
+            for arg in field.args.iter() {
+                let name = arg.name.as_str();
+                let value: Option<Input> = arg
+                    .value
+                    .clone()
+                    // TODO: default value resolution should happen in the InputResolver
+                    .or_else(|| arg.default_value.clone());
+
+                if let Some(value) = value {
+                    arg_map.insert(name, value);
+                } else if !arg.type_of.is_nullable() {
+                    // TODO: throw error here
+                    todo!()
+                }
+            }
+            let ctx = ctx.with_args(arg_map);
             self.execute(field, &ctx, DataPath::new()).await
         }))
         .await;
@@ -78,7 +97,7 @@ where
 
     async fn execute<'b>(
         &'b self,
-        field: &'b Field<Nested>,
+        field: &'b Field<Nested<Input>, Input>,
         ctx: &'b Context<'b, Input, Output>,
         data_path: DataPath,
     ) -> Result<(), Error> {
@@ -91,7 +110,7 @@ where
                 if field.type_of.is_list() {
                     // Check if the value is an array
                     if let Some(array) = value.as_array() {
-                        join_all(field.nested().iter().map(|field| {
+                        join_all(field.nested_iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
                                 let ctx = ctx.with_value(value); // Output::JsonArray::Value
                                 let data_path = data_path.clone().with_index(index);
@@ -107,7 +126,7 @@ where
                 // TODO: Validate if the value is an Object
                 // Has to be an Object, we don't do anything while executing if its a Scalar
                 else {
-                    join_all(field.nested().iter().map(|child| {
+                    join_all(field.nested_iter().map(|child| {
                         let ctx = ctx.with_value(value);
                         let data_path = data_path.clone();
                         async move { self.execute(child, &ctx, data_path).await }
