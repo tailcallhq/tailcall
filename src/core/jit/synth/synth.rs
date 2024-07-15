@@ -207,7 +207,10 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
 
 #[cfg(test)]
 mod tests {
-    use async_graphql::Value;
+
+    use async_graphql_value::ConstValue;
+    use serde::de::DeserializeOwned;
+    use serde::Serialize;
 
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
@@ -215,6 +218,7 @@ mod tests {
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
+    use crate::core::json::JsonLikeOwned;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -266,7 +270,7 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value(self) -> Data<Value> {
+        fn into_value<Value: JsonLikeOwned + DeserializeOwned>(self) -> Data<Value> {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
@@ -286,13 +290,27 @@ mod tests {
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn init(query: &str, store: Vec<(FieldId, Data<Value>)>) -> String {
+    fn init<Value: JsonLikeOwned + DeserializeOwned + Serialize + Clone>(
+        query: &str,
+        store: Vec<(FieldId, TestData)>,
+    ) -> String {
+        let store = store
+            .into_iter()
+            .map(|(id, data)| (id, data.into_value()))
+            .collect::<Vec<_>>();
+
         let doc = async_graphql::parser::parse_query(query).unwrap();
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build(&Variables::new()).unwrap();
+        let plan = plan
+            .try_map(|v| {
+                let v = v.into_json()?;
+                Ok::<_, anyhow::Error>(serde_json::from_value::<Value>(v)?)
+            })
+            .unwrap();
 
         let store = store
             .into_iter()
@@ -309,9 +327,9 @@ mod tests {
 
     #[test]
     fn test_posts() {
-        let store = vec![(FieldId::new(0), TestData::Posts.into_value())];
+        let store = vec![(FieldId::new(0), TestData::Posts)];
 
-        let val = init(
+        let val = init::<ConstValue>(
             r#"
             query {
                 posts { id }
@@ -324,14 +342,14 @@ mod tests {
 
     #[test]
     fn test_user() {
-        let store = vec![(FieldId::new(0), TestData::User1.into_value())];
+        let store = vec![(FieldId::new(0), TestData::User1)];
 
-        let val = init(
+        let val = init::<ConstValue>(
             r#"
-            query {
-                user(id: 1) { id }
-            }
-        "#,
+                query {
+                    user(id: 1) { id }
+                }
+            "#,
             store,
         );
         insta::assert_snapshot!(val);
@@ -340,16 +358,16 @@ mod tests {
     #[test]
     fn test_nested() {
         let store = vec![
-            (FieldId::new(0), TestData::Posts.into_value()),
-            (FieldId::new(3), TestData::UsersData.into_value()),
+            (FieldId::new(0), TestData::Posts),
+            (FieldId::new(3), TestData::UsersData),
         ];
 
-        let val = init(
+        let val = init::<ConstValue>(
             r#"
-            query {
-                posts { id title user { id name } }
-            }
-        "#,
+                query {
+                    posts { id title user { id name } }
+                }
+            "#,
             store,
         );
         insta::assert_snapshot!(val);
@@ -358,22 +376,23 @@ mod tests {
     #[test]
     fn test_multiple_nested() {
         let store = vec![
-            (FieldId::new(0), TestData::Posts.into_value()),
-            (FieldId::new(3), TestData::UsersData.into_value()),
-            (FieldId::new(6), TestData::Users.into_value()),
+            (FieldId::new(0), TestData::Posts),
+            (FieldId::new(3), TestData::UsersData),
+            (FieldId::new(6), TestData::Users),
         ];
 
-        let val = init(
+        let val = init::<ConstValue>(
             r#"
-            query {
-                posts { id title user { id name } }
-                users { id name }
-            }
-        "#,
+                query {
+                    posts { id title user { id name } }
+                    users { id name }
+                }
+            "#,
             store,
         );
         insta::assert_snapshot!(val)
     }
+
     #[test]
     fn test_json_placeholder() {
         let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
