@@ -1,4 +1,4 @@
-use async_graphql::Positioned;
+use async_graphql::{ErrorExtensions, Positioned};
 use derive_setters::Setters;
 use serde::Serialize;
 
@@ -34,10 +34,13 @@ impl Response<async_graphql::Value, jit::Error> {
             resp = resp.extension(name, value);
         }
         for error in self.errors {
-            resp.errors.push(async_graphql::ServerError::new(
-                error.node.to_string(),
-                Some(error.pos),
-            ));
+            let extensions = error.node.extend().extensions;
+            let mut server_error =
+                async_graphql::ServerError::new(error.node.to_string(), Some(error.pos));
+
+            server_error.extensions = extensions;
+
+            resp.errors.push(server_error);
         }
         resp
     }
