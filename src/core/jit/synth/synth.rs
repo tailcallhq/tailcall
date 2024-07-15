@@ -40,12 +40,11 @@ impl<Extensions, Input> Field<Extensions, Input> {
     pub fn skip<Value: JsonLikeOwned>(&self, variables: &Variables<Value>) -> bool {
         let eval =
             |variable_option: Option<&Variable>, variables: &Variables<Value>, default: bool| {
-                match variable_option.map(|a| a.as_str()) {
-                    Some(name) => variables
-                        .get(name)
-                        .map_or(default, |value| value.as_bool().unwrap_or(default)),
-                    None => default,
-                }
+                variable_option
+                    .map(|a| a.as_str())
+                    .and_then(|name| variables.get(name))
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(default)
             };
         let skip = eval(self.skip.as_ref(), variables, false);
         let include = eval(self.include.as_ref(), variables, true);
