@@ -1,5 +1,5 @@
 use async_graphql::parser::types::OperationType;
-use async_graphql::ErrorExtensions;
+use async_graphql::{ErrorExtensions, PathSegment};
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
@@ -18,6 +18,14 @@ pub enum ResolveInputError {
     VariableIsNotFound(String),
 }
 
+#[derive(Error, Debug, Clone)]
+pub enum ValidationError {
+    // TODO: replace with sane error message. Right now, it's defined as is only for compatibility
+    // with async_graphql error message for this case
+    #[error(r#"internal: invalid value for scalar "{type_of}", expected "FieldValue::Value""#)]
+    ScalarInvalid { type_of: String, path: String },
+}
+
 #[derive(Debug, Clone, Error)]
 pub enum Error {
     #[error("Build error: {0}")]
@@ -26,6 +34,8 @@ pub enum Error {
     ParseError(#[from] async_graphql::parser::Error),
     #[error(transparent)]
     IR(#[from] crate::core::ir::Error),
+    #[error(transparent)]
+    Validation(#[from] ValidationError),
 }
 
 impl ErrorExtensions for Error {
@@ -34,6 +44,20 @@ impl ErrorExtensions for Error {
             Error::BuildError(error) => error.extend(),
             Error::ParseError(error) => error.extend(),
             Error::IR(error) => error.extend(),
+            Error::Validation(error) => error.extend(),
+        }
+    }
+}
+
+impl Error {
+    pub fn path(&self) -> Vec<PathSegment> {
+        match self {
+            Error::Validation(error) => match error {
+                ValidationError::ScalarInvalid { type_of: _, path } => {
+                    vec![PathSegment::Field(path.clone())]
+                }
+            },
+            _ => Vec::new(),
         }
     }
 }

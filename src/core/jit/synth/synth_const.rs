@@ -5,8 +5,9 @@ use indexmap::IndexMap;
 use super::Synthesizer;
 use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
-use crate::core::jit::{DataPath, Error, ExecutionPlan, Variable, Variables};
+use crate::core::jit::{DataPath, Error, ExecutionPlan, ValidationError, Variable, Variables};
 use crate::core::json::JsonLike;
+use crate::core::scalar::get_scalar;
 
 pub struct Synth {
     selection: Vec<Field<Nested<ConstValue>, ConstValue>>,
@@ -128,7 +129,25 @@ impl Synth {
 
         match parent {
             // scalar values should be returned as is
-            val if node.is_scalar => Ok(val.clone()),
+            val if node.is_scalar => {
+                let validation = get_scalar(node.type_of.name());
+
+                // TODO: add validation for input type as well. But input types are not checked
+                // by async_graphql anyway so it should be done after replacing
+                // default engine with JIT
+                if validation(val) {
+                    Ok(val.clone())
+                } else {
+                    Err(Positioned {
+                        pos: node.pos,
+                        node: ValidationError::ScalarInvalid {
+                            type_of: node.type_of.name().to_string(),
+                            path: node.name.clone(),
+                        }
+                        .into(),
+                    })
+                }
+            }
             ConstValue::Object(obj) => {
                 let mut ans = IndexMap::default();
                 if include {

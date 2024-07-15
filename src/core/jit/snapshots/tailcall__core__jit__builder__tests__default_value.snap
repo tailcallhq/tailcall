@@ -44,7 +44,7 @@ expression: plan.into_nested()
                         id: 1,
                         name: "id",
                         type_of: ID!,
-                        is_scalar: false,
+                        is_scalar: true,
                     },
                 ],
             ),
