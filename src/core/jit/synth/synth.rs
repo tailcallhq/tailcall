@@ -215,6 +215,7 @@ mod tests {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
+    use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
     use crate::core::valid::Validator;
@@ -375,5 +376,11 @@ mod tests {
             store,
         );
         insta::assert_snapshot!(val)
+    }
+    #[test]
+    fn test_json_placeholder() {
+        let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
+        let val = synth.synthesize().unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }
