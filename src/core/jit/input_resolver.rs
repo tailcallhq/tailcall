@@ -59,6 +59,6 @@ where
             .map(|field| field.clone().try_map(|value| value.resolve(variables)))
             .collect::<Result<_, _>>()?;
 
-        Ok(ExecutionPlan::new(new_fields))
+        Ok(ExecutionPlan::new(new_fields, self.plan.operation_type()))
     }
 }
