@@ -1,16 +1,16 @@
 use super::super::Result;
-use crate::core::jit::model::{ExecutionPlan, Field, Nested, Variable, Variables};
+use crate::core::jit::model::{OperationPlan, Field, Nested, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::synth::Synthesizer;
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 
 // TODO: rename
 pub struct AlsoSynth<Value> {
-    plan: ExecutionPlan<Value>,
+    plan: OperationPlan<Value>,
 }
 
 impl<Value: JsonLikeOwned> AlsoSynth<Value> {
-    pub fn new(plan: ExecutionPlan<Value>) -> Self {
+    pub fn new(plan: OperationPlan<Value>) -> Self {
         Self { plan }
     }
 }
@@ -56,7 +56,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
 impl<Value: JsonLikeOwned + Clone> Synth<Value> {
     #[inline(always)]
     pub fn new(
-        plan: ExecutionPlan<Value>,
+        plan: OperationPlan<Value>,
         store: Store<Result<Value>>,
         variables: Variables<async_graphql_value::ConstValue>,
     ) -> Self {

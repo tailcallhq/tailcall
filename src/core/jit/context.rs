@@ -11,15 +11,21 @@ pub struct Context<'a, Input, Output> {
     request: &'a Request<Input>,
     value: Option<&'a Output>,
     args: Option<indexmap::IndexMap<Name, Input>>,
+    is_query: bool,
 }
 
 impl<'a, Input, Output> Context<'a, Input, Output> {
-    pub fn new(request: &'a Request<Input>) -> Self {
-        Self { request, value: None, args: None }
+    pub fn new(request: &'a Request<Input>, is_query: bool) -> Self {
+        Self { request, value: None, args: None, is_query }
     }
 
     pub fn with_value(&self, value: &'a Output) -> Self {
-        Self { request: self.request, value: Some(value), args: None }
+        Self {
+            request: self.request,
+            value: Some(value),
+            args: None,
+            is_query: self.is_query,
+        }
     }
 
     pub fn with_args(&self, args: indexmap::IndexMap<&str, Input>) -> Self {
@@ -27,7 +33,12 @@ impl<'a, Input, Output> Context<'a, Input, Output> {
         for (key, value) in args {
             map.insert(Name::new(key), value);
         }
-        Self { request: self.request, value: self.value, args: Some(map) }
+        Self {
+            request: self.request,
+            value: self.value,
+            args: Some(map),
+            is_query: self.is_query,
+        }
     }
 }
 
@@ -46,7 +57,7 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
     }
 
     fn is_query(&self) -> bool {
-        todo!()
+        self.is_query
     }
 
     fn add_error(&self, _error: ServerError) {
