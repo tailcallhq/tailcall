@@ -16,10 +16,12 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::request_context::RequestContext;
 use super::telemetry::{get_response_status_code, RequestCounter};
-use super::{showcase, telemetry, AppContext, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
+use super::{showcase, telemetry, TAILCALL_HTTPS_ORIGIN, TAILCALL_HTTP_ORIGIN};
+use crate::core::app_context::AppContext;
 use crate::core::async_graphql_hyper::{GraphQLRequestLike, GraphQLResponse};
 use crate::core::blueprint::telemetry::TelemetryExporter;
 use crate::core::config::{PrometheusExporter, PrometheusFormat};
+use crate::core::jit::JITExecutor;
 
 pub const API_URL_PREFIX: &str = "/api";
 
@@ -97,7 +99,7 @@ pub fn update_response_headers(
 #[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     req: Request<Body>,
-    app_ctx: &AppContext,
+    app_ctx: &Arc<AppContext>,
     req_counter: &mut RequestCounter,
 ) -> Result<Response<Body>> {
     req_counter.set_http_route("/graphql");
@@ -108,14 +110,14 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     match graphql_request {
         Ok(mut request) => {
             if !(app_ctx.blueprint.server.dedupe && request.is_query()) {
-                Ok(execute_query(&app_ctx, &req_ctx, request).await?)
+                Ok(execute_query(app_ctx, &req_ctx, request).await?)
             } else {
                 let operation_id = request.operation_id(&req.headers);
                 let out = app_ctx
                     .dedupe_operation_handler
                     .dedupe(&operation_id, || {
                         Box::pin(async move {
-                            let resp = execute_query(&app_ctx, &req_ctx, request).await?;
+                            let resp = execute_query(app_ctx, &req_ctx, request).await?;
                             Ok(crate::core::http::Response::from_hyper(resp).await?)
                         })
                     })
@@ -140,13 +142,17 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
 }
 
 async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
-    app_ctx: &&AppContext,
+    app_ctx: &Arc<AppContext>,
     req_ctx: &Arc<RequestContext>,
     request: T,
 ) -> anyhow::Result<Response<Body>> {
-    let mut response = request.data(req_ctx.clone()).execute(&app_ctx.schema).await;
-
+    let mut response = if app_ctx.blueprint.server.enable_jit {
+        request.execute(&JITExecutor::new(app_ctx.clone())).await
+    } else {
+        request.data(req_ctx.clone()).execute(&app_ctx.schema).await
+    };
     response = update_cache_control_header(response, app_ctx, req_ctx.clone());
+
     let mut resp = response.into_response()?;
     update_response_headers(&mut resp, req_ctx, app_ctx);
     Ok(resp)
@@ -299,7 +305,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         // The first check for the route should be for `/graphql`
         // This is always going to be the most used route.
         hyper::Method::POST if req.uri().path() == "/graphql" => {
-            graphql_request::<T>(req, app_ctx.as_ref(), req_counter).await
+            graphql_request::<T>(req, &app_ctx, req_counter).await
         }
         hyper::Method::POST
             if app_ctx.blueprint.server.enable_showcase
@@ -311,7 +317,7 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
                     Err(res) => return Ok(res),
                 };
 
-            graphql_request::<T>(req, &app_ctx, req_counter).await
+            graphql_request::<T>(req, &Arc::new(app_ctx), req_counter).await
         }
 
         hyper::Method::GET => {

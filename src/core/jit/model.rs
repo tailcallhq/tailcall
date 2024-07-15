@@ -1,6 +1,36 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
+use serde::Deserialize;
+
 use crate::core::ir::model::IR;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Variables<Value>(HashMap<String, Value>);
+
+impl<Value> Default for Variables<Value> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Value> Variables<Value> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        self.0.get(key)
+    }
+    pub fn insert(&mut self, key: String, value: Value) {
+        self.0.insert(key, value);
+    }
+}
+
+impl<V> FromIterator<(String, V)> for Variables<V> {
+    fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Arg {
@@ -45,44 +75,75 @@ impl FieldId {
 }
 
 #[derive(Clone)]
-pub struct Field<A: Clone> {
+pub struct Field<Extensions> {
     pub id: FieldId,
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
+    pub skip: Option<Variable>,
+    pub include: Option<Variable>,
     pub args: Vec<Arg>,
-    pub refs: Option<A>,
+    pub extensions: Option<Extensions>,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub struct Variable(String);
+
+impl Variable {
+    pub fn new(name: String) -> Self {
+        Variable(name)
+    }
 }
 
-const EMPTY_VEC: &Vec<Field<Children>> = &Vec::new();
-impl Field<Children> {
-    pub fn children(&self) -> &Vec<Field<Children>> {
-        match &self.refs {
-            Some(Children(children)) => children,
+impl<A> Field<A> {
+    #[inline(always)]
+    pub fn skip(&self, variables: &Variables<async_graphql_value::ConstValue>) -> bool {
+        let eval = |variable_option: Option<&Variable>,
+                    variables: &Variables<async_graphql_value::ConstValue>,
+                    default: bool| {
+            match variable_option {
+                Some(Variable(name)) => variables.get(name).map_or(default, |value| match value {
+                    async_graphql_value::ConstValue::Boolean(b) => *b,
+                    _ => default,
+                }),
+                None => default,
+            }
+        };
+        let skip = eval(self.skip.as_ref(), variables, false);
+        let include = eval(self.include.as_ref(), variables, true);
+
+        skip == include
+    }
+}
+
+const EMPTY_VEC: &Vec<Field<Nested>> = &Vec::new();
+impl Field<Nested> {
+    pub fn nested(&self) -> &Vec<Field<Nested>> {
+        match &self.extensions {
+            Some(Nested(children)) => children,
             _ => EMPTY_VEC,
         }
     }
 }
 
-impl Field<Parent> {
+impl Field<Flat> {
     fn parent(&self) -> Option<&FieldId> {
-        self.refs.as_ref().map(|Parent(id)| id)
+        self.extensions.as_ref().map(|Flat(id)| id)
     }
 
-    fn into_children(self, fields: &[Field<Parent>]) -> Field<Children> {
+    fn into_nested(self, fields: &[Field<Flat>]) -> Field<Nested> {
         let mut children = Vec::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
                 if *id == self.id {
-                    children.push(field.to_owned().into_children(fields));
+                    children.push(field.to_owned().into_nested(fields));
                 }
             }
         }
 
-        let refs = if children.is_empty() {
+        let extensions = if children.is_empty() {
             None
         } else {
-            Some(Children(children))
+            Some(Nested(children))
         };
 
         Field {
@@ -90,8 +151,10 @@ impl Field<Parent> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
+            skip: self.skip,
+            include: self.include,
             args: self.args,
-            refs,
+            extensions,
         }
     }
 }
@@ -108,75 +171,76 @@ impl<A: Debug + Clone> Debug for Field<A> {
         if !self.args.is_empty() {
             debug_struct.field("args", &self.args);
         }
-        if self.refs.is_some() {
-            debug_struct.field("refs", &self.refs);
+        if self.extensions.is_some() {
+            debug_struct.field("extensions", &self.extensions);
         }
         debug_struct.finish()
     }
 }
 
+/// Stores field relationships in a flat structure where each field links to its
+/// parent.
 #[derive(Clone)]
-pub struct Parent(FieldId);
+pub struct Flat(FieldId);
 
-impl Parent {
+impl Flat {
     pub fn new(id: FieldId) -> Self {
-        Parent(id)
+        Flat(id)
     }
     pub fn as_id(&self) -> &FieldId {
         &self.0
     }
 }
-impl Debug for Parent {
+impl Debug for Flat {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Parent({:?})", self.0)
+        write!(f, "Flat({:?})", self.0)
     }
 }
 
+/// Store field relationships in a nested structure like a tree where each field
+/// links to its children.
 #[derive(Clone, Debug)]
-pub struct Children(Vec<Field<Children>>);
+pub struct Nested(Vec<Field<Nested>>);
 
 #[derive(Clone, Debug)]
 pub struct ExecutionPlan {
-    parent: Vec<Field<Parent>>,
-    children: Vec<Field<Children>>,
+    flat: Vec<Field<Flat>>,
+    nested: Vec<Field<Nested>>,
 }
 
 impl ExecutionPlan {
-    pub fn new(fields: Vec<Field<Parent>>) -> Self {
-        let field_children = fields
+    pub fn new(fields: Vec<Field<Flat>>) -> Self {
+        let nested = fields
             .clone()
             .into_iter()
-            .filter(|f| f.refs.is_none())
-            .map(|f| f.into_children(&fields))
+            .filter(|f| f.extensions.is_none())
+            .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        Self { parent: fields, children: field_children }
+        Self { flat: fields, nested }
     }
 
-    pub fn as_children(&self) -> &[Field<Children>] {
-        &self.children
+    pub fn as_nested(&self) -> &[Field<Nested>] {
+        &self.nested
     }
 
-    pub fn into_children(self) -> Vec<Field<Children>> {
-        self.children
+    pub fn into_nested(self) -> Vec<Field<Nested>> {
+        self.nested
     }
 
-    pub fn as_parent(&self) -> &[Field<Parent>] {
-        &self.parent
+    pub fn as_parent(&self) -> &[Field<Flat>] {
+        &self.flat
     }
 
-    pub fn find_field(&self, id: FieldId) -> Option<&Field<Parent>> {
-        self.parent.iter().find(|field| field.id == id)
+    pub fn find_field(&self, id: FieldId) -> Option<&Field<Flat>> {
+        self.flat.iter().find(|field| field.id == id)
     }
 
-    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Parent>> {
+    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Flat>> {
         match path.split_first() {
             None => None,
             Some((name, path)) => {
-                let field = self
-                    .parent
-                    .iter()
-                    .find(|field| field.name == name.as_ref())?;
+                let field = self.flat.iter().find(|field| field.name == name.as_ref())?;
                 if path.is_empty() {
                     Some(field)
                 } else {
@@ -187,6 +251,6 @@ impl ExecutionPlan {
     }
 
     pub fn size(&self) -> usize {
-        self.parent.len()
+        self.flat.len()
     }
 }

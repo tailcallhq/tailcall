@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use async_graphql_value::ConstValue;
 use regex::Regex;
+use union_resolver::update_union_resolver;
 
 use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::*;
@@ -263,7 +264,7 @@ fn update_args<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(_, field, _typ, name), _| {
-            // TODO! assert type name
+            // TODO: assert type name
             Valid::from_iter(field.args.iter(), |(name, arg)| {
                 Valid::succeed(InputFieldDefinition {
                     name: name.clone(),
@@ -324,11 +325,10 @@ pub fn fix_dangling_resolvers<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
-        move |(config, field, ty, name), mut b_field| {
+        move |(config, field, _, name), mut b_field| {
             let mut set = HashSet::new();
             if !field.has_resolver()
-                && validate_field_has_resolver(name, field, &config.types, ty, &mut set)
-                    .is_succeed()
+                && validate_field_has_resolver(name, field, &config.types, &mut set).is_succeed()
             {
                 b_field = b_field.resolver(Some(IR::Dynamic(DynamicValue::Value(
                     ConstValue::Object(Default::default()),
@@ -512,6 +512,7 @@ pub fn to_field_definition(
         .and(update_cache_resolvers())
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
         .and(update_enum_alias())
+        .and(update_union_resolver())
         .try_fold(
             &(config_module, field, type_of, name),
             FieldDefinition::default(),
@@ -528,9 +529,9 @@ pub fn to_definitions<'a>() -> TryFold<'a, ConfigModule, Vec<Definition>, String
                     .trace(name)
                     .and_then(|definition| match definition.clone() {
                         Definition::Object(object_type_definition) => {
-                            if config_module.input_types.contains(name) {
+                            if config_module.input_types().contains(name) {
                                 to_input_object_type_definition(object_type_definition).trace(name)
-                            } else if config_module.interface_types.contains(name) {
+                            } else if config_module.interface_types().contains(name) {
                                 to_interface_type_definition(object_type_definition).trace(name)
                             } else {
                                 Valid::succeed(definition)

@@ -1,4 +1,4 @@
-use super::{to_type, FieldDefinition, Type};
+use super::{to_type, FieldDefinition};
 use crate::core::config::{self, Config};
 use crate::core::ir::model::{IO, IR};
 use crate::core::scalar;
@@ -71,7 +71,7 @@ impl<'a> MustachePartsValidator<'a> {
                 // constructing a HashMap since we'd have 3-4 arguments at max in
                 // most cases
                 if let Some(arg) = args.iter().find(|arg| arg.name == tail) {
-                    if let Type::ListType { .. } = arg.of_type {
+                    if !is_query && arg.of_type.is_list() {
                         return Valid::fail(format!("can't use list type '{tail}' here"));
                     }
 
@@ -158,9 +158,14 @@ impl FieldDefinition {
                 )
                 .and_then(|_| {
                     if let Some(body) = &req_template.body {
-                        Valid::from_iter(body.expression_segments(), |parts| {
-                            parts_validator.validate(parts, true).trace("body")
-                        })
+                        if let Some(mustache) = &body.mustache {
+                            Valid::from_iter(mustache.expression_segments(), |parts| {
+                                parts_validator.validate(parts, true).trace("body")
+                            })
+                        } else {
+                            // TODO: needs review
+                            Valid::succeed(Default::default())
+                        }
                     } else {
                         Valid::succeed(Default::default())
                     }
@@ -169,5 +174,76 @@ impl FieldDefinition {
             }
             _ => Valid::succeed(()),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::MustachePartsValidator;
+    use crate::core::blueprint::{FieldDefinition, InputFieldDefinition};
+    use crate::core::config::{Config, Field, Type};
+    use crate::core::valid::Validator;
+
+    fn initialize_test_config_and_field() -> (Config, FieldDefinition) {
+        let mut config = Config::default();
+
+        let mut t1_type = Type::default();
+        t1_type.fields.insert(
+            "numbers".to_owned(),
+            Field { type_of: "Int".to_owned(), list: true, ..Default::default() },
+        );
+        config.types.insert("T1".to_string(), t1_type);
+
+        let type_ = crate::core::blueprint::Type::ListType {
+            of_type: Box::new(crate::core::blueprint::Type::NamedType {
+                name: "Int".to_string(),
+                non_null: false,
+            }),
+            non_null: false,
+        };
+
+        let fld = FieldDefinition {
+            name: "f1".to_string(),
+            args: vec![InputFieldDefinition {
+                name: "q".to_string(),
+                of_type: type_,
+                default_value: None,
+                description: None,
+            }],
+            of_type: crate::core::blueprint::Type::NamedType {
+                name: "T1".to_string(),
+                non_null: false,
+            },
+            resolver: None,
+            directives: vec![],
+            description: None,
+            default_value: None,
+        };
+
+        (config, fld)
+    }
+
+    #[test]
+    fn test_allow_list_arguments_for_query_type() {
+        let (config, field_def) = initialize_test_config_and_field();
+
+        let parts_validator =
+            MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &field_def);
+        let validation_result =
+            parts_validator.validate(&["args".to_string(), "q".to_string()], true);
+
+        assert!(validation_result.is_succeed())
+    }
+
+    #[test]
+    fn test_should_not_allow_list_arguments_for_path_variable() {
+        let (config, field_def) = initialize_test_config_and_field();
+
+        let parts_validator =
+            MustachePartsValidator::new(config.types.get("T1").unwrap(), &config, &field_def);
+        let validation_result =
+            parts_validator.validate(&["args".to_string(), "q".to_string()], false);
+
+        assert!(validation_result.to_result().is_err())
     }
 }

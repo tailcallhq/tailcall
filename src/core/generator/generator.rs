@@ -173,7 +173,7 @@ mod test {
             })])
             .generate(false)?;
 
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
     }
 
@@ -181,12 +181,12 @@ mod test {
     fn should_generate_config_from_configs() -> anyhow::Result<()> {
         let cfg_module = Generator::default()
             .inputs(vec![Input::Config {
-                schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
+                schema: std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?,
                 source: crate::core::config::Source::GraphQL,
             }])
             .generate(true)?;
 
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
     }
 
@@ -202,7 +202,7 @@ mod test {
             }])
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
     }
 
@@ -218,7 +218,7 @@ mod test {
 
         // Config input
         let config_input = Input::Config {
-            schema: std::fs::read_to_string(tailcall_fixtures::configs::USER_POSTS)?,
+            schema: std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?,
             source: crate::core::config::Source::GraphQL,
         };
 
@@ -238,7 +238,7 @@ mod test {
             .generate(true)?;
 
         // Assert the combined output
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
     }
 
@@ -264,7 +264,7 @@ mod test {
             .inputs(inputs)
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
-        insta::assert_snapshot!(cfg_module.config.to_sdl());
+        insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
     }
 }

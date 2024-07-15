@@ -1,16 +1,17 @@
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
+use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::JsonLike;
 
 /// Represents list of bytes
-#[derive(JsonSchema, Default)]
+#[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct Bytes(pub String);
 
 impl super::Scalar for Bytes {
     fn validate(&self) -> fn(&ConstValue) -> bool {
-        |value| value.as_str_ok().is_ok()
+        |value| value.as_str().is_some()
     }
 
     fn schema(&self) -> Schema {

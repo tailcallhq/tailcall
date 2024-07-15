@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
-use serde_json_borrow::Value;
+use async_graphql::Value;
 
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
+use crate::core::jit::Variables;
+use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
@@ -23,10 +25,11 @@ impl JsonPlaceholder {
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
 
         let user_map = users.iter().fold(HashMap::new(), |mut map, user| {
-            let id = user
-                .as_object()
-                .and_then(|user| user.get("id"))
-                .and_then(|u| u.as_u64());
+            let id = if let Value::Object(user) = user {
+                user.get("id").and_then(|u| u.as_u64())
+            } else {
+                None
+            };
 
             if let Some(id) = id {
                 map.insert(id, user);
@@ -34,12 +37,14 @@ impl JsonPlaceholder {
             map
         });
 
-        let users: Vec<Value<'static>> = posts
+        let users: HashMap<_, _> = posts
             .iter()
             .map(|post| {
-                let user_id = post
-                    .as_object()
-                    .and_then(|post| post.get("userId").and_then(|u| u.as_u64()));
+                let user_id = if let Value::Object(post) = post {
+                    post.get("userId").and_then(|u| u.as_u64())
+                } else {
+                    None
+                };
 
                 if let Some(user_id) = user_id {
                     if let Some(user) = user_map.get(&user_id) {
@@ -51,11 +56,14 @@ impl JsonPlaceholder {
                     Value::Null
                 }
             })
-            .collect::<Vec<Value<'static>>>();
+            .map(Ok)
+            .map(Data::Single)
+            .enumerate()
+            .collect();
 
         let config = ConfigModule::from(Config::from_sdl(Self::CONFIG).to_result().unwrap());
         let builder = Builder::new(
-            Blueprint::try_from(&config).unwrap(),
+            &Blueprint::try_from(&config).unwrap(),
             async_graphql::parser::parse_query(query).unwrap(),
         );
         let plan = builder.build().unwrap();
@@ -66,15 +74,16 @@ impl JsonPlaceholder {
             .id
             .to_owned();
         let store = [
-            (posts_id, Data::Single(Value::Array(posts))),
+            (posts_id, Data::Single(Ok(Value::List(posts)))),
             (users_id, Data::Multiple(users)),
         ]
         .into_iter()
-        .fold(Store::new(plan.size()), |mut store, (id, data)| {
-            store.set(id, data);
+        .fold(Store::new(), |mut store, (id, data)| {
+            store.set_data(id, data);
             store
         });
 
-        Synth::new(plan.into_children(), store)
+        let vars = Variables::new();
+        Synth::new(plan, store, vars)
     }
 }

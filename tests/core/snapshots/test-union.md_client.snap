@@ -3,7 +3,7 @@ source: tests/core/spec.rs
 expression: formatted
 ---
 type Bar {
-  bar: String
+  bar: String!
 }
 
 scalar Bytes
@@ -15,7 +15,7 @@ scalar Email
 scalar Empty
 
 type Foo {
-  foo: String
+  foo: String!
 }
 
 union FooBar = Bar | Foo
@@ -32,10 +32,19 @@ scalar Int8
 
 scalar JSON
 
+type Nested {
+  bar: FooBar
+  foo: FooBar
+}
+
 scalar PhoneNumber
 
 type Query {
+  arr: [FooBar]
+  bar: FooBar
   foo: FooBar
+  nested: Nested
+  unknown: FooBar
 }
 
 scalar UInt128

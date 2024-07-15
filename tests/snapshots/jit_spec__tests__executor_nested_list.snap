@@ -1,0 +1,536 @@
+---
+source: tests/jit_spec.rs
+expression: data
+---
+{
+  "posts": [
+    {
+      "id": 1,
+      "user": {
+        "id": 1,
+        "albums": [
+          {
+            "id": 1,
+            "photos": [
+              {
+                "id": 1,
+                "title": "accusamus beatae ad facilis cum similique qui sunt",
+                "combinedId": "Album: 1, photo: 1"
+              },
+              {
+                "id": 2,
+                "title": "reprehenderit est deserunt velit ipsam",
+                "combinedId": "Album: 1, photo: 2"
+              },
+              {
+                "id": 3,
+                "title": "officia porro iure quia iusto qui ipsa ut modi",
+                "combinedId": "Album: 1, photo: 3"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "photos": [
+              {
+                "id": 51,
+                "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+                "combinedId": "Album: 2, photo: 51"
+              },
+              {
+                "id": 52,
+                "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+                "combinedId": "Album: 2, photo: 52"
+              },
+              {
+                "id": 53,
+                "title": "soluta et harum aliquid officiis ab omnis consequatur",
+                "combinedId": "Album: 2, photo: 53"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "user": {
+        "id": 1,
+        "albums": [
+          {
+            "id": 1,
+            "photos": [
+              {
+                "id": 1,
+                "title": "accusamus beatae ad facilis cum similique qui sunt",
+                "combinedId": "Album: 1, photo: 1"
+              },
+              {
+                "id": 2,
+                "title": "reprehenderit est deserunt velit ipsam",
+                "combinedId": "Album: 1, photo: 2"
+              },
+              {
+                "id": 3,
+                "title": "officia porro iure quia iusto qui ipsa ut modi",
+                "combinedId": "Album: 1, photo: 3"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "photos": [
+              {
+                "id": 51,
+                "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+                "combinedId": "Album: 2, photo: 51"
+              },
+              {
+                "id": 52,
+                "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+                "combinedId": "Album: 2, photo: 52"
+              },
+              {
+                "id": 53,
+                "title": "soluta et harum aliquid officiis ab omnis consequatur",
+                "combinedId": "Album: 2, photo: 53"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "user": {
+        "id": 1,
+        "albums": [
+          {
+            "id": 1,
+            "photos": [
+              {
+                "id": 1,
+                "title": "accusamus beatae ad facilis cum similique qui sunt",
+                "combinedId": "Album: 1, photo: 1"
+              },
+              {
+                "id": 2,
+                "title": "reprehenderit est deserunt velit ipsam",
+                "combinedId": "Album: 1, photo: 2"
+              },
+              {
+                "id": 3,
+                "title": "officia porro iure quia iusto qui ipsa ut modi",
+                "combinedId": "Album: 1, photo: 3"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "photos": [
+              {
+                "id": 51,
+                "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+                "combinedId": "Album: 2, photo: 51"
+              },
+              {
+                "id": 52,
+                "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+                "combinedId": "Album: 2, photo: 52"
+              },
+              {
+                "id": 53,
+                "title": "soluta et harum aliquid officiis ab omnis consequatur",
+                "combinedId": "Album: 2, photo: 53"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "user": {
+        "id": 1,
+        "albums": [
+          {
+            "id": 1,
+            "photos": [
+              {
+                "id": 1,
+                "title": "accusamus beatae ad facilis cum similique qui sunt",
+                "combinedId": "Album: 1, photo: 1"
+              },
+              {
+                "id": 2,
+                "title": "reprehenderit est deserunt velit ipsam",
+                "combinedId": "Album: 1, photo: 2"
+              },
+              {
+                "id": 3,
+                "title": "officia porro iure quia iusto qui ipsa ut modi",
+                "combinedId": "Album: 1, photo: 3"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "photos": [
+              {
+                "id": 51,
+                "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+                "combinedId": "Album: 2, photo: 51"
+              },
+              {
+                "id": 52,
+                "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+                "combinedId": "Album: 2, photo: 52"
+              },
+              {
+                "id": 53,
+                "title": "soluta et harum aliquid officiis ab omnis consequatur",
+                "combinedId": "Album: 2, photo: 53"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "user": {
+        "id": 1,
+        "albums": [
+          {
+            "id": 1,
+            "photos": [
+              {
+                "id": 1,
+                "title": "accusamus beatae ad facilis cum similique qui sunt",
+                "combinedId": "Album: 1, photo: 1"
+              },
+              {
+                "id": 2,
+                "title": "reprehenderit est deserunt velit ipsam",
+                "combinedId": "Album: 1, photo: 2"
+              },
+              {
+                "id": 3,
+                "title": "officia porro iure quia iusto qui ipsa ut modi",
+                "combinedId": "Album: 1, photo: 3"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "photos": [
+              {
+                "id": 51,
+                "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+                "combinedId": "Album: 2, photo: 51"
+              },
+              {
+                "id": 52,
+                "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+                "combinedId": "Album: 2, photo: 52"
+              },
+              {
+                "id": 53,
+                "title": "soluta et harum aliquid officiis ab omnis consequatur",
+                "combinedId": "Album: 2, photo: 53"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "user": {
+        "id": 1,
+        "albums": [
+          {
+            "id": 1,
+            "photos": [
+              {
+                "id": 1,
+                "title": "accusamus beatae ad facilis cum similique qui sunt",
+                "combinedId": "Album: 1, photo: 1"
+              },
+              {
+                "id": 2,
+                "title": "reprehenderit est deserunt velit ipsam",
+                "combinedId": "Album: 1, photo: 2"
+              },
+              {
+                "id": 3,
+                "title": "officia porro iure quia iusto qui ipsa ut modi",
+                "combinedId": "Album: 1, photo: 3"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "photos": [
+              {
+                "id": 51,
+                "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+                "combinedId": "Album: 2, photo: 51"
+              },
+              {
+                "id": 52,
+                "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+                "combinedId": "Album: 2, photo: 52"
+              },
+              {
+                "id": 53,
+                "title": "soluta et harum aliquid officiis ab omnis consequatur",
+                "combinedId": "Album: 2, photo: 53"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "user": {
+        "id": 1,
+        "albums": [
+          {
+            "id": 1,
+            "photos": [
+              {
+                "id": 1,
+                "title": "accusamus beatae ad facilis cum similique qui sunt",
+                "combinedId": "Album: 1, photo: 1"
+              },
+              {
+                "id": 2,
+                "title": "reprehenderit est deserunt velit ipsam",
+                "combinedId": "Album: 1, photo: 2"
+              },
+              {
+                "id": 3,
+                "title": "officia porro iure quia iusto qui ipsa ut modi",
+                "combinedId": "Album: 1, photo: 3"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "photos": [
+              {
+                "id": 51,
+                "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+                "combinedId": "Album: 2, photo: 51"
+              },
+              {
+                "id": 52,
+                "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+                "combinedId": "Album: 2, photo: 52"
+              },
+              {
+                "id": 53,
+                "title": "soluta et harum aliquid officiis ab omnis consequatur",
+                "combinedId": "Album: 2, photo: 53"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "user": {
+        "id": 1,
+        "albums": [
+          {
+            "id": 1,
+            "photos": [
+              {
+                "id": 1,
+                "title": "accusamus beatae ad facilis cum similique qui sunt",
+                "combinedId": "Album: 1, photo: 1"
+              },
+              {
+                "id": 2,
+                "title": "reprehenderit est deserunt velit ipsam",
+                "combinedId": "Album: 1, photo: 2"
+              },
+              {
+                "id": 3,
+                "title": "officia porro iure quia iusto qui ipsa ut modi",
+                "combinedId": "Album: 1, photo: 3"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "photos": [
+              {
+                "id": 51,
+                "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+                "combinedId": "Album: 2, photo: 51"
+              },
+              {
+                "id": 52,
+                "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+                "combinedId": "Album: 2, photo: 52"
+              },
+              {
+                "id": 53,
+                "title": "soluta et harum aliquid officiis ab omnis consequatur",
+                "combinedId": "Album: 2, photo: 53"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "user": {
+        "id": 1,
+        "albums": [
+          {
+            "id": 1,
+            "photos": [
+              {
+                "id": 1,
+                "title": "accusamus beatae ad facilis cum similique qui sunt",
+                "combinedId": "Album: 1, photo: 1"
+              },
+              {
+                "id": 2,
+                "title": "reprehenderit est deserunt velit ipsam",
+                "combinedId": "Album: 1, photo: 2"
+              },
+              {
+                "id": 3,
+                "title": "officia porro iure quia iusto qui ipsa ut modi",
+                "combinedId": "Album: 1, photo: 3"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "photos": [
+              {
+                "id": 51,
+                "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+                "combinedId": "Album: 2, photo: 51"
+              },
+              {
+                "id": 52,
+                "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+                "combinedId": "Album: 2, photo: 52"
+              },
+              {
+                "id": 53,
+                "title": "soluta et harum aliquid officiis ab omnis consequatur",
+                "combinedId": "Album: 2, photo: 53"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "user": {
+        "id": 1,
+        "albums": [
+          {
+            "id": 1,
+            "photos": [
+              {
+                "id": 1,
+                "title": "accusamus beatae ad facilis cum similique qui sunt",
+                "combinedId": "Album: 1, photo: 1"
+              },
+              {
+                "id": 2,
+                "title": "reprehenderit est deserunt velit ipsam",
+                "combinedId": "Album: 1, photo: 2"
+              },
+              {
+                "id": 3,
+                "title": "officia porro iure quia iusto qui ipsa ut modi",
+                "combinedId": "Album: 1, photo: 3"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "photos": [
+              {
+                "id": 51,
+                "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+                "combinedId": "Album: 2, photo: 51"
+              },
+              {
+                "id": 52,
+                "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+                "combinedId": "Album: 2, photo: 52"
+              },
+              {
+                "id": 53,
+                "title": "soluta et harum aliquid officiis ab omnis consequatur",
+                "combinedId": "Album: 2, photo: 53"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "user": {
+        "id": 2,
+        "albums": [
+          {
+            "id": 11,
+            "photos": [
+              {
+                "id": 501,
+                "title": "asperiores exercitationem voluptates qui amet quae necessitatibus facere",
+                "combinedId": "Album: 11, photo: 501"
+              },
+              {
+                "id": 502,
+                "title": "omnis qui sit et",
+                "combinedId": "Album: 11, photo: 502"
+              },
+              {
+                "id": 503,
+                "title": "modi voluptas fugiat eos",
+                "combinedId": "Album: 11, photo: 503"
+              }
+            ]
+          },
+          {
+            "id": 12,
+            "photos": [
+              {
+                "id": 551,
+                "title": "eveniet debitis nihil",
+                "combinedId": "Album: 12, photo: 551"
+              },
+              {
+                "id": 552,
+                "title": "odit culpa optio nesciunt",
+                "combinedId": "Album: 12, photo: 552"
+              },
+              {
+                "id": 553,
+                "title": "doloribus illo aperiam ut ducimus",
+                "combinedId": "Album: 12, photo: 553"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

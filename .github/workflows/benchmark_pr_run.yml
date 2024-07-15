@@ -12,7 +12,7 @@ concurrency:
 jobs:
   micro_benchmarks_pr_run:
     name: Micro Benchmarks for PR
-    if: "contains(github.event.pull_request.labels.*.name, 'ci: benchmark')"
+    if: "${{ contains(github.event.pull_request.labels.*.name, 'ci: benchmark') }}"
     runs-on: benchmarking-runner
     steps:
       - uses: actions/checkout@v4

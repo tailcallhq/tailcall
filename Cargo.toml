@@ -52,7 +52,6 @@ opentelemetry-system-metrics = { version = "0.2.0", optional = true }
 tailcall-http-cache = { path = "tailcall-http-cache", optional = true }
 tailcall-version = { path = "./tailcall-version", optional = true }
 
-
 # dependencies safe for wasm:
 
 rustls-pemfile = { version = "1.0.4" }
@@ -62,6 +61,7 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 reqwest = { workspace = true }
 derive_setters = "0.1.6"
+derive-getters = "0.4.0"
 thiserror = "1.0.59"
 serde_json = { workspace = true }
 serde = { workspace = true }
@@ -151,6 +151,7 @@ convert_case = "0.6.0"
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
 tailcall-tracker = { path = "tailcall-tracker", optional = true }
+tailcall-typedefs-common = { path = "./tailcall-typedefs-common" }
 tonic-types = "0.11.0"
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
@@ -161,6 +162,8 @@ Inflector = "0.11.4"
 path-clean = "=1.0.1"
 pathdiff = "0.2.1"
 num = "0.4.3"
+indenter = "0.3.3"
+derive_more = "0.99.18"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
@@ -174,6 +177,11 @@ tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
 tailcall-fixtures = { path = "./tailcall-fixtures" }
+http-cache-semantics = { version = "1.0.1", default-features = false, features = ["with_serde", "reqwest"]}
+cacache = { version = "13.0.0", default-features = false, features = ["tokio-runtime", "mmap"] }
+test-log = { version = "0.2.16", default-features = false, features = ["color", "trace"] }
+flate2 = "1.0.30"
+bincode = "1.3.3"
 
 [features]
 
@@ -209,10 +217,14 @@ cli = [
 # We generally want to interface via CLI and have V8 enabled, while running tests.
 default = ["cli", "js"]
 
+# Feature flag to force JIT engine inside integration tests
+force_jit = []
+
 
 [workspace]
 members = [
     ".",
+    "tailcall-typedefs-common",
     "tailcall-typedefs",
     "tailcall-aws-lambda",
     "tailcall-cloudflare",
@@ -257,7 +269,3 @@ harness = false
 name = "json_to_config_spec"
 path = "src/core/generator/tests/json_to_config_spec.rs"
 harness = false
-
-[patch.crates-io]
-async-graphql = { git = "https://github.com/meskill/async-graphql.git", branch = "feat/selection-field-directives" }
-async-graphql-value = { git = "https://github.com/meskill/async-graphql.git", branch = "feat/selection-field-directives" }

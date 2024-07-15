@@ -1,11 +1,12 @@
 use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
+use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::JsonLike;
 
 /// A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
-#[derive(JsonSchema, Default)]
+#[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct PhoneNumber {
     #[allow(dead_code)]
     #[serde(rename = "PhoneNumber")]
@@ -14,8 +15,8 @@ pub struct PhoneNumber {
 impl super::Scalar for PhoneNumber {
     /// Function used to validate the phone number
     fn validate(&self) -> fn(&ConstValue) -> bool {
-        |value| {
-            if let Ok(phone_str) = value.clone().as_str_ok() {
+        |value: &ConstValue| {
+            if let Some(phone_str) = value.clone().as_str() {
                 return phonenumber::parse(None, phone_str).is_ok();
             }
             false

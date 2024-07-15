@@ -6,6 +6,7 @@ use self::telemetry::to_opentelemetry;
 use super::{Server, TypeLike};
 use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
+use crate::core::config::transformer::Required;
 use crate::core::config::{Arg, Batch, Config, ConfigModule, Field};
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
@@ -102,14 +103,7 @@ where
                 .collect::<BTreeSet<String>>(),
         )
     } else {
-        match type_of {
-            "String" => JsonSchema::Str,
-            "Int" => JsonSchema::Num,
-            "Boolean" => JsonSchema::Bool,
-            "Empty" => JsonSchema::Empty,
-            "JSON" => JsonSchema::Any,
-            _ => JsonSchema::Any,
-        }
+        JsonSchema::from_scalar_type(type_of)
     };
 
     if !required {
@@ -131,7 +125,8 @@ impl TryFrom<&ConfigModule> for Blueprint {
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
         config_blueprint()
             .try_fold(
-                &config_module.clone().normalize_default().to_result()?,
+                // Apply required transformers to the configuration
+                &config_module.to_owned().transform(Required).to_result()?,
                 Blueprint::default(),
             )
             .and_then(|blueprint| {

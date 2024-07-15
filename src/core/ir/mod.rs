@@ -1,3 +1,4 @@
+mod discriminator;
 mod error;
 mod eval;
 mod eval_context;
@@ -9,6 +10,7 @@ pub mod model;
 use std::collections::HashMap;
 use std::ops::Deref;
 
+pub use discriminator::*;
 pub use error::*;
 pub use eval_context::EvalContext;
 pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};
