@@ -22,8 +22,8 @@ impl<'a, Input, Output> Clone for Context<'a, Input, Output> {
 }
 
 impl<'a, Input, Output> Context<'a, Input, Output> {
-    pub fn new(request: &'a Request<Input>) -> Self {
-        Self { request, value: None, is_query: false }
+    pub fn new(request: &'a Request<Input>, is_query: bool) -> Self {
+        Self { request, value: None, is_query }
     }
 
     pub fn with_value(&self, value: &'a Output) -> Self {
@@ -32,10 +32,6 @@ impl<'a, Input, Output> Context<'a, Input, Output> {
             value: Some(value),
             is_query: self.is_query,
         }
-    }
-
-    pub fn with_is_query(&self, is_query: bool) -> Self {
-        Self { request: self.request, value: self.value, is_query }
     }
 }
 

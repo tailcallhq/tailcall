@@ -69,7 +69,7 @@ where
     }
 
     async fn init(&mut self) {
-        let ctx = Context::new(&self.request).with_is_query(self.plan.is_query());
+        let ctx = Context::new(&self.request, self.plan.is_query());
         join_all(
             self.plan
                 .as_nested()
