@@ -1,5 +1,5 @@
 use super::super::Result;
-use crate::core::jit::model::{OperationPlan, Field, Nested, Variable, Variables};
+use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::synth::Synthesizer;
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
