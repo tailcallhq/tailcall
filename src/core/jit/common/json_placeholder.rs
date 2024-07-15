@@ -40,7 +40,10 @@ impl JsonPlaceholder {
         let users: HashMap<_, _> = posts
             .iter()
             .map(|post| {
-                let user_id = post.as_object().and_then(|v| v.get_key("userId")).and_then(|u| u.as_u64());
+                let user_id = post
+                    .as_object()
+                    .and_then(|v| v.get_key("userId"))
+                    .and_then(|u| u.as_u64());
 
                 if let Some(user_id) = user_id {
                     if let Some(user) = user_map.get(&user_id) {
@@ -52,6 +55,7 @@ impl JsonPlaceholder {
                     Value::null()
                 }
             })
+            .map(Ok)
             .map(Data::Single)
             .enumerate()
             .collect();
@@ -70,7 +74,7 @@ impl JsonPlaceholder {
             .id
             .to_owned();
         let store = [
-            (posts_id, Data::Single(Value::array(posts))),
+            (posts_id, Data::Single(Ok(Value::array(posts)))),
             (users_id, Data::Multiple(users)),
         ]
         .into_iter()

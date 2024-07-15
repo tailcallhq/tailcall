@@ -1,10 +1,6 @@
-// mod synth_borrow;
-// mod synth_const;
 mod synth;
 
-// pub use synth_borrow::SynthBorrow;
-// pub use synth_const::{Synth, SynthConst};
-pub use synth::{Synth, AlsoSynth};
+pub use synth::{AlsoSynth, Synth};
 
 use super::{Store, Variables};
 use crate::core::json::JsonLike;

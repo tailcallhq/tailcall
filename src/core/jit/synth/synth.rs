@@ -1,3 +1,4 @@
+use super::super::Result;
 use crate::core::jit::model::{ExecutionPlan, Field, Nested, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::synth::Synthesizer;
@@ -15,22 +16,24 @@ impl<Value: JsonLikeOwned> AlsoSynth<Value> {
 }
 
 impl<Value: JsonLikeOwned + Clone> Synthesizer for AlsoSynth<Value> {
-    type Value = Value;
+    type Value = Result<Value>;
     type Variable = async_graphql_value::ConstValue;
 
-    fn synthesize(self, store: Store<Self::Value>, variables: Variables<Self::Variable>) -> Self::Value {
+    fn synthesize(
+        self,
+        store: Store<Self::Value>,
+        variables: Variables<Self::Variable>,
+    ) -> Self::Value {
         let synth = Synth::new(self.plan, store, variables);
         synth.synthesize()
     }
 }
 
-
 pub struct Synth<Value: JsonLikeOwned> {
     selection: Vec<Field<Nested<Value>, Value>>,
-    store: Store<Value>,
+    store: Store<Result<Value>>,
     variables: Variables<async_graphql_value::ConstValue>,
 }
-
 
 impl<Extensions, Input> Field<Extensions, Input> {
     #[inline(always)]
@@ -57,14 +60,10 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: ExecutionPlan<Value>,
-        store: Store<Value>,
+        store: Store<Result<Value>>,
         variables: Variables<async_graphql_value::ConstValue>,
     ) -> Self {
-        Self {
-            selection: plan.into_nested(),
-            store,
-            variables,
-        }
+        Self { selection: plan.into_nested(), store, variables }
     }
 
     #[inline(always)]
@@ -73,18 +72,18 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
     }
 
     #[inline(always)]
-    pub fn synthesize(&self) -> Value {
+    pub fn synthesize(&self) -> Result<Value> {
         let mut data = Value::JsonObject::new();
 
         for child in self.selection.iter() {
             if !self.include(child) {
                 continue;
             }
-            let val = self.iter(child, None, &DataPath::new());
+            let val = self.iter(child, None, &DataPath::new())?;
             data = data.insert_key(child.name.as_str(), val);
         }
 
-        Value::object(data)
+        Ok(Value::object(data))
     }
 
     /// checks if type_of is an array and value is an array
@@ -99,13 +98,13 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
         node: &'b Field<Nested<Value>, Value>,
         parent: Option<&'b Value>,
         data_path: &DataPath,
-    ) -> Value {
+    ) -> Result<Value> {
         // TODO: this implementation prefer parent value over value in the store
         // that's opposite to the way async_graphql engine works in tailcall
         match parent {
             Some(parent) => {
                 if !Self::is_array(&node.type_of, parent) {
-                    return Value::null();
+                    return Ok(Value::null());
                 }
                 self.iter_inner(node, parent, data_path)
             }
@@ -121,22 +120,22 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                                 Data::Multiple(v) => {
                                     data = &v[index];
                                 }
-                                _ => return Value::null(),
+                                _ => return Ok(Value::null()),
                             }
                         }
 
                         match data {
-                            Data::Single(val) => self.iter(node, Some(&val.clone()), data_path),
+                            Data::Single(val) => self.iter(node, Some(&val.clone()?), data_path),
                             _ => {
                                 // TODO: should bailout instead of returning Null
-                                Value::null()
+                                Ok(Value::null())
                             }
                         }
                     }
                     None => {
                         // IR exists, so there must be a value.
                         // if there is no value then we must return Null
-                        Value::null()
+                        Ok(Value::null())
                     }
                 }
             }
@@ -148,7 +147,7 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
         node: &'b Field<Nested<Value>, Value>,
         parent: &'b Value,
         data_path: &'b DataPath,
-    ) -> Value {
+    ) -> Result<Value> {
         let include = self.include(node);
         match (parent.as_array(), parent.as_object()) {
             (_, Some(obj)) => {
@@ -164,12 +163,12 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                                 if let Some(val) = val {
                                     ans = ans.insert_key(
                                         child.name.as_str(),
-                                        self.iter_inner(child, val, data_path),
+                                        self.iter_inner(child, val, data_path)?,
                                     );
                                 } else {
                                     ans = ans.insert_key(
                                         child.name.as_str(),
-                                        self.iter(child, None, data_path),
+                                        self.iter(child, None, data_path)?,
                                     );
                                 }
                             }
@@ -180,7 +179,7 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                         if let Some(val) = val {
                             ans = ans.insert_key(node.name.as_str(), val.to_owned());
                         } else {
-                            return Value::null();
+                            return Ok(Value::null());
                         }
                     }
                 } else {
@@ -189,34 +188,35 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                     if let Some(val) = val {
                         ans = ans.insert_key(node.name.as_str(), val.to_owned());
                     } else {
-                        return Value::null();
+                        return Ok(Value::null());
                     }
                 }
-                Value::object(ans)
+                Ok(Value::object(ans))
             }
             (Some(arr), _) => {
                 let mut ans = vec![];
                 if include {
                     for (i, val) in arr.iter().enumerate() {
-                        let val = self.iter_inner(node, val, &data_path.clone().with_index(i));
+                        let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
                         ans.push(val)
                     }
                 }
-                Value::array(ans)
+                Ok(Value::array(ans))
             }
-            _ => parent.clone()
+            _ => Ok(parent.clone()),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::core::jit::model::{FieldId, Variables};
-    use crate::core::jit::store::{Data, Store};
     use async_graphql::Value;
+
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
+    use crate::core::jit::model::{FieldId, Variables};
+    use crate::core::jit::store::{Data, Store};
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -277,9 +277,9 @@ mod tests {
                         Data::Single(serde_json::from_str(USER1).unwrap()),
                         Data::Single(serde_json::from_str(USER2).unwrap()),
                     ]
-                        .into_iter()
-                        .enumerate()
-                        .collect(),
+                    .into_iter()
+                    .enumerate()
+                    .collect(),
                 ),
                 TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
             }
@@ -299,12 +299,12 @@ mod tests {
         let store = store
             .into_iter()
             .fold(Store::new(), |mut store, (id, data)| {
-                store.set_data(id, data);
+                store.set_data(id, data.map(Ok));
                 store
             });
         let vars = Variables::new();
         let synth = super::Synth::new(plan, store, vars);
-        let val = synth.synthesize();
+        let val = synth.synthesize().unwrap();
 
         serde_json::to_string_pretty(&val).unwrap()
     }
