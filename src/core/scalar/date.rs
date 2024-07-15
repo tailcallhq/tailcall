@@ -18,8 +18,10 @@ impl super::Scalar for Date {
     /// Function used to validate the date
     fn validate(&self) -> fn(&ConstValue) -> bool {
         |value| {
-            if let Ok(date_str) = value.clone().as_str_ok() {
-                return DateTime::parse_from_rfc3339(date_str).is_ok();
+            if let Some(date_str) = value.as_str() {
+                if DateTime::parse_from_rfc3339(date_str).is_ok() {
+                    return true;
+                }
             }
             false
         }

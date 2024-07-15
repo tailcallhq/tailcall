@@ -6,14 +6,17 @@ use async_graphql::parser::types::{
     Selection, SelectionSet,
 };
 use async_graphql::Positioned;
-use async_graphql_value::Value;
+use async_graphql_value::{ConstValue, Value};
 
+use super::input_resolver::InputResolver;
 use super::model::*;
+use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
+use crate::core::jit::model::ExecutionPlan;
 use crate::core::merge_right::MergeRight;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, strum_macros::Display)]
 enum Condition {
     True,
     False,
@@ -21,18 +24,35 @@ enum Condition {
 }
 
 struct Conditions {
-    skip: Option<Condition>,
-    include: Option<Condition>,
+    skip: Condition,
+    include: Condition,
 }
 
 impl Conditions {
     /// Checks if the field should be skipped always
     fn is_const_skip(&self) -> bool {
-        matches!(self.skip, Some(Condition::True)) ^ matches!(self.include, Some(Condition::True))
+        // Truth Table
+        // skip | include | ignore
+        // T   |    T    |   T
+        // T   |    F    |   T
+        // F   |    T    |   F
+        // F   |    F    |   T
+        //
+        // Logical expression:
+        //     say skip = p, include = q
+        // (p V ~q)
+
+        // so instead of a normalizing variables,
+        // we can just check for the above condition
+
+        matches!(
+            (&self.skip, &self.include),
+            (Condition::True, _) | (Condition::False, Condition::False)
+        )
     }
 
     fn into_variable_tuple(self) -> (Option<Variable>, Option<Variable>) {
-        let comp = |condition| match condition? {
+        let comp = |condition| match condition {
             Condition::Variable(var) => Some(var),
             _ => None,
         };
@@ -51,6 +71,7 @@ pub struct Builder {
     pub document: ExecutableDocument,
 }
 
+// TODO: make generic over Value (Input) type
 impl Builder {
     pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
         let index = blueprint.index();
@@ -69,12 +90,11 @@ impl Builder {
     ) -> Conditions {
         fn get_condition(dir: &Directive) -> Option<Condition> {
             let arg = dir.get_argument("if").map(|pos| &pos.node);
-            let is_include = dir.name.node.as_str() == "include";
             match arg {
                 None => None,
                 Some(value) => match value {
                     Value::Boolean(bool) => {
-                        let condition = if is_include ^ bool {
+                        let condition = if *bool {
                             Condition::True
                         } else {
                             Condition::False
@@ -93,12 +113,14 @@ impl Builder {
                 .iter()
                 .find(|d| d.node.name.node.as_str() == "skip")
                 .map(|d| &d.node)
-                .and_then(get_condition),
+                .and_then(get_condition)
+                .unwrap_or(Condition::False),
             include: directives
                 .iter()
                 .find(|d| d.node.name.node.as_str() == "include")
                 .map(|d| &d.node)
-                .and_then(get_condition),
+                .and_then(get_condition)
+                .unwrap_or(Condition::True),
         }
     }
 
@@ -110,7 +132,7 @@ impl Builder {
         type_of: &str,
         exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Flat>> {
+    ) -> Vec<Field<Flat, Value>> {
         let mut fields = vec![];
         for selection in &selection.items {
             match &selection.node {
@@ -126,20 +148,20 @@ impl Builder {
                     let (include, skip) = conditions.into_variable_tuple();
 
                     let field_name = gql_field.name.node.as_str();
-                    let field_args = gql_field
+                    let request_args = gql_field
                         .arguments
                         .iter()
                         .map(|(k, v)| (k.node.as_str().to_string(), v.node.to_owned()))
                         .collect::<HashMap<_, _>>();
 
                     if let Some(field_def) = self.index.get_field(type_of, field_name) {
-                        let mut args = vec![];
-                        for (arg_name, value) in field_args {
-                            if let Some(arg) = field_def.get_arg(&arg_name) {
-                                let type_of = arg.of_type.clone();
+                        let mut args = Vec::with_capacity(request_args.len());
+                        if let QueryField::Field((_, schema_args)) = field_def {
+                            for (arg_name, arg_value) in schema_args {
+                                let type_of = arg_value.of_type.clone();
                                 let id = ArgId::new(self.arg_id.next());
                                 let name = arg_name.clone();
-                                let default_value = arg
+                                let default_value = arg_value
                                     .default_value
                                     .as_ref()
                                     .and_then(|v| v.to_owned().try_into().ok());
@@ -147,7 +169,9 @@ impl Builder {
                                     id,
                                     name,
                                     type_of,
-                                    value: Some(value),
+                                    // TODO: handle errors for non existing request_args without the
+                                    // default
+                                    value: request_args.get(arg_name).cloned(),
                                     default_value,
                                 });
                             }
@@ -165,7 +189,11 @@ impl Builder {
                             Some(Flat::new(id.clone())),
                             fragments,
                         );
-                        let name = field_name.to_owned();
+                        let name = gql_field
+                            .alias
+                            .as_ref()
+                            .map(|alias| alias.node.to_string())
+                            .unwrap_or(field_name.to_string());
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
@@ -181,6 +209,8 @@ impl Builder {
                             extensions: exts.clone(),
                         });
                         fields = fields.merge_right(child_fields);
+                    } else {
+                        // TODO: error if the field is not found in the schema
                     }
                 }
                 Selection::FragmentSpread(Positioned { node: fragment_spread, .. }) => {
@@ -212,7 +242,10 @@ impl Builder {
     }
 
     #[inline(always)]
-    pub fn build(&self) -> Result<OperationPlan, String> {
+    pub fn build(
+        &self,
+        variables: &Variables<ConstValue>,
+    ) -> Result<ExecutionPlan<ConstValue>, BuildError> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
@@ -223,20 +256,18 @@ impl Builder {
         // A GraphQL request can contain only one operation at a time.
         let operation_type = match &self.document.operations {
             DocumentOperations::Single(single) => {
-                let name = self.get_type(single.node.ty).ok_or(format!(
-                    "Root Operation type not defined for {}",
-                    single.node.ty
-                ))?;
+                let name = self
+                    .get_type(single.node.ty)
+                    .ok_or(BuildError::RootOperationTypeNotDefined { operation: single.node.ty })?;
                 fields.extend(self.iter(&single.node.selection_set.node, name, None, &fragments));
                 single.node.ty
             }
             DocumentOperations::Multiple(multiple) => {
                 let mut operation_type = OperationType::Query;
                 for single in multiple.values() {
-                    let name = self.get_type(single.node.ty).ok_or(format!(
-                        "Root Operation type not defined for {}",
-                        single.node.ty
-                    ))?;
+                    let name = self.get_type(single.node.ty).ok_or(
+                        BuildError::RootOperationTypeNotDefined { operation: single.node.ty },
+                    )?;
                     fields.extend(self.iter(
                         &single.node.selection_set.node,
                         name,
@@ -249,7 +280,13 @@ impl Builder {
             }
         };
 
-        Ok(OperationPlan::new(fields, operation_type))
+        let plan = ExecutionPlan::new(fields, operation_type);
+        // TODO: operation from [ExecutableDocument] could contain definitions for
+        // default values of arguments. That info should be passed to
+        // [InputResolver] to resolve defaults properly
+        let input_resolver = InputResolver::new(plan);
+
+        Ok(input_resolver.resolve_input(variables)?)
     }
 }
 
@@ -265,11 +302,14 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>) -> OperationPlan {
+    fn plan(
+        query: impl AsRef<str>,
+        variables: &Variables<ConstValue>,
+    ) -> ExecutionPlan<ConstValue> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        Builder::new(&blueprint, document).build().unwrap()
+        Builder::new(&blueprint, document).build(variables).unwrap()
     }
 
     #[tokio::test]
@@ -280,6 +320,7 @@ mod tests {
                 posts { user { id name } }
             }
         "#,
+            &Variables::new(),
         );
         assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
@@ -293,6 +334,7 @@ mod tests {
                 posts { user { id name } }
             }
         "#,
+            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -307,6 +349,7 @@ mod tests {
                 posts { user { id } }
             }
         "#,
+            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -335,6 +378,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
 
         assert!(!plan.is_query());
@@ -357,6 +401,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -378,6 +423,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -395,6 +441,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::from_iter([("id".into(), ConstValue::from(1))]),
         );
 
         assert!(plan.is_query());
@@ -416,6 +463,7 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
 
         assert!(plan.is_query());
@@ -436,9 +484,58 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
 
         assert!(!plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
+    }
+
+    #[test]
+    fn test_condition() {
+        // cases:
+        // skip | include | ignore
+        // T  |    T    |   T
+        // T  |    F    |   T
+        // T  |    V    |   T
+        // F  |    F    |   T
+        // F  |    T    |   F
+        // F  |    V    |   F
+        // V  |    T    |   F
+        // V  |    F    |   F
+
+        let test_var = Variable::new("ssdd.dev".to_string());
+
+        let test_cases = vec![
+            // ignore
+            (Condition::True, Condition::True, true),
+            (Condition::True, Condition::False, true),
+            (Condition::True, Condition::Variable(test_var.clone()), true),
+            (Condition::False, Condition::False, true),
+            // don't ignore
+            (Condition::False, Condition::True, false),
+            (
+                Condition::False,
+                Condition::Variable(test_var.clone()),
+                false,
+            ),
+            (
+                Condition::Variable(test_var.clone()),
+                Condition::True,
+                false,
+            ),
+            (Condition::Variable(test_var), Condition::False, false),
+        ];
+
+        for (skip, include, expected) in test_cases {
+            let conditions = Conditions { skip, include };
+            assert_eq!(
+                conditions.is_const_skip(),
+                expected,
+                "Failed for skip: {}, include: {}",
+                conditions.skip,
+                conditions.include
+            );
+        }
     }
 }

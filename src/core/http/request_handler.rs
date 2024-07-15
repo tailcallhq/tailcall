@@ -147,7 +147,9 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     request: T,
 ) -> anyhow::Result<Response<Body>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
-        request.execute(&JITExecutor::new(app_ctx.clone())).await
+        request
+            .execute(&JITExecutor::new(app_ctx.clone(), req_ctx.clone()))
+            .await
     } else {
         request.data(req_ctx.clone()).execute(&app_ctx.schema).await
     };
