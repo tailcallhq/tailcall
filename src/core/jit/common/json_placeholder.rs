@@ -66,7 +66,8 @@ impl JsonPlaceholder {
             &Blueprint::try_from(&config).unwrap(),
             async_graphql::parser::parse_query(query).unwrap(),
         );
-        let plan = builder.build().unwrap();
+        let vars = Variables::new();
+        let plan = builder.build(&vars).unwrap();
         let posts_id = plan.find_field_path(&["posts"]).unwrap().id.to_owned();
         let users_id = plan
             .find_field_path(&["posts", "user"])
@@ -82,8 +83,6 @@ impl JsonPlaceholder {
             store.set_data(id, data);
             store
         });
-
-        let vars = Variables::new();
         Synth::new(plan, store, vars)
     }
 }

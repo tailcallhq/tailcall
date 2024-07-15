@@ -1,0 +1,10 @@
+---
+source: tests/jit_spec.rs
+expression: data
+---
+{
+  "post": {
+    "id": 1,
+    "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+  }
+}

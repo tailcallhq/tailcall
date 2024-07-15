@@ -33,12 +33,27 @@ impl<V> FromIterator<(String, V)> for Variables<V> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Arg {
+pub struct Arg<Input> {
     pub id: ArgId,
     pub name: String,
     pub type_of: crate::core::blueprint::Type,
-    pub value: Option<async_graphql_value::Value>,
-    pub default_value: Option<async_graphql_value::ConstValue>,
+    pub value: Option<Input>,
+    pub default_value: Option<Input>,
+}
+
+impl<Input> Arg<Input> {
+    pub fn try_map<Output, Error>(
+        self,
+        map: impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<Arg<Output>, Error> {
+        Ok(Arg {
+            id: self.id,
+            name: self.name,
+            type_of: self.type_of,
+            value: self.value.map(&map).transpose()?,
+            default_value: self.default_value.map(&map).transpose()?,
+        })
+    }
 }
 
 #[derive(Clone)]
@@ -75,16 +90,17 @@ impl FieldId {
 }
 
 #[derive(Clone)]
-pub struct Field<Extensions> {
+pub struct Field<Extensions, Input> {
     pub id: FieldId,
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
     pub skip: Option<Variable>,
     pub include: Option<Variable>,
-    pub args: Vec<Arg>,
+    pub args: Vec<Arg<Input>>,
     pub extensions: Option<Extensions>,
 }
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Variable(String);
 
@@ -92,45 +108,58 @@ impl Variable {
     pub fn new(name: String) -> Self {
         Variable(name)
     }
-}
-
-impl<A> Field<A> {
-    #[inline(always)]
-    pub fn skip(&self, variables: &Variables<async_graphql_value::ConstValue>) -> bool {
-        let eval = |variable_option: Option<&Variable>,
-                    variables: &Variables<async_graphql_value::ConstValue>,
-                    default: bool| {
-            match variable_option {
-                Some(Variable(name)) => variables.get(name).map_or(default, |value| match value {
-                    async_graphql_value::ConstValue::Boolean(b) => *b,
-                    _ => default,
-                }),
-                None => default,
-            }
-        };
-        let skip = eval(self.skip.as_ref(), variables, false);
-        let include = eval(self.include.as_ref(), variables, true);
-
-        skip == include
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+    pub fn into_string(self) -> String {
+        self.0
     }
 }
 
-const EMPTY_VEC: &Vec<Field<Nested>> = &Vec::new();
-impl Field<Nested> {
-    pub fn nested(&self) -> &Vec<Field<Nested>> {
-        match &self.extensions {
-            Some(Nested(children)) => children,
-            _ => EMPTY_VEC,
-        }
+impl<Extensions, Input> Field<Extensions, Input> {
+    pub fn try_map<Output, Error>(
+        self,
+        map: impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<Field<Extensions, Output>, Error> {
+        Ok(Field {
+            id: self.id,
+            name: self.name,
+            ir: self.ir,
+            type_of: self.type_of,
+            extensions: self.extensions,
+            skip: self.skip,
+            include: self.include,
+            args: self
+                .args
+                .into_iter()
+                .map(|arg| arg.try_map(&map))
+                .collect::<Result<_, _>>()?,
+        })
     }
 }
 
-impl Field<Flat> {
+impl<Input> Field<Nested<Input>, Input> {
+    pub fn nested(&self) -> Option<&Vec<Field<Nested<Input>, Input>>> {
+        self.extensions.as_ref().map(|Nested(nested)| nested)
+    }
+
+    pub fn nested_iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
+        self.nested()
+            .map(|nested| nested.iter())
+            .into_iter()
+            .flatten()
+    }
+}
+
+impl<Input> Field<Flat, Input> {
     fn parent(&self) -> Option<&FieldId> {
         self.extensions.as_ref().map(|Flat(id)| id)
     }
 
-    fn into_nested(self, fields: &[Field<Flat>]) -> Field<Nested> {
+    fn into_nested(self, fields: &[Field<Flat, Input>]) -> Field<Nested<Input>, Input>
+    where
+        Input: Clone,
+    {
         let mut children = Vec::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
@@ -159,7 +188,7 @@ impl Field<Flat> {
     }
 }
 
-impl<A: Debug + Clone> Debug for Field<A> {
+impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut debug_struct = f.debug_struct("Field");
         debug_struct.field("id", &self.id);
@@ -200,16 +229,19 @@ impl Debug for Flat {
 /// Store field relationships in a nested structure like a tree where each field
 /// links to its children.
 #[derive(Clone, Debug)]
-pub struct Nested(Vec<Field<Nested>>);
+pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
 #[derive(Clone, Debug)]
-pub struct ExecutionPlan {
-    flat: Vec<Field<Flat>>,
-    nested: Vec<Field<Nested>>,
+pub struct ExecutionPlan<Input> {
+    flat: Vec<Field<Flat, Input>>,
+    nested: Vec<Field<Nested<Input>, Input>>,
 }
 
-impl ExecutionPlan {
-    pub fn new(fields: Vec<Field<Flat>>) -> Self {
+impl<Input> ExecutionPlan<Input> {
+    pub fn new(fields: Vec<Field<Flat, Input>>) -> Self
+    where
+        Input: Clone,
+    {
         let nested = fields
             .clone()
             .into_iter()
@@ -220,23 +252,23 @@ impl ExecutionPlan {
         Self { flat: fields, nested }
     }
 
-    pub fn as_nested(&self) -> &[Field<Nested>] {
+    pub fn as_nested(&self) -> &[Field<Nested<Input>, Input>] {
         &self.nested
     }
 
-    pub fn into_nested(self) -> Vec<Field<Nested>> {
+    pub fn into_nested(self) -> Vec<Field<Nested<Input>, Input>> {
         self.nested
     }
 
-    pub fn as_parent(&self) -> &[Field<Flat>] {
+    pub fn as_parent(&self) -> &[Field<Flat, Input>] {
         &self.flat
     }
 
-    pub fn find_field(&self, id: FieldId) -> Option<&Field<Flat>> {
+    pub fn find_field(&self, id: FieldId) -> Option<&Field<Flat, Input>> {
         self.flat.iter().find(|field| field.id == id)
     }
 
-    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Flat>> {
+    pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Flat, Input>> {
         match path.split_first() {
             None => None,
             Some((name, path)) => {
