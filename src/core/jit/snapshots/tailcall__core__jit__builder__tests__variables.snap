@@ -14,10 +14,8 @@ expression: plan.into_nested()
                 name: "id",
                 type_of: ID!,
                 value: Some(
-                    Variable(
-                        Name(
-                            "id",
-                        ),
+                    Number(
+                        Number(1),
                     ),
                 ),
                 default_value: None,
