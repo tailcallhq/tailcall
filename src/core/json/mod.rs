@@ -3,11 +3,13 @@ mod graphql;
 mod json_like;
 mod json_schema;
 mod serde;
+mod helpers;
 
 use std::collections::HashMap;
 
 pub use json_like::*;
 pub use json_schema::*;
+pub use helpers::*;
 
 // Highly micro-optimized and benchmarked version of get_path_all
 // Any further changes should be verified with benchmarks
