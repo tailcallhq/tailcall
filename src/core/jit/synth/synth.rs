@@ -37,15 +37,12 @@ pub struct Synth<Value> {
 
 impl<Extensions, Input> Field<Extensions, Input> {
     #[inline(always)]
-    pub fn skip(&self, variables: &Variables<async_graphql_value::ConstValue>) -> bool {
+    pub fn skip<Value: JsonLikeOwned>(&self, variables: &Variables<Value>) -> bool {
         let eval = |variable_option: Option<&Variable>,
-                    variables: &Variables<async_graphql_value::ConstValue>,
+                    variables: &Variables<Value>,
                     default: bool| {
             match variable_option.map(|a| a.as_str()) {
-                Some(name) => variables.get(name).map_or(default, |value| match value {
-                    async_graphql_value::ConstValue::Boolean(b) => *b,
-                    _ => default,
-                }),
+                Some(name) => variables.get(name).map_or(default, |value| value.as_bool().unwrap_or(default)),
                 None => default,
             }
         };
