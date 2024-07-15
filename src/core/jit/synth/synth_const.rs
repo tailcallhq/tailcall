@@ -1,17 +1,22 @@
-use async_graphql::Name;
+use async_graphql::{Name, Positioned};
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
-use super::super::Result;
 use super::Synthesizer;
-use crate::core::jit::model::{Field, Nested};
-use crate::core::jit::store::{Data, Store};
-use crate::core::jit::{DataPath, ExecutionPlan, Variable, Variables};
+use crate::core::jit::{
+    model::{Field, Nested},
+    Error,
+};
+use crate::core::jit::{
+    store::{Data, Store},
+    Variable,
+};
+use crate::core::jit::{DataPath, ExecutionPlan, Variables};
 use crate::core::json::JsonLike;
 
 pub struct Synth {
     selection: Vec<Field<Nested<ConstValue>, ConstValue>>,
-    store: Store<Result<ConstValue>>,
+    store: Store<Result<ConstValue, Positioned<Error>>>,
     variables: Variables<ConstValue>,
 }
 
@@ -39,7 +44,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
 impl Synth {
     pub fn new(
         plan: ExecutionPlan<ConstValue>,
-        store: Store<Result<ConstValue>>,
+        store: Store<Result<ConstValue, Positioned<Error>>>,
         variables: Variables<ConstValue>,
     ) -> Self {
         Self { selection: plan.into_nested(), store, variables }
@@ -50,7 +55,7 @@ impl Synth {
         !field.skip(&self.variables)
     }
 
-    pub fn synthesize(&self) -> Result<ConstValue> {
+    pub fn synthesize(&self) -> Result<ConstValue, Positioned<Error>> {
         let mut data = IndexMap::default();
 
         for child in self.selection.iter() {
@@ -75,7 +80,7 @@ impl Synth {
         node: &'b Field<Nested<ConstValue>, ConstValue>,
         parent: Option<&'b ConstValue>,
         data_path: &DataPath,
-    ) -> Result<ConstValue> {
+    ) -> Result<ConstValue, Positioned<Error>> {
         // TODO: this implementation prefer parent value over value in the store
         // that's opposite to the way async_graphql engine works in tailcall
         match parent {
@@ -124,7 +129,7 @@ impl Synth {
         node: &'b Field<Nested<ConstValue>, ConstValue>,
         parent: &'b ConstValue,
         data_path: &'b DataPath,
-    ) -> Result<ConstValue> {
+    ) -> Result<ConstValue, Positioned<Error>> {
         let include = self.include(node);
 
         match parent {
@@ -197,7 +202,7 @@ impl SynthConst {
 }
 
 impl Synthesizer for SynthConst {
-    type Value = Result<ConstValue>;
+    type Value = Result<ConstValue, Positioned<Error>>;
     type Variable = ConstValue;
 
     fn synthesize(

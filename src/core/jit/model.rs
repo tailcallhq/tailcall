@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
+use async_graphql::Pos;
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
@@ -99,6 +100,7 @@ pub struct Field<Extensions, Input> {
     pub include: Option<Variable>,
     pub args: Vec<Arg<Input>>,
     pub extensions: Option<Extensions>,
+    pub pos: Pos,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -129,6 +131,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
             extensions: self.extensions,
             skip: self.skip,
             include: self.include,
+            pos: self.pos,
             args: self
                 .args
                 .into_iter()
@@ -183,6 +186,7 @@ impl<Input> Field<Flat, Input> {
             skip: self.skip,
             include: self.include,
             args: self.args,
+            pos: self.pos,
             extensions,
         }
     }
