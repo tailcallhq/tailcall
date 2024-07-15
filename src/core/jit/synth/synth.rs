@@ -5,7 +5,7 @@ use crate::core::jit::synth::Synthesizer;
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 
 // TODO: rename
-pub struct AlsoSynth<Value: JsonLikeOwned> {
+pub struct AlsoSynth<Value> {
     plan: ExecutionPlan<Value>,
 }
 
@@ -29,7 +29,7 @@ impl<Value: JsonLikeOwned + Clone> Synthesizer for AlsoSynth<Value> {
     }
 }
 
-pub struct Synth<Value: JsonLikeOwned> {
+pub struct Synth<Value> {
     selection: Vec<Field<Nested<Value>, Value>>,
     store: Store<Result<Value>>,
     variables: Variables<async_graphql_value::ConstValue>,
