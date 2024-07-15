@@ -1,6 +1,7 @@
 use async_graphql_value::{ConstValue, Value};
 
 use super::{OperationPlan, ResolveInputError, Variables};
+use crate::core::jit::try_map::TryMap;
 
 /// Trait to represent conversion from some dynamic type (with variables)
 /// to the resolved variant based on the additional provided info.
@@ -56,7 +57,7 @@ where
             .plan
             .as_parent()
             .iter()
-            .map(|field| field.clone().try_map(|value| value.resolve(variables)))
+            .map(|field| field.clone().try_map(&|value| value.resolve(variables)))
             .collect::<Result<_, _>>()?;
 
         Ok(OperationPlan::new(new_fields, self.plan.operation_type()))
