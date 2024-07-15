@@ -14,8 +14,9 @@ impl<'a> JsonObjectLike<'a> for ObjectAsVec<'a> {
         self.get(key)
     }
 
-    fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
+    fn insert_key(mut self, key: &'a str, value: Self::Value) -> Self {
         self.insert(key, value);
+        self
     }
 }
 
@@ -24,6 +25,14 @@ impl<'a> JsonLike<'a> for Value<'a> {
 
     fn null() -> Self {
         Value::Null
+    }
+
+    fn object(obj: Self::JsonObject) -> Self {
+        Value::Object(obj)
+    }
+
+    fn array(arr: Vec<Self>) -> Self {
+        Value::Array(arr)
     }
 
     fn as_array(&self) -> Option<&Vec<Value>> {

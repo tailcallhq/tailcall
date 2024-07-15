@@ -4,7 +4,7 @@ use async_graphql_value::ConstValue;
 
 use super::context::Context;
 use super::exec::{Executor, IRExecutor};
-use super::synth::SynthConst;
+use super::synth::AlsoSynth;
 use super::{Error, ExecutionPlan, Request, Response, Result};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
@@ -29,7 +29,7 @@ impl ConstValueExecutor {
         let exec = ConstValueExec::new(req_ctx);
         let plan = self.plan;
         // TODO: drop the clones in plan
-        let synth = SynthConst::new(plan.clone());
+        let synth = AlsoSynth::new(plan.clone());
         let exe = Executor::new(plan, synth, exec);
         exe.execute(request).await
     }

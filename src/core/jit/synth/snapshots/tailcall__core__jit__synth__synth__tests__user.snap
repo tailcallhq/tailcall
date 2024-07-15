@@ -1,0 +1,9 @@
+---
+source: src/core/jit/synth/synth.rs
+expression: val
+---
+{
+  "user": {
+    "id": 1
+  }
+}
