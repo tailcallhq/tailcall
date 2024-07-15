@@ -7,7 +7,7 @@ use futures_util::future::join_all;
 
 use super::context::Context;
 use super::synth::Synthesizer;
-use super::{DataPath, OperationPlan, Field, Nested, Request, Response, Store};
+use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
