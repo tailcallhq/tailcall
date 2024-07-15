@@ -77,18 +77,61 @@ impl<Input, Value, Err> TryMap<Input, Value, OperationPlan<Value>, Err> for Oper
         self,
         map: &impl Fn(Input) -> Result<Value, Err>,
     ) -> Result<OperationPlan<Value>, Err> {
-        let flat = self
-            .flat
-            .into_iter()
-            .map(|field| field.try_map(&map))
-            .collect::<Result<_, _>>()?;
+        let mut flat = vec![];
+        for v in self.flat {
+            flat.push(v.try_map(map)?);
+        }
 
-        let nested = self
-            .nested
-            .into_iter()
-            .map(|field| field.try_map(&map))
-            .collect::<Result<_, _>>()?;
+        let mut nested = vec![];
+        for v in self.nested {
+            nested.push(v.try_map(map)?);
+        }
 
         Ok(OperationPlan { flat, operation_type: self.operation_type, nested })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json_borrow::OwnedValue;
+
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::{Config, ConfigModule};
+    use crate::core::jit::builder::Builder;
+    use crate::core::jit::model::Variables;
+    use crate::core::jit::try_map::TryMap;
+    use crate::core::valid::Validator;
+    const CONFIG: &str = include_str!("fixtures/jsonplaceholder-mutation.graphql");
+    const QUERY: &str = r#"
+        {
+            posts {
+                title
+            }
+        }
+    "#;
+
+    #[test]
+    fn test_operation() {
+        let doc = async_graphql::parser::parse_query(QUERY).unwrap();
+
+        let config = Config::from_sdl(CONFIG).to_result().unwrap();
+        let config = ConfigModule::from(config);
+        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
+        let plan = builder.build(&Variables::new()).unwrap();
+        let plan_str = plan
+            .clone()
+            .try_map(&|v| Ok::<_, anyhow::Error>(v.to_string()))
+            .unwrap();
+
+        let plan = plan
+            .try_map(&|v| Ok::<_, anyhow::Error>(OwnedValue::from_str(v.to_string().as_str())?))
+            .unwrap();
+
+        let plan = plan
+            .clone()
+            .try_map(&|v| Ok::<_, anyhow::Error>(v.to_string()))
+            .unwrap();
+
+        assert_eq!(plan_str.flat.len(), plan.flat.len());
     }
 }
