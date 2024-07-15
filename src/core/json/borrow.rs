@@ -5,8 +5,17 @@ use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike};
 // BorrowedValue
 impl<'a> JsonObjectLike<'a> for ObjectAsVec<'a> {
     type Value = Value<'a>;
+
+    fn new() -> Self {
+        ObjectAsVec::default()
+    }
+
     fn get_key(&'a self, key: &str) -> Option<&Value> {
         self.get(key)
+    }
+
+    fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
+        self.insert(key, value);
     }
 }
 
