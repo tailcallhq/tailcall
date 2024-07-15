@@ -8,8 +8,17 @@ use super::*;
 
 impl<'a, Value: JsonLike<'a> + Clone> JsonObjectLike<'a> for IndexMap<Name, Value> {
     type Value = Value;
+
+    fn new() -> Self {
+        IndexMap::new()
+    }
+
     fn get_key(&'a self, key: &str) -> Option<&Self::Value> {
         self.get(&Name::new(key))
+    }
+
+    fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
+        self.insert(Name::new(key), value);
     }
 }
 
