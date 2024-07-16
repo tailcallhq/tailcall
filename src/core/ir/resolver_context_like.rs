@@ -104,6 +104,7 @@ impl SelectionField {
             .filter_map(|a| a.value.as_ref().map(|v| (a.name.to_owned(), v.to_string())))
             .collect::<Vec<_>>();
 
+        // TODO: add support for directives.
         SelectionField {
             name,
             args,
