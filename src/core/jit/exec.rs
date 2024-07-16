@@ -77,7 +77,6 @@ where
     }
 
     async fn init(&mut self) {
-        let ctx = Context::new(&self.request, self.plan.is_query());
         join_all(self.plan.as_nested().iter().map(|field| async {
             let mut arg_map = indexmap::IndexMap::new();
             for arg in field.args.iter() {
@@ -95,7 +94,7 @@ where
                     todo!()
                 }
             }
-            let ctx = ctx.with_args(arg_map);
+            let ctx = Context::new(&self.request, self.plan.is_query(), field).with_args(arg_map);
             self.execute(field, &ctx, DataPath::new()).await
         }))
         .await;
