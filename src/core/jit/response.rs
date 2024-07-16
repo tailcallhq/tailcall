@@ -34,11 +34,13 @@ impl Response<async_graphql::Value, jit::Error> {
             resp = resp.extension(name, value);
         }
         for error in self.errors {
-            let extensions = error.node.extend().extensions;
-            let mut server_error =
-                async_graphql::ServerError::new(error.node.to_string(), Some(error.pos));
+            let pos = error.pos;
+            let error = error.node;
+            let extensions = error.extend().extensions;
+            let mut server_error = async_graphql::ServerError::new(error.to_string(), Some(pos));
 
             server_error.extensions = extensions;
+            server_error.path = error.path();
 
             resp.errors.push(server_error);
         }
