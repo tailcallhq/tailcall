@@ -1,0 +1,29 @@
+---
+source: src/core/jit/context.rs
+expression: ctx.field().unwrap()
+---
+SelectionField {
+    name: "posts",
+    args: [],
+    directive: Ok(
+        [],
+    ),
+    selection_set: [
+        SelectionField {
+            name: "id",
+            args: [],
+            directive: Ok(
+                [],
+            ),
+            selection_set: [],
+        },
+        SelectionField {
+            name: "title",
+            args: [],
+            directive: Ok(
+                [],
+            ),
+            selection_set: [],
+        },
+    ],
+}
