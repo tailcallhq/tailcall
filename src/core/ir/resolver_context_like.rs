@@ -74,7 +74,7 @@ impl<'a> ResolverContextLike for ResolverContext<'a> {
 pub struct SelectionField {
     name: String,
     args: Vec<(String, String)>,
-    directive: Option<async_graphql::ServerResult<Vec<ConstDirective>>>,
+    directive: async_graphql::ServerResult<Vec<ConstDirective>>,
     selection_set: Vec<SelectionField>,
 }
 
@@ -104,7 +104,12 @@ impl SelectionField {
             .filter_map(|a| a.value.as_ref().map(|v| (a.name.to_owned(), v.to_string())))
             .collect::<Vec<_>>();
 
-        SelectionField { name, args, directive: None, selection_set }
+        SelectionField {
+            name,
+            args,
+            directive: async_graphql::ServerResult::Ok(vec![]),
+            selection_set,
+        }
     }
 
     fn from_async_selection_field(field: async_graphql::SelectionField) -> SelectionField {
@@ -126,11 +131,11 @@ impl SelectionField {
             .map(Self::from_async_selection_field)
             .collect();
 
-        Self { name, args, selection_set, directive: Some(directive) }
+        Self { name, args, selection_set, directive }
     }
 
     pub fn directives(&self) -> &async_graphql::ServerResult<Vec<ConstDirective>> {
-        self.directive.as_ref().unwrap()
+        &self.directive
     }
 
     pub fn arguments(&self) -> &[(String, String)] {
