@@ -218,6 +218,7 @@ mod tests {
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
+    use crate::core::jit::try_map::TryMap;
     use crate::core::json::JsonLikeOwned;
     use crate::core::valid::Validator;
 
@@ -306,7 +307,7 @@ mod tests {
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build(&Variables::new()).unwrap();
         let plan = plan
-            .try_map(|v| {
+            .try_map(&|v| {
                 let v = v.into_json()?;
                 Ok::<_, anyhow::Error>(serde_json::from_value::<Value>(v)?)
             })

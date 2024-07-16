@@ -212,27 +212,6 @@ pub struct OperationPlan<Input> {
 }
 
 impl<Input> OperationPlan<Input> {
-    pub fn try_map<Output, Error>(
-        self,
-        map: impl Fn(Input) -> Result<Output, Error>,
-    ) -> Result<OperationPlan<Output>, Error> {
-        let flat = self
-            .flat
-            .into_iter()
-            .map(|field| field.try_map(&map))
-            .collect::<Result<_, _>>()?;
-
-        let nested = self
-            .nested
-            .into_iter()
-            .map(|field| field.try_map(&map))
-            .collect::<Result<_, _>>()?;
-
-        Ok(OperationPlan { flat, operation_type: self.operation_type, nested })
-    }
-}
-
-impl<Input> OperationPlan<Input> {
     pub fn new(fields: Vec<Field<Flat, Input>>, operation_type: OperationType) -> Self
     where
         Input: Clone,
