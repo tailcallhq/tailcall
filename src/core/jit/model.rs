@@ -144,25 +144,6 @@ impl<Input> Field<Nested<Input>, Input> {
         self.extensions.as_ref().map(|Nested(nested)| nested)
     }
 
-    // pub fn selection_field(&self) -> SelectionField<'_, Input> {
-    //     self.selection_field_inner(self)
-    // }
-
-    // fn selection_field_inner<'a>(
-    //     &'a self,
-    //     field: &'a Field<Nested<Input>, Input>,
-    // ) -> SelectionField<'a, Input> {
-    //     let mut selection_field = SelectionField { field, selection_set: vec![] };
-
-    //     for children in field.nested_iter() {
-    //         selection_field
-    //             .selection_set
-    //             .push(self.selection_field_inner(children));
-    //     }
-
-    //     selection_field
-    // }
-
     pub fn nested_iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
         self.nested()
             .map(|nested| nested.iter())
@@ -315,23 +296,3 @@ impl<Input> OperationPlan<Input> {
         self.flat.len()
     }
 }
-
-// #[derive(Debug)]
-// pub struct SelectionField<'a, Input> {
-//     field: &'a Field<Nested<Input>, Input>,
-//     selection_set: Vec<SelectionField<'a, Input>>,
-// }
-
-// impl<Input> SelectionField<'_, Input> {
-//     pub fn name(&self) -> &str {
-//         &self.field.name
-//     }
-
-//     pub fn arguments(&self) -> &[Arg<Input>] {
-//         &self.field.args
-//     }
-
-//     pub fn selection_set(&self) -> std::slice::Iter<'_, SelectionField<'_, Input>> {
-//         self.selection_set.iter()
-//     }
-// }
