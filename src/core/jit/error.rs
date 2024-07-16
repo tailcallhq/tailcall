@@ -1,4 +1,5 @@
 use async_graphql::parser::types::OperationType;
+use async_graphql::ErrorExtensions;
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
@@ -23,8 +24,18 @@ pub enum Error {
     BuildError(#[from] BuildError),
     #[error("ParseError: {0}")]
     ParseError(#[from] async_graphql::parser::Error),
-    #[error("IR: {0}")]
+    #[error(transparent)]
     IR(#[from] crate::core::ir::Error),
+}
+
+impl ErrorExtensions for Error {
+    fn extend(&self) -> async_graphql::Error {
+        match self {
+            Error::BuildError(error) => error.extend(),
+            Error::ParseError(error) => error.extend(),
+            Error::IR(error) => error.extend(),
+        }
+    }
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
