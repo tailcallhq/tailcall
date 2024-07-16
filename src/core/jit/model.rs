@@ -42,21 +42,6 @@ pub struct Arg<Input> {
     pub default_value: Option<Input>,
 }
 
-impl<Input> Arg<Input> {
-    pub fn try_map<Output, Error>(
-        self,
-        map: impl Fn(Input) -> Result<Output, Error>,
-    ) -> Result<Arg<Output>, Error> {
-        Ok(Arg {
-            id: self.id,
-            name: self.name,
-            type_of: self.type_of,
-            value: self.value.map(&map).transpose()?,
-            default_value: self.default_value.map(&map).transpose()?,
-        })
-    }
-}
-
 #[derive(Clone)]
 pub struct ArgId(usize);
 
@@ -114,60 +99,6 @@ impl Variable {
     }
     pub fn into_string(self) -> String {
         self.0
-    }
-}
-
-impl<Input> Field<Nested<Input>, Input> {
-    pub fn try_map<Output, Error>(
-        self,
-        map: &impl Fn(Input) -> Result<Output, Error>,
-    ) -> Result<Field<Nested<Output>, Output>, Error> {
-        let mut extensions = None;
-
-        if let Some(nested) = self.extensions {
-            let mut exts = vec![];
-            for v in nested.0 {
-                exts.push(v.try_map(map)?);
-            }
-            extensions = Some(Nested(exts));
-        }
-
-        Ok(Field {
-            id: self.id,
-            name: self.name,
-            ir: self.ir,
-            type_of: self.type_of,
-            extensions,
-            skip: self.skip,
-            include: self.include,
-            args: self
-                .args
-                .into_iter()
-                .map(|arg| arg.try_map(map))
-                .collect::<Result<_, _>>()?,
-        })
-    }
-}
-
-impl<Input> Field<Flat, Input> {
-    pub fn try_map<Output, Error>(
-        self,
-        map: impl Fn(Input) -> Result<Output, Error>,
-    ) -> Result<Field<Flat, Output>, Error> {
-        Ok(Field {
-            id: self.id,
-            name: self.name,
-            ir: self.ir,
-            type_of: self.type_of,
-            extensions: self.extensions,
-            skip: self.skip,
-            include: self.include,
-            args: self
-                .args
-                .into_iter()
-                .map(|arg| arg.try_map(&map))
-                .collect::<Result<_, _>>()?,
-        })
     }
 }
 
@@ -264,11 +195,20 @@ impl Debug for Flat {
 #[derive(Clone, Debug)]
 pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
+impl<Input> Nested<Input> {
+    pub fn new(fields: Vec<Field<Nested<Input>, Input>>) -> Self {
+        Nested(fields)
+    }
+    pub fn into_inner(self) -> Vec<Field<Nested<Input>, Input>> {
+        self.0
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct OperationPlan<Input> {
-    flat: Vec<Field<Flat, Input>>,
-    operation_type: OperationType,
-    nested: Vec<Field<Nested<Input>, Input>>,
+    pub(super) flat: Vec<Field<Flat, Input>>,
+    pub(super) operation_type: OperationType,
+    pub(super) nested: Vec<Field<Nested<Input>, Input>>,
 }
 
 impl<Input> OperationPlan<Input> {
