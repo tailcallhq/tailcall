@@ -2,11 +2,11 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use async_graphql::{SelectionField, ServerError, Value};
+use async_graphql::{ServerError, Value};
 use reqwest::header::HeaderMap;
 
 use super::discriminator::TypeName;
-use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike};
+use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike, SelectionField};
 use crate::core::document::print_directives;
 use crate::core::http::RequestContext;
 
@@ -122,23 +122,22 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
 
 impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'a, Ctx> {
     fn directives(&self) -> Option<String> {
-        let field = self.graphql_ctx.field()?;
-
-        field
+        let selection_field = self.graphql_ctx.field()?;
+        selection_field
             .directives()
+            .as_ref()
             .ok()
             .map(|directives| print_directives(directives.iter()))
     }
 
     fn selection_set(&self, related_fields: &RelatedFields) -> Option<String> {
-        let field = self.graphql_ctx.field()?;
-
-        format_selection_set(field.selection_set(), related_fields)
+        let selection_field = self.graphql_ctx.field()?;
+        format_selection_set(selection_field.selection_set(), related_fields)
     }
 }
 
 fn format_selection_set<'a>(
-    selection_set: impl Iterator<Item = SelectionField<'a>>,
+    selection_set: impl Iterator<Item = &'a SelectionField>,
     related_fields: &RelatedFields,
 ) -> Option<String> {
     let set = selection_set
@@ -157,7 +156,7 @@ fn format_selection_set<'a>(
     Some(format!("{{ {} }}", set.join(" ")))
 }
 
-fn format_selection_field(field: SelectionField, related_fields: &RelatedFields) -> String {
+fn format_selection_field(field: &SelectionField, related_fields: &RelatedFields) -> String {
     let name = field.name();
     let arguments = format_selection_field_arguments(field);
     let selection_set = format_selection_set(field.selection_set(), related_fields);
@@ -181,16 +180,8 @@ fn format_selection_field(field: SelectionField, related_fields: &RelatedFields)
     output
 }
 
-fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> {
-    let name = field.name();
-    let arguments = field
-        .arguments()
-        .map_err(|error| {
-            tracing::warn!("Failed to resolve arguments for field {name}, due to error: {error}");
-
-            error
-        })
-        .unwrap_or_default();
+fn format_selection_field_arguments(field: &SelectionField) -> Cow<'static, str> {
+    let arguments = field.arguments();
 
     if arguments.is_empty() {
         return Cow::Borrowed("");
