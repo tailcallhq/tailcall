@@ -1,12 +1,11 @@
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
-use derive_getters::Getters;
 
 use super::{Field, Nested, Request};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
 /// Rust representation of the GraphQL context available in the DSL
-#[derive(Getters, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Context<'a, Input, Output> {
     request: &'a Request<Input>,
     value: Option<&'a Output>,
@@ -69,5 +68,38 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
 
     fn add_error(&self, _error: ServerError) {
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Context;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::{Config, ConfigModule};
+    use crate::core::ir::ResolverContextLike;
+    use crate::core::jit::{OperationPlan, Request};
+    use crate::core::valid::Validator;
+
+    fn setup(
+        query: &str,
+    ) -> (
+        OperationPlan<async_graphql::Value>,
+        Request<async_graphql::Value>,
+    ) {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let blueprint = Blueprint::try_from(&ConfigModule::from(config)).unwrap();
+        let request = Request::new(query);
+        let plan = request.clone().create_plan(&blueprint).unwrap();
+        (plan, request)
+    }
+
+    #[test]
+    fn test_field() {
+        let (plan, req) = setup("query {posts {id title}}");
+        let field = plan.as_nested();
+        let ctx: Context<async_graphql::Value, async_graphql::Value> =
+            Context::new(&req, false, &field[0]);
+        insta::assert_debug_snapshot!(ctx.field().unwrap());
     }
 }
