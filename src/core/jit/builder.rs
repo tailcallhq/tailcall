@@ -13,7 +13,7 @@ use super::model::*;
 use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
-use crate::core::jit::model::ExecutionPlan;
+use crate::core::jit::model::OperationPlan;
 use crate::core::merge_right::MergeRight;
 
 #[derive(PartialEq, strum_macros::Display)]
@@ -246,7 +246,7 @@ impl Builder {
     pub fn build(
         &self,
         variables: &Variables<ConstValue>,
-    ) -> Result<ExecutionPlan<ConstValue>, BuildError> {
+    ) -> Result<OperationPlan<ConstValue>, BuildError> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
@@ -254,14 +254,17 @@ impl Builder {
             fragments.insert(name.as_str(), &fragment.node);
         }
 
-        match &self.document.operations {
+        // A GraphQL request can contain only one operation at a time.
+        let operation_type = match &self.document.operations {
             DocumentOperations::Single(single) => {
                 let name = self
                     .get_type(single.node.ty)
                     .ok_or(BuildError::RootOperationTypeNotDefined { operation: single.node.ty })?;
                 fields.extend(self.iter(&single.node.selection_set.node, name, None, &fragments));
+                single.node.ty
             }
             DocumentOperations::Multiple(multiple) => {
+                let mut operation_type = OperationType::Query;
                 for single in multiple.values() {
                     let name = self.get_type(single.node.ty).ok_or(
                         BuildError::RootOperationTypeNotDefined { operation: single.node.ty },
@@ -272,11 +275,13 @@ impl Builder {
                         None,
                         &fragments,
                     ));
+                    operation_type = single.node.ty;
                 }
+                operation_type
             }
-        }
+        };
 
-        let plan = ExecutionPlan::new(fields);
+        let plan = OperationPlan::new(fields, operation_type);
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly
@@ -301,7 +306,7 @@ mod tests {
     fn plan(
         query: impl AsRef<str>,
         variables: &Variables<ConstValue>,
-    ) -> ExecutionPlan<ConstValue> {
+    ) -> OperationPlan<ConstValue> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
@@ -318,6 +323,7 @@ mod tests {
         "#,
             &Variables::new(),
         );
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -332,6 +338,7 @@ mod tests {
             &Variables::new(),
         );
 
+        assert!(plan.is_query());
         assert_eq!(plan.size(), 4)
     }
 
@@ -345,6 +352,8 @@ mod tests {
         "#,
             &Variables::new(),
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -372,6 +381,8 @@ mod tests {
         "#,
             &Variables::new(),
         );
+
+        assert!(!plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -393,6 +404,8 @@ mod tests {
         "#,
             &Variables::new(),
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -413,6 +426,8 @@ mod tests {
         "#,
             &Variables::new(),
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -429,6 +444,8 @@ mod tests {
         "#,
             &Variables::from_iter([("id".into(), ConstValue::from(1))]),
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -449,6 +466,8 @@ mod tests {
         "#,
             &Variables::new(),
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -468,6 +487,8 @@ mod tests {
         "#,
             &Variables::new(),
         );
+
+        assert!(!plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 

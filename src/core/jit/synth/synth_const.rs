@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use super::Synthesizer;
 use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
-use crate::core::jit::{DataPath, Error, ExecutionPlan, Variable, Variables};
+use crate::core::jit::{DataPath, Error, OperationPlan, Variable, Variables};
 use crate::core::json::JsonLike;
 
 pub struct Synth {
@@ -37,7 +37,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
 
 impl Synth {
     pub fn new(
-        plan: ExecutionPlan<ConstValue>,
+        plan: OperationPlan<ConstValue>,
         store: Store<Result<ConstValue, Positioned<Error>>>,
         variables: Variables<ConstValue>,
     ) -> Self {
@@ -186,11 +186,11 @@ impl Synth {
 }
 
 pub struct SynthConst {
-    plan: ExecutionPlan<ConstValue>,
+    plan: OperationPlan<ConstValue>,
 }
 
 impl SynthConst {
-    pub fn new(plan: ExecutionPlan<ConstValue>) -> Self {
+    pub fn new(plan: OperationPlan<ConstValue>) -> Self {
         Self { plan }
     }
 }

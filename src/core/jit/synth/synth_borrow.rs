@@ -2,7 +2,7 @@ use serde_json_borrow::{ObjectAsVec, Value};
 
 use crate::core::jit::model::{Children, Field};
 use crate::core::jit::store::{Data, Store};
-use crate::core::jit::ExecutionPlan;
+use crate::core::jit::OperationPlan;
 
 pub struct SynthBorrow<'a> {
     selection: Vec<Field<Children>>,
@@ -10,7 +10,7 @@ pub struct SynthBorrow<'a> {
 }
 
 impl<'a> SynthBorrow<'a> {
-    pub fn new(plan: ExecutionPlan, store: Store<Value<'a>>) -> Self {
+    pub fn new(plan: OperationPlan, store: Store<Value<'a>>) -> Self {
         Self { selection: plan.into_children(), store }
     }
 
