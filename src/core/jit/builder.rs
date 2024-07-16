@@ -222,7 +222,10 @@ impl Builder {
                         fields.extend(self.iter(
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
-                            exts.clone(),
+                            exts.as_ref().map(|ext| {
+                                ext.clone()
+                                    .with_type(fragment.type_condition.node.on.to_string())
+                            }),
                             fragments,
                         ));
                     }
@@ -397,9 +400,15 @@ mod tests {
               phone
             }
 
+            fragment PostPII on Post {
+              title
+              body
+            }
+
             query {
               user(id:1) {
                 ...UserPII
+                ...PostPII
               }
             }
         "#,

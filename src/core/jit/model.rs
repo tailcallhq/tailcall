@@ -3,6 +3,7 @@ use std::fmt::{Debug, Formatter};
 
 use async_graphql::parser::types::OperationType;
 use async_graphql::Pos;
+use indexmap::IndexMap;
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
@@ -146,7 +147,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
 
 impl<Input> Field<Nested<Input>, Input> {
     pub fn nested(&self) -> Option<&Vec<Field<Nested<Input>, Input>>> {
-        self.extensions.as_ref().map(|Nested(nested)| nested)
+        self.extensions.as_ref().map(|nested| &nested.fields)
     }
 
     pub fn nested_iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
@@ -159,7 +160,7 @@ impl<Input> Field<Nested<Input>, Input> {
 
 impl<Input> Field<Flat, Input> {
     fn parent(&self) -> Option<&FieldId> {
-        self.extensions.as_ref().map(|Flat(id)| id)
+        self.extensions.as_ref().map(|flat| &flat.parent_id)
     }
 
     fn into_nested(self, fields: &[Field<Flat, Input>]) -> Field<Nested<Input>, Input>
@@ -167,18 +168,30 @@ impl<Input> Field<Flat, Input> {
         Input: Clone,
     {
         let mut children = Vec::new();
+        let mut by_type: IndexMap<String, Vec<_>> = IndexMap::new();
         for field in fields.iter() {
             if let Some(id) = field.parent() {
                 if *id == self.id {
-                    children.push(field.to_owned().into_nested(fields));
+                    if let Some(as_type) = field
+                        .extensions
+                        .as_ref()
+                        .and_then(|ext| ext.as_type.as_ref())
+                    {
+                        by_type
+                            .entry(as_type.to_owned())
+                            .or_default()
+                            .push(field.to_owned().into_nested(fields));
+                    } else {
+                        children.push(field.to_owned().into_nested(fields));
+                    }
                 }
             }
         }
 
-        let extensions = if children.is_empty() {
+        let extensions = if children.is_empty() && by_type.is_empty() {
             None
         } else {
-            Some(Nested(children))
+            Some(Nested { fields: children, by_type })
         };
 
         Field {
@@ -219,27 +232,31 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
 
 /// Stores field relationships in a flat structure where each field links to its
 /// parent.
-#[derive(Clone)]
-pub struct Flat(FieldId);
+#[derive(Clone, Debug)]
+pub struct Flat {
+    parent_id: FieldId,
+    as_type: Option<String>,
+}
 
 impl Flat {
-    pub fn new(id: FieldId) -> Self {
-        Flat(id)
+    pub fn new(parent_id: FieldId) -> Self {
+        Flat { parent_id, as_type: None }
     }
-    pub fn as_id(&self) -> &FieldId {
-        &self.0
-    }
-}
-impl Debug for Flat {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Flat({:?})", self.0)
+
+    pub fn with_type(self, as_type: String) -> Self {
+        Self { as_type: Some(as_type), ..self }
     }
 }
 
 /// Store field relationships in a nested structure like a tree where each field
 /// links to its children.
 #[derive(Clone, Debug)]
-pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
+pub struct Nested<Input> {
+    /// usual fields without fragment definition
+    fields: Vec<Field<Nested<Input>, Input>>,
+    /// fields from the fragment based on the fragment's type
+    by_type: IndexMap<String, Vec<Field<Nested<Input>, Input>>>,
+}
 
 #[derive(Clone, Debug)]
 pub struct OperationPlan<Input> {

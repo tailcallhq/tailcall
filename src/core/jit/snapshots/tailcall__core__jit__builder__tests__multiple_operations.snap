@@ -22,8 +22,8 @@ expression: plan.into_nested()
             },
         ],
         extensions: Some(
-            Nested(
-                [
+            Nested {
+                fields: [
                     Field {
                         id: 1,
                         name: "id",
@@ -37,7 +37,8 @@ expression: plan.into_nested()
                         is_scalar: true,
                     },
                 ],
-            ),
+                by_type: {},
+            },
         ),
         is_scalar: false,
     },
@@ -47,8 +48,8 @@ expression: plan.into_nested()
         ir: "Some(..)",
         type_of: [Post],
         extensions: Some(
-            Nested(
-                [
+            Nested {
+                fields: [
                     Field {
                         id: 4,
                         name: "id",
@@ -62,7 +63,8 @@ expression: plan.into_nested()
                         is_scalar: true,
                     },
                 ],
-            ),
+                by_type: {},
+            },
         ),
         is_scalar: false,
     },
