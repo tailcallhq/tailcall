@@ -7,7 +7,7 @@ use futures_util::future::join_all;
 
 use super::context::Context;
 use super::synth::Synthesizer;
-use super::{DataPath, ExecutionPlan, Field, Nested, Request, Response, Store};
+use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
@@ -15,7 +15,7 @@ use crate::core::json::JsonLike;
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
 pub struct Executor<Synth, IRExec, Input> {
-    plan: ExecutionPlan<Input>,
+    plan: OperationPlan<Input>,
     synth: Synth,
     exec: IRExec,
 }
@@ -27,7 +27,7 @@ where
     Synth: Synthesizer<Value = Result<Output, Error>, Variable = Input>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
-    pub fn new(plan: ExecutionPlan<Input>, synth: Synth, exec: Exec) -> Self {
+    pub fn new(plan: OperationPlan<Input>, synth: Synth, exec: Exec) -> Self {
         Self { plan, synth, exec }
     }
 
@@ -51,7 +51,7 @@ where
 struct ExecutorInner<'a, Input, Output, Error, Exec> {
     request: Request<Input>,
     store: Arc<Mutex<Store<Result<Output, Error>>>>,
-    plan: ExecutionPlan<Input>,
+    plan: OperationPlan<Input>,
     ir_exec: &'a Exec,
 }
 
@@ -64,15 +64,15 @@ where
     fn new(
         request: Request<Input>,
         store: Arc<Mutex<Store<Result<Output, Error>>>>,
-        plan: ExecutionPlan<Input>,
+        plan: OperationPlan<Input>,
         ir_exec: &'a Exec,
     ) -> Self {
         Self { request, store, plan, ir_exec }
     }
 
     async fn init(&mut self) {
+        let ctx = Context::new(&self.request, self.plan.is_query());
         join_all(self.plan.as_nested().iter().map(|field| async {
-            let ctx = Context::new(&self.request);
             let mut arg_map = indexmap::IndexMap::new();
             for arg in field.args.iter() {
                 let name = arg.name.as_str();
