@@ -33,6 +33,16 @@ impl<'a, Input, Output> Context<'a, Input, Output> {
         }
     }
 
+    pub fn with_field(&self, field: &'a Field<Nested<Input>, Input>) -> Self {
+        Self {
+            request: self.request,
+            value: self.value,
+            args: None,
+            is_query: self.is_query,
+            field,
+        }
+    }
+
     pub fn with_args(&self, args: indexmap::IndexMap<&str, Input>) -> Self {
         let mut map = indexmap::IndexMap::new();
         for (key, value) in args {
