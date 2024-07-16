@@ -24,17 +24,12 @@ scalar JSON
 
 scalar PhoneNumber
 
-type Post {
-  body: String!
-  id: Int!
-  title: String!
-  user: User
-  userId: Int!
+type Query {
+  f1(q: [Int]!): T1
 }
 
-type Query {
-  posts: [Post]
-  user(id: Int!): User
+type T1 {
+  numbers: [Int]
 }
 
 scalar UInt128
@@ -48,15 +43,6 @@ scalar UInt64
 scalar UInt8
 
 scalar Url
-
-type User {
-  email: String!
-  id: Int!
-  name: String!
-  phone: String
-  username: String!
-  website: String
-}
 
 schema {
   query: Query

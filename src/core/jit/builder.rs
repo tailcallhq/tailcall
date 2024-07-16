@@ -1,15 +1,48 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 
 use async_graphql::parser::types::{
-    DocumentOperations, ExecutableDocument, FragmentDefinition, OperationType, Selection,
-    SelectionSet,
+    Directive, DocumentOperations, ExecutableDocument, FragmentDefinition, OperationType,
+    Selection, SelectionSet,
 };
 use async_graphql::Positioned;
+use async_graphql_value::Value;
 
 use super::model::*;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::merge_right::MergeRight;
+
+#[derive(PartialEq)]
+enum Condition {
+    True,
+    False,
+    Variable(Variable),
+}
+
+struct Conditions {
+    skip: Option<Condition>,
+    include: Option<Condition>,
+}
+
+impl Conditions {
+    /// Checks if the field should be skipped always
+    fn is_const_skip(&self) -> bool {
+        matches!(self.skip, Some(Condition::True)) ^ matches!(self.include, Some(Condition::True))
+    }
+
+    fn into_variable_tuple(self) -> (Option<Variable>, Option<Variable>) {
+        let comp = |condition| match condition? {
+            Condition::Variable(var) => Some(var),
+            _ => None,
+        };
+
+        let include = comp(self.include);
+        let skip = comp(self.skip);
+
+        (include, skip)
+    }
+}
 
 pub struct Builder {
     pub index: Index,
@@ -29,18 +62,69 @@ impl Builder {
         }
     }
 
+    #[inline(always)]
+    fn include(
+        &self,
+        directives: &[Positioned<async_graphql::parser::types::Directive>],
+    ) -> Conditions {
+        fn get_condition(dir: &Directive) -> Option<Condition> {
+            let arg = dir.get_argument("if").map(|pos| &pos.node);
+            let is_include = dir.name.node.as_str() == "include";
+            match arg {
+                None => None,
+                Some(value) => match value {
+                    Value::Boolean(bool) => {
+                        let condition = if is_include ^ bool {
+                            Condition::True
+                        } else {
+                            Condition::False
+                        };
+                        Some(condition)
+                    }
+                    Value::Variable(var) => {
+                        Some(Condition::Variable(Variable::new(var.deref().to_owned())))
+                    }
+                    _ => None,
+                },
+            }
+        }
+        Conditions {
+            skip: directives
+                .iter()
+                .find(|d| d.node.name.node.as_str() == "skip")
+                .map(|d| &d.node)
+                .and_then(get_condition),
+            include: directives
+                .iter()
+                .find(|d| d.node.name.node.as_str() == "include")
+                .map(|d| &d.node)
+                .and_then(get_condition),
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
+    #[inline(always)]
     fn iter(
         &self,
         selection: &SelectionSet,
         type_of: &str,
-        refs: Option<Parent>,
+        exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Parent>> {
+    ) -> Vec<Field<Flat>> {
         let mut fields = vec![];
         for selection in &selection.items {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
+                    let conditions = self.include(&gql_field.directives);
+
+                    // if include is always false xor skip is always true,
+                    // then we can skip the field from the plan
+                    if conditions.is_const_skip() {
+                        continue;
+                    }
+
+                    let (include, skip) = conditions.into_variable_tuple();
+
                     let field_name = gql_field.name.node.as_str();
                     let field_args = gql_field
                         .arguments
@@ -78,7 +162,7 @@ impl Builder {
                         let child_fields = self.iter(
                             &gql_field.selection_set.node,
                             type_of.name(),
-                            Some(Parent::new(id.clone())),
+                            Some(Flat::new(id.clone())),
                             fragments,
                         );
                         let name = field_name.to_owned();
@@ -91,8 +175,10 @@ impl Builder {
                             name,
                             ir,
                             type_of,
+                            skip,
+                            include,
                             args,
-                            extensions: refs.clone(),
+                            extensions: exts.clone(),
                         });
                         fields = fields.merge_right(child_fields);
                     }
@@ -104,7 +190,7 @@ impl Builder {
                         fields.extend(self.iter(
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
-                            refs.clone(),
+                            exts.clone(),
                             fragments,
                         ));
                     }
@@ -116,6 +202,7 @@ impl Builder {
         fields
     }
 
+    #[inline(always)]
     fn get_type(&self, ty: OperationType) -> Option<&str> {
         match ty {
             OperationType::Query => Some(self.index.get_query()),
@@ -124,6 +211,7 @@ impl Builder {
         }
     }
 
+    #[inline(always)]
     pub fn build(&self) -> Result<ExecutionPlan, String> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
@@ -176,7 +264,6 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-
         Builder::new(&blueprint, document).build().unwrap()
     }
 
@@ -189,7 +276,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[tokio::test]
@@ -214,7 +301,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -240,7 +327,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -260,7 +347,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -279,7 +366,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -294,7 +381,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -313,7 +400,7 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 
     #[test]
@@ -331,6 +418,6 @@ mod tests {
             }
         "#,
         );
-        insta::assert_debug_snapshot!(plan.into_children());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 }
