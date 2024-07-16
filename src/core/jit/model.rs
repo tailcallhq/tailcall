@@ -276,17 +276,17 @@ impl<Input> OperationPlan<Input> {
         self,
         map: impl Fn(Input) -> Result<Output, Error>,
     ) -> Result<OperationPlan<Output>, Error> {
-        let flat = self
-            .flat
-            .into_iter()
-            .map(|field| field.try_map(&map))
-            .collect::<Result<_, _>>()?;
+        let mut flat = vec![];
 
-        let nested = self
-            .nested
-            .into_iter()
-            .map(|field| field.try_map(&map))
-            .collect::<Result<_, _>>()?;
+        for f in self.flat {
+            flat.push(f.try_map(&map)?);
+        }
+
+        let mut nested = vec![];
+
+        for n in self.nested {
+            nested.push(n.try_map(&map)?);
+        }
 
         Ok(OperationPlan { flat, operation_type: self.operation_type, nested })
     }
