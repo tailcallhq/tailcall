@@ -206,6 +206,7 @@ impl Builder {
                             skip,
                             include,
                             args,
+                            pos: selection.pos,
                             extensions: exts.clone(),
                         });
                         fields = fields.merge_right(child_fields);

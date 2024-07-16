@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use crate::core::blueprint::{
     Blueprint, Definition, FieldDefinition, InputFieldDefinition, SchemaDefinition,
@@ -9,13 +9,13 @@ use crate::core::blueprint::{
 /// access to getting any field information.
 
 pub struct Index {
-    map: HashMap<String, (Definition, HashMap<String, QueryField>)>,
+    map: IndexMap<String, (Definition, IndexMap<String, QueryField>)>,
     schema: SchemaDefinition,
 }
 
 #[derive(Debug)]
 pub enum QueryField {
-    Field((FieldDefinition, HashMap<String, InputFieldDefinition>)),
+    Field((FieldDefinition, IndexMap<String, InputFieldDefinition>)),
     InputField(InputFieldDefinition),
 }
 
@@ -46,16 +46,16 @@ impl Index {
 
 impl From<&Blueprint> for Index {
     fn from(blueprint: &Blueprint) -> Self {
-        let mut map = HashMap::new();
+        let mut map = IndexMap::new();
 
         for definition in blueprint.definitions.iter() {
             match definition {
                 Definition::Object(object_def) => {
                     let type_name = object_def.name.clone();
-                    let mut fields_map = HashMap::new();
+                    let mut fields_map = IndexMap::new();
 
                     for field in &object_def.fields {
-                        let args_map = HashMap::from_iter(
+                        let args_map = IndexMap::from_iter(
                             field
                                 .args
                                 .iter()
@@ -75,10 +75,10 @@ impl From<&Blueprint> for Index {
                 }
                 Definition::Interface(interface_def) => {
                     let type_name = interface_def.name.clone();
-                    let mut fields_map = HashMap::new();
+                    let mut fields_map = IndexMap::new();
 
                     for field in interface_def.fields.clone() {
-                        let args_map = HashMap::from_iter(
+                        let args_map = IndexMap::from_iter(
                             field
                                 .args
                                 .iter()
@@ -95,7 +95,7 @@ impl From<&Blueprint> for Index {
                 }
                 Definition::InputObject(input_object_def) => {
                     let type_name = input_object_def.name.clone();
-                    let mut fields_map = HashMap::new();
+                    let mut fields_map = IndexMap::new();
 
                     for field in input_object_def.fields.clone() {
                         fields_map.insert(field.name.clone(), QueryField::InputField(field));
@@ -113,21 +113,21 @@ impl From<&Blueprint> for Index {
                     let type_name = scalar_def.name.clone();
                     map.insert(
                         type_name.clone(),
-                        (Definition::Scalar(scalar_def.to_owned()), HashMap::new()),
+                        (Definition::Scalar(scalar_def.to_owned()), IndexMap::new()),
                     );
                 }
                 Definition::Enum(enum_def) => {
                     let type_name = enum_def.name.clone();
                     map.insert(
                         type_name.clone(),
-                        (Definition::Enum(enum_def.to_owned()), HashMap::new()),
+                        (Definition::Enum(enum_def.to_owned()), IndexMap::new()),
                     );
                 }
                 Definition::Union(union_def) => {
                     let type_name = union_def.name.clone();
                     map.insert(
                         type_name.clone(),
-                        (Definition::Union(union_def.to_owned()), HashMap::new()),
+                        (Definition::Union(union_def.to_owned()), IndexMap::new()),
                     );
                 }
             }
