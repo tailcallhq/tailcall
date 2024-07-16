@@ -132,7 +132,7 @@ where
                 // Has to be an Object, we don't do anything while executing if its a Scalar
                 else {
                     join_all(field.nested_iter().map(|child| {
-                        let ctx = ctx.with_value(value).with_field(field);
+                        let ctx = ctx.with_value(value).with_field(child);
                         let data_path = data_path.clone();
                         async move { self.execute(child, &ctx, data_path).await }
                     }))
