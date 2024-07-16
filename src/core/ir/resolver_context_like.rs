@@ -101,13 +101,7 @@ impl SelectionField {
         let args = field
             .args
             .iter()
-            .filter_map(|a| {
-                if let Some(v) = &a.value {
-                    Some((a.name.to_owned(), v.to_string()))
-                } else {
-                    None
-                }
-            })
+            .filter_map(|a| a.value.as_ref().map(|v| (a.name.to_owned(), v.to_string())))
             .collect::<Vec<_>>();
 
         SelectionField { name, args, directive: None, selection_set }
