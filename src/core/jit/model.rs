@@ -146,13 +146,26 @@ impl<Extensions, Input> Field<Extensions, Input> {
 }
 
 impl<Input> Field<Nested<Input>, Input> {
-    pub fn nested(&self) -> Option<&Vec<Field<Nested<Input>, Input>>> {
-        self.extensions.as_ref().map(|nested| &nested.fields)
-    }
-
-    pub fn nested_iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
-        self.nested()
-            .map(|nested| nested.iter())
+    /// iters over children fields that are
+    /// either usual fields without fragment involved
+    /// or fields from fragment for specified `type_name`
+    pub fn nested_iter(
+        &self,
+        type_name: &str,
+    ) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
+        self.extensions
+            .as_ref()
+            .map(|nested| {
+                nested
+                    .fields
+                    .iter()
+                    // TODO: handle Interface and Union types here
+                    // Right now only exact type name is used to check the set of fields
+                    // but with Interfaces/Unions we need to check if that specific type
+                    // is member of some Interface/Union and if so call the fragments for
+                    // the related Interfaces/Unions
+                    .chain(nested.by_type.get(type_name).into_iter().flatten())
+            })
             .into_iter()
             .flatten()
     }

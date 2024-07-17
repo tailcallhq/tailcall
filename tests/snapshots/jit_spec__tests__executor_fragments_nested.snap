@@ -8,110 +8,110 @@ expression: data
       "id": 1,
       "user": {
         "id": 1,
+        "username": "Bret",
         "name": "Leanne Graham",
         "email": "Sincere@april.biz",
-        "phone": "1-770-736-8031 x56442",
-        "username": "Bret"
+        "phone": "1-770-736-8031 x56442"
       }
     },
     {
       "id": 2,
       "user": {
         "id": 1,
+        "username": "Bret",
         "name": "Leanne Graham",
         "email": "Sincere@april.biz",
-        "phone": "1-770-736-8031 x56442",
-        "username": "Bret"
+        "phone": "1-770-736-8031 x56442"
       }
     },
     {
       "id": 3,
       "user": {
         "id": 1,
+        "username": "Bret",
         "name": "Leanne Graham",
         "email": "Sincere@april.biz",
-        "phone": "1-770-736-8031 x56442",
-        "username": "Bret"
+        "phone": "1-770-736-8031 x56442"
       }
     },
     {
       "id": 4,
       "user": {
         "id": 1,
+        "username": "Bret",
         "name": "Leanne Graham",
         "email": "Sincere@april.biz",
-        "phone": "1-770-736-8031 x56442",
-        "username": "Bret"
+        "phone": "1-770-736-8031 x56442"
       }
     },
     {
       "id": 5,
       "user": {
         "id": 1,
+        "username": "Bret",
         "name": "Leanne Graham",
         "email": "Sincere@april.biz",
-        "phone": "1-770-736-8031 x56442",
-        "username": "Bret"
+        "phone": "1-770-736-8031 x56442"
       }
     },
     {
       "id": 6,
       "user": {
         "id": 1,
+        "username": "Bret",
         "name": "Leanne Graham",
         "email": "Sincere@april.biz",
-        "phone": "1-770-736-8031 x56442",
-        "username": "Bret"
+        "phone": "1-770-736-8031 x56442"
       }
     },
     {
       "id": 7,
       "user": {
         "id": 1,
+        "username": "Bret",
         "name": "Leanne Graham",
         "email": "Sincere@april.biz",
-        "phone": "1-770-736-8031 x56442",
-        "username": "Bret"
+        "phone": "1-770-736-8031 x56442"
       }
     },
     {
       "id": 8,
       "user": {
         "id": 1,
+        "username": "Bret",
         "name": "Leanne Graham",
         "email": "Sincere@april.biz",
-        "phone": "1-770-736-8031 x56442",
-        "username": "Bret"
+        "phone": "1-770-736-8031 x56442"
       }
     },
     {
       "id": 9,
       "user": {
         "id": 1,
+        "username": "Bret",
         "name": "Leanne Graham",
         "email": "Sincere@april.biz",
-        "phone": "1-770-736-8031 x56442",
-        "username": "Bret"
+        "phone": "1-770-736-8031 x56442"
       }
     },
     {
       "id": 10,
       "user": {
         "id": 1,
+        "username": "Bret",
         "name": "Leanne Graham",
         "email": "Sincere@april.biz",
-        "phone": "1-770-736-8031 x56442",
-        "username": "Bret"
+        "phone": "1-770-736-8031 x56442"
       }
     },
     {
       "id": 11,
       "user": {
         "id": 2,
+        "username": "Antonette",
         "name": "Ervin Howell",
         "email": "Shanna@melissa.tv",
-        "phone": "010-692-6593 x09125",
-        "username": "Antonette"
+        "phone": "010-692-6593 x09125"
       }
     }
   ]

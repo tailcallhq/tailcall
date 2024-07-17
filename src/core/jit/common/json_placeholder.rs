@@ -57,7 +57,7 @@ impl JsonPlaceholder {
                 }
             })
             .map(Ok)
-            .map(Data::Single)
+            .map(Data::single)
             .enumerate()
             .collect();
 
@@ -75,7 +75,7 @@ impl JsonPlaceholder {
             .id
             .to_owned();
         let store = [
-            (posts_id, Data::Single(Ok(Value::List(posts)))),
+            (posts_id, Data::single(Ok(Value::List(posts)))),
             (users_id, Data::Multiple(users)),
         ]
         .into_iter()

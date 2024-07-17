@@ -3,11 +3,14 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::Synthesizer;
-use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::{DataPath, Error, OperationPlan, ValidationError, Variable, Variables};
 use crate::core::json::JsonLike;
 use crate::core::scalar::get_scalar;
+use crate::core::{
+    ir::TypeName,
+    jit::model::{Field, Nested},
+};
 
 pub struct Synth {
     selection: Vec<Field<Nested<ConstValue>, ConstValue>>,
@@ -57,7 +60,7 @@ impl Synth {
             if !self.include(child) {
                 continue;
             }
-            let val = self.iter(child, None, &DataPath::new())?;
+            let val = self.iter(child, None, &DataPath::new(), &None)?;
             data.insert(Name::new(child.name.as_str()), val);
         }
 
@@ -75,57 +78,56 @@ impl Synth {
         node: &'b Field<Nested<ConstValue>, ConstValue>,
         parent: Option<&'b ConstValue>,
         data_path: &DataPath,
+        type_name: &Option<TypeName>,
     ) -> Result<ConstValue, Positioned<Error>> {
-        // TODO: this implementation prefer parent value over value in the store
-        // that's opposite to the way async_graphql engine works in tailcall
-        match parent {
-            Some(parent) => {
-                if !Self::is_array(&node.type_of, parent) {
-                    return Ok(ConstValue::Null);
-                }
-                self.iter_inner(node, parent, data_path)
-            }
-            None => {
-                // we perform this check to avoid unnecessary hashing
+        match self.store.get(&node.id) {
+            Some(val) => {
+                let mut data = val;
 
-                match self.store.get(&node.id) {
-                    Some(val) => {
-                        let mut data = val;
-
-                        for index in data_path.as_slice() {
-                            match data {
-                                Data::Multiple(v) => {
-                                    data = &v[index];
-                                }
-                                _ => return Ok(ConstValue::Null),
-                            }
+                for index in data_path.as_slice() {
+                    match data {
+                        Data::Multiple(v) => {
+                            data = &v[index];
                         }
-
-                        match data {
-                            Data::Single(val) => self.iter(node, Some(&val.clone()?), data_path),
-                            _ => {
-                                // TODO: should bailout instead of returning Null
-                                Ok(ConstValue::Null)
-                            }
-                        }
+                        _ => return Ok(ConstValue::Null),
                     }
-                    None => {
-                        // IR exists, so there must be a value.
-                        // if there is no value then we must return Null
+                }
+
+                match data {
+                    Data::Single { value, type_name } => {
+                        let value = value.clone()?;
+
+                        if !Self::is_array(&node.type_of, &value) {
+                            return Ok(ConstValue::Null);
+                        }
+                        self.iter_inner(node, &value, data_path, type_name)
+                    }
+                    _ => {
+                        // TODO: should bailout instead of returning Null
                         Ok(ConstValue::Null)
                     }
                 }
             }
+            None => match parent {
+                Some(parent) => {
+                    self.iter_inner(node, parent, data_path, type_name)
+                }
+                None => Ok(ConstValue::Null),
+            },
         }
     }
+
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
         node: &'b Field<Nested<ConstValue>, ConstValue>,
         parent: &'b ConstValue,
         data_path: &'b DataPath,
+        type_name: &Option<TypeName>,
     ) -> Result<ConstValue, Positioned<Error>> {
-        let include = self.include(node);
+        if !self.include(node) {
+            return Ok(ConstValue::Null);
+        }
 
         match parent {
             // scalar values should be returned as is
@@ -150,55 +152,47 @@ impl Synth {
             }
             ConstValue::Object(obj) => {
                 let mut ans = IndexMap::default();
-                if include {
-                    if let Some(children) = node.nested() {
-                        for child in children {
-                            // all checks for skip must occur in `iter_inner`
-                            // and include be checked before calling `iter` or recursing.
-                            let include = self.include(child);
-                            if include {
-                                let val = obj.get(child.name.as_str());
-                                if let Some(val) = val {
-                                    ans.insert(
-                                        Name::new(child.name.as_str()),
-                                        self.iter_inner(child, val, data_path)?,
-                                    );
-                                } else {
-                                    ans.insert(
-                                        Name::new(child.name.as_str()),
-                                        self.iter(child, None, data_path)?,
-                                    );
-                                }
-                            }
-                        }
-                    } else {
-                        let val = obj.get(node.name.as_str());
-                        // if it's a leaf node, then push the value
-                        if let Some(val) = val {
-                            ans.insert(Name::new(node.name.as_str()), val.to_owned());
+
+                let type_name = match &type_name {
+                    Some(TypeName::Single(type_name)) => type_name,
+                    Some(TypeName::Vec(v)) => {
+                        if let Some(index) = data_path.as_slice().last() {
+                            &v[*index]
                         } else {
-                            return Ok(ConstValue::Null);
+                            return Err(Positioned::new(
+                                ValidationError::TypeNameMismatch.into(),
+                                node.pos,
+                            ));
                         }
                     }
-                } else {
-                    let val = obj.get(node.name.as_str());
-                    // if it's a leaf node, then push the value
-                    if let Some(val) = val {
-                        ans.insert(Name::new(node.name.as_str()), val.to_owned());
-                    } else {
-                        return Ok(ConstValue::Null);
+                    None => node.type_of.name(),
+                };
+
+                for child in node.nested_iter(type_name) {
+                    // all checks for skip must occur in `iter_inner`
+                    // and include be checked before calling `iter` or recursing.
+                    let include = self.include(child);
+                    if include {
+                        let val = obj.get(child.name.as_str());
+
+                        ans.insert(
+                            Name::new(child.name.as_str()),
+                            self.iter(child, val, data_path, &None)?,
+                        );
                     }
                 }
+
                 Ok(ConstValue::Object(ans))
             }
             ConstValue::List(arr) => {
                 let mut ans = vec![];
-                if include {
-                    for (i, val) in arr.iter().enumerate() {
-                        let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
-                        ans.push(val)
-                    }
+
+                for (i, val) in arr.iter().enumerate() {
+                    let val =
+                        self.iter_inner(node, val, &data_path.clone().with_index(i), type_name)?;
+                    ans.push(val)
                 }
+
                 Ok(ConstValue::List(ans))
             }
             val => Ok(val.clone()), // cloning here would be cheaper than cloning whole value
@@ -294,18 +288,18 @@ mod tests {
     impl TestData {
         fn into_value(self) -> Data<Value> {
             match self {
-                Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
-                Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
+                Self::Posts => Data::single(serde_json::from_str(POSTS).unwrap()),
+                Self::User1 => Data::single(serde_json::from_str(USER1).unwrap()),
                 TestData::UsersData => Data::Multiple(
                     vec![
-                        Data::Single(serde_json::from_str(USER1).unwrap()),
-                        Data::Single(serde_json::from_str(USER2).unwrap()),
+                        Data::single(serde_json::from_str(USER1).unwrap()),
+                        Data::single(serde_json::from_str(USER2).unwrap()),
                     ]
                     .into_iter()
                     .enumerate()
                     .collect(),
                 ),
-                TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
+                TestData::Users => Data::single(serde_json::from_str(USERS).unwrap()),
             }
         }
     }

@@ -45,19 +45,23 @@ impl<'a> ConstValueExec<'a> {
     }
 }
 
-#[async_trait::async_trait]
 impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
     type Input = ConstValue;
     type Output = ConstValue;
     type Error = Error;
 
-    async fn execute<'a>(
+    async fn execute<'a, 'b>(
         &'a self,
         ir: &'a IR,
-        ctx: &'a Context<'a, Self::Input, Self::Output>,
+        ctx: &'b mut Context<'a, Self::Input, Self::Output>,
     ) -> Result<Self::Output> {
         let req_context = &self.req_context;
-        let mut ctx = EvalContext::new(req_context, ctx);
-        Ok(ir.eval(&mut ctx).await?)
+        let mut eval_ctx = EvalContext::new(req_context, ctx);
+
+        let result = ir.eval(&mut eval_ctx).await?;
+
+        ctx.set_type_name(eval_ctx.type_name.take());
+
+        Ok(result)
     }
 }

@@ -230,7 +230,23 @@ impl Builder {
                         ));
                     }
                 }
-                _ => {}
+                Selection::InlineFragment(Positioned { node: fragment, .. }) => {
+                    let type_of = fragment
+                        .type_condition
+                        .as_ref()
+                        .map(|cond| cond.node.on.node.as_str())
+                        .unwrap_or(type_of);
+
+                    fields.extend(
+                        self.iter(
+                            &fragment.selection_set.node,
+                            type_of,
+                            exts.as_ref()
+                                .map(|ext| ext.clone().with_type(type_of.to_string())),
+                            fragments,
+                        ),
+                    );
+                }
             }
         }
 

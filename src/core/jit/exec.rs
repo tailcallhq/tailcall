@@ -6,10 +6,10 @@ use async_graphql::Positioned;
 use derive_getters::Getters;
 use futures_util::future::join_all;
 
-use super::context::Context;
 use super::synth::Synthesizer;
+use super::{context::Context, Data};
 use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
-use crate::core::ir::model::IR;
+use crate::core::ir::{model::IR, TypeName};
 use crate::core::json::JsonLike;
 
 type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Positioned<Error>>>>>;
@@ -95,20 +95,21 @@ where
                     todo!()
                 }
             }
-            let ctx = ctx.with_args(arg_map);
-            self.execute(field, &ctx, DataPath::new()).await
+            let mut ctx = ctx.with_args(arg_map);
+            self.execute(field, &mut ctx, DataPath::new()).await
         }))
         .await;
     }
 
-    async fn execute<'b>(
+    async fn execute<'b, 'c>(
         &'b self,
         field: &'b Field<Nested<Input>, Input>,
-        ctx: &'b Context<'b, Input, Output>,
+        ctx: &'c mut Context<'b, Input, Output>,
         data_path: DataPath,
     ) -> Result<(), Error> {
         if let Some(ir) = &field.ir {
             let result = self.ir_exec.execute(ir, ctx).await;
+            let type_name = ctx.type_name();
 
             if let Ok(ref value) = result {
                 // Array
@@ -116,11 +117,17 @@ where
                 if field.type_of.is_list() {
                     // Check if the value is an array
                     if let Some(array) = value.as_array() {
-                        join_all(field.nested_iter().map(|field| {
-                            join_all(array.iter().enumerate().map(|(index, value)| {
-                                let ctx = ctx.with_value(value); // Output::JsonArray::Value
+                        join_all(array.iter().enumerate().map(|(index, value)| {
+                            let type_name = match &type_name {
+                                Some(TypeName::Single(type_name)) => type_name, // TODO: should throw ValidationError
+                                Some(TypeName::Vec(v)) => &v[index],
+                                None => field.type_of.name(),
+                            };
+
+                            join_all(field.nested_iter(type_name).map(|field| {
+                                let mut ctx = ctx.with_value(value); // Output::JsonArray::Value
                                 let data_path = data_path.clone().with_index(index);
-                                async move { self.execute(field, &ctx, data_path).await }
+                                async move { self.execute(field, &mut ctx, data_path).await }
                             }))
                         }))
                         .await;
@@ -132,10 +139,16 @@ where
                 // TODO: Validate if the value is an Object
                 // Has to be an Object, we don't do anything while executing if its a Scalar
                 else {
-                    join_all(field.nested_iter().map(|child| {
-                        let ctx = ctx.with_value(value);
+                    let type_name = match &type_name {
+                        Some(TypeName::Single(type_name)) => type_name,
+                        Some(TypeName::Vec(_)) => panic!("TypeName type mismatch"), // TODO: should throw ValidationError
+                        None => field.type_of.name(),
+                    };
+
+                    join_all(field.nested_iter(type_name).map(|child| {
+                        let mut ctx = ctx.with_value(value);
                         let data_path = data_path.clone();
-                        async move { self.execute(child, &ctx, data_path).await }
+                        async move { self.execute(child, &mut ctx, data_path).await }
                     }))
                     .await;
                 }
@@ -143,11 +156,11 @@ where
 
             let mut store = self.store.lock().unwrap();
 
-            store.set(
-                &field.id,
-                &data_path,
-                result.map_err(|e| Positioned::new(e, field.pos)),
-            );
+            let entry = store.entry(&field.id, &data_path);
+            *entry = Data::Single {
+                value: result.map_err(|e| Positioned::new(e, field.pos)),
+                type_name: type_name.clone(),
+            };
         }
 
         Ok(())
@@ -155,14 +168,13 @@ where
 }
 
 /// Executor for IR
-#[async_trait::async_trait]
 pub trait IRExecutor {
     type Input;
     type Output;
     type Error;
-    async fn execute<'a>(
+    async fn execute<'a, 'b>(
         &'a self,
         ir: &'a IR,
-        ctx: &'a Context<'a, Self::Input, Self::Output>,
+        ctx: &'b mut Context<'a, Self::Input, Self::Output>,
     ) -> Result<Self::Output, Self::Error>;
 }

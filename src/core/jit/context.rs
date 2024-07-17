@@ -3,7 +3,7 @@ use async_graphql_value::ConstValue;
 use derive_getters::Getters;
 
 use super::Request;
-use crate::core::ir::ResolverContextLike;
+use crate::core::ir::{ResolverContextLike, TypeName};
 
 /// Rust representation of the GraphQL context available in the DSL
 #[derive(Getters, Debug, Clone)]
@@ -12,11 +12,12 @@ pub struct Context<'a, Input, Output> {
     value: Option<&'a Output>,
     args: Option<indexmap::IndexMap<Name, Input>>,
     is_query: bool,
+    type_name: Option<TypeName>
 }
 
 impl<'a, Input, Output> Context<'a, Input, Output> {
     pub fn new(request: &'a Request<Input>, is_query: bool) -> Self {
-        Self { request, value: None, args: None, is_query }
+        Self { request, value: None, args: None, is_query, type_name: None }
     }
 
     pub fn with_value(&self, value: &'a Output) -> Self {
@@ -25,6 +26,7 @@ impl<'a, Input, Output> Context<'a, Input, Output> {
             value: Some(value),
             args: None,
             is_query: self.is_query,
+            type_name: None
         }
     }
 
@@ -38,7 +40,12 @@ impl<'a, Input, Output> Context<'a, Input, Output> {
             value: self.value,
             args: Some(map),
             is_query: self.is_query,
+            type_name: None
         }
+    }
+
+    pub fn set_type_name(&mut self, type_name: Option<TypeName>) {
+        self.type_name = type_name;
     }
 }
 
