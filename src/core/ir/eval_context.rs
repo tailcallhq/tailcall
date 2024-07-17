@@ -126,7 +126,6 @@ impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'a, C
         selection_field
             .directives()
             .as_ref()
-            .ok()
             .map(|directives| print_directives(directives.iter()))
     }
 
@@ -163,7 +162,7 @@ fn format_selection_field(field: &SelectionField, related_fields: &RelatedFields
 
     let mut output = format!("{}{}", name, arguments);
 
-    if let Ok(directives) = field.directives() {
+    if let Some(directives) = field.directives() {
         let directives = print_directives(directives.iter());
 
         if !directives.is_empty() {
