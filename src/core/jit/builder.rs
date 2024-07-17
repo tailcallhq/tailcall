@@ -125,6 +125,24 @@ impl Builder {
         }
     }
 
+    fn get_variable_value(
+        &self,
+        name: &str,
+        variables: &Variables<ConstValue>,
+        variable_definitions: &[Positioned<async_graphql::parser::types::VariableDefinition>],
+    ) -> Result<async_graphql::Value, BuildError> {
+        Ok(variable_definitions
+            .iter()
+            .find(|def| def.node.name.node == name)
+            .and_then(|def| {
+                variables
+                    .get(&def.node.name.node)
+                    .or_else(|| def.node.default_value())
+            })
+            .cloned()
+            .ok_or_else(|| ResolveInputError::VariableIsNotFound(name.to_string()))?)
+    }
+
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter(
@@ -134,6 +152,7 @@ impl Builder {
         exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
         variables: &Variables<ConstValue>,
+        variable_definitions: &Vec<Positioned<async_graphql::parser::types::VariableDefinition>>,
     ) -> Result<Vec<Field<Flat, Value>>, BuildError> {
         let mut fields = vec![];
         for selection in &selection.items {
@@ -157,22 +176,15 @@ impl Builder {
                         for (name, value) in &directive.arguments {
                             arguments.push((
                                 name.clone(),
-                                value.position_node(
-                                    value
-                                        .node
-                                        .clone()
-                                        .into_const_with(|name| {
-                                            // TODO: handle value depending on the type of argument and use dafaults if provided.
-                                            let val = variables
-                                                .get(&name)
-                                                .cloned()
-                                                .unwrap_or(ConstValue::Null);
-                                            async_graphql::ServerResult::Ok(val)
-                                        })
-                                        .map_err(|_x| {
-                                            ResolveInputError::VariableIsNotFound(name.to_string())
-                                        })?,
-                                ),
+                                value.position_node(value.node.clone().into_const_with(
+                                    |name| {
+                                        self.get_variable_value(
+                                            &name,
+                                            variables,
+                                            variable_definitions,
+                                        )
+                                    },
+                                )?),
                             ));
                         }
                         directives.push(ConstDirective { name: directive.name.clone(), arguments });
@@ -222,6 +234,7 @@ impl Builder {
                             Some(Flat::new(id.clone())),
                             fragments,
                             variables,
+                            variable_definitions,
                         )?;
                         let name = gql_field
                             .alias
@@ -266,6 +279,7 @@ impl Builder {
                             exts.clone(),
                             fragments,
                             variables,
+                            variable_definitions,
                         )?);
                     }
                 }
@@ -303,12 +317,14 @@ impl Builder {
                 let name = self
                     .get_type(single.node.ty)
                     .ok_or(BuildError::RootOperationTypeNotDefined { operation: single.node.ty })?;
+                let variable_definitions = &single.node.variable_definitions;
                 fields.extend(self.iter(
                     &single.node.selection_set.node,
                     name,
                     None,
                     &fragments,
                     variables,
+                    variable_definitions,
                 )?);
                 single.node.ty
             }
@@ -318,12 +334,14 @@ impl Builder {
                     let name = self.get_type(single.node.ty).ok_or(
                         BuildError::RootOperationTypeNotDefined { operation: single.node.ty },
                     )?;
+                    let variable_definitions = &single.node.variable_definitions;
                     fields.extend(self.iter(
                         &single.node.selection_set.node,
                         name,
                         None,
                         &fragments,
                         variables,
+                        variable_definitions,
                     )?);
                     operation_type = single.node.ty;
                 }

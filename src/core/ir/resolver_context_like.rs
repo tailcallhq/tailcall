@@ -103,7 +103,7 @@ impl SelectionField {
             .iter()
             .filter_map(|a| a.value.as_ref().map(|v| (a.name.to_owned(), v.to_string())))
             .collect::<Vec<_>>();
-        let directives = if field.directives.len() > 0 {
+        let directives = if !field.directives.is_empty() {
             Some(field.directives.clone())
         } else {
             None
