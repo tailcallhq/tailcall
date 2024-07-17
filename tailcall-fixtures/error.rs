@@ -10,8 +10,8 @@ pub enum Error {
     #[debug(fmt = "Std IO Error")]
     IO(std::io::Error),
 
-    #[debug(fmt = "Failed to resolve filename")]
-    FilenameNotResolved,
+    #[debug(fmt = "Failed to resolve filename: {}", _0)]
+    FilenameNotResolved(String),
 }
 
 impl Display for Error {
@@ -19,7 +19,9 @@ impl Display for Error {
         match self {
             Error::StdFmt(_) => write!(f, "Std Fmt Error"),
             Error::IO(_) => write!(f, "Std IO Error"),
-            Error::FilenameNotResolved => write!(f, "Failed to resolve filename"),
+            Error::FilenameNotResolved(file_name) => {
+                write!(f, "Failed to resolve filename: {}", file_name)
+            }
         }
     }
 }
