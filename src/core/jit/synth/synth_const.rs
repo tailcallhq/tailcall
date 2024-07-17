@@ -3,17 +3,13 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::Synthesizer;
-use crate::core::jit::{
-    exec::ExecResult,
-    store::{Data, Store},
-};
+use crate::core::ir::TypeName;
+use crate::core::jit::exec::{ExecResult, ExecResultRef};
+use crate::core::jit::model::{Field, Nested};
+use crate::core::jit::store::{Data, Store};
 use crate::core::jit::{DataPath, Error, OperationPlan, ValidationError, Variable, Variables};
 use crate::core::json::JsonLike;
 use crate::core::scalar::get_scalar;
-use crate::core::{
-    ir::TypeName,
-    jit::model::{Field, Nested},
-};
 
 type ConstValueStore = Store<Result<ExecResult<ConstValue>, Positioned<Error>>>;
 
@@ -65,7 +61,7 @@ impl Synth {
             if !self.include(child) {
                 continue;
             }
-            let val = self.iter(child, None, &DataPath::new(), &None)?;
+            let val = self.iter(child, None, &DataPath::new())?;
             data.insert(Name::new(child.name.as_str()), val);
         }
 
@@ -81,9 +77,8 @@ impl Synth {
     fn iter<'b>(
         &'b self,
         node: &'b Field<Nested<ConstValue>, ConstValue>,
-        parent: Option<&'b ConstValue>,
+        result: Option<ExecResultRef<'b, ConstValue>>,
         data_path: &DataPath,
-        type_name: &Option<TypeName>,
     ) -> Result<ConstValue, Positioned<Error>> {
         match self.store.get(&node.id) {
             Some(val) => {
@@ -100,12 +95,15 @@ impl Synth {
 
                 match data {
                     Data::Single(result) => {
-                        let ExecResult { value, type_name } = result.clone()?;
+                        let result = match result {
+                            Ok(result) => result,
+                            Err(err) => return Err(err.clone()),
+                        };
 
-                        if !Self::is_array(&node.type_of, &value) {
+                        if !Self::is_array(&node.type_of, &result.value) {
                             return Ok(ConstValue::Null);
                         }
-                        self.iter_inner(node, &value, data_path, &type_name)
+                        self.iter_inner(node, result.as_ref(), data_path)
                     }
                     _ => {
                         // TODO: should bailout instead of returning Null
@@ -113,8 +111,8 @@ impl Synth {
                     }
                 }
             }
-            None => match parent {
-                Some(parent) => self.iter_inner(node, parent, data_path, type_name),
+            None => match result {
+                Some(result) => self.iter_inner(node, result, data_path),
                 None => Ok(ConstValue::Null),
             },
         }
@@ -124,15 +122,16 @@ impl Synth {
     fn iter_inner<'b>(
         &'b self,
         node: &'b Field<Nested<ConstValue>, ConstValue>,
-        parent: &'b ConstValue,
+        result: ExecResultRef<'b, ConstValue>,
         data_path: &'b DataPath,
-        type_name: &Option<TypeName>,
     ) -> Result<ConstValue, Positioned<Error>> {
         if !self.include(node) {
             return Ok(ConstValue::Null);
         }
 
-        match parent {
+        let ExecResultRef { value, type_name } = result;
+
+        match value {
             // scalar values should be returned as is
             val if node.is_scalar => {
                 let validation = get_scalar(node.type_of.name());
@@ -180,7 +179,7 @@ impl Synth {
 
                         ans.insert(
                             Name::new(child.name.as_str()),
-                            self.iter(child, val, data_path, &None)?,
+                            self.iter(child, val.map(ExecResultRef::new), data_path)?,
                         );
                     }
                 }
@@ -191,8 +190,11 @@ impl Synth {
                 let mut ans = vec![];
 
                 for (i, val) in arr.iter().enumerate() {
-                    let val =
-                        self.iter_inner(node, val, &data_path.clone().with_index(i), type_name)?;
+                    let val = self.iter_inner(
+                        node,
+                        result.map(|_| val),
+                        &data_path.clone().with_index(i),
+                    )?;
                     ans.push(val)
                 }
 
@@ -232,14 +234,15 @@ mod tests {
     use async_graphql_value::ConstValue;
 
     use super::Synth;
+    use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JsonPlaceholder;
+    use crate::core::jit::exec::ExecResult;
     use crate::core::jit::model::FieldId;
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::Variables;
     use crate::core::valid::Validator;
-    use crate::core::{blueprint::Blueprint, jit::exec::ExecResult};
 
     const POSTS: &str = r#"
         [

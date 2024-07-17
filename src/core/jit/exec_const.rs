@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
-use super::exec::{Executor, IRExecutor};
+use super::context::Context;
+use super::exec::{ExecResult, Executor, IRExecutor};
 use super::synth::SynthConst;
-use super::{context::Context, exec::ExecResult};
 use super::{Error, OperationPlan, Request, Response, Result};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;

@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use async_graphql_value::ConstValue;
 
-use crate::core::{blueprint::Blueprint, jit::exec::ExecResult};
+use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
+use crate::core::jit::exec::ExecResult;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::Variables;
@@ -76,7 +77,10 @@ impl JsonPlaceholder {
             .id
             .to_owned();
         let store = [
-            (posts_id, Data::Single(Ok(ExecResult::new(ConstValue::List(posts))))),
+            (
+                posts_id,
+                Data::Single(Ok(ExecResult::new(ConstValue::List(posts)))),
+            ),
             (users_id, Data::Multiple(users)),
         ]
         .into_iter()

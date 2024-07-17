@@ -9,7 +9,8 @@ use futures_util::future::join_all;
 use super::context::Context;
 use super::synth::Synthesizer;
 use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
-use crate::core::ir::{model::IR, TypeName};
+use crate::core::ir::model::IR;
+use crate::core::ir::TypeName;
 use crate::core::json::JsonLike;
 
 type SharedStore<Output, Error> = Arc<Mutex<Store<Result<ExecResult<Output>, Positioned<Error>>>>>;
@@ -99,8 +100,8 @@ where
                     todo!()
                 }
             }
-            let mut ctx = ctx.with_args(arg_map);
-            self.execute(field, &mut ctx, DataPath::new()).await
+            let ctx = ctx.with_args(arg_map);
+            self.execute(field, &ctx, DataPath::new()).await
         }))
         .await;
     }
@@ -128,9 +129,9 @@ where
                             };
 
                             join_all(field.nested_iter(type_name).map(|field| {
-                                let mut ctx = ctx.with_value(value); // Output::JsonArray::Value
+                                let ctx = ctx.with_value(value); // Output::JsonArray::Value
                                 let data_path = data_path.clone().with_index(index);
-                                async move { self.execute(field, &mut ctx, data_path).await }
+                                async move { self.execute(field, &ctx, data_path).await }
                             }))
                         }))
                         .await;
@@ -144,14 +145,14 @@ where
                 else {
                     let type_name = match &type_name {
                         Some(TypeName::Single(type_name)) => type_name,
-                        Some(TypeName::Vec(_)) => panic!("TypeName type mismatch"), // TODO: should throw ValidationError
+                        Some(TypeName::Vec(_)) => panic!("TypeName type mismatch"), /* TODO: should throw ValidationError */
                         None => field.type_of.name(),
                     };
 
                     join_all(field.nested_iter(type_name).map(|child| {
-                        let mut ctx = ctx.with_value(value);
+                        let ctx = ctx.with_value(value);
                         let data_path = data_path.clone();
-                        async move { self.execute(child, &mut ctx, data_path).await }
+                        async move { self.execute(child, &ctx, data_path).await }
                     }))
                     .await;
                 }
@@ -176,9 +177,31 @@ pub struct ExecResult<V> {
     pub type_name: Option<TypeName>,
 }
 
+pub struct ExecResultRef<'a, V> {
+    pub value: &'a V,
+    pub type_name: Option<&'a TypeName>,
+}
+
 impl<V> ExecResult<V> {
     pub fn new(value: V) -> Self {
         Self { value, type_name: None }
+    }
+
+    pub fn as_ref(&self) -> ExecResultRef<'_, V> {
+        ExecResultRef { value: &self.value, type_name: self.type_name.as_ref() }
+    }
+}
+
+impl<'a, V> ExecResultRef<'a, V> {
+    pub fn new(value: &'a V) -> Self {
+        Self { value, type_name: None }
+    }
+
+    pub fn map<'out, U>(&'a self, map: impl FnOnce(&V) -> &'out U) -> ExecResultRef<'out, U>
+    where
+        'a: 'out,
+    {
+        ExecResultRef { value: map(self.value), type_name: self.type_name }
     }
 }
 
