@@ -67,7 +67,7 @@ impl JsonPlaceholder {
             async_graphql::parser::parse_query(query).unwrap(),
         );
         let vars = Variables::new();
-        let plan = builder.build(None, &vars).unwrap();
+        let plan = builder.build(&vars, None).unwrap();
         let posts_id = plan.find_field_path(&["posts"]).unwrap().id.to_owned();
         let users_id = plan
             .find_field_path(&["posts", "user"])

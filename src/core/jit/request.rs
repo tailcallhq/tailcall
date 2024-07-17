@@ -36,7 +36,7 @@ impl Request<ConstValue> {
     pub fn create_plan(&self, blueprint: &Blueprint) -> Result<OperationPlan<ConstValue>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = Builder::new(blueprint, doc);
-        let plan = builder.build(self.operation_name.as_deref(), &self.variables)?;
+        let plan = builder.build(&self.variables, self.operation_name.as_deref())?;
 
         Ok(plan)
     }

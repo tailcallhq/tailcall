@@ -272,8 +272,8 @@ impl Builder {
     #[inline(always)]
     pub fn build(
         &self,
-        operation_name: Option<&str>,
         variables: &Variables<ConstValue>,
+        operation_name: Option<&str>,
     ) -> Result<OperationPlan<ConstValue>, BuildError> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
@@ -319,7 +319,7 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
         Builder::new(&blueprint, document)
-            .build(None, variables)
+            .build(variables, None)
             .unwrap()
     }
 
@@ -578,25 +578,25 @@ mod tests {
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
         let error = Builder::new(&blueprint, document.clone())
-            .build(None, &Variables::new())
+            .build(&Variables::new(), None)
             .unwrap_err();
 
         assert_eq!(error, BuildError::OperationNameRequired);
 
         let error = Builder::new(&blueprint, document.clone())
-            .build(Some("unknown"), &Variables::new())
+            .build(&Variables::new(), Some("unknown"))
             .unwrap_err();
 
         assert_eq!(error, BuildError::OperationNotFound("unknown".to_string()));
 
         let plan = Builder::new(&blueprint, document.clone())
-            .build(Some("GetPosts"), &Variables::new())
+            .build(&Variables::new(), Some("GetPosts"))
             .unwrap();
         assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
 
         let plan = Builder::new(&blueprint, document.clone())
-            .build(Some("CreateNewPost"), &Variables::new())
+            .build(&Variables::new(), Some("CreateNewPost"))
             .unwrap();
         assert!(!plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());

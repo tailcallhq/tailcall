@@ -297,7 +297,7 @@ mod tests {
         let config = ConfigModule::from(config);
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
-        let plan = builder.build(None, &Variables::new()).unwrap();
+        let plan = builder.build(&Variables::new(), None).unwrap();
 
         let store = store
             .into_iter()
