@@ -25,6 +25,13 @@ impl TypeMerger {
         }
         Self { threshold: validated_thresh }
     }
+
+    pub fn is_enabled(threshold: f32) -> bool {
+        if threshold > 0.0 {
+            return true;
+        }
+        false
+    }
 }
 
 impl Default for TypeMerger {
@@ -199,7 +206,7 @@ fn merge_type(type_: &Type, merge_into: Type) -> Type {
 impl Transform for TypeMerger {
     type Value = Config;
     type Error = String;
-    fn transform(&self, config: Config) -> Valid<Config, String> {
+    fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
         let config = self.merger(1, config);
         Valid::succeed(config)
     }

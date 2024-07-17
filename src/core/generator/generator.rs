@@ -194,13 +194,18 @@ mod test {
     fn should_generate_config_from_json() -> anyhow::Result<()> {
         let parsed_content =
             parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
+        let preset = Preset::default()
+            .merge_type(1.0)
+            .consolidate_url(0.5)
+            .tree_shake(true)
+            .use_better_names(true);
         let cfg_module = Generator::default()
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
                 field_name: "f1".to_string(),
             }])
-            .transformers(vec![Box::new(Preset::default())])
+            .transformers(vec![Box::new(preset)])
             .generate(true)?;
         insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())
@@ -232,9 +237,14 @@ mod test {
         };
 
         // Combine inputs
+        let preset = Preset::default()
+            .merge_type(1.0)
+            .consolidate_url(0.5)
+            .tree_shake(true)
+            .use_better_names(true);
         let cfg_module = Generator::default()
             .inputs(vec![proto_input, json_input, config_input])
-            .transformers(vec![Box::new(Preset::default())])
+            .transformers(vec![Box::new(preset)])
             .generate(true)?;
 
         // Assert the combined output
@@ -260,9 +270,14 @@ mod test {
             });
         }
 
+        let preset = Preset::default()
+            .merge_type(1.0)
+            .consolidate_url(0.5)
+            .tree_shake(true)
+            .use_better_names(true);
         let cfg_module = Generator::default()
             .inputs(inputs)
-            .transformers(vec![Box::new(Preset::default())])
+            .transformers(vec![Box::new(preset)])
             .generate(true)?;
         insta::assert_snapshot!(cfg_module.config().to_sdl());
         Ok(())

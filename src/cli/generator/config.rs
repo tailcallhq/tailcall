@@ -27,7 +27,10 @@ pub struct Config<Status = UnResolved> {
 #[serde(rename_all = "camelCase")]
 pub struct Preset {
     merge_type: Option<f32>,
+    #[serde(rename = "consolidateURL")]
     consolidate_url: Option<f32>,
+    use_better_names: Option<bool>,
+    tree_shake: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -99,6 +102,14 @@ impl From<Preset> for config::transformer::Preset {
 
         if let Some(consolidate_url) = val.consolidate_url {
             preset = preset.consolidate_url(consolidate_url);
+        }
+
+        if let Some(use_better_names) = val.use_better_names {
+            preset = preset.use_better_names(use_better_names);
+        }
+
+        if let Some(tree_shake) = val.tree_shake {
+            preset = preset.tree_shake(tree_shake);
         }
 
         preset
@@ -298,16 +309,28 @@ mod tests {
 
     #[test]
     fn should_use_default_presets_when_none_provided() {
-        let config_preset = Preset { merge_type: None, consolidate_url: None };
+        let config_preset = Preset {
+            tree_shake: None,
+            use_better_names: None,
+            merge_type: None,
+            consolidate_url: None,
+        };
         let transform_preset: config::transformer::Preset = config_preset.into();
         assert_eq!(transform_preset, config::transformer::Preset::default());
     }
 
     #[test]
     fn should_use_user_provided_presets_when_provided() {
-        let config_preset = Preset { merge_type: Some(0.5), consolidate_url: Some(1.0) };
+        let config_preset = Preset {
+            tree_shake: Some(true),
+            use_better_names: Some(true),
+            merge_type: Some(0.5),
+            consolidate_url: Some(1.0),
+        };
         let transform_preset: config::transformer::Preset = config_preset.into();
         let expected_preset = config::transformer::Preset::default()
+            .use_better_names(true)
+            .tree_shake(true)
             .consolidate_url(1.0)
             .merge_type(0.5);
         assert_eq!(transform_preset, expected_preset);

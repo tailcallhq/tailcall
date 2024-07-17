@@ -24,9 +24,15 @@ impl Transform for Preset {
         transform::default()
             .pipe(super::Required)
             .pipe(super::TreeShake.when(self.tree_shake))
-            .pipe(super::TypeMerger::new(self.merge_type))
+            .pipe(
+                super::TypeMerger::new(self.merge_type)
+                    .when(super::TypeMerger::is_enabled(self.merge_type)),
+            )
             .pipe(super::ImproveTypeNames.when(self.use_better_names))
-            .pipe(super::ConsolidateURL::new(self.consolidate_url))
+            .pipe(
+                super::ConsolidateURL::new(self.consolidate_url)
+                    .when(super::ConsolidateURL::is_enabled(self.consolidate_url)),
+            )
             .transform(config)
     }
 }
@@ -34,10 +40,10 @@ impl Transform for Preset {
 impl Default for Preset {
     fn default() -> Self {
         Self {
-            merge_type: 1.0,
-            consolidate_url: 0.5,
-            use_better_names: true,
-            tree_shake: true,
+            merge_type: 0.0,
+            consolidate_url: 0.0,
+            use_better_names: false,
+            tree_shake: false,
         }
     }
 }
