@@ -10,10 +10,10 @@ pub struct Context<'a, Input, Output> {
     request: &'a Request<Input>,
     value: Option<&'a Output>,
     args: Option<indexmap::IndexMap<Name, Input>>,
+    // TODO: remove the args, since they're already present inside the fields and support for default values.
     field: &'a Field<Nested<Input>, Input>,
     is_query: bool,
 }
-
 impl<'a, Input, Output> Context<'a, Input, Output> {
     pub fn new(
         request: &'a Request<Input>,
