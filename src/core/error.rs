@@ -9,10 +9,12 @@ pub enum Error {
 }
 
 pub mod worker {
+    use std::sync::Arc;
+
     use derive_more::{DebugCustom, From};
     use tokio::task::JoinError;
 
-    #[derive(From, DebugCustom)]
+    #[derive(From, DebugCustom, Clone)]
     pub enum Error {
         #[debug(fmt = "Failed to initialize worker")]
         InitializationFailed,
@@ -21,13 +23,13 @@ pub mod worker {
         Communication,
 
         #[debug(fmt = "Serde Json Error")]
-        SerdeJson(serde_json::Error),
+        SerdeJson(Arc<serde_json::Error>),
 
         #[debug(fmt = "Request Clone Failed")]
         RequestCloneFailed,
 
         #[debug(fmt = "Hyper Header To Str Error")]
-        HyperHeaderStr(hyper::header::ToStrError),
+        HyperHeaderStr(Arc<hyper::header::ToStrError>),
 
         #[debug(fmt = "JS Runtime Stopped Error")]
         JsRuntimeStopped,
@@ -36,7 +38,7 @@ pub mod worker {
         CLI(String),
 
         #[debug(fmt = "Join Error : {}", _0)]
-        Join(JoinError),
+        Join(Arc<JoinError>),
 
         #[debug(fmt = "Runtime not initialized")]
         RuntimeNotInitialized,
@@ -64,7 +66,31 @@ pub mod worker {
         FunctionValueParseError(String),
 
         #[debug(fmt = "Error : {}", _0)]
-        Anyhow(anyhow::Error),
+        Anyhow(Arc<anyhow::Error>),
+    }
+
+    impl From<serde_json::Error> for Error {
+        fn from(error: serde_json::Error) -> Self {
+            Error::SerdeJson(Arc::new(error))
+        }
+    }
+
+    impl From<hyper::header::ToStrError> for Error {
+        fn from(error: hyper::header::ToStrError) -> Self {
+            Error::HyperHeaderStr(Arc::new(error))
+        }
+    }
+
+    impl From<JoinError> for Error {
+        fn from(error: JoinError) -> Self {
+            Error::Join(Arc::new(error))
+        }
+    }
+
+    impl From<anyhow::Error> for Error {
+        fn from(error: anyhow::Error) -> Self {
+            Error::Anyhow(Arc::new(error))
+        }
     }
 
     pub type Result<A> = std::result::Result<A, Error>;
