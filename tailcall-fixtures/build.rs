@@ -1,9 +1,11 @@
+mod error;
+
 use std::fmt::Write;
 use std::path::Path;
 use std::{env, fs};
 
-use anyhow::{Context, Result};
 use convert_case::{Case, Casing};
+use error::{Error, Result};
 use indenter::CodeFormatter;
 
 fn write_mod(path: &Path, f: &mut CodeFormatter<String>, dir_name: Option<&str>) -> Result<()> {
@@ -31,7 +33,7 @@ fn write_mod(path: &Path, f: &mut CodeFormatter<String>, dir_name: Option<&str>)
             let name = file.file_name();
             let name = Path::new(&name)
                 .file_stem()
-                .context("Failed to resolve filename")?
+                .ok_or_else(|| Error::FilenameNotResolved)?
                 .to_string_lossy();
             let name = name.as_ref().to_case(Case::UpperSnake);
             let path = file.path();
