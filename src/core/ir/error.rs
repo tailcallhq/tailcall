@@ -34,8 +34,7 @@ pub enum Error {
     AuthError(auth::error::Error),
 
     #[error("Worker Error: {0}")]
-    #[from(ignore)]
-    WorkerError(String),
+    WorkerError(worker::Error),
 }
 
 impl ErrorExtensions for Error {
@@ -87,11 +86,5 @@ impl From<anyhow::Error> for Error {
             Ok(err) => err,
             Err(err) => Error::IOException(err.to_string()),
         }
-    }
-}
-
-impl From<worker::Error> for Error {
-    fn from(value: worker::Error) -> Self {
-        Error::WorkerError(value.to_string())
     }
 }
