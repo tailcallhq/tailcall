@@ -105,12 +105,7 @@ impl SelectionField {
             .collect::<Vec<_>>();
 
         // TODO: add support for directives.
-        SelectionField {
-            name,
-            args,
-            directives: None,
-            selection_set,
-        }
+        SelectionField { name, args, directives: None, selection_set }
     }
 
     fn from_async_selection_field(field: async_graphql::SelectionField) -> SelectionField {
