@@ -7,6 +7,7 @@ use reqwest::header::HeaderMap;
 
 use super::discriminator::TypeName;
 use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike};
+use crate::core::document::print_directives;
 use crate::core::http::RequestContext;
 
 // TODO: rename to ResolverContext
@@ -120,10 +121,19 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
 }
 
 impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'a, Ctx> {
-    fn selection_set(&self, related_fields: &RelatedFields) -> Option<String> {
-        let selection_set = self.graphql_ctx.field()?.selection_set();
+    fn directives(&self) -> Option<String> {
+        let field = self.graphql_ctx.field()?;
 
-        format_selection_set(selection_set, related_fields)
+        field
+            .directives()
+            .ok()
+            .map(|directives| print_directives(directives.iter()))
+    }
+
+    fn selection_set(&self, related_fields: &RelatedFields) -> Option<String> {
+        let field = self.graphql_ctx.field()?;
+
+        format_selection_set(field.selection_set(), related_fields)
     }
 }
 
@@ -152,11 +162,23 @@ fn format_selection_field(field: SelectionField, related_fields: &RelatedFields)
     let arguments = format_selection_field_arguments(field);
     let selection_set = format_selection_set(field.selection_set(), related_fields);
 
-    if let Some(set) = selection_set {
-        format!("{}{} {}", name, arguments, set)
-    } else {
-        format!("{}{}", name, arguments)
+    let mut output = format!("{}{}", name, arguments);
+
+    if let Ok(directives) = field.directives() {
+        let directives = print_directives(directives.iter());
+
+        if !directives.is_empty() {
+            output.push(' ');
+            output.push_str(&directives.escape_default().to_string());
+        }
     }
+
+    if let Some(selection_set) = selection_set {
+        output.push(' ');
+        output.push_str(&selection_set);
+    }
+
+    output
 }
 
 fn format_selection_field_arguments(field: SelectionField) -> Cow<'static, str> {

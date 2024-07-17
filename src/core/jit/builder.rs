@@ -6,11 +6,14 @@ use async_graphql::parser::types::{
     Selection, SelectionSet,
 };
 use async_graphql::Positioned;
-use async_graphql_value::Value;
+use async_graphql_value::{ConstValue, Value};
 
+use super::input_resolver::InputResolver;
 use super::model::*;
+use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
+use crate::core::jit::model::OperationPlan;
 use crate::core::merge_right::MergeRight;
 
 #[derive(PartialEq, strum_macros::Display)]
@@ -68,6 +71,7 @@ pub struct Builder {
     pub document: ExecutableDocument,
 }
 
+// TODO: make generic over Value (Input) type
 impl Builder {
     pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
         let index = blueprint.index();
@@ -128,7 +132,7 @@ impl Builder {
         type_of: &str,
         exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Flat>> {
+    ) -> Vec<Field<Flat, Value>> {
         let mut fields = vec![];
         for selection in &selection.items {
             match &selection.node {
@@ -144,20 +148,20 @@ impl Builder {
                     let (include, skip) = conditions.into_variable_tuple();
 
                     let field_name = gql_field.name.node.as_str();
-                    let field_args = gql_field
+                    let request_args = gql_field
                         .arguments
                         .iter()
                         .map(|(k, v)| (k.node.as_str().to_string(), v.node.to_owned()))
                         .collect::<HashMap<_, _>>();
 
                     if let Some(field_def) = self.index.get_field(type_of, field_name) {
-                        let mut args = vec![];
-                        for (arg_name, value) in field_args {
-                            if let Some(arg) = field_def.get_arg(&arg_name) {
-                                let type_of = arg.of_type.clone();
+                        let mut args = Vec::with_capacity(request_args.len());
+                        if let QueryField::Field((_, schema_args)) = field_def {
+                            for (arg_name, arg_value) in schema_args {
+                                let type_of = arg_value.of_type.clone();
                                 let id = ArgId::new(self.arg_id.next());
                                 let name = arg_name.clone();
-                                let default_value = arg
+                                let default_value = arg_value
                                     .default_value
                                     .as_ref()
                                     .and_then(|v| v.to_owned().try_into().ok());
@@ -165,7 +169,9 @@ impl Builder {
                                     id,
                                     name,
                                     type_of,
-                                    value: Some(value),
+                                    // TODO: handle errors for non existing request_args without the
+                                    // default
+                                    value: request_args.get(arg_name).cloned(),
                                     default_value,
                                 });
                             }
@@ -183,7 +189,11 @@ impl Builder {
                             Some(Flat::new(id.clone())),
                             fragments,
                         );
-                        let name = field_name.to_owned();
+                        let name = gql_field
+                            .alias
+                            .as_ref()
+                            .map(|alias| alias.node.to_string())
+                            .unwrap_or(field_name.to_string());
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
@@ -192,13 +202,17 @@ impl Builder {
                             id,
                             name,
                             ir,
+                            is_scalar: self.index.type_is_scalar(type_of.name()),
                             type_of,
                             skip,
                             include,
                             args,
+                            pos: selection.pos,
                             extensions: exts.clone(),
                         });
                         fields = fields.merge_right(child_fields);
+                    } else {
+                        // TODO: error if the field is not found in the schema
                     }
                 }
                 Selection::FragmentSpread(Positioned { node: fragment_spread, .. }) => {
@@ -230,7 +244,10 @@ impl Builder {
     }
 
     #[inline(always)]
-    pub fn build(&self) -> Result<ExecutionPlan, String> {
+    pub fn build(
+        &self,
+        variables: &Variables<ConstValue>,
+    ) -> Result<OperationPlan<ConstValue>, BuildError> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
 
@@ -238,31 +255,40 @@ impl Builder {
             fragments.insert(name.as_str(), &fragment.node);
         }
 
-        match &self.document.operations {
+        // A GraphQL request can contain only one operation at a time.
+        let operation_type = match &self.document.operations {
             DocumentOperations::Single(single) => {
-                let name = self.get_type(single.node.ty).ok_or(format!(
-                    "Root Operation type not defined for {}",
-                    single.node.ty
-                ))?;
+                let name = self
+                    .get_type(single.node.ty)
+                    .ok_or(BuildError::RootOperationTypeNotDefined { operation: single.node.ty })?;
                 fields.extend(self.iter(&single.node.selection_set.node, name, None, &fragments));
+                single.node.ty
             }
             DocumentOperations::Multiple(multiple) => {
+                let mut operation_type = OperationType::Query;
                 for single in multiple.values() {
-                    let name = self.get_type(single.node.ty).ok_or(format!(
-                        "Root Operation type not defined for {}",
-                        single.node.ty
-                    ))?;
+                    let name = self.get_type(single.node.ty).ok_or(
+                        BuildError::RootOperationTypeNotDefined { operation: single.node.ty },
+                    )?;
                     fields.extend(self.iter(
                         &single.node.selection_set.node,
                         name,
                         None,
                         &fragments,
                     ));
+                    operation_type = single.node.ty;
                 }
+                operation_type
             }
-        }
+        };
 
-        Ok(ExecutionPlan::new(fields))
+        let plan = OperationPlan::new(fields, operation_type);
+        // TODO: operation from [ExecutableDocument] could contain definitions for
+        // default values of arguments. That info should be passed to
+        // [InputResolver] to resolve defaults properly
+        let input_resolver = InputResolver::new(plan);
+
+        Ok(input_resolver.resolve_input(variables)?)
     }
 }
 
@@ -278,11 +304,14 @@ mod tests {
 
     const CONFIG: &str = include_str!("./fixtures/jsonplaceholder-mutation.graphql");
 
-    fn plan(query: impl AsRef<str>) -> ExecutionPlan {
+    fn plan(
+        query: impl AsRef<str>,
+        variables: &Variables<ConstValue>,
+    ) -> OperationPlan<ConstValue> {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        Builder::new(&blueprint, document).build().unwrap()
+        Builder::new(&blueprint, document).build(variables).unwrap()
     }
 
     #[tokio::test]
@@ -293,7 +322,9 @@ mod tests {
                 posts { user { id name } }
             }
         "#,
+            &Variables::new(),
         );
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -305,8 +336,10 @@ mod tests {
                 posts { user { id name } }
             }
         "#,
+            &Variables::new(),
         );
 
+        assert!(plan.is_query());
         assert_eq!(plan.size(), 4)
     }
 
@@ -318,7 +351,10 @@ mod tests {
                 posts { user { id } }
             }
         "#,
+            &Variables::new(),
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -344,7 +380,10 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
+
+        assert!(!plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -364,7 +403,10 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -383,7 +425,10 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -398,7 +443,10 @@ mod tests {
               }
             }
         "#,
+            &Variables::from_iter([("id".into(), ConstValue::from(1))]),
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -417,7 +465,10 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
@@ -435,7 +486,10 @@ mod tests {
               }
             }
         "#,
+            &Variables::new(),
         );
+
+        assert!(!plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 
