@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use async_graphql::parser::types::OperationType;
+use async_graphql::Pos;
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
@@ -100,6 +101,8 @@ pub struct Field<Extensions, Input> {
     pub include: Option<Variable>,
     pub args: Vec<Arg<Input>>,
     pub extensions: Option<Extensions>,
+    pub pos: Pos,
+    pub is_scalar: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -130,11 +133,13 @@ impl<Extensions, Input> Field<Extensions, Input> {
             extensions: self.extensions,
             skip: self.skip,
             include: self.include,
+            pos: self.pos,
             args: self
                 .args
                 .into_iter()
                 .map(|arg| arg.try_map(&map))
                 .collect::<Result<_, _>>()?,
+            is_scalar: self.is_scalar,
         })
     }
 }
@@ -184,7 +189,9 @@ impl<Input> Field<Flat, Input> {
             skip: self.skip,
             include: self.include,
             args: self.args,
+            pos: self.pos,
             extensions,
+            is_scalar: self.is_scalar,
         }
     }
 }
@@ -204,6 +211,8 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
         if self.extensions.is_some() {
             debug_struct.field("extensions", &self.extensions);
         }
+        debug_struct.field("is_scalar", &self.is_scalar);
+
         debug_struct.finish()
     }
 }
