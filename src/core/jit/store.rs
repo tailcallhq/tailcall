@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::core::{ir::TypeName, jit::model::FieldId};
+use crate::core::jit::model::FieldId;
 
 /// Path to the data in the store with info
 /// to resolve nested multiple data
@@ -43,10 +43,7 @@ pub struct Store<A> {
 pub enum Data<A> {
     /// Represents that the value was computed only once for the associated
     /// field
-    Single {
-        value: A,
-        type_name: Option<TypeName>,
-    },
+    Single(A),
     /// Represents that the value was computed multiple times for the associated
     /// field. The order is guaranteed by the executor to be the same as the
     /// other of invocation and not the other of completion.
@@ -59,7 +56,7 @@ pub enum Data<A> {
 impl<A> std::fmt::Debug for Data<A> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Single { .. } => f.debug_tuple("Single").finish(),
+            Self::Single(_) => f.debug_tuple("Single").finish(),
             Self::Multiple(arg0) => f.debug_tuple("Multiple").field(&arg0.len()).finish(),
             Self::Pending => write!(f, "Pending"),
         }
@@ -67,13 +64,9 @@ impl<A> std::fmt::Debug for Data<A> {
 }
 
 impl<A> Data<A> {
-    pub fn single(value: A) -> Self {
-        Self::Single { value, type_name: None }
-    }
-
     pub fn map<B>(self, ab: impl Fn(A) -> B + Copy) -> Data<B> {
         match self {
-            Data::Single { value, type_name } => Data::Single { value: ab(value), type_name },
+            Data::Single(a) => Data::Single(ab(a)),
             Data::Multiple(values) => Data::Multiple(
                 values
                     .into_iter()
@@ -100,7 +93,7 @@ impl<A> Store<A> {
         self.data.insert(field_id.as_usize(), data);
     }
 
-    pub fn entry(&mut self, field_id: &FieldId, path: &DataPath) -> &mut Data<A> {
+    pub fn set(&mut self, field_id: &FieldId, path: &DataPath, data: A) {
         let path = path.as_slice();
         let mut current_entry = self.data.entry(field_id.as_usize());
 
@@ -120,7 +113,7 @@ impl<A> Store<A> {
             }
         }
 
-        current_entry.or_insert(Data::Pending)
+        *current_entry.or_insert(Data::Pending) = Data::Single(data);
     }
 
     pub fn get(&self, field_id: &FieldId) -> Option<&Data<A>> {

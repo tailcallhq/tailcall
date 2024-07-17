@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
-use super::context::Context;
 use super::exec::{Executor, IRExecutor};
 use super::synth::SynthConst;
+use super::{context::Context, exec::ExecResult};
 use super::{Error, OperationPlan, Request, Response, Result};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
@@ -50,18 +50,17 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
     type Output = ConstValue;
     type Error = Error;
 
-    async fn execute<'a, 'b>(
+    async fn execute<'a>(
         &'a self,
         ir: &'a IR,
-        ctx: &'b mut Context<'a, Self::Input, Self::Output>,
-    ) -> Result<Self::Output> {
+        ctx: &'a Context<'a, Self::Input, Self::Output>,
+    ) -> Result<ExecResult<Self::Output>> {
         let req_context = &self.req_context;
         let mut eval_ctx = EvalContext::new(req_context, ctx);
 
-        let result = ir.eval(&mut eval_ctx).await?;
-
-        ctx.set_type_name(eval_ctx.type_name.take());
-
-        Ok(result)
+        Ok(ir
+            .eval(&mut eval_ctx)
+            .await
+            .map(|value| ExecResult { value, type_name: eval_ctx.type_name.take() })?)
     }
 }

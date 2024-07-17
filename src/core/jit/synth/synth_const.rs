@@ -3,7 +3,10 @@ use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::Synthesizer;
-use crate::core::jit::store::{Data, Store};
+use crate::core::jit::{
+    exec::ExecResult,
+    store::{Data, Store},
+};
 use crate::core::jit::{DataPath, Error, OperationPlan, ValidationError, Variable, Variables};
 use crate::core::json::JsonLike;
 use crate::core::scalar::get_scalar;
@@ -12,9 +15,11 @@ use crate::core::{
     jit::model::{Field, Nested},
 };
 
+type ConstValueStore = Store<Result<ExecResult<ConstValue>, Positioned<Error>>>;
+
 pub struct Synth {
     selection: Vec<Field<Nested<ConstValue>, ConstValue>>,
-    store: Store<Result<ConstValue, Positioned<Error>>>,
+    store: ConstValueStore,
     variables: Variables<ConstValue>,
 }
 
@@ -42,7 +47,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
 impl Synth {
     pub fn new(
         plan: OperationPlan<ConstValue>,
-        store: Store<Result<ConstValue, Positioned<Error>>>,
+        store: ConstValueStore,
         variables: Variables<ConstValue>,
     ) -> Self {
         Self { selection: plan.into_nested(), store, variables }
@@ -94,13 +99,13 @@ impl Synth {
                 }
 
                 match data {
-                    Data::Single { value, type_name } => {
-                        let value = value.clone()?;
+                    Data::Single(result) => {
+                        let ExecResult { value, type_name } = result.clone()?;
 
                         if !Self::is_array(&node.type_of, &value) {
                             return Ok(ConstValue::Null);
                         }
-                        self.iter_inner(node, &value, data_path, type_name)
+                        self.iter_inner(node, &value, data_path, &type_name)
                     }
                     _ => {
                         // TODO: should bailout instead of returning Null
@@ -109,9 +114,7 @@ impl Synth {
                 }
             }
             None => match parent {
-                Some(parent) => {
-                    self.iter_inner(node, parent, data_path, type_name)
-                }
+                Some(parent) => self.iter_inner(node, parent, data_path, type_name),
                 None => Ok(ConstValue::Null),
             },
         }
@@ -211,24 +214,24 @@ impl SynthConst {
 }
 
 impl Synthesizer for SynthConst {
-    type Value = Result<ConstValue, Positioned<Error>>;
+    type Value = Result<ExecResult<ConstValue>, Positioned<Error>>;
+    type Output = Result<ConstValue, Positioned<Error>>;
     type Variable = ConstValue;
 
     fn synthesize(
         self,
         store: Store<Self::Value>,
         variables: Variables<Self::Variable>,
-    ) -> Self::Value {
+    ) -> Self::Output {
         Synth::new(self.plan, store, variables).synthesize()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use async_graphql::Value;
+    use async_graphql_value::ConstValue;
 
     use super::Synth;
-    use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JsonPlaceholder;
@@ -236,6 +239,7 @@ mod tests {
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::Variables;
     use crate::core::valid::Validator;
+    use crate::core::{blueprint::Blueprint, jit::exec::ExecResult};
 
     const POSTS: &str = r#"
         [
@@ -286,27 +290,31 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value(self) -> Data<Value> {
+        fn into_value(self) -> Data<ExecResult<ConstValue>> {
+            fn single_data(value: ConstValue) -> Data<ExecResult<ConstValue>> {
+                Data::Single(ExecResult { value, type_name: None })
+            }
+
             match self {
-                Self::Posts => Data::single(serde_json::from_str(POSTS).unwrap()),
-                Self::User1 => Data::single(serde_json::from_str(USER1).unwrap()),
+                Self::Posts => single_data(serde_json::from_str(POSTS).unwrap()),
+                Self::User1 => single_data(serde_json::from_str(USER1).unwrap()),
                 TestData::UsersData => Data::Multiple(
                     vec![
-                        Data::single(serde_json::from_str(USER1).unwrap()),
-                        Data::single(serde_json::from_str(USER2).unwrap()),
+                        single_data(serde_json::from_str(USER1).unwrap()),
+                        single_data(serde_json::from_str(USER2).unwrap()),
                     ]
                     .into_iter()
                     .enumerate()
                     .collect(),
                 ),
-                TestData::Users => Data::single(serde_json::from_str(USERS).unwrap()),
+                TestData::Users => single_data(serde_json::from_str(USERS).unwrap()),
             }
         }
     }
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn init(query: &str, store: Vec<(FieldId, Data<Value>)>) -> String {
+    fn init(query: &str, store: Vec<(FieldId, Data<ExecResult<ConstValue>>)>) -> String {
         let doc = async_graphql::parser::parse_query(query).unwrap();
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let config = ConfigModule::from(config);

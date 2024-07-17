@@ -6,13 +6,13 @@ use async_graphql::Positioned;
 use derive_getters::Getters;
 use futures_util::future::join_all;
 
+use super::context::Context;
 use super::synth::Synthesizer;
-use super::{context::Context, Data};
 use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
 use crate::core::ir::{model::IR, TypeName};
 use crate::core::json::JsonLike;
 
-type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Positioned<Error>>>>>;
+type SharedStore<Output, Error> = Arc<Mutex<Store<Result<ExecResult<Output>, Positioned<Error>>>>>;
 
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
@@ -27,7 +27,11 @@ impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec, Input>
 where
     Output: for<'a> JsonLike<'a> + Debug,
     Input: Clone + Debug,
-    Synth: Synthesizer<Value = Result<Output, Positioned<Error>>, Variable = Input>,
+    Synth: Synthesizer<
+        Value = Result<ExecResult<Output>, Positioned<Error>>,
+        Output = Result<Output, Positioned<Error>>,
+        Variable = Input,
+    >,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
     pub fn new(plan: OperationPlan<Input>, synth: Synth, exec: Exec) -> Self {
@@ -37,7 +41,7 @@ where
     async fn execute_inner(
         &self,
         request: Request<Input>,
-    ) -> Store<Result<Output, Positioned<Error>>> {
+    ) -> Store<Result<ExecResult<Output>, Positioned<Error>>> {
         let store = Arc::new(Mutex::new(Store::new()));
         let mut ctx = ExecutorInner::new(request, store.clone(), self.plan.to_owned(), &self.exec);
         ctx.init().await;
@@ -101,17 +105,16 @@ where
         .await;
     }
 
-    async fn execute<'b, 'c>(
+    async fn execute<'b>(
         &'b self,
         field: &'b Field<Nested<Input>, Input>,
-        ctx: &'c mut Context<'b, Input, Output>,
+        ctx: &'b Context<'b, Input, Output>,
         data_path: DataPath,
     ) -> Result<(), Error> {
         if let Some(ir) = &field.ir {
             let result = self.ir_exec.execute(ir, ctx).await;
-            let type_name = ctx.type_name();
 
-            if let Ok(ref value) = result {
+            if let Ok(ExecResult { value, type_name }) = &result {
                 // Array
                 // Check if the field expects a list
                 if field.type_of.is_list() {
@@ -156,14 +159,26 @@ where
 
             let mut store = self.store.lock().unwrap();
 
-            let entry = store.entry(&field.id, &data_path);
-            *entry = Data::Single {
-                value: result.map_err(|e| Positioned::new(e, field.pos)),
-                type_name: type_name.clone(),
-            };
+            store.set(
+                &field.id,
+                &data_path,
+                result.map_err(|e| Positioned::new(e, field.pos)),
+            );
         }
 
         Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub struct ExecResult<V> {
+    pub value: V,
+    pub type_name: Option<TypeName>,
+}
+
+impl<V> ExecResult<V> {
+    pub fn new(value: V) -> Self {
+        Self { value, type_name: None }
     }
 }
 
@@ -172,9 +187,9 @@ pub trait IRExecutor {
     type Input;
     type Output;
     type Error;
-    async fn execute<'a, 'b>(
+    async fn execute<'a>(
         &'a self,
         ir: &'a IR,
-        ctx: &'b mut Context<'a, Self::Input, Self::Output>,
-    ) -> Result<Self::Output, Self::Error>;
+        ctx: &'a Context<'a, Self::Input, Self::Output>,
+    ) -> Result<ExecResult<Self::Output>, Self::Error>;
 }

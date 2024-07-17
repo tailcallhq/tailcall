@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use async_graphql::Value;
+use async_graphql_value::ConstValue;
 
-use crate::core::blueprint::Blueprint;
+use crate::core::{blueprint::Blueprint, jit::exec::ExecResult};
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit::builder::Builder;
 use crate::core::jit::store::{Data, Store};
@@ -21,11 +21,11 @@ impl JsonPlaceholder {
     const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
     pub fn init(query: &str) -> Synth {
-        let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
-        let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
+        let posts = serde_json::from_str::<Vec<ConstValue>>(Self::POSTS).unwrap();
+        let users = serde_json::from_str::<Vec<ConstValue>>(Self::USERS).unwrap();
 
         let user_map = users.iter().fold(HashMap::new(), |mut map, user| {
-            let id = if let Value::Object(user) = user {
+            let id = if let ConstValue::Object(user) = user {
                 user.get("id").and_then(|u| u.as_u64())
             } else {
                 None
@@ -40,7 +40,7 @@ impl JsonPlaceholder {
         let users: HashMap<_, _> = posts
             .iter()
             .map(|post| {
-                let user_id = if let Value::Object(post) = post {
+                let user_id = if let ConstValue::Object(post) = post {
                     post.get("userId").and_then(|u| u.as_u64())
                 } else {
                     None
@@ -50,14 +50,15 @@ impl JsonPlaceholder {
                     if let Some(user) = user_map.get(&user_id) {
                         user.to_owned().to_owned().to_owned()
                     } else {
-                        Value::Null
+                        ConstValue::Null
                     }
                 } else {
-                    Value::Null
+                    ConstValue::Null
                 }
             })
+            .map(ExecResult::new)
             .map(Ok)
-            .map(Data::single)
+            .map(Data::Single)
             .enumerate()
             .collect();
 
@@ -75,7 +76,7 @@ impl JsonPlaceholder {
             .id
             .to_owned();
         let store = [
-            (posts_id, Data::single(Ok(Value::List(posts)))),
+            (posts_id, Data::Single(Ok(ExecResult::new(ConstValue::List(posts))))),
             (users_id, Data::Multiple(users)),
         ]
         .into_iter()
