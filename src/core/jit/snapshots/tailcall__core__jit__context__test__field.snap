@@ -5,24 +5,18 @@ expression: ctx.field().unwrap()
 SelectionField {
     name: "posts",
     args: [],
-    directive: Ok(
-        [],
-    ),
+    directives: None,
     selection_set: [
         SelectionField {
             name: "id",
             args: [],
-            directive: Ok(
-                [],
-            ),
+            directives: None,
             selection_set: [],
         },
         SelectionField {
             name: "title",
             args: [],
-            directive: Ok(
-                [],
-            ),
+            directives: None,
             selection_set: [],
         },
     ],
