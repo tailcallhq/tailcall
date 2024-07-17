@@ -46,11 +46,22 @@ pub mod worker {
         InvalidFunction(String),
 
         #[debug(fmt = "Rquickjs Error: {}", _0)]
-        Rquickjs(rquickjs::Error),
+        #[from(ignore)]
+        Rquickjs(String),
 
         #[debug(fmt = "Deserialize Failed: {}", _0)]
         #[from(ignore)]
         DeserializeFailed(String),
+
+        #[debug(fmt = "globalThis not initialized")]
+        GlobalThisNotInitialised,
+
+        #[debug(
+            fmt = "Unable to parse value from js function: {} maybe because it's not returning a string?",
+            _0
+        )]
+        #[from(ignore)]
+        FunctionValueParseError(String),
 
         #[debug(fmt = "Error : {}", _0)]
         Anyhow(anyhow::Error),
@@ -78,6 +89,8 @@ impl Display for worker::Error {
             }
             worker::Error::Rquickjs(error) => write!(f, "Rquickjs error: {}", error),
             worker::Error::DeserializeFailed(error) => write!(f, "Deserialize Failed: {}", error),
+            worker::Error::GlobalThisNotInitialised => write!(f, "globalThis not initialized"),
+            worker::Error::FunctionValueParseError(name) => write!(f, "Unable to parse value from js function: {} maybe because it's not returning a string?", name),
             worker::Error::Anyhow(msg) => write!(f, "Error: {}", msg),
         }
     }

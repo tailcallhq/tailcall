@@ -145,13 +145,17 @@ fn call(name: String, event: Event) -> worker::Result<Option<Command>> {
         let runtime = cell.get_mut().ok_or(worker::Error::RuntimeNotInitialized)?;
         runtime.0.with(|ctx| match event {
             Event::Request(req) => {
-                let fn_as_value = ctx.globals().get::<&str, Function>(name.as_str())?;
+                let fn_as_value = ctx
+                    .globals()
+                    .get::<&str, Function>(name.as_str())
+                    .map_err(|_| worker::Error::GlobalThisNotInitialised)?;
 
                 let function = fn_as_value
                     .as_function()
                     .ok_or(worker::Error::InvalidFunction(name))?;
 
-                let args = prepare_args(&ctx, req)?;
+                let args =
+                    prepare_args(&ctx, req).map_err(|e| worker::Error::Rquickjs(e.to_string()))?;
                 let command: Option<Value> = function.call(args).ok();
                 command
                     .map(|output| Command::from_js(&ctx, output))
@@ -166,12 +170,17 @@ fn execute_inner(name: String, value: String) -> worker::Result<ConstValue> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
         let runtime = cell.get_mut().ok_or(worker::Error::RuntimeNotInitialized)?;
         runtime.0.with(|ctx| {
-            let fn_as_value = ctx.globals().get::<_, rquickjs::Function>(&name)?;
+            let fn_as_value = ctx
+                .globals()
+                .get::<_, rquickjs::Function>(&name)
+                .map_err(|_| worker::Error::GlobalThisNotInitialised)?;
 
             let function = fn_as_value
                 .as_function()
-                .ok_or(worker::Error::InvalidFunction(name))?;
-            let val: String = function.call((value,))?;
+                .ok_or(worker::Error::InvalidFunction(name.clone()))?;
+            let val: String = function
+                .call((value,))
+                .map_err(|_| worker::Error::FunctionValueParseError(name))?;
             Ok::<_, worker::Error>(serde_json::from_str(&val)?)
         })
     })
