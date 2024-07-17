@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use async_graphql::parser::types::OperationType;
+use async_graphql::parser::types::{ConstDirective, OperationType};
 use async_graphql::Pos;
 use serde::Deserialize;
 
@@ -103,6 +103,7 @@ pub struct Field<Extensions, Input> {
     pub extensions: Option<Extensions>,
     pub pos: Pos,
     pub is_scalar: bool,
+    pub directives: Vec<ConstDirective>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -140,6 +141,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
                 .map(|arg| arg.try_map(&map))
                 .collect::<Result<_, _>>()?,
             is_scalar: self.is_scalar,
+            directives: self.directives,
         })
     }
 }
@@ -192,6 +194,7 @@ impl<Input> Field<Flat, Input> {
             pos: self.pos,
             extensions,
             is_scalar: self.is_scalar,
+            directives: self.directives,
         }
     }
 }
@@ -212,7 +215,13 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("extensions", &self.extensions);
         }
         debug_struct.field("is_scalar", &self.is_scalar);
-
+        if self.skip.is_some() {
+            debug_struct.field("skip", &self.skip);
+        }
+        if self.include.is_some() {
+            debug_struct.field("include", &self.include);
+        }
+        debug_struct.field("directives", &self.directives);
         debug_struct.finish()
     }
 }

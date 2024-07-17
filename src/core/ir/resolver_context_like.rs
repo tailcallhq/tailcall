@@ -103,9 +103,10 @@ impl SelectionField {
             .iter()
             .filter_map(|a| a.value.as_ref().map(|v| (a.name.to_owned(), v.to_string())))
             .collect::<Vec<_>>();
+        let directives = field.directives.clone();
 
         // TODO: add support for directives.
-        SelectionField { name, args, directives: None, selection_set }
+        SelectionField { name, args, directives: Some(directives), selection_set }
     }
 
     fn from_async_selection_field(field: async_graphql::SelectionField) -> SelectionField {

@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::ops::Deref;
 
 use async_graphql::parser::types::{
-    Directive, DocumentOperations, ExecutableDocument, FragmentDefinition, OperationType,
-    Selection, SelectionSet,
+    ConstDirective, Directive, DocumentOperations, ExecutableDocument, FragmentDefinition,
+    OperationType, Selection, SelectionSet,
 };
 use async_graphql::Positioned;
 use async_graphql_value::{ConstValue, Value};
@@ -14,6 +14,7 @@ use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
+use crate::core::jit::ResolveInputError;
 use crate::core::merge_right::MergeRight;
 
 #[derive(PartialEq, strum_macros::Display)]
@@ -132,7 +133,8 @@ impl Builder {
         type_of: &str,
         exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Flat, Value>> {
+        variables: &Variables<ConstValue>,
+    ) -> Result<Vec<Field<Flat, Value>>, BuildError> {
         let mut fields = vec![];
         for selection in &selection.items {
             match &selection.node {
@@ -143,6 +145,37 @@ impl Builder {
                     // then we can skip the field from the plan
                     if conditions.is_const_skip() {
                         continue;
+                    }
+
+                    let mut directives = Vec::with_capacity(gql_field.directives.len());
+                    for directive in &gql_field.directives {
+                        let directive = &directive.node;
+                        if directive.name.node == "skip" || directive.name.node == "include" {
+                            continue;
+                        }
+                        let mut arguments = Vec::with_capacity(directive.arguments.len());
+                        for (name, value) in &directive.arguments {
+                            arguments.push((
+                                name.clone(),
+                                value.position_node(
+                                    value
+                                        .node
+                                        .clone()
+                                        .into_const_with(|name| {
+                                            // TODO: handle value depending on the type of argument and use dafaults if provided.
+                                            let val = variables
+                                                .get(&name)
+                                                .cloned()
+                                                .unwrap_or(ConstValue::Null);
+                                            async_graphql::ServerResult::Ok(val)
+                                        })
+                                        .map_err(|_x| {
+                                            ResolveInputError::VariableIsNotFound(name.to_string())
+                                        })?,
+                                ),
+                            ));
+                        }
+                        directives.push(ConstDirective { name: directive.name.clone(), arguments });
                     }
 
                     let (include, skip) = conditions.into_variable_tuple();
@@ -188,7 +221,8 @@ impl Builder {
                             type_of.name(),
                             Some(Flat::new(id.clone())),
                             fragments,
-                        );
+                            variables,
+                        )?;
                         let name = gql_field
                             .alias
                             .as_ref()
@@ -198,7 +232,7 @@ impl Builder {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
                         };
-                        fields.push(Field {
+                        let flat_field = Field {
                             id,
                             name,
                             ir,
@@ -209,7 +243,14 @@ impl Builder {
                             args,
                             pos: selection.pos,
                             extensions: exts.clone(),
-                        });
+                            directives,
+                        };
+
+                        if flat_field.skip(variables) {
+                            continue;
+                        }
+
+                        fields.push(flat_field);
                         fields = fields.merge_right(child_fields);
                     } else {
                         // TODO: error if the field is not found in the schema
@@ -224,14 +265,15 @@ impl Builder {
                             fragment.type_condition.node.on.node.as_str(),
                             exts.clone(),
                             fragments,
-                        ));
+                            variables,
+                        )?);
                     }
                 }
                 _ => {}
             }
         }
 
-        fields
+        Ok(fields)
     }
 
     #[inline(always)]
@@ -261,7 +303,13 @@ impl Builder {
                 let name = self
                     .get_type(single.node.ty)
                     .ok_or(BuildError::RootOperationTypeNotDefined { operation: single.node.ty })?;
-                fields.extend(self.iter(&single.node.selection_set.node, name, None, &fragments));
+                fields.extend(self.iter(
+                    &single.node.selection_set.node,
+                    name,
+                    None,
+                    &fragments,
+                    variables,
+                )?);
                 single.node.ty
             }
             DocumentOperations::Multiple(multiple) => {
@@ -275,7 +323,8 @@ impl Builder {
                         name,
                         None,
                         &fragments,
-                    ));
+                        variables,
+                    )?);
                     operation_type = single.node.ty;
                 }
                 operation_type
