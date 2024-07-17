@@ -10,7 +10,8 @@ pub struct Context<'a, Input, Output> {
     request: &'a Request<Input>,
     value: Option<&'a Output>,
     args: Option<indexmap::IndexMap<Name, Input>>,
-    // TODO: remove the args, since they're already present inside the fields and support for default values.
+    // TODO: remove the args, since they're already present inside the fields and support for
+    // default values.
     field: &'a Field<Nested<Input>, Input>,
     is_query: bool,
 }
@@ -23,22 +24,16 @@ impl<'a, Input, Output> Context<'a, Input, Output> {
         Self { request, value: None, args: None, is_query, field }
     }
 
-    pub fn with_value(&self, value: &'a Output) -> Self {
+    pub fn with_value_and_field(
+        &self,
+        value: &'a Output,
+        field: &'a Field<Nested<Input>, Input>,
+    ) -> Self {
         Self {
             request: self.request,
+            args: None,
+            is_query: self.is_query,
             value: Some(value),
-            args: None,
-            is_query: self.is_query,
-            field: self.field,
-        }
-    }
-
-    pub fn with_field(&self, field: &'a Field<Nested<Input>, Input>) -> Self {
-        Self {
-            request: self.request,
-            value: self.value,
-            args: None,
-            is_query: self.is_query,
             field,
         }
     }
