@@ -105,7 +105,6 @@ impl SelectionField {
             .collect::<Vec<_>>();
         let directives = field.directives.clone();
 
-        // TODO: add support for directives.
         SelectionField { name, args, directives: Some(directives), selection_set }
     }
 
