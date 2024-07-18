@@ -35,7 +35,6 @@ mod uint8;
 mod url;
 
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 use enum_dispatch::enum_dispatch;
@@ -66,25 +65,25 @@ pub enum ScalarType {
 }
 
 lazy_static! {
-    pub static ref CUSTOM_SCALARS: HashMap<String, Arc<ScalarType>> = {
-        let scalars: Vec<Arc<ScalarType>> = vec![
-            Arc::new(Email::default().into()),
-            Arc::new(PhoneNumber::default().into()),
-            Arc::new(Date::default().into()),
-            Arc::new(Url::default().into()),
-            Arc::new(JSON::default().into()),
-            Arc::new(Empty::default().into()),
-            Arc::new(Int8::default().into()),
-            Arc::new(Int16::default().into()),
-            Arc::new(Int32::default().into()),
-            Arc::new(Int64::default().into()),
-            Arc::new(Int128::default().into()),
-            Arc::new(UInt8::default().into()),
-            Arc::new(UInt16::default().into()),
-            Arc::new(UInt32::default().into()),
-            Arc::new(UInt64::default().into()),
-            Arc::new(UInt128::default().into()),
-            Arc::new(Bytes::default().into()),
+    pub static ref CUSTOM_SCALARS: HashMap<String, ScalarType> = {
+        let scalars: Vec<ScalarType> = vec![
+            Email::default().into(),
+            PhoneNumber::default().into(),
+            Date::default().into(),
+            Url::default().into(),
+            JSON::default().into(),
+            Empty::default().into(),
+            Int8::default().into(),
+            Int16::default().into(),
+            Int32::default().into(),
+            Int64::default().into(),
+            Int128::default().into(),
+            UInt8::default().into(),
+            UInt16::default().into(),
+            UInt32::default().into(),
+            UInt64::default().into(),
+            UInt128::default().into(),
+            Bytes::default().into(),
         ];
         let mut hm = HashMap::new();
 
