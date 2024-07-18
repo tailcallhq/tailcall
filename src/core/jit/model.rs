@@ -141,6 +141,7 @@ impl<Input> Field<Nested<Input>, Input> {
             ir: self.ir,
             type_of: self.type_of,
             extensions,
+            pos: self.pos,
             skip: self.skip,
             include: self.include,
             args: self
@@ -148,6 +149,7 @@ impl<Input> Field<Nested<Input>, Input> {
                 .into_iter()
                 .map(|arg| arg.try_map(map))
                 .collect::<Result<_, _>>()?,
+            is_scalar: false,
         })
     }
 }
