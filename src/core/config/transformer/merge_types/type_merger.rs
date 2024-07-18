@@ -27,10 +27,7 @@ impl TypeMerger {
     }
 
     pub fn is_enabled(threshold: f32) -> bool {
-        if threshold > 0.0 {
-            return true;
-        }
-        false
+        threshold > 0.0
     }
 }
 
