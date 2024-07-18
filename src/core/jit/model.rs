@@ -1,11 +1,13 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use async_graphql::parser::types::OperationType;
 use async_graphql::Pos;
 use serde::Deserialize;
 
-use crate::core::{blueprint::Index, ir::model::IR};
+use crate::core::blueprint::Index;
+use crate::core::ir::model::IR;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
@@ -373,7 +375,11 @@ impl<Input> OperationPlan<Input> {
         self.index.type_is_enum(field.type_of.name())
     }
 
-    pub fn field_validate_enum_value<Extensions>(&self, field: &Field<Extensions, Input>, value: &str) -> bool {
+    pub fn field_validate_enum_value<Extensions>(
+        &self,
+        field: &Field<Extensions, Input>,
+        value: &str,
+    ) -> bool {
         self.index.validate_enum_value(field.type_of.name(), value)
     }
 }

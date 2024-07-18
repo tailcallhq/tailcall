@@ -1,5 +1,6 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use async_graphql::parser::types::{
     Directive, DocumentOperations, ExecutableDocument, FragmentDefinition, OperationType,
