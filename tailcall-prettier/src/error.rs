@@ -6,13 +6,13 @@ use tokio::task::JoinError;
 
 #[derive(From, DebugCustom)]
 pub enum Error {
-    #[debug(fmt = "Std IO Error")]
+    #[debug(fmt = "Std IO Error: {}", _0)]
     IO(std::io::Error),
 
-    #[debug(fmt = "Join Error")]
+    #[debug(fmt = "Join Error: {}", _0)]
     Join(JoinError),
 
-    #[debug(fmt = "From Utf8 Error")]
+    #[debug(fmt = "From Utf8 Error: {}", _0)]
     FromUtf8(FromUtf8Error),
 
     #[debug(fmt = "Prettier formatting failed: {}", _0)]
@@ -28,9 +28,9 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::IO(_) => write!(f, "Std IO Error"),
-            Error::Join(_) => write!(f, "Join Error"),
-            Error::FromUtf8(_) => write!(f, "From Utf8 Error"),
+            Error::IO(error) => write!(f, "Std IO Error: {}", error),
+            Error::Join(error) => write!(f, "Join Error: {}", error),
+            Error::FromUtf8(error) => write!(f, "From Utf8 Error: {}", error),
             Error::PrettierFormattingFailed(msg) => {
                 write!(f, "Prettier formatting failed: {}", msg)
             }
