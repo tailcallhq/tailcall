@@ -102,7 +102,6 @@ pub struct Field<Extensions, Input> {
     pub args: Vec<Arg<Input>>,
     pub extensions: Option<Extensions>,
     pub pos: Pos,
-    pub is_scalar: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -149,7 +148,6 @@ impl<Input> Field<Nested<Input>, Input> {
                 .into_iter()
                 .map(|arg| arg.try_map(map))
                 .collect::<Result<_, _>>()?,
-            is_scalar: false,
         })
     }
 }
@@ -173,7 +171,6 @@ impl<Input> Field<Flat, Input> {
                 .into_iter()
                 .map(|arg| arg.try_map(&map))
                 .collect::<Result<_, _>>()?,
-            is_scalar: self.is_scalar,
         })
     }
 }
@@ -225,7 +222,6 @@ impl<Input> Field<Flat, Input> {
             args: self.args,
             pos: self.pos,
             extensions,
-            is_scalar: self.is_scalar,
         }
     }
 }
@@ -245,7 +241,6 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
         if self.extensions.is_some() {
             debug_struct.field("extensions", &self.extensions);
         }
-        debug_struct.field("is_scalar", &self.is_scalar);
 
         debug_struct.finish()
     }
@@ -310,7 +305,11 @@ impl<Input> OperationPlan<Input> {
 }
 
 impl<Input> OperationPlan<Input> {
-    pub fn new(fields: Vec<Field<Flat, Input>>, operation_type: OperationType, index: Arc<Index>) -> Self
+    pub fn new(
+        fields: Vec<Field<Flat, Input>>,
+        operation_type: OperationType,
+        index: Arc<Index>,
+    ) -> Self
     where
         Input: Clone,
     {
@@ -364,5 +363,9 @@ impl<Input> OperationPlan<Input> {
 
     pub fn size(&self) -> usize {
         self.flat.len()
+    }
+
+    pub fn field_is_scalar<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
+        self.index.type_is_scalar(field.type_of.name())
     }
 }

@@ -202,7 +202,6 @@ impl Builder {
                             id,
                             name,
                             ir,
-                            is_scalar: self.index.type_is_scalar(type_of.name()),
                             type_of,
                             skip,
                             include,

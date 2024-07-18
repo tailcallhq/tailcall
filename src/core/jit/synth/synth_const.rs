@@ -10,7 +10,7 @@ use crate::core::json::JsonLike;
 use crate::core::scalar::get_scalar;
 
 pub struct Synth {
-    selection: Vec<Field<Nested<ConstValue>, ConstValue>>,
+    plan: OperationPlan<ConstValue>,
     store: Store<Result<ConstValue, Positioned<Error>>>,
     variables: Variables<ConstValue>,
 }
@@ -42,7 +42,7 @@ impl Synth {
         store: Store<Result<ConstValue, Positioned<Error>>>,
         variables: Variables<ConstValue>,
     ) -> Self {
-        Self { selection: plan.into_nested(), store, variables }
+        Self { plan, store, variables }
     }
 
     #[inline(always)]
@@ -53,7 +53,7 @@ impl Synth {
     pub fn synthesize(&self) -> Result<ConstValue, Positioned<Error>> {
         let mut data = IndexMap::default();
 
-        for child in self.selection.iter() {
+        for child in self.plan.as_nested().iter() {
             if !self.include(child) {
                 continue;
             }
@@ -129,7 +129,7 @@ impl Synth {
 
         match parent {
             // scalar values should be returned as is
-            val if node.is_scalar => {
+            val if self.plan.field_is_scalar(node) => {
                 let validation = get_scalar(node.type_of.name());
 
                 // TODO: add validation for input type as well. But input types are not checked
