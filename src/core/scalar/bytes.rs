@@ -3,7 +3,7 @@ use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLike;
+use crate::core::json::{JsonLike, JsonLikeOwned};
 
 /// Represents list of bytes
 #[derive(JsonSchema, Default, ScalarDefinition)]
@@ -11,6 +11,10 @@ pub struct Bytes(pub String);
 
 impl super::Scalar for Bytes {
     fn validate(&self) -> fn(&ConstValue) -> bool {
+        |value| value.as_str().is_some()
+    }
+
+    fn validate_generic<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
         |value| value.as_str().is_some()
     }
 

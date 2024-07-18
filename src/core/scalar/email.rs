@@ -4,7 +4,7 @@ use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLike;
+use crate::core::json::{JsonLike, JsonLikeOwned};
 
 /// field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
 #[derive(JsonSchema, Default, ScalarDefinition)]
@@ -35,6 +35,17 @@ impl super::Scalar for Email {
             false
         }
     }
+
+    fn validate_generic<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+        |value| {
+            if let Some(email_str) = value.as_str() {
+                let email_str = email_str.to_string();
+                return email(&email_str).is_ok();
+            }
+            false
+        }
+    }
+
     fn schema(&self) -> Schema {
         Schema::Object(schema_for!(Self).schema)
     }

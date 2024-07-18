@@ -3,6 +3,8 @@ use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
 
+use crate::core::json::JsonLikeOwned;
+
 /// Represents signed integer type 8bit size
 #[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct Int8(pub i8);
@@ -19,6 +21,16 @@ impl super::Scalar for Int8 {
             false
         }
     }
+
+    fn validate_generic<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+        |value| {
+            if let Some(value) = value.as_i64() {
+                return i8::try_from(value).is_ok();
+            }
+            false
+        }
+    }
+
     fn schema(&self) -> Schema {
         schema_for!(Self).schema.into()
     }
