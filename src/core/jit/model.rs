@@ -1,11 +1,11 @@
-use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::{collections::HashMap, sync::Arc};
 
 use async_graphql::parser::types::OperationType;
 use async_graphql::Pos;
 use serde::Deserialize;
 
-use crate::core::ir::model::IR;
+use crate::core::{blueprint::Index, ir::model::IR};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
@@ -275,11 +275,12 @@ impl Debug for Flat {
 #[derive(Clone, Debug)]
 pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct OperationPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
+    pub index: Arc<Index>,
 }
 
 impl<Input> OperationPlan<Input> {
@@ -299,12 +300,17 @@ impl<Input> OperationPlan<Input> {
             nested.push(n.try_map(&map)?);
         }
 
-        Ok(OperationPlan { flat, operation_type: self.operation_type, nested })
+        Ok(OperationPlan {
+            flat,
+            operation_type: self.operation_type,
+            nested,
+            index: self.index,
+        })
     }
 }
 
 impl<Input> OperationPlan<Input> {
-    pub fn new(fields: Vec<Field<Flat, Input>>, operation_type: OperationType) -> Self
+    pub fn new(fields: Vec<Field<Flat, Input>>, operation_type: OperationType, index: Arc<Index>) -> Self
     where
         Input: Clone,
     {
@@ -315,7 +321,7 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        Self { flat: fields, nested, operation_type }
+        Self { flat: fields, nested, operation_type, index }
     }
 
     pub fn operation_type(&self) -> OperationType {

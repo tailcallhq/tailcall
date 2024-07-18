@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use std::ops::Deref;
 
 use async_graphql::parser::types::{
@@ -65,7 +65,7 @@ impl Conditions {
 }
 
 pub struct Builder {
-    pub index: Index,
+    pub index: Arc<Index>,
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: ExecutableDocument,
@@ -74,7 +74,7 @@ pub struct Builder {
 // TODO: make generic over Value (Input) type
 impl Builder {
     pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
-        let index = blueprint.index();
+        let index = Arc::new(blueprint.index());
         Self {
             document,
             index,
@@ -282,7 +282,7 @@ impl Builder {
             }
         };
 
-        let plan = OperationPlan::new(fields, operation_type);
+        let plan = OperationPlan::new(fields, operation_type, self.index.clone());
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly
