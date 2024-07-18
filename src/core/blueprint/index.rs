@@ -36,6 +36,22 @@ impl Index {
         matches!(def, Some(Definition::Scalar(_))) || is_predefined_scalar(type_name)
     }
 
+    pub fn type_is_enum(&self, type_name: &str) -> bool {
+        let def = self.map.get(type_name).map(|(def, _)| def);
+
+        matches!(def, Some(Definition::Enum(_)))
+    }
+
+    pub fn validate_enum_value(&self, type_name: &str, value: &str) -> bool {
+        let def = self.map.get(type_name).map(|(def, _)| def);
+
+        if let Some(Definition::Enum(enum_)) = def {
+            enum_.enum_values.iter().any(|v| &v.name == value)
+        } else {
+            false
+        }
+    }
+
     pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&QueryField> {
         self.map
             .get(type_name)

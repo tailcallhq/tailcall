@@ -368,4 +368,12 @@ impl<Input> OperationPlan<Input> {
     pub fn field_is_scalar<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
         self.index.type_is_scalar(field.type_of.name())
     }
+
+    pub fn field_is_enum<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
+        self.index.type_is_enum(field.type_of.name())
+    }
+
+    pub fn field_validate_enum_value<Extensions>(&self, field: &Field<Extensions, Input>, value: &str) -> bool {
+        self.index.validate_enum_value(field.type_of.name(), value)
+    }
 }

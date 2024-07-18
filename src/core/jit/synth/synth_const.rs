@@ -148,6 +148,24 @@ impl Synth {
                     })
                 }
             }
+            val if self.plan.field_is_enum(node) => {
+                if val
+                    .as_str()
+                    .map(|v| self.plan.field_validate_enum_value(node, v))
+                    .unwrap_or(false)
+                {
+                    Ok(val.clone())
+                } else {
+                    Err(Positioned {
+                        pos: node.pos,
+                        node: ValidationError::EnumInvalid {
+                            type_of: node.type_of.name().to_string(),
+                            path: node.name.clone(),
+                        }
+                        .into(),
+                    })
+                }
+            }
             ConstValue::Object(obj) => {
                 let mut ans = IndexMap::default();
                 if include {
