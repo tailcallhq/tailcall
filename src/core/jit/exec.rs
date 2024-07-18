@@ -152,7 +152,8 @@ where
                 result.map_err(|e| Positioned::new(e, field.pos)),
             );
         } else {
-            // if the present field doesn't have IR, still go through it's extensions to see if they've IR.
+            // if the present field doesn't have IR, still go through it's extensions to see
+            // if they've IR.
             join_all(field.nested_iter().map(|child| {
                 let ctx = ctx.with_field(child);
                 let data_path = data_path.clone();
