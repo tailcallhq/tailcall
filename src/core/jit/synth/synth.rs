@@ -1,8 +1,9 @@
 use async_graphql::Positioned;
-use crate::core::jit::{Error, ValidationError};
+
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::synth::Synthesizer;
+use crate::core::jit::{Error, ValidationError};
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::scalar::get_scalar;
 
@@ -163,34 +164,41 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                         type_of: node.type_of.name().to_string(),
                         path: node.name.clone(),
                     }
-                        .into(),
+                    .into(),
                 })
             }
-        }else {
-
-        }
-        match (parent.as_array(), parent.as_object()) {
-            (_, Some(obj)) => {
-                let mut ans = Value::JsonObject::new();
-                if include {
-                    if let Some(children) = node.nested() {
-                        for child in children {
-                            // all checks for skip must occur in `iter_inner`
-                            // and include be checked before calling `iter` or recursing.
-                            let include = self.include(child);
-                            if include {
-                                let val = obj.get_key(child.name.as_str());
-                                if let Some(val) = val {
-                                    ans = ans.insert_key(
-                                        child.name.as_str(),
-                                        self.iter_inner(child, val, data_path)?,
-                                    );
-                                } else {
-                                    ans = ans.insert_key(
-                                        child.name.as_str(),
-                                        self.iter(child, None, data_path)?,
-                                    );
+        } else {
+            match (parent.as_array(), parent.as_object()) {
+                (_, Some(obj)) => {
+                    let mut ans = Value::JsonObject::new();
+                    if include {
+                        if let Some(children) = node.nested() {
+                            for child in children {
+                                // all checks for skip must occur in `iter_inner`
+                                // and include be checked before calling `iter` or recursing.
+                                let include = self.include(child);
+                                if include {
+                                    let val = obj.get_key(child.name.as_str());
+                                    if let Some(val) = val {
+                                        ans = ans.insert_key(
+                                            child.name.as_str(),
+                                            self.iter_inner(child, val, data_path)?,
+                                        );
+                                    } else {
+                                        ans = ans.insert_key(
+                                            child.name.as_str(),
+                                            self.iter(child, None, data_path)?,
+                                        );
+                                    }
                                 }
+                            }
+                        } else {
+                            let val = obj.get_key(node.name.as_str());
+                            // if it's a leaf node, then push the value
+                            if let Some(val) = val {
+                                ans = ans.insert_key(node.name.as_str(), val.to_owned());
+                            } else {
+                                return Ok(Value::null());
                             }
                         }
                     } else {
@@ -202,28 +210,21 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                             return Ok(Value::null());
                         }
                     }
-                } else {
-                    let val = obj.get_key(node.name.as_str());
-                    // if it's a leaf node, then push the value
-                    if let Some(val) = val {
-                        ans = ans.insert_key(node.name.as_str(), val.to_owned());
-                    } else {
-                        return Ok(Value::null());
-                    }
+                    Ok(Value::object(ans))
                 }
-                Ok(Value::object(ans))
-            }
-            (Some(arr), _) => {
-                let mut ans = vec![];
-                if include {
-                    for (i, val) in arr.iter().enumerate() {
-                        let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
-                        ans.push(val)
+                (Some(arr), _) => {
+                    let mut ans = vec![];
+                    if include {
+                        for (i, val) in arr.iter().enumerate() {
+                            let val =
+                                self.iter_inner(node, val, &data_path.clone().with_index(i))?;
+                            ans.push(val)
+                        }
                     }
+                    Ok(Value::array(ans))
                 }
-                Ok(Value::array(ans))
+                _ => Ok(parent.clone()),
             }
-            _ => Ok(parent.clone()),
         }
     }
 }
@@ -241,7 +242,6 @@ mod tests {
     use crate::core::jit::common::JsonPlaceholder;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
-    use crate::core::jit::try_map::TryMap;
     use crate::core::json::JsonLikeOwned;
     use crate::core::valid::Validator;
 
@@ -330,7 +330,7 @@ mod tests {
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build(&Variables::new(), None).unwrap();
         let plan = plan
-            .try_map(&|v| {
+            .try_map(|v: ConstValue| {
                 let v = v.into_json()?;
                 Ok::<_, anyhow::Error>(serde_json::from_value::<Value>(v)?)
             })
