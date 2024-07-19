@@ -13,6 +13,12 @@ pub struct Preset {
     use_better_names: bool,
 }
 
+impl Preset {
+    pub fn is_invalid_threshold(threshold: f32) -> bool {
+        !(0.1..=1.0).contains(&threshold)
+    }
+}
+
 impl Transform for Preset {
     type Value = Config;
     type Error = String;

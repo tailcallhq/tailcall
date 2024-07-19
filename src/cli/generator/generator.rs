@@ -146,7 +146,8 @@ impl Generator {
         let config = self.read().await?;
         let path = config.output.path.0.to_owned();
         let query_type = config.schema.query.clone();
-        let preset: config::transformer::Preset = config.preset.clone().unwrap_or_default().into();
+        let preset: config::transformer::Preset =
+            config.preset.clone().unwrap_or_default().try_into()?;
         let input_samples = self.resolve_io(config).await?;
 
         let mut config_gen = ConfigGenerator::default()
@@ -320,7 +321,7 @@ mod test {
             let generator = Generator::new(path, runtime);
             let config = generator.read().await?;
             let preset: config::transformer::Preset =
-                config.preset.clone().unwrap_or_default().into();
+                config.preset.clone().unwrap_or_default().try_into()?;
 
             // resolve i/o's
             let input_samples = generator.resolve_io(config).await?;

@@ -14,16 +14,7 @@ pub struct TypeMerger {
 
 impl TypeMerger {
     pub fn new(threshold: f32) -> Self {
-        let mut validated_thresh = threshold;
-        if !(0.0..=1.0).contains(&threshold) {
-            validated_thresh = 1.0;
-            tracing::warn!(
-                "Invalid threshold value ({:.2}), reverting to default threshold ({:.2}). allowed range is [0.0 - 1.0] inclusive",
-                threshold,
-                validated_thresh
-            );
-        }
-        Self { threshold: validated_thresh }
+        Self { threshold }
     }
 
     pub fn is_enabled(threshold: f32) -> bool {
@@ -217,24 +208,6 @@ mod test {
     use crate::core::config::{Config, Field, Type};
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
-
-    #[test]
-    fn test_validate_thresh() {
-        let ty_merger = TypeMerger::default();
-        assert_eq!(ty_merger.threshold, 1.0);
-
-        let ty_merger = TypeMerger::new(0.0);
-        assert_eq!(ty_merger.threshold, 0.0);
-
-        let ty_merger = TypeMerger::new(1.2);
-        assert_eq!(ty_merger.threshold, 1.0);
-
-        let ty_merger = TypeMerger::new(-0.5);
-        assert_eq!(ty_merger.threshold, 1.0);
-
-        let ty_merger = TypeMerger::new(0.5);
-        assert_eq!(ty_merger.threshold, 0.5);
-    }
 
     #[test]
     fn test_cyclic_merge_case() -> anyhow::Result<()> {

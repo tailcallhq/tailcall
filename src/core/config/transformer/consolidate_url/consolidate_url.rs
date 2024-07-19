@@ -51,16 +51,7 @@ pub struct ConsolidateURL {
 
 impl ConsolidateURL {
     pub fn new(threshold: f32) -> Self {
-        let mut validated_thresh = threshold;
-        if !(0.0..=1.0).contains(&threshold) {
-            validated_thresh = 1.0;
-            tracing::warn!(
-                "Invalid threshold value ({:.2}), reverting to default threshold ({:.2}). allowed range is [0.0 - 1.0] inclusive",
-                threshold,
-                validated_thresh
-            );
-        }
-        Self { threshold: validated_thresh }
+        Self { threshold }
     }
 
     fn generate_base_url(&self, mut config: Config) -> Config {

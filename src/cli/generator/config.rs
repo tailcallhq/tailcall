@@ -11,6 +11,7 @@ use url::Url;
 
 use crate::core::config::{self, ConfigReaderContext};
 use crate::core::mustache::Mustache;
+use crate::core::valid::{Valid, ValidationError, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -93,14 +94,30 @@ pub struct Schema {
     pub query: Option<String>,
 }
 
-impl From<Preset> for config::transformer::Preset {
-    fn from(val: Preset) -> Self {
+impl TryFrom<Preset> for config::transformer::Preset {
+    type Error = ValidationError<String>;
+    fn try_from(val: Preset) -> Result<Self, Self::Error> {
         let mut preset = config::transformer::Preset::default();
+
         if let Some(merge_type) = val.merge_type {
+            if config::transformer::Preset::is_invalid_threshold(merge_type) {
+                return Valid::fail(format!(
+                    "Invalid threshold value ({:.2}). Allowed range is [0.0 - 1.0] inclusive.",
+                    merge_type
+                ))
+                .to_result();
+            }
             preset = preset.merge_type(merge_type);
         }
 
         if let Some(consolidate_url) = val.consolidate_url {
+            if config::transformer::Preset::is_invalid_threshold(consolidate_url) {
+                return Valid::fail(format!(
+                    "Invalid threshold value ({:.2}). Allowed range is [0.0 - 1.0] inclusive.",
+                    consolidate_url
+                ))
+                .to_result();
+            }
             preset = preset.consolidate_url(consolidate_url);
         }
 
@@ -112,7 +129,7 @@ impl From<Preset> for config::transformer::Preset {
             preset = preset.tree_shake(tree_shake);
         }
 
-        preset
+        Ok(preset)
     }
 }
 
@@ -315,8 +332,22 @@ mod tests {
             merge_type: None,
             consolidate_url: None,
         };
-        let transform_preset: config::transformer::Preset = config_preset.into();
+        let transform_preset: config::transformer::Preset = config_preset.try_into().unwrap();
         assert_eq!(transform_preset, config::transformer::Preset::default());
+    }
+
+    #[test]
+    fn should_fail_when_invalid_merge_type_threshold() {
+        let config_preset = Preset {
+            tree_shake: None,
+            use_better_names: None,
+            merge_type: Some(2.0),
+            consolidate_url: None,
+        };
+
+        let transform_preset: Result<config::transformer::Preset, ValidationError<String>> =
+            config_preset.try_into();
+        assert!(transform_preset.is_err());
     }
 
     #[test]
@@ -327,7 +358,7 @@ mod tests {
             merge_type: Some(0.5),
             consolidate_url: Some(1.0),
         };
-        let transform_preset: config::transformer::Preset = config_preset.into();
+        let transform_preset: config::transformer::Preset = config_preset.try_into().unwrap();
         let expected_preset = config::transformer::Preset::default()
             .use_better_names(true)
             .tree_shake(true)
