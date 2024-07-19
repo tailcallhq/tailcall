@@ -22,13 +22,13 @@ pub mod worker {
         #[debug(fmt = "Worker communication error")]
         Communication,
 
-        #[debug(fmt = "Serde Json Error")]
+        #[debug(fmt = "Serde Json Error: {}", _0)]
         SerdeJson(Arc<serde_json::Error>),
 
         #[debug(fmt = "Request Clone Failed")]
         RequestCloneFailed,
 
-        #[debug(fmt = "Hyper Header To Str Error")]
+        #[debug(fmt = "Hyper Header To Str Error: {}", _0)]
         HyperHeaderStr(Arc<hyper::header::ToStrError>),
 
         #[debug(fmt = "JS Runtime Stopped Error")]
