@@ -117,11 +117,8 @@ where
                     if let Some(array) = value.as_array() {
                         join_all(field.nested_iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
-                                let mut ctx = ctx.with_value_and_field(value, field); // Output::JsonArray::Value
-                                if !field.is_scalar {
-                                    let new_value = value.get_key(&field.name).unwrap_or(value);
-                                    ctx = ctx.with_value_and_field(new_value, field);
-                                }
+                                let new_value = value.get_key(&field.name).unwrap_or(value);
+                                let ctx = ctx.with_value_and_field(new_value, field);
                                 let data_path = data_path.clone().with_index(index);
                                 async move { self.execute(field, &ctx, data_path).await }
                             }))
@@ -136,7 +133,8 @@ where
                 // Has to be an Object, we don't do anything while executing if its a Scalar
                 else {
                     join_all(field.nested_iter().map(|child| {
-                        let ctx = ctx.with_value_and_field(value, field);
+                        let new_value = value.get_key(&child.name).unwrap_or(value);
+                        let ctx = ctx.with_value_and_field(new_value, field);
                         let data_path = data_path.clone();
                         async move { self.execute(child, &ctx, data_path).await }
                     }))
