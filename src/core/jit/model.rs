@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use async_graphql::parser::types::OperationType;
+use async_graphql::parser::types::{ConstDirective, OperationType};
 use async_graphql::Pos;
+use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
@@ -316,6 +317,37 @@ impl<Input> OperationPlan<Input> {
 
     pub fn size(&self) -> usize {
         self.flat.len()
+    }
+}
+
+pub trait DirectiveAdapter {
+    fn name(&self) -> &str;
+    fn arguments(&self) -> Vec<(String, ConstValue)>;
+}
+
+impl DirectiveAdapter for ConstDirective {
+    fn name(&self) -> &str {
+        &self.name.node
+    }
+
+    fn arguments(&self) -> Vec<(String, ConstValue)> {
+        self.arguments
+            .iter()
+            .map(|(k, v)| (k.node.to_string(), v.node.clone()))
+            .collect::<Vec<_>>()
+    }
+}
+
+impl DirectiveAdapter for Directive<ConstValue> {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn arguments(&self) -> Vec<(String, ConstValue)> {
+        self.arguments
+            .iter()
+            .map(|arg| (arg.name.clone(), arg.value.clone()))
+            .collect::<Vec<_>>()
     }
 }
 
