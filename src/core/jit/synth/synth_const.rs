@@ -132,7 +132,7 @@ impl Synth {
                 if node.type_of.is_nullable() {
                     Ok(ConstValue::Null)
                 } else {
-                    Err(Positioned { pos: node.pos, node: ValidationError::ValueRequired.into() })
+                    Err(ValidationError::ValueRequired.into())
                 }
             }
             // scalar values should be returned as is
@@ -145,14 +145,11 @@ impl Synth {
                 if validation(val) {
                     Ok(val.clone())
                 } else {
-                    Err(Positioned {
-                        pos: node.pos,
-                        node: ValidationError::ScalarInvalid {
-                            type_of: node.type_of.name().to_string(),
-                            path: node.name.clone(),
-                        }
-                        .into(),
-                    })
+                    Err(ValidationError::ScalarInvalid {
+                        type_of: node.type_of.name().to_string(),
+                        path: node.name.clone(),
+                    }
+                    .into())
                 }
             }
             val if self.plan.field_is_enum(node) => {
@@ -163,14 +160,11 @@ impl Synth {
                 {
                     Ok(val.clone())
                 } else {
-                    Err(Positioned {
-                        pos: node.pos,
-                        node: ValidationError::EnumInvalid {
-                            type_of: node.type_of.name().to_string(),
-                            path: node.name.clone(),
-                        }
-                        .into(),
-                    })
+                    Err(ValidationError::EnumInvalid {
+                        type_of: node.type_of.name().to_string(),
+                        path: node.name.clone(),
+                    }
+                    .into())
                 }
             }
             ConstValue::Object(obj) => {
@@ -228,6 +222,7 @@ impl Synth {
             }
             val => Ok(val.clone()), // cloning here would be cheaper than cloning whole value
         }
+        .map_err(|error| Positioned { pos: node.pos, node: error })
     }
 }
 
