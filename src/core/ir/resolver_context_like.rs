@@ -120,7 +120,11 @@ impl SelectionField {
         SelectionField {
             name,
             args,
-            directives: Some(field.directives.clone()),
+            directives: if field.directives.is_empty() {
+                None
+            } else {
+                Some(field.directives.clone())
+            },
             selection_set,
         }
     }

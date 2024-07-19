@@ -20,12 +20,12 @@ expression: plan.into_nested()
                             Directive {
                                 name: "options",
                                 arguments: [
-                                    DirectiveArgs {
-                                        name: "paging",
-                                        value: Boolean(
+                                    (
+                                        "paging",
+                                        Boolean(
                                             true,
                                         ),
-                                    },
+                                    ),
                                 ],
                             },
                         ],
