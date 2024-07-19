@@ -45,7 +45,7 @@ impl RequestTemplate {
         // template.
         let mustache_eval = ValueStringEval::default();
 
-        let extra_qp = self.query.iter().filter_map(|(key, value)| {
+        let extra_qp = self.query.iter().map(|(key, value)| {
             let parsed_value = mustache_eval.eval(value, ctx);
             self.query_encoder.encode(key, parsed_value)
         });

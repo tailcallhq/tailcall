@@ -12,35 +12,48 @@ pub enum QueryEncoder {
 }
 
 impl QueryEncoder {
-    pub fn encode(&self, key: &str, raw_value: Option<ValueString>) -> Option<String> {
+    pub fn encode(&self, key: &str, raw_value: Option<ValueString>) -> String {
         if let Some(value) = raw_value {
             match &value {
                 ValueString::Value(val) => self.encode_const_value(key, val),
-                ValueString::String(val) => Some(format!("{}={}", key, val)),
+                ValueString::String(val) => format!("{}={}", key, val),
             }
         } else {
-            Some(key.to_owned())
+            key.to_owned()
         }
     }
-    fn encode_const_value(&self, key: &str, value: &async_graphql::Value) -> Option<String> {
+    fn encode_const_value(&self, key: &str, value: &async_graphql::Value) -> String {
         match self {
             QueryEncoder::CommaSeparated => match value {
                 async_graphql::Value::List(list) if !list.is_empty() => {
                     let encoded_values: Vec<String> =
                         list.iter().filter_map(convert_value).collect();
-                    Some(format!("{}={}", key, encoded_values.join(",")))
+                    
+                    if encoded_values.is_empty() {
+                        key.to_string()
+                    } else {
+                        format!("{}={}", key, encoded_values.join(","))
+                    }
                 }
-                _ => convert_value(value).map(|val| format!("{}={}", key, val)),
+                _ => convert_value(value)
+                    .map(|val| format!("{}={}", key, val))
+                    .unwrap_or(key.to_string()),
             },
             QueryEncoder::RepeatedKey => match value {
                 async_graphql::Value::List(list) if !list.is_empty() => {
                     let encoded_values: Vec<String> = list
                         .iter()
-                        .filter_map(|val| self.encode_const_value(key, val))
+                        .map(|val| self.encode_const_value(key, val))
                         .collect();
-                    Some(encoded_values.join("&"))
+                    if encoded_values.is_empty() {
+                        key.to_string()
+                    } else {
+                        encoded_values.join("&")
+                    }
                 }
-                _ => convert_value(value).map(|val| format!("{}={}", key, val)),
+                _ => convert_value(value)
+                    .map(|val| format!("{}={}", key, val))
+                    .unwrap_or(key.to_string()),
             },
         }
     }
@@ -74,7 +87,7 @@ mod tests {
         let arg_raw_value = Some(ValueString::Value(Cow::Borrowed(&values)));
 
         let actual = encoder.encode("key", arg_raw_value);
-        let expected = Some("key=12,42,13".to_string());
+        let expected = "key=12,42,13".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -90,7 +103,7 @@ mod tests {
         let arg_raw_value = Some(ValueString::Value(Cow::Borrowed(&values)));
 
         let actual = encoder.encode("key", arg_raw_value);
-        let expected = Some("key=12&key=42&key=13".to_string());
+        let expected = "key=12&key=42&key=13".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -101,7 +114,7 @@ mod tests {
         let raw_value = Some(ValueString::String("env_value".into()));
 
         let actual = encoder.encode("key", raw_value);
-        let expected = Some("key=env_value".to_string());
+        let expected = "key=env_value".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -112,7 +125,7 @@ mod tests {
         let raw_value = Some(ValueString::String("var_value".into()));
 
         let actual = encoder.encode("key", raw_value);
-        let expected = Some("key=var_value".to_string());
+        let expected = "key=var_value".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -123,7 +136,7 @@ mod tests {
         let raw_value: Option<ValueString> = None;
 
         let actual = encoder.encode("key", raw_value);
-        let expected = Some("key".to_owned());
+        let expected = "key".to_owned();
 
         assert_eq!(actual, expected);
     }
@@ -139,7 +152,7 @@ mod tests {
         let strategy = QueryEncoder::CommaSeparated;
 
         let actual = strategy.encode_const_value(key, &values);
-        let expected = Some("ids=1,2,3".to_string());
+        let expected = "ids=1,2,3".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -155,7 +168,7 @@ mod tests {
         let strategy = QueryEncoder::RepeatedKey;
 
         let actual = strategy.encode_const_value(key, &values);
-        let expected = Some("ids=1&ids=2&ids=3".to_string());
+        let expected = "ids=1&ids=2&ids=3".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -171,7 +184,7 @@ mod tests {
         let strategy = QueryEncoder::CommaSeparated;
 
         let actual = strategy.encode_const_value(key, &values);
-        let expected = Some("values=string,42,true".to_string());
+        let expected = "values=string,42,true".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -187,7 +200,7 @@ mod tests {
         let strategy = QueryEncoder::RepeatedKey;
 
         let actual = strategy.encode_const_value(key, &values);
-        let expected = Some("values=string&values=42&values=true".to_string());
+        let expected = "values=string&values=42&values=true".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -199,7 +212,7 @@ mod tests {
         let strategy = QueryEncoder::CommaSeparated;
 
         let actual = strategy.encode_const_value(key, &values);
-        let expected: Option<String> = None;
+        let expected = "empty".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -211,7 +224,7 @@ mod tests {
         let strategy = QueryEncoder::RepeatedKey;
 
         let actual = strategy.encode_const_value(key, &values);
-        let expected: Option<String> = None;
+        let expected = "empty".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -223,7 +236,7 @@ mod tests {
         let strategy = QueryEncoder::CommaSeparated;
 
         let actual = strategy.encode_const_value(key, &values);
-        let expected = Some("single=value".to_string());
+        let expected = "single=value".to_string();
 
         assert_eq!(actual, expected);
     }
@@ -235,7 +248,7 @@ mod tests {
         let strategy = QueryEncoder::RepeatedKey;
 
         let actual = strategy.encode_const_value(key, &values);
-        let expected = Some("single=value".to_string());
+        let expected = "single=value".to_string();
 
         assert_eq!(actual, expected);
     }
