@@ -1,21 +1,23 @@
 use std::collections::BTreeMap;
 use std::ops::Deref;
-
+use crate::core::is_default;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+type Value = (String, Option<bool>);
+
 #[derive(Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema)]
-pub struct KeyValues(pub BTreeMap<String, String>);
+pub struct KeyValues(pub BTreeMap<String, Value>);
 
 impl Deref for KeyValues {
-    type Target = BTreeMap<String, String>;
+    type Target = BTreeMap<String, Value>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl FromIterator<(String, String)> for KeyValues {
-    fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
+impl FromIterator<(String, Value)> for KeyValues {
+    fn from_iter<T: IntoIterator<Item = (String, Value)>>(iter: T) -> Self {
         KeyValues(BTreeMap::from_iter(iter))
     }
 }
@@ -24,6 +26,10 @@ impl FromIterator<(String, String)> for KeyValues {
 pub struct KeyValue {
     pub key: String,
     pub value: String,
+    #[serde(default, skip_serializing_if = "is_default")]
+    #[serde(rename = "skipNull")]
+    /// When specified in query params will skip the param whole value is null the default value of this argument is false
+    pub skip_null: Option<bool>
 }
 
 // When we merge values, we do a merge right, which is to say that
@@ -34,15 +40,15 @@ pub fn merge_key_value_vecs(current: &[KeyValue], other: &[KeyValue]) -> Vec<Key
     let mut res = BTreeMap::new();
 
     for kv in current {
-        res.insert(kv.key.to_owned(), kv.value.to_owned());
+        res.insert(kv.key.to_owned(), (kv.value.to_owned(), kv.skip_null.to_owned()));
     }
 
     for kv in other {
-        res.insert(kv.key.to_owned(), kv.value.to_owned());
+        res.insert(kv.key.to_owned(), (kv.value.to_owned(), kv.skip_null.to_owned()));
     }
 
     res.into_iter()
-        .map(|(k, v)| KeyValue { key: k, value: v })
+        .map(|(k, (v,skip_null))| KeyValue { key: k, value: v, skip_null })
         .collect::<Vec<KeyValue>>()
 }
 
@@ -54,7 +60,7 @@ impl Serialize for KeyValues {
         let vec: Vec<KeyValue> = self
             .0
             .iter()
-            .map(|(k, v)| KeyValue { key: k.clone(), value: v.clone() })
+            .map(|(k, (v, skip_null))| KeyValue { key: k.clone(), value: v.clone(), skip_null: skip_null.to_owned() })
             .collect();
         vec.serialize(serializer)
     }
@@ -66,7 +72,7 @@ impl<'de> Deserialize<'de> for KeyValues {
         D: Deserializer<'de>,
     {
         let vec: Vec<KeyValue> = Vec::deserialize(deserializer)?;
-        let btree_map = vec.into_iter().map(|kv| (kv.key, kv.value)).collect();
+        let btree_map = vec.into_iter().map(|kv| (kv.key, (kv.value, kv.skip_null))).collect();
         Ok(KeyValues(btree_map))
     }
 }
@@ -85,7 +91,7 @@ mod tests {
     #[test]
     fn test_serialize_non_empty_keyvalues() {
         let mut kv = KeyValues::default();
-        kv.0.insert("a".to_string(), "b".to_string());
+        kv.0.insert("a".to_string(), ("b".to_string(), None));
         let serialized = serde_json::to_string(&kv).unwrap();
         assert_eq!(serialized, r#"[{"key":"a","value":"b"}]"#);
     }
@@ -99,9 +105,9 @@ mod tests {
 
     #[test]
     fn test_deserialize_non_empty_keyvalues() {
-        let data = r#"[{"key":"a","value":"b"}]"#;
+        let data = r#"[{"key":"a","value":"b", "skipNull": true}]"#;
         let kv: KeyValues = serde_json::from_str(data).unwrap();
-        assert_eq!(kv.0["a"], "b");
+        assert_eq!(kv.0["a"], ("b".to_string(), Some(true)));
     }
 
     #[test]
@@ -113,9 +119,9 @@ mod tests {
     #[test]
     fn test_deref() {
         let mut kv = KeyValues::default();
-        kv.0.insert("a".to_string(), "b".to_string());
+        kv.0.insert("a".to_string(), ("b".to_string(), None));
         // Using the deref trait
-        assert_eq!(kv["a"], "b");
+        assert_eq!(kv["a"], ("b".to_string(), None));
     }
 
     #[test]
@@ -129,7 +135,7 @@ mod tests {
     #[test]
     fn test_merge_with_current_empty() {
         let current = vec![];
-        let other = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string() }];
+        let other = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string(), skip_null: None }];
         let result = merge_key_value_vecs(&current, &other);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].key, "key1");
@@ -138,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_merge_with_other_empty() {
-        let current = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string() }];
+        let current = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string(), skip_null: None }];
         let other = vec![];
         let result = merge_key_value_vecs(&current, &other);
         assert_eq!(result.len(), 1);
@@ -148,8 +154,8 @@ mod tests {
 
     #[test]
     fn test_merge_with_unique_keys() {
-        let current = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string() }];
-        let other = vec![KeyValue { key: "key2".to_string(), value: "value2".to_string() }];
+        let current = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string(), skip_null: None }];
+        let other = vec![KeyValue { key: "key2".to_string(), value: "value2".to_string(), skip_null: None }];
         let result = merge_key_value_vecs(&current, &other);
         assert_eq!(result.len(), 2);
         assert_eq!(result[0].key, "key1");
@@ -160,8 +166,8 @@ mod tests {
 
     #[test]
     fn test_merge_with_overlapping_keys() {
-        let current = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string() }];
-        let other = vec![KeyValue { key: "key1".to_string(), value: "value2".to_string() }];
+        let current = vec![KeyValue { key: "key1".to_string(), value: "value1".to_string(), skip_null: None }];
+        let other = vec![KeyValue { key: "key1".to_string(), value: "value2".to_string(), skip_null: None }];
         let result = merge_key_value_vecs(&current, &other);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].key, "key1");
