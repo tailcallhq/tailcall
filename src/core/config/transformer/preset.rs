@@ -15,7 +15,7 @@ pub struct Preset {
 
 impl Preset {
     pub fn is_invalid_threshold(threshold: f32) -> bool {
-        !(0.1..=1.0).contains(&threshold)
+        !(0.0..=1.0).contains(&threshold)
     }
 }
 
