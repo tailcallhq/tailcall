@@ -28,7 +28,7 @@ impl QueryEncoder {
                 async_graphql::Value::List(list) if !list.is_empty() => {
                     let encoded_values: Vec<String> =
                         list.iter().filter_map(convert_value).collect();
-                    
+
                     if encoded_values.is_empty() {
                         key.to_string()
                     } else {
