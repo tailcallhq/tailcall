@@ -19,7 +19,7 @@ impl QueryEncoder {
                 ValueString::String(val) => Some(format!("{}={}", key, val)),
             }
         } else {
-            None
+            Some(key.to_owned())
         }
     }
     fn encode_const_value(&self, key: &str, value: &async_graphql::Value) -> Option<String> {
