@@ -143,7 +143,7 @@ mod test {
                 let value = <$ty>::default();
 
                 $(
-                    assert!(value.validate()(&$value));
+                    assert!(value.validate::<async_graphql_value::ConstValue>()(&$value));
                 )+
             }
         };
@@ -158,7 +158,7 @@ mod test {
                 let value = <$ty>::default();
 
                 $(
-                    assert!(!value.validate()(&$value));
+                    assert!(!value.validate::<async_graphql_value::ConstValue>()(&$value));
                 )+
             }
         };
