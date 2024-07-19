@@ -128,6 +128,13 @@ impl Synth {
         let include = self.include(node);
 
         match parent {
+            ConstValue::Null => {
+                if node.type_of.is_nullable() {
+                    Ok(ConstValue::Null)
+                } else {
+                    Err(Positioned { pos: node.pos, node: ValidationError::ValueRequired.into() })
+                }
+            }
             // scalar values should be returned as is
             val if self.plan.field_is_scalar(node) => {
                 let validation = get_scalar(node.type_of.name());

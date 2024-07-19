@@ -30,6 +30,8 @@ pub enum ValidationError {
     ScalarInvalid { type_of: String, path: String },
     #[error(r#"internal: invalid item for enum "{type_of}""#)]
     EnumInvalid { type_of: String, path: String },
+    #[error("internal: non-null types require a return value")]
+    ValueRequired
 }
 
 #[derive(Debug, Clone, Error)]
