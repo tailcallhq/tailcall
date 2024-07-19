@@ -2,6 +2,8 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
+use super::jit::Directive;
+
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
@@ -68,6 +70,13 @@ pub fn print_directives<'a>(directives: impl Iterator<Item = &'a ConstDirective>
         .join(" ")
 }
 
+pub fn print_directives1<'a>(directives: impl Iterator<Item = &'a Directive<async_graphql_value::ConstValue>>) -> String {
+    directives
+        .map(|d| print_directive(&const_directive_to_sdl1(d)))
+        .collect::<Vec<String>>()
+        .join(" ")
+}
+
 fn print_pos_directives(directives: &[Positioned<ConstDirective>]) -> String {
     let mut output = print_directives(directives.iter().map(|directive| &directive.node));
 
@@ -101,6 +110,40 @@ fn print_schema(schema: &SchemaDefinition) -> String {
         directives, query, mutation, subscription
     )
 }
+
+fn const_directive_to_sdl1(directive: &Directive<async_graphql_value::ConstValue>) -> DirectiveDefinition {
+    DirectiveDefinition {
+        description: None,
+        name: pos(Name::new(directive.name.clone())),
+        arguments: directive
+            .arguments
+            .iter()
+            .filter_map(|arg| {
+                if arg.value.clone() != ConstValue::Null {
+                    Some(pos(InputValueDefinition {
+                        description: None,
+                        name: pos(Name::new(arg.name.clone())),
+                        ty: pos(Type {
+                            nullable: true,
+                            base: async_graphql::parser::types::BaseType::Named(Name::new(
+                                arg.value.clone().to_string(),
+                            )),
+                        }),
+                        default_value: Some(pos(ConstValue::String(
+                            arg.value.clone().to_string(),
+                        ))),
+                        directives: Vec::new(),
+                    }))
+                } else {
+                    None
+                }
+            })
+            .collect(),
+        is_repeatable: true,
+        locations: vec![],
+    }
+}
+
 fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
     DirectiveDefinition {
         description: None,

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use async_graphql::parser::types::{ConstDirective, OperationType};
+use async_graphql::parser::types::OperationType;
 use async_graphql::Pos;
 use serde::Deserialize;
 
@@ -103,7 +103,7 @@ pub struct Field<Extensions, Input> {
     pub extensions: Option<Extensions>,
     pub pos: Pos,
     pub is_scalar: bool,
-    pub directives: Vec<ConstDirective>,
+    pub directives: Vec<Directive<Input>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -141,7 +141,11 @@ impl<Extensions, Input> Field<Extensions, Input> {
                 .map(|arg| arg.try_map(&map))
                 .collect::<Result<_, _>>()?,
             is_scalar: self.is_scalar,
-            directives: self.directives,
+            directives: self
+                .directives
+                .into_iter()
+                .map(|directive| directive.try_map(&map))
+                .collect::<Result<_, _>>()?,
         })
     }
 }
@@ -312,5 +316,42 @@ impl<Input> OperationPlan<Input> {
 
     pub fn size(&self) -> usize {
         self.flat.len()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Directive<Input> {
+    pub name: String,
+    pub arguments: Vec<DirectiveArgs<Input>>,
+}
+
+impl<Input> Directive<Input> {
+    pub fn try_map<Output, Error>(
+        self,
+        map: impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<Directive<Output>, Error> {
+        Ok(Directive {
+            name: self.name,
+            arguments: self
+                .arguments
+                .into_iter()
+                .map(|arg| arg.try_map(&map))
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct DirectiveArgs<Input> {
+    pub name: String,
+    pub value: Input,
+}
+
+impl<Input> DirectiveArgs<Input> {
+    pub fn try_map<Output, Error>(
+        self,
+        map: impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<DirectiveArgs<Output>, Error> {
+        Ok(DirectiveArgs { name: self.name, value: map(self.value)? })
     }
 }

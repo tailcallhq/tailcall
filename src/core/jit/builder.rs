@@ -2,19 +2,18 @@ use std::collections::HashMap;
 use std::ops::Deref;
 
 use async_graphql::parser::types::{
-    ConstDirective, Directive, DocumentOperations, ExecutableDocument, FragmentDefinition,
-    OperationType, Selection, SelectionSet,
+    Directive, DocumentOperations, ExecutableDocument, FragmentDefinition, OperationType,
+    Selection, SelectionSet,
 };
 use async_graphql::Positioned;
 use async_graphql_value::{ConstValue, Value};
 
 use super::input_resolver::InputResolver;
-use super::model::*;
+use super::model::{Directive as JitDirective, *};
 use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
-use crate::core::jit::ResolveInputError;
 use crate::core::merge_right::MergeRight;
 
 #[derive(PartialEq, strum_macros::Display)]
@@ -125,24 +124,6 @@ impl Builder {
         }
     }
 
-    fn get_variable_value(
-        &self,
-        name: &str,
-        variables: &Variables<ConstValue>,
-        variable_definitions: &[Positioned<async_graphql::parser::types::VariableDefinition>],
-    ) -> Result<async_graphql::Value, BuildError> {
-        Ok(variable_definitions
-            .iter()
-            .find(|def| def.node.name.node == name)
-            .and_then(|def| {
-                variables
-                    .get(&def.node.name.node)
-                    .or_else(|| def.node.default_value())
-            })
-            .cloned()
-            .ok_or_else(|| ResolveInputError::VariableIsNotFound(name.to_string()))?)
-    }
-
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter(
@@ -151,8 +132,6 @@ impl Builder {
         type_of: &str,
         exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-        variables: &Variables<ConstValue>,
-        variable_definitions: &Vec<Positioned<async_graphql::parser::types::VariableDefinition>>,
     ) -> Result<Vec<Field<Flat, Value>>, BuildError> {
         let mut fields = vec![];
         for selection in &selection.items {
@@ -174,20 +153,14 @@ impl Builder {
                         }
                         let mut arguments = Vec::with_capacity(directive.arguments.len());
                         for (name, value) in &directive.arguments {
-                            arguments.push((
-                                name.clone(),
-                                value.position_node(value.node.clone().into_const_with(
-                                    |name| {
-                                        self.get_variable_value(
-                                            &name,
-                                            variables,
-                                            variable_definitions,
-                                        )
-                                    },
-                                )?),
-                            ));
+                            let arg_value = value.node.clone();
+                            let arg_name = name.node.clone().to_string();
+                            arguments.push(DirectiveArgs { name: arg_name, value: arg_value });
                         }
-                        directives.push(ConstDirective { name: directive.name.clone(), arguments });
+                        directives.push(JitDirective {
+                            name: directive.name.clone().to_string(),
+                            arguments,
+                        });
                     }
 
                     let (include, skip) = conditions.into_variable_tuple();
@@ -233,8 +206,6 @@ impl Builder {
                             type_of.name(),
                             Some(Flat::new(id.clone())),
                             fragments,
-                            variables,
-                            variable_definitions,
                         )?;
                         let name = gql_field
                             .alias
@@ -259,10 +230,6 @@ impl Builder {
                             directives,
                         };
 
-                        if flat_field.skip(variables) {
-                            continue;
-                        }
-
                         fields.push(flat_field);
                         fields = fields.merge_right(child_fields);
                     } else {
@@ -278,8 +245,6 @@ impl Builder {
                             fragment.type_condition.node.on.node.as_str(),
                             exts.clone(),
                             fragments,
-                            variables,
-                            variable_definitions,
                         )?);
                     }
                 }
@@ -317,14 +282,11 @@ impl Builder {
                 let name = self
                     .get_type(single.node.ty)
                     .ok_or(BuildError::RootOperationTypeNotDefined { operation: single.node.ty })?;
-                let variable_definitions = &single.node.variable_definitions;
                 fields.extend(self.iter(
                     &single.node.selection_set.node,
                     name,
                     None,
                     &fragments,
-                    variables,
-                    variable_definitions,
                 )?);
                 single.node.ty
             }
@@ -334,20 +296,20 @@ impl Builder {
                     let name = self.get_type(single.node.ty).ok_or(
                         BuildError::RootOperationTypeNotDefined { operation: single.node.ty },
                     )?;
-                    let variable_definitions = &single.node.variable_definitions;
                     fields.extend(self.iter(
                         &single.node.selection_set.node,
                         name,
                         None,
                         &fragments,
-                        variables,
-                        variable_definitions,
                     )?);
                     operation_type = single.node.ty;
                 }
                 operation_type
             }
         };
+
+        // remove the fields which are skipable.
+        fields.retain(|f| !f.skip(variables));
 
         let plan = OperationPlan::new(fields, operation_type);
         // TODO: operation from [ExecutableDocument] could contain definitions for
@@ -610,6 +572,9 @@ mod tests {
 
     #[test]
     fn test_directives() {
+        let mut variables = Variables::new();
+        variables.insert("includeName".to_string(), ConstValue::Boolean(true));
+
         let plan = plan(
             r#"
             query($includeName: Boolean! = true) {
@@ -619,7 +584,7 @@ mod tests {
                 }
             }
             "#,
-            &Variables::new(),
+            &variables,
         );
 
         assert!(plan.is_query());

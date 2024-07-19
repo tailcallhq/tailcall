@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use async_graphql::parser::types::{ConstDirective, OperationType};
+use async_graphql::parser::types::OperationType;
 use async_graphql::{Name, ServerError, Value};
 use indexmap::IndexMap;
 
-use crate::core::jit::Nested;
+use crate::core::jit::{Directive, DirectiveArgs, Nested};
 
 pub trait ResolverContextLike: Clone {
     fn value(&self) -> Option<&Value>;
@@ -74,7 +74,7 @@ impl<'a> ResolverContextLike for ResolverContext<'a> {
 pub struct SelectionField {
     name: String,
     args: Vec<(String, String)>,
-    directives: Option<Vec<ConstDirective>>,
+    directives: Option<Vec<Directive<async_graphql_value::ConstValue>>>,
     selection_set: Vec<SelectionField>,
 }
 
@@ -84,17 +84,30 @@ impl From<async_graphql::SelectionField<'_>> for SelectionField {
     }
 }
 
-impl<'a, Input: ToString> From<&'a crate::core::jit::Field<Nested<Input>, Input>>
-    for SelectionField
+impl<'a>
+    From<
+        &'a crate::core::jit::Field<
+            Nested<async_graphql_value::ConstValue>,
+            async_graphql_value::ConstValue,
+        >,
+    > for SelectionField
 {
-    fn from(value: &'a crate::core::jit::Field<Nested<Input>, Input>) -> Self {
+    fn from(
+        value: &'a crate::core::jit::Field<
+            Nested<async_graphql_value::ConstValue>,
+            async_graphql_value::ConstValue,
+        >,
+    ) -> Self {
         Self::from_jit_field(value)
     }
 }
 
 impl SelectionField {
-    fn from_jit_field<Input: ToString>(
-        field: &crate::core::jit::Field<Nested<Input>, Input>,
+    fn from_jit_field(
+        field: &crate::core::jit::Field<
+            Nested<async_graphql_value::ConstValue>,
+            async_graphql_value::ConstValue,
+        >,
     ) -> SelectionField {
         let name = field.name.clone();
         let selection_set = field.nested_iter().map(Self::from_jit_field).collect();
@@ -103,13 +116,13 @@ impl SelectionField {
             .iter()
             .filter_map(|a| a.value.as_ref().map(|v| (a.name.to_owned(), v.to_string())))
             .collect::<Vec<_>>();
-        let directives = if !field.directives.is_empty() {
+        let _directives = if !field.directives.is_empty() {
             Some(field.directives.clone())
         } else {
             None
         };
 
-        SelectionField { name, args, directives, selection_set }
+        SelectionField { name, args, directives: _directives, selection_set }
     }
 
     fn from_async_selection_field(field: async_graphql::SelectionField) -> SelectionField {
@@ -125,7 +138,22 @@ impl SelectionField {
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect::<Vec<_>>();
 
-        let directives = field.directives().ok();
+        let directives = field.directives().ok().map(|d| {
+            d.into_iter()
+                .map(|d| {
+                    let args = d
+                        .arguments
+                        .into_iter()
+                        .map(|(k, v)| {
+                            let arg_name = k.node.to_string();
+                            let arg_value = v.node;
+                            DirectiveArgs { name: arg_name, value: arg_value }
+                        })
+                        .collect::<Vec<_>>();
+                    Directive { name: d.name.node.to_string(), arguments: args }
+                })
+                .collect::<Vec<_>>()
+        });
         let selection_set = field
             .selection_set()
             .map(Self::from_async_selection_field)
@@ -134,7 +162,7 @@ impl SelectionField {
         Self { name, args, selection_set, directives }
     }
 
-    pub fn directives(&self) -> &Option<Vec<ConstDirective>> {
+    pub fn directives(&self) -> &Option<Vec<Directive<async_graphql_value::ConstValue>>> {
         &self.directives
     }
 

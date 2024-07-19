@@ -7,7 +7,7 @@ use reqwest::header::HeaderMap;
 
 use super::discriminator::TypeName;
 use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike, SelectionField};
-use crate::core::document::print_directives;
+use crate::core::document::print_directives1;
 use crate::core::http::RequestContext;
 
 // TODO: rename to ResolverContext
@@ -126,7 +126,7 @@ impl<'a, Ctx: ResolverContextLike> GraphQLOperationContext for EvalContext<'a, C
         selection_field
             .directives()
             .as_ref()
-            .map(|directives| print_directives(directives.iter()))
+            .map(|directives| print_directives1(directives.iter()))
     }
 
     fn selection_set(&self, related_fields: &RelatedFields) -> Option<String> {
@@ -163,7 +163,7 @@ fn format_selection_field(field: &SelectionField, related_fields: &RelatedFields
     let mut output = format!("{}{}", name, arguments);
 
     if let Some(directives) = field.directives() {
-        let directives = print_directives(directives.iter());
+        let directives = print_directives1(directives.iter());
 
         if !directives.is_empty() {
             output.push(' ');
