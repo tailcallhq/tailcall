@@ -4,7 +4,6 @@ use std::sync::Arc;
 use async_graphql::{Data, Executor, Response};
 use futures_util::stream::BoxStream;
 
-use super::IntoServerError;
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::jit;
