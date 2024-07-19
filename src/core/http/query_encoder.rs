@@ -123,7 +123,7 @@ mod tests {
         let raw_value: Option<ValueString> = None;
 
         let actual = encoder.encode("key", raw_value);
-        let expected = None;
+        let expected = Some("key".to_owned());
 
         assert_eq!(actual, expected);
     }

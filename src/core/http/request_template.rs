@@ -683,7 +683,7 @@ mod tests {
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
-            assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1");
+            assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1&c");
         }
 
         #[test]
@@ -725,7 +725,7 @@ mod tests {
             let req = tmpl.to_request(&ctx).unwrap();
             assert_eq!(
                 req.url().to_string(),
-                "http://localhost:3000/foo?b=foo&d=bar&f=baz"
+                "http://localhost:3000/foo?b=foo&d=bar&f=baz&e"
             );
         }
 
