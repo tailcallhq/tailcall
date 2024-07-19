@@ -2,17 +2,16 @@ use std::fmt::Debug;
 use std::mem;
 use std::sync::{Arc, Mutex};
 
-use async_graphql::Positioned;
 use derive_getters::Getters;
 use futures_util::future::join_all;
 
-use super::context::Context;
 use super::synth::Synthesizer;
+use super::{context::Context, LocationError};
 use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::json::JsonLike;
 
-type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Positioned<Error>>>>>;
+type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Error>>>>;
 
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
@@ -27,17 +26,18 @@ impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec, Input>
 where
     Output: for<'a> JsonLike<'a> + Debug,
     Input: Clone + Debug,
-    Synth: Synthesizer<Value = Result<Output, Positioned<Error>>, Variable = Input>,
+    Synth: Synthesizer<
+        Value = Result<Output, Error>,
+        Output = Result<Output, LocationError<Error>>,
+        Variable = Input,
+    >,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
     pub fn new(plan: OperationPlan<Input>, synth: Synth, exec: Exec) -> Self {
         Self { plan, synth, exec }
     }
 
-    async fn execute_inner(
-        &self,
-        request: Request<Input>,
-    ) -> Store<Result<Output, Positioned<Error>>> {
+    async fn execute_inner(&self, request: Request<Input>) -> Store<Result<Output, Error>> {
         let store = Arc::new(Mutex::new(Store::new()));
         let mut ctx = ExecutorInner::new(request, store.clone(), self.plan.to_owned(), &self.exec);
         ctx.init().await;
@@ -143,11 +143,7 @@ where
 
             let mut store = self.store.lock().unwrap();
 
-            store.set(
-                &field.id,
-                &data_path,
-                result.map_err(|e| Positioned::new(e, field.pos)),
-            );
+            store.set(&field.id, &data_path, result);
         }
 
         Ok(())

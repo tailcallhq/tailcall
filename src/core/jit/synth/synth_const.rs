@@ -1,17 +1,20 @@
-use async_graphql::{Name, Positioned};
+use async_graphql::{Name, PathSegment};
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use super::Synthesizer;
-use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
+use crate::core::jit::{
+    model::{Field, Nested},
+    LocationError,
+};
 use crate::core::jit::{DataPath, Error, OperationPlan, ValidationError, Variable, Variables};
 use crate::core::json::JsonLike;
 use crate::core::scalar::get_scalar;
 
 pub struct Synth {
     plan: OperationPlan<ConstValue>,
-    store: Store<Result<ConstValue, Positioned<Error>>>,
+    store: Store<Result<ConstValue, Error>>,
     variables: Variables<ConstValue>,
 }
 
@@ -39,7 +42,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
 impl Synth {
     pub fn new(
         plan: OperationPlan<ConstValue>,
-        store: Store<Result<ConstValue, Positioned<Error>>>,
+        store: Store<Result<ConstValue, Error>>,
         variables: Variables<ConstValue>,
     ) -> Self {
         Self { plan, store, variables }
@@ -50,7 +53,7 @@ impl Synth {
         !field.skip(&self.variables)
     }
 
-    pub fn synthesize(&self) -> Result<ConstValue, Positioned<Error>> {
+    pub fn synthesize(&self) -> Result<ConstValue, LocationError<Error>> {
         let mut data = IndexMap::default();
 
         for child in self.plan.as_nested().iter() {
@@ -75,7 +78,7 @@ impl Synth {
         node: &'b Field<Nested<ConstValue>, ConstValue>,
         parent: Option<&'b ConstValue>,
         data_path: &DataPath,
-    ) -> Result<ConstValue, Positioned<Error>> {
+    ) -> Result<ConstValue, LocationError<Error>> {
         // TODO: this implementation prefer parent value over value in the store
         // that's opposite to the way async_graphql engine works in tailcall
         match parent {
@@ -102,7 +105,14 @@ impl Synth {
                         }
 
                         match data {
-                            Data::Single(val) => self.iter(node, Some(&val.clone()?), data_path),
+                            Data::Single(val) => self.iter(
+                                node,
+                                Some(
+                                    &val.clone()
+                                        .map_err(|error| self.to_location_error(error, node))?,
+                                ),
+                                data_path,
+                            ),
                             _ => {
                                 // TODO: should bailout instead of returning Null
                                 Ok(ConstValue::Null)
@@ -124,7 +134,7 @@ impl Synth {
         node: &'b Field<Nested<ConstValue>, ConstValue>,
         parent: &'b ConstValue,
         data_path: &'b DataPath,
-    ) -> Result<ConstValue, Positioned<Error>> {
+    ) -> Result<ConstValue, LocationError<Error>> {
         let include = self.include(node);
 
         match parent {
@@ -145,11 +155,10 @@ impl Synth {
                 if validation(val) {
                     Ok(val.clone())
                 } else {
-                    Err(ValidationError::ScalarInvalid {
-                        type_of: node.type_of.name().to_string(),
-                        path: node.name.clone(),
-                    }
-                    .into())
+                    Err(
+                        ValidationError::ScalarInvalid { type_of: node.type_of.name().to_string() }
+                            .into(),
+                    )
                 }
             }
             val if self.plan.field_is_enum(node) => {
@@ -160,11 +169,10 @@ impl Synth {
                 {
                     Ok(val.clone())
                 } else {
-                    Err(ValidationError::EnumInvalid {
-                        type_of: node.type_of.name().to_string(),
-                        path: node.name.clone(),
-                    }
-                    .into())
+                    Err(
+                        ValidationError::EnumInvalid { type_of: node.type_of.name().to_string() }
+                            .into(),
+                    )
                 }
             }
             ConstValue::Object(obj) => {
@@ -222,7 +230,32 @@ impl Synth {
             }
             val => Ok(val.clone()), // cloning here would be cheaper than cloning whole value
         }
-        .map_err(|error| Positioned { pos: node.pos, node: error })
+        .map_err(|error| self.to_location_error(error, node))
+    }
+
+    fn to_location_error(
+        &self,
+        error: Error,
+        node: &Field<Nested<ConstValue>, ConstValue>,
+    ) -> LocationError<Error> {
+        // create path from the root to the current node in the fields tree
+        let path = {
+            let mut path = Vec::new();
+
+            let mut parent = self.plan.find_field(node.id.clone());
+
+            while let Some(field) = parent {
+                path.push(PathSegment::Field(field.name.to_string()));
+                parent = field
+                    .parent()
+                    .and_then(|id| self.plan.find_field(id.clone()));
+            }
+
+            path.reverse();
+            path
+        };
+
+        LocationError { error, pos: node.pos, path }
     }
 }
 
@@ -237,14 +270,15 @@ impl SynthConst {
 }
 
 impl Synthesizer for SynthConst {
-    type Value = Result<ConstValue, Positioned<Error>>;
+    type Value = Result<ConstValue, Error>;
+    type Output = Result<ConstValue, LocationError<Error>>;
     type Variable = ConstValue;
 
     fn synthesize(
         self,
         store: Store<Self::Value>,
         variables: Variables<Self::Variable>,
-    ) -> Self::Value {
+    ) -> Self::Output {
         Synth::new(self.plan, store, variables).synthesize()
     }
 }
