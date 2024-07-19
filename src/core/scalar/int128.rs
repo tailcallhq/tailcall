@@ -1,4 +1,3 @@
-use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
@@ -10,17 +9,7 @@ use crate::core::json::JsonLikeOwned;
 pub struct Int128(pub i128);
 
 impl super::Scalar for Int128 {
-    fn validate(&self) -> fn(&ConstValue) -> bool {
-        |value| {
-            if let ConstValue::String(n) = value {
-                n.parse::<i128>().is_ok()
-            } else {
-                false
-            }
-        }
-    }
-
-    fn validate_generic<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
         |value| {
             value
                 .as_str()

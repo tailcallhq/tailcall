@@ -1,4 +1,3 @@
-use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
@@ -14,11 +13,7 @@ pub struct Empty {
 }
 
 impl super::Scalar for Empty {
-    fn validate(&self) -> fn(&ConstValue) -> bool {
-        |_| true
-    }
-
-    fn validate_generic<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
         |_| true
     }
 
