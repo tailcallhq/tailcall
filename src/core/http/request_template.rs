@@ -52,16 +52,16 @@ impl RequestTemplate {
         // template.
         let mustache_eval = ValueStringEval::default();
 
-        let extra_qp = self.query.iter().map(|query| {
+        let extra_qp = self.query.iter().filter_map(|query| {
             let key = &query.key;
             let value = &query.value;
             let skip = query.skip_null;
             let parsed_value = mustache_eval.eval(value, ctx);
             if skip && parsed_value.is_none() {
-                return key.to_string();
+                None
+            } else {
+                Some(self.query_encoder.encode(key, parsed_value))
             }
-
-            self.query_encoder.encode(key, parsed_value)
         });
 
         let base_qp = url
@@ -214,11 +214,13 @@ impl TryFrom<Endpoint> for RequestTemplate {
         let query = endpoint
             .query
             .iter()
-            .map(|(k, v, skip)| Ok(Query {
-                key: k.as_str().to_string(),
-                value: Mustache::parse(v.as_str())?,
-                skip_null: *skip,
-            }))
+            .map(|(k, v, skip)| {
+                Ok(Query {
+                    key: k.as_str().to_string(),
+                    value: Mustache::parse(v.as_str())?,
+                    skip_null: *skip,
+                })
+            })
             .collect::<anyhow::Result<Vec<_>>>()?;
 
         let method = endpoint.method.clone().to_hyper();

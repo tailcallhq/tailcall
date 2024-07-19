@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -97,10 +98,8 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             for key in &keys {
                 let req = key.to_request();
                 let query_set: std::collections::HashMap<_, _> = req.url().query_pairs().collect();
-                let id = query_set.get(group_by.key()).ok_or(anyhow::anyhow!(
-                    "Unable to find key {} in query params",
-                    group_by.key()
-                ))?;
+                println!("{:?}", query_set);
+                let id = query_set.get(group_by.key()).unwrap_or(&Cow::Borrowed(""));
                 hashmap.insert(key.clone(), res.clone().body((self.body)(&body_value, id)));
             }
             Ok(hashmap)
