@@ -10,7 +10,7 @@ pub struct UInt64(pub u64);
 
 impl super::Scalar for UInt64 {
     fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
-        |value| value.as_u64().is_some()
+        |value| value.as_str().map_or(false, |s| s.parse::<u64>().is_ok())
     }
 
     fn schema(&self) -> Schema {
