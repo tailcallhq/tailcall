@@ -2,16 +2,20 @@ use async_graphql::parser::types::OperationType;
 use async_graphql::{ErrorExtensions, PathSegment};
 use thiserror::Error;
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
 #[error("Error while building the plan")]
 pub enum BuildError {
     #[error("Root Operation type not defined for {operation}")]
     RootOperationTypeNotDefined { operation: OperationType },
     #[error("ResolveInputError: {0}")]
     ResolveInputError(#[from] ResolveInputError),
+    #[error(r#"Unknown operation named "{0}""#)]
+    OperationNotFound(String),
+    #[error("Operation name required in request")]
+    OperationNameRequired,
 }
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
 #[error("Cannot resolve the input value")]
 pub enum ResolveInputError {
     #[error("Variable `{0}` is not defined")]
