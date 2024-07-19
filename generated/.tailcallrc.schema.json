@@ -837,6 +837,13 @@
         "key": {
           "type": "string"
         },
+        "skipNull": {
+          "description": "When specified in query params will skip the param whole value is null the default value of this argument is false",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "value": {
           "type": "string"
         }

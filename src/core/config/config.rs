@@ -360,9 +360,9 @@ impl Field {
             .is_some_and(|http| !http.group_by.is_empty())
             || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
             || self
-            .grpc
-            .as_ref()
-            .is_some_and(|grpc| !grpc.group_by.is_empty())
+                .grpc
+                .as_ref()
+                .is_some_and(|grpc| !grpc.group_by.is_empty())
     }
     pub fn into_list(mut self) -> Self {
         self.list = true;
@@ -392,10 +392,10 @@ impl Field {
     pub fn is_omitted(&self) -> bool {
         self.omit.is_some()
             || self
-            .modify
-            .as_ref()
-            .and_then(|m| m.omit)
-            .unwrap_or_default()
+                .modify
+                .as_ref()
+                .and_then(|m| m.omit)
+                .unwrap_or_default()
     }
 }
 
@@ -787,9 +787,9 @@ impl Config {
             &self.schema.mutation,
             &self.schema.subscription,
         ]
-            .iter()
-            .filter_map(|&root_name| root_name.as_ref())
-            .any(|root_name| root_name.to_lowercase() == type_name)
+        .iter()
+        .filter_map(|&root_name| root_name.as_ref())
+        .any(|root_name| root_name.to_lowercase() == type_name)
     }
 
     pub fn port(&self) -> u16 {
@@ -1133,8 +1133,8 @@ mod tests {
             }
             ",
         )
-            .to_result()
-            .unwrap();
+        .to_result()
+        .unwrap();
 
         let actual = config.unused_types();
         let mut expected = HashSet::new();

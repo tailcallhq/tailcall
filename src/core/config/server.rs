@@ -289,28 +289,68 @@ mod tests {
 
     fn get_default_left_vec() -> Vec<KeyValue> {
         [
-            KeyValue { key: "left".to_string(), value: "From Left".to_string(), skip_null: None },
-            KeyValue { key: "1".to_string(), value: "1, Left".to_string(), skip_null: None },
-            KeyValue { key: "2".to_string(), value: "2, Left".to_string(), skip_null: None },
+            KeyValue {
+                key: "left".to_string(),
+                value: "From Left".to_string(),
+                skip_null: None,
+            },
+            KeyValue {
+                key: "1".to_string(),
+                value: "1, Left".to_string(),
+                skip_null: None,
+            },
+            KeyValue {
+                key: "2".to_string(),
+                value: "2, Left".to_string(),
+                skip_null: None,
+            },
         ]
         .to_vec()
     }
 
     fn get_default_right_vec() -> Vec<KeyValue> {
         [
-            KeyValue { key: "right".to_string(), value: "From Right".to_string(), skip_null: None },
-            KeyValue { key: "1".to_string(), value: "1, Right".to_string(), skip_null: None },
-            KeyValue { key: "2".to_string(), value: "2, Right".to_string(), skip_null: None },
+            KeyValue {
+                key: "right".to_string(),
+                value: "From Right".to_string(),
+                skip_null: None,
+            },
+            KeyValue {
+                key: "1".to_string(),
+                value: "1, Right".to_string(),
+                skip_null: None,
+            },
+            KeyValue {
+                key: "2".to_string(),
+                value: "2, Right".to_string(),
+                skip_null: None,
+            },
         ]
         .to_vec()
     }
 
     fn get_sorted_expected_merge_value() -> Vec<KeyValue> {
         let mut res = [
-            KeyValue { key: "right".to_string(), value: "From Right".to_string(), skip_null: None },
-            KeyValue { key: "left".to_string(), value: "From Left".to_string(), skip_null: None },
-            KeyValue { key: "1".to_string(), value: "1, Right".to_string(), skip_null: None },
-            KeyValue { key: "2".to_string(), value: "2, Right".to_string(), skip_null: None },
+            KeyValue {
+                key: "right".to_string(),
+                value: "From Right".to_string(),
+                skip_null: None,
+            },
+            KeyValue {
+                key: "left".to_string(),
+                value: "From Left".to_string(),
+                skip_null: None,
+            },
+            KeyValue {
+                key: "1".to_string(),
+                value: "1, Right".to_string(),
+                skip_null: None,
+            },
+            KeyValue {
+                key: "2".to_string(),
+                value: "2, Right".to_string(),
+                skip_null: None,
+            },
         ]
         .to_vec();
         res.sort_by(|a, b| a.key.cmp(&b.key));

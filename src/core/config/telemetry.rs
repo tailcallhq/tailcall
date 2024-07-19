@@ -145,14 +145,22 @@ mod tests {
         let exporter_otlp_1 = Telemetry {
             export: Some(TelemetryExporter::Otlp(OtlpExporter {
                 url: "test-url".to_owned(),
-                headers: vec![KeyValue { key: "header_a".to_owned(), value: "a".to_owned(), skip_null: None }],
+                headers: vec![KeyValue {
+                    key: "header_a".to_owned(),
+                    value: "a".to_owned(),
+                    skip_null: None,
+                }],
             })),
             request_headers: vec!["Api-Key-A".to_owned()],
         };
         let exporter_otlp_2 = Telemetry {
             export: Some(TelemetryExporter::Otlp(OtlpExporter {
                 url: "test-url-2".to_owned(),
-                headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned(), skip_null: None }],
+                headers: vec![KeyValue {
+                    key: "header_b".to_owned(),
+                    value: "b".to_owned(),
+                    skip_null: None,
+                }],
             })),
             request_headers: vec!["Api-Key-B".to_owned()],
         };
@@ -201,7 +209,11 @@ mod tests {
             Telemetry {
                 export: Some(TelemetryExporter::Otlp(OtlpExporter {
                     url: "test-url-2".to_owned(),
-                    headers: vec![KeyValue { key: "header_b".to_owned(), value: "b".to_owned(), skip_null: None }]
+                    headers: vec![KeyValue {
+                        key: "header_b".to_owned(),
+                        value: "b".to_owned(),
+                        skip_null: None
+                    }]
                 })),
                 request_headers: vec!["Api-Key-A".to_string(), "Api-Key-B".to_string(),]
             }

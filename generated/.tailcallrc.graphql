@@ -540,6 +540,11 @@ input Step {
 
 input KeyValue {
   key: String!
+  """
+  When specified in query params will skip the param whole value is null the default 
+  value of this argument is false
+  """
+  skipNull: Boolean
   value: String!
 }
 
