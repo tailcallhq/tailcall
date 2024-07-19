@@ -11,7 +11,7 @@ use schemars::Map;
 use serde_json::{json, Value};
 use tailcall::cli;
 use tailcall::core::config::Config;
-use tailcall::core::scalar::CUSTOM_SCALARS;
+use tailcall::core::scalar::{Scalar, CUSTOM_SCALARS};
 use tailcall::core::tracing::default_tracing_for_name;
 use tailcall::core::FileIO;
 
