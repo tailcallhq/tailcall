@@ -280,6 +280,14 @@ pub struct OperationPlan<Input> {
     pub index: Arc<Index>,
 }
 
+impl<Input> std::fmt::Debug for OperationPlan<Input> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OperationPlan")
+            .field("operation_type", &self.operation_type)
+            .finish()
+    }
+}
+
 impl<Input> OperationPlan<Input> {
     pub fn try_map<Output, Error>(
         self,
