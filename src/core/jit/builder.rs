@@ -607,4 +607,22 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_directives() {
+        let plan = plan(
+            r#"
+            query($includeName: Boolean! = true) {
+                users {
+                    id @options(paging: $includeName)
+                    name @include(if: $includeName)
+                }
+            }
+            "#,
+            &Variables::new(),
+        );
+
+        assert!(plan.is_query());
+        insta::assert_debug_snapshot!(plan.into_nested());
+    }
 }

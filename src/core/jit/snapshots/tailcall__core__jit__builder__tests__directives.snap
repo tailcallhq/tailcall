@@ -1,0 +1,64 @@
+---
+source: src/core/jit/builder.rs
+expression: plan.into_nested()
+---
+[
+    Field {
+        id: 0,
+        name: "users",
+        ir: "Some(..)",
+        type_of: [User],
+        extensions: Some(
+            Nested(
+                [
+                    Field {
+                        id: 1,
+                        name: "id",
+                        type_of: ID!,
+                        is_scalar: true,
+                        directives: [
+                            ConstDirective {
+                                name: Positioned {
+                                    pos: Pos(4:25),
+                                    node: Name(
+                                        "options",
+                                    ),
+                                },
+                                arguments: [
+                                    (
+                                        Positioned {
+                                            pos: Pos(4:33),
+                                            node: Name(
+                                                "paging",
+                                            ),
+                                        },
+                                        Positioned {
+                                            pos: Pos(4:41),
+                                            node: Boolean(
+                                                true,
+                                            ),
+                                        },
+                                    ),
+                                ],
+                            },
+                        ],
+                    },
+                    Field {
+                        id: 2,
+                        name: "name",
+                        type_of: String!,
+                        is_scalar: true,
+                        include: Some(
+                            Variable(
+                                "includeName",
+                            ),
+                        ),
+                        directives: [],
+                    },
+                ],
+            ),
+        ),
+        is_scalar: false,
+        directives: [],
+    },
+]
