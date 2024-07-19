@@ -52,13 +52,13 @@ impl RequestTemplate {
         // template.
         let mustache_eval = ValueStringEval::default();
 
-        let extra_qp = self.query.iter().filter_map(|query| {
+        let extra_qp = self.query.iter().map(|query| {
             let key = &query.key;
             let value = &query.value;
             let skip = query.skip_null;
             let parsed_value = mustache_eval.eval(value, ctx);
             if skip && parsed_value.is_none() {
-                return None;
+                return key.to_string();
             }
 
             self.query_encoder.encode(key, parsed_value)
@@ -734,7 +734,7 @@ mod tests {
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
-            assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1");
+            assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1&c");
         }
 
         #[test]
@@ -776,7 +776,7 @@ mod tests {
             let req = tmpl.to_request(&ctx).unwrap();
             assert_eq!(
                 req.url().to_string(),
-                "http://localhost:3000/foo?b=foo&d=bar&f=baz"
+                "http://localhost:3000/foo?b=foo&d=bar&f=baz&e"
             );
         }
 
