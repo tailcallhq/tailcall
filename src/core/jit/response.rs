@@ -1,9 +1,9 @@
-use async_graphql::Positioned;
+use async_graphql::{Positioned, ServerError};
 use derive_setters::Setters;
 use serde::Serialize;
 
-use super::IntoServerError;
 use crate::core::jit;
+use crate::core::lift::Lift;
 
 #[derive(Setters, Serialize)]
 pub struct Response<Value, Error> {
@@ -35,7 +35,7 @@ impl Response<async_graphql::Value, jit::Error> {
             resp = resp.extension(name, value);
         }
         for error in self.errors {
-            resp.errors.push(error.into_server_error());
+            resp.errors.push(Lift::<ServerError>::from(error).take());
         }
         resp
     }
