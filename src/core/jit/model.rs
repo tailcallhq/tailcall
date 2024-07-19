@@ -320,7 +320,8 @@ impl<Input> OperationPlan<Input> {
     }
 }
 
-/// DirectiveAdapter helps to bridge the gap between async_graphql's ConstDirective and our custom Directive implementation.
+/// DirectiveAdapter helps to bridge the gap between async_graphql's
+/// ConstDirective and our custom Directive implementation.
 pub trait DirectiveAdapter {
     fn name(&self) -> &str;
     fn arguments(&self) -> Vec<(String, &ConstValue)>;
