@@ -348,7 +348,7 @@ impl DirectiveAdapter for Directive<ConstValue> {
     fn arguments(&self) -> Vec<(String, &ConstValue)> {
         self.arguments
             .iter()
-            .map(|arg| (arg.name.to_string(), &arg.value))
+            .map(|(k, v)| (k.to_owned(), v))
             .collect::<Vec<_>>()
     }
 }
@@ -356,7 +356,7 @@ impl DirectiveAdapter for Directive<ConstValue> {
 #[derive(Clone, Debug)]
 pub struct Directive<Input> {
     pub name: String,
-    pub arguments: Vec<DirectiveArgs<Input>>,
+    pub arguments: Vec<(String, Input)>,
 }
 
 impl<Input> Directive<Input> {
@@ -369,23 +369,8 @@ impl<Input> Directive<Input> {
             arguments: self
                 .arguments
                 .into_iter()
-                .map(|arg| arg.try_map(&map))
-                .collect::<Result<_, _>>()?,
+                .filter_map(|(k, v)| map(v).ok().map(|v| (k, v)))
+                .collect::<Vec<_>>(),
         })
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct DirectiveArgs<Input> {
-    pub name: String,
-    pub value: Input,
-}
-
-impl<Input> DirectiveArgs<Input> {
-    pub fn try_map<Output, Error>(
-        self,
-        map: impl Fn(Input) -> Result<Output, Error>,
-    ) -> Result<DirectiveArgs<Output>, Error> {
-        Ok(DirectiveArgs { name: self.name, value: map(self.value)? })
     }
 }

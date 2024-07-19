@@ -151,12 +151,12 @@ impl Builder {
                         if directive.name.node == "skip" || directive.name.node == "include" {
                             continue;
                         }
-                        let mut arguments = Vec::with_capacity(directive.arguments.len());
-                        for (name, value) in &directive.arguments {
-                            let arg_value = value.node.clone();
-                            let arg_name = name.node.clone().to_string();
-                            arguments.push(DirectiveArgs { name: arg_name, value: arg_value });
-                        }
+                        let arguments = directive
+                            .arguments
+                            .iter()
+                            .map(|(k, v)| (k.node.to_string(), v.node.clone()))
+                            .collect::<Vec<_>>();
+
                         directives.push(JitDirective {
                             name: directive.name.clone().to_string(),
                             arguments,
