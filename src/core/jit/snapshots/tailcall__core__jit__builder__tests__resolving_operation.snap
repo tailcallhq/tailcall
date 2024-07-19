@@ -5,22 +5,9 @@ expression: plan.into_nested()
 [
     Field {
         id: 0,
-        name: "user",
+        name: "posts",
         ir: "Some(..)",
-        type_of: User,
-        args: [
-            Arg {
-                id: 0,
-                name: "id",
-                type_of: ID!,
-                value: Some(
-                    Number(
-                        Number(1),
-                    ),
-                ),
-                default_value: None,
-            },
-        ],
+        type_of: [Post],
         extensions: Some(
             Nested(
                 [
@@ -32,7 +19,13 @@ expression: plan.into_nested()
                     },
                     Field {
                         id: 2,
-                        name: "name",
+                        name: "userId",
+                        type_of: ID!,
+                        is_scalar: true,
+                    },
+                    Field {
+                        id: 3,
+                        name: "title",
                         type_of: String!,
                         is_scalar: true,
                     },

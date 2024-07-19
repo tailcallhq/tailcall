@@ -1,8 +1,10 @@
-use super::super::Result;
+use async_graphql::Positioned;
+use crate::core::jit::{Error, ValidationError};
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::synth::Synthesizer;
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
+use crate::core::scalar::get_scalar;
 
 // TODO: rename
 pub struct AlsoSynth<Value> {
@@ -16,7 +18,7 @@ impl<Value: JsonLikeOwned> AlsoSynth<Value> {
 }
 
 impl<Value: JsonLikeOwned + Clone> Synthesizer for AlsoSynth<Value> {
-    type Value = Result<Value>;
+    type Value = Result<Value, Positioned<Error>>;
     type Variable = async_graphql_value::ConstValue;
 
     fn synthesize(
@@ -31,7 +33,7 @@ impl<Value: JsonLikeOwned + Clone> Synthesizer for AlsoSynth<Value> {
 
 pub struct Synth<Value> {
     selection: Vec<Field<Nested<Value>, Value>>,
-    store: Store<Result<Value>>,
+    store: Store<Result<Value, Positioned<Error>>>,
     variables: Variables<async_graphql_value::ConstValue>,
 }
 
@@ -57,7 +59,7 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: OperationPlan<Value>,
-        store: Store<Result<Value>>,
+        store: Store<Result<Value, Positioned<Error>>>,
         variables: Variables<async_graphql_value::ConstValue>,
     ) -> Self {
         Self { selection: plan.into_nested(), store, variables }
@@ -69,7 +71,7 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
     }
 
     #[inline(always)]
-    pub fn synthesize(&self) -> Result<Value> {
+    pub fn synthesize(&self) -> Result<Value, Positioned<Error>> {
         let mut data = Value::JsonObject::new();
 
         for child in self.selection.iter() {
@@ -95,7 +97,7 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
         node: &'b Field<Nested<Value>, Value>,
         parent: Option<&'b Value>,
         data_path: &DataPath,
-    ) -> Result<Value> {
+    ) -> Result<Value, Positioned<Error>> {
         // TODO: this implementation prefer parent value over value in the store
         // that's opposite to the way async_graphql engine works in tailcall
         match parent {
@@ -144,8 +146,29 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
         node: &'b Field<Nested<Value>, Value>,
         parent: &'b Value,
         data_path: &'b DataPath,
-    ) -> Result<Value> {
+    ) -> Result<Value, Positioned<Error>> {
         let include = self.include(node);
+        if include && node.is_scalar {
+            let validation = get_scalar(node.type_of.name());
+
+            // TODO: add validation for input type as well. But input types are not checked
+            // by async_graphql anyway so it should be done after replacing
+            // default engine with JIT
+            if validation(parent) {
+                Ok(parent.clone())
+            } else {
+                Err(Positioned {
+                    pos: node.pos,
+                    node: ValidationError::ScalarInvalid {
+                        type_of: node.type_of.name().to_string(),
+                        path: node.name.clone(),
+                    }
+                        .into(),
+                })
+            }
+        }else {
+
+        }
         match (parent.as_array(), parent.as_object()) {
             (_, Some(obj)) => {
                 let mut ans = Value::JsonObject::new();
@@ -305,7 +328,7 @@ mod tests {
         let config = ConfigModule::from(config);
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
-        let plan = builder.build(&Variables::new()).unwrap();
+        let plan = builder.build(&Variables::new(), None).unwrap();
         let plan = plan
             .try_map(&|v| {
                 let v = v.into_json()?;

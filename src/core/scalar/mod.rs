@@ -35,32 +35,55 @@ mod uint8;
 mod url;
 
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
+use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
 use schemars::schema::Schema;
 
+use crate::core::json::JsonLikeOwned;
+
+#[enum_dispatch(Scalar)]
+pub enum ScalarType {
+    Email,
+    PhoneNumber,
+    Date,
+    Url,
+    JSON,
+    Empty,
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    Int128,
+    UInt8,
+    UInt16,
+    UInt32,
+    UInt64,
+    UInt128,
+    Bytes,
+}
+
 lazy_static! {
-    pub static ref CUSTOM_SCALARS: HashMap<String, Arc<dyn Scalar + Send + Sync>> = {
-        let scalars: Vec<Arc<dyn Scalar + Send + Sync>> = vec![
-            Arc::new(Email::default()),
-            Arc::new(PhoneNumber::default()),
-            Arc::new(Date::default()),
-            Arc::new(Url::default()),
-            Arc::new(JSON::default()),
-            Arc::new(Empty::default()),
-            Arc::new(Int8::default()),
-            Arc::new(Int16::default()),
-            Arc::new(Int32::default()),
-            Arc::new(Int64::default()),
-            Arc::new(Int128::default()),
-            Arc::new(UInt8::default()),
-            Arc::new(UInt16::default()),
-            Arc::new(UInt32::default()),
-            Arc::new(UInt64::default()),
-            Arc::new(UInt128::default()),
-            Arc::new(Bytes::default()),
+    pub static ref CUSTOM_SCALARS: HashMap<String, ScalarType> = {
+        let scalars: Vec<ScalarType> = vec![
+            Email::default().into(),
+            PhoneNumber::default().into(),
+            Date::default().into(),
+            Url::default().into(),
+            JSON::default().into(),
+            Empty::default().into(),
+            Int8::default().into(),
+            Int16::default().into(),
+            Int32::default().into(),
+            Int64::default().into(),
+            Int128::default().into(),
+            UInt8::default().into(),
+            UInt16::default().into(),
+            UInt32::default().into(),
+            UInt64::default().into(),
+            UInt128::default().into(),
+            Bytes::default().into(),
         ];
         let mut hm = HashMap::new();
 
@@ -84,9 +107,10 @@ lazy_static! {
 pub fn is_predefined_scalar(type_name: &str) -> bool {
     SCALAR_TYPES.contains(type_name)
 }
-
+#[enum_dispatch]
 pub trait Scalar {
-    fn validate(&self) -> fn(&ConstValue) -> bool;
+    // Drop validate when we switch to jit
+    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool;
     fn schema(&self) -> Schema;
     fn name(&self) -> String {
         std::any::type_name::<Self>()
@@ -108,7 +132,7 @@ pub fn get_scalar(name: &str) -> fn(&ConstValue) -> bool {
 mod test {
     use schemars::schema::Schema;
 
-    use crate::core::scalar::CUSTOM_SCALARS;
+    use crate::core::scalar::{Scalar, CUSTOM_SCALARS};
 
     /// generates test asserts for valid scalar inputs
     #[macro_export]
@@ -119,7 +143,7 @@ mod test {
                 let value = <$ty>::default();
 
                 $(
-                    assert!(value.validate()(&$value));
+                    assert!(value.validate::<async_graphql_value::ConstValue>()(&$value));
                 )+
             }
         };
@@ -134,7 +158,7 @@ mod test {
                 let value = <$ty>::default();
 
                 $(
-                    assert!(!value.validate()(&$value));
+                    assert!(!value.validate::<async_graphql_value::ConstValue>()(&$value));
                 )+
             }
         };
