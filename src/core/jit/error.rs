@@ -1,5 +1,5 @@
 use async_graphql::parser::types::OperationType;
-use async_graphql::{ErrorExtensions, PathSegment};
+use async_graphql::{ErrorExtensions, PathSegment, Pos, Positioned, ServerError};
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
@@ -67,3 +67,39 @@ impl Error {
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
+
+impl Error {
+    fn into_server_error_with_pos(self, pos: Option<Pos>) -> ServerError {
+        let extensions = self.extend().extensions;
+        let mut server_error = ServerError::new(self.to_string(), pos);
+
+        server_error.extensions = extensions;
+        server_error.path = self.path();
+
+        server_error
+    }
+}
+
+pub trait IntoServerError {
+    fn into_server_error(self) -> ServerError;
+}
+
+impl IntoServerError for Error {
+    fn into_server_error(self) -> ServerError {
+        match self {
+            // async_graphql::parser::Error has special conversion to ServerError
+            Error::ParseError(error) => error.into(),
+            error => error.into_server_error_with_pos(None),
+        }
+    }
+}
+
+impl IntoServerError for Positioned<Error> {
+    fn into_server_error(self) -> ServerError {
+        match self.node {
+            // async_graphql::parser::Error already has builtin positioning
+            Error::ParseError(error) => error.into(),
+            error => error.into_server_error_with_pos(Some(self.pos)),
+        }
+    }
+}
