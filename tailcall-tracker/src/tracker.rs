@@ -1,8 +1,8 @@
 use reqwest::header::{HeaderName, HeaderValue};
 
+use super::Result;
 use crate::check_tracking::check_tracking;
 use crate::event::Event;
-use super::Result;
 
 const API_SECRET: &str = "GVaEzXFeRkCI9YBIylbEjQ";
 const MEASUREMENT_ID: &str = "G-JEP3QDWT0G";
