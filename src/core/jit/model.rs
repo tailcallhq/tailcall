@@ -320,9 +320,10 @@ impl<Input> OperationPlan<Input> {
     }
 }
 
+/// DirectiveAdapter helps to bridge the gap between async_graphql's ConstDirective and our custom Directive implementation.
 pub trait DirectiveAdapter {
     fn name(&self) -> &str;
-    fn arguments(&self) -> Vec<(String, ConstValue)>;
+    fn arguments(&self) -> Vec<(String, &ConstValue)>;
 }
 
 impl DirectiveAdapter for ConstDirective {
@@ -330,10 +331,10 @@ impl DirectiveAdapter for ConstDirective {
         &self.name.node
     }
 
-    fn arguments(&self) -> Vec<(String, ConstValue)> {
+    fn arguments(&self) -> Vec<(String, &ConstValue)> {
         self.arguments
             .iter()
-            .map(|(k, v)| (k.node.to_string(), v.node.clone()))
+            .map(|(k, v)| (k.node.to_string(), &v.node))
             .collect::<Vec<_>>()
     }
 }
@@ -343,10 +344,10 @@ impl DirectiveAdapter for Directive<ConstValue> {
         &self.name
     }
 
-    fn arguments(&self) -> Vec<(String, ConstValue)> {
+    fn arguments(&self) -> Vec<(String, &ConstValue)> {
         self.arguments
             .iter()
-            .map(|arg| (arg.name.clone(), arg.value.clone()))
+            .map(|arg| (arg.name.to_string(), &arg.value))
             .collect::<Vec<_>>()
     }
 }
