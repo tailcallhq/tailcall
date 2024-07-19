@@ -1,8 +1,5 @@
 use std::collections::HashMap;
 
-pub trait JsonLikeOwned: for<'json> JsonLike<'json> {}
-impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}
-
 /// A trait for objects that can be used as JSON values
 pub trait JsonLike<'a>: Sized {
     type JsonObject: JsonObjectLike<'a, Value = Self>;

@@ -2,7 +2,7 @@ use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::JsonLike;
 
 /// Empty scalar type represents an empty value.
 #[derive(JsonSchema, Default, ScalarDefinition)]
@@ -13,7 +13,7 @@ pub struct Empty {
 }
 
 impl super::Scalar for Empty {
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate<Value: for<'a> JsonLike<'a>>(&self) -> fn(&Value) -> bool {
         |_| true
     }
 

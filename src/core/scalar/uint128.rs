@@ -2,14 +2,14 @@ use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::JsonLike;
 
 /// Represents unsigned integer type 128bit size as string
 #[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct UInt128(pub u128);
 
 impl super::Scalar for UInt128 {
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate<Value: for<'a> JsonLike<'a>>(&self) -> fn(&Value) -> bool {
         |value| {
             value
                 .as_str()
