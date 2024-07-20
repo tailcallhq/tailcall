@@ -338,61 +338,6 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
         }
 
         hyper::Method::GET => {
-            /*
-            Method::GET => {
-                let url = url::Url::parse(&format!("http://tailcall{}", req.uri()))?;
-
-                let query = match url.query_pairs().find(|x| x.0 == "query") {
-                    Some(x) => x.1.into_owned(),
-                    None => {
-                        let mut response = async_graphql::Response::default();
-                        let server_error = ServerError::new(
-                            "GraphQL request is missing query parameter".to_string(),
-                            None,
-                        );
-                        response.errors = vec![server_error];
-
-                        return GraphQLResponse::from(response).into_response(StatusCode::BAD_REQUEST, req.headers());
-                    }
-                };
-
-                let operation_name = url
-                    .query_pairs()
-                    .find(|x| x.0 == "operationName")
-                    .map(|x| x.1.into_owned());
-                let variables = url
-                    .query_pairs()
-                    .find(|x| x.0 == "variables")
-                    .map(|x| x.1.into_owned());
-
-                let mut request = async_graphql::Request::new(query);
-
-                request.operation_name = operation_name;
-
-                if let Some(variables) = variables {
-                    let variables = match serde_json::from_str::<async_graphql_value::Variables>(&variables) {
-                        Ok(x) => x,
-                        Err(err) => {
-                            tracing::error!("Failed to parse request variables: {}", variables);
-
-                            let mut response = async_graphql::Response::default();
-                            let server_error = ServerError::new(
-                                format!("Unexpected GraphQL Request Variables: {}", err),
-                                None,
-                            );
-                            response.errors = vec![server_error];
-
-                            return GraphQLResponse::from(response).into_response(StatusCode::BAD_REQUEST, req.headers());
-                        }
-                    };
-                    request.variables = variables;
-                }
-
-                let request = crate::core::async_graphql_hyper::GraphQLRequest(request);
-                request.data(req_ctx.clone()).execute(&app_ctx.schema)
-            }
-
-                */
             if let Some(TelemetryExporter::Prometheus(prometheus)) =
                 app_ctx.blueprint.telemetry.export.as_ref()
             {

@@ -50,7 +50,9 @@ pub trait GraphQLRequestLike: Hash + Send {
 
 #[derive(Debug, Deserialize)]
 pub struct GraphQLBatchRequest(pub async_graphql::BatchRequest);
+
 impl GraphQLBatchRequest {}
+
 impl Hash for GraphQLBatchRequest {
     //TODO: Fix Hash implementation for BatchRequest, which should ideally batch
     // execution of individual requests instead of the whole chunk of requests as
@@ -66,6 +68,7 @@ impl Hash for GraphQLBatchRequest {
         }
     }
 }
+
 #[async_trait::async_trait]
 impl GraphQLRequestLike for GraphQLBatchRequest {
     fn data<D: Any + Clone + Send + Sync>(mut self, data: D) -> Self {
@@ -98,6 +101,7 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
 pub struct GraphQLRequest(pub async_graphql::Request);
 
 impl GraphQLRequest {}
+
 impl Hash for GraphQLRequest {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.0.query.hash(state);
@@ -108,6 +112,7 @@ impl Hash for GraphQLRequest {
         }
     }
 }
+
 #[async_trait::async_trait]
 impl GraphQLRequestLike for GraphQLRequest {
     #[must_use]
@@ -134,11 +139,13 @@ impl GraphQLRequestLike for GraphQLRequest {
 
 #[derive(Debug, Serialize)]
 pub struct GraphQLResponse(pub async_graphql::BatchResponse);
+
 impl From<async_graphql::BatchResponse> for GraphQLResponse {
     fn from(batch: async_graphql::BatchResponse) -> Self {
         Self(batch)
     }
 }
+
 impl From<async_graphql::Response> for GraphQLResponse {
     fn from(res: async_graphql::Response) -> Self {
         Self(res.into())
@@ -195,7 +202,7 @@ impl GraphQLResponse {
         headers: &HeaderMap,
     ) -> Result<Response<Body>> {
         let resp_content_ty = headers
-            .get(CONTENT_TYPE)
+            .get(ACCEPT)
             .map(|v| v.as_ref())
             .filter(|v| (*v).eq(APPLICATION_GRAPHQL_JSON.as_ref()))
             .unwrap_or(APPLICATION_JSON.as_ref());
@@ -229,6 +236,7 @@ impl GraphQLResponse {
         if !self.0.is_ok() && headers.get(ACCEPT) == Some(&APPLICATION_GRAPHQL_JSON) {
             status = StatusCode::BAD_REQUEST;
         }
+
         self.build_response(status, self.default_body()?, headers)
     }
 
