@@ -2,6 +2,8 @@ use async_graphql::parser::types::OperationType;
 use async_graphql::{ErrorExtensions, PathSegment, Pos, Positioned, ServerError};
 use thiserror::Error;
 
+use crate::core::lift::Lift;
+
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 #[error("Error while building the plan")]
 pub enum BuildError {
@@ -78,14 +80,8 @@ impl Error {
 
         server_error
     }
-}
 
-pub trait IntoServerError {
-    fn into_server_error(self) -> ServerError;
-}
-
-impl IntoServerError for Error {
-    fn into_server_error(self) -> ServerError {
+    pub fn into_server_error(self) -> ServerError {
         match self {
             // async_graphql::parser::Error has special conversion to ServerError
             Error::ParseError(error) => error.into(),
@@ -94,12 +90,13 @@ impl IntoServerError for Error {
     }
 }
 
-impl IntoServerError for Positioned<Error> {
-    fn into_server_error(self) -> ServerError {
-        match self.node {
+impl From<Positioned<Error>> for Lift<ServerError> {
+    fn from(a: Positioned<Error>) -> Self {
+        (match a.node {
             // async_graphql::parser::Error already has builtin positioning
             Error::ParseError(error) => error.into(),
-            error => error.into_server_error_with_pos(Some(self.pos)),
-        }
+            error => error.into_server_error_with_pos(Some(a.pos)),
+        })
+        .into()
     }
 }
