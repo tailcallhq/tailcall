@@ -201,6 +201,7 @@ impl GraphQLResponse {
         body: Body,
         headers: &HeaderMap,
     ) -> Result<Response<Body>> {
+        // Choose b/w APPLICATION_JSON and APPLICATION_GRAPHQL_JSON
         let resp_content_ty = headers
             .get(ACCEPT)
             .map(|v| v.as_ref())
