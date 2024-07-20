@@ -12,10 +12,6 @@ impl JsonObjectLike for serde_json::Map<String, serde_json::Value> {
     fn get_key(&self, key: &str) -> Option<&serde_json::Value> {
         self.get(key)
     }
-
-    // fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
-    //     self.insert(key.to_owned(), value);
-    // }
 }
 
 impl JsonLike for serde_json::Value {
@@ -30,7 +26,7 @@ impl JsonLike for serde_json::Value {
         self.as_array()
     }
 
-    fn as_object<'a>(&'a self) -> Option<&Self::JsonObject<'a>> {
+    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         self.as_object()
     }
 

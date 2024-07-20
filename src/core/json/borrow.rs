@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+
 use serde_json_borrow::{ObjectAsVec, Value};
 
 use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike};
@@ -14,11 +15,6 @@ impl<'a> JsonObjectLike for ObjectAsVec<'a> {
     fn get_key<'b>(&'b self, key: &str) -> Option<&Self::Value<'b>> {
         self.get(key)
     }
-
-
-    // fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
-    //     self.insert(key, value);
-    // }
 }
 
 impl<'ctx> JsonLike for Value<'ctx> {
@@ -36,7 +32,7 @@ impl<'ctx> JsonLike for Value<'ctx> {
         }
     }
 
-    fn as_object<'a>(&'a self) -> Option<&Self::JsonObject<'a>> {
+    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         self.as_object()
     }
 

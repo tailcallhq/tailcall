@@ -16,10 +16,6 @@ impl<Value: JsonLike + Clone> JsonObjectLike for IndexMap<Name, Value> {
     fn get_key<'a>(&'a self, key: &str) -> Option<&Self::Value<'a>> {
         self.get(&Name::new(key))
     }
-
-    // fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
-    //     self.insert(Name::new(key), value);
-    // }
 }
 
 impl JsonLike for ConstValue {
@@ -37,7 +33,7 @@ impl JsonLike for ConstValue {
         }
     }
 
-    fn as_object<'a>(&'a self) -> Option<&Self::JsonObject<'a>> {
+    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         match self {
             ConstValue::Object(map) => Some(map),
             _ => None,
