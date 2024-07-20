@@ -31,7 +31,7 @@ impl<'a> JsonObjectLike for ObjectAsVec<'a> {
 }
 
 impl<'ctx> JsonLike for Value<'ctx> {
-    type JsonObject<'obj> = ObjectAsVec<'obj> where Self: 'obj;
+    type JsonObject = ObjectAsVec<'ctx>;
     type Output<'a>  = Value<'a> where 'ctx: 'a, Self: 'a;
 
     fn null() -> Self {
@@ -45,8 +45,11 @@ impl<'ctx> JsonLike for Value<'ctx> {
         }
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
-        self.as_object()
+    fn as_object(&self) -> Option<&Self::JsonObject> {
+        match self {
+            Value::Object(map) => Some(map),
+            _ => None,
+        }
     }
 
     fn as_str(&self) -> Option<&str> {

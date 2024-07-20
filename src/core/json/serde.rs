@@ -28,7 +28,7 @@ impl JsonObjectLike for serde_json::Map<String, serde_json::Value> {
 }
 
 impl JsonLike for serde_json::Value {
-    type JsonObject<'obj> = serde_json::Map<String, serde_json::Value> where Self: 'obj;
+    type JsonObject = serde_json::Map<String, serde_json::Value>;
     type Output<'a> = serde_json::Value where Self: 'a;
 
     fn null() -> Self {
@@ -39,7 +39,7 @@ impl JsonLike for serde_json::Value {
         self.as_array()
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
+    fn as_object(&self) -> Option<&Self::JsonObject> {
         self.as_object()
     }
 

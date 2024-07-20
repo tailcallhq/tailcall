@@ -5,9 +5,7 @@ impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}*/
 
 /// A trait for objects that can be used as JSON values
 pub trait JsonLike: Sized {
-    type JsonObject<'obj>: JsonObjectLike
-    where
-        Self: 'obj;
+    type JsonObject: JsonObjectLike;
     type Output<'a>: JsonLike
     where
         Self: 'a;
@@ -17,7 +15,7 @@ pub trait JsonLike: Sized {
 
     // Operators
     fn as_array(&self) -> Option<&Vec<Self>>;
-    fn as_object(&self) -> Option<&Self::JsonObject<'_>>;
+    fn as_object(&self) -> Option<&Self::JsonObject>;
     fn as_str(&self) -> Option<&str>;
     fn as_i64(&self) -> Option<i64>;
     fn as_u64(&self) -> Option<u64>;

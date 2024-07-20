@@ -32,7 +32,7 @@ impl<Value: JsonLike + Clone> JsonObjectLike for IndexMap<Name, Value> {
 }
 
 impl JsonLike for ConstValue {
-    type JsonObject<'obj> = IndexMap<Name, ConstValue> where Self: 'obj;
+    type JsonObject = IndexMap<Name, ConstValue>;
     type Output<'a>  = ConstValue where Self: 'a;
 
     fn null() -> Self {
@@ -46,7 +46,7 @@ impl JsonLike for ConstValue {
         }
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
+    fn as_object(&self) -> Option<&Self::JsonObject> {
         match self {
             ConstValue::Object(map) => Some(map),
             _ => None,
