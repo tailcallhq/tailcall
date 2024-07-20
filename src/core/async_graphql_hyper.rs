@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
-use async_graphql::{BatchResponse, Executor, Value};
+use async_graphql::{BatchRequest, BatchResponse, Executor, Value};
 use headers::HeaderMap;
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
@@ -45,6 +45,7 @@ pub trait GraphQLRequestLike: Hash + Send {
         self.hash(state);
         OperationId(hasher.finish())
     }
+    fn is_valid_query(&mut self) -> bool;
 }
 
 #[derive(Debug, Deserialize)]
@@ -84,6 +85,13 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
     fn parse_query(&mut self) -> Option<&ExecutableDocument> {
         None
     }
+
+    fn is_valid_query(&mut self) -> bool {
+        match &self.0 {
+            BatchRequest::Single(single) => !single.query.is_empty(),
+            BatchRequest::Batch(multi) => multi.iter().any(|v| v.query.is_empty()),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -117,6 +125,10 @@ impl GraphQLRequestLike for GraphQLRequest {
 
     fn parse_query(&mut self) -> Option<&ExecutableDocument> {
         self.0.parsed_query().ok()
+    }
+
+    fn is_valid_query(&mut self) -> bool {
+        self.0.query.is_empty()
     }
 }
 
@@ -171,12 +183,26 @@ impl GraphQLQuery {
 
 static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
+static APPLICATION_GRAPHQL_JSON: Lazy<HeaderValue> =
+    Lazy::new(|| HeaderValue::from_static("application/graphql-response+json"));
 
 impl GraphQLResponse {
-    fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
+    /// TODO: take bool instead of HeaderMap
+    fn build_response(
+        &self,
+        status: StatusCode,
+        body: Body,
+        headers: &HeaderMap,
+    ) -> Result<Response<Body>> {
+        let resp_content_ty = headers
+            .get(CONTENT_TYPE)
+            .map(|v| v.as_ref())
+            .filter(|v| (*v).eq(APPLICATION_GRAPHQL_JSON.as_ref()))
+            .unwrap_or(APPLICATION_JSON.as_ref());
+
         let mut response = Response::builder()
             .status(status)
-            .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
+            .header(CONTENT_TYPE, resp_content_ty)
             .body(body)?;
 
         if self.0.is_ok() {
@@ -195,8 +221,24 @@ impl GraphQLResponse {
         Ok(Body::from(serde_json::to_string(&self.0)?))
     }
 
-    pub fn into_response(self, status: StatusCode) -> Result<Response<hyper::Body>> {
-        self.build_response(status, self.default_body()?)
+    pub fn into_response(
+        self,
+        status: StatusCode,
+        headers: &HeaderMap,
+    ) -> Result<Response<hyper::Body>> {
+        if !self.0.is_ok() {
+            let is_document_error = match &self.0 {
+                BatchResponse::Single(x) => x.errors.iter().any(|x| !x.locations.is_empty()),
+                BatchResponse::Batch(x) => x
+                    .iter()
+                    .any(|x| x.errors.iter().any(|x| !x.locations.is_empty())),
+            };
+
+            if !is_document_error || headers.get("accept") == Some(&APPLICATION_GRAPHQL_JSON) {
+                return self.build_response(StatusCode::BAD_REQUEST, self.default_body()?, headers);
+            }
+        }
+        self.build_response(status, self.default_body()?, headers)
     }
 
     fn flatten_response(data: &Value) -> &Value {
@@ -209,9 +251,13 @@ impl GraphQLResponse {
     /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
     /// Differs as `to_response` by flattening the response's data
     /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
-    pub fn into_rest_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_rest_response(self, headers: &HeaderMap) -> Result<Response<hyper::Body>> {
         if !self.0.is_ok() {
-            return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?);
+            return self.build_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                self.default_body()?,
+                headers,
+            );
         }
 
         match self.0 {
@@ -219,7 +265,7 @@ impl GraphQLResponse {
                 let item = Self::flatten_response(&res.data);
                 let data = serde_json::to_string(item)?;
 
-                self.build_response(StatusCode::OK, Body::from(data))
+                self.build_response(StatusCode::OK, Body::from(data), headers)
             }
             BatchResponse::Batch(ref list) => {
                 let item = list
@@ -228,7 +274,7 @@ impl GraphQLResponse {
                     .collect::<Vec<&Value>>();
                 let data = serde_json::to_string(&item)?;
 
-                self.build_response(StatusCode::OK, Body::from(data))
+                self.build_response(StatusCode::OK, Body::from(data), headers)
             }
         }
     }
@@ -284,10 +330,15 @@ mod tests {
         let data = IndexMap::from([(Name::new("user"), Value::Object(user))]);
 
         let response = GraphQLResponse(BatchResponse::Single(Response::new(Value::Object(data))));
-        let rest_response = response.into_rest_response().unwrap();
+        let mut headers = HeaderMap::default();
+        headers.insert(CONTENT_TYPE, APPLICATION_GRAPHQL_JSON.clone());
+        let rest_response = response.into_rest_response(&headers).unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
-        assert_eq!(rest_response.headers()["content-type"], "application/json");
+        assert_eq!(
+            rest_response.headers()["content-type"],
+            "application/graphql-response+json"
+        );
         assert_eq!(
             hyper::body::to_bytes(rest_response.into_body())
                 .await
@@ -311,7 +362,7 @@ mod tests {
             .collect();
 
         let response = GraphQLResponse(BatchResponse::Batch(list));
-        let rest_response = response.into_rest_response().unwrap();
+        let rest_response = response.into_rest_response(&Default::default()).unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
@@ -340,7 +391,7 @@ mod tests {
             .map(|error| ServerError::new(error.to_string(), None))
             .collect();
         let response = GraphQLResponse(BatchResponse::Single(response));
-        let rest_response = response.into_rest_response().unwrap();
+        let rest_response = response.into_rest_response(&Default::default()).unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(rest_response.headers()["content-type"], "application/json");

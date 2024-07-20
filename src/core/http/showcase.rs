@@ -18,6 +18,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
     runtime: TargetRuntime,
     enable_fs: bool,
 ) -> Result<Result<AppContext, Response<Body>>> {
+    let req_headers = req.headers();
     let config_url = req
         .uri()
         .query()
@@ -31,7 +32,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         let server_error = ServerError::new("No Config URL specified", None);
         response.errors = vec![server_error];
         return Ok(Err(
-            GraphQLResponse::from(response).into_response(StatusCode::BAD_REQUEST)?
+            GraphQLResponse::from(response).into_response(StatusCode::BAD_REQUEST, req_headers)?
         ));
     };
 
@@ -40,7 +41,7 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
         let server_error = ServerError::new("Invalid Config URL specified", None);
         response.errors = vec![server_error];
         return Ok(Err(
-            GraphQLResponse::from(response).into_response(StatusCode::BAD_REQUEST)?
+            GraphQLResponse::from(response).into_response(StatusCode::BAD_REQUEST, req_headers)?
         ));
     }
 
@@ -51,9 +52,8 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
             let mut response = async_graphql::Response::default();
             let server_error = ServerError::new(format!("Failed to read config: {}", e), None);
             response.errors = vec![server_error];
-            return Ok(Err(
-                GraphQLResponse::from(response).into_response(StatusCode::BAD_REQUEST)?
-            ));
+            return Ok(Err(GraphQLResponse::from(response)
+                .into_response(StatusCode::BAD_REQUEST, req_headers)?));
         }
     };
 
@@ -63,9 +63,8 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
             let mut response = async_graphql::Response::default();
             let server_error = ServerError::new(format!("{}", e), None);
             response.errors = vec![server_error];
-            return Ok(Err(
-                GraphQLResponse::from(response).into_response(StatusCode::BAD_REQUEST)?
-            ));
+            return Ok(Err(GraphQLResponse::from(response)
+                .into_response(StatusCode::BAD_REQUEST, req_headers)?));
         }
     };
 
