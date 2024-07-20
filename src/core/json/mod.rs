@@ -17,7 +17,7 @@ pub fn gather_path_matches<'a, J: JsonLike<'a>>(
     mut vector: Vec<(&'a J, &'a J)>,
 ) -> Vec<(&'a J, &'a J)>
 where
-    J::JsonObject: JsonObjectLike<'a>,
+    J::JsonObject: JsonObjectLike,
 {
     if let Some(root) = root.as_array() {
         for value in root.iter() {

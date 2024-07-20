@@ -6,8 +6,11 @@ use indexmap::IndexMap;
 
 use super::*;
 
-impl<'a, Value: JsonLike<'a> + Clone> JsonObjectLike<'a> for IndexMap<Name, Value> {
-    type Value = Value;
+impl<Value: for<'a> JsonLike<'a> + Clone> JsonObjectLike for IndexMap<Name, Value> {
+    type Value<'json> = Value where Self: 'json;
+
+    /*
+        type Value = Value;
 
     fn new() -> Self {
         IndexMap::new()
@@ -17,9 +20,19 @@ impl<'a, Value: JsonLike<'a> + Clone> JsonObjectLike<'a> for IndexMap<Name, Valu
         self.get(&Name::new(key))
     }
 
-    fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
-        self.insert(Name::new(key), value);
+    */
+
+    fn new() -> Self {
+        IndexMap::new()
     }
+
+    fn get_key<'a>(&'a self, key: &str) -> Option<&Self::Value<'a>> {
+        self.get(&Name::new(key))
+    }
+
+    // fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
+    //     self.insert(Name::new(key), value);
+    // }
 }
 
 impl<'a> JsonLike<'a> for ConstValue {

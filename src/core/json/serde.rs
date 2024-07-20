@@ -2,20 +2,20 @@ use std::collections::HashMap;
 
 use super::{JsonLike, JsonObjectLike};
 
-impl<'a> JsonObjectLike<'a> for serde_json::Map<String, serde_json::Value> {
-    type Value = serde_json::Value;
+impl JsonObjectLike for serde_json::Map<String, serde_json::Value> {
+    type Value<'a> = serde_json::Value where Self: 'a;
 
     fn new() -> Self {
         serde_json::Map::new()
     }
 
-    fn get_key(&'a self, key: &str) -> Option<&serde_json::Value> {
+    fn get_key(&self, key: &str) -> Option<&serde_json::Value> {
         self.get(key)
     }
 
-    fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
-        self.insert(key.to_owned(), value);
-    }
+    // fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
+    //     self.insert(key.to_owned(), value);
+    // }
 }
 
 impl<'a> JsonLike<'a> for serde_json::Value {

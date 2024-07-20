@@ -3,20 +3,21 @@ use serde_json_borrow::{ObjectAsVec, Value};
 use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike};
 
 // BorrowedValue
-impl<'a> JsonObjectLike<'a> for ObjectAsVec<'a> {
-    type Value = Value<'a>;
+impl<'a> JsonObjectLike for ObjectAsVec<'a> {
+    type Value<'json> = Value<'json> where 'a: 'json;
 
     fn new() -> Self {
         ObjectAsVec::default()
     }
 
-    fn get_key(&'a self, key: &str) -> Option<&Value> {
+    fn get_key<'b>(&'b self, key: &str) -> Option<&Self::Value<'b>> {
         self.get(key)
     }
 
-    fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
-        self.insert(key, value);
-    }
+
+    // fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
+    //     self.insert(key, value);
+    // }
 }
 
 impl<'a> JsonLike<'a> for Value<'a> {

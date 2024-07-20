@@ -5,7 +5,7 @@ impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}
 
 /// A trait for objects that can be used as JSON values
 pub trait JsonLike<'a>: Sized {
-    type JsonObject: JsonObjectLike<'a, Value = Self>;
+    type JsonObject: JsonObjectLike<Value<'a> = Self> where Self: 'a;
 
     // Constructors
     fn null() -> Self;
@@ -25,11 +25,11 @@ pub trait JsonLike<'a>: Sized {
 }
 
 /// A trait for objects that can be used as JSON objects
-pub trait JsonObjectLike<'a>: Sized {
-    type Value;
+pub trait JsonObjectLike: Sized {
+    type Value<'json>: JsonLike<'json> where Self: 'json;
     fn new() -> Self;
-    fn get_key(&'a self, key: &str) -> Option<&Self::Value>;
-    fn insert_key(&'a mut self, key: &'a str, value: Self::Value);
+    fn get_key<'a>(&'a self, key: &str) -> Option<&Self::Value<'a>>;
+    // fn insert_key(&'a mut self, key: &'a str, value: Self::Value);
 }
 
 #[cfg(test)]
