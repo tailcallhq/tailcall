@@ -112,7 +112,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
-            if request.is_valid_query() {
+            if !request.is_valid_query() {
                 let mut response = async_graphql::Response::default();
                 let server_error =
                     ServerError::new("Query not present in request".to_string(), None);

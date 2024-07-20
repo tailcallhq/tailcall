@@ -89,7 +89,7 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
     fn is_valid_query(&mut self) -> bool {
         match &self.0 {
             BatchRequest::Single(single) => !single.query.is_empty(),
-            BatchRequest::Batch(multi) => multi.iter().any(|v| v.query.is_empty()),
+            BatchRequest::Batch(multi) => !multi.iter().any(|v| v.query.is_empty()),
         }
     }
 }
@@ -128,7 +128,7 @@ impl GraphQLRequestLike for GraphQLRequest {
     }
 
     fn is_valid_query(&mut self) -> bool {
-        self.0.query.is_empty()
+        !self.0.query.is_empty()
     }
 }
 
