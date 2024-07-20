@@ -148,7 +148,7 @@ fn call(name: String, event: Event) -> worker::Result<Option<Command>> {
                 let fn_as_value = ctx
                     .globals()
                     .get::<&str, Function>(name.as_str())
-                    .map_err(|_| worker::Error::GlobalThisNotInitialised)?;
+                    .map_err(|e| worker::Error::GlobalThisNotInitialised(e.to_string()))?;
 
                 let function = fn_as_value
                     .as_function()
@@ -173,14 +173,14 @@ fn execute_inner(name: String, value: String) -> worker::Result<ConstValue> {
             let fn_as_value = ctx
                 .globals()
                 .get::<_, rquickjs::Function>(&name)
-                .map_err(|_| worker::Error::GlobalThisNotInitialised)?;
+                .map_err(|e| worker::Error::GlobalThisNotInitialised(e.to_string()))?;
 
             let function = fn_as_value
                 .as_function()
                 .ok_or(worker::Error::InvalidFunction(name.clone()))?;
             let val: String = function
                 .call((value,))
-                .map_err(|_| worker::Error::FunctionValueParseError(name))?;
+                .map_err(|e| worker::Error::FunctionValueParseError(e.to_string(), name))?;
             Ok::<_, worker::Error>(serde_json::from_str(&val)?)
         })
     })
