@@ -22,8 +22,16 @@ impl JsonLike for serde_json::Value {
     type JsonObject<'obj> = serde_json::Map<String, serde_json::Value> where Self: 'obj;
     type Output<'a> = serde_json::Value where Self: 'a;
 
-    fn as_array<'a>(&'a self) -> Option<&'a Vec<Self>> {
+    fn null() -> Self {
+        Self::Null
+    }
+
+    fn as_array(&self) -> Option<&Vec<Self>> {
         self.as_array()
+    }
+
+    fn as_object<'a>(&'a self) -> Option<&Self::JsonObject<'a>> {
+        self.as_object()
     }
 
     fn as_str(&self) -> Option<&str> {
@@ -49,7 +57,6 @@ impl JsonLike for serde_json::Value {
     fn is_null(&self) -> bool {
         self.is_null()
     }
-
     fn get_path<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self::Output<'a>> {
         let mut val = self;
         for token in path {
@@ -71,20 +78,9 @@ impl JsonLike for serde_json::Value {
             _ => None,
         }
     }
+
     fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&Self::Output<'a>>> {
         let src = super::gather_path_matches(self, path, vec![]);
         super::group_by_key(src)
     }
-
-    fn null() -> Self {
-        Self::Null
-    }
-
-    fn as_object<'a>(&'a self) -> Option<&Self::JsonObject<'a>> {
-        self.as_object()
-    }
-
-   /* fn own<'a>(value: &'a Self::Output<'a>) -> &'a Self {
-        value
-    }*/
 }

@@ -12,17 +12,16 @@ pub trait JsonLike: Sized {
 
     // Constructors
     fn null() -> Self;
-    // fn own<'a>(value: &'a Self::Output<'a>) -> &'a Self;
 
     // Operators
-    fn as_array<'a>(&'a self) -> Option<&'a Vec<Self>>;
+    fn as_array(&self) -> Option<&Vec<Self>>;
     fn as_object<'a>(&'a self) -> Option<&Self::JsonObject<'a>>;
-    fn as_str<'a>(&'a self) -> Option<&str>;
-    fn as_i64<'a>(&'a self) -> Option<i64>;
-    fn as_u64<'a>(&'a self) -> Option<u64>;
-    fn as_f64<'a>(&'a self) -> Option<f64>;
-    fn as_bool<'a>(&'a self) -> Option<bool>;
-    fn is_null<'a>(&'a self) -> bool;
+    fn as_str(&self) -> Option<&str>;
+    fn as_i64(&self) -> Option<i64>;
+    fn as_u64(&self) -> Option<u64>;
+    fn as_f64(&self) -> Option<f64>;
+    fn as_bool(&self) -> Option<bool>;
+    fn is_null(&self) -> bool;
     fn get_path<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self::Output<'a>>;
     fn get_key<'a>(&'a self, path: &'a str) -> Option<&Self::Output<'a>>;
     fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output<'a>>>;

@@ -9,19 +9,6 @@ use super::*;
 impl<Value: JsonLike + Clone> JsonObjectLike for IndexMap<Name, Value> {
     type Value<'json> = Value where Self: 'json;
 
-    /*
-        type Value = Value;
-
-    fn new() -> Self {
-        IndexMap::new()
-    }
-
-    fn get_key(&'a self, key: &str) -> Option<&Self::Value> {
-        self.get(&Name::new(key))
-    }
-
-    */
-
     fn new() -> Self {
         IndexMap::new()
     }
@@ -39,49 +26,60 @@ impl JsonLike for ConstValue {
     type JsonObject<'obj> = IndexMap<Name, ConstValue> where Self: 'obj;
     type Output<'a>  = ConstValue where Self: 'a;
 
-    fn as_array<'a>(&'a self) -> Option<&'a Vec<Self>> {
+    fn null() -> Self {
+        Default::default()
+    }
+
+    fn as_array(&self) -> Option<&Vec<Self>> {
         match self {
             ConstValue::List(seq) => Some(seq),
             _ => None,
         }
     }
 
-    fn as_str<'a>(&'a self) -> Option<&'a str> {
+    fn as_object<'a>(&'a self) -> Option<&Self::JsonObject<'a>> {
+        match self {
+            ConstValue::Object(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    fn as_str(&self) -> Option<&str> {
         match self {
             ConstValue::String(s) => Some(s),
             _ => None,
         }
     }
 
-    fn as_i64<'a>(&'a self) -> Option<i64> {
+    fn as_i64(&self) -> Option<i64> {
         match self {
             ConstValue::Number(n) => n.as_i64(),
             _ => None,
         }
     }
 
-    fn as_u64<'a>(&'a self) -> Option<u64> {
+    fn as_u64(&self) -> Option<u64> {
         match self {
             ConstValue::Number(n) => n.as_u64(),
             _ => None,
         }
     }
 
-    fn as_f64<'a>(&'a self) -> Option<f64> {
+    fn as_f64(&self) -> Option<f64> {
         match self {
             ConstValue::Number(n) => n.as_f64(),
             _ => None,
         }
     }
 
-    fn as_bool<'a>(&'a self) -> Option<bool> {
+    fn as_bool(&self) -> Option<bool> {
         match self {
             ConstValue::Boolean(b) => Some(*b),
             _ => None,
         }
     }
 
-    fn is_null<'a>(&'a self) -> bool {
+    fn is_null(&self) -> bool {
         matches!(self, ConstValue::Null)
     }
 
@@ -111,19 +109,4 @@ impl JsonLike for ConstValue {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
-
-    fn null() -> Self {
-        Default::default()
-    }
-
-    fn as_object<'a>(&'a self) -> Option<&'a Self::JsonObject<'a>> {
-        match self {
-            ConstValue::Object(map) => Some(map),
-            _ => None,
-        }
-    }
-
-    /*fn own<'a>(value: &'a Self::Output<'a>) -> &'a Self {
-        value
-    }*/
 }
