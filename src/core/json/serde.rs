@@ -18,10 +18,11 @@ impl JsonObjectLike for serde_json::Map<String, serde_json::Value> {
     // }
 }
 
-impl<'a> JsonLike<'a> for serde_json::Value {
-    type JsonObject = serde_json::Map<String, serde_json::Value>;
+impl JsonLike for serde_json::Value {
+    type JsonObject<'obj> = serde_json::Map<String, serde_json::Value> where Self: 'obj;
+    type Output<'a> = serde_json::Value where Self: 'a;
 
-    fn as_array(&'a self) -> Option<&'a Vec<Self>> {
+    fn as_array<'a>(&'a self) -> Option<&'a Vec<Self>> {
         self.as_array()
     }
 
@@ -49,7 +50,7 @@ impl<'a> JsonLike<'a> for serde_json::Value {
         self.is_null()
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self> {
+    fn get_path<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self::Output<'a>> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -64,14 +65,13 @@ impl<'a> JsonLike<'a> for serde_json::Value {
         Some(val)
     }
 
-    fn get_key(&self, path: &str) -> Option<&Self> {
+    fn get_key<'a>(&'a self, path: &'a str) -> Option<&Self::Output<'a>> {
         match self {
             serde_json::Value::Object(map) => map.get(path),
             _ => None,
         }
     }
-
-    fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&Self>> {
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&Self::Output<'a>>> {
         let src = super::gather_path_matches(self, path, vec![]);
         super::group_by_key(src)
     }
@@ -80,7 +80,11 @@ impl<'a> JsonLike<'a> for serde_json::Value {
         Self::Null
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject> {
+    fn as_object<'a>(&'a self) -> Option<&Self::JsonObject<'a>> {
         self.as_object()
     }
+
+   /* fn own<'a>(value: &'a Self::Output<'a>) -> &'a Self {
+        value
+    }*/
 }

@@ -2,7 +2,7 @@ use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::JsonLike;
 
 /// A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
 #[derive(JsonSchema, Default, ScalarDefinition)]
@@ -14,7 +14,7 @@ pub struct Url {
 
 impl super::Scalar for Url {
     /// Function used to validate the date
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate<Value: JsonLike>(&self) -> fn(&Value) -> bool {
         |value| {
             if let Some(date_str) = value.as_str() {
                 return url::Url::parse(date_str).is_ok();

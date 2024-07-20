@@ -11,13 +11,13 @@ pub use json_schema::*;
 
 // Highly micro-optimized and benchmarked version of get_path_all
 // Any further changes should be verified with benchmarks
-pub fn gather_path_matches<'a, J: JsonLike<'a>>(
+pub fn gather_path_matches<'a, J: JsonLike<Output<'a> = J>>(
     root: &'a J,
     path: &'a [String],
     mut vector: Vec<(&'a J, &'a J)>,
 ) -> Vec<(&'a J, &'a J)>
 where
-    J::JsonObject: JsonObjectLike,
+    J::JsonObject<'a>: JsonObjectLike,
 {
     if let Some(root) = root.as_array() {
         for value in root.iter() {
@@ -36,7 +36,7 @@ where
     vector
 }
 
-fn group_by_key<'a, J: JsonLike<'a>>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
+fn group_by_key<'a, J: JsonLike>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
     let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
     for (key, value) in src {
         // Need to handle number and string keys

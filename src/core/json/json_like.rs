@@ -1,32 +1,36 @@
 use std::collections::HashMap;
 
-pub trait JsonLikeOwned: for<'json> JsonLike<'json> {}
-impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}
+/*pub trait JsonLikeOwned: for<'json> JsonLike<'json> {}
+impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}*/
 
 /// A trait for objects that can be used as JSON values
-pub trait JsonLike<'a>: Sized {
-    type JsonObject: JsonObjectLike<Value<'a> = Self> where Self: 'a;
+pub trait JsonLike: Sized {
+    type JsonObject<'obj>: JsonObjectLike where Self: 'obj;
+    type Output<'a>: JsonLike
+        where
+            Self: 'a;
 
     // Constructors
     fn null() -> Self;
+    // fn own<'a>(value: &'a Self::Output<'a>) -> &'a Self;
 
     // Operators
-    fn as_array(&'a self) -> Option<&'a Vec<Self>>;
-    fn as_object(&'a self) -> Option<&Self::JsonObject>;
-    fn as_str(&'a self) -> Option<&str>;
-    fn as_i64(&'a self) -> Option<i64>;
-    fn as_u64(&'a self) -> Option<u64>;
-    fn as_f64(&'a self) -> Option<f64>;
-    fn as_bool(&'a self) -> Option<bool>;
-    fn is_null(&'a self) -> bool;
-    fn get_path<T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self>;
-    fn get_key(&'a self, path: &'a str) -> Option<&Self>;
-    fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>>;
+    fn as_array<'a>(&'a self) -> Option<&'a Vec<Self>>;
+    fn as_object<'a>(&'a self) -> Option<&Self::JsonObject<'a>>;
+    fn as_str<'a>(&'a self) -> Option<&str>;
+    fn as_i64<'a>(&'a self) -> Option<i64>;
+    fn as_u64<'a>(&'a self) -> Option<u64>;
+    fn as_f64<'a>(&'a self) -> Option<f64>;
+    fn as_bool<'a>(&'a self) -> Option<bool>;
+    fn is_null<'a>(&'a self) -> bool;
+    fn get_path<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self::Output<'a>>;
+    fn get_key<'a>(&'a self, path: &'a str) -> Option<&Self::Output<'a>>;
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output<'a>>>;
 }
 
 /// A trait for objects that can be used as JSON objects
 pub trait JsonObjectLike: Sized {
-    type Value<'json>: JsonLike<'json> where Self: 'json;
+    type Value<'json>: JsonLike where Self: 'json;
     fn new() -> Self;
     fn get_key<'a>(&'a self, key: &str) -> Option<&Self::Value<'a>>;
     // fn insert_key(&'a mut self, key: &'a str, value: Self::Value);

@@ -2,14 +2,14 @@ use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::JsonLike;
 
 /// Represents signed integer type 64bit size as string
 #[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct Int64(pub i64);
 
 impl super::Scalar for Int64 {
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate<Value: JsonLike>(&self) -> fn(&Value) -> bool {
         |value| value.as_str().map_or(false, |s| s.parse::<i64>().is_ok())
     }
 

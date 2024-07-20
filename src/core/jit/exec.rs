@@ -25,7 +25,7 @@ pub struct Executor<Synth, IRExec, Input> {
 
 impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec, Input>
 where
-    Output: for<'a> JsonLike<'a> + Debug,
+    Output: JsonLike + Debug,
     Input: Clone + Debug,
     Synth: Synthesizer<Value = Result<Output, Positioned<Error>>, Variable = Input>,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
@@ -63,7 +63,7 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
 where
-    Output: for<'i> JsonLike<'i> + Debug,
+    Output: JsonLike + Debug,
     Input: Clone + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {

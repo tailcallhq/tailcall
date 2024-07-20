@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 
 use super::*;
 
-impl<Value: for<'a> JsonLike<'a> + Clone> JsonObjectLike for IndexMap<Name, Value> {
+impl<Value: JsonLike + Clone> JsonObjectLike for IndexMap<Name, Value> {
     type Value<'json> = Value where Self: 'json;
 
     /*
@@ -35,56 +35,57 @@ impl<Value: for<'a> JsonLike<'a> + Clone> JsonObjectLike for IndexMap<Name, Valu
     // }
 }
 
-impl<'a> JsonLike<'a> for ConstValue {
-    type JsonObject = IndexMap<Name, ConstValue>;
+impl JsonLike for ConstValue {
+    type JsonObject<'obj> = IndexMap<Name, ConstValue> where Self: 'obj;
+    type Output<'a>  = ConstValue where Self: 'a;
 
-    fn as_array(&'a self) -> Option<&'a Vec<Self>> {
+    fn as_array<'a>(&'a self) -> Option<&'a Vec<Self>> {
         match self {
             ConstValue::List(seq) => Some(seq),
             _ => None,
         }
     }
 
-    fn as_str(&'a self) -> Option<&'a str> {
+    fn as_str<'a>(&'a self) -> Option<&'a str> {
         match self {
             ConstValue::String(s) => Some(s),
             _ => None,
         }
     }
 
-    fn as_i64(&'a self) -> Option<i64> {
+    fn as_i64<'a>(&'a self) -> Option<i64> {
         match self {
             ConstValue::Number(n) => n.as_i64(),
             _ => None,
         }
     }
 
-    fn as_u64(&'a self) -> Option<u64> {
+    fn as_u64<'a>(&'a self) -> Option<u64> {
         match self {
             ConstValue::Number(n) => n.as_u64(),
             _ => None,
         }
     }
 
-    fn as_f64(&'a self) -> Option<f64> {
+    fn as_f64<'a>(&'a self) -> Option<f64> {
         match self {
             ConstValue::Number(n) => n.as_f64(),
             _ => None,
         }
     }
 
-    fn as_bool(&'a self) -> Option<bool> {
+    fn as_bool<'a>(&'a self) -> Option<bool> {
         match self {
             ConstValue::Boolean(b) => Some(*b),
             _ => None,
         }
     }
 
-    fn is_null(&'a self) -> bool {
+    fn is_null<'a>(&'a self) -> bool {
         matches!(self, ConstValue::Null)
     }
 
-    fn get_path<T: AsRef<str>>(&self, path: &[T]) -> Option<&Self> {
+    fn get_path<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self::Output<'a>> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -99,14 +100,14 @@ impl<'a> JsonLike<'a> for ConstValue {
         Some(val)
     }
 
-    fn get_key(&self, path: &str) -> Option<&Self> {
+    fn get_key<'a>(&'a self, path: &'a str) -> Option<&Self::Output<'a>> {
         match self {
             ConstValue::Object(map) => map.get(&async_graphql::Name::new(path)),
             _ => None,
         }
     }
 
-    fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
+    fn group_by<'a>(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self::Output<'a>>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
@@ -115,10 +116,14 @@ impl<'a> JsonLike<'a> for ConstValue {
         Default::default()
     }
 
-    fn as_object(&'a self) -> Option<&'a Self::JsonObject> {
+    fn as_object<'a>(&'a self) -> Option<&'a Self::JsonObject<'a>> {
         match self {
             ConstValue::Object(map) => Some(map),
             _ => None,
         }
     }
+
+    /*fn own<'a>(value: &'a Self::Output<'a>) -> &'a Self {
+        value
+    }*/
 }

@@ -41,7 +41,7 @@ use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
 use schemars::schema::Schema;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::JsonLike;
 
 #[enum_dispatch(Scalar)]
 pub enum ScalarType {
@@ -110,7 +110,7 @@ pub fn is_predefined_scalar(type_name: &str) -> bool {
 #[enum_dispatch]
 pub trait Scalar {
     // Drop validate when we switch to jit
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool;
+    fn validate<Value: JsonLike>(&self) -> fn(&Value) -> bool;
     fn schema(&self) -> Schema;
     fn name(&self) -> String {
         std::any::type_name::<Self>()
