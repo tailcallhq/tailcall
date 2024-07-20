@@ -330,7 +330,7 @@ mod tests {
 
         let response = GraphQLResponse(BatchResponse::Single(Response::new(Value::Object(data))));
         let mut headers = HeaderMap::default();
-        headers.insert(CONTENT_TYPE, APPLICATION_GRAPHQL_JSON.clone());
+        headers.insert(ACCEPT, APPLICATION_GRAPHQL_JSON.clone());
         let rest_response = response.into_rest_response(&headers).unwrap();
 
         assert_eq!(rest_response.status(), StatusCode::OK);
