@@ -1,7 +1,8 @@
-use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
+
+use crate::core::json::JsonLikeOwned;
 
 /// The JSON scalar type represents JSON values as specified by
 /// [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/
@@ -15,7 +16,7 @@ pub struct JSON {
 }
 
 impl super::Scalar for JSON {
-    fn validate(&self) -> fn(&ConstValue) -> bool {
+    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
         |_| true
     }
 
