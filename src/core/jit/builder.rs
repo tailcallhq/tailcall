@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::ops::Deref;
 
 use async_graphql::parser::types::{
-    Directive, DocumentOperations, ExecutableDocument, FragmentDefinition, OperationType,
-    Selection, SelectionSet,
+    Directive, DocumentOperations, ExecutableDocument, FragmentDefinition, OperationDefinition,
+    OperationType, Selection, SelectionSet,
 };
 use async_graphql::Positioned;
 use async_graphql_value::{ConstValue, Value};
@@ -243,10 +243,38 @@ impl Builder {
         }
     }
 
+    /// Resolves currently processed operation
+    /// based on [spec](https://spec.graphql.org/October2021/#sec-Executing-Requests)
+    #[inline(always)]
+    fn get_operation(
+        &self,
+        operation_name: Option<&str>,
+    ) -> Result<&OperationDefinition, BuildError> {
+        if let Some(operation_name) = operation_name {
+            match &self.document.operations {
+                DocumentOperations::Single(_) => None,
+                DocumentOperations::Multiple(operations) => {
+                    operations.get(operation_name).map(|op| &op.node)
+                }
+            }
+            .ok_or_else(|| BuildError::OperationNotFound(operation_name.to_string()))
+        } else {
+            match &self.document.operations {
+                DocumentOperations::Single(operation) => Ok(&operation.node),
+                DocumentOperations::Multiple(map) if map.len() == 1 => {
+                    let (_, operation) = map.iter().next().unwrap();
+                    Ok(&operation.node)
+                }
+                DocumentOperations::Multiple(_) => Err(BuildError::OperationNameRequired),
+            }
+        }
+    }
+
     #[inline(always)]
     pub fn build(
         &self,
         variables: &Variables<ConstValue>,
+        operation_name: Option<&str>,
     ) -> Result<OperationPlan<ConstValue>, BuildError> {
         let mut fields = Vec::new();
         let mut fragments: HashMap<&str, &FragmentDefinition> = HashMap::new();
@@ -255,34 +283,14 @@ impl Builder {
             fragments.insert(name.as_str(), &fragment.node);
         }
 
-        // A GraphQL request can contain only one operation at a time.
-        let operation_type = match &self.document.operations {
-            DocumentOperations::Single(single) => {
-                let name = self
-                    .get_type(single.node.ty)
-                    .ok_or(BuildError::RootOperationTypeNotDefined { operation: single.node.ty })?;
-                fields.extend(self.iter(&single.node.selection_set.node, name, None, &fragments));
-                single.node.ty
-            }
-            DocumentOperations::Multiple(multiple) => {
-                let mut operation_type = OperationType::Query;
-                for single in multiple.values() {
-                    let name = self.get_type(single.node.ty).ok_or(
-                        BuildError::RootOperationTypeNotDefined { operation: single.node.ty },
-                    )?;
-                    fields.extend(self.iter(
-                        &single.node.selection_set.node,
-                        name,
-                        None,
-                        &fragments,
-                    ));
-                    operation_type = single.node.ty;
-                }
-                operation_type
-            }
-        };
+        let operation = self.get_operation(operation_name)?;
 
-        let plan = OperationPlan::new(fields, operation_type);
+        let name = self
+            .get_type(operation.ty)
+            .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
+        fields.extend(self.iter(&operation.selection_set.node, name, None, &fragments));
+
+        let plan = OperationPlan::new(fields, operation.ty);
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly
@@ -311,7 +319,9 @@ mod tests {
         let config = Config::from_sdl(CONFIG).to_result().unwrap();
         let blueprint = Blueprint::try_from(&config.into()).unwrap();
         let document = async_graphql::parser::parse_query(query).unwrap();
-        Builder::new(&blueprint, document).build(variables).unwrap()
+        Builder::new(&blueprint, document)
+            .build(variables, None)
+            .unwrap()
     }
 
     #[tokio::test]
@@ -539,5 +549,57 @@ mod tests {
                 conditions.include
             );
         }
+    }
+
+    #[test]
+    fn test_resolving_operation() {
+        let query = r#"
+            query GetPosts {
+                posts {
+                    id
+                    userId
+                    title
+                }
+            }
+
+            mutation CreateNewPost {
+                createPost(post: {
+                    userId: 1,
+                    title: "test-12",
+                    body: "test-12",
+                }) {
+                    id
+                    userId
+                    title
+                    body
+                }
+            }
+        "#;
+        let config = Config::from_sdl(CONFIG).to_result().unwrap();
+        let blueprint = Blueprint::try_from(&config.into()).unwrap();
+        let document = async_graphql::parser::parse_query(query).unwrap();
+        let error = Builder::new(&blueprint, document.clone())
+            .build(&Variables::new(), None)
+            .unwrap_err();
+
+        assert_eq!(error, BuildError::OperationNameRequired);
+
+        let error = Builder::new(&blueprint, document.clone())
+            .build(&Variables::new(), Some("unknown"))
+            .unwrap_err();
+
+        assert_eq!(error, BuildError::OperationNotFound("unknown".to_string()));
+
+        let plan = Builder::new(&blueprint, document.clone())
+            .build(&Variables::new(), Some("GetPosts"))
+            .unwrap();
+        assert!(plan.is_query());
+        insta::assert_debug_snapshot!(plan.into_nested());
+
+        let plan = Builder::new(&blueprint, document.clone())
+            .build(&Variables::new(), Some("CreateNewPost"))
+            .unwrap();
+        assert!(!plan.is_query());
+        insta::assert_debug_snapshot!(plan.into_nested());
     }
 }
