@@ -6,33 +6,30 @@ use indexmap::IndexMap;
 
 use super::*;
 
-impl<Value: JsonLike + Clone> JsonObjectLike for IndexMap<Name, Value> {
-    type Value<'json> = Value where Self: 'json;
-    type Object<'obj>= IndexMap<Name, Value> where Self: 'obj;
+impl<'ctx, Value: JsonLike + Clone> JsonObjectLike<'ctx> for IndexMap<Name, Value> {
+    type Value<'json> = Value
+    where
+        Self: 'json,
+        'json: 'ctx;
 
     fn new() -> Self {
         IndexMap::new()
     }
 
-    fn get_key<'a>(&'a self, key: &str) -> Option<&Self::Value<'a>> {
+    fn get_key<'a: 'ctx>(&'a self, key: &str) -> Option<&Self::Value<'a>> {
         self.get(&Name::new(key))
     }
 
-    fn insert_key<'a>(
-        mut slf: Self::Object<'a>,
-        key: &'a str,
-        value: Self::Value<'a>,
-    ) -> Self::Object<'a>
+    fn insert_key<'a: 'ctx>(&mut self, key: &'a str, value: Self::Value<'a>)
     where
         Self: 'a,
     {
-        slf.insert(Name::new(key), value);
-        slf
+        self.insert(Name::new(key), value);
     }
 }
 
 impl JsonLike for ConstValue {
-    type JsonObject = IndexMap<Name, ConstValue>;
+    type JsonObject<'a> = IndexMap<Name, ConstValue>;
     type Output<'a>  = ConstValue where Self: 'a;
 
     fn null() -> Self {
@@ -46,7 +43,7 @@ impl JsonLike for ConstValue {
         }
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject> {
+    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         match self {
             ConstValue::Object(map) => Some(map),
             _ => None,

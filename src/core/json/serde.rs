@@ -2,33 +2,31 @@ use std::collections::HashMap;
 
 use super::{JsonLike, JsonObjectLike};
 
-impl JsonObjectLike for serde_json::Map<String, serde_json::Value> {
-    type Value<'a> = serde_json::Value where Self: 'a;
-    type Object<'obj> = serde_json::Map<String, serde_json::Value> where Self: 'obj;
+impl<'ctx> JsonObjectLike<'ctx> for serde_json::Map<String, serde_json::Value> {
+    type Value<'json> = serde_json::Value
+    where
+        Self: 'json,
+        'json: 'ctx;
 
     fn new() -> Self {
         serde_json::Map::new()
     }
 
-    fn get_key(&self, key: &str) -> Option<&serde_json::Value> {
+    fn get_key<'a: 'ctx>(&self, key: &str) -> Option<&serde_json::Value>
+    {
         self.get(key)
     }
 
-    fn insert_key<'a>(
-        mut slf: Self::Object<'a>,
-        key: &'a str,
-        value: Self::Value<'a>,
-    ) -> Self::Object<'a>
+    fn insert_key<'a: 'ctx>(&mut self, key: &'a str, value: Self::Value<'a>)
     where
         Self: 'a,
     {
-        slf.insert(key.to_string(), value);
-        slf
+        self.insert(key.to_string(), value);
     }
 }
 
 impl JsonLike for serde_json::Value {
-    type JsonObject = serde_json::Map<String, serde_json::Value>;
+    type JsonObject<'a> = serde_json::Map<String, serde_json::Value>;
     type Output<'a> = serde_json::Value where Self: 'a;
 
     fn null() -> Self {
@@ -39,7 +37,7 @@ impl JsonLike for serde_json::Value {
         self.as_array()
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject> {
+    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         self.as_object()
     }
 
@@ -92,4 +90,18 @@ impl JsonLike for serde_json::Value {
         let src = super::gather_path_matches(self, path, vec![]);
         super::group_by_key(src)
     }
+}
+
+#[test]
+fn test() {
+    let mut obj = serde_json::Map::new();
+
+    obj.insert_key("test", serde_json::Value::Null);
+    obj.insert_key("test", serde_json::Value::Null);
+
+    let mut obj = serde_json_borrow::Map::new();
+    let value = serde_json_borrow::Value::Null;
+
+    obj.insert_key("test", value.clone());
+    obj.insert_key("test", value);
 }

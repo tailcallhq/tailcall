@@ -5,33 +5,33 @@ use serde_json_borrow::{ObjectAsVec, Value};
 use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike};
 
 // BorrowedValue
-impl<'a> JsonObjectLike for ObjectAsVec<'a> {
-    type Value<'json> = Value<'json> where 'a: 'json;
-    type Object<'obj> = ObjectAsVec<'obj> where 'a: 'obj;
+impl<'slf> JsonObjectLike<'slf> for ObjectAsVec<'slf> {
+    type Value<'json> = Value<'json>
+    where
+        Self: 'json,
+        'json: 'slf;
 
     fn new() -> Self {
         ObjectAsVec::default()
     }
 
-    fn get_key<'b>(&'b self, key: &str) -> Option<&Self::Value<'b>> {
+    fn get_key<'a: 'slf>(&'a self, key: &str) -> Option<&Self::Value<'a>>
+    where
+        Self: 'a,
+    {
         self.get(key)
     }
 
-    fn insert_key<'b>(
-        mut slf: Self::Object<'b>,
-        key: &'b str,
-        value: Self::Value<'b>,
-    ) -> Self::Object<'b>
+    fn insert_key<'a: 'slf>(&mut self, key: &'a str, value: Self::Value<'a>)
     where
-        Self: 'b,
+        Self: 'a,
     {
-        slf.insert(key, value);
-        slf
+        self.insert(key, value);
     }
 }
 
 impl<'ctx> JsonLike for Value<'ctx> {
-    type JsonObject = ObjectAsVec<'ctx>;
+    type JsonObject<'a> = ObjectAsVec<'a> where Self: 'a;
     type Output<'a>  = Value<'a> where 'ctx: 'a, Self: 'a;
 
     fn null() -> Self {
@@ -45,7 +45,7 @@ impl<'ctx> JsonLike for Value<'ctx> {
         }
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject> {
+    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         match self {
             Value::Object(map) => Some(map),
             _ => None,
