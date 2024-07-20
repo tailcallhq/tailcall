@@ -25,15 +25,13 @@ impl Executor for JITExecutor {
     fn execute(&self, request: async_graphql::Request) -> impl Future<Output = Response> + Send {
         let request = jit::Request::from(request);
 
-        match ConstValueExecutor::new(&request, self.app_ctx.clone()) {
-            Ok(exec) => {
-                async {
+        async {
+            match ConstValueExecutor::new(&request, self.app_ctx.clone()) {
+                Ok(exec) => {
                     let resp = exec.execute(&self.req_ctx, request).await;
                     resp.into_async_graphql()
                 }
-            }
-            Err(_) => {
-                todo!()
+                Err(error) => Response::from_errors(vec![error.into_server_error()]),
             }
         }
     }
