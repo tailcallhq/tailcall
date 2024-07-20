@@ -34,8 +34,20 @@ pub trait JsonObjectLike: Sized {
     type Value<'json>: JsonLike
     where
         Self: 'json;
+
+    type Object<'obj>: JsonObjectLike
+    where
+        Self: 'obj;
+
     fn new() -> Self;
     fn get_key<'a>(&'a self, key: &str) -> Option<&Self::Value<'a>>;
+    fn insert_key<'a>(
+        slf: Self::Object<'a>,
+        key: &'a str,
+        value: Self::Value<'a>,
+    ) -> Self::Object<'a>
+    where
+        Self: 'a;
 }
 
 #[cfg(test)]

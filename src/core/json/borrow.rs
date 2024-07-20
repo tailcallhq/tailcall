@@ -7,6 +7,7 @@ use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike};
 // BorrowedValue
 impl<'a> JsonObjectLike for ObjectAsVec<'a> {
     type Value<'json> = Value<'json> where 'a: 'json;
+    type Object<'obj> = ObjectAsVec<'obj> where 'a: 'obj;
 
     fn new() -> Self {
         ObjectAsVec::default()
@@ -14,6 +15,18 @@ impl<'a> JsonObjectLike for ObjectAsVec<'a> {
 
     fn get_key<'b>(&'b self, key: &str) -> Option<&Self::Value<'b>> {
         self.get(key)
+    }
+
+    fn insert_key<'b>(
+        mut slf: Self::Object<'b>,
+        key: &'b str,
+        value: Self::Value<'b>,
+    ) -> Self::Object<'b>
+    where
+        Self: 'b,
+    {
+        slf.insert(key, value);
+        slf
     }
 }
 

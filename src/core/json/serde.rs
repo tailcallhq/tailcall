@@ -4,6 +4,7 @@ use super::{JsonLike, JsonObjectLike};
 
 impl JsonObjectLike for serde_json::Map<String, serde_json::Value> {
     type Value<'a> = serde_json::Value where Self: 'a;
+    type Object<'obj> = serde_json::Map<String, serde_json::Value> where Self: 'obj;
 
     fn new() -> Self {
         serde_json::Map::new()
@@ -11,6 +12,18 @@ impl JsonObjectLike for serde_json::Map<String, serde_json::Value> {
 
     fn get_key(&self, key: &str) -> Option<&serde_json::Value> {
         self.get(key)
+    }
+
+    fn insert_key<'a>(
+        mut slf: Self::Object<'a>,
+        key: &'a str,
+        value: Self::Value<'a>,
+    ) -> Self::Object<'a>
+    where
+        Self: 'a,
+    {
+        slf.insert(key.to_string(), value);
+        slf
     }
 }
 

@@ -8,6 +8,7 @@ use super::*;
 
 impl<Value: JsonLike + Clone> JsonObjectLike for IndexMap<Name, Value> {
     type Value<'json> = Value where Self: 'json;
+    type Object<'obj>= IndexMap<Name, Value> where Self: 'obj;
 
     fn new() -> Self {
         IndexMap::new()
@@ -15,6 +16,18 @@ impl<Value: JsonLike + Clone> JsonObjectLike for IndexMap<Name, Value> {
 
     fn get_key<'a>(&'a self, key: &str) -> Option<&Self::Value<'a>> {
         self.get(&Name::new(key))
+    }
+
+    fn insert_key<'a>(
+        mut slf: Self::Object<'a>,
+        key: &'a str,
+        value: Self::Value<'a>,
+    ) -> Self::Object<'a>
+    where
+        Self: 'a,
+    {
+        slf.insert(Name::new(key), value);
+        slf
     }
 }
 
