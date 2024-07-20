@@ -195,8 +195,8 @@ impl GraphQLResponse {
         Ok(Body::from(serde_json::to_string(&self.0)?))
     }
 
-    pub fn into_response(self) -> Result<Response<hyper::Body>> {
-        self.build_response(StatusCode::OK, self.default_body()?)
+    pub fn into_response(self, status: StatusCode) -> Result<Response<hyper::Body>> {
+        self.build_response(status, self.default_body()?)
     }
 
     fn flatten_response(data: &Value) -> &Value {

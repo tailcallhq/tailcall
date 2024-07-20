@@ -106,6 +106,11 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
     let (req, body) = req.into_parts();
     let bytes = hyper::body::to_bytes(body).await?;
+    if bytes.is_empty() {
+        let response = async_graphql::Response::default();
+        return GraphQLResponse::from(response).into_response(StatusCode::OK);
+    }
+
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
@@ -136,7 +141,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
                 ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
             response.errors = vec![server_error];
 
-            Ok(GraphQLResponse::from(response).into_response()?)
+            Ok(GraphQLResponse::from(response).into_response(StatusCode::BAD_REQUEST)?)
         }
     }
 }
@@ -155,7 +160,7 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     };
     response = update_cache_control_header(response, app_ctx, req_ctx.clone());
 
-    let mut resp = response.into_response()?;
+    let mut resp = response.into_response(StatusCode::OK)?;
     update_response_headers(&mut resp, req_ctx, app_ctx);
     Ok(resp)
 }
