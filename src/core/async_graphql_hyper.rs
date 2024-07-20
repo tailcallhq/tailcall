@@ -5,7 +5,7 @@ use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
 use async_graphql::{BatchRequest, BatchResponse, Executor, Value};
 use headers::HeaderMap;
-use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
+use hyper::header::{HeaderValue, ACCEPT, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -223,20 +223,11 @@ impl GraphQLResponse {
 
     pub fn into_response(
         self,
-        status: StatusCode,
+        mut status: StatusCode,
         headers: &HeaderMap,
     ) -> Result<Response<hyper::Body>> {
-        if !self.0.is_ok() {
-            let is_document_error = match &self.0 {
-                BatchResponse::Single(x) => x.errors.iter().any(|x| !x.locations.is_empty()),
-                BatchResponse::Batch(x) => x
-                    .iter()
-                    .any(|x| x.errors.iter().any(|x| !x.locations.is_empty())),
-            };
-
-            if !is_document_error || headers.get("accept") == Some(&APPLICATION_GRAPHQL_JSON) {
-                return self.build_response(StatusCode::BAD_REQUEST, self.default_body()?, headers);
-            }
+        if !self.0.is_ok() && headers.get(ACCEPT) == Some(&APPLICATION_GRAPHQL_JSON) {
+            status = StatusCode::BAD_REQUEST;
         }
         self.build_response(status, self.default_body()?, headers)
     }
