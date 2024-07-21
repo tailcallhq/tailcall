@@ -1,6 +1,5 @@
 ---
 source: src/core/config/transformer/flatten_single_field.rs
-assertion_line: 90
 expression: transformed_config.to_sdl()
 ---
 schema @server @upstream {
@@ -9,6 +8,10 @@ schema @server @upstream {
 
 type Bar {
   a: Int
+}
+
+type Connection {
+  user: User
 }
 
 type Foo {
@@ -23,4 +26,9 @@ type NotSingle {
 type Query @addField(name: "foo", path: ["foo", "bar", "a"]) {
   foo: Foo @omit
   not_single: NotSingle
+  user: User
+}
+
+type User {
+  connections: [Connection]
 }

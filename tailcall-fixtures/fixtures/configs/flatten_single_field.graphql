@@ -5,6 +5,7 @@ schema {
 type Query {
   foo: Foo
   not_single: NotSingle
+  user: User
 }
 
 # Type with only one field
@@ -20,4 +21,13 @@ type Bar {
 type NotSingle {
   f1: Int
   f2: Int
+}
+
+# Recursive type
+type User {
+  connections: [Connection]
+}
+
+type Connection {
+  user: User
 }
