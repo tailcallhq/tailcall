@@ -22,6 +22,7 @@ pub mod http;
 pub mod ir;
 pub mod jit;
 pub mod json;
+mod lift;
 pub mod merge_right;
 pub mod mustache;
 pub mod path;
@@ -95,7 +96,7 @@ pub type EntityCache = dyn Cache<Key = IoId, Value = ConstValue>;
 #[async_trait::async_trait]
 pub trait WorkerIO<In, Out>: Send + Sync + 'static {
     /// Calls a global JS function
-    async fn call(&self, name: &str, input: In) -> Result<Option<Out>, error::worker::Error>;
+    async fn call(&self, name: &str, input: In) -> error::worker::Result<Option<Out>>;
 }
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {

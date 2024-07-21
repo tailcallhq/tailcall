@@ -14,7 +14,7 @@ use crate::core::json::JsonLike;
 /// structure. The returned value is encoded as a plain string.
 /// This is typically used in evaluating mustache templates.
 pub trait PathString {
-    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>>;
+    fn path_string<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<Cow<'a, str>>;
 }
 
 /// PathValue trait provides a method for accessing values from JSON-like
@@ -32,8 +32,8 @@ pub trait PathGraphql {
 }
 
 impl PathString for serde_json::Value {
-    fn path_string<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'_, str>> {
-        self.get_path(path).map(|a| match a {
+    fn path_string<'a, T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<Cow<'a, str>> {
+        self.get_path(path).map(move |a| match a {
             serde_json::Value::String(s) => Cow::Borrowed(s.as_str()),
             _ => Cow::Owned(a.to_string()),
         })
@@ -136,7 +136,6 @@ mod tests {
         use std::collections::BTreeMap;
         use std::sync::Arc;
 
-        use async_graphql::SelectionField;
         use async_graphql_value::{ConstValue as Value, Name, Number};
         use hyper::header::HeaderValue;
         use hyper::HeaderMap;
@@ -144,7 +143,7 @@ mod tests {
         use once_cell::sync::Lazy;
 
         use crate::core::http::RequestContext;
-        use crate::core::ir::{EvalContext, ResolverContextLike};
+        use crate::core::ir::{EvalContext, ResolverContextLike, SelectionField};
         use crate::core::path::{PathGraphql, PathString, PathValue, ValueString};
         use crate::core::EnvIO;
 

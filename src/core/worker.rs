@@ -151,7 +151,7 @@ impl WorkerRequest {
         self.0.method().to_string()
     }
 
-    pub fn headers(&self) -> Result<BTreeMap<String, String>, worker::Error> {
+    pub fn headers(&self) -> worker::Result<BTreeMap<String, String>> {
         let headers = self.0.headers();
         let mut map = BTreeMap::new();
         for (k, v) in headers.iter() {
