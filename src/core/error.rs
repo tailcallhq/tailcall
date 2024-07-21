@@ -128,15 +128,10 @@ pub mod cache {
 
     use derive_more::{DebugCustom, From};
 
-    use super::worker;
-
     #[derive(From, DebugCustom, Clone)]
     pub enum Error {
         #[debug(fmt = "Serde Json Error: {}", _0)]
         SerdeJson(Arc<serde_json::Error>),
-
-        #[debug(fmt = "Worker Error: {}", _0)]
-        Worker(worker::Error),
 
         #[debug(fmt = "Kv Error: {}", _0)]
         #[from(ignore)]
@@ -156,7 +151,6 @@ impl Display for cache::Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             cache::Error::SerdeJson(error) => write!(f, "Serde Json Error: {}", error),
-            cache::Error::Worker(error) => write!(f, "Worker Error: {}", error),
             cache::Error::Kv(error) => write!(f, "Kv Error: {}", error),
         }
     }
