@@ -5282,8 +5282,8 @@ dependencies = [
 name = "tailcall-fixtures"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "convert_case 0.6.0",
+ "derive_more",
  "indenter",
 ]
 
