@@ -36,7 +36,6 @@ mod url;
 
 use std::collections::{HashMap, HashSet};
 
-use async_graphql_value::ConstValue;
 use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
 use schemars::schema::Schema;
@@ -121,7 +120,7 @@ pub trait Scalar {
     }
 }
 
-pub fn get_scalar(name: &str) -> fn(&ConstValue) -> bool {
+pub fn get_scalar<Value: JsonLikeOwned>(name: &str) -> fn(&Value) -> bool {
     CUSTOM_SCALARS
         .get(name)
         .map(|v| v.validate())
