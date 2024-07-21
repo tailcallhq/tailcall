@@ -1,55 +1,58 @@
 use std::collections::HashMap;
+use std::ops::DerefMut;
 
-use derive_setters::Setters;
+use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
-use super::{Builder, Error, ExecutionPlan, Result};
+use super::{Builder, OperationPlan, Result, Variables};
 use crate::core::blueprint::Blueprint;
-use crate::core::jit::model::Variables;
 
-#[derive(Debug, Deserialize, Setters, Clone)]
-pub struct Request<Value> {
+#[derive(Debug, Deserialize, Clone)]
+pub struct Request<V> {
     #[serde(default)]
     pub query: String,
     #[serde(default, rename = "operationName")]
     pub operation_name: Option<String>,
     #[serde(default)]
-    pub variables: Variables<Value>,
+    pub variables: Variables<V>,
     #[serde(default)]
-    pub extensions: HashMap<String, Value>,
+    pub extensions: HashMap<String, V>,
 }
 
-impl From<async_graphql::Request> for Request<async_graphql_value::ConstValue> {
-    fn from(value: async_graphql::Request) -> Self {
+impl From<async_graphql::Request> for Request<ConstValue> {
+    fn from(mut value: async_graphql::Request) -> Self {
+        let variables = std::mem::take(value.variables.deref_mut());
+
         Self {
             query: value.query,
             operation_name: value.operation_name,
-            variables: match value.variables.into_value() {
-                async_graphql_value::ConstValue::Object(val) => {
-                    Variables::from_iter(val.into_iter().map(|(name, val)| (name.to_string(), val)))
-                }
-                _ => Variables::default(),
-            },
+            variables: Variables::from_iter(variables.into_iter().map(|(k, v)| (k.to_string(), v))),
             extensions: value.extensions,
         }
     }
 }
 
-impl<Value> Request<Value> {
-    pub fn try_new(&self, blueprint: &Blueprint) -> Result<ExecutionPlan> {
+impl Request<ConstValue> {
+    pub fn create_plan(&self, blueprint: &Blueprint) -> Result<OperationPlan<ConstValue>> {
         let doc = async_graphql::parser::parse_query(&self.query)?;
         let builder = Builder::new(blueprint, doc);
-        builder.build().map_err(Error::BuildError)
+        let plan = builder.build(&self.variables, self.operation_name.as_deref())?;
+
+        Ok(plan)
     }
 }
 
-impl<A> Request<A> {
+impl<V> Request<V> {
     pub fn new(query: &str) -> Self {
         Self {
             query: query.to_string(),
             operation_name: None,
-            variables: Variables::default(),
+            variables: Variables::new(),
             extensions: HashMap::new(),
         }
+    }
+
+    pub fn variables(self, vars: impl IntoIterator<Item = (String, V)>) -> Self {
+        Self { variables: Variables::from_iter(vars), ..self }
     }
 }

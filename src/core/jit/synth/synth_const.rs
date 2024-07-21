@@ -1,34 +1,56 @@
-use async_graphql::{Name, Value};
+use async_graphql::{Name, Positioned};
+use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
-use super::super::Result;
 use super::Synthesizer;
 use crate::core::jit::model::{Field, Nested};
 use crate::core::jit::store::{Data, Store};
-use crate::core::jit::{DataPath, ExecutionPlan, Variables};
+use crate::core::jit::{DataPath, Error, OperationPlan, ValidationError, Variable, Variables};
 use crate::core::json::JsonLike;
+use crate::core::scalar::get_scalar;
 
 pub struct Synth {
-    selection: Vec<Field<Nested>>,
-    store: Store<Result<Value>>,
-    variables: Variables<async_graphql_value::ConstValue>,
+    selection: Vec<Field<Nested<ConstValue>, ConstValue>>,
+    store: Store<Result<ConstValue, Positioned<Error>>>,
+    variables: Variables<ConstValue>,
+}
+
+impl<Extensions, Input> Field<Extensions, Input> {
+    #[inline(always)]
+    pub fn skip(&self, variables: &Variables<ConstValue>) -> bool {
+        let eval = |variable_option: Option<&Variable>,
+                    variables: &Variables<ConstValue>,
+                    default: bool| {
+            match variable_option.map(|a| a.as_str()) {
+                Some(name) => variables.get(name).map_or(default, |value| match value {
+                    ConstValue::Boolean(b) => *b,
+                    _ => default,
+                }),
+                None => default,
+            }
+        };
+        let skip = eval(self.skip.as_ref(), variables, false);
+        let include = eval(self.include.as_ref(), variables, true);
+
+        skip == include
+    }
 }
 
 impl Synth {
     pub fn new(
-        plan: ExecutionPlan,
-        store: Store<Result<Value>>,
-        variables: Variables<async_graphql_value::ConstValue>,
+        plan: OperationPlan<ConstValue>,
+        store: Store<Result<ConstValue, Positioned<Error>>>,
+        variables: Variables<ConstValue>,
     ) -> Self {
         Self { selection: plan.into_nested(), store, variables }
     }
 
     #[inline(always)]
-    fn include<T>(&self, field: &Field<T>) -> bool {
+    fn include<T>(&self, field: &Field<T, ConstValue>) -> bool {
         !field.skip(&self.variables)
     }
 
-    pub fn synthesize(&self) -> Result<Value> {
+    pub fn synthesize(&self) -> Result<ConstValue, Positioned<Error>> {
         let mut data = IndexMap::default();
 
         for child in self.selection.iter() {
@@ -39,27 +61,27 @@ impl Synth {
             data.insert(Name::new(child.name.as_str()), val);
         }
 
-        Ok(Value::Object(data))
+        Ok(ConstValue::Object(data))
     }
 
     /// checks if type_of is an array and value is an array
-    fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
-        type_of.is_list() == value.as_array_ok().is_ok()
+    fn is_array(type_of: &crate::core::blueprint::Type, value: &ConstValue) -> bool {
+        type_of.is_list() == value.as_array().is_some()
     }
 
     #[inline(always)]
     fn iter<'b>(
         &'b self,
-        node: &'b Field<Nested>,
-        parent: Option<&'b Value>,
+        node: &'b Field<Nested<ConstValue>, ConstValue>,
+        parent: Option<&'b ConstValue>,
         data_path: &DataPath,
-    ) -> Result<Value> {
+    ) -> Result<ConstValue, Positioned<Error>> {
         // TODO: this implementation prefer parent value over value in the store
         // that's opposite to the way async_graphql engine works in tailcall
         match parent {
             Some(parent) => {
                 if !Self::is_array(&node.type_of, parent) {
-                    return Ok(Value::Null);
+                    return Ok(ConstValue::Null);
                 }
                 self.iter_inner(node, parent, data_path)
             }
@@ -75,7 +97,7 @@ impl Synth {
                                 Data::Multiple(v) => {
                                     data = &v[index];
                                 }
-                                _ => return Ok(Value::Null),
+                                _ => return Ok(ConstValue::Null),
                             }
                         }
 
@@ -83,14 +105,14 @@ impl Synth {
                             Data::Single(val) => self.iter(node, Some(&val.clone()?), data_path),
                             _ => {
                                 // TODO: should bailout instead of returning Null
-                                Ok(Value::Null)
+                                Ok(ConstValue::Null)
                             }
                         }
                     }
                     None => {
                         // IR exists, so there must be a value.
                         // if there is no value then we must return Null
-                        Ok(Value::Null)
+                        Ok(ConstValue::Null)
                     }
                 }
             }
@@ -99,26 +121,37 @@ impl Synth {
     #[inline(always)]
     fn iter_inner<'b>(
         &'b self,
-        node: &'b Field<Nested>,
-        parent: &'b Value,
+        node: &'b Field<Nested<ConstValue>, ConstValue>,
+        parent: &'b ConstValue,
         data_path: &'b DataPath,
-    ) -> Result<Value> {
+    ) -> Result<ConstValue, Positioned<Error>> {
         let include = self.include(node);
 
         match parent {
-            Value::Object(obj) => {
-                let mut ans = IndexMap::default();
-                let children = node.nested();
-                if include {
-                    if children.is_empty() {
-                        let val = obj.get(node.name.as_str());
-                        // if it's a leaf node, then push the value
-                        if let Some(val) = val {
-                            ans.insert(Name::new(node.name.as_str()), val.to_owned());
-                        } else {
-                            return Ok(Value::Null);
+            // scalar values should be returned as is
+            val if node.is_scalar => {
+                let validation = get_scalar(node.type_of.name());
+
+                // TODO: add validation for input type as well. But input types are not checked
+                // by async_graphql anyway so it should be done after replacing
+                // default engine with JIT
+                if validation(val) {
+                    Ok(val.clone())
+                } else {
+                    Err(Positioned {
+                        pos: node.pos,
+                        node: ValidationError::ScalarInvalid {
+                            type_of: node.type_of.name().to_string(),
+                            path: node.name.clone(),
                         }
-                    } else {
+                        .into(),
+                    })
+                }
+            }
+            ConstValue::Object(obj) => {
+                let mut ans = IndexMap::default();
+                if include {
+                    if let Some(children) = node.nested() {
                         for child in children {
                             // all checks for skip must occur in `iter_inner`
                             // and include be checked before calling `iter` or recursing.
@@ -138,11 +171,27 @@ impl Synth {
                                 }
                             }
                         }
+                    } else {
+                        let val = obj.get(node.name.as_str());
+                        // if it's a leaf node, then push the value
+                        if let Some(val) = val {
+                            ans.insert(Name::new(node.name.as_str()), val.to_owned());
+                        } else {
+                            return Ok(ConstValue::Null);
+                        }
+                    }
+                } else {
+                    let val = obj.get(node.name.as_str());
+                    // if it's a leaf node, then push the value
+                    if let Some(val) = val {
+                        ans.insert(Name::new(node.name.as_str()), val.to_owned());
+                    } else {
+                        return Ok(ConstValue::Null);
                     }
                 }
-                Ok(Value::Object(ans))
+                Ok(ConstValue::Object(ans))
             }
-            Value::List(arr) => {
+            ConstValue::List(arr) => {
                 let mut ans = vec![];
                 if include {
                     for (i, val) in arr.iter().enumerate() {
@@ -150,7 +199,7 @@ impl Synth {
                         ans.push(val)
                     }
                 }
-                Ok(Value::List(ans))
+                Ok(ConstValue::List(ans))
             }
             val => Ok(val.clone()), // cloning here would be cheaper than cloning whole value
         }
@@ -158,18 +207,18 @@ impl Synth {
 }
 
 pub struct SynthConst {
-    plan: ExecutionPlan,
+    plan: OperationPlan<ConstValue>,
 }
 
 impl SynthConst {
-    pub fn new(plan: ExecutionPlan) -> Self {
+    pub fn new(plan: OperationPlan<ConstValue>) -> Self {
         Self { plan }
     }
 }
 
 impl Synthesizer for SynthConst {
-    type Value = Result<Value>;
-    type Variable = Value;
+    type Value = Result<ConstValue, Positioned<Error>>;
+    type Variable = ConstValue;
 
     fn synthesize(
         self,
@@ -269,7 +318,7 @@ mod tests {
         let config = ConfigModule::from(config);
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
-        let plan = builder.build().unwrap();
+        let plan = builder.build(&Variables::new(), None).unwrap();
 
         let store = store
             .into_iter()

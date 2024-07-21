@@ -3,6 +3,7 @@ entr
 Hasher
 Htpasswd
 httpmock
+indexmap
 inlines
 insta
 jsonplaceholder

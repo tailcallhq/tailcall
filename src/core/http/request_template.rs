@@ -45,7 +45,7 @@ impl RequestTemplate {
         // template.
         let mustache_eval = ValueStringEval::default();
 
-        let extra_qp = self.query.iter().filter_map(|(key, value)| {
+        let extra_qp = self.query.iter().map(|(key, value)| {
             let parsed_value = mustache_eval.eval(value, ctx);
             self.query_encoder.encode(key, parsed_value)
         });
@@ -327,7 +327,7 @@ mod tests {
     }
 
     impl crate::core::path::PathString for Context {
-        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+        fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'_, str>> {
             self.value.path_string(parts)
         }
     }
@@ -683,7 +683,7 @@ mod tests {
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
             let req = tmpl.to_request(&ctx).unwrap();
-            assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1");
+            assert_eq!(req.url().to_string(), "http://localhost:3000/?q=1&b=1&c");
         }
 
         #[test]
@@ -725,7 +725,7 @@ mod tests {
             let req = tmpl.to_request(&ctx).unwrap();
             assert_eq!(
                 req.url().to_string(),
-                "http://localhost:3000/foo?b=foo&d=bar&f=baz"
+                "http://localhost:3000/foo?b=foo&d=bar&f=baz&e"
             );
         }
 
