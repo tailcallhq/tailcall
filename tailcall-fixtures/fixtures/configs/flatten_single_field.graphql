@@ -5,6 +5,7 @@ schema {
 type Query {
   foo: Foo
   not_single: NotSingle
+  not_single_middle: NotSingleMiddle
   user: User
 }
 
@@ -21,6 +22,28 @@ type Bar {
 type NotSingle {
   f1: Int
   f2: Int
+}
+
+# Middle nested type is not single
+type NotSingleMiddle {
+  t1: Type1
+}
+
+type Type1 {
+  t2: Type2
+}
+
+type Type2 {
+  t3: Type3
+  t4: Type4
+}
+
+type Type3 {
+  t5: Int
+}
+
+type Type4 {
+  t6: Bool
 }
 
 # Recursive type
