@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use async_graphql::context::SelectionField;
 use async_graphql::{Name, Value};
 use async_trait::async_trait;
 use criterion::{BenchmarkId, Criterion};
@@ -18,7 +17,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use tailcall::core::blueprint::{Server, Upstream};
 use tailcall::core::cache::InMemoryCache;
 use tailcall::core::http::{RequestContext, Response};
-use tailcall::core::ir::{EvalContext, ResolverContextLike};
+use tailcall::core::ir::{EvalContext, ResolverContextLike, SelectionField};
 use tailcall::core::path::PathString;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};

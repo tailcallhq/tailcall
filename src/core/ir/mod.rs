@@ -13,7 +13,9 @@ use std::ops::Deref;
 pub use discriminator::*;
 pub use error::*;
 pub use eval_context::EvalContext;
-pub use resolver_context_like::{EmptyResolverContext, ResolverContext, ResolverContextLike};
+pub use resolver_context_like::{
+    EmptyResolverContext, ResolverContext, ResolverContextLike, SelectionField,
+};
 
 /// Contains all the nested fields that are resolved with current parent
 /// resolver i.e. fields that don't have their own resolver and are resolved by
