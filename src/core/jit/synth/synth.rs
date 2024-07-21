@@ -2,35 +2,9 @@ use async_graphql::Positioned;
 
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
-use crate::core::jit::synth::Synthesizer;
 use crate::core::jit::{Error, ValidationError};
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::scalar::get_scalar;
-
-// TODO: rename
-pub struct AlsoSynth<Value> {
-    plan: OperationPlan<Value>,
-}
-
-impl<Value: JsonLikeOwned> AlsoSynth<Value> {
-    pub fn new(plan: OperationPlan<Value>) -> Self {
-        Self { plan }
-    }
-}
-
-impl<Value: JsonLikeOwned + Clone> Synthesizer for AlsoSynth<Value> {
-    type Value = Result<Value, Positioned<Error>>;
-    type Variable = async_graphql_value::ConstValue;
-
-    fn synthesize(
-        self,
-        store: Store<Self::Value>,
-        variables: Variables<Self::Variable>,
-    ) -> Self::Value {
-        let synth = Synth::new(self.plan, store, variables);
-        synth.synthesize()
-    }
-}
 
 pub struct Synth<Value> {
     selection: Vec<Field<Nested<Value>, Value>>,
