@@ -23,6 +23,7 @@ lazy_static = "1.4.0"
 serde_json = { version = "1.0.116", features = ["preserve_order"] }
 serde = { version = "1.0.200", features = ["derive"] }
 derive_more = "0.99.18"
+thiserror = "1.0.59"
 url = { version = "2.5.0", features = ["serde"] }
 
 [dependencies]
@@ -63,7 +64,7 @@ anyhow = { workspace = true }
 reqwest = { workspace = true }
 derive_setters = "0.1.6"
 derive-getters = "0.4.0"
-thiserror = "1.0.59"
+thiserror = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
 serde_qs = "0.13"
