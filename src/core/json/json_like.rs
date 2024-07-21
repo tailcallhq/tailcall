@@ -9,7 +9,8 @@ pub trait JsonLike<'a>: Sized {
 
     // Constructors
     fn null() -> Self;
-    fn array(value: Vec<Self>) -> Self where Self: 'a;
+    fn object(obj: Self::JsonObject) -> Self;
+    fn array(arr: Vec<Self>) -> Self;
 
     // Operators
     fn as_array(&'a self) -> Option<&'a Vec<Self>>;
@@ -30,7 +31,7 @@ pub trait JsonObjectLike<'a>: Sized {
     type Value;
     fn new() -> Self;
     fn get_key(&'a self, key: &str) -> Option<&Self::Value>;
-    fn insert_key(&'a mut self, key: &'a str, value: Self::Value);
+    fn insert_key(self, key: &'a str, value: Self::Value) -> Self;
 }
 
 #[cfg(test)]
