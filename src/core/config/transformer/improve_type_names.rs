@@ -38,9 +38,9 @@ impl<'a> CandidateConvergence<'a> {
             // Filter out candidates that have already been converged or are already present
             // in types
             let candidates_to_consider = candidate_list.iter().filter(|(candidate_name, _)| {
-                let singularized_candidate_name = candidate_name.to_pascal_case();
-                !converged_candidate_set.contains(&singularized_candidate_name)
-                    && !self.config.types.contains_key(&singularized_candidate_name)
+                let candidate_type_name = candidate_name.to_pascal_case();
+                !converged_candidate_set.contains(&candidate_type_name)
+                    && !self.config.types.contains_key(&candidate_type_name)
             });
 
             // Find the candidate with the highest frequency and priority
