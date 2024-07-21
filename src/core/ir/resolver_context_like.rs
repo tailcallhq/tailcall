@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::parser::types::OperationType;
 use async_graphql::{Name, ServerError, Value};
+use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use crate::core::jit::{Directive, Nested};
@@ -74,7 +75,7 @@ impl<'a> ResolverContextLike for ResolverContext<'a> {
 pub struct SelectionField {
     name: String,
     args: Vec<(String, String)>,
-    directives: Option<Vec<Directive<async_graphql_value::ConstValue>>>,
+    directives: Option<Vec<Directive<ConstValue>>>,
     selection_set: Vec<SelectionField>,
 }
 
@@ -84,30 +85,15 @@ impl From<async_graphql::SelectionField<'_>> for SelectionField {
     }
 }
 
-impl<'a>
-    From<
-        &'a crate::core::jit::Field<
-            Nested<async_graphql_value::ConstValue>,
-            async_graphql_value::ConstValue,
-        >,
-    > for SelectionField
-{
-    fn from(
-        value: &'a crate::core::jit::Field<
-            Nested<async_graphql_value::ConstValue>,
-            async_graphql_value::ConstValue,
-        >,
-    ) -> Self {
+impl<'a> From<&'a crate::core::jit::Field<Nested<ConstValue>, ConstValue>> for SelectionField {
+    fn from(value: &'a crate::core::jit::Field<Nested<ConstValue>, ConstValue>) -> Self {
         Self::from_jit_field(value)
     }
 }
 
 impl SelectionField {
     fn from_jit_field(
-        field: &crate::core::jit::Field<
-            Nested<async_graphql_value::ConstValue>,
-            async_graphql_value::ConstValue,
-        >,
+        field: &crate::core::jit::Field<Nested<ConstValue>, ConstValue>,
     ) -> SelectionField {
         let name = field.name.clone();
         let selection_set = field.nested_iter().map(Self::from_jit_field).collect();
@@ -162,7 +148,7 @@ impl SelectionField {
         Self { name, args, selection_set, directives }
     }
 
-    pub fn directives(&self) -> &Option<Vec<Directive<async_graphql_value::ConstValue>>> {
+    pub fn directives(&self) -> &Option<Vec<Directive<ConstValue>>> {
         &self.directives
     }
 
