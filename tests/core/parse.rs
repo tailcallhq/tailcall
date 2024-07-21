@@ -15,10 +15,8 @@ use tailcall::cli::javascript;
 use tailcall::core::app_context::AppContext;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::cache::InMemoryCache;
-use tailcall::core::config::transformer::Preset;
 use tailcall::core::config::{ConfigModule, Source};
 use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::valid::Validator;
 use tailcall::core::worker::{Command, Event};
 use tailcall::core::{EnvIO, WorkerIO};
 
@@ -61,7 +59,6 @@ impl ExecutionSpec {
         let mut runner: Option<Annotation> = None;
         let mut check_identity = false;
         let mut sdl_error = false;
-        let mut preset = false; // enable preset transformer
 
         while let Some(node) = children.next() {
             match node {
@@ -100,7 +97,6 @@ impl ExecutionSpec {
                                     if a.contains("skip") && b.ends_with("true") {
                                         runner = Some(Annotation::Skip);
                                     }
-                                    preset = a.contains("preset") && b.ends_with("true");
                                 }
                                 _ => {
                                     return Err(anyhow!(
@@ -266,7 +262,6 @@ impl ExecutionSpec {
 
             check_identity,
             sdl_error,
-            preset,
         };
 
         anyhow::Ok(spec)
@@ -278,16 +273,7 @@ impl ExecutionSpec {
         env: HashMap<String, String>,
         http: Arc<Http>,
     ) -> Arc<AppContext> {
-        let config = if self.preset {
-            config
-                .to_owned()
-                .transform(Preset::default())
-                .to_result()
-                .unwrap()
-        } else {
-            config.to_owned()
-        };
-        let mut blueprint = Blueprint::try_from(&config).unwrap();
+        let mut blueprint = Blueprint::try_from(config).unwrap();
 
         if cfg!(feature = "force_jit") {
             blueprint.server.enable_jit = true;
