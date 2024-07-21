@@ -68,11 +68,7 @@ pub trait HttpIO: Sync + Send + 'static {
 
 #[async_trait::async_trait]
 pub trait FileIO: Send + Sync {
-    async fn write<'a>(
-        &'a self,
-        path: &'a str,
-        content: &'a [u8],
-    ) -> error::file::Result<()>;
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> error::file::Result<()>;
     async fn read<'a>(&'a self, path: &'a str) -> error::file::Result<String>;
 }
 

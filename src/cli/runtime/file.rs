@@ -27,11 +27,7 @@ async fn write<'a>(path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
 
 #[async_trait::async_trait]
 impl FileIO for NativeFileIO {
-    async fn write<'a>(
-        &'a self,
-        path: &'a str,
-        content: &'a [u8],
-    ) -> file::Result<()> {
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> file::Result<()> {
         write(path, content)
             .await
             .map_err(|_| file::Error::FileWriteFailed(path.to_string()))?;

@@ -2,7 +2,6 @@ use std::fmt::Display;
 use std::string::FromUtf8Error;
 
 use derive_more::From;
-use inquire::InquireError;
 
 use super::config::UnsupportedConfigFormat;
 
@@ -15,7 +14,7 @@ pub enum Error {
     File(file::Error),
 
     #[error("Inquire Error: {}", _0)]
-    Inquire(InquireError),
+    Inquire(String),
 
     #[error("Serde Yaml Error: {}", _0)]
     SerdeYaml(serde_yaml::Error),
@@ -23,7 +22,7 @@ pub enum Error {
     #[error("Package name is required")]
     PackageNameNotFound,
 
-    #[error("Protox Parse Error")]
+    #[error("Protox Parse Error: {}", _0)]
     ProtoxParse(protox_parse::ParseError),
 
     #[error("Unable to extract content of google well-known proto file")]
@@ -32,7 +31,7 @@ pub enum Error {
     #[error("Utf8 Error: {}", _0)]
     Utf8(FromUtf8Error),
 
-    #[error("Unsupported Config Format")]
+    #[error("Unsupported Config Format: {}", _0)]
     UnsupportedConfigFormat(UnsupportedConfigFormat),
 
     #[error("Unsupported File Format")]

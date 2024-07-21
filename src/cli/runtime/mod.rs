@@ -95,7 +95,8 @@ pub async fn confirm_and_write(
     if file_exists {
         let confirm = Confirm::new(&format!("Do you want to overwrite the file {path}?"))
             .with_default(false)
-            .prompt()?;
+            .prompt()
+            .map_err(|e| error::Error::Inquire(e.to_string()))?;
 
         if !confirm {
             return Ok(());
