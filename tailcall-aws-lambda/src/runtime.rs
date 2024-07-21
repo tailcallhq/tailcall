@@ -29,11 +29,11 @@ pub struct LambdaFileIO;
 
 #[async_trait::async_trait]
 impl FileIO for LambdaFileIO {
-    async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> Result<(), file::Error> {
+    async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> file::Result<()> {
         Err(file::Error::LambdaFileWriteNotSupported)
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> Result<String, file::Error> {
+    async fn read<'a>(&'a self, path: &'a str) -> file::Result<String> {
         let mut file = tokio::fs::File::open(path).await?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).await?;

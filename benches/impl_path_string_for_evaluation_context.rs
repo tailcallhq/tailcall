@@ -90,11 +90,11 @@ impl EnvIO for Env {
 struct File;
 #[async_trait]
 impl FileIO for File {
-    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> Result<(), file::Error> {
+    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> file::Result<()> {
         unimplemented!("Not needed for this bench")
     }
 
-    async fn read<'a>(&'a self, _: &'a str) -> Result<String, file::Error> {
+    async fn read<'a>(&'a self, _: &'a str) -> file::Result<String> {
         unimplemented!("Not needed for this bench")
     }
 }

@@ -198,10 +198,10 @@ pub mod file {
         #[from(ignore)]
         FileWriteFailed(String),
 
-        #[debug(fmt = "Std IO Error")]
+        #[debug(fmt = "Std IO Error: {}", _0)]
         StdIO(std::io::Error),
 
-        #[debug(fmt = "Utf8 Error")]
+        #[debug(fmt = "Utf8 Error: {}", _0)]
         Utf8(FromUtf8Error),
 
         #[debug(fmt = "File writing not supported on Lambda.")]
@@ -217,6 +217,8 @@ pub mod file {
         #[debug(fmt = "Error : {}", _0)]
         Anyhow(anyhow::Error),
     }
+
+    pub type Result<A> = std::result::Result<A, Error>;
 }
 
 impl Display for file::Error {
@@ -230,8 +232,8 @@ impl Display for file::Error {
             file::Error::InvalidOsString => write!(f, "Invalid OS string"),
             file::Error::FileReadFailed(path) => write!(f, "Failed to read file: {}", path),
             file::Error::FileWriteFailed(path) => write!(f, "Failed to write file: {}", path),
-            file::Error::StdIO(_) => write!(f, "Std IO Error"),
-            file::Error::Utf8(_) => write!(f, "Utf8 Error"),
+            file::Error::StdIO(error) => write!(f, "Std IO Error: {}", error),
+            file::Error::Utf8(error) => write!(f, "Utf8 Error: {}", error),
             file::Error::LambdaFileWriteNotSupported => {
                 write!(f, "File writing not supported on Lambda.")
             }

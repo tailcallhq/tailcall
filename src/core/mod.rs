@@ -72,8 +72,8 @@ pub trait FileIO: Send + Sync {
         &'a self,
         path: &'a str,
         content: &'a [u8],
-    ) -> Result<(), error::file::Error>;
-    async fn read<'a>(&'a self, path: &'a str) -> Result<String, error::file::Error>;
+    ) -> error::file::Result<()>;
+    async fn read<'a>(&'a self, path: &'a str) -> error::file::Result<String>;
 }
 
 #[async_trait::async_trait]

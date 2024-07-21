@@ -142,7 +142,7 @@ pub mod test {
             &'a self,
             path: &'a str,
             content: &'a [u8],
-        ) -> crate::core::Result<(), error::file::Error> {
+        ) -> error::file::Result<()> {
             let mut file = tokio::fs::File::create(path).await?;
             file.write_all(content).await?;
             Ok(())
@@ -151,7 +151,7 @@ pub mod test {
         async fn read<'a>(
             &'a self,
             path: &'a str,
-        ) -> crate::core::Result<String, error::file::Error> {
+        ) -> error::file::Result<String> {
             let mut file = tokio::fs::File::open(path).await?;
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer).await?;
