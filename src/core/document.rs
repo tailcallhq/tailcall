@@ -112,17 +112,14 @@ fn const_directive_to_sdl<Input: DirectiveAdapter>(directive: &Input) -> Directi
         name: pos(Name::new(directive.name())),
         arguments: directive
             .arguments()
-            .iter()
             .filter_map(|(k, v)| {
-                if **v != ConstValue::Null {
+                if *v != ConstValue::Null {
                     Some(pos(InputValueDefinition {
                         description: None,
-                        name: pos(Name::new(k.clone())),
+                        name: pos(Name::new(k)),
                         ty: pos(Type {
                             nullable: true,
-                            base: async_graphql::parser::types::BaseType::Named(Name::new(
-                                v.to_string(),
-                            )),
+                            base: async_graphql::parser::types::BaseType::Named(Name::new(v.to_string())),
                         }),
                         default_value: Some(pos(ConstValue::String(v.to_string()))),
                         directives: Vec::new(),

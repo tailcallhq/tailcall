@@ -324,7 +324,7 @@ impl<Input> OperationPlan<Input> {
 /// ConstDirective and our custom Directive implementation.
 pub trait DirectiveAdapter {
     fn name(&self) -> &str;
-    fn arguments(&self) -> Vec<(String, &ConstValue)>;
+    fn arguments(&self) -> impl Iterator<Item = (&str, &ConstValue)>;
 }
 
 impl DirectiveAdapter for ConstDirective {
@@ -332,11 +332,10 @@ impl DirectiveAdapter for ConstDirective {
         &self.name.node
     }
 
-    fn arguments(&self) -> Vec<(String, &ConstValue)> {
+    fn arguments(&self) -> impl Iterator<Item = (&str, &ConstValue)> {
         self.arguments
             .iter()
-            .map(|(k, v)| (k.node.to_string(), &v.node))
-            .collect::<Vec<_>>()
+            .map(|(k, v)| (k.node.as_str(), &v.node))
     }
 }
 
@@ -345,11 +344,8 @@ impl DirectiveAdapter for Directive<ConstValue> {
         &self.name
     }
 
-    fn arguments(&self) -> Vec<(String, &ConstValue)> {
-        self.arguments
-            .iter()
-            .map(|(k, v)| (k.to_owned(), v))
-            .collect::<Vec<_>>()
+    fn arguments(&self) -> impl Iterator<Item = (&str, &ConstValue)> {
+        self.arguments.iter().map(|(k, v)| (k.as_str(), v))
     }
 }
 
