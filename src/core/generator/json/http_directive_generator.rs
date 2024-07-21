@@ -244,64 +244,45 @@ mod test {
         assert_eq!(parser.get_query_params().len(), 0);
     }
 
+    fn add_arg_to_field(field: &mut Field, key: &str, type_of: &str) {
+        field.args.insert(
+            key.to_string(),
+            Arg {
+                type_of: type_of.to_string(),
+                required: true,
+                ..Default::default()
+            },
+        );
+    }
+
     #[test]
     fn test_variable_detection_with_route_provided() {
         let url = Url::parse("http://example.com/v1/albums/wpa/photos/2").unwrap();
         let route = Some("/v1/albums/$album_name/photos/$id".to_string());
+
         let mut http_directive_gen = HttpDirectiveGenerator::new(&url, route.as_ref());
-        let mut actual_field = Field { list: false, ..Default::default() };
-        http_directive_gen.add_path_variables(&mut actual_field);
+        let mut actual: Field = Default::default();
+        http_directive_gen.add_path_variables(&mut actual);
 
-        let mut expected_field = Field { list: false, args: BTreeMap::new(), ..Default::default() };
+        let mut expected: Field = Default::default();
+        add_arg_to_field(&mut expected, "p1", "String");
+        add_arg_to_field(&mut expected, "p2", "Int");
 
-        expected_field.args.insert(
-            "p1".to_string(),
-            Arg {
-                type_of: "String".to_string(),
-                required: true,
-                ..Default::default()
-            },
-        );
-
-        expected_field.args.insert(
-            "p2".to_string(),
-            Arg {
-                type_of: "Int".to_string(),
-                required: true,
-                ..Default::default()
-            },
-        );
-
-        assert_eq!(actual_field, expected_field);
+        assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_variable_detection_with_best_effort() {
         let url = Url::parse("http://example.com/v22/api/albums/wpa22/photos/2/delete").unwrap();
+
         let mut http_directive_gen = HttpDirectiveGenerator::new(&url, None);
-        let mut actual_field = Field { list: false, ..Default::default() };
-        http_directive_gen.add_path_variables(&mut actual_field);
+        let mut actual: Field = Default::default();
+        http_directive_gen.add_path_variables(&mut actual);
 
-        let mut expected_field = Field { list: false, args: BTreeMap::new(), ..Default::default() };
+        let mut expected: Field = Default::default();
+        add_arg_to_field(&mut expected, "p1", "String");
+        add_arg_to_field(&mut expected, "p2", "Int");
 
-        expected_field.args.insert(
-            "p1".to_string(),
-            Arg {
-                type_of: "String".to_string(),
-                required: true,
-                ..Default::default()
-            },
-        );
-
-        expected_field.args.insert(
-            "p2".to_string(),
-            Arg {
-                type_of: "Int".to_string(),
-                required: true,
-                ..Default::default()
-            },
-        );
-
-        assert_eq!(actual_field, expected_field);
+        assert_eq!(actual, expected);
     }
 }
