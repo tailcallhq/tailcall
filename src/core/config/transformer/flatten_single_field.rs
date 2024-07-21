@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-
 use crate::core::config::{AddField, Config, Omit};
 use crate::core::transform::Transform;
 use crate::core::valid::{Valid, Validator};
@@ -29,7 +28,12 @@ fn get_single_field_path(
     if let Some(ty) = ty {
         if ty.fields.len() == 1 {
             if let Some((sub_field_name, sub_field)) = ty.fields.first_key_value() {
-                let sub_path = get_single_field_path(config, sub_field_name, &sub_field.type_of, visited_types);
+                let sub_path = get_single_field_path(
+                    config,
+                    sub_field_name,
+                    &sub_field.type_of,
+                    visited_types,
+                );
                 if let Some(sub_path) = sub_path {
                     path.extend(sub_path);
                     Some(path)
@@ -58,9 +62,12 @@ impl Transform for FlattenSingleField {
                 let field_trans =
                     Valid::from_iter(root_query.fields.iter_mut(), |(name, field)| {
                         let mut visited_types = HashSet::<String>::new();
-                        if let Some(path) =
-                            get_single_field_path(&origin_config, name, &field.type_of, &mut visited_types)
-                        {
+                        if let Some(path) = get_single_field_path(
+                            &origin_config,
+                            name,
+                            &field.type_of,
+                            &mut visited_types,
+                        ) {
                             if path.len() > 1 {
                                 field.omit = Some(Omit {});
                                 root_query
