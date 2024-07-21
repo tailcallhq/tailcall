@@ -8,7 +8,7 @@ use crate::core::jit::builder::Builder;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::Variables;
-use crate::core::json::JsonLike;
+use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::Validator;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
@@ -20,13 +20,13 @@ impl JsonPlaceholder {
     const USERS: &'static str = include_str!("users.json");
     const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    pub fn init(query: &str) -> Synth {
+    pub fn init(query: &str) -> Synth<Value> {
         let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
 
         let user_map = users.iter().fold(HashMap::new(), |mut map, user| {
             let id = if let Value::Object(user) = user {
-                user.get("id").and_then(|u| u.as_u64_ok().ok())
+                user.get("id").and_then(|u| u.as_u64())
             } else {
                 None
             };
@@ -40,20 +40,19 @@ impl JsonPlaceholder {
         let users: HashMap<_, _> = posts
             .iter()
             .map(|post| {
-                let user_id = if let Value::Object(post) = post {
-                    post.get("userId").and_then(|u| u.as_u64_ok().ok())
-                } else {
-                    None
-                };
+                let user_id = post
+                    .as_object()
+                    .and_then(|v| v.get_key("userId"))
+                    .and_then(|u| u.as_u64());
 
                 if let Some(user_id) = user_id {
                     if let Some(user) = user_map.get(&user_id) {
                         user.to_owned().to_owned().to_owned()
                     } else {
-                        Value::Null
+                        Value::null()
                     }
                 } else {
-                    Value::Null
+                    Value::null()
                 }
             })
             .map(Ok)
@@ -66,7 +65,8 @@ impl JsonPlaceholder {
             &Blueprint::try_from(&config).unwrap(),
             async_graphql::parser::parse_query(query).unwrap(),
         );
-        let plan = builder.build().unwrap();
+        let vars = Variables::new();
+        let plan = builder.build(&vars, None).unwrap();
         let posts_id = plan.find_field_path(&["posts"]).unwrap().id.to_owned();
         let users_id = plan
             .find_field_path(&["posts", "user"])
@@ -74,7 +74,7 @@ impl JsonPlaceholder {
             .id
             .to_owned();
         let store = [
-            (posts_id, Data::Single(Ok(Value::List(posts)))),
+            (posts_id, Data::Single(Ok(Value::array(posts)))),
             (users_id, Data::Multiple(users)),
         ]
         .into_iter()
@@ -82,8 +82,6 @@ impl JsonPlaceholder {
             store.set_data(id, data);
             store
         });
-
-        let vars = Variables::new();
         Synth::new(plan, store, vars)
     }
 }
