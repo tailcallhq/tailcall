@@ -22,10 +22,6 @@ impl Preset {
             use_better_names: false,
         }
     }
-
-    pub fn is_invalid_threshold(threshold: f32) -> bool {
-        !(0.0..=1.0).contains(&threshold)
-    }
 }
 
 impl Transform for Preset {

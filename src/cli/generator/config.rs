@@ -94,42 +94,43 @@ pub struct Schema {
     pub query: Option<String>,
 }
 
-impl TryFrom<Preset> for config::transformer::Preset {
-    type Error = ValidationError<String>;
-    fn try_from(val: Preset) -> Result<Self, Self::Error> {
+impl Preset {
+    pub fn into_config_preset(&self) -> Valid<config::transformer::Preset, String> {
         let mut preset = config::transformer::Preset::new();
 
-        if let Some(merge_type) = val.merge_type {
-            if config::transformer::Preset::is_invalid_threshold(merge_type) {
+        if let Some(merge_type) = self.merge_type {
+            if Self::is_invalid_threshold(merge_type) {
                 return Valid::fail(format!(
                     "Invalid threshold value ({:.2}). Allowed range is [0.0 - 1.0] inclusive.",
                     merge_type
-                ))
-                .to_result();
+                ));
             }
             preset = preset.merge_type(merge_type);
         }
 
-        if let Some(consolidate_url) = val.consolidate_url {
-            if config::transformer::Preset::is_invalid_threshold(consolidate_url) {
+        if let Some(consolidate_url) = self.consolidate_url {
+            if Self::is_invalid_threshold(consolidate_url) {
                 return Valid::fail(format!(
                     "Invalid threshold value ({:.2}). Allowed range is [0.0 - 1.0] inclusive.",
                     consolidate_url
-                ))
-                .to_result();
+                ));
             }
             preset = preset.consolidate_url(consolidate_url);
         }
 
-        if let Some(use_better_names) = val.use_better_names {
+        if let Some(use_better_names) = self.use_better_names {
             preset = preset.use_better_names(use_better_names);
         }
 
-        if let Some(tree_shake) = val.tree_shake {
+        if let Some(tree_shake) = self.tree_shake {
             preset = preset.tree_shake(tree_shake);
         }
 
-        Ok(preset)
+        Valid::succeed(preset)
+    }
+
+    fn is_invalid_threshold(threshold: f32) -> bool {
+        !(0.0..=1.0).contains(&threshold)
     }
 }
 
@@ -333,8 +334,7 @@ mod tests {
             consolidate_url: None,
         };
 
-        let transform_preset: Result<config::transformer::Preset, ValidationError<String>> =
-            config_preset.try_into();
+        let transform_preset = config_preset.into_config_preset().to_result();
         assert!(transform_preset.is_err());
     }
 
@@ -346,7 +346,8 @@ mod tests {
             merge_type: Some(0.5),
             consolidate_url: Some(1.0),
         };
-        let transform_preset: config::transformer::Preset = config_preset.try_into().unwrap();
+        let transform_preset: config::transformer::Preset =
+            config_preset.into_config_preset().to_result().unwrap();
         let expected_preset = config::transformer::Preset::new()
             .use_better_names(true)
             .tree_shake(true)
