@@ -394,7 +394,7 @@ mod tests {
     #[test]
     fn test_json_placeholder() {
         let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
-        let val = synth.synthesize().unwrap();
+        let val: async_graphql::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }
