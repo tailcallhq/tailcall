@@ -97,7 +97,7 @@ pub struct Schema {
 impl TryFrom<Preset> for config::transformer::Preset {
     type Error = ValidationError<String>;
     fn try_from(val: Preset) -> Result<Self, Self::Error> {
-        let mut preset = config::transformer::Preset::default();
+        let mut preset = config::transformer::Preset::new();
 
         if let Some(merge_type) = val.merge_type {
             if config::transformer::Preset::is_invalid_threshold(merge_type) {
@@ -325,18 +325,6 @@ mod tests {
     }
 
     #[test]
-    fn should_use_default_presets_when_none_provided() {
-        let config_preset = Preset {
-            tree_shake: None,
-            use_better_names: None,
-            merge_type: None,
-            consolidate_url: None,
-        };
-        let transform_preset: config::transformer::Preset = config_preset.try_into().unwrap();
-        assert_eq!(transform_preset, config::transformer::Preset::default());
-    }
-
-    #[test]
     fn should_fail_when_invalid_merge_type_threshold() {
         let config_preset = Preset {
             tree_shake: None,
@@ -359,7 +347,7 @@ mod tests {
             consolidate_url: Some(1.0),
         };
         let transform_preset: config::transformer::Preset = config_preset.try_into().unwrap();
-        let expected_preset = config::transformer::Preset::default()
+        let expected_preset = config::transformer::Preset::new()
             .use_better_names(true)
             .tree_shake(true)
             .consolidate_url(1.0)

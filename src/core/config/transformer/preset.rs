@@ -5,7 +5,7 @@ use crate::core::transform::{self, Transform, TransformerOps};
 
 /// Defines a set of default transformers that can be applied to any
 /// configuration to make it more maintainable.
-#[derive(Default, Setters, Debug, PartialEq)]
+#[derive(Setters, Debug, PartialEq)]
 pub struct Preset {
     merge_type: f32,
     consolidate_url: f32,
@@ -14,6 +14,15 @@ pub struct Preset {
 }
 
 impl Preset {
+    pub fn new() -> Self {
+        Self {
+            merge_type: 0.0,
+            consolidate_url: 0.0,
+            tree_shake: false,
+            use_better_names: false,
+        }
+    }
+
     pub fn is_invalid_threshold(threshold: f32) -> bool {
         !(0.0..=1.0).contains(&threshold)
     }
@@ -40,5 +49,16 @@ impl Transform for Preset {
                     .when(super::ConsolidateURL::is_enabled(self.consolidate_url)),
             )
             .transform(config)
+    }
+}
+
+impl Default for Preset {
+    fn default() -> Self {
+        Self {
+            merge_type: 1.0,
+            consolidate_url: 0.5,
+            use_better_names: true,
+            tree_shake: true,
+        }
     }
 }

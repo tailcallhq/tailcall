@@ -111,12 +111,8 @@ mod tests {
             ));
         }
 
-        let preset = Preset::default()
-            .merge_type(1.0)
-            .consolidate_url(0.5)
-            .use_better_names(true);
         let config = FromJsonGenerator::new(&request_samples, &NameGenerator::new("T"), "Query")
-            .pipe(preset)
+            .pipe(Preset::default())
             .generate()
             .to_result()?;
 
