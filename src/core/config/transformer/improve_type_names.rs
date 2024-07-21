@@ -38,7 +38,7 @@ impl<'a> CandidateConvergence<'a> {
             // Filter out candidates that have already been converged or are already present
             // in types
             let candidates_to_consider = candidate_list.iter().filter(|(candidate_name, _)| {
-                let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
+                let singularized_candidate_name = candidate_name.to_pascal_case();
                 !converged_candidate_set.contains(&singularized_candidate_name)
                     && !self.config.types.contains_key(&singularized_candidate_name)
             });
@@ -47,7 +47,7 @@ impl<'a> CandidateConvergence<'a> {
             if let Some((candidate_name, _)) = candidates_to_consider
                 .max_by_key(|(key, value)| (value.frequency, value.priority, *key))
             {
-                let singularized_candidate_name = candidate_name.to_singular().to_pascal_case();
+                let singularized_candidate_name = candidate_name.to_pascal_case();
                 finalized_candidates
                     .insert(type_name.to_owned(), singularized_candidate_name.clone());
                 converged_candidate_set.insert(singularized_candidate_name);
@@ -86,7 +86,7 @@ impl<'a> CandidateGeneration<'a> {
                     .entry(field_info.type_of.to_owned())
                     .or_default();
 
-                let singularized_field_name = field_name.to_singular().to_pascal_case();
+                let singularized_field_name = field_name.to_singular();
 
                 if let Some(key_val) = inner_map.get_mut(&singularized_field_name) {
                     key_val.frequency += 1
