@@ -122,11 +122,45 @@ impl Variable {
     }
 }
 
-impl<Extensions, Input> Field<Extensions, Input> {
+impl<Input> Field<Nested<Input>, Input> {
+    pub fn try_map<Output, Error>(
+        self,
+        map: &impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<Field<Nested<Output>, Output>, Error> {
+        let mut extensions = None;
+
+        if let Some(nested) = self.extensions {
+            let mut exts = vec![];
+            for v in nested.0 {
+                exts.push(v.try_map(map)?);
+            }
+            extensions = Some(Nested(exts));
+        }
+
+        Ok(Field {
+            id: self.id,
+            name: self.name,
+            ir: self.ir,
+            type_of: self.type_of,
+            extensions,
+            pos: self.pos,
+            skip: self.skip,
+            include: self.include,
+            args: self
+                .args
+                .into_iter()
+                .map(|arg| arg.try_map(map))
+                .collect::<Result<_, _>>()?,
+            is_scalar: false,
+        })
+    }
+}
+
+impl<Input> Field<Flat, Input> {
     pub fn try_map<Output, Error>(
         self,
         map: impl Fn(Input) -> Result<Output, Error>,
-    ) -> Result<Field<Extensions, Output>, Error> {
+    ) -> Result<Field<Flat, Output>, Error> {
         Ok(Field {
             id: self.id,
             name: self.name,
@@ -260,6 +294,27 @@ pub struct OperationPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
+}
+
+impl<Input> OperationPlan<Input> {
+    pub fn try_map<Output, Error>(
+        self,
+        map: impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<OperationPlan<Output>, Error> {
+        let mut flat = vec![];
+
+        for f in self.flat {
+            flat.push(f.try_map(&map)?);
+        }
+
+        let mut nested = vec![];
+
+        for n in self.nested {
+            nested.push(n.try_map(&map)?);
+        }
+
+        Ok(OperationPlan { flat, operation_type: self.operation_type, nested })
+    }
 }
 
 impl<Input> OperationPlan<Input> {
