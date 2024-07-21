@@ -152,6 +152,11 @@ impl<Input> Field<Nested<Input>, Input> {
                 .map(|arg| arg.try_map(map))
                 .collect::<Result<_, _>>()?,
             is_scalar: false,
+            directives: self
+                .directives
+                .into_iter()
+                .map(|directive| directive.try_map(map))
+                .collect::<Result<_, _>>()?,
         })
     }
 }
