@@ -11,7 +11,7 @@ use url::Url;
 
 use crate::core::config::{self, ConfigReaderContext};
 use crate::core::mustache::Mustache;
-use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::valid::Valid;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -262,6 +262,7 @@ mod tests {
 
     use super::*;
     use crate::core::tests::TestEnvIO;
+    use crate::core::valid::Validator;
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
         Location(s.as_ref().to_string(), PhantomData)
