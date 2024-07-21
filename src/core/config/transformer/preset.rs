@@ -11,7 +11,7 @@ pub struct Preset {
     consolidate_url: f32,
     tree_shake: bool,
     use_better_names: bool,
-    flatten_single_field: bool,
+    unwrap_single_field_types: bool,
 }
 
 impl Transform for Preset {
@@ -26,7 +26,7 @@ impl Transform for Preset {
             .pipe(super::Required)
             .pipe(super::TreeShake.when(self.tree_shake))
             .pipe(super::TypeMerger::new(self.merge_type))
-            .pipe(super::FlattenSingleField.when(self.flatten_single_field))
+            .pipe(super::FlattenSingleField.when(self.unwrap_single_field_types))
             .pipe(super::ImproveTypeNames.when(self.use_better_names))
             .pipe(super::ConsolidateURL::new(self.consolidate_url))
             .transform(config)
@@ -40,7 +40,7 @@ impl Default for Preset {
             consolidate_url: 0.5,
             use_better_names: true,
             tree_shake: true,
-            flatten_single_field: true,
+            unwrap_single_field_types: true,
         }
     }
 }
