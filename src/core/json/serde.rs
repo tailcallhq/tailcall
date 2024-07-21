@@ -83,4 +83,11 @@ impl<'a> JsonLike<'a> for serde_json::Value {
     fn as_object(&self) -> Option<&Self::JsonObject> {
         self.as_object()
     }
+
+    fn array(value: Vec<Self>) -> Self
+    where
+        Self: 'a
+    {
+        Self::Array(value)
+    }
 }

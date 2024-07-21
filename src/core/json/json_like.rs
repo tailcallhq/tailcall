@@ -9,6 +9,7 @@ pub trait JsonLike<'a>: Sized {
 
     // Constructors
     fn null() -> Self;
+    fn array(value: Vec<Self>) -> Self where Self: 'a;
 
     // Operators
     fn as_array(&'a self) -> Option<&'a Vec<Self>>;

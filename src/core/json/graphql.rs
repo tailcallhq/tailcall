@@ -108,4 +108,8 @@ impl<'a> JsonLike<'a> for ConstValue {
             _ => None,
         }
     }
+
+    fn array(value: Vec<Self>) -> Self {
+        ConstValue::List(value)
+    }
 }
