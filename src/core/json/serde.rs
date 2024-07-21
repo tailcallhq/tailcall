@@ -13,8 +13,9 @@ impl<'a> JsonObjectLike<'a> for serde_json::Map<String, serde_json::Value> {
         self.get(key)
     }
 
-    fn insert_key(&'a mut self, key: &'a str, value: Self::Value) {
+    fn insert_key(mut self, key: &'a str, value: Self::Value) -> Self {
         self.insert(key.to_owned(), value);
+        self
     }
 }
 
@@ -82,5 +83,13 @@ impl<'a> JsonLike<'a> for serde_json::Value {
 
     fn as_object(&self) -> Option<&Self::JsonObject> {
         self.as_object()
+    }
+
+    fn object(obj: Self::JsonObject) -> Self {
+        serde_json::Value::Object(obj)
+    }
+
+    fn array(arr: Vec<Self>) -> Self {
+        serde_json::Value::Array(arr)
     }
 }
