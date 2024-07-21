@@ -86,9 +86,9 @@ impl<'a> CandidateGeneration<'a> {
                     .entry(field_info.type_of.to_owned())
                     .or_default();
 
-                let singularized_field_name = field_name.to_singular();
+                let singularized_candidate = field_name.to_singular();
 
-                if let Some(key_val) = inner_map.get_mut(&singularized_field_name) {
+                if let Some(key_val) = inner_map.get_mut(&singularized_candidate) {
                     key_val.frequency += 1
                 } else {
                     // in order to infer the types correctly, always prioritize the non-operation
@@ -100,7 +100,7 @@ impl<'a> CandidateGeneration<'a> {
                     };
 
                     inner_map.insert(
-                        singularized_field_name,
+                        singularized_candidate,
                         CandidateStats { frequency: 1, priority },
                     );
                 }
