@@ -132,7 +132,7 @@ impl Builder {
         type_of: &str,
         exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Result<Vec<Field<Flat, Value>>, BuildError> {
+    ) -> Vec<Field<Flat, Value>> {
         let mut fields = vec![];
         for selection in &selection.items {
             match &selection.node {
@@ -206,7 +206,7 @@ impl Builder {
                             type_of.name(),
                             Some(Flat::new(id.clone())),
                             fragments,
-                        )?;
+                        );
                         let name = gql_field
                             .alias
                             .as_ref()
@@ -245,14 +245,14 @@ impl Builder {
                             fragment.type_condition.node.on.node.as_str(),
                             exts.clone(),
                             fragments,
-                        )?);
+                        ));
                     }
                 }
                 _ => {}
             }
         }
 
-        Ok(fields)
+        fields
     }
 
     #[inline(always)]
@@ -282,12 +282,7 @@ impl Builder {
                 let name = self
                     .get_type(single.node.ty)
                     .ok_or(BuildError::RootOperationTypeNotDefined { operation: single.node.ty })?;
-                fields.extend(self.iter(
-                    &single.node.selection_set.node,
-                    name,
-                    None,
-                    &fragments,
-                )?);
+                fields.extend(self.iter(&single.node.selection_set.node, name, None, &fragments));
                 single.node.ty
             }
             DocumentOperations::Multiple(multiple) => {
@@ -301,7 +296,7 @@ impl Builder {
                         name,
                         None,
                         &fragments,
-                    )?);
+                    ));
                     operation_type = single.node.ty;
                 }
                 operation_type
