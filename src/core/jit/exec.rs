@@ -74,7 +74,6 @@ where
     }
 
     async fn init(&mut self) {
-        let ctx = Context::new(&self.request, self.plan.is_query());
         join_all(self.plan.as_nested().iter().map(|field| async {
             let mut arg_map = indexmap::IndexMap::new();
             for arg in field.args.iter() {
@@ -92,7 +91,7 @@ where
                     todo!()
                 }
             }
-            let ctx = ctx.with_args(arg_map);
+            let ctx = Context::new(&self.request, self.plan.is_query(), field).with_args(arg_map);
             self.execute(field, &ctx, DataPath::new()).await
         }))
         .await;
@@ -115,7 +114,7 @@ where
                     if let Some(array) = value.as_array() {
                         join_all(field.nested_iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
-                                let ctx = ctx.with_value(value); // Output::JsonArray::Value
+                                let ctx = ctx.with_value_and_field(value, field); // Output::JsonArray::Value
                                 let data_path = data_path.clone().with_index(index);
                                 async move { self.execute(field, &ctx, data_path).await }
                             }))
@@ -130,7 +129,7 @@ where
                 // Has to be an Object, we don't do anything while executing if its a Scalar
                 else {
                     join_all(field.nested_iter().map(|child| {
-                        let ctx = ctx.with_value(value);
+                        let ctx = ctx.with_value_and_field(value, field);
                         let data_path = data_path.clone();
                         async move { self.execute(child, &ctx, data_path).await }
                     }))

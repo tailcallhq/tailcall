@@ -4,7 +4,6 @@ mod store;
 mod synth;
 
 use builder::*;
-use model::*;
 use store::*;
 mod context;
 mod error;
@@ -22,5 +21,6 @@ mod graphql_executor;
 pub use error::*;
 pub use exec_const::*;
 pub use graphql_executor::*;
+pub use model::*;
 pub use request::*;
 pub use response::*;

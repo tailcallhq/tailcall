@@ -5334,7 +5334,7 @@ dependencies = [
 name = "tailcall-tracker"
 version = "0.1.0"
 dependencies = [
- "anyhow",
+ "derive_more",
  "lazy_static",
  "machineid-rs",
  "reqwest",
@@ -5344,6 +5344,7 @@ dependencies = [
  "tailcall-version",
  "tokio",
  "tracing",
+ "url",
 ]
 
 [[package]]
