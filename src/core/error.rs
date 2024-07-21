@@ -123,4 +123,43 @@ impl Display for worker::Error {
     }
 }
 
+pub mod cache {
+    use std::sync::Arc;
+
+    use derive_more::{DebugCustom, From};
+
+    use super::worker;
+
+    #[derive(From, DebugCustom, Clone)]
+    pub enum Error {
+        #[debug(fmt = "Serde Json Error: {}", _0)]
+        SerdeJson(Arc<serde_json::Error>),
+
+        #[debug(fmt = "Worker Error: {}", _0)]
+        Worker(worker::Error),
+
+        #[debug(fmt = "Kv Error: {}", _0)]
+        #[from(ignore)]
+        Kv(String),
+    }
+
+    impl From<serde_json::Error> for Error {
+        fn from(error: serde_json::Error) -> Self {
+            Error::SerdeJson(Arc::new(error))
+        }
+    }
+
+    pub type Result<A> = std::result::Result<A, Error>;
+}
+
+impl Display for cache::Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            cache::Error::SerdeJson(error) => write!(f, "Serde Json Error: {}", error),
+            cache::Error::Worker(error) => write!(f, "Worker Error: {}", error),
+            cache::Error::Kv(error) => write!(f, "Kv Error: {}", error),
+        }
+    }
+}
+
 pub type Result<A, E> = std::result::Result<A, E>;
