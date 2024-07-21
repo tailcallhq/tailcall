@@ -100,7 +100,7 @@ impl<'a> CandidateGeneration<'a> {
                     };
 
                     inner_map.insert(
-                        singularized_field_name.to_owned(),
+                        singularized_field_name,
                         CandidateStats { frequency: 1, priority },
                     );
                 }
