@@ -175,9 +175,8 @@ mod grpc_fetch {
 
     use anyhow::Result;
 
-    use crate::core::Error;
-
     use super::*;
+    use crate::core::Error;
 
     fn get_fake_descriptor() -> Vec<u8> {
         let mut path = PathBuf::from(file!());

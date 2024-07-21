@@ -6,9 +6,9 @@ use anyhow::Result;
 use super::helpers::{FILE_NAME, JSON_FILE_NAME, YML_FILE_NAME};
 use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
 use crate::core::config::{Config, Expr, Field, RootSchema, Source, Type};
+use crate::core::error::Error;
 use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
-use crate::core::error::Error;
 
 pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     create_directory(folder_path).await?;
@@ -67,7 +67,11 @@ async fn confirm_and_write_yml(
         }
         Err(_) => {
             let content = serde_yaml::to_string(&final_graphqlrc)?;
-            runtime.file.write(&yml_file_path, content.as_bytes()).await.map_err(|e| Error::from(e))
+            runtime
+                .file
+                .write(&yml_file_path, content.as_bytes())
+                .await
+                .map_err(Error::from)
         }
     }
 }

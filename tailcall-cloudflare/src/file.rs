@@ -2,7 +2,8 @@ use std::rc::Rc;
 
 use anyhow::anyhow;
 use async_std::task::spawn_local;
-use tailcall::core::{error::file, FileIO};
+use tailcall::core::error::file;
+use tailcall::core::FileIO;
 use worker::Env;
 
 use crate::to_anyhow;
@@ -48,11 +49,7 @@ async fn put(bucket: Rc<worker::Bucket>, path: String, value: Vec<u8>) -> anyhow
 
 #[async_trait::async_trait]
 impl FileIO for CloudflareFileIO {
-    async fn write<'a>(
-        &'a self,
-        path: &'a str,
-        content: &'a [u8],
-    ) -> Result<(), file::Error> {
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<(), file::Error> {
         let content = content.to_vec();
         let bucket = self.bucket.clone();
         let path_cloned = path.to_string();

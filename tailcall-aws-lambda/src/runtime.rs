@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use tailcall::core::error::file;
 use tailcall::core::cache::InMemoryCache;
+use tailcall::core::error::file;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EntityCache, EnvIO, FileIO};
 use tokio::io::AsyncReadExt;

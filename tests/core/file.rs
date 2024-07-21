@@ -2,7 +2,8 @@ extern crate core;
 
 use std::path::PathBuf;
 
-use tailcall::core::{error::file, FileIO};
+use tailcall::core::error::file;
+use tailcall::core::FileIO;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::runtime::ExecutionSpec;

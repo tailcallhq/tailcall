@@ -88,9 +88,3 @@ impl From<anyhow::Error> for Error {
         }
     }
 }
-
-impl From<error::worker::Error> for Error {
-    fn from(value: error::worker::Error) -> Self {
-        Error::WorkerError(value.to_string())
-    }
-}

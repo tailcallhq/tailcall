@@ -90,10 +90,9 @@ impl WorkerIO<Event, Command> for Runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    call(name, event).map_err(worker::Error::from)
+                    call(name, event)
                 })
-                .await
-                .map_err(|_| worker::Error::ExecutionFailed)?
+                .await?
         } else {
             Err(worker::Error::JsRuntimeStopped)
         }
@@ -105,17 +104,14 @@ impl WorkerIO<ConstValue, ConstValue> for Runtime {
     async fn call(&self, name: &str, input: ConstValue) -> worker::Result<Option<ConstValue>> {
         let script = self.script.clone();
         let name = name.to_string();
-        let value = serde_json::to_string(&input).map_err(worker::Error::from)?;
+        let value = serde_json::to_string(&input)?;
         if let Some(runtime) = &self.tokio_runtime {
             runtime
                 .spawn(async move {
                     init_rt(script)?;
-                    execute_inner(name, value)
-                        .map(Some)
-                        .map_err(worker::Error::from)
+                    execute_inner(name, value).map(Some)
                 })
-                .await
-                .map_err(|_| worker::Error::ExecutionFailed)?
+                .await?
         } else {
             Err(worker::Error::JsRuntimeStopped)
         }

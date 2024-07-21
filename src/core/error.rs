@@ -1,14 +1,14 @@
-use std::{fmt::Display, string::FromUtf8Error};
+use std::fmt::Display;
+use std::string::FromUtf8Error;
 
 use derive_more::From;
 use inquire::InquireError;
 
 use super::config::UnsupportedConfigFormat;
 
-
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Worker Error")]
+    #[error("Worker Error: {}", _0)]
     Worker(worker::Error),
 
     #[error("File Error: {}", _0)]
@@ -48,11 +48,12 @@ pub enum Error {
     SchemaMismatch,
 
     #[error("Error: {}", _0)]
-    Anyhow(anyhow::Error)
+    Anyhow(anyhow::Error),
 }
 
 pub mod worker {
     use std::sync::Arc;
+
     use derive_more::{DebugCustom, From};
     use tokio::task::JoinError;
 
@@ -139,6 +140,31 @@ pub mod worker {
     pub type Result<A> = std::result::Result<A, Error>;
 }
 
+impl Display for worker::Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            worker::Error::InitializationFailed => write!(f, "Failed to initialize worker"),
+            worker::Error::Communication => write!(f, "Worker communication error"),
+            worker::Error::SerdeJson(error) => write!(f, "Serde Json Error: {}", error),
+            worker::Error::RequestCloneFailed => write!(f, "Request Clone Failed"),
+            worker::Error::HyperHeaderStr(error) => {
+                write!(f, "Hyper Header To Str Error: {}", error)
+            }
+            worker::Error::JsRuntimeStopped => write!(f, "JS Runtime Stopped Error"),
+            worker::Error::CLI(msg) => write!(f, "CLI Error: {}", msg),
+            worker::Error::Join(error) => write!(f, "Join Error: {}", error),
+            worker::Error::RuntimeNotInitialized => write!(f, "Runtime not initialized"),
+            worker::Error::InvalidFunction(function_name) => {
+                write!(f, "{} is not a function", function_name)
+            }
+            worker::Error::Rquickjs(error) => write!(f, "Rquickjs error: {}", error),
+            worker::Error::DeserializeFailed(error) => write!(f, "Deserialize Failed: {}", error),
+            worker::Error::GlobalThisNotInitialised(error) => write!(f, "globalThis not initialized: {}", error),
+            worker::Error::FunctionValueParseError(error, name) => write!(f, "Error: {}\nUnable to parse value from js function: {} maybe because it's not returning a string?", error, name),
+            worker::Error::Anyhow(msg) => write!(f, "Error: {}", msg),
+        }
+    }
+}
 
 pub mod file {
     use std::string::FromUtf8Error;
@@ -190,32 +216,6 @@ pub mod file {
 
         #[debug(fmt = "Error : {}", _0)]
         Anyhow(anyhow::Error),
-    }
-}
-
-impl Display for worker::Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            worker::Error::InitializationFailed => write!(f, "Failed to initialize worker"),
-            worker::Error::Communication => write!(f, "Worker communication error"),
-            worker::Error::SerdeJson(error) => write!(f, "Serde Json Error: {}", error),
-            worker::Error::RequestCloneFailed => write!(f, "Request Clone Failed"),
-            worker::Error::HyperHeaderStr(error) => {
-                write!(f, "Hyper Header To Str Error: {}", error)
-            }
-            worker::Error::JsRuntimeStopped => write!(f, "JS Runtime Stopped Error"),
-            worker::Error::CLI(msg) => write!(f, "CLI Error: {}", msg),
-            worker::Error::Join(error) => write!(f, "Join Error: {}", error),
-            worker::Error::RuntimeNotInitialized => write!(f, "Runtime not initialized"),
-            worker::Error::InvalidFunction(function_name) => {
-                write!(f, "{} is not a function", function_name)
-            }
-            worker::Error::Rquickjs(error) => write!(f, "Rquickjs error: {}", error),
-            worker::Error::DeserializeFailed(error) => write!(f, "Deserialize Failed: {}", error),
-            worker::Error::GlobalThisNotInitialised(error) => write!(f, "globalThis not initialized: {}", error),
-            worker::Error::FunctionValueParseError(error, name) => write!(f, "Error: {}\nUnable to parse value from js function: {} maybe because it's not returning a string?", error, name),
-            worker::Error::Anyhow(msg) => write!(f, "Error: {}", msg),
-        }
     }
 }
 

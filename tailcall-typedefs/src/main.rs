@@ -55,7 +55,7 @@ async fn mode_check() -> Result<(), Error> {
     let rt = cli::runtime::init(&Default::default());
     let file_io = rt.file;
     let content = file_io
-    .read(json_schema.to_str().ok_or(Error::PathDeterminationFailed)?)
+        .read(json_schema.to_str().ok_or(Error::PathDeterminationFailed)?)
         .await?;
     let content = serde_json::from_str::<Value>(&content)?;
     let schema = get_updated_json().await?;
