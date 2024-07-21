@@ -87,7 +87,7 @@ impl<'a> CandidateGeneration<'a> {
                     .or_default();
 
                 let singularized_field_name = field_name.to_singular().to_pascal_case();
-                
+
                 if let Some(key_val) = inner_map.get_mut(&singularized_field_name) {
                     key_val.frequency += 1
                 } else {
