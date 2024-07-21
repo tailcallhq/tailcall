@@ -365,8 +365,8 @@ impl<Input> Directive<Input> {
             arguments: self
                 .arguments
                 .into_iter()
-                .filter_map(|(k, v)| map(v).ok().map(|v| (k, v)))
-                .collect::<Vec<_>>(),
+                .map(|(k, v)| map(v).map(|mapped_value| (k, mapped_value)))
+                .collect::<Result<Vec<_>, _>>()?,
         })
     }
 }
