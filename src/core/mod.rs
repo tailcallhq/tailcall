@@ -12,6 +12,7 @@ pub mod data_loader;
 pub mod directive;
 pub mod document;
 pub mod endpoint;
+pub mod error;
 pub mod generator;
 pub mod graphql;
 pub mod grpc;
@@ -46,6 +47,7 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
+pub use error::{Error, Result};
 use http::Response;
 use ir::model::IoId;
 pub use mustache::Mustache;
@@ -90,7 +92,7 @@ pub type EntityCache = dyn Cache<Key = IoId, Value = ConstValue>;
 #[async_trait::async_trait]
 pub trait WorkerIO<In, Out>: Send + Sync + 'static {
     /// Calls a global JS function
-    async fn call(&self, name: &str, input: In) -> anyhow::Result<Option<Out>>;
+    async fn call(&self, name: &str, input: In) -> error::worker::Result<Option<Out>>;
 }
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
