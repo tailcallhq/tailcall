@@ -169,7 +169,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
         self.http
     }
 
-    fn deterime_arg_type_from_route_segment(segment: &str) -> String {
+    fn determine_arg_type_from_route_segment(segment: &str) -> String {
         let is_digits = segment.chars().all(|item| item.is_ascii_digit());
         if is_digits {
             return String::from("Int");
