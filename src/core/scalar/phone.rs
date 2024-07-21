@@ -2,7 +2,7 @@ use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::{JsonLike, JsonLikeOwned};
 
 /// A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
 #[derive(JsonSchema, Default, ScalarDefinition)]
@@ -13,8 +13,17 @@ pub struct PhoneNumber {
 }
 impl super::Scalar for PhoneNumber {
     /// Function used to validate the phone number
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate_owned<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
         |value: &Value| {
+            if let Some(phone_str) = value.as_str() {
+                return phonenumber::parse(None, phone_str).is_ok();
+            }
+            false
+        }
+    }
+
+    fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
+        |value: &'a Value| {
             if let Some(phone_str) = value.as_str() {
                 return phonenumber::parse(None, phone_str).is_ok();
             }

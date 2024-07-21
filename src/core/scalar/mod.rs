@@ -40,7 +40,7 @@ use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
 use schemars::schema::Schema;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::{JsonLike, JsonLikeOwned};
 
 #[enum_dispatch(Scalar)]
 pub enum ScalarType {
@@ -108,8 +108,13 @@ pub fn is_predefined_scalar(type_name: &str) -> bool {
 }
 #[enum_dispatch]
 pub trait Scalar {
-    // Drop validate when we switch to jit
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool;
+    // Works for owned values like
+    // ConstValue and Serde Value
+    fn validate_owned<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool;
+
+    // Works with any type
+    // Designed for jit
+    fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool;
     fn schema(&self) -> Schema;
     fn name(&self) -> String {
         std::any::type_name::<Self>()
@@ -120,7 +125,17 @@ pub trait Scalar {
     }
 }
 
-pub fn get_scalar<Value: JsonLikeOwned>(name: &str) -> fn(&Value) -> bool {
+// Works for owned values like
+// ConstValue and Serde Value
+pub fn get_scalar_owned<Value: JsonLikeOwned>(name: &str) -> fn(&Value) -> bool {
+    CUSTOM_SCALARS
+        .get(name)
+        .map(|v| v.validate_owned())
+        .unwrap_or(|_| true)
+}
+
+// Works for all kinds of value
+pub fn get_scalar<'a, Value: JsonLike<'a>>(name: &str) -> fn(&'a Value) -> bool {
     CUSTOM_SCALARS
         .get(name)
         .map(|v| v.validate())
@@ -143,6 +158,7 @@ mod test {
 
                 $(
                     assert!(value.validate::<async_graphql_value::ConstValue>()(&$value));
+                    assert!(value.validate_owned::<async_graphql_value::ConstValue>()(&$value));
                 )+
             }
         };
@@ -158,6 +174,7 @@ mod test {
 
                 $(
                     assert!(!value.validate::<async_graphql_value::ConstValue>()(&$value));
+                    assert!(!value.validate_owned::<async_graphql_value::ConstValue>()(&$value));
                 )+
             }
         };

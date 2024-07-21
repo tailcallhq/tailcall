@@ -229,7 +229,7 @@ impl From<&Blueprint> for SchemaBuilder {
 
         for (k, v) in CUSTOM_SCALARS.iter() {
             schema = schema.register(dynamic::Type::Scalar(
-                dynamic::Scalar::new(k.clone()).validator(v.validate::<ConstValue>()),
+                dynamic::Scalar::new(k.clone()).validator(v.validate_owned::<ConstValue>()),
             ));
         }
 
