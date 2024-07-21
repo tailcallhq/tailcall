@@ -181,8 +181,6 @@ impl<'a> HttpDirectiveGenerator<'a> {
 
 #[cfg(test)]
 mod test {
-    use std::collections::BTreeMap;
-
     use url::Url;
 
     use crate::core::config::{Arg, Field};
