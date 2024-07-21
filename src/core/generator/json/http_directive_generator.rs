@@ -88,7 +88,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
                     field.args.insert(
                         arg_key,
                         Arg {
-                            type_of: Self::deterime_arg_type_from_route_segment(segment),
+                            type_of: Self::determine_arg_type_from_route_segment(segment),
                             required: true,
                             ..Default::default()
                         },
@@ -127,7 +127,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
                         field.args.insert(
                             arg_key,
                             Arg {
-                                type_of: Self::deterime_arg_type_from_route_segment(segment),
+                                type_of: Self::determine_arg_type_from_route_segment(segment),
                                 required: true,
                                 ..Default::default()
                             },
