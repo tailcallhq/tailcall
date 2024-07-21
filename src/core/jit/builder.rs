@@ -158,7 +158,7 @@ impl Builder {
                             .collect::<Vec<_>>();
 
                         directives.push(JitDirective {
-                            name: directive.name.clone().to_string(),
+                            name: directive.name.to_string(),
                             arguments,
                         });
                     }
