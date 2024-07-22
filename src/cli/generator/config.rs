@@ -9,9 +9,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
 use crate::core::mustache::Mustache;
-use crate::core::valid::Valid;
+use crate::core::valid::{Valid, ValidateFrom};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -20,13 +21,13 @@ pub struct Config<Status = UnResolved> {
     pub inputs: Vec<Input<Status>>,
     pub output: Output<Status>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub preset: Option<Preset>,
+    pub preset: Option<PresetConfig>,
     pub schema: Schema,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct Preset {
+pub struct PresetConfig {
     merge_type: Option<f32>,
     #[serde(rename = "consolidateURL")]
     consolidate_url: Option<f32>,
@@ -94,12 +95,18 @@ pub struct Schema {
     pub query: Option<String>,
 }
 
-impl Preset {
-    pub fn into_config_preset(&self) -> Valid<config::transformer::Preset, String> {
-        let mut preset = config::transformer::Preset::new();
+fn is_invalid_threshold(threshold: f32) -> bool {
+    !(0.0..=1.0).contains(&threshold)
+}
 
-        if let Some(merge_type) = self.merge_type {
-            if Self::is_invalid_threshold(merge_type) {
+impl ValidateFrom<PresetConfig> for Preset {
+    type Error = String;
+    fn validate_from(preset: PresetConfig) -> Valid<Self, Self::Error> {
+        let this = preset;
+        let mut preset = Preset::new();
+
+        if let Some(merge_type) = this.merge_type {
+            if is_invalid_threshold(merge_type) {
                 return Valid::fail(format!(
                     "Invalid threshold value ({:.2}). Allowed range is [0.0 - 1.0] inclusive.",
                     merge_type
@@ -108,8 +115,8 @@ impl Preset {
             preset = preset.merge_type(merge_type);
         }
 
-        if let Some(consolidate_url) = self.consolidate_url {
-            if Self::is_invalid_threshold(consolidate_url) {
+        if let Some(consolidate_url) = this.consolidate_url {
+            if is_invalid_threshold(consolidate_url) {
                 return Valid::fail(format!(
                     "Invalid threshold value ({:.2}). Allowed range is [0.0 - 1.0] inclusive.",
                     consolidate_url
@@ -118,19 +125,15 @@ impl Preset {
             preset = preset.consolidate_url(consolidate_url);
         }
 
-        if let Some(use_better_names) = self.use_better_names {
+        if let Some(use_better_names) = this.use_better_names {
             preset = preset.use_better_names(use_better_names);
         }
 
-        if let Some(tree_shake) = self.tree_shake {
+        if let Some(tree_shake) = this.tree_shake {
             preset = preset.tree_shake(tree_shake);
         }
 
         Valid::succeed(preset)
-    }
-
-    fn is_invalid_threshold(threshold: f32) -> bool {
-        !(0.0..=1.0).contains(&threshold)
     }
 }
 
@@ -262,7 +265,7 @@ mod tests {
 
     use super::*;
     use crate::core::tests::TestEnvIO;
-    use crate::core::valid::Validator;
+    use crate::core::valid::{ValidateInto, ValidationError, Validator};
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
         Location(s.as_ref().to_string(), PhantomData)
@@ -328,28 +331,28 @@ mod tests {
 
     #[test]
     fn should_fail_when_invalid_merge_type_threshold() {
-        let config_preset = Preset {
+        let config_preset = PresetConfig {
             tree_shake: None,
             use_better_names: None,
             merge_type: Some(2.0),
             consolidate_url: None,
         };
 
-        let transform_preset = config_preset.into_config_preset().to_result();
+        let transform_preset: Result<Preset, ValidationError<String>> =
+            config_preset.validate_into().to_result();
         assert!(transform_preset.is_err());
     }
 
     #[test]
     fn should_use_user_provided_presets_when_provided() {
-        let config_preset = Preset {
+        let config_preset = PresetConfig {
             tree_shake: Some(true),
             use_better_names: Some(true),
             merge_type: Some(0.5),
             consolidate_url: Some(1.0),
         };
-        let transform_preset: config::transformer::Preset =
-            config_preset.into_config_preset().to_result().unwrap();
-        let expected_preset = config::transformer::Preset::new()
+        let transform_preset: Preset = config_preset.validate_into().to_result().unwrap();
+        let expected_preset = Preset::new()
             .use_better_names(true)
             .tree_shake(true)
             .consolidate_url(1.0)

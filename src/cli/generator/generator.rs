@@ -8,12 +8,13 @@ use pathdiff::diff_paths;
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
+use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
-use crate::core::valid::Validator;
+use crate::core::valid::{ValidateInto, Validator};
 
 /// CLI that reads the the config file and generates the required tailcall
 /// configuration.
@@ -147,11 +148,11 @@ impl Generator {
         let config = self.read().await?;
         let path = config.output.path.0.to_owned();
         let query_type = config.schema.query.clone();
-        let preset = config
+        let preset: Preset = config
             .preset
             .clone()
             .unwrap_or_default()
-            .into_config_preset()
+            .validate_into()
             .to_result()?;
         let input_samples = self.resolve_io(config).await?;
 
@@ -309,7 +310,7 @@ mod test {
         use crate::core::blueprint::Blueprint;
         use crate::core::config::{self, ConfigModule};
         use crate::core::generator::Generator as ConfigGenerator;
-        use crate::core::valid::Validator;
+        use crate::core::valid::{ValidateInto, Validator};
 
         pub fn run_config_generator_spec(path: &Path) -> datatest_stable::Result<()> {
             let path = path.to_path_buf();
@@ -330,7 +331,7 @@ mod test {
                 .preset
                 .clone()
                 .unwrap_or_default()
-                .into_config_preset()
+                .validate_into()
                 .to_result()?;
 
             // resolve i/o's
