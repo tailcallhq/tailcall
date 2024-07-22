@@ -1,9 +1,7 @@
 # different batch key and extraction path
 
 ```graphql @config
-schema
-  @server(port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {maxSize: 1000, delay: 1}) {
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {maxSize: 1000, delay: 1}) {
   query: Query
 }
 
@@ -23,10 +21,7 @@ type Transaction {
     @http(
       path: "/v1/bank_accounts"
       query: [{key: "bank_account_ids[]", value: "{{.value.bank_account_id}}"}]
-      batch: {
-        batchKey: "bank_account_ids[]",
-        extractionPath: ["bank_accounts","id"]
-      }
+      batch: {batchKey: "bank_account_ids[]", extractionPath: ["bank_accounts", "id"]}
     )
 }
 
@@ -82,7 +77,6 @@ type BankAccount {
         total_pages: 2
         total_count: 4
         per_page: 2
-
 ```
 
 ```yml @test
