@@ -201,7 +201,13 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             if !grpc.group_by.is_empty() {
                 IR::IO(IO::Grpc {
                     req_template,
-                    group_by: Some(GroupBy::new(grpc.group_by.clone())),
+                    group_by: Some(GroupBy::new(
+                        grpc.group_by
+                            .clone()
+                            .into_iter()
+                            .map(serde_json::Value::String)
+                            .collect(),
+                    )),
                     dl_id: None,
                 })
             } else {

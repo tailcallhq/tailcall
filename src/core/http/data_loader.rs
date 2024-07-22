@@ -91,7 +91,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 .to_json::<ConstValue>()?;
             #[allow(clippy::mutable_key_type)]
             let mut hashmap = HashMap::with_capacity(keys.len());
-            let path = &group_by.path();
+            let path = &group_by.path_target();
             let body_value = res.body.group_by(path);
 
             for key in &keys {

@@ -555,7 +555,7 @@ pub struct Http {
 
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+    pub group_by: Vec<serde_json::Value>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
@@ -1087,7 +1087,10 @@ mod tests {
         let f1 = Field { ..Default::default() };
 
         let f2 = Field {
-            http: Some(Http { group_by: vec!["id".to_string()], ..Default::default() }),
+            http: Some(Http {
+                group_by: vec![serde_json::Value::String("id".to_string())],
+                ..Default::default()
+            }),
             ..Default::default()
         };
 
