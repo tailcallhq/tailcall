@@ -425,13 +425,14 @@ impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
 mod test {
     use async_graphql::parser::types::ConstDirective;
     use async_graphql_value::ConstValue;
+
     use super::Directive;
 
     #[test]
     fn test_from_custom_directive() {
         let custom_directive = Directive {
             name: "options".to_string(),
-            arguments: vec![("paging".to_string(), ConstValue::Boolean(true))]
+            arguments: vec![("paging".to_string(), ConstValue::Boolean(true))],
         };
 
         let async_directive: ConstDirective = (&custom_directive).into();
