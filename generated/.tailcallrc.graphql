@@ -137,8 +137,8 @@ directive @http(
   """
   baseURL: String
   """
-  The `batchKey` parameter groups multiple data requests into a single call. For more 
-  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  The `batch` parameter allows you to groups multiple data requests into a single call. 
+  For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
   batch: GroupBy
   """
@@ -791,8 +791,8 @@ input Http {
   """
   baseURL: String
   """
-  The `batchKey` parameter groups multiple data requests into a single call. For more 
-  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  The `batch` parameter allows you to groups multiple data requests into a single call. 
+  For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
   batch: GroupBy
   """

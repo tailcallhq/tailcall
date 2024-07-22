@@ -555,7 +555,7 @@ pub struct Http {
     pub encoding: Encoding,
 
     #[serde(rename = "batch", default, skip_serializing_if = "is_default")]
-    /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+    /// The `batch` parameter allows you to groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Option<GroupBy>,
 
     #[serde(default, skip_serializing_if = "is_default")]
