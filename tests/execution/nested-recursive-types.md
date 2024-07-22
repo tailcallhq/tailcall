@@ -97,5 +97,4 @@ type Mutation {
           }
         }
       }
-
 ```
