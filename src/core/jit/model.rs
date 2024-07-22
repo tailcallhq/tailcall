@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
-use async_graphql::Pos;
+use async_graphql::{Name, Pos, Positioned};
 use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
@@ -380,35 +380,6 @@ impl<Input> OperationPlan<Input> {
     }
 }
 
-/// DirectiveAdapter helps to bridge the gap between async_graphql's
-/// ConstDirective and our custom Directive implementation.
-pub trait DirectiveAdapter {
-    fn name(&self) -> &str;
-    fn arguments(&self) -> impl Iterator<Item = (&str, &ConstValue)>;
-}
-
-impl DirectiveAdapter for ConstDirective {
-    fn name(&self) -> &str {
-        &self.name.node
-    }
-
-    fn arguments(&self) -> impl Iterator<Item = (&str, &ConstValue)> {
-        self.arguments
-            .iter()
-            .map(|(k, v)| (k.node.as_str(), &v.node))
-    }
-}
-
-impl DirectiveAdapter for Directive<ConstValue> {
-    fn name(&self) -> &str {
-        &self.name
-    }
-
-    fn arguments(&self) -> impl Iterator<Item = (&str, &ConstValue)> {
-        self.arguments.iter().map(|(k, v)| (k.as_str(), v))
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct Directive<Input> {
     pub name: String,
@@ -428,5 +399,24 @@ impl<Input> Directive<Input> {
                 .map(|(k, v)| map(v).map(|mapped_value| (k, mapped_value)))
                 .collect::<Result<Vec<_>, _>>()?,
         })
+    }
+}
+
+impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
+    fn from(value: &'a Directive<ConstValue>) -> Self {
+        // we don't use pos required in Positioned struct, hence using defaults.
+        ConstDirective {
+            name: Positioned::new(Name::new(&value.name), Default::default()),
+            arguments: value
+                .arguments
+                .iter()
+                .map(|a| {
+                    (
+                        Positioned::new(Name::new(a.0.clone()), Default::default()),
+                        Positioned::new(a.1.clone(), Default::default()),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        }
     }
 }
