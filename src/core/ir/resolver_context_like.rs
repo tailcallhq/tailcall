@@ -106,13 +106,17 @@ impl SelectionField {
         SelectionField {
             name,
             args,
-            directives: Some(
-                field
-                    .directives
-                    .iter()
-                    .map(|d| d.into())
-                    .collect::<Vec<ConstDirective>>(),
-            ),
+            directives: if field.directives.is_empty() {
+                None
+            } else {
+                Some(
+                    field
+                        .directives
+                        .iter()
+                        .map(|d| d.into())
+                        .collect::<Vec<ConstDirective>>(),
+                )
+            },
             selection_set,
         }
     }
