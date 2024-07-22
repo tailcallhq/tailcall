@@ -153,7 +153,12 @@ where
             // if the present field doesn't have IR, still go through it's extensions to see
             // if they've IR.
             join_all(field.nested_iter().map(|child| {
-                let ctx = ctx.with_field(child);
+                let value = ctx.value().map(|v| v.get_key(&child.name).unwrap_or(v));
+                let ctx = if let Some(v) = value {
+                    ctx.with_value_and_field(v, child)
+                } else {
+                    ctx.with_field(child)
+                };
                 let data_path = data_path.clone();
                 async move { self.execute(child, &ctx, data_path).await }
             }))

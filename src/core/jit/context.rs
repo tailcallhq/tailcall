@@ -63,6 +63,10 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             field: self.field,
         }
     }
+
+    pub fn value(&self) -> Option<&Output> {
+        self.value
+    }
 }
 
 impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
