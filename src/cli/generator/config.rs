@@ -97,7 +97,7 @@ pub struct Schema {
 
 fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
     Valid::<(), String>::fail(format!(
-        "Invalid threshold value ({:.2}). Allowed range is [{} - {}] inclusive.",
+        "Invalid threshold value ({:.2}). Allowed range is [{:.2} - {:.2}] inclusive.",
         threshold, min, max
     ))
     .when(|| !(min..=max).contains(&threshold))
@@ -263,10 +263,11 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Arc;
 
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::core::tests::TestEnvIO;
     use crate::core::valid::{ValidateInto, ValidationError, Validator};
-    use pretty_assertions::assert_eq;
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
         Location(s.as_ref().to_string(), PhantomData)
