@@ -56,6 +56,7 @@ pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
 #[cfg(test)]
 mod tests {
 
+    use crate::core::config::group_by::GroupBy;
     use crate::core::config::{Config, Field, Http, Type};
 
     #[test]
@@ -116,7 +117,7 @@ mod tests {
                     Field::default()
                         .type_of("F2".to_string())
                         .into_list()
-                        .http(Http { group_by: vec!["id".into()], ..Default::default() }),
+                        .http(Http { group_by: Some(GroupBy::default()), ..Default::default() }),
                 )]),
             ),
             (

@@ -13,6 +13,7 @@ use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::scalar_definition::ScalarDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 
+use super::group_by::GroupBy;
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
@@ -357,12 +358,12 @@ impl Field {
     pub fn has_batched_resolver(&self) -> bool {
         self.http
             .as_ref()
-            .is_some_and(|http| !http.group_by.is_empty())
+            .is_some_and(|http| http.group_by.is_some())
             || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
             || self
                 .grpc
                 .as_ref()
-                .is_some_and(|grpc| !grpc.group_by.is_empty())
+                .is_some_and(|grpc| grpc.group_by.is_some())
     }
     pub fn into_list(mut self) -> Self {
         self.list = true;
@@ -553,9 +554,9 @@ pub struct Http {
     /// `ApplicationJson`.
     pub encoding: Encoding,
 
-    #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
+    #[serde(rename = "batch", default, skip_serializing_if = "is_default")]
     /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+    pub group_by: Option<GroupBy>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
@@ -666,9 +667,9 @@ pub struct Grpc {
     /// static object or use Mustache template for dynamic parameters. These
     /// parameters will be added in the body in `protobuf` format.
     pub body: Option<Value>,
-    #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
+    #[serde(rename = "batch", default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+    pub group_by: Option<GroupBy>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@grpc` operator. It is used by specifying a
@@ -1087,12 +1088,12 @@ mod tests {
         let f1 = Field { ..Default::default() };
 
         let f2 = Field {
-            http: Some(Http { group_by: vec!["id".to_string()], ..Default::default() }),
+            http: Some(Http { group_by: Some(GroupBy::default()), ..Default::default() }),
             ..Default::default()
         };
 
         let f3 = Field {
-            http: Some(Http { group_by: vec![], ..Default::default() }),
+            http: Some(Http { group_by: None, ..Default::default() }),
             ..Default::default()
         };
 

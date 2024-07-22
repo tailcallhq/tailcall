@@ -4,7 +4,6 @@ use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
 use crate::core::blueprint::{FieldDefinition, TypeLike};
-use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
@@ -180,10 +179,10 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
         .and_then(|(operation, url, headers, body)| {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
-                if grpc.group_by.is_empty() {
-                    validate_schema(field_schema, &operation, field.name()).unit()
+                if let Some(ref grp_by) = grpc.group_by {
+                    validate_group_by(&field_schema, &operation, grp_by.path()).unit()
                 } else {
-                    validate_group_by(&field_schema, &operation, grpc.group_by.clone()).unit()
+                    validate_schema(field_schema, &operation, field.name()).unit()
                 }
             } else {
                 Valid::succeed(())
@@ -198,12 +197,8 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 body,
                 operation_type: operation_type.clone(),
             };
-            if !grpc.group_by.is_empty() {
-                IR::IO(IO::Grpc {
-                    req_template,
-                    group_by: Some(GroupBy::new(grpc.group_by.clone())),
-                    dl_id: None,
-                })
+            if let Some(grp_by) = &grpc.group_by {
+                IR::IO(IO::Grpc { req_template, group_by: Some(grp_by.clone()), dl_id: None })
             } else {
                 IR::IO(IO::Grpc { req_template, group_by: None, dl_id: None })
             }

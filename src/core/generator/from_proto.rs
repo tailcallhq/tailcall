@@ -369,7 +369,7 @@ impl Context {
                 cfg_field.grpc = Some(Grpc {
                     base_url: None,
                     body,
-                    group_by: vec![],
+                    group_by: None,
                     headers: vec![],
                     method: field_name.id(),
                 });
