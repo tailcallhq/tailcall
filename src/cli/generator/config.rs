@@ -12,7 +12,7 @@ use url::Url;
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
 use crate::core::mustache::Mustache;
-use crate::core::valid::{Valid, ValidateFrom};
+use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -95,45 +95,48 @@ pub struct Schema {
     pub query: Option<String>,
 }
 
-fn is_invalid_threshold(threshold: f32) -> bool {
-    !(0.0..=1.0).contains(&threshold)
+fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
+    if !(min..=max).contains(&threshold) {
+        Valid::fail(format!(
+            "Invalid threshold value ({:.2}). Allowed range is [{} - {}] inclusive.",
+            threshold, min, max
+        ))
+    } else {
+        Valid::succeed(())
+    }
 }
 
 impl ValidateFrom<PresetConfig> for Preset {
     type Error = String;
-    fn validate_from(preset: PresetConfig) -> Valid<Self, Self::Error> {
-        let this = preset;
+    fn validate_from(config: PresetConfig) -> Valid<Self, Self::Error> {
         let mut preset = Preset::new();
 
-        if let Some(merge_type) = this.merge_type {
-            if is_invalid_threshold(merge_type) {
-                return Valid::fail(format!(
-                    "Invalid threshold value ({:.2}). Allowed range is [0.0 - 1.0] inclusive.",
-                    merge_type
-                ));
-            }
+        if let Some(merge_type) = config.merge_type {
             preset = preset.merge_type(merge_type);
         }
 
-        if let Some(consolidate_url) = this.consolidate_url {
-            if is_invalid_threshold(consolidate_url) {
-                return Valid::fail(format!(
-                    "Invalid threshold value ({:.2}). Allowed range is [0.0 - 1.0] inclusive.",
-                    consolidate_url
-                ));
-            }
+        if let Some(consolidate_url) = config.consolidate_url {
             preset = preset.consolidate_url(consolidate_url);
         }
 
-        if let Some(use_better_names) = this.use_better_names {
+        if let Some(use_better_names) = config.use_better_names {
             preset = preset.use_better_names(use_better_names);
         }
 
-        if let Some(tree_shake) = this.tree_shake {
+        if let Some(tree_shake) = config.tree_shake {
             preset = preset.tree_shake(tree_shake);
         }
 
+        // TODO: The field names in trace should be inserted at compile time.
         Valid::succeed(preset)
+            .and_then(|preset| {
+                let merge_types_th = between(preset.merge_type, 0.0, 0.1).trace("mergeType");
+                let consolidate_url_th =
+                    between(preset.consolidate_url, 0.0, 0.1).trace("consolidateURL");
+
+                merge_types_th.and(consolidate_url_th).map_to(preset)
+            })
+            .trace("preset")
     }
 }
 

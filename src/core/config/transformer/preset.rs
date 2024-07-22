@@ -7,10 +7,10 @@ use crate::core::transform::{self, Transform, TransformerOps};
 /// configuration to make it more maintainable.
 #[derive(Setters, Debug, PartialEq)]
 pub struct Preset {
-    merge_type: f32,
-    consolidate_url: f32,
-    tree_shake: bool,
-    use_better_names: bool,
+    pub merge_type: f32,
+    pub consolidate_url: f32,
+    pub tree_shake: bool,
+    pub use_better_names: bool,
 }
 
 impl Preset {
