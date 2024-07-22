@@ -32,7 +32,10 @@
               }
             ],
             "baseURL": "http://jsonplaceholder.typicode.com",
-            "batchKey": ["id"]
+            "batch": {
+              "batchKey": "id",
+              "extractionPath": ["id"]
+            }
           },
           "cache": null
         }

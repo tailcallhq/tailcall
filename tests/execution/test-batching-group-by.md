@@ -13,7 +13,12 @@ type Post {
   body: String
   id: Int
   title: String
-  user: User @http(batchKey: ["id"], path: "/users", query: [{key: "id", value: "{{.value.userId}}"}])
+  user: User
+    @http(
+      batch: {batchKey: "id", extractionPath: ["id"]}
+      path: "/users"
+      query: [{key: "id", value: "{{.value.userId}}"}]
+    )
   userId: Int!
 }
 

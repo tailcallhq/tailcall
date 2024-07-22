@@ -15,6 +15,6 @@ type User {
 }
 
 type Query {
-  user: User @http(path: "/posts/1", method: "POST", batchKey: ["id"])
+  user: User @http(path: "/posts/1", method: "POST", batch: {batchKey: "id", extractionPath: ["id"]})
 }
 ```
