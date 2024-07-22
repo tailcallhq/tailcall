@@ -39,7 +39,10 @@
                 "value": "{{value.userId}}"
               }
             ],
-            "batchKey": ["id"]
+            "batch": {
+              "batchKey": "id",
+              "extractionPath": ["id"]
+            }
           }
         },
         "userId": {
