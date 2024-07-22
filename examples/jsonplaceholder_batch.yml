@@ -28,8 +28,10 @@ types:
           query:
             - key: id
               value: "{{value.userId}}"
-          batchKey:
-            - id
+          batch:
+            batchKey: id
+            extractionPath:
+              - id
       userId:
         type: Int
         required: true
