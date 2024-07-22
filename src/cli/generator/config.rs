@@ -96,14 +96,11 @@ pub struct Schema {
 }
 
 fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
-    if !(min..=max).contains(&threshold) {
-        Valid::fail(format!(
-            "Invalid threshold value ({:.2}). Allowed range is [{} - {}] inclusive.",
-            threshold, min, max
-        ))
-    } else {
-        Valid::succeed(())
-    }
+    Valid::<(), String>::fail(format!(
+        "Invalid threshold value ({:.2}). Allowed range is [{} - {}] inclusive.",
+        threshold, min, max
+    ))
+    .when(|| !(min..=max).contains(&threshold))
 }
 
 impl ValidateFrom<PresetConfig> for Preset {
