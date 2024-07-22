@@ -2,8 +2,6 @@ use async_graphql::parser::types::*;
 use async_graphql::{Pos, Positioned};
 use async_graphql_value::{ConstValue, Name};
 
-use super::jit::DirectiveAdapter;
-
 fn pos<A>(a: A) -> Positioned<A> {
     Positioned::new(a, Pos::default())
 }
@@ -63,9 +61,7 @@ fn get_formatted_docs(docs: Option<String>, indent: usize) -> String {
     formatted_docs
 }
 
-pub fn print_directives<'a, Input: DirectiveAdapter + 'a>(
-    directives: impl Iterator<Item = &'a Input>,
-) -> String {
+pub fn print_directives<'a>(directives: impl Iterator<Item = &'a ConstDirective>) -> String {
     directives
         .map(|d| print_directive(&const_directive_to_sdl(d)))
         .collect::<Vec<String>>()
@@ -106,17 +102,18 @@ fn print_schema(schema: &SchemaDefinition) -> String {
     )
 }
 
-fn const_directive_to_sdl<Input: DirectiveAdapter>(directive: &Input) -> DirectiveDefinition {
+fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
     DirectiveDefinition {
         description: None,
-        name: pos(Name::new(directive.name())),
+        name: pos(Name::new(directive.name.node.as_str())),
         arguments: directive
-            .arguments()
+            .arguments
+            .iter()
             .filter_map(|(k, v)| {
-                if *v != ConstValue::Null {
+                if v.node != ConstValue::Null {
                     Some(pos(InputValueDefinition {
                         description: None,
-                        name: pos(Name::new(k)),
+                        name: pos(Name::new(k.node.clone())),
                         ty: pos(Type {
                             nullable: true,
                             base: async_graphql::parser::types::BaseType::Named(Name::new(

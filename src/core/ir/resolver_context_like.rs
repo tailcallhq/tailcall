@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use async_graphql::parser::types::OperationType;
+use async_graphql::parser::types::{ConstDirective, OperationType};
 use async_graphql::{Name, ServerError, Value};
 use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
-use crate::core::jit::{Directive, Nested};
+use crate::core::jit::Nested;
 
 pub trait ResolverContextLike: Clone {
     fn value(&self) -> Option<&Value>;
@@ -75,7 +75,7 @@ impl<'a> ResolverContextLike for ResolverContext<'a> {
 pub struct SelectionField {
     name: String,
     args: Vec<(String, String)>,
-    directives: Option<Vec<Directive<ConstValue>>>,
+    directives: Option<Vec<ConstDirective>>,
     selection_set: Vec<SelectionField>,
 }
 
@@ -109,7 +109,13 @@ impl SelectionField {
             directives: if field.directives.is_empty() {
                 None
             } else {
-                Some(field.directives.clone())
+                Some(
+                    field
+                        .directives
+                        .iter()
+                        .map(|d| d.into())
+                        .collect::<Vec<ConstDirective>>(),
+                )
             },
             selection_set,
         }
@@ -128,27 +134,20 @@ impl SelectionField {
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect::<Vec<_>>();
 
-        let directives = field.directives().ok().map(|d| {
-            d.into_iter()
-                .map(|d| {
-                    let args = d
-                        .arguments
-                        .into_iter()
-                        .map(|(k, v)| (k.node.to_string(), v.node))
-                        .collect::<Vec<_>>();
-                    Directive { name: d.name.node.to_string(), arguments: args }
-                })
-                .collect::<Vec<_>>()
-        });
         let selection_set = field
             .selection_set()
             .map(Self::from_async_selection_field)
             .collect();
 
-        Self { name, args, selection_set, directives }
+        Self {
+            name,
+            args,
+            selection_set,
+            directives: field.directives().ok(),
+        }
     }
 
-    pub fn directives(&self) -> &Option<Vec<Directive<ConstValue>>> {
+    pub fn directives(&self) -> &Option<Vec<ConstDirective>> {
         &self.directives
     }
 
