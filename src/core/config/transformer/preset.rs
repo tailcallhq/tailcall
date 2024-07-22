@@ -7,10 +7,21 @@ use crate::core::transform::{self, Transform, TransformerOps};
 /// configuration to make it more maintainable.
 #[derive(Setters, Debug, PartialEq)]
 pub struct Preset {
-    merge_type: f32,
-    consolidate_url: f32,
-    tree_shake: bool,
-    use_better_names: bool,
+    pub merge_type: f32,
+    pub consolidate_url: f32,
+    pub tree_shake: bool,
+    pub use_better_names: bool,
+}
+
+impl Preset {
+    pub fn new() -> Self {
+        Self {
+            merge_type: 0.0,
+            consolidate_url: 0.0,
+            tree_shake: false,
+            use_better_names: false,
+        }
+    }
 }
 
 impl Transform for Preset {
@@ -24,9 +35,15 @@ impl Transform for Preset {
         transform::default()
             .pipe(super::Required)
             .pipe(super::TreeShake.when(self.tree_shake))
-            .pipe(super::TypeMerger::new(self.merge_type))
+            .pipe(
+                super::TypeMerger::new(self.merge_type)
+                    .when(super::TypeMerger::is_enabled(self.merge_type)),
+            )
             .pipe(super::ImproveTypeNames.when(self.use_better_names))
-            .pipe(super::ConsolidateURL::new(self.consolidate_url))
+            .pipe(
+                super::ConsolidateURL::new(self.consolidate_url)
+                    .when(super::ConsolidateURL::is_enabled(self.consolidate_url)),
+            )
             .transform(config)
     }
 }
