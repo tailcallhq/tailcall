@@ -78,7 +78,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
                 let url = request.url();
                 let pairs: Vec<_> = url
                     .query_pairs()
-                    .filter(|(key, _)| group_by.path().contains(&key.to_string()))
+                    .filter(|(key, _)| group_by.key().contains(&key.to_string()))
                     .collect();
                 first_url.query_pairs_mut().extend_pairs(pairs);
             }
