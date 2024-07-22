@@ -11,7 +11,7 @@ use tracing::Instrument;
 use crate::core::blueprint::{Blueprint, Definition, Type};
 use crate::core::http::RequestContext;
 use crate::core::ir::{EvalContext, ResolverContext, TypeName};
-use crate::core::scalar::CUSTOM_SCALARS;
+use crate::core::scalar::{Scalar, CUSTOM_SCALARS};
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {
@@ -229,7 +229,7 @@ impl From<&Blueprint> for SchemaBuilder {
 
         for (k, v) in CUSTOM_SCALARS.iter() {
             schema = schema.register(dynamic::Type::Scalar(
-                dynamic::Scalar::new(k.clone()).validator(v.validate()),
+                dynamic::Scalar::new(k.clone()).validator(v.validate::<ConstValue>()),
             ));
         }
 
