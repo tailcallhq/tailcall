@@ -127,9 +127,9 @@ impl ValidateFrom<PresetConfig> for Preset {
         // TODO: The field names in trace should be inserted at compile time.
         Valid::succeed(preset)
             .and_then(|preset| {
-                let merge_types_th = between(preset.merge_type, 0.0, 0.1).trace("mergeType");
+                let merge_types_th = between(preset.merge_type, 0.0, 1.0).trace("mergeType");
                 let consolidate_url_th =
-                    between(preset.consolidate_url, 0.0, 0.1).trace("consolidateURL");
+                    between(preset.consolidate_url, 0.0, 1.0).trace("consolidateURL");
 
                 merge_types_th.and(consolidate_url_th).map_to(preset)
             })
@@ -266,6 +266,7 @@ mod tests {
     use super::*;
     use crate::core::tests::TestEnvIO;
     use crate::core::valid::{ValidateInto, ValidationError, Validator};
+    use pretty_assertions::assert_eq;
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
         Location(s.as_ref().to_string(), PhantomData)
