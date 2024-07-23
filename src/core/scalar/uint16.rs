@@ -1,5 +1,4 @@
-use schemars::schema::Schema;
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::JsonLikeOwned;
@@ -11,10 +10,6 @@ pub struct UInt16(pub u16);
 impl super::Scalar for UInt16 {
     fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
         |value| value.as_u64().map_or(false, |n| u16::try_from(n).is_ok())
-    }
-
-    fn schema(&self) -> Schema {
-        schema_for!(Self).schema.into()
     }
 }
 
