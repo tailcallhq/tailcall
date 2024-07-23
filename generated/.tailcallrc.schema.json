@@ -601,7 +601,7 @@
           ]
         },
         "batchKey": {
-          "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "description": "The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
           "type": "array",
           "items": {
             "type": "string"
@@ -687,7 +687,7 @@
           ]
         },
         "batchKey": {
-          "description": "The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "description": "The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
           "type": "array",
           "items": {
             "type": "string"
@@ -757,7 +757,7 @@
           "type": "string"
         },
         "query": {
-          "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL.",
+          "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. When `batchKey` is present Tailcall uses the first query parameter as the key for the groupBy operator.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/KeyValue"
