@@ -296,11 +296,10 @@ mod tests {
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn extend_lifetime_str<'b>(r: &'b str) -> &'static str {
-        unsafe { std::mem::transmute::<&'b str, &'static str>(r) }
-    }
-
-    fn make_store<'a, Value: JsonLike<'a> + Deserialize<'a> + Serialize + Clone + 'a>(
+    fn make_store<
+        'a,
+        Value: JsonLike<'a> + Deserialize<'a> + Serialize + Clone + 'a + std::fmt::Debug,
+    >(
         query: &str,
         store: Vec<(FieldId, TestData)>,
     ) -> Synth<Value> {
@@ -315,15 +314,7 @@ mod tests {
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build(&Variables::new(), None).unwrap();
-        let plan = plan
-            .try_map(|v: ConstValue| {
-                let v = v.into_json()?;
-                let val = v.to_string();
-                let val = val.as_str();
-                let val = extend_lifetime_str(val);
-                Ok::<_, anyhow::Error>(serde_json::from_str::<Value>(val)?)
-            })
-            .unwrap();
+        let plan = plan.try_map(Deserialize::deserialize).unwrap();
 
         let store = store
             .into_iter()
