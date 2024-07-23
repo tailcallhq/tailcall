@@ -4,7 +4,6 @@ use std::sync::Arc;
 use async_graphql::{Data, Executor, Response};
 use futures_util::stream::BoxStream;
 
-use super::IntoServerError;
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::jit;
@@ -32,7 +31,7 @@ impl Executor for JITExecutor {
                     let resp = exec.execute(&self.req_ctx, request).await;
                     resp.into_async_graphql()
                 }
-                Err(error) => Response::from_errors(vec![error.into_server_error()]),
+                Err(error) => Response::from_errors(vec![error.into()]),
             }
         }
     }

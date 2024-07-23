@@ -191,7 +191,7 @@ impl<Input> Field<Nested<Input>, Input> {
 }
 
 impl<Input> Field<Flat, Input> {
-    fn parent(&self) -> Option<&FieldId> {
+    pub fn parent(&self) -> Option<&FieldId> {
         self.extensions.as_ref().map(|Flat(id)| id)
     }
 

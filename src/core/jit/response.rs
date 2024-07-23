@@ -1,22 +1,22 @@
-use async_graphql::Positioned;
 use derive_setters::Setters;
 use serde::Serialize;
 
-use super::IntoServerError;
 use crate::core::jit;
+
+use super::LocationError;
 
 #[derive(Setters, Serialize)]
 pub struct Response<Value, Error> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub errors: Vec<Positioned<Error>>,
+    pub errors: Vec<LocationError<Error>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub extensions: Vec<(String, Value)>,
 }
 
 impl<Value, Error> Response<Value, Error> {
-    pub fn new(result: Result<Value, Positioned<Error>>) -> Self {
+    pub fn new(result: Result<Value, LocationError<Error>>) -> Self {
         match result {
             Ok(value) => Response {
                 data: Some(value),
@@ -35,7 +35,7 @@ impl Response<async_graphql::Value, jit::Error> {
             resp = resp.extension(name, value);
         }
         for error in self.errors {
-            resp.errors.push(error.into_server_error());
+            resp.errors.push(error.into());
         }
         resp
     }
