@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::{JsonLike};
+use crate::core::json::JsonLike;
 
 /// A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
 #[derive(JsonSchema, Default, ScalarDefinition)]

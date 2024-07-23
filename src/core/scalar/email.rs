@@ -2,7 +2,7 @@ use async_graphql::validators::email;
 use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::{JsonLike};
+use crate::core::json::JsonLike;
 
 /// field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
 #[derive(JsonSchema, Default, ScalarDefinition)]

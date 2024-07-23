@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::{JsonLike};
+use crate::core::json::JsonLike;
 
 /// Represents unsigned integer type 128bit size as string
 #[derive(JsonSchema, Default, ScalarDefinition)]

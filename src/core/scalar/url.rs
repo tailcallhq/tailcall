@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::{JsonLike};
+use crate::core::json::JsonLike;
 
 /// A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.
 #[derive(JsonSchema, Default, ScalarDefinition)]
