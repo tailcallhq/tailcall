@@ -3,7 +3,7 @@ source: tests/core/spec.rs
 expression: formatted
 ---
 type Bar {
-  bar_name: String!
+  barName: String!
   id: ID!
 }
 
@@ -16,9 +16,9 @@ scalar Email
 scalar Empty
 
 type Foo {
-  bar_id: String!
+  barId: String!
   bars: [Bar!]!
-  foo_name: String!
+  fooName: String!
   id: ID!
 }
 

@@ -9,20 +9,20 @@ schema
 }
 
 type Bar {
-  bar_name: String!
+  barName: String!
   id: ID!
 }
 
 type Foo {
-  bar_id: String!
+  barId: String!
   bars: [Bar!]!
     @http(
-      batchKey: "bar_ids[]"
+      batchKey: "barId[]"
       batchPath: ["bars", "id"]
       path: "/bar"
-      query: [{key: "bar_ids[]", value: "{{.value.bar_id}}"}]
+      query: [{key: "barId[]", value: "{{.value.barId}}"}]
     )
-  foo_name: String!
+  fooName: String!
   id: ID!
 }
 

@@ -601,7 +601,14 @@
           ]
         },
         "batchKey": {
-          "description": "The key path in the response which should be used to group multiple requests. For instance `[\"news\",\"id\"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "description": "The `batchKey` is used to dictate the query parameter Tailcall will use to group multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "batchPath": {
+          "description": "The `batchPath` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
           "type": "array",
           "items": {
             "type": "string"
@@ -687,7 +694,14 @@
           ]
         },
         "batchKey": {
-          "description": "The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "description": "The `batchKey` is used to dictate the query parameter Tailcall will use to group multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "batchPath": {
+          "description": "The `batchPath` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).",
           "type": "array",
           "items": {
             "type": "string"

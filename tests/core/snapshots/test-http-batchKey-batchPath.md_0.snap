@@ -13,42 +13,42 @@ expression: response
         "foos": [
           {
             "id": "foo_1",
-            "foo_name": "foo_name_1",
-            "bar_id": "bar_1",
+            "fooName": "foo_name_1",
+            "barId": "bar_1",
             "bars": [
               {
                 "id": "bar_1",
-                "bar_name": "bar_name_1"
+                "barName": "bar_name_1"
               },
               {
                 "id": "bar_1",
-                "bar_name": "bar_name_1"
+                "barName": "bar_name_1"
               }
             ]
           },
           {
             "id": "foo_2",
-            "foo_name": "foo_name_2",
-            "bar_id": "bar_1",
+            "fooName": "foo_name_2",
+            "barId": "bar_1",
             "bars": [
               {
                 "id": "bar_1",
-                "bar_name": "bar_name_1"
+                "barName": "bar_name_1"
               },
               {
                 "id": "bar_1",
-                "bar_name": "bar_name_1"
+                "barName": "bar_name_1"
               }
             ]
           },
           {
             "id": "foo_3",
-            "foo_name": "foo_name_3",
-            "bar_id": "bar_2",
+            "fooName": "foo_name_3",
+            "barId": "bar_2",
             "bars": [
               {
                 "id": "bar_2",
-                "bar_name": "bar_name_2"
+                "barName": "bar_name_2"
               }
             ]
           }

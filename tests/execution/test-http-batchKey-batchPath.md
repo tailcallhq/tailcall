@@ -17,20 +17,20 @@ type FooResponse {
 
 type Foo {
   id: ID!
-  foo_name: String!
-  bar_id: String!
+  fooName: String!
+  barId: String!
   bars: [Bar!]!
     @http(
       path: "/bar"
-      query: [{key: "bar_ids[]", value: "{{.value.bar_id}}"}]
-      batchKey: "bar_ids[]"
+      query: [{key: "barId[]", value: "{{.value.barId}}"}]
+      batchKey: "barId[]"
       batchPath: ["bars", "id"]
     )
 }
 
 type Bar {
   id: ID!
-  bar_name: String!
+  barName: String!
 }
 ```
 
@@ -44,25 +44,25 @@ type Bar {
       {
         "foos":
           [
-            {"id": "foo_1", "foo_name": "foo_name_1", "bar_id": "bar_1"},
-            {"id": "foo_2", "foo_name": "foo_name_2", "bar_id": "bar_1"},
-            {"id": "foo_3", "foo_name": "foo_name_3", "bar_id": "bar_2"},
+            {"id": "foo_1", "fooName": "foo_name_1", "barId": "bar_1"},
+            {"id": "foo_2", "fooName": "foo_name_2", "barId": "bar_1"},
+            {"id": "foo_3", "fooName": "foo_name_3", "barId": "bar_2"},
           ],
         "meta":
           {"current_page": 1, "next_page": 1, "prev_page": null, "total_pages": 1, "total_count": 3, "per_page": 3},
       }
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/bar?bar_ids[]=bar_1&bar_ids%5B%5D=bar_2
+    url: http://jsonplaceholder.typicode.com/bar?barId[]=bar_1&barId%5B%5D=bar_2
   response:
     status: 200
     body:
       {
         "bars":
           [
-            {"id": "bar_1", "bar_name": "bar_name_1"},
-            {"id": "bar_1", "bar_name": "bar_name_1"},
-            {"id": "bar_2", "bar_name": "bar_name_2"},
+            {"id": "bar_1", "barName": "bar_name_1"},
+            {"id": "bar_1", "barName": "bar_name_1"},
+            {"id": "bar_2", "barName": "bar_name_2"},
           ],
         "meta":
           {"current_page": 1, "next_page": 1, "prev_page": null, "total_pages": 1, "total_count": 3, "per_page": 3},
@@ -78,11 +78,11 @@ type Bar {
         foos {
           foos {
             id
-            foo_name
-            bar_id
+            fooName
+            barId
             bars {
               id
-              bar_name
+              barName
             }
           }
         }
