@@ -103,10 +103,11 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                         }
 
                         match data {
-                            Data::Single(val) => {
-                                let val = val.as_ref().ok();
-                                self.iter(node, val, data_path)
-                            }
+                            Data::Single(val) => self.iter(
+                                node,
+                                Some(val.as_ref().map_err(Clone::clone)?),
+                                data_path,
+                            ),
                             _ => {
                                 // TODO: should bailout instead of returning Null
                                 Ok(Value::null())

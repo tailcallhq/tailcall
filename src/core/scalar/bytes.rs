@@ -1,5 +1,4 @@
-use schemars::schema::Schema;
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::{JsonLike, JsonLikeOwned};
@@ -15,10 +14,6 @@ impl super::Scalar for Bytes {
 
     fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
         |value| value.as_str().is_some()
-    }
-
-    fn schema(&self) -> Schema {
-        schema_for!(Self).schema.into()
     }
 }
 

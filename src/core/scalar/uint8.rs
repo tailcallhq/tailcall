@@ -1,5 +1,4 @@
-use schemars::schema::Schema;
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::{JsonLike, JsonLikeOwned};
@@ -15,10 +14,6 @@ impl super::Scalar for UInt8 {
 
     fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
         |value| value.as_u64().map_or(false, |n| u8::try_from(n).is_ok())
-    }
-
-    fn schema(&self) -> Schema {
-        schema_for!(Self).schema.into()
     }
 }
 

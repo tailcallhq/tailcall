@@ -1,5 +1,4 @@
-use schemars::schema::Schema;
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::{JsonLike, JsonLikeOwned};
@@ -27,10 +26,6 @@ impl super::Scalar for Int16 {
 
             false
         }
-    }
-
-    fn schema(&self) -> Schema {
-        schema_for!(Self).schema.into()
     }
 }
 

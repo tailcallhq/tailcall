@@ -39,10 +39,12 @@ use std::collections::{HashMap, HashSet};
 use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
 use schemars::schema::Schema;
+use schemars::schema_for;
 
 use crate::core::json::{JsonLike, JsonLikeOwned};
 
 #[enum_dispatch(Scalar)]
+#[derive(schemars::JsonSchema)]
 pub enum ScalarType {
     Email,
     PhoneNumber,
@@ -115,7 +117,12 @@ pub trait Scalar {
     // Works with any type
     // Designed for jit
     fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool;
-    fn schema(&self) -> Schema;
+    fn schema(&self) -> Schema
+    where
+        Self: schemars::JsonSchema,
+    {
+        Schema::Object(schema_for!(Self).schema)
+    }
     fn name(&self) -> String {
         std::any::type_name::<Self>()
             .split("::")
