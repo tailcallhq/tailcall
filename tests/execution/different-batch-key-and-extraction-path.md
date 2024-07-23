@@ -79,7 +79,6 @@ type BankAccount {
         total_count: 4
         per_page: 2
   expectedHits: 1
-  
 ```
 
 ```yml @test
