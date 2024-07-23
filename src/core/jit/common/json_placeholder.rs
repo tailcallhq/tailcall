@@ -38,8 +38,8 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
     fn init() -> Self {
         let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
-        let test_data = TestData { posts, users };
-        test_data
+
+        TestData { posts, users }
     }
 
     fn to_processed(&'a self) -> ProcessedTestData<Value> {
@@ -90,7 +90,7 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JsonPlaceholder<Val
             async_graphql::parser::parse_query(query).unwrap(),
         );
 
-        let plan = builder.build(&variables, None).unwrap();
+        let plan = builder.build(variables, None).unwrap();
 
         plan.try_map(Deserialize::deserialize).unwrap()
     }
