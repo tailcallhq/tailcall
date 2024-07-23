@@ -36,14 +36,15 @@ mod url;
 
 use std::collections::{HashMap, HashSet};
 
-use async_graphql_value::ConstValue;
 use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
 use schemars::schema::Schema;
+use schemars::schema_for;
 
 use crate::core::json::JsonLikeOwned;
 
 #[enum_dispatch(Scalar)]
+#[derive(schemars::JsonSchema)]
 pub enum ScalarType {
     Email,
     PhoneNumber,
@@ -111,7 +112,12 @@ pub fn is_predefined_scalar(type_name: &str) -> bool {
 pub trait Scalar {
     // Drop validate when we switch to jit
     fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool;
-    fn schema(&self) -> Schema;
+    fn schema(&self) -> Schema
+    where
+        Self: schemars::JsonSchema,
+    {
+        Schema::Object(schema_for!(Self).schema)
+    }
     fn name(&self) -> String {
         std::any::type_name::<Self>()
             .split("::")
@@ -121,7 +127,7 @@ pub trait Scalar {
     }
 }
 
-pub fn get_scalar(name: &str) -> fn(&ConstValue) -> bool {
+pub fn get_scalar<Value: JsonLikeOwned>(name: &str) -> fn(&Value) -> bool {
     CUSTOM_SCALARS
         .get(name)
         .map(|v| v.validate())

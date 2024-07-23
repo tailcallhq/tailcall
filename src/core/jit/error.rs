@@ -3,6 +3,7 @@ use async_graphql::{ErrorExtensions, PathSegment, Pos, ServerError};
 use serde::Serialize;
 use thiserror::Error;
 
+
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 #[error("Error while building the plan")]
 pub enum BuildError {
@@ -60,21 +61,32 @@ impl ErrorExtensions for Error {
 
 pub type Result<A> = std::result::Result<A, Error>;
 
-impl Into<ServerError> for Error {
-    fn into(self) -> ServerError {
+impl From<Error> for ServerError {
+    fn from(val: Error) -> Self {
         // async_graphql::parser::Error has special conversion to ServerError
-        if let Error::ParseError(error) = self {
+        if let Error::ParseError(error) = val {
             return error.into();
         }
 
-        let extensions = self.extend().extensions;
-        let mut server_error = ServerError::new(self.to_string(), None);
+        let extensions = val.extend().extensions;
+        let mut server_error = ServerError::new(val.to_string(), None);
 
         server_error.extensions = extensions;
 
         server_error
     }
 }
+
+// impl From<Positioned<Error>> for Lift<ServerError> {
+//     fn from(a: Positioned<Error>) -> Self {
+//         (match a.node {
+//             // async_graphql::parser::Error already has builtin positioning
+//             Error::ParseError(error) => error.into(),
+//             error => error.into_server_error_with_pos(Some(a.pos)),
+//         })
+//         .into()
+//     }
+// }
 
 #[derive(Debug, Serialize)]
 pub struct LocationError<Err> {
@@ -83,17 +95,18 @@ pub struct LocationError<Err> {
     pub path: Vec<PathSegment>,
 }
 
-impl Into<ServerError> for LocationError<Error> {
-    fn into(self) -> ServerError {
-        let extensions = self.error.extend().extensions;
-        let mut server_error = ServerError::new(self.error.to_string(), Some(self.pos));
+impl From<LocationError<Error>> for ServerError {
+    fn from(val: LocationError<Error>) -> Self {
+        let extensions = val.error.extend().extensions;
+        let mut server_error = ServerError::new(val.error.to_string(), Some(val.pos));
 
         server_error.extensions = extensions;
 
-        // TODO: in order to be compatible with async_graphql path is only set for validation errors here
-        // but in general we might consider setting it for every error
-        if let Error::Validation(_) = self.error {
-            server_error.path = self.path;
+        // TODO: in order to be compatible with async_graphql path is only set for
+        // validation errors here but in general we might consider setting it
+        // for every error
+        if let Error::Validation(_) = val.error {
+            server_error.path = val.path;
         }
 
         server_error

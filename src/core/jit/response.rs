@@ -1,9 +1,8 @@
 use derive_setters::Setters;
 use serde::Serialize;
 
-use crate::core::jit;
-
 use super::LocationError;
+use crate::core::jit;
 
 #[derive(Setters, Serialize)]
 pub struct Response<Value, Error> {
