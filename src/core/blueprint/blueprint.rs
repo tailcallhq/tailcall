@@ -5,7 +5,6 @@ use std::sync::Arc;
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
-use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use serde_json::Value;
 
@@ -191,7 +190,7 @@ pub struct ScalarTypeDefinition {
     pub name: String,
     pub directive: Vec<Directive>,
     pub description: Option<String>,
-    pub validator: fn(&ConstValue) -> bool,
+    pub validator: String,
 }
 
 #[derive(Clone, Debug)]

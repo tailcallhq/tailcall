@@ -35,13 +35,15 @@ mod uint8;
 mod url;
 
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Debug, Formatter};
+use std::sync::Arc;
 
 use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
 use schemars::schema::Schema;
 use schemars::schema_for;
 
-use crate::core::json::{JsonLike, JsonLikeOwned};
+use crate::core::json::JsonLike;
 
 #[enum_dispatch(Scalar)]
 #[derive(schemars::JsonSchema)]
@@ -63,6 +65,28 @@ pub enum ScalarType {
     UInt64,
     UInt128,
     Bytes,
+}
+
+#[derive(Clone)]
+pub struct Validator<'a, Value> {
+    pub validate_fn: Arc<dyn Fn(&'a Value) -> bool + Send + Sync + 'static>,
+}
+
+impl<Value> Debug for Validator<'_, Value> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Validator")
+    }
+}
+
+impl<'a, Value: JsonLike<'a>> Validator<'a, Value> {
+    pub fn eval(name: &str) -> Validator<'a, Value> {
+        match CUSTOM_SCALARS.get(name) {
+            None => Validator { validate_fn: Arc::new(|_: &Value| true) },
+            Some(scalar) => Validator {
+                validate_fn: Arc::new(move |value: &Value| scalar.validate()(value)),
+            },
+        }
+    }
 }
 
 lazy_static! {
@@ -110,12 +134,6 @@ pub fn is_predefined_scalar(type_name: &str) -> bool {
 }
 #[enum_dispatch]
 pub trait Scalar {
-    // Works for owned values like
-    // ConstValue and Serde Value
-    fn validate_owned<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool;
-
-    // Works with any type
-    // Designed for jit
     fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool;
     fn schema(&self) -> Schema
     where
@@ -130,23 +148,6 @@ pub trait Scalar {
             .unwrap()
             .to_string()
     }
-}
-
-// Works for owned values like
-// ConstValue and Serde Value
-pub fn get_scalar_owned<Value: JsonLikeOwned>(name: &str) -> fn(&Value) -> bool {
-    CUSTOM_SCALARS
-        .get(name)
-        .map(|v| v.validate_owned())
-        .unwrap_or(|_| true)
-}
-
-// Works for all kinds of value
-pub fn get_scalar<'a, Value: JsonLike<'a>>(name: &str) -> fn(&'a Value) -> bool {
-    CUSTOM_SCALARS
-        .get(name)
-        .map(|v| v.validate())
-        .unwrap_or(|_| true)
 }
 
 #[cfg(test)]
@@ -165,7 +166,6 @@ mod test {
 
                 $(
                     assert!(value.validate::<async_graphql_value::ConstValue>()(&$value));
-                    assert!(value.validate_owned::<async_graphql_value::ConstValue>()(&$value));
                 )+
             }
         };
@@ -181,7 +181,6 @@ mod test {
 
                 $(
                     assert!(!value.validate::<async_graphql_value::ConstValue>()(&$value));
-                    assert!(!value.validate_owned::<async_graphql_value::ConstValue>()(&$value));
                 )+
             }
         };
