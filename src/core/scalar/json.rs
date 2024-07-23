@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::{JsonLike, JsonLikeOwned};
+use crate::core::json::{JsonLike};
 
 /// The JSON scalar type represents JSON values as specified by
 /// [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/
@@ -15,10 +15,6 @@ pub struct JSON {
 }
 
 impl super::Scalar for JSON {
-    fn validate_owned<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
-        |_| true
-    }
-
     fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
         |_| true
     }

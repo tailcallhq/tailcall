@@ -2,7 +2,7 @@ use async_graphql::validators::email;
 use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::{JsonLike, JsonLikeOwned};
+use crate::core::json::{JsonLike};
 
 /// field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
 #[derive(JsonSchema, Default, ScalarDefinition)]
@@ -24,16 +24,6 @@ fn email_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::S
 
 impl super::Scalar for Email {
     /// Function used to validate the email address
-    fn validate_owned<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
-        |value| {
-            if let Some(email_str) = value.as_str() {
-                let email_str = email_str.to_string();
-                return email(&email_str).is_ok();
-            }
-            false
-        }
-    }
-
     fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
         |value| {
             if let Some(email_str) = value.as_str() {

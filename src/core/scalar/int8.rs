@@ -1,22 +1,13 @@
 use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::{JsonLike, JsonLikeOwned};
+use crate::core::json::{JsonLike};
 
 /// Represents signed integer type 8bit size
 #[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct Int8(pub i8);
 
 impl super::Scalar for Int8 {
-    fn validate_owned<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
-        |value| {
-            if let Some(value) = value.as_i64() {
-                return i8::try_from(value).is_ok();
-            }
-            false
-        }
-    }
-
     fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
         |value| {
             if let Some(value) = value.as_i64() {
