@@ -53,6 +53,7 @@ type BankAccount {
         total_pages: 2
         total_count: 4
         per_page: 2
+  expectedHits: 1
 
 - request:
     method: GET
@@ -77,6 +78,8 @@ type BankAccount {
         total_pages: 2
         total_count: 4
         per_page: 2
+  expectedHits: 1
+  
 ```
 
 ```yml @test
