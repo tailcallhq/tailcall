@@ -407,8 +407,17 @@ mod tests {
 
     #[test]
     fn test_json_placeholder() {
-        let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
-        let val = synth.synthesize().unwrap();
+        let placeholder = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
+        let synth = placeholder.synth();
+        let val: async_graphql::Value = synth.synthesize().unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
+    }
+
+    #[test]
+    fn test_json_placeholder_borrowed() {
+        let placeholder = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
+        let synth = placeholder.synth();
+        let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }
