@@ -4,7 +4,7 @@ use tailcall_macros::ScalarDefinition;
 use crate::core::json::JsonLike;
 
 /// Represents unsigned integer type 64bit size as string
-#[derive(JsonSchema, Default, ScalarDefinition)]
+#[derive(JsonSchema, Default, ScalarDefinition, Clone, Debug)]
 pub struct UInt64(pub u64);
 
 impl super::Scalar for UInt64 {

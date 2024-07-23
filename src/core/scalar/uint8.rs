@@ -4,7 +4,7 @@ use tailcall_macros::ScalarDefinition;
 use crate::core::json::JsonLike;
 
 /// Represents unsigned integer type 8bit size
-#[derive(JsonSchema, Default, ScalarDefinition)]
+#[derive(JsonSchema, Default, ScalarDefinition, Clone, Debug)]
 pub struct UInt8(pub u8);
 
 impl super::Scalar for UInt8 {

@@ -4,7 +4,7 @@ use tailcall_macros::ScalarDefinition;
 use crate::core::json::JsonLike;
 
 /// Represents signed integer type 128 bit size as string
-#[derive(JsonSchema, Default, ScalarDefinition)]
+#[derive(JsonSchema, Default, ScalarDefinition, Clone, Debug)]
 pub struct Int128(pub i128);
 
 impl super::Scalar for Int128 {

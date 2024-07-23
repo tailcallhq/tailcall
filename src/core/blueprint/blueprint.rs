@@ -12,6 +12,7 @@ use super::telemetry::Telemetry;
 use super::{GlobalTimeout, Index};
 use crate::core::blueprint::{Server, Upstream};
 use crate::core::ir::model::IR;
+use crate::core::scalar;
 use crate::core::schema_extension::SchemaExtension;
 
 /// Blueprint is an intermediary representation that allows us to generate
@@ -190,7 +191,7 @@ pub struct ScalarTypeDefinition {
     pub name: String,
     pub directive: Vec<Directive>,
     pub description: Option<String>,
-    pub validator: String,
+    pub validator: scalar::ScalarType,
 }
 
 #[derive(Clone, Debug)]

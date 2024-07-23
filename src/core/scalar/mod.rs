@@ -35,8 +35,7 @@ mod uint8;
 mod url;
 
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Debug, Formatter};
-use std::sync::Arc;
+use std::fmt::Debug;
 
 use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
@@ -46,7 +45,7 @@ use schemars::schema_for;
 use crate::core::json::JsonLike;
 
 #[enum_dispatch(Scalar)]
-#[derive(schemars::JsonSchema)]
+#[derive(schemars::JsonSchema, Debug, Clone)]
 pub enum ScalarType {
     Email,
     PhoneNumber,
@@ -67,26 +66,8 @@ pub enum ScalarType {
     Bytes,
 }
 
-#[derive(Clone)]
-pub struct Validator<'a, Value> {
-    pub validate_fn: Arc<dyn Fn(&'a Value) -> bool + Send + Sync + 'static>,
-}
-
-impl<Value> Debug for Validator<'_, Value> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Validator")
-    }
-}
-
-impl<'a, Value: JsonLike<'a>> Validator<'a, Value> {
-    pub fn eval(name: &str) -> Validator<'a, Value> {
-        match CUSTOM_SCALARS.get(name) {
-            None => Validator { validate_fn: Arc::new(|_: &Value| true) },
-            Some(scalar) => Validator {
-                validate_fn: Arc::new(move |value: &Value| scalar.validate()(value)),
-            },
-        }
-    }
+pub fn get_scalar(name: &str) -> Option<ScalarType> {
+    CUSTOM_SCALARS.get(name).cloned()
 }
 
 lazy_static! {

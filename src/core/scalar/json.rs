@@ -6,7 +6,7 @@ use crate::core::json::JsonLike;
 /// The JSON scalar type represents JSON values as specified by
 /// [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/
 /// ECMA-404.pdf).
-#[derive(JsonSchema, Default, ScalarDefinition)]
+#[derive(JsonSchema, Default, ScalarDefinition, Clone, Debug)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct JSON {
     #[allow(dead_code)]
