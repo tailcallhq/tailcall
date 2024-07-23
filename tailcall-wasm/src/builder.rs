@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
+use tailcall::core::app_context::AppContext;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::ConfigModule;
-use tailcall::core::http::AppContext;
 use tailcall::core::merge_right::MergeRight;
 use tailcall::core::rest::EndpointSet;
 use tailcall::core::runtime::TargetRuntime;

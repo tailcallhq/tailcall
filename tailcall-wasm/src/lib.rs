@@ -5,8 +5,9 @@ use std::panic;
 use std::sync::Arc;
 
 use serde_json::json;
+use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
-use tailcall::core::http::{handle_request, AppContext};
+use tailcall::core::http::handle_request;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
