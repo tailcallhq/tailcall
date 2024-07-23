@@ -51,7 +51,7 @@ type Query {
       method: "news.NewsService.GetMultipleNews"
       baseURL: "http://localhost:50051"
       body: "{{.args.news}}"
-      batchPath: ["news", "id"]
+      batchKey: ["news", "id"]
     )
 }
 input NewsInput {

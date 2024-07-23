@@ -24,7 +24,7 @@ type Foo {
       path: "/bar"
       query: [{key: "barId[]", value: "{{.value.barId}}"}]
       batchKey: "barId[]"
-      batchPath: ["bars", "id"]
+      batchKey: ["bars", "id"]
     )
 }
 

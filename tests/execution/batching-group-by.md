@@ -20,7 +20,7 @@ type Post {
     @http(
       path: "/users"
       query: [{key: "id", value: "{{.value.userId}}"}, {key: "foo", value: "bar"}]
-      batchPath: ["id"]
+      batchKey: ["id"]
     )
 }
 

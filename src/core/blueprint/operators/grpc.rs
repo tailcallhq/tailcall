@@ -180,10 +180,10 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
         .and_then(|(operation, url, headers, body)| {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
-                if grpc.batch_path.is_empty() {
+                if grpc.batch_key.is_empty() {
                     validate_schema(field_schema, &operation, field.name()).unit()
                 } else {
-                    validate_group_by(&field_schema, &operation, grpc.batch_path.clone()).unit()
+                    validate_group_by(&field_schema, &operation, grpc.batch_key.clone()).unit()
                 }
             } else {
                 Valid::succeed(())
@@ -198,13 +198,10 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
                 body,
                 operation_type: operation_type.clone(),
             };
-            if !grpc.batch_path.is_empty() {
+            if !grpc.batch_key.is_empty() {
                 IR::IO(IO::Grpc {
                     req_template,
-                    group_by: Some(GroupBy::new(
-                        grpc.batch_path.clone(),
-                        grpc.batch_key.clone(),
-                    )),
+                    group_by: Some(GroupBy::new(grpc.batch_key.clone(), None)),
                     dl_id: None,
                 })
             } else {

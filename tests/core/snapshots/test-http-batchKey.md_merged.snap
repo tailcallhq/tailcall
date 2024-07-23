@@ -15,13 +15,7 @@ type Bar {
 
 type Foo {
   barId: String!
-  bars: [Bar!]!
-    @http(
-      batchKey: "barId[]"
-      batchPath: ["bars", "id"]
-      path: "/bar"
-      query: [{key: "barId[]", value: "{{.value.barId}}"}]
-    )
+  bars: [Bar!]! @http(batchKey: ["bars", "id"], path: "/bar", query: [{key: "barId[]", value: "{{.value.barId}}"}])
   fooName: String!
   id: ID!
 }

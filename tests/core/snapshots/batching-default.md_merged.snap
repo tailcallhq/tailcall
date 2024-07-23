@@ -14,7 +14,7 @@ type Post {
   title: String
   user: User
     @http(
-      batchPath: ["id"]
+      batchKey: ["id"]
       path: "/users"
       query: [{key: "id", value: "{{.value.userId}}"}, {key: "foo", value: "bar"}]
     )
