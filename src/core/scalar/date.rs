@@ -1,5 +1,5 @@
 use chrono::DateTime;
-use schemars::{JsonSchema};
+use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::JsonLikeOwned;

@@ -1,5 +1,5 @@
 use async_graphql::validators::email;
-use schemars::{JsonSchema};
+use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::JsonLikeOwned;
