@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
+use async_graphql::Positioned;
 use serde::Deserialize;
 
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
+use crate::core::jit;
 use crate::core::jit::builder::Builder;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
@@ -16,43 +18,32 @@ use crate::core::valid::Validator;
 pub struct JsonPlaceholder<Value> {
     test_data: TestData<Value>,
     plan: OperationPlan<Value>,
+    vars: Variables<async_graphql::Value>,
 }
 
+#[derive(Clone)]
 struct TestData<Value> {
     posts: Vec<Value>,
     users: Vec<Value>,
 }
 
-impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JsonPlaceholder<Value> {
+struct ProcessedTestData<Value> {
+    posts: Value,
+    users: HashMap<usize, Data<Result<Value, Positioned<jit::Error>>>>,
+}
+
+impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
     const POSTS: &'static str = include_str!("posts.json");
     const USERS: &'static str = include_str!("users.json");
-    const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
-
-    fn plan(query: &str) -> OperationPlan<Value> {
-        let config = ConfigModule::from(Config::from_sdl(Self::CONFIG).to_result().unwrap());
-        let builder = Builder::new(
-            &Blueprint::try_from(&config).unwrap(),
-            async_graphql::parser::parse_query(query).unwrap(),
-        );
-        let vars = Variables::new();
-        let plan = builder.build(&vars, None).unwrap();
-
-        plan.try_map(Deserialize::deserialize).unwrap()
-    }
-
-    pub fn init(query: &str) -> Self {
+    fn init() -> Self {
         let posts = serde_json::from_str::<Vec<Value>>(Self::POSTS).unwrap();
         let users = serde_json::from_str::<Vec<Value>>(Self::USERS).unwrap();
         let test_data = TestData { posts, users };
-        let plan = Self::plan(query);
-
-        JsonPlaceholder { test_data, plan }
+        test_data
     }
 
-    pub fn synth(&'a self) -> Synth<Value> {
-        let TestData { posts, users } = &self.test_data;
-        let plan = self.plan.clone();
-
+    fn to_processed(&'a self) -> ProcessedTestData<Value> {
+        let TestData { posts, users } = self;
         let user_map = users.iter().fold(HashMap::new(), |mut map, user| {
             let id = user
                 .as_object()
@@ -60,7 +51,7 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JsonPlaceholder<Val
                 .and_then(|u| u.as_u64());
 
             if let Some(id) = id {
-                map.insert(id, user);
+                map.insert(id as usize, Data::Single(Ok(user.clone())));
             }
             map
         });
@@ -74,19 +65,49 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JsonPlaceholder<Val
                     .and_then(|u| u.as_u64());
 
                 if let Some(user_id) = user_id {
-                    if let Some(user) = user_map.get(&user_id) {
-                        user.to_owned().to_owned().to_owned()
+                    if let Some(user) = user_map.get(&(user_id as usize)) {
+                        (user_id as usize, user.clone())
                     } else {
-                        Value::null()
+                        (user_id as usize, Data::Single(Ok(Value::null())))
                     }
                 } else {
-                    Value::null()
+                    (0, Data::Single(Ok(Value::null())))
                 }
             })
-            .map(Ok)
-            .map(Data::Single)
-            .enumerate()
             .collect();
+
+        ProcessedTestData { posts: Value::array(posts.clone()), users }
+    }
+}
+
+impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JsonPlaceholder<Value> {
+    const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
+
+    fn plan(query: &str, variables: &Variables<async_graphql::Value>) -> OperationPlan<Value> {
+        let config = ConfigModule::from(Config::from_sdl(Self::CONFIG).to_result().unwrap());
+        let builder = Builder::new(
+            &Blueprint::try_from(&config).unwrap(),
+            async_graphql::parser::parse_query(query).unwrap(),
+        );
+
+        let plan = builder.build(&variables, None).unwrap();
+
+        plan.try_map(Deserialize::deserialize).unwrap()
+    }
+
+    pub fn init(query: &str, variables: Option<Variables<async_graphql::Value>>) -> Self {
+        let vars = variables.unwrap_or_default();
+
+        let test_data = TestData::init();
+        let plan = Self::plan(query, &vars);
+
+        JsonPlaceholder { test_data, plan, vars }
+    }
+
+    pub fn synth(&'a self) -> Synth<Value> {
+        let ProcessedTestData { posts, users } = self.test_data.to_processed();
+        let plan = self.plan.clone();
+        let vars = self.vars.clone();
 
         let posts_id = plan.find_field_path(&["posts"]).unwrap().id.to_owned();
         let users_id = plan
@@ -94,8 +115,9 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JsonPlaceholder<Val
             .unwrap()
             .id
             .to_owned();
+
         let store = [
-            (posts_id, Data::Single(Ok(Value::array(posts.clone())))),
+            (posts_id, Data::Single(Ok(posts))),
             (users_id, Data::Multiple(users)),
         ]
         .into_iter()
@@ -104,6 +126,6 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JsonPlaceholder<Val
             store
         });
 
-        Synth::new(plan, store, Default::default())
+        Synth::new(plan, store, vars)
     }
 }
