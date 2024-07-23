@@ -99,7 +99,11 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                         }
 
                         match data {
-                            Data::Single(val) => self.iter(node, Some(&val.clone()?), data_path),
+                            Data::Single(val) => self.iter(
+                                node,
+                                Some(val.as_ref().map_err(Clone::clone)?),
+                                data_path,
+                            ),
                             _ => {
                                 // TODO: should bailout instead of returning Null
                                 Ok(Value::null())
