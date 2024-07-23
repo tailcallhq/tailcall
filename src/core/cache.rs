@@ -6,6 +6,8 @@ use std::time::Duration;
 
 use ttl_cache::TtlCache;
 
+use super::error::cache;
+
 pub struct InMemoryCache<K: Hash + Eq, V> {
     data: Arc<RwLock<TtlCache<K, V>>>,
     hits: AtomicUsize,
@@ -38,13 +40,13 @@ impl<K: Hash + Eq + Send + Sync, V: Clone + Send + Sync> crate::core::Cache
     type Key = K;
     type Value = V;
     #[allow(clippy::too_many_arguments)]
-    async fn set<'a>(&'a self, key: K, value: V, ttl: NonZeroU64) -> anyhow::Result<()> {
+    async fn set<'a>(&'a self, key: K, value: V, ttl: NonZeroU64) -> cache::Result<()> {
         let ttl = Duration::from_millis(ttl.get());
         self.data.write().unwrap().insert(key, value, ttl);
         Ok(())
     }
 
-    async fn get<'a>(&'a self, key: &'a K) -> anyhow::Result<Option<Self::Value>> {
+    async fn get<'a>(&'a self, key: &'a K) -> cache::Result<Option<Self::Value>> {
         let val = self.data.read().unwrap().get(key).cloned();
         if val.is_some() {
             self.hits.fetch_add(1, Ordering::Relaxed);
