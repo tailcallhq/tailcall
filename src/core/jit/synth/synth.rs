@@ -1,14 +1,14 @@
-use async_graphql::Positioned;
+use async_graphql::PathSegment;
 
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
-use crate::core::jit::{Error, ValidationError};
+use crate::core::jit::{self, Error, LocationError, ValidationError};
 use crate::core::json::{JsonLikeOwned, JsonObjectLike};
 use crate::core::scalar::get_scalar;
 
 pub struct Synth<Value> {
-    selection: Vec<Field<Nested<Value>, Value>>,
-    store: Store<Result<Value, Positioned<Error>>>,
+    plan: OperationPlan<Value>,
+    store: Store<Result<Value, jit::Error>>,
     variables: Variables<async_graphql_value::ConstValue>,
 }
 
@@ -34,10 +34,10 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: OperationPlan<Value>,
-        store: Store<Result<Value, Positioned<Error>>>,
+        store: Store<Result<Value, jit::Error>>,
         variables: Variables<async_graphql_value::ConstValue>,
     ) -> Self {
-        Self { selection: plan.into_nested(), store, variables }
+        Self { plan, store, variables }
     }
 
     #[inline(always)]
@@ -46,10 +46,10 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
     }
 
     #[inline(always)]
-    pub fn synthesize(&self) -> Result<Value, Positioned<Error>> {
+    pub fn synthesize(&self) -> Result<Value, LocationError<Error>> {
         let mut data = Value::JsonObject::new();
 
-        for child in self.selection.iter() {
+        for child in self.plan.as_nested().iter() {
             if !self.include(child) {
                 continue;
             }
@@ -72,7 +72,7 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
         node: &'b Field<Nested<Value>, Value>,
         parent: Option<&'b Value>,
         data_path: &DataPath,
-    ) -> Result<Value, Positioned<Error>> {
+    ) -> Result<Value, LocationError<Error>> {
         // TODO: this implementation prefer parent value over value in the store
         // that's opposite to the way async_graphql engine works in tailcall
         match parent {
@@ -101,7 +101,7 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                         match data {
                             Data::Single(val) => self.iter(
                                 node,
-                                Some(val.as_ref().map_err(Clone::clone)?),
+                                Some(&val.clone().map_err(|e| self.to_location_error(e, node))?),
                                 data_path,
                             ),
                             _ => {
@@ -125,9 +125,17 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
         node: &'b Field<Nested<Value>, Value>,
         parent: &'b Value,
         data_path: &'b DataPath,
-    ) -> Result<Value, Positioned<Error>> {
+    ) -> Result<Value, LocationError<Error>> {
         let include = self.include(node);
-        if include && node.is_scalar {
+
+        if parent.is_null() {
+            if node.type_of.is_nullable() {
+                Ok(Value::null())
+            } else {
+                Err(ValidationError::ValueRequired.into())
+                    .map_err(|e| self.to_location_error(e, node))
+            }
+        } else if include && self.plan.field_is_scalar(node) {
             let validation = get_scalar(node.type_of.name());
 
             // TODO: add validation for input type as well. But input types are not checked
@@ -136,14 +144,25 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
             if validation(parent) {
                 Ok(parent.clone())
             } else {
-                Err(Positioned {
-                    pos: node.pos,
-                    node: ValidationError::ScalarInvalid {
-                        type_of: node.type_of.name().to_string(),
-                        path: node.name.clone(),
-                    }
-                    .into(),
-                })
+                Err(
+                    ValidationError::ScalarInvalid { type_of: node.type_of.name().to_string() }
+                        .into(),
+                )
+                .map_err(|e| self.to_location_error(e, node))
+            }
+        } else if self.plan.field_is_enum(node) {
+            if parent
+                .as_str()
+                .map(|v| self.plan.field_validate_enum_value(node, v))
+                .unwrap_or(false)
+            {
+                Ok(parent.clone())
+            } else {
+                Err(
+                    ValidationError::EnumInvalid { type_of: node.type_of.name().to_string() }
+                        .into(),
+                )
+                .map_err(|e| self.to_location_error(e, node))
             }
         } else {
             match (parent.as_array(), parent.as_object()) {
@@ -204,6 +223,31 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                 _ => Ok(parent.clone()),
             }
         }
+    }
+
+    fn to_location_error(
+        &self,
+        error: Error,
+        node: &Field<Nested<Value>, Value>,
+    ) -> LocationError<Error> {
+        // create path from the root to the current node in the fields tree
+        let path = {
+            let mut path = Vec::new();
+
+            let mut parent = self.plan.find_field(node.id.clone());
+
+            while let Some(field) = parent {
+                path.push(PathSegment::Field(field.name.to_string()));
+                parent = field
+                    .parent()
+                    .and_then(|id| self.plan.find_field(id.clone()));
+            }
+
+            path.reverse();
+            path
+        };
+
+        LocationError { error, pos: node.pos, path }
     }
 }
 

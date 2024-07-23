@@ -3,7 +3,6 @@ use async_graphql::{ErrorExtensions, PathSegment, Pos, ServerError};
 use serde::Serialize;
 use thiserror::Error;
 
-
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 #[error("Error while building the plan")]
 pub enum BuildError {
