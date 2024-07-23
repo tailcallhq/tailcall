@@ -1,0 +1,66 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Bytes
+
+scalar Date
+
+scalar Email
+
+scalar Empty
+
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Post {
+  id: ID!
+  title: String!
+}
+
+input PostInput {
+  id: ID!
+  title: String!
+}
+
+type Query {
+  post(input: PostInput!): Post
+  user(input: UserInput!): User
+}
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
+
+scalar Url
+
+type User {
+  id: ID!
+  name: String!
+}
+
+input UserInput {
+  id: ID!
+  name: String!
+}
+
+schema {
+  query: Query
+}

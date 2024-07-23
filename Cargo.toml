@@ -22,7 +22,9 @@ tracing = "0.1.40"
 lazy_static = "1.4.0"
 serde_json = { version = "1.0.116", features = ["preserve_order"] }
 serde = { version = "1.0.200", features = ["derive"] }
-
+derive_more = "0.99.18"
+thiserror = "1.0.59"
+url = { version = "2.5.0", features = ["serde"] }
 
 [dependencies]
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
@@ -52,7 +54,6 @@ opentelemetry-system-metrics = { version = "0.2.0", optional = true }
 tailcall-http-cache = { path = "tailcall-http-cache", optional = true }
 tailcall-version = { path = "./tailcall-version", optional = true }
 
-
 # dependencies safe for wasm:
 
 rustls-pemfile = { version = "1.0.4" }
@@ -62,13 +63,14 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 reqwest = { workspace = true }
 derive_setters = "0.1.6"
-thiserror = "1.0.59"
+derive-getters = "0.4.0"
+thiserror = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
 serde_qs = "0.13"
 serde_yaml = "0.9.34"
 serde_urlencoded = "0.7.1"
-url = { version = "2.5.0", features = ["serde"] }
+url = { workspace = true }
 indexmap = { workspace = true }
 once_cell = "1.19.0"
 clap = { version = "4.5.4", features = ["derive"] }
@@ -104,7 +106,6 @@ update-informer = { version = "1.1.0", default-features = false, features = [
 lazy_static = { workspace = true }
 which = { version = "6.0.1", optional = true }
 async-recursion = "1.1.1"
-tempfile = "3.10.1"
 rquickjs = { "version" = "0.5.1", optional = true, features = ["macro"] }
 strum_macros = "0.26.4"
 # TODO: disable some levels with features?
@@ -152,12 +153,20 @@ convert_case = "0.6.0"
 rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
 tailcall-tracker = { path = "tailcall-tracker", optional = true }
+tailcall-typedefs-common = { path = "./tailcall-typedefs-common" }
 tonic-types = "0.11.0"
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 base64 = "0.22.1"
 tailcall-hasher = { path = "tailcall-hasher" }
-serde_json_borrow = "0.3.0"
+serde_json_borrow = "0.5.0"
+Inflector = "0.11.4"
+path-clean = "=1.0.1"
+pathdiff = "0.2.1"
+num = "0.4.3"
+indenter = "0.3.3"
+derive_more = { workspace = true }
+enum_dispatch = "0.3.13"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
@@ -171,6 +180,11 @@ tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
 tailcall-fixtures = { path = "./tailcall-fixtures" }
+http-cache-semantics = { version = "1.0.1", default-features = false, features = ["with_serde", "reqwest"]}
+cacache = { version = "13.0.0", default-features = false, features = ["tokio-runtime", "mmap"] }
+test-log = { version = "0.2.16", default-features = false, features = ["color", "trace"] }
+flate2 = "1.0.30"
+bincode = "1.3.3"
 
 [features]
 
@@ -206,16 +220,19 @@ cli = [
 # We generally want to interface via CLI and have V8 enabled, while running tests.
 default = ["cli", "js"]
 
+# Feature flag to force JIT engine inside integration tests
+force_jit = []
+
 
 [workspace]
 members = [
     ".",
+    "tailcall-typedefs-common",
     "tailcall-typedefs",
     "tailcall-aws-lambda",
     "tailcall-cloudflare",
     "tailcall-macros",
     "tailcall-prettier",
-    "tailcall-query-plan",
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",

@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use anyhow::Result;
 use derive_setters::Setters;
 use hyper::header::CONTENT_TYPE;
-use hyper::{HeaderMap, Method};
+use hyper::HeaderMap;
 use reqwest::header::HeaderValue;
 use tailcall_hasher::TailcallHasher;
 use url::Url;
@@ -13,7 +13,7 @@ use crate::core::config::GraphQLOperationType;
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::has_headers::HasHeaders;
 use crate::core::helpers::headers::MustacheHeaders;
-use crate::core::ir::{CacheKey, IoId};
+use crate::core::ir::model::{CacheKey, IoId};
 use crate::core::mustache::Mustache;
 use crate::core::path::PathString;
 
@@ -23,9 +23,25 @@ static GRPC_MIME_TYPE: HeaderValue = HeaderValue::from_static("application/grpc"
 pub struct RequestTemplate {
     pub url: Mustache,
     pub headers: MustacheHeaders,
-    pub body: Option<Mustache>,
+    pub body: Option<RequestBody>,
     pub operation: ProtobufOperation,
     pub operation_type: GraphQLOperationType,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Setters)]
+pub struct RequestBody {
+    pub mustache: Option<Mustache>,
+    pub value: String,
+}
+
+impl RequestBody {
+    pub fn render<C: PathString>(&self, ctx: &C) -> String {
+        if let Some(mustache) = &self.mustache {
+            mustache.render(ctx)
+        } else {
+            self.value.to_string()
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -95,9 +111,6 @@ impl RequestTemplate {
 
 impl RenderedRequestTemplate {
     pub fn to_request(&self) -> Result<reqwest::Request> {
-        let mut req = reqwest::Request::new(Method::POST, self.url.clone());
-        req.headers_mut().extend(self.headers.clone());
-
         Ok(create_grpc_request(
             self.url.clone(),
             self.headers.clone(),
@@ -126,12 +139,12 @@ mod tests {
     use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
 
-    use super::RequestTemplate;
+    use super::{RequestBody, RequestTemplate};
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
     use crate::core::config::{Config, Field, GraphQLOperationType, Grpc, Link, LinkType, Type};
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
-    use crate::core::ir::CacheKey;
+    use crate::core::ir::model::CacheKey;
     use crate::core::mustache::Mustache;
 
     async fn get_protobuf_op() -> ProtobufOperation {
@@ -162,7 +175,7 @@ mod tests {
                 .resolve(config, None)
                 .await
                 .unwrap()
-                .extensions
+                .extensions()
                 .get_file_descriptor_set(),
         )
         .unwrap();
@@ -186,7 +199,7 @@ mod tests {
     }
 
     impl crate::core::path::PathString for Context {
-        fn path_string<T: AsRef<str>>(&self, parts: &[T]) -> Option<Cow<'_, str>> {
+        fn path_string<'a, T: AsRef<str>>(&'a self, parts: &'a [T]) -> Option<Cow<'_, str>> {
             self.value.path_string(parts)
         }
     }
@@ -240,7 +253,10 @@ mod tests {
             url: Mustache::parse("http://localhost:3000/").unwrap(),
             headers: vec![],
             operation: get_protobuf_op().await,
-            body: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
+            body: Some(RequestBody {
+                mustache: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
+                value: Default::default(),
+            }),
             operation_type: GraphQLOperationType::Query,
         };
         let ctx = Context::default();
@@ -257,14 +273,17 @@ mod tests {
             url: Mustache::parse("http://localhost:3000/").unwrap(),
             headers: vec![],
             operation: get_protobuf_op().await,
-            body: Some(Mustache::parse(body_str).unwrap()),
+            body: Some(RequestBody {
+                mustache: Some(Mustache::parse(body_str).unwrap()),
+                value: Default::default(),
+            }),
             operation_type: GraphQLOperationType::Query,
         }
     }
 
     #[tokio::test]
     async fn test_grpc_cache_key_collision() {
-        let tmpls = [
+        let arr = [
             r#"{ "name": "test" }"#,
             r#"{ "name": "test1" }"#,
             r#"{ "name1": "test" }"#,
@@ -273,7 +292,7 @@ mod tests {
 
         let ctx = Context::default();
         let tmpl_set: HashSet<_> =
-            futures_util::future::join_all(tmpls.iter().cloned().zip(std::iter::repeat(&ctx)).map(
+            futures_util::future::join_all(arr.iter().cloned().zip(std::iter::repeat(&ctx)).map(
                 |(body_str, ctx)| async {
                     let tmpl = request_template_with_body(body_str).await;
                     tmpl.cache_key(ctx)
@@ -283,6 +302,6 @@ mod tests {
             .into_iter()
             .collect();
 
-        assert_eq!(tmpls.len(), tmpl_set.len());
+        assert_eq!(arr.len(), tmpl_set.len());
     }
 }

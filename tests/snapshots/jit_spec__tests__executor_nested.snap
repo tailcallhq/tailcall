@@ -1,0 +1,107 @@
+---
+source: tests/jit_spec.rs
+expression: data
+---
+{
+  "posts": [
+    {
+      "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+      "userId": 1,
+      "user": {
+        "id": 1,
+        "name": "Leanne Graham",
+        "blog": "https://test.blog/users/website/Bret"
+      }
+    },
+    {
+      "title": "qui est esse",
+      "userId": 1,
+      "user": {
+        "id": 1,
+        "name": "Leanne Graham",
+        "blog": "https://test.blog/users/website/Bret"
+      }
+    },
+    {
+      "title": "ea molestias quasi exercitationem repellat qui ipsa sit aut",
+      "userId": 1,
+      "user": {
+        "id": 1,
+        "name": "Leanne Graham",
+        "blog": "https://test.blog/users/website/Bret"
+      }
+    },
+    {
+      "title": "eum et est occaecati",
+      "userId": 1,
+      "user": {
+        "id": 1,
+        "name": "Leanne Graham",
+        "blog": "https://test.blog/users/website/Bret"
+      }
+    },
+    {
+      "title": "nesciunt quas odio",
+      "userId": 1,
+      "user": {
+        "id": 1,
+        "name": "Leanne Graham",
+        "blog": "https://test.blog/users/website/Bret"
+      }
+    },
+    {
+      "title": "dolorem eum magni eos aperiam quia",
+      "userId": 1,
+      "user": {
+        "id": 1,
+        "name": "Leanne Graham",
+        "blog": "https://test.blog/users/website/Bret"
+      }
+    },
+    {
+      "title": "magnam facilis autem",
+      "userId": 1,
+      "user": {
+        "id": 1,
+        "name": "Leanne Graham",
+        "blog": "https://test.blog/users/website/Bret"
+      }
+    },
+    {
+      "title": "dolorem dolore est ipsam",
+      "userId": 1,
+      "user": {
+        "id": 1,
+        "name": "Leanne Graham",
+        "blog": "https://test.blog/users/website/Bret"
+      }
+    },
+    {
+      "title": "nesciunt iure omnis dolorem tempora et accusantium",
+      "userId": 1,
+      "user": {
+        "id": 1,
+        "name": "Leanne Graham",
+        "blog": "https://test.blog/users/website/Bret"
+      }
+    },
+    {
+      "title": "optio molestias id quia eum",
+      "userId": 1,
+      "user": {
+        "id": 1,
+        "name": "Leanne Graham",
+        "blog": "https://test.blog/users/website/Bret"
+      }
+    },
+    {
+      "title": "et ea vero quia laudantium autem",
+      "userId": 2,
+      "user": {
+        "id": 2,
+        "name": "Ervin Howell",
+        "blog": "https://test.blog/users/website/Antonette"
+      }
+    }
+  ]
+}

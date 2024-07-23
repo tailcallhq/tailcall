@@ -1,23 +1,23 @@
-use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
+use tailcall_macros::ScalarDefinition;
+
+use crate::core::json::JsonLikeOwned;
 
 /// Represents signed integer type 8bit size
-#[derive(JsonSchema, Default)]
+#[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct Int8(pub i8);
 
 impl super::Scalar for Int8 {
-    fn validate(&self) -> fn(&ConstValue) -> bool {
+    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
         |value| {
-            if let ConstValue::Number(n) = value {
-                if let Some(n) = n.as_i64() {
-                    return i8::try_from(n).is_ok();
-                }
+            if let Some(value) = value.as_i64() {
+                return i8::try_from(value).is_ok();
             }
-
             false
         }
     }
+
     fn schema(&self) -> Schema {
         schema_for!(Self).schema.into()
     }

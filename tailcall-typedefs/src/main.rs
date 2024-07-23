@@ -3,18 +3,20 @@ mod gen_gql_schema;
 use std::env;
 use std::path::PathBuf;
 use std::process::exit;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use gen_gql_schema::update_gql;
 use schemars::schema::{RootSchema, Schema};
 use schemars::Map;
 use serde_json::{json, Value};
 use tailcall::cli;
 use tailcall::core::config::Config;
-use tailcall::core::scalar::CUSTOM_SCALARS;
+use tailcall::core::scalar::{Scalar, CUSTOM_SCALARS};
 use tailcall::core::tracing::default_tracing_for_name;
+use tailcall::core::FileIO;
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
+static GRAPHQL_SCHEMA_FILE: &str = "../generated/.tailcallrc.graphql";
 
 #[tokio::main]
 async fn main() {
@@ -68,16 +70,30 @@ async fn mode_check() -> Result<()> {
 }
 
 async fn mode_fix() -> Result<()> {
-    update_json().await?;
-    update_gql()?;
+    let rt = cli::runtime::init(&Default::default());
+    let file_io = rt.file;
+
+    update_json(file_io.clone()).await?;
+    update_gql(file_io.clone()).await?;
     Ok(())
 }
 
-async fn update_json() -> Result<()> {
+async fn update_gql(file_io: Arc<dyn FileIO>) -> Result<()> {
+    let doc = gen_gql_schema::build_service_document();
+
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(GRAPHQL_SCHEMA_FILE);
+    file_io
+        .write(
+            path.to_str().ok_or(anyhow!("Unable to determine path"))?,
+            tailcall::core::document::print(doc).as_bytes(),
+        )
+        .await?;
+    Ok(())
+}
+
+async fn update_json(file_io: Arc<dyn FileIO>) -> Result<()> {
     let path = get_file_path();
     let schema = serde_json::to_string_pretty(&get_updated_json().await?)?;
-    let rt = cli::runtime::init(&Default::default());
-    let file_io = rt.file;
     tracing::info!("Updating JSON Schema: {}", path.to_str().unwrap());
     file_io
         .write(

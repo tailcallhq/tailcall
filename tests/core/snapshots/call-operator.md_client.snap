@@ -41,13 +41,13 @@ type Post {
   news: NewsData!
   newsWithPortArg: NewsData!
   title: String
-  user(id: Int): User
+  user: User
   user1: User
   userFromValue: User
-  userGraphQL(id: Int): User
-  userGraphQLHeaders(id: Int): User
-  userHttpHeaders(id: ID): User
-  userHttpQuery(id: ID): User
+  userGraphQL: User
+  userGraphQLHeaders: User
+  userHttpHeaders: User
+  userHttpQuery: User
   userId: Int!
 }
 
@@ -91,7 +91,7 @@ type User {
 type UserWithPosts {
   id: Int!
   name: String!
-  posts(id: ID): [Post]
+  posts: [Post]
 }
 
 schema {

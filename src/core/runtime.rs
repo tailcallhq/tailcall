@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_graphql_value::ConstValue;
 
-use super::ir::IoId;
+use super::ir::model::IoId;
 use crate::core::schema_extension::SchemaExtension;
 use crate::core::worker::{Command, Event};
 use crate::core::{Cache, EnvIO, FileIO, HttpIO, WorkerIO};

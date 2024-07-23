@@ -1,9 +1,9 @@
 use serde_json::{Map, Value};
 
-use super::NameGenerator;
-use crate::core::config::transformer::Transform;
 use crate::core::config::{Config, Field, Type};
+use crate::core::generator::NameGenerator;
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
+use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 struct JSONValidator;
@@ -137,7 +137,7 @@ where
                 if !object_types.is_empty() {
                     // merge the generated types of list into single concrete type.
                     let merged_type = TypeMerger::merge_fields(object_types);
-                    let generate_type_name = self.type_name_generator.generate_name();
+                    let generate_type_name = self.type_name_generator.next();
                     config
                         .types
                         .insert(generate_type_name.to_owned(), merged_type);
@@ -152,7 +152,7 @@ where
                     return self.generate_scalar(config);
                 }
                 let ty = self.create_type_from_object(json_obj, config);
-                let generate_type_name = self.type_name_generator.generate_name();
+                let generate_type_name = self.type_name_generator.next();
                 config.types.insert(generate_type_name.to_owned(), ty);
                 generate_type_name
             }
@@ -165,7 +165,10 @@ impl<T1> Transform for TypesGenerator<'_, T1>
 where
     T1: OperationGenerator,
 {
-    fn transform(&self, mut config: Config) -> Valid<Config, String> {
+    type Value = Config;
+    type Error = String;
+
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let root_type_name = self.generate_types(self.json_value, &mut config);
         self.operation_generator
             .generate(root_type_name.as_str(), config)

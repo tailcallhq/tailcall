@@ -1,0 +1,30 @@
+---
+source: src/core/config/transformer/improve_type_names.rs
+expression: transformed_config.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Author {
+  id: ID!
+  name: String!
+  posts: [Post]!
+}
+
+type Cycle {
+  cycle: Cycle
+  id: ID!
+}
+
+type Post {
+  author: Author!
+  content: String!
+  cycle: Cycle
+  id: ID!
+  title: String!
+}
+
+type Query {
+  f1: [Author] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+}

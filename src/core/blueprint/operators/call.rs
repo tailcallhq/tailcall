@@ -3,7 +3,7 @@ use serde_json::Value;
 use crate::core::blueprint::*;
 use crate::core::config;
 use crate::core::config::{Field, GraphQLOperationType};
-use crate::core::ir::IR;
+use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
@@ -18,29 +18,8 @@ pub fn update_call<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_call(config, calls, operation_type, object_name).map(|field| {
-                let args = field
-                    .args
-                    .into_iter()
-                    .map(|mut arg_field| {
-                        arg_field.of_type = match &arg_field.of_type {
-                            Type::NamedType { name, .. } => {
-                                Type::NamedType { name: name.to_owned(), non_null: false }
-                            }
-                            Type::ListType { of_type, .. } => {
-                                Type::ListType { of_type: of_type.to_owned(), non_null: false }
-                            }
-                        };
-
-                        arg_field
-                    })
-                    .collect();
-
-                b_field
-                    .args(args)
-                    .resolver(field.resolver)
-                    .name(name.to_string())
-            })
+            compile_call(config, calls, operation_type, object_name)
+                .map(|field| b_field.resolver(field.resolver).name(name.to_string()))
         },
     )
 }
@@ -103,7 +82,7 @@ fn compile_call(
             )
             .map(|(mut b_field, args_expr)| {
                 if !step.args.is_empty() {
-                    b_field.map_expr(|expr| args_expr.clone().and_then(expr));
+                    b_field.map_expr(|expr| args_expr.clone().pipe(expr));
                 }
 
                 b_field
@@ -114,13 +93,12 @@ fn compile_call(
         Valid::from_option(
             b_fields.into_iter().reduce(|mut b_field, b_field_next| {
                 b_field.name = b_field_next.name;
-                b_field.args.extend(b_field_next.args);
                 b_field.of_type = b_field_next.of_type;
                 b_field.map_expr(|expr| {
                     b_field_next
                         .resolver
                         .as_ref()
-                        .map(|other_expr| expr.clone().and_then(other_expr.clone()))
+                        .map(|other_expr| expr.clone().pipe(other_expr.clone()))
                         .unwrap_or(expr)
                 });
 
@@ -151,7 +129,7 @@ fn get_field_and_field_name<'a>(
     )
     .and_then(|(type_name, field_name)| {
         Valid::from_option(
-            config_module.config.find_type(&type_name),
+            config_module.config().find_type(&type_name),
             format!("{} type not found on config", type_name),
         )
         .and_then(|query_type| {

@@ -1,0 +1,16 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream(baseURL: "http://localhost:8080") {
+  query: Query
+}
+
+enum Foo {
+  BAR @alias(options: ["OP1", "OP2"])
+  BAZ
+}
+
+type Query {
+  foo: Foo @expr(body: "OP1")
+}

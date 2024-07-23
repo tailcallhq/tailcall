@@ -7,6 +7,11 @@ use async_graphql::parser::types::ServiceDocument;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall_macros::{DirectiveDefinition, InputDefinition};
+use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
+use tailcall_typedefs_common::input_definition::InputDefinition;
+use tailcall_typedefs_common::scalar_definition::ScalarDefinition;
+use tailcall_typedefs_common::ServiceDocumentBuilder;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
@@ -129,8 +134,18 @@ impl Type {
 }
 
 #[derive(
-    Clone, Debug, Default, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    DirectiveDefinition,
 )]
+#[directive_definition(locations = "Object")]
 #[serde(deny_unknown_fields)]
 /// Used to represent an identifier for a type. Typically used via only by the
 /// configuration generators to provide additional information about the type.
@@ -139,7 +154,19 @@ pub struct Tag {
     pub id: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Clone,
+    Debug,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "Object,FieldDefinition")]
 /// The @cache operator enables caching for the query, field or type it is
 /// applied to.
 #[serde(rename_all = "camelCase")]
@@ -151,8 +178,18 @@ pub struct Cache {
 }
 
 #[derive(
-    Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Default, schemars::JsonSchema, MergeRight,
+    Clone,
+    Debug,
+    Deserialize,
+    Serialize,
+    PartialEq,
+    Eq,
+    Default,
+    schemars::JsonSchema,
+    MergeRight,
+    DirectiveDefinition,
 )]
+#[directive_definition(locations = "Object,FieldDefinition")]
 pub struct Protected {}
 
 #[derive(
@@ -176,7 +213,10 @@ pub struct RootSchema {
     pub subscription: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DirectiveDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 /// Used to omit a field from public consumption.
 pub struct Omit {}
@@ -262,10 +302,16 @@ pub struct Field {
     ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
+
     ///
     /// Marks field as protected by auth provider
     #[serde(default)]
     pub protected: Option<Protected>,
+
+    ///
+    /// Stores the default value for the field
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub default_value: Option<Value>,
 }
 
 // It's a terminal implementation of MergeRight
@@ -353,12 +399,34 @@ impl Field {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition", lowercase_name)]
 pub struct JS {
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 pub struct Modify {
     #[serde(default, skip_serializing_if = "is_default")]
@@ -388,7 +456,9 @@ pub struct Arg {
     pub default_value: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+)]
 pub struct Union {
     pub types: BTreeSet<String>,
     pub doc: Option<String>,
@@ -397,11 +467,61 @@ pub struct Union {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
 /// Definition of GraphQL enum type
 pub struct Enum {
-    pub variants: BTreeSet<String>,
+    pub variants: BTreeSet<Variant>,
     pub doc: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+/// Definition of GraphQL value
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+)]
+pub struct Variant {
+    pub name: String,
+    // directive: alias
+    pub alias: Option<Alias>,
+}
+
+/// The @alias directive indicates that aliases of one enum value.
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    schemars::JsonSchema,
+    MergeRight,
+    DirectiveDefinition,
+)]
+#[directive_definition(locations = "EnumValue")]
+pub struct Alias {
+    pub options: BTreeSet<String>,
+}
+
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///
@@ -475,7 +595,18 @@ pub struct Http {
 ///
 /// Provides the ability to refer to multiple fields in the Query or
 /// Mutation root.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 pub struct Call {
     /// Steps are composed together to form a call.
     /// If you have multiple steps, the output of the previous step is passed as
@@ -501,7 +632,19 @@ pub struct Step {
     pub args: BTreeMap<String, Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    InputDefinition,
+    DirectiveDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 /// The @grpc operator indicates that a field or node is backed by a gRPC API.
@@ -522,7 +665,7 @@ pub struct Grpc {
     /// This refers to the arguments of your gRPC call. You can pass it as a
     /// static object or use Mustache template for dynamic parameters. These
     /// parameters will be added in the body in `protobuf` format.
-    pub body: Option<String>,
+    pub body: Option<Value>,
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
     /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
     pub group_by: Vec<String>,
@@ -537,7 +680,19 @@ pub struct Grpc {
     pub method: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 /// The @graphQL operator allows to specify GraphQL API server request to fetch
 /// data from.
@@ -590,7 +745,18 @@ impl Display for GraphQLOperationType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
 /// The `@expr` operators allows you to specify an expression that can evaluate
 /// to a value. The expression can be a static value or built form a Mustache
@@ -599,7 +765,10 @@ pub struct Expr {
     pub body: Value,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, DirectiveDefinition,
+)]
+#[directive_definition(repeatable, locations = "Object")]
 #[serde(deny_unknown_fields)]
 /// The @addField operator simplifies data structures and queries by adding a field that inlines or flattens a nested field or node within your schema. more info [here](https://tailcall.run/docs/guides/operators/#addfield)
 pub struct AddField {
@@ -610,6 +779,19 @@ pub struct AddField {
 }
 
 impl Config {
+    pub fn is_root_operation_type(&self, type_name: &str) -> bool {
+        let type_name = type_name.to_lowercase();
+
+        [
+            &self.schema.query,
+            &self.schema.mutation,
+            &self.schema.subscription,
+        ]
+        .iter()
+        .filter_map(|&root_name| root_name.as_ref())
+        .any(|root_name| root_name.to_lowercase() == type_name)
+    }
+
     pub fn port(&self) -> u16 {
         self.server.port.unwrap_or(8000)
     }
@@ -638,13 +820,9 @@ impl Config {
         }
     }
 
-    pub fn to_document(&self) -> ServiceDocument {
-        self.clone().into()
-    }
-
+    /// Renders current config to graphQL string
     pub fn to_sdl(&self) -> String {
-        let doc = self.to_document();
-        crate::core::document::print(doc)
+        crate::core::document::print(self.into())
     }
 
     pub fn query(mut self, query: &str) -> Self {
@@ -699,11 +877,16 @@ impl Config {
     /// Given a starting type, this function searches for all the unique types
     /// that this type can be connected to via it's fields
     fn find_connections(&self, type_of: &str, mut types: HashSet<String>) -> HashSet<String> {
-        if let Some(type_) = self.find_type(type_of) {
+        if let Some(union_) = self.find_union(type_of) {
+            types.insert(type_of.into());
+
+            for type_ in union_.types.iter() {
+                types = self.find_connections(type_, types);
+            }
+        } else if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
                 if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
-                    types.insert(field.type_of.clone());
                     types = self.find_connections(&field.type_of, types);
                 }
             }
@@ -730,6 +913,14 @@ impl Config {
             .fold(HashSet::new(), |types, type_of| {
                 self.find_connections(type_of, types)
             })
+    }
+
+    /// finds the all types which are present in union.
+    pub fn union_types(&self) -> HashSet<String> {
+        self.unions
+            .values()
+            .flat_map(|union| union.types.iter().cloned())
+            .collect()
     }
 
     /// Returns a list of all the types that are used as output types
@@ -772,6 +963,7 @@ impl Config {
     pub fn remove_types(mut self, types: HashSet<String>) -> Self {
         for unused_type in types {
             self.types.remove(&unused_type);
+            self.unions.remove(&unused_type);
         }
 
         self
@@ -779,7 +971,12 @@ impl Config {
 
     pub fn unused_types(&self) -> HashSet<String> {
         let used_types = self.get_all_used_type_names();
-        let all_types: HashSet<String> = self.types.keys().cloned().collect();
+        let all_types: HashSet<String> = self
+            .types
+            .keys()
+            .chain(self.unions.keys())
+            .cloned()
+            .collect();
         all_types.difference(&used_types).cloned().collect()
     }
 
@@ -794,11 +991,15 @@ impl Config {
             stack.push(mutation.clone());
         }
         while let Some(type_name) = stack.pop() {
-            if let Some(typ) = self.types.get(&type_name) {
-                if set.contains(&type_name) {
-                    continue;
+            if set.contains(&type_name) {
+                continue;
+            }
+            if let Some(union_) = self.unions.get(&type_name) {
+                set.insert(type_name);
+                for type_ in &union_.types {
+                    stack.push(type_.clone());
                 }
-
+            } else if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
                 for field in typ.fields.values() {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
@@ -808,6 +1009,61 @@ impl Config {
         }
 
         set
+    }
+
+    pub fn graphql_schema() -> ServiceDocument {
+        // Multiple structs may contain a field of the same type when creating directive
+        // definitions. To avoid generating the same GraphQL type multiple times,
+        // this hash set is used to track visited types and ensure no duplicates are
+        // generated.
+        let mut generated_types: HashSet<String> = HashSet::new();
+        let generated_types = &mut generated_types;
+
+        let builder = ServiceDocumentBuilder::new();
+        builder
+            .add_directive(AddField::directive_definition(generated_types))
+            .add_directive(Alias::directive_definition(generated_types))
+            .add_directive(Cache::directive_definition(generated_types))
+            .add_directive(Call::directive_definition(generated_types))
+            .add_directive(Expr::directive_definition(generated_types))
+            .add_directive(GraphQL::directive_definition(generated_types))
+            .add_directive(Grpc::directive_definition(generated_types))
+            .add_directive(Http::directive_definition(generated_types))
+            .add_directive(JS::directive_definition(generated_types))
+            .add_directive(Link::directive_definition(generated_types))
+            .add_directive(Modify::directive_definition(generated_types))
+            .add_directive(Omit::directive_definition(generated_types))
+            .add_directive(Protected::directive_definition(generated_types))
+            .add_directive(Server::directive_definition(generated_types))
+            .add_directive(Tag::directive_definition(generated_types))
+            .add_directive(Telemetry::directive_definition(generated_types))
+            .add_directive(Upstream::directive_definition(generated_types))
+            .add_input(GraphQL::input_definition())
+            .add_input(Grpc::input_definition())
+            .add_input(Http::input_definition())
+            .add_input(Expr::input_definition())
+            .add_input(JS::input_definition())
+            .add_input(Modify::input_definition())
+            .add_input(Cache::input_definition())
+            .add_input(Telemetry::input_definition())
+            .add_scalar(scalar::Bytes::scalar_definition())
+            .add_scalar(scalar::Date::scalar_definition())
+            .add_scalar(scalar::Email::scalar_definition())
+            .add_scalar(scalar::Empty::scalar_definition())
+            .add_scalar(scalar::Int128::scalar_definition())
+            .add_scalar(scalar::Int16::scalar_definition())
+            .add_scalar(scalar::Int32::scalar_definition())
+            .add_scalar(scalar::Int64::scalar_definition())
+            .add_scalar(scalar::Int8::scalar_definition())
+            .add_scalar(scalar::JSON::scalar_definition())
+            .add_scalar(scalar::PhoneNumber::scalar_definition())
+            .add_scalar(scalar::UInt128::scalar_definition())
+            .add_scalar(scalar::UInt16::scalar_definition())
+            .add_scalar(scalar::UInt32::scalar_definition())
+            .add_scalar(scalar::UInt64::scalar_definition())
+            .add_scalar(scalar::UInt8::scalar_definition())
+            .add_scalar(scalar::Url::scalar_definition())
+            .build()
     }
 }
 
@@ -885,5 +1141,57 @@ mod tests {
         expected.insert("Bar".to_string());
 
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_query() {
+        let mut config = Config::default();
+        config.schema.query = Some("Query".to_string());
+
+        assert!(config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_mutation() {
+        let mut config = Config::default();
+        config.schema.mutation = Some("Mutation".to_string());
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_subscription() {
+        let mut config = Config::default();
+        config.schema.subscription = Some("Subscription".to_string());
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_is_root_operation_type_with_no_root_operation() {
+        let config = Config::default();
+
+        assert!(!config.is_root_operation_type("Query"));
+        assert!(!config.is_root_operation_type("Mutation"));
+        assert!(!config.is_root_operation_type("Subscription"));
+    }
+
+    #[test]
+    fn test_union_types() {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::UNION_CONFIG).unwrap();
+        let config = Config::from_sdl(&sdl).to_result().unwrap();
+        let union_types = config.union_types();
+        let expected_union_types: HashSet<String> = ["Bar", "Baz", "Foo"]
+            .iter()
+            .cloned()
+            .map(String::from)
+            .collect();
+        assert_eq!(union_types, expected_union_types);
     }
 }

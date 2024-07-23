@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
 use async_graphql::{ErrorExtensions, Value as ConstValue};
+use derive_more::From;
 use thiserror::Error;
 
 use crate::core::auth;
-#[derive(Debug, Error, Clone)]
-pub enum EvaluationError {
+use crate::core::error::worker;
+#[derive(From, Debug, Error, Clone)]
+pub enum Error {
     #[error("IOException: {0}")]
     IOException(String),
 
@@ -21,19 +23,24 @@ pub enum EvaluationError {
     APIValidationError(Vec<String>),
 
     #[error("ExprEvalError: {0}")]
+    #[from(ignore)]
     ExprEvalError(String),
 
     #[error("DeserializeError: {0}")]
+    #[from(ignore)]
     DeserializeError(String),
 
     #[error("Authentication Failure: {0}")]
     AuthError(auth::error::Error),
+
+    #[error("Worker Error: {0}")]
+    WorkerError(worker::Error),
 }
 
-impl ErrorExtensions for EvaluationError {
+impl ErrorExtensions for Error {
     fn extend(&self) -> async_graphql::Error {
         async_graphql::Error::new(format!("{}", self)).extend_with(|_err, e| {
-            if let EvaluationError::GRPCError {
+            if let Error::GRPCError {
                 grpc_code,
                 grpc_description,
                 grpc_status_message,
@@ -49,15 +56,9 @@ impl ErrorExtensions for EvaluationError {
     }
 }
 
-impl From<auth::error::Error> for EvaluationError {
-    fn from(value: auth::error::Error) -> Self {
-        EvaluationError::AuthError(value)
-    }
-}
-
-impl<'a> From<crate::core::valid::ValidationError<&'a str>> for EvaluationError {
+impl<'a> From<crate::core::valid::ValidationError<&'a str>> for Error {
     fn from(value: crate::core::valid::ValidationError<&'a str>) -> Self {
-        EvaluationError::APIValidationError(
+        Error::APIValidationError(
             value
                 .as_vec()
                 .iter()
@@ -67,11 +68,11 @@ impl<'a> From<crate::core::valid::ValidationError<&'a str>> for EvaluationError 
     }
 }
 
-impl From<Arc<anyhow::Error>> for EvaluationError {
+impl From<Arc<anyhow::Error>> for Error {
     fn from(error: Arc<anyhow::Error>) -> Self {
-        match error.downcast_ref::<EvaluationError>() {
+        match error.downcast_ref::<Error>() {
             Some(err) => err.clone(),
-            None => EvaluationError::IOException(error.to_string()),
+            None => Error::IOException(error.to_string()),
         }
     }
 }
@@ -79,11 +80,11 @@ impl From<Arc<anyhow::Error>> for EvaluationError {
 // TODO: remove conversion from anyhow and don't use anyhow to pass errors
 // since it loses potentially valuable information that could be later provided
 // in the error extensions
-impl From<anyhow::Error> for EvaluationError {
+impl From<anyhow::Error> for Error {
     fn from(value: anyhow::Error) -> Self {
-        match value.downcast::<EvaluationError>() {
+        match value.downcast::<Error>() {
             Ok(err) => err,
-            Err(err) => EvaluationError::IOException(err.to_string()),
+            Err(err) => Error::IOException(err.to_string()),
         }
     }
 }

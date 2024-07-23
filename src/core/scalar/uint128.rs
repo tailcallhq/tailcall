@@ -1,21 +1,23 @@
-use async_graphql_value::ConstValue;
 use schemars::schema::Schema;
 use schemars::{schema_for, JsonSchema};
+use tailcall_macros::ScalarDefinition;
+
+use crate::core::json::JsonLikeOwned;
 
 /// Represents unsigned integer type 128bit size as string
-#[derive(JsonSchema, Default)]
+#[derive(JsonSchema, Default, ScalarDefinition)]
 pub struct UInt128(pub u128);
 
 impl super::Scalar for UInt128 {
-    fn validate(&self) -> fn(&ConstValue) -> bool {
+    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
         |value| {
-            if let ConstValue::String(n) = value {
-                n.parse::<u128>().is_ok()
-            } else {
-                false
-            }
+            value
+                .as_str()
+                .map(|n| n.parse::<u128>().is_ok())
+                .unwrap_or(false)
         }
     }
+
     fn schema(&self) -> Schema {
         schema_for!(Self).schema.into()
     }

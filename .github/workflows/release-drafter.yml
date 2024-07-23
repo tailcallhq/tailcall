@@ -8,6 +8,7 @@ on:
   # it's ok to do so until we do not checkout and build any external code
   pull_request_target:
     types: [opened, reopened, synchronize]
+    branches: [main]
 
 permissions:
   contents: read

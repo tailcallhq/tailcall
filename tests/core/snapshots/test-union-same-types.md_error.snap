@@ -1,0 +1,15 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Union have equal types: Bar == Foo ",
+    "trace": [
+      "Query",
+      "fooBarBaz",
+      "FooBarBaz"
+    ],
+    "description": null
+  }
+]

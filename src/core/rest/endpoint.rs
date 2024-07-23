@@ -157,7 +157,7 @@ impl Endpoint {
         // Query
         let query = self.query_params.matches(query_params)?;
 
-        // FIXME: Too much cloning is happening via merge_variables
+        // TODO: Too much cloning is happening via merge_variables
         variables = merge_variables(variables, path);
         variables = merge_variables(variables, query);
 

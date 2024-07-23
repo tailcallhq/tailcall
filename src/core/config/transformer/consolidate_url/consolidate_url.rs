@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
 use super::max_value_map::MaxValueMap;
-use crate::core::config::transformer::Transform;
 use crate::core::config::Config;
+use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 struct UrlTypeMapping {
@@ -51,16 +51,7 @@ pub struct ConsolidateURL {
 
 impl ConsolidateURL {
     pub fn new(threshold: f32) -> Self {
-        let mut validated_thresh = threshold;
-        if !(0.0..=1.0).contains(&threshold) {
-            validated_thresh = 1.0;
-            tracing::warn!(
-                "Invalid threshold value ({:.2}), reverting to default threshold ({:.2}). allowed range is [0.0 - 1.0] inclusive",
-                threshold,
-                validated_thresh
-            );
-        }
-        Self { threshold: validated_thresh }
+        Self { threshold }
     }
 
     fn generate_base_url(&self, mut config: Config) -> Config {
@@ -91,9 +82,15 @@ impl ConsolidateURL {
 
         config
     }
+
+    pub fn is_enabled(threshold: f32) -> bool {
+        threshold > 0.0
+    }
 }
 
 impl Transform for ConsolidateURL {
+    type Value = Config;
+    type Error = String;
     fn transform(&self, config: Config) -> Valid<Config, String> {
         let config = self.generate_base_url(config);
         Valid::succeed(config)
@@ -107,8 +104,8 @@ mod test {
     use tailcall_fixtures::configs;
 
     use super::*;
-    use crate::core::config::transformer::Transform;
     use crate::core::config::Config;
+    use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     fn read_fixture(path: &str) -> String {

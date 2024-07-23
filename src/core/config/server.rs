@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
+use tailcall_macros::DirectiveDefinition;
 
 use super::merge_key_value_vecs;
 use crate::core::config::headers::Headers;
@@ -10,14 +11,30 @@ use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema, MergeRight,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    DirectiveDefinition,
 )]
+#[directive_definition(locations = "Schema")]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 /// The `@server` directive, when applied at the schema level, offers a
 /// comprehensive set of server configurations. It dictates how the server
 /// behaves and helps tune tailcall for various use-cases.
 pub struct Server {
+    // The `enableJIT` option activates Just-In-Time (JIT) compilation. When set to true, it
+    // optimizes execution of each incoming request independently, resulting in significantly
+    // better performance in most cases.
+    #[serde(default, skip_serializing_if = "is_default", rename = "enableJIT")]
+    pub enable_jit: Option<bool>,
+
     #[serde(default, skip_serializing_if = "is_default")]
     /// `apolloTracing` exposes GraphQL query performance data, including
     /// execution time of queries and individual resolvers.
@@ -28,6 +45,15 @@ pub struct Server {
     /// performance but potentially introducing latency and complicating
     /// debugging. Use judiciously. @default `false`.
     pub batch_requests: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "is_default")]
+    /// Enables deduplication of IO operations to enhance performance.
+    ///
+    /// This flag prevents duplicate IO requests from being executed
+    /// concurrently, reducing resource load. Caution: May lead to issues
+    /// with APIs that expect unique results for identical inputs, such as
+    /// nonce-based APIs.
+    pub dedupe: Option<bool>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// `headers` contains key-value pairs that are included as default headers
@@ -197,6 +223,13 @@ impl Server {
 
     pub fn get_pipeline_flush(&self) -> bool {
         self.pipeline_flush.unwrap_or(true)
+    }
+
+    pub fn get_dedupe(&self) -> bool {
+        self.dedupe.unwrap_or(false)
+    }
+    pub fn enable_jit(&self) -> bool {
+        self.enable_jit.unwrap_or(false)
     }
 }
 

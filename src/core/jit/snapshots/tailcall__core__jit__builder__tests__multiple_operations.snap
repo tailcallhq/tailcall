@@ -1,0 +1,69 @@
+---
+source: src/core/jit/builder.rs
+expression: plan.into_nested()
+---
+[
+    Field {
+        id: 0,
+        name: "user",
+        ir: "Some(..)",
+        type_of: User,
+        args: [
+            Arg {
+                id: 0,
+                name: "id",
+                type_of: ID!,
+                value: Some(
+                    Number(
+                        Number(1),
+                    ),
+                ),
+                default_value: None,
+            },
+        ],
+        extensions: Some(
+            Nested(
+                [
+                    Field {
+                        id: 1,
+                        name: "id",
+                        type_of: ID!,
+                        is_scalar: true,
+                    },
+                    Field {
+                        id: 2,
+                        name: "username",
+                        type_of: String!,
+                        is_scalar: true,
+                    },
+                ],
+            ),
+        ),
+        is_scalar: false,
+    },
+    Field {
+        id: 3,
+        name: "posts",
+        ir: "Some(..)",
+        type_of: [Post],
+        extensions: Some(
+            Nested(
+                [
+                    Field {
+                        id: 4,
+                        name: "id",
+                        type_of: ID!,
+                        is_scalar: true,
+                    },
+                    Field {
+                        id: 5,
+                        name: "title",
+                        type_of: String!,
+                        is_scalar: true,
+                    },
+                ],
+            ),
+        ),
+        is_scalar: false,
+    },
+]

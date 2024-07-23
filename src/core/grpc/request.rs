@@ -56,7 +56,7 @@ mod tests {
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::grpc::request::execute_grpc_request;
     use crate::core::http::Response;
-    use crate::core::ir::EvaluationError;
+    use crate::core::ir::Error;
     use crate::core::runtime::TargetRuntime;
     use crate::core::HttpIO;
 
@@ -159,8 +159,8 @@ mod tests {
         );
 
         if let Err(err) = result {
-            match err.downcast_ref::<EvaluationError>() {
-                Some(EvaluationError::GRPCError {
+            match err.downcast_ref::<Error>() {
+                Some(Error::GRPCError {
                     grpc_code,
                     grpc_description,
                     grpc_status_message,

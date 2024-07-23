@@ -19,7 +19,7 @@ type User {
 ```yml @mock
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/users
+    url: http://jsonplaceholder.typicode.com/users?id
   response:
     status: 200
     body:

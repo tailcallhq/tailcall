@@ -1,0 +1,37 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+union FooBarBaz = Bar | Baz | Foo
+
+type Bar {
+  bar: String
+}
+
+type Baz {
+  bar: String
+  baz: String
+}
+
+type Foo {
+  foo: String
+}
+
+type Nested {
+  bar: FooBarBaz
+  foo: FooBarBaz
+}
+
+type Query {
+  arr: [FooBarBaz] @http(path: "/arr")
+  bar: FooBarBaz @http(path: "/bar")
+  foo: FooBarBaz @http(path: "/foo")
+  nested: Nested @http(path: "/nested")
+  string: FooBarBaz @http(path: "/string")
+  unknown: FooBarBaz @http(path: "/unknown")
+  wrong: FooBarBaz @http(path: "/wrong")
+}

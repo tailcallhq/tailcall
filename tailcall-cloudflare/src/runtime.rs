@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use async_graphql_value::ConstValue;
-use tailcall::core::ir::IoId;
+use tailcall::core::ir::model::IoId;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 

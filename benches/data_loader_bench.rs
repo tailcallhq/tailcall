@@ -11,7 +11,7 @@ use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::core::config::Batch;
 use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
-use tailcall::core::ir::IoId;
+use tailcall::core::ir::model::IoId;
 use tailcall::core::runtime::TargetRuntime;
 use tailcall::core::{EnvIO, FileIO, HttpIO};
 

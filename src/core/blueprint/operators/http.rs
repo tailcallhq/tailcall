@@ -3,14 +3,13 @@ use crate::core::config::group_by::GroupBy;
 use crate::core::config::Field;
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
-use crate::core::ir::{IO, IR};
+use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 use crate::core::{config, helpers};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
-    field: &config::Field,
     http: &config::Http,
 ) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
@@ -42,15 +41,11 @@ pub fn compile_http(
                 .iter()
                 .map(|key_value| (key_value.key.clone(), key_value.value.clone()))
                 .collect();
-            let output_schema = to_json_schema_for_field(field, config_module);
-            let input_schema = to_json_schema_for_args(&field.args, config_module);
 
             RequestTemplate::try_from(
                 Endpoint::new(base_url.to_string())
                     .method(http.method.clone())
                     .query(query)
-                    .output(output_schema)
-                    .input(input_schema)
                     .body(http.body.clone())
                     .encoding(http.encoding.clone()),
             )
@@ -88,7 +83,7 @@ pub fn update_http<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_module, field, http)
+            compile_http(config_module, http)
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field

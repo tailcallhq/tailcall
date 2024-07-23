@@ -1,0 +1,54 @@
+---
+source: src/core/jit/builder.rs
+expression: plan.into_nested()
+---
+[
+    Field {
+        id: 0,
+        name: "createPost",
+        ir: "Some(..)",
+        type_of: Post,
+        args: [
+            Arg {
+                id: 0,
+                name: "post",
+                type_of: InputPost!,
+                value: Some(
+                    Object(
+                        {
+                            Name(
+                                "userId",
+                            ): Number(
+                                Number(123),
+                            ),
+                            Name(
+                                "title",
+                            ): String(
+                                "tailcall",
+                            ),
+                            Name(
+                                "body",
+                            ): String(
+                                "tailcall test",
+                            ),
+                        },
+                    ),
+                ),
+                default_value: None,
+            },
+        ],
+        extensions: Some(
+            Nested(
+                [
+                    Field {
+                        id: 1,
+                        name: "id",
+                        type_of: ID!,
+                        is_scalar: true,
+                    },
+                ],
+            ),
+        ),
+        is_scalar: false,
+    },
+]

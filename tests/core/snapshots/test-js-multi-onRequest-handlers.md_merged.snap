@@ -1,6 +1,6 @@
 ---
 source: tests/core/spec.rs
-expression: merged
+expression: formatter
 ---
 schema @server @upstream(onRequest: "foo", baseURL: "http://localhost:3000") @link(src: "test1.js", type: Script) {
   query: Query

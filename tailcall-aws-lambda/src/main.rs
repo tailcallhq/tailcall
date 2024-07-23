@@ -4,10 +4,11 @@ use dotenvy::dotenv;
 use http::{to_request, to_response};
 use lambda_http::{run, service_fn, Body, Error, Response};
 use runtime::init_runtime;
+use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::GraphQLRequest;
 use tailcall::core::blueprint::Blueprint;
 use tailcall::core::config::reader::ConfigReader;
-use tailcall::core::http::{handle_request, AppContext};
+use tailcall::core::http::handle_request;
 use tailcall::core::tracing::get_log_level;
 
 mod http;
@@ -35,8 +36,9 @@ async fn main() -> Result<(), Error> {
         .await?;
     let blueprint = Blueprint::try_from(&config)?;
     let endpoints = config
-        .extensions
+        .extensions()
         .endpoint_set
+        .clone()
         .into_checked(&blueprint, runtime.clone())
         .await?;
 

@@ -1,27 +1,70 @@
 use std::any::Any;
+use std::hash::{Hash, Hasher};
 
 use anyhow::Result;
-use async_graphql::parser::types::ExecutableDocument;
+use async_graphql::parser::types::{ExecutableDocument, OperationType};
 use async_graphql::{BatchResponse, Executor, Value};
+use headers::HeaderMap;
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
 use hyper::{Body, Response, StatusCode};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use tailcall_hasher::TailcallHasher;
+
+#[derive(PartialEq, Eq, Clone, Hash, Debug)]
+pub struct OperationId(u64);
 
 #[async_trait::async_trait]
-pub trait GraphQLRequestLike {
+pub trait GraphQLRequestLike: Hash + Send {
     fn data<D: Any + Clone + Send + Sync>(self, data: D) -> Self;
     async fn execute<E>(self, executor: &E) -> GraphQLResponse
     where
         E: Executor;
 
     fn parse_query(&mut self) -> Option<&ExecutableDocument>;
+
+    fn is_query(&mut self) -> bool {
+        self.parse_query()
+            .map(|a| {
+                let mut is_query = false;
+                for (_, operation) in a.operations.iter() {
+                    is_query = operation.node.ty == OperationType::Query;
+                }
+                is_query
+            })
+            .unwrap_or(false)
+    }
+
+    fn operation_id(&self, headers: &HeaderMap) -> OperationId {
+        let mut hasher = TailcallHasher::default();
+        let state = &mut hasher;
+        for (name, value) in headers.iter() {
+            name.hash(state);
+            value.hash(state);
+        }
+        self.hash(state);
+        OperationId(hasher.finish())
+    }
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GraphQLBatchRequest(pub async_graphql::BatchRequest);
 impl GraphQLBatchRequest {}
-
+impl Hash for GraphQLBatchRequest {
+    //TODO: Fix Hash implementation for BatchRequest, which should ideally batch
+    // execution of individual requests instead of the whole chunk of requests as
+    // one.
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        for request in self.0.iter() {
+            request.query.hash(state);
+            request.operation_name.hash(state);
+            for (name, value) in request.variables.iter() {
+                name.hash(state);
+                value.to_string().hash(state);
+            }
+        }
+    }
+}
 #[async_trait::async_trait]
 impl GraphQLRequestLike for GraphQLBatchRequest {
     fn data<D: Any + Clone + Send + Sync>(mut self, data: D) -> Self {
@@ -47,7 +90,16 @@ impl GraphQLRequestLike for GraphQLBatchRequest {
 pub struct GraphQLRequest(pub async_graphql::Request);
 
 impl GraphQLRequest {}
-
+impl Hash for GraphQLRequest {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.query.hash(state);
+        self.0.operation_name.hash(state);
+        for (name, value) in self.0.variables.iter() {
+            name.hash(state);
+            value.to_string().hash(state);
+        }
+    }
+}
 #[async_trait::async_trait]
 impl GraphQLRequestLike for GraphQLRequest {
     #[must_use]
