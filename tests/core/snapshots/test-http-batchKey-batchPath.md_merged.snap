@@ -1,0 +1,35 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(port: 8000)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 10, headers: [], maxSize: 1000}) {
+  query: Query
+}
+
+type Bar {
+  bar_name: String!
+  id: ID!
+}
+
+type Foo {
+  bar_id: String!
+  bars: [Bar!]!
+    @http(
+      batchKey: "bar_ids[]"
+      batchPath: ["bars", "id"]
+      path: "/bar"
+      query: [{key: "bar_ids[]", value: "{{.value.bar_id}}"}]
+    )
+  foo_name: String!
+  id: ID!
+}
+
+type FooResponse {
+  foos: [Foo!]!
+}
+
+type Query {
+  foos: FooResponse @http(path: "/foo")
+}

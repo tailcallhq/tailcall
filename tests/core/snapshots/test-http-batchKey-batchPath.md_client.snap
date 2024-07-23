@@ -2,9 +2,8 @@
 source: tests/core/spec.rs
 expression: formatted
 ---
-type BankAccount {
-  bic: String!
-  iban: String!
+type Bar {
+  bar_name: String!
   id: ID!
 }
 
@@ -15,6 +14,17 @@ scalar Date
 scalar Email
 
 scalar Empty
+
+type Foo {
+  bar_id: String!
+  bars: [Bar!]!
+  foo_name: String!
+  id: ID!
+}
+
+type FooResponse {
+  foos: [Foo!]!
+}
 
 scalar Int128
 
@@ -31,14 +41,7 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
-  transactions: [Transaction!]!
-}
-
-type Transaction {
-  BankAccounts: [BankAccount!]!
-  bank_account_id: String!
-  id: ID!
-  slug: String!
+  foos: FooResponse
 }
 
 scalar UInt128

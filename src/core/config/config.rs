@@ -357,12 +357,12 @@ impl Field {
     pub fn has_batched_resolver(&self) -> bool {
         self.http
             .as_ref()
-            .is_some_and(|http| !http.group_by.is_empty())
+            .is_some_and(|http| !http.batch_path.is_empty())
             || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
             || self
                 .grpc
                 .as_ref()
-                .is_some_and(|grpc| !grpc.group_by.is_empty())
+                .is_some_and(|grpc| !grpc.batch_path.is_empty())
     }
     pub fn into_list(mut self) -> Self {
         self.list = true;
@@ -554,8 +554,12 @@ pub struct Http {
     pub encoding: Encoding,
 
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
-    /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<serde_json::Value>,
+    /// The `batchKey` is used to dictate the query parameter Tailcall will use to group multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+    pub batch_key: Option<String>,
+
+    #[serde(rename = "batchPath", default, skip_serializing_if = "is_default")]
+    /// The `batchPath` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+    pub batch_path: Vec<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
@@ -667,8 +671,11 @@ pub struct Grpc {
     /// parameters will be added in the body in `protobuf` format.
     pub body: Option<Value>,
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
-    /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+    /// The `batchKey` is used to dictate the query parameter Tailcall will use to group multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+    pub batch_key: Option<String>,
+    #[serde(rename = "batchPath", default, skip_serializing_if = "is_default")]
+    /// The `batchPath` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+    pub batch_path: Vec<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@grpc` operator. It is used by specifying a
@@ -1087,15 +1094,12 @@ mod tests {
         let f1 = Field { ..Default::default() };
 
         let f2 = Field {
-            http: Some(Http {
-                group_by: vec![serde_json::Value::String("id".to_string())],
-                ..Default::default()
-            }),
+            http: Some(Http { batch_path: vec!["id".to_string()], ..Default::default() }),
             ..Default::default()
         };
 
         let f3 = Field {
-            http: Some(Http { group_by: vec![], ..Default::default() }),
+            http: Some(Http { batch_path: vec![], ..Default::default() }),
             ..Default::default()
         };
 

@@ -1,0 +1,59 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "foos": {
+        "foos": [
+          {
+            "id": "foo_1",
+            "foo_name": "foo_name_1",
+            "bar_id": "bar_1",
+            "bars": [
+              {
+                "id": "bar_1",
+                "bar_name": "bar_name_1"
+              },
+              {
+                "id": "bar_1",
+                "bar_name": "bar_name_1"
+              }
+            ]
+          },
+          {
+            "id": "foo_2",
+            "foo_name": "foo_name_2",
+            "bar_id": "bar_1",
+            "bars": [
+              {
+                "id": "bar_1",
+                "bar_name": "bar_name_1"
+              },
+              {
+                "id": "bar_1",
+                "bar_name": "bar_name_1"
+              }
+            ]
+          },
+          {
+            "id": "foo_3",
+            "foo_name": "foo_name_3",
+            "bar_id": "bar_2",
+            "bars": [
+              {
+                "id": "bar_2",
+                "bar_name": "bar_name_2"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
