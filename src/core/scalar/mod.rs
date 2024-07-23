@@ -47,12 +47,12 @@ use crate::core::json::JsonLike;
 #[enum_dispatch(Scalar)]
 #[derive(schemars::JsonSchema, Debug, Clone)]
 pub enum ScalarType {
+    Empty,
     Email,
     PhoneNumber,
     Date,
     Url,
     JSON,
-    Empty,
     Int8,
     Int16,
     Int32,
@@ -66,8 +66,11 @@ pub enum ScalarType {
     Bytes,
 }
 
-pub fn get_scalar(name: &str) -> Option<ScalarType> {
-    CUSTOM_SCALARS.get(name).cloned()
+pub fn get_scalar(name: &str) -> ScalarType {
+    CUSTOM_SCALARS
+        .get(name)
+        .cloned()
+        .unwrap_or(Empty::default().into())
 }
 
 lazy_static! {
