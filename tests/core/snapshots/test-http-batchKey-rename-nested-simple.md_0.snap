@@ -1,0 +1,47 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "transactions": {
+        "transactions": [
+          {
+            "id": "7964963e-06e8-46a7-b228-04fc08fd020f",
+            "slug": "slug-tx-1",
+            "bank_account_id": "441ff0f9-c00d-45cc-8bbf-5a8fffa01798",
+            "bank_accounts": [
+              {
+                "id": "441ff0f9-c00d-45cc-8bbf-5a8fffa01798",
+                "bic": "bic1",
+                "iban": "iban1"
+              },
+              {
+                "id": "441ff0f9-c00d-45cc-8bbf-5a8fffa01798",
+                "bic": "bic2",
+                "iban": "iban2"
+              }
+            ]
+          },
+          {
+            "id": "140b5e4d-b9c0-40f7-97ec-313c9bda2b00",
+            "slug": "slug-tx-2",
+            "bank_account_id": "ea2efff5-6d7c-4cf3-bada-8447e139a864",
+            "bank_accounts": [
+              {
+                "id": "ea2efff5-6d7c-4cf3-bada-8447e139a864",
+                "bic": "bic3",
+                "iban": "iban3"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
