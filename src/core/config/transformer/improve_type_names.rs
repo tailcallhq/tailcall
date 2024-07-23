@@ -142,7 +142,7 @@ impl ImproveTypeNames {
 impl Transform for ImproveTypeNames {
     type Value = Config;
     type Error = String;
-    fn transform(&self, config: Config) -> Valid<Config, String> {
+    fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
         let config = self.generate_type_names(config);
 
         Valid::succeed(config)

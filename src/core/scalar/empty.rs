@@ -1,5 +1,4 @@
-use schemars::schema::Schema;
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::JsonLikeOwned;
@@ -15,9 +14,5 @@ pub struct Empty {
 impl super::Scalar for Empty {
     fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
         |_| true
-    }
-
-    fn schema(&self) -> Schema {
-        Schema::Object(schema_for!(Self).schema)
     }
 }
