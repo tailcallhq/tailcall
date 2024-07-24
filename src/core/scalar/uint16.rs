@@ -1,14 +1,14 @@
 use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::JsonLike;
 
 /// Represents unsigned integer type 16bit size
-#[derive(JsonSchema, Default, ScalarDefinition)]
+#[derive(JsonSchema, Default, ScalarDefinition, Clone, Debug)]
 pub struct UInt16(pub u16);
 
 impl super::Scalar for UInt16 {
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
         |value| value.as_u64().map_or(false, |n| u16::try_from(n).is_ok())
     }
 }

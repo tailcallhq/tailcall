@@ -1,14 +1,14 @@
 use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::JsonLike;
 
 /// Represents signed integer type 16bit size
-#[derive(JsonSchema, Default, ScalarDefinition)]
+#[derive(JsonSchema, Default, ScalarDefinition, Clone, Debug)]
 pub struct Int16(pub i16);
 
 impl super::Scalar for Int16 {
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
         |value| {
             if let Some(n) = value.as_i64() {
                 return i16::try_from(n).is_ok();
