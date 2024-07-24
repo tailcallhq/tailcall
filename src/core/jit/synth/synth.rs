@@ -2,14 +2,14 @@ use async_graphql::PathSegment;
 
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
-use crate::core::jit::{self, Error, LocationError, ValidationError};
+use crate::core::jit::{Error, LocationError, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar::{self, Scalar};
 
 pub struct Synth<Value> {
     plan: OperationPlan<Value>,
-    store: Store<Result<Value, jit::Error>>,
-    variables: Variables<async_graphql_value::ConstValue>,
+    store: Store<Result<Value, Error>>,
+    variables: Variables<Value>,
 }
 
 impl<Extensions, Input> Field<Extensions, Input> {
@@ -38,14 +38,14 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: OperationPlan<Value>,
-        store: Store<Result<Value, jit::Error>>,
-        variables: Variables<async_graphql_value::ConstValue>,
+        store: Store<Result<Value, Error>>,
+        variables: Variables<Value>,
     ) -> Self {
         Self { plan, store, variables }
     }
 
     #[inline(always)]
-    fn include<T>(&self, field: &Field<T, Value>) -> bool {
+    fn include<T>(&'a self, field: &'a Field<T, Value>) -> bool {
         !field.skip(&self.variables)
     }
 
@@ -263,7 +263,7 @@ mod tests {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
-    use crate::core::jit::common::JsonPlaceholder;
+    use crate::core::jit::common::JP;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::synth::Synth;
@@ -451,8 +451,17 @@ mod tests {
 
     #[test]
     fn test_json_placeholder() {
-        let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
-        let val = synth.synthesize().unwrap();
+        let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let synth = jp.synth();
+        let val: async_graphql::Value = synth.synthesize().unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
+    }
+
+    #[test]
+    fn test_json_placeholder_borrowed() {
+        let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let synth = jp.synth();
+        let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }
