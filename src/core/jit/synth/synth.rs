@@ -102,13 +102,14 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                         }
 
                         match data {
-                            Data::Single(val) =>{ 
-                                let t = val.as_ref().map_err(|e| self.to_location_error(e.to_owned(), node))?;
-                                self.iter(
+                            Data::Single(val) => self.iter(
                                 node,
-                                Some(t),
+                                Some(
+                                    val.as_ref()
+                                        .map_err(|e| self.to_location_error(e.to_owned(), node))?,
+                                ),
                                 data_path,
-                            )},
+                            ),
                             _ => {
                                 // TODO: should bailout instead of returning Null
                                 Ok(Value::null())
@@ -229,9 +230,9 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     }
 
     fn to_location_error(
-        &self,
+        &'a self,
         error: Error,
-        node: &Field<Nested<Value>, Value>,
+        node: &'a Field<Nested<Value>, Value>,
     ) -> LocationError<Error> {
         // create path from the root to the current node in the fields tree
         let path = {
