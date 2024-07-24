@@ -5,13 +5,13 @@ expression: formatted
 scalar Bytes
 
 type Connection {
+  nested: NestedUser
   type: String
-  user: User
 }
 
 input ConnectionInput {
+  nested: NestedUserInput
   type: String
-  user: UserInput
 }
 
 scalar Date
@@ -36,6 +36,14 @@ type Mutation {
   createUser(user: UserInput): User
 }
 
+type NestedUser {
+  user: User
+}
+
+input NestedUserInput {
+  user: UserInput
+}
+
 scalar PhoneNumber
 
 type Query {
@@ -57,13 +65,13 @@ scalar Url
 type User {
   connections: [Connection]
   id: Int!
-  name: String!
+  name: String
 }
 
 input UserInput {
   connections: [ConnectionInput]
   id: Int!
-  name: String!
+  name: String
 }
 
 schema {

@@ -1,0 +1,47 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "user": {
+        "name": "User1",
+        "id": 1,
+        "connections": [
+          {
+            "type": "friend",
+            "nested": {
+              "user": {
+                "name": "User2",
+                "id": 2,
+                "connections": [
+                  {
+                    "nested": {
+                      "user": {
+                        "name": "User3",
+                        "id": 3
+                      }
+                    }
+                  },
+                  {
+                    "nested": {
+                      "user": {
+                        "name": "User4",
+                        "id": 4
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
