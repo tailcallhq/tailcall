@@ -43,7 +43,7 @@ where
 
     pub async fn execute(self, synth: Synth<Output>) -> Response<Output, jit::Error> {
         let mut response = Response::new(synth.synthesize());
-        response.add_errors(self.plan.get_errors());
+        response.add_errors(self.plan.errors());
 
         response
     }

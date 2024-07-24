@@ -375,7 +375,7 @@ impl<Input> OperationPlan<Input> {
         self.operation_type
     }
 
-    pub fn get_errors(&self) -> Vec<LocationError<Error>> {
+    pub fn errors(&self) -> Vec<LocationError<Error>> {
         self.errors.lock().unwrap().clone()
     }
 
