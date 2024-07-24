@@ -21,6 +21,7 @@ impl Preset {
             consolidate_url: 0.0,
             tree_shake: false,
             use_better_names: false,
+            unwrap_single_field_types: true,
         }
     }
 }
