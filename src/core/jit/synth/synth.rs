@@ -84,7 +84,6 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
             }
             None => {
                 // we perform this check to avoid unnecessary hashing
-
                 match self.store.get(&node.id) {
                     Some(val) => {
                         let mut data = val;
@@ -111,9 +110,13 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                         }
                     }
                     None => {
-                        // IR exists, so there must be a value.
-                        // if there is no value then we must return Null
-                        Ok(Value::null())
+                        // if value doens't exists, do check if it's allowed to send Null value else validation raise error.
+                        if node.type_of.is_nullable() {
+                            Ok(Value::null())
+                        } else {
+                            Err(ValidationError::ValueRequired.into())
+                                .map_err(|e| self.to_location_error(e, node))
+                        }
                     }
                 }
             }
@@ -127,15 +130,7 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
         data_path: &'b DataPath,
     ) -> Result<Value, LocationError<Error>> {
         let include = self.include(node);
-
-        if parent.is_null() {
-            if node.type_of.is_nullable() {
-                Ok(Value::null())
-            } else {
-                Err(ValidationError::ValueRequired.into())
-                    .map_err(|e| self.to_location_error(e, node))
-            }
-        } else if include && self.plan.field_is_scalar(node) {
+        if include && self.plan.field_is_scalar(node) {
             let validation = get_scalar(node.type_of.name());
 
             // TODO: add validation for input type as well. But input types are not checked
