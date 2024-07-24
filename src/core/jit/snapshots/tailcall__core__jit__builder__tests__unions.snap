@@ -22,5 +22,6 @@ expression: plan.into_nested()
             },
         ],
         is_scalar: false,
+        directives: [],
     },
 ]

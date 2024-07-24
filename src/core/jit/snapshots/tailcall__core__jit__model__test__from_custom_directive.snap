@@ -1,0 +1,28 @@
+---
+source: src/core/jit/model.rs
+expression: async_directive
+---
+ConstDirective {
+    name: Positioned {
+        pos: Pos(0:0),
+        node: Name(
+            "options",
+        ),
+    },
+    arguments: [
+        (
+            Positioned {
+                pos: Pos(0:0),
+                node: Name(
+                    "paging",
+                ),
+            },
+            Positioned {
+                pos: Pos(0:0),
+                node: Boolean(
+                    true,
+                ),
+            },
+        ),
+    ],
+}

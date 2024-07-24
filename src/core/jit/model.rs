@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use async_graphql::parser::types::OperationType;
-use async_graphql::Pos;
+use async_graphql::parser::types::{ConstDirective, OperationType};
+use async_graphql::{Name, Pos, Positioned};
+use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
 use crate::core::ir::model::IR;
@@ -103,6 +104,7 @@ pub struct Field<Extensions, Input> {
     pub extensions: Option<Extensions>,
     pub pos: Pos,
     pub is_scalar: bool,
+    pub directives: Vec<Directive<Input>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -150,6 +152,11 @@ impl<Input> Field<Nested<Input>, Input> {
                 .map(|arg| arg.try_map(map))
                 .collect::<Result<_, _>>()?,
             is_scalar: false,
+            directives: self
+                .directives
+                .into_iter()
+                .map(|directive| directive.try_map(map))
+                .collect::<Result<_, _>>()?,
         })
     }
 }
@@ -174,6 +181,11 @@ impl<Input> Field<Flat, Input> {
                 .map(|arg| arg.try_map(&map))
                 .collect::<Result<_, _>>()?,
             is_scalar: self.is_scalar,
+            directives: self
+                .directives
+                .into_iter()
+                .map(|directive| directive.try_map(&map))
+                .collect::<Result<_, _>>()?,
         })
     }
 }
@@ -226,6 +238,7 @@ impl<Input> Field<Flat, Input> {
             pos: self.pos,
             extensions,
             is_scalar: self.is_scalar,
+            directives: self.directives,
         }
     }
 }
@@ -246,7 +259,13 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("extensions", &self.extensions);
         }
         debug_struct.field("is_scalar", &self.is_scalar);
-
+        if self.skip.is_some() {
+            debug_struct.field("skip", &self.skip);
+        }
+        if self.include.is_some() {
+            debug_struct.field("include", &self.include);
+        }
+        debug_struct.field("directives", &self.directives);
         debug_struct.finish()
     }
 }
@@ -358,5 +377,65 @@ impl<Input> OperationPlan<Input> {
 
     pub fn size(&self) -> usize {
         self.flat.len()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Directive<Input> {
+    pub name: String,
+    pub arguments: Vec<(String, Input)>,
+}
+
+impl<Input> Directive<Input> {
+    pub fn try_map<Output, Error>(
+        self,
+        map: impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<Directive<Output>, Error> {
+        Ok(Directive {
+            name: self.name,
+            arguments: self
+                .arguments
+                .into_iter()
+                .map(|(k, v)| map(v).map(|mapped_value| (k, mapped_value)))
+                .collect::<Result<Vec<_>, _>>()?,
+        })
+    }
+}
+
+impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
+    fn from(value: &'a Directive<ConstValue>) -> Self {
+        // we don't use pos required in Positioned struct, hence using defaults.
+        ConstDirective {
+            name: Positioned::new(Name::new(&value.name), Default::default()),
+            arguments: value
+                .arguments
+                .iter()
+                .map(|a| {
+                    (
+                        Positioned::new(Name::new(a.0.clone()), Default::default()),
+                        Positioned::new(a.1.clone(), Default::default()),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use async_graphql::parser::types::ConstDirective;
+    use async_graphql_value::ConstValue;
+
+    use super::Directive;
+
+    #[test]
+    fn test_from_custom_directive() {
+        let custom_directive = Directive {
+            name: "options".to_string(),
+            arguments: vec![("paging".to_string(), ConstValue::Boolean(true))],
+        };
+
+        let async_directive: ConstDirective = (&custom_directive).into();
+        insta::assert_debug_snapshot!(async_directive);
     }
 }
