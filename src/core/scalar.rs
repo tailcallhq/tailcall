@@ -27,35 +27,61 @@ pub enum ScalarType {
     Bytes,
 }
 
+fn validate_str<'a, Value: JsonLike<'a> + 'a, F: Fn(&str) -> bool>(val: &'a Value, fxn: F) -> bool {
+    val.as_str().map_or(false, fxn)
+}
+
+fn validate_signed<
+    'a,
+    Num,
+    Value: JsonLike<'a> + 'a,
+    F: Fn(i64) -> Result<Num, std::num::TryFromIntError>,
+>(
+    val: &'a Value,
+    fxn: F,
+) -> bool {
+    val.as_i64().map_or(false, |n| fxn(n).is_ok())
+}
+
+fn validate_unsigned<
+    'a,
+    Num,
+    Value: JsonLike<'a> + 'a,
+    F: Fn(u64) -> Result<Num, std::num::TryFromIntError>,
+>(
+    val: &'a Value,
+    fxn: F,
+) -> bool {
+    val.as_u64().map_or(false, |n| fxn(n).is_ok())
+}
+
 impl ScalarType {
     pub fn validate<'a, Value: JsonLike<'a> + 'a>(&self, value: &'a Value) -> bool {
         match self {
             ScalarType::JSON => true,
             ScalarType::Empty => true,
-            ScalarType::Email => value.as_str().map_or(false, |s| {
+            ScalarType::Email => validate_str(value, |s| {
                 async_graphql::validators::email(&s.to_string()).is_ok()
             }),
-            ScalarType::PhoneNumber => value
-                .as_str()
-                .map_or(false, |s| phonenumber::parse(None, s).is_ok()),
-            ScalarType::Date => value
-                .as_str()
-                .map_or(false, |s| chrono::DateTime::parse_from_rfc3339(s).is_ok()),
-            ScalarType::Url => value.as_str().map_or(false, |s| url::Url::parse(s).is_ok()),
+            ScalarType::PhoneNumber => validate_str(value, |s| phonenumber::parse(None, s).is_ok()),
+            ScalarType::Date => {
+                validate_str(value, |s| chrono::DateTime::parse_from_rfc3339(s).is_ok())
+            }
+            ScalarType::Url => validate_str(value, |s| url::Url::parse(s).is_ok()),
             ScalarType::Bytes => value.as_str().is_some(),
 
-            ScalarType::Int8 => value.as_i64().map_or(false, |n| i8::try_from(n).is_ok()),
-            ScalarType::Int16 => value.as_i64().map_or(false, |n| i16::try_from(n).is_ok()),
-            ScalarType::Int32 => value.as_i64().map_or(false, |n| i32::try_from(n).is_ok()),
-            ScalarType::Int64 => value.as_str().map_or(false, |s| s.parse::<i64>().is_ok()),
+            ScalarType::Int64 => validate_str(value, |s| s.parse::<i64>().is_ok()),
+            ScalarType::UInt64 => validate_str(value, |s| s.parse::<u64>().is_ok()),
+            ScalarType::Int128 => validate_str(value, |s| s.parse::<i128>().is_ok()),
+            ScalarType::UInt128 => validate_str(value, |s| s.parse::<u128>().is_ok()),
 
-            ScalarType::UInt8 => value.as_u64().map_or(false, |n| u8::try_from(n).is_ok()),
-            ScalarType::UInt16 => value.as_u64().map_or(false, |n| u16::try_from(n).is_ok()),
-            ScalarType::UInt32 => value.as_u64().map_or(false, |n| u32::try_from(n).is_ok()),
+            ScalarType::Int8 => validate_signed(value, i8::try_from),
+            ScalarType::Int16 => validate_signed(value, i16::try_from),
+            ScalarType::Int32 => validate_signed(value, i32::try_from),
 
-            ScalarType::UInt64 => value.as_str().map_or(false, |s| s.parse::<u64>().is_ok()),
-            ScalarType::Int128 => value.as_str().map_or(false, |s| s.parse::<i128>().is_ok()),
-            ScalarType::UInt128 => value.as_str().map_or(false, |s| s.parse::<u128>().is_ok()),
+            ScalarType::UInt8 => validate_unsigned(value, u8::try_from),
+            ScalarType::UInt16 => validate_unsigned(value, u16::try_from),
+            ScalarType::UInt32 => validate_unsigned(value, u32::try_from),
         }
     }
     pub fn get_scalar(name: &str) -> ScalarType {
