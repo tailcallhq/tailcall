@@ -51,7 +51,7 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
                 .and_then(|u| u.as_u64());
 
             if let Some(id) = id {
-                map.insert(id as usize, Data::Single(Ok(user.clone())));
+                map.insert(id, user);
             }
             map
         });
@@ -65,15 +65,18 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
                     .and_then(|u| u.as_u64());
 
                 if let Some(user_id) = user_id {
-                    if let Some(user) = user_map.get(&(user_id as usize)) {
-                        (user_id as usize, user.clone())
+                    if let Some(user) = user_map.get(&user_id) {
+                        user.to_owned().to_owned().to_owned()
                     } else {
-                        (user_id as usize, Data::Single(Ok(Value::null())))
+                        Value::null()
                     }
                 } else {
-                    (0, Data::Single(Ok(Value::null())))
+                    Value::null()
                 }
             })
+            .map(Ok)
+            .map(Data::Single)
+            .enumerate()
             .collect();
 
         ProcessedTestData { posts: Value::array(posts.clone()), users }
