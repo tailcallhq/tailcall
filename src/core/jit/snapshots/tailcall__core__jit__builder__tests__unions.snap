@@ -21,5 +21,6 @@ expression: plan.into_nested()
                 default_value: None,
             },
         ],
+        directives: [],
     },
 ]

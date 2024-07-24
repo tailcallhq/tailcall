@@ -28,14 +28,17 @@ expression: plan.into_nested()
                         id: 1,
                         name: "id",
                         type_of: ID!,
+                        directives: [],
                     },
                     Field {
                         id: 2,
                         name: "name",
                         type_of: String!,
+                        directives: [],
                     },
                 ],
             ),
         ),
+        directives: [],
     },
 ]

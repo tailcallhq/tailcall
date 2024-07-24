@@ -15,19 +15,23 @@ expression: plan.into_nested()
                         id: 1,
                         name: "id",
                         type_of: ID!,
+                        directives: [],
                     },
                     Field {
                         id: 2,
                         name: "userId",
                         type_of: ID!,
+                        directives: [],
                     },
                     Field {
                         id: 3,
                         name: "title",
                         type_of: String!,
+                        directives: [],
                     },
                 ],
             ),
         ),
+        directives: [],
     },
 ]

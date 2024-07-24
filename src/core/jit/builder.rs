@@ -10,7 +10,7 @@ use async_graphql::Positioned;
 use async_graphql_value::{ConstValue, Value};
 
 use super::input_resolver::InputResolver;
-use super::model::*;
+use super::model::{Directive as JitDirective, *};
 use super::BuildError;
 use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
@@ -146,6 +146,22 @@ impl Builder {
                         continue;
                     }
 
+                    let mut directives = Vec::with_capacity(gql_field.directives.len());
+                    for directive in &gql_field.directives {
+                        let directive = &directive.node;
+                        if directive.name.node == "skip" || directive.name.node == "include" {
+                            continue;
+                        }
+                        let arguments = directive
+                            .arguments
+                            .iter()
+                            .map(|(k, v)| (k.node.to_string(), v.node.clone()))
+                            .collect::<Vec<_>>();
+
+                        directives
+                            .push(JitDirective { name: directive.name.to_string(), arguments });
+                    }
+
                     let (include, skip) = conditions.into_variable_tuple();
 
                     let field_name = gql_field.name.node.as_str();
@@ -199,7 +215,7 @@ impl Builder {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
                         };
-                        fields.push(Field {
+                        let flat_field = Field {
                             id,
                             name,
                             ir,
@@ -209,7 +225,10 @@ impl Builder {
                             args,
                             pos: selection.pos,
                             extensions: exts.clone(),
-                        });
+                            directives,
+                        };
+
+                        fields.push(flat_field);
                         fields = fields.merge_right(child_fields);
                     } else {
                         // TODO: error if the field is not found in the schema
@@ -289,6 +308,9 @@ impl Builder {
             .get_type(operation.ty)
             .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
         fields.extend(self.iter(&operation.selection_set.node, name, None, &fragments));
+
+        // skip the fields depending on variables.
+        fields.retain(|f| !f.skip(variables));
 
         let plan = OperationPlan::new(fields, operation.ty, self.index.clone());
         // TODO: operation from [ExecutableDocument] could contain definitions for
@@ -600,6 +622,27 @@ mod tests {
             .build(&Variables::new(), Some("CreateNewPost"))
             .unwrap();
         assert!(!plan.is_query());
+        insta::assert_debug_snapshot!(plan.into_nested());
+    }
+
+    #[test]
+    fn test_directives() {
+        let mut variables = Variables::new();
+        variables.insert("includeName".to_string(), ConstValue::Boolean(true));
+
+        let plan = plan(
+            r#"
+            query($includeName: Boolean! = true) {
+                users {
+                    id @options(paging: $includeName)
+                    name @include(if: $includeName)
+                }
+            }
+            "#,
+            &variables,
+        );
+
+        assert!(plan.is_query());
         insta::assert_debug_snapshot!(plan.into_nested());
     }
 }
