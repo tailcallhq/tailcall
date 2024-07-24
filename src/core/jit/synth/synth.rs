@@ -9,7 +9,7 @@ use crate::core::scalar::{self, Scalar};
 pub struct Synth<Value> {
     selection: Vec<Field<Nested<Value>, Value>>,
     store: Store<Result<Value, Positioned<Error>>>,
-    variables: Variables<async_graphql_value::ConstValue>,
+    variables: Variables<Value>,
 }
 
 impl<Extensions, Input> Field<Extensions, Input> {
@@ -39,13 +39,13 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     pub fn new(
         plan: OperationPlan<Value>,
         store: Store<Result<Value, Positioned<Error>>>,
-        variables: Variables<async_graphql_value::ConstValue>,
+        variables: Variables<Value>,
     ) -> Self {
         Self { selection: plan.into_nested(), store, variables }
     }
 
     #[inline(always)]
-    fn include<T>(&self, field: &Field<T, Value>) -> bool {
+    fn include<T>(&'a self, field: &'a Field<T, Value>) -> bool {
         !field.skip(&self.variables)
     }
 

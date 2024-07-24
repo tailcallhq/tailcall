@@ -26,6 +26,16 @@ impl<Value> Variables<Value> {
     pub fn insert(&mut self, key: String, value: Value) {
         self.0.insert(key, value);
     }
+    pub fn try_map<Output, Error>(
+        self,
+        map: impl Fn(Value) -> Result<Output, Error>,
+    ) -> Result<Variables<Output>, Error> {
+        let mut hm = HashMap::new();
+        for (k, v) in self.0 {
+            hm.insert(k, map(v)?);
+        }
+        Ok(Variables(hm))
+    }
 }
 
 impl<V> FromIterator<(String, V)> for Variables<V> {

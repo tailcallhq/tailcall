@@ -18,7 +18,7 @@ use crate::core::valid::Validator;
 pub struct JsonPlaceholder<Value> {
     test_data: TestData<Value>,
     plan: OperationPlan<Value>,
-    vars: Variables<async_graphql::Value>,
+    vars: Variables<Value>,
 }
 
 #[derive(Clone)]
@@ -100,6 +100,7 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JsonPlaceholder<Val
 
         let test_data = TestData::init();
         let plan = Self::plan(query, &vars);
+        let vars = vars.try_map(Deserialize::deserialize).unwrap();
 
         JsonPlaceholder { test_data, plan, vars }
     }
