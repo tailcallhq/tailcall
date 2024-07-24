@@ -75,7 +75,6 @@ impl ScalarType {
 }
 
 lazy_static! {
-    // TODO: rename
     pub static ref CUSTOM_SCALARS: HashMap<String, ScalarType> = {
         let scalars: Vec<ScalarType> = vec![
             ScalarType::Email,
