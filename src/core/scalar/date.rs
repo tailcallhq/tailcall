@@ -1,12 +1,11 @@
 use chrono::DateTime;
-use schemars::schema::Schema;
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::JsonLike;
 
 /// A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.
-#[derive(JsonSchema, Default, ScalarDefinition)]
+#[derive(JsonSchema, Default, ScalarDefinition, Clone, Debug)]
 pub struct Date {
     #[allow(dead_code)]
     #[serde(rename = "Date")]
@@ -15,7 +14,7 @@ pub struct Date {
 
 impl super::Scalar for Date {
     /// Function used to validate the date
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
         |value| {
             if let Some(date_str) = value.as_str() {
                 if DateTime::parse_from_rfc3339(date_str).is_ok() {
@@ -24,10 +23,6 @@ impl super::Scalar for Date {
             }
             false
         }
-    }
-
-    fn schema(&self) -> Schema {
-        Schema::Object(schema_for!(Self).schema)
     }
 }
 

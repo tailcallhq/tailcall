@@ -35,21 +35,24 @@ mod uint8;
 mod url;
 
 use std::collections::{HashMap, HashSet};
+use std::fmt::Debug;
 
 use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
 use schemars::schema::Schema;
+use schemars::schema_for;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::JsonLike;
 
 #[enum_dispatch(Scalar)]
+#[derive(schemars::JsonSchema, Debug, Clone)]
 pub enum ScalarType {
+    Empty,
     Email,
     PhoneNumber,
     Date,
     Url,
     JSON,
-    Empty,
     Int8,
     Int16,
     Int32,
@@ -61,6 +64,13 @@ pub enum ScalarType {
     UInt64,
     UInt128,
     Bytes,
+}
+
+pub fn get_scalar(name: &str) -> ScalarType {
+    CUSTOM_SCALARS
+        .get(name)
+        .cloned()
+        .unwrap_or(Empty::default().into())
 }
 
 lazy_static! {
@@ -108,9 +118,13 @@ pub fn is_predefined_scalar(type_name: &str) -> bool {
 }
 #[enum_dispatch]
 pub trait Scalar {
-    // Drop validate when we switch to jit
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool;
-    fn schema(&self) -> Schema;
+    fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool;
+    fn schema(&self) -> Schema
+    where
+        Self: schemars::JsonSchema,
+    {
+        Schema::Object(schema_for!(Self).schema)
+    }
     fn name(&self) -> String {
         std::any::type_name::<Self>()
             .split("::")
@@ -118,13 +132,6 @@ pub trait Scalar {
             .unwrap()
             .to_string()
     }
-}
-
-pub fn get_scalar<Value: JsonLikeOwned>(name: &str) -> fn(&Value) -> bool {
-    CUSTOM_SCALARS
-        .get(name)
-        .map(|v| v.validate())
-        .unwrap_or(|_| true)
 }
 
 #[cfg(test)]
