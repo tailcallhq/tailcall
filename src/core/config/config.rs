@@ -357,12 +357,12 @@ impl Field {
     pub fn has_batched_resolver(&self) -> bool {
         self.http
             .as_ref()
-            .is_some_and(|http| !http.group_by.is_empty())
+            .is_some_and(|http| !http.batch_key.is_empty())
             || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
             || self
                 .grpc
                 .as_ref()
-                .is_some_and(|grpc| !grpc.group_by.is_empty())
+                .is_some_and(|grpc| !grpc.batch_key.is_empty())
     }
     pub fn into_list(mut self) -> Self {
         self.list = true;
@@ -554,8 +554,8 @@ pub struct Http {
     pub encoding: Encoding,
 
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
-    /// The `batchKey` parameter groups multiple data requests into a single call. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+    /// The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+    pub batch_key: Vec<String>,
 
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
@@ -589,6 +589,8 @@ pub struct Http {
     /// This represents the query parameters of your API call. You can pass it
     /// as a static object or use Mustache template for dynamic parameters.
     /// These parameters will be added to the URL.
+    /// When `batchKey` is present Tailcall uses the first query parameter as
+    /// the key for the groupBy operator.
     pub query: Vec<KeyValue>,
 }
 
@@ -667,8 +669,8 @@ pub struct Grpc {
     /// parameters will be added in the body in `protobuf` format.
     pub body: Option<Value>,
     #[serde(rename = "batchKey", default, skip_serializing_if = "is_default")]
-    /// The key path in the response which should be used to group multiple requests. For instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
-    pub group_by: Vec<String>,
+    /// The `batchKey` dictates the path Tailcall will follow to group the returned items from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+    pub batch_key: Vec<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     /// The `headers` parameter allows you to customize the headers of the HTTP
     /// request made by the `@grpc` operator. It is used by specifying a
@@ -1087,12 +1089,12 @@ mod tests {
         let f1 = Field { ..Default::default() };
 
         let f2 = Field {
-            http: Some(Http { group_by: vec!["id".to_string()], ..Default::default() }),
+            http: Some(Http { batch_key: vec!["id".to_string()], ..Default::default() }),
             ..Default::default()
         };
 
         let f3 = Field {
-            http: Some(Http { group_by: vec![], ..Default::default() }),
+            http: Some(Http { batch_key: vec![], ..Default::default() }),
             ..Default::default()
         };
 

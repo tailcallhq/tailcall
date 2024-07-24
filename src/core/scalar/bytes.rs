@@ -1,20 +1,15 @@
-use schemars::schema::Schema;
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
-use crate::core::json::JsonLikeOwned;
+use crate::core::json::JsonLike;
 
 /// Represents list of bytes
-#[derive(JsonSchema, Default, ScalarDefinition)]
+#[derive(JsonSchema, Default, ScalarDefinition, Clone, Debug)]
 pub struct Bytes(pub String);
 
 impl super::Scalar for Bytes {
-    fn validate<Value: JsonLikeOwned>(&self) -> fn(&Value) -> bool {
+    fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
         |value| value.as_str().is_some()
-    }
-
-    fn schema(&self) -> Schema {
-        schema_for!(Self).schema.into()
     }
 }
 
