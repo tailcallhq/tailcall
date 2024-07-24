@@ -16,12 +16,6 @@
       "fields": {
         "user": {
           "type": "User",
-          "args": {
-            "id": {
-              "type": "Int",
-              "required": true
-            }
-          },
           "http": {
             "path": "/users/1"
           }
