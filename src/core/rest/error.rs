@@ -11,7 +11,6 @@ use crate::core::valid::ValidationError;
 #[derive(From, thiserror::Error, DebugCustom)]
 pub enum Error {
     #[error("Unexpected Named Type: {}", 0.to_string())]
-    #[from(ignore)]
     UnexpectedNamedType(Name),
 
     #[error("Unexpected Type: {}, expected a named type like String, Float, Boolean etc.", 0.to_string())]
