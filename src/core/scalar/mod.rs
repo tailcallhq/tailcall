@@ -44,7 +44,6 @@ use schemars::schema_for;
 
 use crate::core::json::JsonLike;
 
-#[enum_dispatch(Scalar)]
 #[derive(schemars::JsonSchema, Debug, Clone)]
 pub enum ScalarType {
     Empty,
@@ -66,33 +65,101 @@ pub enum ScalarType {
     Bytes,
 }
 
+impl ScalarType {
+    pub fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool {
+        match self {
+            ScalarType::Empty => Empty::default().validate(),
+            ScalarType::Email => Email::default().validate(),
+            ScalarType::PhoneNumber => PhoneNumber::default().validate(),
+            ScalarType::Date => Date::default().validate(),
+            ScalarType::Url => Url::default().validate(),
+            ScalarType::JSON => JSON::default().validate(),
+            ScalarType::Int8 => Int8::default().validate(),
+            ScalarType::Int16 => Int16::default().validate(),
+            ScalarType::Int32 => Int32::default().validate(),
+            ScalarType::Int64 => Int64::default().validate(),
+            ScalarType::Int128 => Int128::default().validate(),
+            ScalarType::UInt8 => UInt8::default().validate(),
+            ScalarType::UInt16 => UInt16::default().validate(),
+            ScalarType::UInt32 => UInt32::default().validate(),
+            ScalarType::UInt64 => UInt64::default().validate(),
+            ScalarType::UInt128 => UInt128::default().validate(),
+            ScalarType::Bytes => Bytes::default().validate(),
+        }
+    }
+
+    pub fn schema(&self) -> Schema {
+        match self {
+            ScalarType::Empty => Empty::default().schema(),
+            ScalarType::Email => Email::default().schema(),
+            ScalarType::PhoneNumber => PhoneNumber::default().schema(),
+            ScalarType::Date => Date::default().schema(),
+            ScalarType::Url => Url::default().schema(),
+            ScalarType::JSON => JSON::default().schema(),
+            ScalarType::Int8 => Int8::default().schema(),
+            ScalarType::Int16 => Int16::default().schema(),
+            ScalarType::Int32 => Int32::default().schema(),
+            ScalarType::Int64 => Int64::default().schema(),
+            ScalarType::Int128 => Int128::default().schema(),
+            ScalarType::UInt8 => UInt8::default().schema(),
+            ScalarType::UInt16 => UInt16::default().schema(),
+            ScalarType::UInt32 => UInt32::default().schema(),
+            ScalarType::UInt64 => UInt64::default().schema(),
+            ScalarType::UInt128 => UInt128::default().schema(),
+            ScalarType::Bytes => Bytes::default().schema(),
+        }
+    }
+
+    pub fn name(&self) -> String {
+        match self {
+            ScalarType::Empty => "Empty".to_string(),
+            ScalarType::Email => "Email".to_string(),
+            ScalarType::PhoneNumber => "PhoneNumber".to_string(),
+            ScalarType::Date => "Date".to_string(),
+            ScalarType::Url => "Url".to_string(),
+            ScalarType::JSON => "JSON".to_string(),
+            ScalarType::Int8 => "Int8".to_string(),
+            ScalarType::Int16 => "Int16".to_string(),
+            ScalarType::Int32 => "Int32".to_string(),
+            ScalarType::Int64 => "Int64".to_string(),
+            ScalarType::Int128 => "Int128".to_string(),
+            ScalarType::UInt8 => "UInt8".to_string(),
+            ScalarType::UInt16 => "UInt16".to_string(),
+            ScalarType::UInt32 => "UInt32".to_string(),
+            ScalarType::UInt64 => "UInt64".to_string(),
+            ScalarType::UInt128 => "UInt128".to_string(),
+            ScalarType::Bytes => "Bytes".to_string(),
+        }
+    }
+}
+
 pub fn get_scalar(name: &str) -> ScalarType {
     CUSTOM_SCALARS
         .get(name)
         .cloned()
-        .unwrap_or(Empty::default().into())
+        .unwrap_or(ScalarType::Empty)
 }
 
 lazy_static! {
     pub static ref CUSTOM_SCALARS: HashMap<String, ScalarType> = {
         let scalars: Vec<ScalarType> = vec![
-            Email::default().into(),
-            PhoneNumber::default().into(),
-            Date::default().into(),
-            Url::default().into(),
-            JSON::default().into(),
-            Empty::default().into(),
-            Int8::default().into(),
-            Int16::default().into(),
-            Int32::default().into(),
-            Int64::default().into(),
-            Int128::default().into(),
-            UInt8::default().into(),
-            UInt16::default().into(),
-            UInt32::default().into(),
-            UInt64::default().into(),
-            UInt128::default().into(),
-            Bytes::default().into(),
+            ScalarType::Email,
+            ScalarType::PhoneNumber,
+            ScalarType::Date,
+            ScalarType::Url,
+            ScalarType::JSON,
+            ScalarType::Empty,
+            ScalarType::Int8,
+            ScalarType::Int16,
+            ScalarType::Int32,
+            ScalarType::Int64,
+            ScalarType::Int128,
+            ScalarType::UInt8,
+            ScalarType::UInt16,
+            ScalarType::UInt32,
+            ScalarType::UInt64,
+            ScalarType::UInt128,
+            ScalarType::Bytes,
         ];
         let mut hm = HashMap::new();
 
@@ -102,6 +169,7 @@ lazy_static! {
         hm
     };
 }
+
 lazy_static! {
     static ref SCALAR_TYPES: HashSet<&'static str> = {
         let mut set = HashSet::new();
@@ -116,29 +184,12 @@ lazy_static! {
 pub fn is_predefined_scalar(type_name: &str) -> bool {
     SCALAR_TYPES.contains(type_name)
 }
-#[enum_dispatch]
-pub trait Scalar {
-    fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool;
-    fn schema(&self) -> Schema
-    where
-        Self: schemars::JsonSchema,
-    {
-        Schema::Object(schema_for!(Self).schema)
-    }
-    fn name(&self) -> String {
-        std::any::type_name::<Self>()
-            .split("::")
-            .last()
-            .unwrap()
-            .to_string()
-    }
-}
 
 #[cfg(test)]
 mod test {
     use schemars::schema::Schema;
 
-    use crate::core::scalar::{Scalar, CUSTOM_SCALARS};
+    use crate::core::scalar::{ScalarType, CUSTOM_SCALARS};
 
     /// generates test asserts for valid scalar inputs
     #[macro_export]
@@ -146,7 +197,7 @@ mod test {
         ($ty: ty, $($value: expr),+) => {
             #[test]
             fn test_scalar_valid() {
-                let value = <$ty>::default();
+                let value = ScalarType::$ty;
 
                 $(
                     assert!(value.validate::<async_graphql_value::ConstValue>()(&$value));
@@ -161,7 +212,7 @@ mod test {
         ($ty: ty, $($value: expr),+) => {
             #[test]
             fn test_scalar_invalid() {
-                let value = <$ty>::default();
+                let value = ScalarType::$ty;
 
                 $(
                     assert!(!value.validate::<async_graphql_value::ConstValue>()(&$value));
