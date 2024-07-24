@@ -126,7 +126,14 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
         data_path: &'b DataPath,
     ) -> Result<Value, LocationError<Error>> {
         let include = self.include(node);
-        if include && self.plan.field_is_scalar(node) {
+        if parent.is_null() {
+            if node.type_of.is_nullable() {
+                Ok(Value::null())
+            } else {
+                Err(ValidationError::ValueRequired.into())
+                    .map_err(|e| self.to_location_error(e, node))
+            }
+        } else if include && self.plan.field_is_scalar(node) {
             let validation = get_scalar(node.type_of.name());
 
             // TODO: add validation for input type as well. But input types are not checked
@@ -435,5 +442,20 @@ mod tests {
         let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
         let val = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
+    }
+
+    #[test]
+    fn test_posts_1() {
+        let store = vec![(FieldId::new(0), TestData::Posts)];
+
+        let val = init::<ConstValue>(
+            r#"
+            query {
+                posts { id, pest }
+            }
+        "#,
+            store,
+        );
+        insta::assert_snapshot!(val);
     }
 }
