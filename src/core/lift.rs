@@ -12,7 +12,6 @@ impl<A> Deref for Lift<A> {
 }
 
 impl<A> Lift<A> {
-    #[allow(dead_code)]
     pub fn take(self) -> A {
         self.0
     }
