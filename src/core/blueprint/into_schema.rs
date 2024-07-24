@@ -198,7 +198,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
             if let Some(description) = &def.description {
                 scalar = scalar.description(description);
             }
-            scalar = scalar.validator(def.validator);
+            let name = def.validator.clone();
+            scalar = scalar.validator(move |v| name.validate()(v));
             dynamic::Type::Scalar(scalar)
         }
         Definition::Enum(def) => {
@@ -229,7 +230,7 @@ impl From<&Blueprint> for SchemaBuilder {
 
         for (k, v) in CUSTOM_SCALARS.iter() {
             schema = schema.register(dynamic::Type::Scalar(
-                dynamic::Scalar::new(k.clone()).validator(v.validate::<ConstValue>()),
+                dynamic::Scalar::new(k.clone()).validator(move |val| (v.validate())(val)),
             ));
         }
 
