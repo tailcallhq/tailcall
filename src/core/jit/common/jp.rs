@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use async_graphql::Positioned;
 use serde::Deserialize;
 
 use crate::core::blueprint::Blueprint;
@@ -29,7 +28,7 @@ struct TestData<Value> {
 
 struct ProcessedTestData<Value> {
     posts: Value,
-    users: HashMap<usize, Data<Result<Value, Positioned<jit::Error>>>>,
+    users: HashMap<usize, Data<Result<Value, jit::Error>>>,
 }
 
 impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
