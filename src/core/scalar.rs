@@ -6,7 +6,7 @@ use schemars::schema::{InstanceType, Schema, SchemaObject};
 
 use crate::core::json::JsonLike;
 
-#[derive(schemars::JsonSchema, Debug, Clone, strum_macros::Display)]
+#[derive(schemars::JsonSchema, Debug, Clone, strum_macros::Display, strum_macros::EnumIter)]
 pub enum ScalarType {
     Empty,
     Email,
@@ -265,8 +265,29 @@ pub fn is_predefined_scalar(type_name: &str) -> bool {
 #[cfg(test)]
 mod test {
     use schemars::schema::Schema;
+    use strum::IntoEnumIterator;
 
-    use crate::core::scalar::CUSTOM_SCALARS;
+    use crate::core::scalar::{ScalarType, CUSTOM_SCALARS};
+
+    #[test]
+    fn test_all_varients_present() {
+        // It is easy to forget to add a new scalar type to the CUSTOM_SCALARS map
+        // This test ensures that all scalar types are correctly defined
+        macro_rules! check_custom_scalars {
+            ($enum_type:ty, $hashmap:expr) => {{
+                let mut all_present = true;
+                for variant in <$enum_type>::iter() {
+                    let variant_name = format!("{:?}", variant);
+                    if !$hashmap.contains_key(&variant_name) {
+                        all_present = false;
+                        println!("Missing variant: {}", variant_name);
+                    }
+                }
+                all_present
+            }};
+        }
+        assert!(check_custom_scalars!(ScalarType, &CUSTOM_SCALARS));
+    }
 
     fn get_name(v: Schema) -> String {
         serde_json::to_value(v)
