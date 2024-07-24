@@ -208,6 +208,10 @@
         }
       }
     },
+    "Bytes": {
+      "title": "Bytes",
+      "description": "A field whose value is a sequence of bytes."
+    },
     "Cache": {
       "description": "The @cache operator enables caching for the query, field or type it is applied to.",
       "type": "object",
@@ -308,6 +312,14 @@
           }
         }
       }
+    },
+    "Date": {
+      "title": "Date",
+      "description": "A field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339)."
+    },
+    "Email": {
+      "title": "Email",
+      "description": "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
     },
     "Encoding": {
       "type": "string",
@@ -728,6 +740,26 @@
         "HTTP2"
       ]
     },
+    "Int128": {
+      "title": "Int128",
+      "description": "A field whose value is a 128-bit signed integer."
+    },
+    "Int16": {
+      "title": "Int16",
+      "description": "A field whose value is a 16-bit signed integer."
+    },
+    "Int32": {
+      "title": "Int32",
+      "description": "A field whose value is a 32-bit signed integer."
+    },
+    "Int64": {
+      "title": "Int64",
+      "description": "A field whose value is a 64-bit signed integer."
+    },
+    "Int8": {
+      "title": "Int8",
+      "description": "A field whose value is an 8-bit signed integer."
+    },
     "JS": {
       "type": "object",
       "required": [
@@ -738,6 +770,10 @@
           "type": "string"
         }
       }
+    },
+    "JSON": {
+      "title": "JSON",
+      "description": "A field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259)."
     },
     "KeyValue": {
       "type": "object",
@@ -848,6 +884,10 @@
           "type": "string"
         }
       }
+    },
+    "PhoneNumber": {
+      "title": "PhoneNumber",
+      "description": "A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164)."
     },
     "PrometheusExporter": {
       "description": "Output the telemetry metrics data to prometheus server",
@@ -1259,6 +1299,26 @@
         }
       }
     },
+    "UInt128": {
+      "title": "UInt128",
+      "description": "A field whose value is a 128-bit unsigned integer."
+    },
+    "UInt16": {
+      "title": "UInt16",
+      "description": "A field whose value is a 16-bit unsigned integer."
+    },
+    "UInt32": {
+      "title": "UInt32",
+      "description": "A field whose value is a 32-bit unsigned integer."
+    },
+    "UInt64": {
+      "title": "UInt64",
+      "description": "A field whose value is a 64-bit unsigned integer."
+    },
+    "UInt8": {
+      "title": "UInt8",
+      "description": "A field whose value is an 8-bit unsigned integer."
+    },
     "Union": {
       "type": "object",
       "required": [
@@ -1427,6 +1487,10 @@
       },
       "additionalProperties": false
     },
+    "Url": {
+      "title": "Url",
+      "description": "A field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986)."
+    },
     "Variant": {
       "description": "Definition of GraphQL value",
       "type": "object",
@@ -1449,16 +1513,6 @@
         }
       }
     },
-    "bytes": {},
-    "date": {},
-    "email": {},
-    "int128": {},
-    "int16": {},
-    "int32": {},
-    "int64": {},
-    "int8": {},
-    "json": {},
-    "phonenumber": {},
     "schema": {
       "oneOf": [
         {
@@ -1527,12 +1581,6 @@
           "additionalProperties": false
         }
       ]
-    },
-    "uint128": {},
-    "uint16": {},
-    "uint32": {},
-    "uint64": {},
-    "uint8": {},
-    "url": {}
+    }
   }
 }

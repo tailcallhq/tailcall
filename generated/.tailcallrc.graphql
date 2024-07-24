@@ -429,39 +429,95 @@ directive @upstream(
   userAgent: String
 ) on SCHEMA
 
-scalar bytes
+"""
+A field whose value is a sequence of bytes.
+"""
+scalar Bytes
 
-scalar date
+"""
+A field whose value conforms to the standard date format as specified in RFC 3339 
+(https://datatracker.ietf.org/doc/html/rfc3339).
+"""
+scalar Date
 
-scalar email
+"""
+Field whose value conforms to the standard internet email address format as specified 
+in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+"""
+scalar Email
 
-scalar empty
+"""
+Empty scalar type represents an empty value.
+"""
+scalar Empty
 
-scalar int128
+"""
+A field whose value is a 128-bit signed integer.
+"""
+scalar Int128
 
-scalar int16
+"""
+A field whose value is a 16-bit signed integer.
+"""
+scalar Int16
 
-scalar int32
+"""
+A field whose value is a 32-bit signed integer.
+"""
+scalar Int32
 
-scalar int64
+"""
+A field whose value is a 64-bit signed integer.
+"""
+scalar Int64
 
-scalar int8
+"""
+A field whose value is an 8-bit signed integer.
+"""
+scalar Int8
 
-scalar json
+"""
+A field whose value conforms to the standard JSON format as specified in RFC 8259 
+(https://datatracker.ietf.org/doc/html/rfc8259).
+"""
+scalar JSON
 
-scalar phonenumber
+"""
+A field whose value conforms to the standard E.164 format as specified in E.164 specification 
+(https://en.wikipedia.org/wiki/E.164).
+"""
+scalar PhoneNumber
 
-scalar uint128
+"""
+A field whose value is a 128-bit unsigned integer.
+"""
+scalar UInt128
 
-scalar uint16
+"""
+A field whose value is a 16-bit unsigned integer.
+"""
+scalar UInt16
 
-scalar uint32
+"""
+A field whose value is a 32-bit unsigned integer.
+"""
+scalar UInt32
 
-scalar uint64
+"""
+A field whose value is a 64-bit unsigned integer.
+"""
+scalar UInt64
 
-scalar uint8
+"""
+A field whose value is an 8-bit unsigned integer.
+"""
+scalar UInt8
 
-scalar url
+"""
+A field whose value conforms to the standard URL format as specified in RFC 3986 
+(https://datatracker.ietf.org/doc/html/rfc3986).
+"""
+scalar Url
 
 """
 Provides the ability to refer to a field defined in the root Query or Mutation.
