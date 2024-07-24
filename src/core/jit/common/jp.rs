@@ -15,7 +15,7 @@ use crate::core::valid::Validator;
 
 /// NOTE: This is a bit of a boilerplate reducing module that is used in tests
 /// and benchmarks.
-pub struct JsonPlaceholder<Value> {
+pub struct JP<Value> {
     test_data: TestData<Value>,
     plan: OperationPlan<Value>,
     vars: Variables<Value>,
@@ -83,7 +83,7 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
     }
 }
 
-impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JsonPlaceholder<Value> {
+impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JP<Value> {
     const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
     fn plan(query: &str, variables: &Variables<async_graphql::Value>) -> OperationPlan<Value> {
@@ -105,7 +105,7 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> JsonPlaceholder<Val
         let plan = Self::plan(query, &vars);
         let vars = vars.try_map(Deserialize::deserialize).unwrap();
 
-        JsonPlaceholder { test_data, plan, vars }
+        JP { test_data, plan, vars }
     }
 
     pub fn synth(&'a self) -> Synth<Value> {

@@ -1,2 +1,2 @@
-mod json_placeholder;
-pub use json_placeholder::*;
+mod jp;
+pub use jp::*;
