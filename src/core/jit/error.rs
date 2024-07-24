@@ -47,6 +47,8 @@ pub enum Error {
     IR(#[from] crate::core::ir::Error),
     #[error(transparent)]
     Validation(#[from] ValidationError),
+    #[error("{0}")]
+    ServerError(async_graphql::ServerError),
 }
 
 impl ErrorExtensions for Error {
@@ -56,6 +58,7 @@ impl ErrorExtensions for Error {
             Error::ParseError(error) => error.extend(),
             Error::IR(error) => error.extend(),
             Error::Validation(error) => error.extend(),
+            Error::ServerError(error) => error.extend(),
         }
     }
 }
@@ -78,27 +81,44 @@ impl From<Error> for ServerError {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct LocationError<Err> {
     pub error: Err,
     pub pos: Pos,
     pub path: Vec<PathSegment>,
 }
 
+// TODO: Improve conversion logic to avoid unnecessary round-trip conversions
+//       between ServerError and LocationError<Error>.
+impl From<ServerError> for LocationError<Error> {
+    fn from(val: ServerError) -> Self {
+        Self {
+            error: Error::ServerError(val.clone()),
+            pos: val.locations.first().cloned().unwrap_or_default(),
+            path: val.path.clone(),
+        }
+    }
+}
+
 impl From<LocationError<Error>> for Lift<ServerError> {
     fn from(val: LocationError<Error>) -> Self {
-        let extensions = val.error.extend().extensions;
-        let mut server_error = ServerError::new(val.error.to_string(), Some(val.pos));
+        match val.error {
+            Error::ServerError(e) => e.into(),
+            _ => {
+                let extensions = val.error.extend().extensions;
+                let mut server_error = ServerError::new(val.error.to_string(), Some(val.pos));
 
-        server_error.extensions = extensions;
+                server_error.extensions = extensions;
 
-        // TODO: in order to be compatible with async_graphql path is only set for
-        // validation errors here but in general we might consider setting it
-        // for every error
-        if let Error::Validation(_) = val.error {
-            server_error.path = val.path;
+                // TODO: in order to be compatible with async_graphql path is only set for
+                // validation errors here but in general we might consider setting it
+                // for every error
+                if let Error::Validation(_) = val.error {
+                    server_error.path = val.path;
+                }
+
+                server_error.into()
+            }
         }
-
-        server_error.into()
     }
 }

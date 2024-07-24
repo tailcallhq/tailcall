@@ -1,7 +1,7 @@
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
 
-use super::{Field, Nested, Request};
+use super::{Field, Nested, OperationPlan, Request};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
 /// Rust representation of the GraphQL context available in the DSL
@@ -13,15 +13,15 @@ pub struct Context<'a, Input, Output> {
     // TODO: remove the args, since they're already present inside the fields and add support for
     // default values.
     field: &'a Field<Nested<Input>, Input>,
-    is_query: bool,
+    plan: &'a OperationPlan<Input>,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     pub fn new(
         request: &'a Request<Input>,
-        is_query: bool,
         field: &'a Field<Nested<Input>, Input>,
+        plan: &'a OperationPlan<Input>,
     ) -> Self {
-        Self { request, value: None, args: None, is_query, field }
+        Self { request, value: None, args: None, field, plan }
     }
 
     pub fn with_value_and_field(
@@ -32,9 +32,9 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         Self {
             request: self.request,
             args: None,
-            is_query: self.is_query,
             value: Some(value),
             field,
+            plan: self.plan,
         }
     }
 
@@ -43,10 +43,10 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
 
         Self {
             request: self.request,
-            is_query: self.is_query,
             value: self.value,
             field,
             args,
+            plan: self.plan,
         }
     }
 
@@ -59,8 +59,8 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             request: self.request,
             value: self.value,
             args: Some(map),
-            is_query: self.is_query,
             field: self.field,
+            plan: self.plan,
         }
     }
 
@@ -84,11 +84,11 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
     }
 
     fn is_query(&self) -> bool {
-        self.is_query
+        self.plan.is_query()
     }
 
     fn add_error(&self, _error: ServerError) {
-        todo!()
+        self.plan.add_error(_error.into())
     }
 }
 
@@ -120,7 +120,7 @@ mod test {
         let (plan, req) = setup("query {posts {id title}}");
         let field = plan.as_nested();
         let ctx: Context<async_graphql::Value, async_graphql::Value> =
-            Context::new(&req, false, &field[0]);
+            Context::new(&req, &field[0], &plan);
         insta::assert_debug_snapshot!(ctx.field().unwrap());
     }
 }

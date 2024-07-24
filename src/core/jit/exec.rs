@@ -42,7 +42,10 @@ where
     }
 
     pub async fn execute(self, synth: Synth<Output>) -> Response<Output, jit::Error> {
-        Response::new(synth.synthesize())
+        let mut response = Response::new(synth.synthesize());
+        response.add_errors(self.plan.get_errors());
+
+        response
     }
 }
 
@@ -87,7 +90,7 @@ where
                     todo!()
                 }
             }
-            let ctx = Context::new(&self.request, self.plan.is_query(), field).with_args(arg_map);
+            let ctx = Context::new(&self.request, field, &self.plan).with_args(arg_map);
             self.execute(field, &ctx, DataPath::new()).await
         }))
         .await;

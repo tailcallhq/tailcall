@@ -27,6 +27,10 @@ impl<Value, Error> Response<Value, Error> {
             Err(error) => Response { data: None, errors: vec![error], extensions: Vec::new() },
         }
     }
+
+    pub fn add_errors(&mut self, mut error: Vec<LocationError<Error>>) {
+        self.errors.append(&mut error);
+    }
 }
 
 impl Response<async_graphql::Value, jit::Error> {
