@@ -110,13 +110,9 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                         }
                     }
                     None => {
-                        // if value doens't exists, do check if it's allowed to send Null value else validation raise error.
-                        if node.type_of.is_nullable() {
-                            Ok(Value::null())
-                        } else {
-                            Err(ValidationError::ValueRequired.into())
-                                .map_err(|e| self.to_location_error(e, node))
-                        }
+                        // IR exists, so there must be a value.
+                        // if there is no value then we must return Null
+                        Ok(Value::null())
                     }
                 }
             }
