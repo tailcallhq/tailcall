@@ -15,7 +15,6 @@ expression: plan.into_nested()
                         id: 1,
                         name: "id",
                         type_of: ID!,
-                        is_scalar: true,
                         directives: [
                             Directive {
                                 name: "options",
@@ -34,7 +33,6 @@ expression: plan.into_nested()
                         id: 2,
                         name: "name",
                         type_of: String!,
-                        is_scalar: true,
                         include: Some(
                             Variable(
                                 "includeName",
@@ -45,7 +43,6 @@ expression: plan.into_nested()
                 ],
             ),
         ),
-        is_scalar: false,
         directives: [],
     },
 ]
