@@ -4,7 +4,7 @@ use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables}
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
-use crate::core::scalar::{self, Scalar};
+use crate::core::scalar;
 
 pub struct Synth<Value> {
     selection: Vec<Field<Nested<Value>, Value>>,
@@ -132,12 +132,12 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     ) -> Result<Value, Positioned<Error>> {
         let include = self.include(node);
         if include && node.is_scalar {
-            let scalar = scalar::get_scalar(node.type_of.name());
+            let scalar = scalar::ScalarType::get_scalar(node.type_of.name());
 
             // TODO: add validation for input type as well. But input types are not checked
             // by async_graphql anyway so it should be done after replacing
             // default engine with JIT
-            if (scalar.validate())(parent) {
+            if scalar.validate(parent) {
                 Ok(parent.clone())
             } else {
                 Err(Positioned {

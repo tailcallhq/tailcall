@@ -11,7 +11,7 @@ use tracing::Instrument;
 use crate::core::blueprint::{Blueprint, Definition, Type};
 use crate::core::http::RequestContext;
 use crate::core::ir::{EvalContext, ResolverContext, TypeName};
-use crate::core::scalar::{Scalar, CUSTOM_SCALARS};
+use crate::core::scalar::CUSTOM_SCALARS;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {
@@ -199,7 +199,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 scalar = scalar.description(description);
             }
             let name = def.validator.clone();
-            scalar = scalar.validator(move |v| name.validate()(v));
+            scalar = scalar.validator(move |v| name.validate(v));
             dynamic::Type::Scalar(scalar)
         }
         Definition::Enum(def) => {
@@ -230,7 +230,7 @@ impl From<&Blueprint> for SchemaBuilder {
 
         for (k, v) in CUSTOM_SCALARS.iter() {
             schema = schema.register(dynamic::Type::Scalar(
-                dynamic::Scalar::new(k.clone()).validator(move |val| (v.validate())(val)),
+                dynamic::Scalar::new(k.clone()).validator(move |val| v.validate(val)),
             ));
         }
 

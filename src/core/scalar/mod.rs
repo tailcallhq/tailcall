@@ -1,51 +1,11 @@
-pub use bytes::*;
-pub use date::*;
-pub use email::*;
-pub use empty::*;
-pub use int128::*;
-pub use int16::*;
-pub use int32::*;
-pub use int64::*;
-pub use int8::*;
-pub use json::*;
-pub use phone::*;
-pub use uint128::*;
-pub use uint16::*;
-pub use uint32::*;
-pub use uint64::*;
-pub use uint8::*;
-pub use url::*;
-
-mod bytes;
-mod date;
-mod email;
-mod empty;
-mod int128;
-mod int16;
-mod int32;
-mod int64;
-mod int8;
-mod json;
-mod phone;
-mod uint128;
-mod uint16;
-mod uint32;
-mod uint64;
-mod uint8;
-mod url;
-
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
-use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
-use schemars::schema::Schema;
-use schemars::schema_for;
 
 use crate::core::json::JsonLike;
 
-#[enum_dispatch(Scalar)]
-#[derive(schemars::JsonSchema, Debug, Clone)]
+#[derive(schemars::JsonSchema, Debug, Clone, strum_macros::Display)]
 pub enum ScalarType {
     Empty,
     Email,
@@ -66,33 +26,69 @@ pub enum ScalarType {
     Bytes,
 }
 
-pub fn get_scalar(name: &str) -> ScalarType {
-    CUSTOM_SCALARS
-        .get(name)
-        .cloned()
-        .unwrap_or(Empty::default().into())
+impl ScalarType {
+    pub fn validate<'a, Value: JsonLike<'a> + 'a>(&self, value: &'a Value) -> bool {
+        match self {
+            ScalarType::JSON => true,
+            ScalarType::Empty => true,
+            ScalarType::Email => value.as_str().map_or(false, |s| {
+                async_graphql::validators::email(&s.to_string()).is_ok()
+            }),
+            ScalarType::PhoneNumber => value
+                .as_str()
+                .map_or(false, |s| phonenumber::parse(None, s).is_ok()),
+            ScalarType::Date => value
+                .as_str()
+                .map_or(false, |s| chrono::DateTime::parse_from_rfc3339(s).is_ok()),
+            ScalarType::Url => value.as_str().map_or(false, |s| url::Url::parse(s).is_ok()),
+            ScalarType::Bytes => value.as_str().is_some(),
+
+            ScalarType::Int8 => value.as_i64().map_or(false, |n| i8::try_from(n).is_ok()),
+            ScalarType::Int16 => value.as_i64().map_or(false, |n| i16::try_from(n).is_ok()),
+            ScalarType::Int32 => value.as_i64().map_or(false, |n| i32::try_from(n).is_ok()),
+            ScalarType::Int64 => value.as_str().map_or(false, |s| s.parse::<i64>().is_ok()),
+
+            ScalarType::UInt8 => value.as_u64().map_or(false, |n| u8::try_from(n).is_ok()),
+            ScalarType::UInt16 => value.as_u64().map_or(false, |n| u16::try_from(n).is_ok()),
+            ScalarType::UInt32 => value.as_u64().map_or(false, |n| u32::try_from(n).is_ok()),
+
+            ScalarType::UInt64 => value.as_str().map_or(false, |s| s.parse::<u64>().is_ok()),
+            ScalarType::Int128 => value.as_str().map_or(false, |s| s.parse::<i128>().is_ok()),
+            ScalarType::UInt128 => value.as_str().map_or(false, |s| s.parse::<u128>().is_ok()),
+        }
+    }
+    pub fn get_scalar(name: &str) -> ScalarType {
+        CUSTOM_SCALARS.get(name).cloned().unwrap_or(Self::Empty)
+    }
+    pub fn name(&self) -> String {
+        self.to_string().to_lowercase()
+    }
+    pub fn scalar_definition(&self) -> async_graphql::parser::types::TypeSystemDefinition {
+        let schemars = schemars::schema::RootSchema::default();
+        tailcall_typedefs_common::scalar_definition::into_scalar_definition(schemars, &self.name())
+    }
 }
 
 lazy_static! {
+    // TODO: rename
     pub static ref CUSTOM_SCALARS: HashMap<String, ScalarType> = {
         let scalars: Vec<ScalarType> = vec![
-            Email::default().into(),
-            PhoneNumber::default().into(),
-            Date::default().into(),
-            Url::default().into(),
-            JSON::default().into(),
-            Empty::default().into(),
-            Int8::default().into(),
-            Int16::default().into(),
-            Int32::default().into(),
-            Int64::default().into(),
-            Int128::default().into(),
-            UInt8::default().into(),
-            UInt16::default().into(),
-            UInt32::default().into(),
-            UInt64::default().into(),
-            UInt128::default().into(),
-            Bytes::default().into(),
+            ScalarType::Email,
+            ScalarType::PhoneNumber,
+            ScalarType::Date,
+            ScalarType::Url,
+            ScalarType::JSON,
+            ScalarType::Int8,
+            ScalarType::Int16,
+            ScalarType::Int32,
+            ScalarType::Int64,
+            ScalarType::Int128,
+            ScalarType::UInt8,
+            ScalarType::UInt16,
+            ScalarType::UInt32,
+            ScalarType::UInt64,
+            ScalarType::UInt128,
+            ScalarType::Bytes,
         ];
         let mut hm = HashMap::new();
 
@@ -116,59 +112,12 @@ lazy_static! {
 pub fn is_predefined_scalar(type_name: &str) -> bool {
     SCALAR_TYPES.contains(type_name)
 }
-#[enum_dispatch]
-pub trait Scalar {
-    fn validate<'a, Value: JsonLike<'a>>(&self) -> fn(&'a Value) -> bool;
-    fn schema(&self) -> Schema
-    where
-        Self: schemars::JsonSchema,
-    {
-        Schema::Object(schema_for!(Self).schema)
-    }
-    fn name(&self) -> String {
-        std::any::type_name::<Self>()
-            .split("::")
-            .last()
-            .unwrap()
-            .to_string()
-    }
-}
 
 #[cfg(test)]
 mod test {
     use schemars::schema::Schema;
 
-    use crate::core::scalar::{Scalar, CUSTOM_SCALARS};
-
-    /// generates test asserts for valid scalar inputs
-    #[macro_export]
-    macro_rules! test_scalar_valid {
-        ($ty: ty, $($value: expr),+) => {
-            #[test]
-            fn test_scalar_valid() {
-                let value = <$ty>::default();
-
-                $(
-                    assert!(value.validate::<async_graphql_value::ConstValue>()(&$value));
-                )+
-            }
-        };
-    }
-
-    // generates test asserts for invalid scalar inputs
-    #[macro_export]
-    macro_rules! test_scalar_invalid {
-        ($ty: ty, $($value: expr),+) => {
-            #[test]
-            fn test_scalar_invalid() {
-                let value = <$ty>::default();
-
-                $(
-                    assert!(!value.validate::<async_graphql_value::ConstValue>()(&$value));
-                )+
-            }
-        };
-    }
+    use crate::core::scalar::CUSTOM_SCALARS;
 
     fn get_name(v: Schema) -> String {
         serde_json::to_value(v)

@@ -10,7 +10,6 @@ use serde_json::Value;
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
-use tailcall_typedefs_common::scalar_definition::ScalarDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 
 use super::telemetry::Telemetry;
@@ -1048,23 +1047,23 @@ impl Config {
             .add_input(Modify::input_definition())
             .add_input(Cache::input_definition())
             .add_input(Telemetry::input_definition())
-            .add_scalar(scalar::Bytes::scalar_definition())
-            .add_scalar(scalar::Date::scalar_definition())
-            .add_scalar(scalar::Email::scalar_definition())
-            .add_scalar(scalar::Empty::scalar_definition())
-            .add_scalar(scalar::Int128::scalar_definition())
-            .add_scalar(scalar::Int16::scalar_definition())
-            .add_scalar(scalar::Int32::scalar_definition())
-            .add_scalar(scalar::Int64::scalar_definition())
-            .add_scalar(scalar::Int8::scalar_definition())
-            .add_scalar(scalar::JSON::scalar_definition())
-            .add_scalar(scalar::PhoneNumber::scalar_definition())
-            .add_scalar(scalar::UInt128::scalar_definition())
-            .add_scalar(scalar::UInt16::scalar_definition())
-            .add_scalar(scalar::UInt32::scalar_definition())
-            .add_scalar(scalar::UInt64::scalar_definition())
-            .add_scalar(scalar::UInt8::scalar_definition())
-            .add_scalar(scalar::Url::scalar_definition())
+            .add_scalar(scalar::ScalarType::Bytes.scalar_definition())
+            .add_scalar(scalar::ScalarType::Date.scalar_definition())
+            .add_scalar(scalar::ScalarType::Email.scalar_definition())
+            .add_scalar(scalar::ScalarType::Empty.scalar_definition())
+            .add_scalar(scalar::ScalarType::Int128.scalar_definition())
+            .add_scalar(scalar::ScalarType::Int16.scalar_definition())
+            .add_scalar(scalar::ScalarType::Int32.scalar_definition())
+            .add_scalar(scalar::ScalarType::Int64.scalar_definition())
+            .add_scalar(scalar::ScalarType::Int8.scalar_definition())
+            .add_scalar(scalar::ScalarType::JSON.scalar_definition())
+            .add_scalar(scalar::ScalarType::PhoneNumber.scalar_definition())
+            .add_scalar(scalar::ScalarType::UInt128.scalar_definition())
+            .add_scalar(scalar::ScalarType::UInt16.scalar_definition())
+            .add_scalar(scalar::ScalarType::UInt32.scalar_definition())
+            .add_scalar(scalar::ScalarType::UInt64.scalar_definition())
+            .add_scalar(scalar::ScalarType::UInt8.scalar_definition())
+            .add_scalar(scalar::ScalarType::Url.scalar_definition())
             .build()
     }
 }

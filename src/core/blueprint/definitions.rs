@@ -18,7 +18,7 @@ pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
         name: name.to_string(),
         directive: Vec::new(),
         description: None,
-        validator: scalar::get_scalar(name),
+        validator: scalar::ScalarType::get_scalar(name),
     }))
 }
 
