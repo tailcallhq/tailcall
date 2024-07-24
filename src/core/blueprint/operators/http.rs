@@ -13,7 +13,7 @@ pub fn compile_http(
     http: &config::Http,
 ) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
-        .when(|| !http.group_by.is_empty() && http.method != Method::GET)
+        .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
             Valid::<(), String>::fail(
                 "GroupBy can only be applied if batching is enabled".to_string(),
@@ -21,7 +21,7 @@ pub fn compile_http(
             .when(|| {
                 (config_module.upstream.get_delay() < 1
                     || config_module.upstream.get_max_size() < 1)
-                    && !http.group_by.is_empty()
+                    && !http.batch_key.is_empty()
             }),
         )
         .and(Valid::from_option(
@@ -61,10 +61,11 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
-            if !http.group_by.is_empty() && http.method == Method::GET {
+            if !http.batch_key.is_empty() && http.method == Method::GET {
+                let key = http.query.first().map(|query| query.key.clone());
                 IR::IO(IO::Http {
                     req_template,
-                    group_by: Some(GroupBy::new(http.group_by.clone())),
+                    group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
                     http_filter,
                 })

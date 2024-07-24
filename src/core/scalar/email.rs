@@ -1,6 +1,5 @@
 use async_graphql::validators::email;
-use schemars::schema::Schema;
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 use tailcall_macros::ScalarDefinition;
 
 use crate::core::json::JsonLikeOwned;
@@ -33,10 +32,6 @@ impl super::Scalar for Email {
             }
             false
         }
-    }
-
-    fn schema(&self) -> Schema {
-        Schema::Object(schema_for!(Self).schema)
     }
 }
 
