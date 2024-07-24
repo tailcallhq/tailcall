@@ -288,9 +288,9 @@ mod tests {
         use maplit::btreemap;
         use pretty_assertions::assert_eq;
 
+        use super::Result;
         use crate::core::rest::endpoint::tests::TEST_QUERY;
         use crate::core::rest::endpoint::Endpoint;
-        use super::Result;
 
         fn test_request(method: Method, uri: &str) -> Result<hyper::Request<Body>> {
             Ok(Request::builder()

@@ -1,8 +1,8 @@
 use async_graphql::{Name, Variables};
 
 use super::typed_variables::TypedVariable;
-use crate::core::rest::type_map::TypeMap;
 use super::{Error, Result};
+use crate::core::rest::type_map::TypeMap;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Segment {

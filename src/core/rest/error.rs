@@ -2,7 +2,7 @@ use std::num::{ParseFloatError, ParseIntError};
 use std::str::ParseBoolError;
 
 use async_graphql::parser::types::{Directive, Type};
-use async_graphql::Name;
+use async_graphql::{Name, ServerError};
 use derive_more::{DebugCustom, From};
 use serde_json;
 
@@ -17,47 +17,46 @@ pub enum Error {
     #[error("Unexpected Type: {}, expected a named type like String, Float, Boolean etc.", 0.to_string())]
     UnexpectedType(Type),
 
-    #[error("Serde Json Error")]
-    SerdeJsonError(serde_json::Error),
+    #[error("Serde Json Error: {}", _0)]
+    SerdeJson(serde_json::Error),
 
     #[error("{msg}: {directive:?}")]
     #[debug(fmt = "{msg}: {directive:?}")]
     Missing { msg: String, directive: Directive },
 
-    #[error("Undefined query param: {0}")]
+    #[error("Undefined query param: {}", _0)]
     UndefinedQueryParam(String),
 
-    #[error("Parse Integer Error")]
-    ParseIntegerError(ParseIntError),
+    #[error("Parse Integer Error: {}", _0)]
+    ParseInteger(ParseIntError),
 
-    #[error("Parse Float Error")]
-    ParseFloatingPointError(ParseFloatError),
+    #[error("Parse Float Error: {}", _0)]
+    ParseFloatingPoint(ParseFloatError),
 
-    #[error("Parse Boolean Error")]
-    ParseBooleanError(ParseBoolError),
+    #[error("Parse Boolean Error: {}", _0)]
+    ParseBoolean(ParseBoolError),
 
     #[error("Undefined param : {key} in {input}")]
     #[debug(fmt = "Undefined param : {key} in {input}")]
     UndefinedParam { key: String, input: String },
 
-    #[error("Validation Error : {0}")]
-    ValidationError(ValidationError<std::string::String>),
+    #[error("Validation Error : {}", _0)]
+    Validation(ValidationError<std::string::String>),
 
-    #[error("Async Graphql Parser Error")]
-    AsyncgraphqlParserError(async_graphql::parser::Error),
+    #[error("Async Graphql Parser Error: {}", _0)]
+    AsyncgraphqlParser(async_graphql::parser::Error),
 
-    #[error("Hyper HTTP Invalid URI Error")]
+    #[error("Hyper HTTP Invalid URI Error: {}", _0)]
     HyperHttpInvalidUri(hyper::http::uri::InvalidUri),
 
-    #[error("Hyper HTTP Error")]
-    HyperHttpError(hyper::http::Error),
+    #[error("Hyper HTTP Error: {}", _0)]
+    HyperHttp(hyper::http::Error),
 
-    #[error("Hyper Error")]
-    HyperError(hyper::Error),
+    #[error("Hyper Error: {}", _0)]
+    Hyper(hyper::Error),
 
-    #[error("Server Error")]
-    #[from(ignore)]
-    ServerError(String),
+    #[error("Async Graphql Server Error: {}", _0)]
+    AsyncgraphqlServer(ServerError),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

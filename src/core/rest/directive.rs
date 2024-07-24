@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
-use super::{Error, Result};
 use async_graphql::parser::types::Directive;
 use async_graphql_value::Value;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
+use super::{Error, Result};
 use crate::core::http::Method;
 use crate::core::is_default;
 
@@ -69,15 +69,18 @@ impl TryFrom<&Directive> for Rest {
 
         match (has_method, has_path) {
             (true, true) => Ok(rest),
-            (true, false) => {
-                return Err(Error::Missing{msg: "Path not provided in the directive".to_string(), directive: directive.clone()});
-            }
-            (false, true) => {
-                return Err(Error::Missing{msg: "Method not provided in the directive".to_string(), directive: directive.clone()});
-            }
-            (false, false) => {
-                return Err(Error::Missing{msg: "Method and Path not provided in the directive".to_string(), directive: directive.clone()});
-            }
+            (true, false) => Err(Error::Missing {
+                msg: "Path not provided in the directive".to_string(),
+                directive: directive.clone(),
+            }),
+            (false, true) => Err(Error::Missing {
+                msg: "Method not provided in the directive".to_string(),
+                directive: directive.clone(),
+            }),
+            (false, false) => Err(Error::Missing {
+                msg: "Method and Path not provided in the directive".to_string(),
+                directive: directive.clone(),
+            }),
         }
     }
 }
