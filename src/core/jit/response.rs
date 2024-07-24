@@ -28,8 +28,8 @@ impl<Value, Error> Response<Value, Error> {
         }
     }
 
-    pub fn add_errors(&mut self, error: Vec<LocationError<Error>>) {
-        self.errors.extend(error);
+    pub fn add_errors(&mut self, new_errors: Vec<LocationError<Error>>) {
+        self.errors.extend(new_errors);
     }
 }
 
