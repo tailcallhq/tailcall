@@ -321,6 +321,10 @@
       "title": "Email",
       "description": "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
     },
+    "Empty": {
+      "title": "Empty",
+      "description": "Empty scalar type represents an empty value."
+    },
     "Encoding": {
       "type": "string",
       "enum": [

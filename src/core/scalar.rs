@@ -195,6 +195,7 @@ impl ScalarType {
 lazy_static! {
     pub static ref CUSTOM_SCALARS: HashMap<String, ScalarType> = {
         let scalars: Vec<ScalarType> = vec![
+            ScalarType::Empty,
             ScalarType::Email,
             ScalarType::PhoneNumber,
             ScalarType::Date,
@@ -255,9 +256,11 @@ mod test {
 
     #[test]
     fn assert_scalar_types() {
+        // println!("{}", ScalarType::Empty.to_string());
         // it's easy to accidentally add a different scalar type to the schema
         // this test ensures that the scalar types are correctly defined
         for (k, v) in CUSTOM_SCALARS.iter() {
+            println!("{}", k);
             assert_eq!(k.clone(), get_name(v.schema()));
         }
     }
