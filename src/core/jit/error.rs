@@ -3,6 +3,8 @@ use async_graphql::{ErrorExtensions, PathSegment, Pos, ServerError};
 use serde::Serialize;
 use thiserror::Error;
 
+use crate::core::lift::Lift;
+
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 #[error("Error while building the plan")]
 pub enum BuildError {
@@ -76,17 +78,6 @@ impl From<Error> for ServerError {
     }
 }
 
-// impl From<Positioned<Error>> for Lift<ServerError> {
-//     fn from(a: Positioned<Error>) -> Self {
-//         (match a.node {
-//             // async_graphql::parser::Error already has builtin positioning
-//             Error::ParseError(error) => error.into(),
-//             error => error.into_server_error_with_pos(Some(a.pos)),
-//         })
-//         .into()
-//     }
-// }
-
 #[derive(Debug, Serialize)]
 pub struct LocationError<Err> {
     pub error: Err,
@@ -94,7 +85,7 @@ pub struct LocationError<Err> {
     pub path: Vec<PathSegment>,
 }
 
-impl From<LocationError<Error>> for ServerError {
+impl From<LocationError<Error>> for Lift<ServerError> {
     fn from(val: LocationError<Error>) -> Self {
         let extensions = val.error.extend().extensions;
         let mut server_error = ServerError::new(val.error.to_string(), Some(val.pos));
@@ -108,6 +99,6 @@ impl From<LocationError<Error>> for ServerError {
             server_error.path = val.path;
         }
 
-        server_error
+        server_error.into()
     }
 }
