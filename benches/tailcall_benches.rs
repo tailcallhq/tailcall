@@ -21,6 +21,7 @@ fn all_benchmarks(c: &mut Criterion) {
     http_execute_bench::benchmark_http_execute_method(c);
     from_json_bench::benchmark_from_json_method(c);
     bench_synth::bench_synth_nested(c);
+    bench_synth::bench_synth_nested_borrow(c);
 }
 
 criterion_group! {
