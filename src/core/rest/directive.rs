@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use anyhow::bail;
+use super::{Error, Result};
 use async_graphql::parser::types::Directive;
 use async_graphql_value::Value;
 use derive_setters::Setters;
@@ -24,9 +24,9 @@ pub(crate) struct Rest {
 }
 
 impl TryFrom<&Directive> for Rest {
-    type Error = anyhow::Error;
+    type Error = Error;
 
-    fn try_from(directive: &Directive) -> anyhow::Result<Self> {
+    fn try_from(directive: &Directive) -> Result<Self> {
         let mut rest = Rest::default();
 
         let mut has_path = false;
@@ -70,16 +70,13 @@ impl TryFrom<&Directive> for Rest {
         match (has_method, has_path) {
             (true, true) => Ok(rest),
             (true, false) => {
-                bail!("Path not provided in the directive: {:?}", directive);
+                return Err(Error::Missing{msg: "Path not provided in the directive".to_string(), directive: directive.clone()});
             }
             (false, true) => {
-                bail!("Method not provided in the directive: {:?}", directive);
+                return Err(Error::Missing{msg: "Method not provided in the directive".to_string(), directive: directive.clone()});
             }
             (false, false) => {
-                bail!(
-                    "Method and Path not provided in the directive: {:?}",
-                    directive
-                );
+                return Err(Error::Missing{msg: "Method and Path not provided in the directive".to_string(), directive: directive.clone()});
             }
         }
     }

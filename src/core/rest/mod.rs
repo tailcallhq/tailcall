@@ -7,7 +7,9 @@ mod path;
 mod query_params;
 mod type_map;
 mod typed_variables;
+pub mod error;
 
 pub use endpoint_set::{Checked, EndpointSet, Unchecked};
 
 type Request = hyper::Request<hyper::Body>;
+pub use error::{Error, Result};
