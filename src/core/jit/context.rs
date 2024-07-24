@@ -87,8 +87,8 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
         self.plan.is_query()
     }
 
-    fn add_error(&self, _error: ServerError) {
-        self.plan.add_error(_error.into())
+    fn add_error(&self, error: ServerError) {
+        self.plan.add_error(error.into())
     }
 }
 
