@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
 use lazy_static::lazy_static;
+use schemars::schema::Schema;
 
 use crate::core::json::JsonLike;
 
@@ -64,8 +65,12 @@ impl ScalarType {
         self.to_string().to_lowercase()
     }
     pub fn scalar_definition(&self) -> async_graphql::parser::types::TypeSystemDefinition {
-        let schemars = schemars::schema::RootSchema::default();
+        let schemars = self.schema();
         tailcall_typedefs_common::scalar_definition::into_scalar_definition(schemars, &self.name())
+    }
+    pub fn schema(&self) -> Schema {
+        let schemars = schemars::schema::RootSchema::default();
+        Schema::Object(schemars.schema)
     }
 }
 
