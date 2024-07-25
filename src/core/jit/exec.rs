@@ -117,7 +117,13 @@ where
                 }))
                 .await;
             }
-        } else {
+            // TODO:  We should throw an error stating that we expected
+            // a list type here but because the `Error` is a
+            // type-parameter, its not possible
+        }
+        // TODO: Validate if the value is an Object
+        // Has to be an Object, we don't do anything while executing if its a Scalar
+        else {
             join_all(field.nested_iter().map(|child| {
                 let value = if value.is_some() { value } else { ctx.value() };
                 let value = value.map(|v| v.get_key(&child.name).unwrap_or(v));
