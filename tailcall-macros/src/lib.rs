@@ -3,6 +3,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 
 mod document_definition;
+mod gen;
 mod merge_right;
 use crate::document_definition::{expand_directive_definition, expand_input_definition};
 use crate::merge_right::expand_merge_right_derive;
@@ -14,6 +15,11 @@ pub fn merge_right_derive(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DirectiveDefinition, attributes(directive_definition))]
 pub fn directive_definitions_derive(input: TokenStream) -> TokenStream {
     expand_directive_definition(input)
+}
+
+#[proc_macro_derive(Doc)]
+pub fn scalar_definition_derive(input: TokenStream) -> TokenStream {
+    gen::doc(input)
 }
 
 #[proc_macro_derive(InputDefinition)]

@@ -3,27 +3,47 @@ use std::fmt::Debug;
 
 use lazy_static::lazy_static;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
+use tailcall_macros::Doc;
 
 use crate::core::json::JsonLike;
 
-#[derive(schemars::JsonSchema, Debug, Clone, strum_macros::Display, strum_macros::EnumIter)]
+#[derive(
+    schemars::JsonSchema, Debug, Clone, strum_macros::Display, strum_macros::EnumIter, Doc,
+)]
 pub enum ScalarType {
+    /// Empty scalar type represents an empty value.
     Empty,
+    /// Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
     Email,
+    /// Field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
     PhoneNumber,
+    /// Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339).
     Date,
+    /// Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986).
     Url,
+    /// Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259).
     JSON,
+    /// Field whose value is an 8-bit signed integer.
     Int8,
+    /// Field whose value is a 16-bit signed integer.
     Int16,
+    /// Field whose value is a 32-bit signed integer.
     Int32,
+    /// Field whose value is a 64-bit signed integer.
     Int64,
+    /// Field whose value is a 128-bit signed integer.
     Int128,
+    /// Field whose value is an 8-bit unsigned integer.
     UInt8,
+    /// Field whose value is a 16-bit unsigned integer.
     UInt16,
+    /// Field whose value is a 32-bit unsigned integer.
     UInt32,
+    /// Field whose value is a 64-bit unsigned integer.
     UInt64,
+    /// Field whose value is a 128-bit unsigned integer.
     UInt128,
+    /// Field whose value is a sequence of bytes.
     Bytes,
 }
 
@@ -100,7 +120,8 @@ impl ScalarType {
         let schemars = self.schema();
         tailcall_typedefs_common::scalar_definition::into_scalar_definition(schemars, &self.name())
     }
-    fn schema_inner(&self, type_of: InstanceType, description: &str) -> Schema {
+    fn schema_inner(&self, type_of: InstanceType) -> Schema {
+        let description = self.doc();
         let format = match type_of {
             InstanceType::Integer => Some(self.name().to_lowercase()),
             _ => None,
@@ -121,105 +142,23 @@ impl ScalarType {
     }
     pub fn schema(&self) -> Schema {
         match self {
-            ScalarType::Empty => {
-                self.schema_inner(InstanceType::Null, "Empty scalar type represents an empty value.")
-            }
-            ScalarType::Email => {
-                self.schema_inner(
-                    InstanceType::String,
-                    "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.",
-                )
-            }
-            ScalarType::PhoneNumber => {
-                self.schema_inner(
-                    InstanceType::String,
-                    "A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).",
-                )
-            }
-            ScalarType::Date => {
-                self.schema_inner(
-                    InstanceType::String,
-                    "A field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339).",
-                )
-            }
-            ScalarType::Url => {
-                self.schema_inner(
-                    InstanceType::String,
-                    "A field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986).",
-                )
-            }
-            ScalarType::JSON => {
-                self.schema_inner(
-                    InstanceType::Object,
-                    "A field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259).",
-                )
-            }
-            ScalarType::Int8 => {
-                self.schema_inner(
-                    InstanceType::Integer,
-                    "A field whose value is an 8-bit signed integer.",
-                )
-            }
-            ScalarType::Int16 => {
-                self.schema_inner(
-                    InstanceType::Integer,
-                    "A field whose value is a 16-bit signed integer.",
-                )
-            }
-            ScalarType::Int32 => {
-                self.schema_inner(
-                    InstanceType::Integer,
-                    "A field whose value is a 32-bit signed integer.",
-                )
-            }
-            ScalarType::Int64 => {
-                self.schema_inner(
-                    InstanceType::Integer,
-                    "A field whose value is a 64-bit signed integer.",
-                )
-            }
-            ScalarType::Int128 => {
-                self.schema_inner(
-                    InstanceType::Integer,
-                    "A field whose value is a 128-bit signed integer.",
-                )
-            }
-            ScalarType::UInt8 => {
-                self.schema_inner(
-                    InstanceType::Integer,
-                    "A field whose value is an 8-bit unsigned integer.",
-                )
-            }
-            ScalarType::UInt16 => {
-                self.schema_inner(
-                    InstanceType::Integer,
-                    "A field whose value is a 16-bit unsigned integer.",
-                )
-            }
-            ScalarType::UInt32 => {
-                self.schema_inner(
-                    InstanceType::Integer,
-                    "A field whose value is a 32-bit unsigned integer.",
-                )
-            }
-            ScalarType::UInt64 => {
-                self.schema_inner(
-                    InstanceType::Integer,
-                    "A field whose value is a 64-bit unsigned integer.",
-                )
-            }
-            ScalarType::UInt128 => {
-                self.schema_inner(
-                    InstanceType::Integer,
-                    "A field whose value is a 128-bit unsigned integer.",
-                )
-            }
-            ScalarType::Bytes => {
-                self.schema_inner(
-                    InstanceType::String,
-                    "A field whose value is a sequence of bytes.",
-                )
-            }
+            ScalarType::Empty => self.schema_inner(InstanceType::Null),
+            ScalarType::Email => self.schema_inner(InstanceType::String),
+            ScalarType::PhoneNumber => self.schema_inner(InstanceType::String),
+            ScalarType::Date => self.schema_inner(InstanceType::String),
+            ScalarType::Url => self.schema_inner(InstanceType::String),
+            ScalarType::JSON => self.schema_inner(InstanceType::Object),
+            ScalarType::Int8 => self.schema_inner(InstanceType::Integer),
+            ScalarType::Int16 => self.schema_inner(InstanceType::Integer),
+            ScalarType::Int32 => self.schema_inner(InstanceType::Integer),
+            ScalarType::Int64 => self.schema_inner(InstanceType::Integer),
+            ScalarType::Int128 => self.schema_inner(InstanceType::Integer),
+            ScalarType::UInt8 => self.schema_inner(InstanceType::Integer),
+            ScalarType::UInt16 => self.schema_inner(InstanceType::Integer),
+            ScalarType::UInt32 => self.schema_inner(InstanceType::Integer),
+            ScalarType::UInt64 => self.schema_inner(InstanceType::Integer),
+            ScalarType::UInt128 => self.schema_inner(InstanceType::Integer),
+            ScalarType::Bytes => self.schema_inner(InstanceType::String),
         }
     }
 }

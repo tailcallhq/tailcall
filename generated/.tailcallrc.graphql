@@ -430,13 +430,12 @@ directive @upstream(
 ) on SCHEMA
 
 """
-A field whose value is a sequence of bytes.
+Field whose value is a sequence of bytes.
 """
 scalar Bytes
 
 """
-A field whose value conforms to the standard date format as specified in RFC 3339 
-(https://datatracker.ietf.org/doc/html/rfc3339).
+Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339).
 """
 scalar Date
 
@@ -452,70 +451,68 @@ Empty scalar type represents an empty value.
 scalar Empty
 
 """
-A field whose value is a 128-bit signed integer.
+Field whose value is a 128-bit signed integer.
 """
 scalar Int128
 
 """
-A field whose value is a 16-bit signed integer.
+Field whose value is a 16-bit signed integer.
 """
 scalar Int16
 
 """
-A field whose value is a 32-bit signed integer.
+Field whose value is a 32-bit signed integer.
 """
 scalar Int32
 
 """
-A field whose value is a 64-bit signed integer.
+Field whose value is a 64-bit signed integer.
 """
 scalar Int64
 
 """
-A field whose value is an 8-bit signed integer.
+Field whose value is an 8-bit signed integer.
 """
 scalar Int8
 
 """
-A field whose value conforms to the standard JSON format as specified in RFC 8259 
-(https://datatracker.ietf.org/doc/html/rfc8259).
+Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259).
 """
 scalar JSON
 
 """
-A field whose value conforms to the standard E.164 format as specified in E.164 specification 
+Field whose value conforms to the standard E.164 format as specified in E.164 specification 
 (https://en.wikipedia.org/wiki/E.164).
 """
 scalar PhoneNumber
 
 """
-A field whose value is a 128-bit unsigned integer.
+Field whose value is a 128-bit unsigned integer.
 """
 scalar UInt128
 
 """
-A field whose value is a 16-bit unsigned integer.
+Field whose value is a 16-bit unsigned integer.
 """
 scalar UInt16
 
 """
-A field whose value is a 32-bit unsigned integer.
+Field whose value is a 32-bit unsigned integer.
 """
 scalar UInt32
 
 """
-A field whose value is a 64-bit unsigned integer.
+Field whose value is a 64-bit unsigned integer.
 """
 scalar UInt64
 
 """
-A field whose value is an 8-bit unsigned integer.
+Field whose value is an 8-bit unsigned integer.
 """
 scalar UInt8
 
 """
-A field whose value conforms to the standard URL format as specified in RFC 3986 
-(https://datatracker.ietf.org/doc/html/rfc3986).
+Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986).
 """
 scalar Url
 
