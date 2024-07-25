@@ -18,11 +18,12 @@ use crate::core::config::from_document::from_document;
 use crate::core::config::source::Source;
 use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
+use crate::core::is_default;
 use crate::core::json::JsonSchema;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
+use crate::core::scalar::Scalar;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{is_default, scalar};
 
 #[derive(
     Serialize,
@@ -900,9 +901,7 @@ impl Config {
     pub fn is_scalar(&self, type_name: &str) -> bool {
         self.types
             .get(type_name)
-            .map_or(scalar::Scalar::is_predefined(type_name), |ty| {
-                ty.scalar()
-            })
+            .map_or(Scalar::is_predefined(type_name), |ty| ty.scalar())
     }
 
     ///
@@ -1049,23 +1048,23 @@ impl Config {
             .add_input(Modify::input_definition())
             .add_input(Cache::input_definition())
             .add_input(Telemetry::input_definition())
-            .add_scalar(scalar::Scalar::Bytes.scalar_definition())
-            .add_scalar(scalar::Scalar::Date.scalar_definition())
-            .add_scalar(scalar::Scalar::Email.scalar_definition())
-            .add_scalar(scalar::Scalar::Empty.scalar_definition())
-            .add_scalar(scalar::Scalar::Int128.scalar_definition())
-            .add_scalar(scalar::Scalar::Int16.scalar_definition())
-            .add_scalar(scalar::Scalar::Int32.scalar_definition())
-            .add_scalar(scalar::Scalar::Int64.scalar_definition())
-            .add_scalar(scalar::Scalar::Int8.scalar_definition())
-            .add_scalar(scalar::Scalar::JSON.scalar_definition())
-            .add_scalar(scalar::Scalar::PhoneNumber.scalar_definition())
-            .add_scalar(scalar::Scalar::UInt128.scalar_definition())
-            .add_scalar(scalar::Scalar::UInt16.scalar_definition())
-            .add_scalar(scalar::Scalar::UInt32.scalar_definition())
-            .add_scalar(scalar::Scalar::UInt64.scalar_definition())
-            .add_scalar(scalar::Scalar::UInt8.scalar_definition())
-            .add_scalar(scalar::Scalar::Url.scalar_definition())
+            .add_scalar(Scalar::Bytes.scalar_definition())
+            .add_scalar(Scalar::Date.scalar_definition())
+            .add_scalar(Scalar::Email.scalar_definition())
+            .add_scalar(Scalar::Empty.scalar_definition())
+            .add_scalar(Scalar::Int128.scalar_definition())
+            .add_scalar(Scalar::Int16.scalar_definition())
+            .add_scalar(Scalar::Int32.scalar_definition())
+            .add_scalar(Scalar::Int64.scalar_definition())
+            .add_scalar(Scalar::Int8.scalar_definition())
+            .add_scalar(Scalar::JSON.scalar_definition())
+            .add_scalar(Scalar::PhoneNumber.scalar_definition())
+            .add_scalar(Scalar::UInt128.scalar_definition())
+            .add_scalar(Scalar::UInt16.scalar_definition())
+            .add_scalar(Scalar::UInt32.scalar_definition())
+            .add_scalar(Scalar::UInt64.scalar_definition())
+            .add_scalar(Scalar::UInt8.scalar_definition())
+            .add_scalar(Scalar::Url.scalar_definition())
             .build()
     }
 }

@@ -33,8 +33,7 @@ impl Index {
     pub fn type_is_scalar(&self, type_name: &str) -> bool {
         let def = self.map.get(type_name).map(|(def, _)| def);
 
-        matches!(def, Some(Definition::Scalar(_)))
-            || scalar::Scalar::is_predefined(type_name)
+        matches!(def, Some(Definition::Scalar(_))) || scalar::Scalar::is_predefined(type_name)
     }
 
     pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&QueryField> {
