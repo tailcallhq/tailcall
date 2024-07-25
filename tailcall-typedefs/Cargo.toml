@@ -17,3 +17,4 @@ tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1.40"
 tailcall-typedefs-common = { path = "../tailcall-typedefs-common" }
 async-graphql = { workspace = true }
+strum = "0.26.2"

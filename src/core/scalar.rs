@@ -1,11 +1,17 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 use lazy_static::lazy_static;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
+use strum::IntoEnumIterator;
 use tailcall_macros::{gen_doc, Doc};
 
 use crate::core::json::JsonLike;
+
+lazy_static! {
+    static ref CUSTOM_SCALARS: HashMap<String, ScalarType> =
+        ScalarType::iter().map(|v| (v.name(), v)).collect();
+}
 
 #[derive(
     schemars::JsonSchema, Debug, Clone, strum_macros::Display, strum_macros::EnumIter, Doc,
@@ -96,7 +102,12 @@ impl ScalarType {
     ///
     /// Check if the type is a predefined scalar
     pub fn is_predefined_scalar(type_name: &str) -> bool {
-        SCALAR_TYPES.contains(type_name)
+        let predefined = ["String", "Int", "Float", "ID", "Boolean"];
+        if predefined.iter().any(|v| type_name.eq(*v)) {
+            true
+        } else {
+            CUSTOM_SCALARS.get(type_name).is_some()
+        }
     }
 
     pub fn validate<'a, Value: JsonLike<'a> + 'a>(&self, value: &'a Value) -> bool {
@@ -127,7 +138,7 @@ impl ScalarType {
             ScalarType::UInt32 => eval_unsigned(value, u32::try_from),
         }
     }
-    pub fn get_scalar(name: &str) -> ScalarType {
+    pub fn scalar(name: &str) -> ScalarType {
         CUSTOM_SCALARS.get(name).cloned().unwrap_or(Self::Empty)
     }
     pub fn name(&self) -> String {
@@ -159,74 +170,11 @@ impl ScalarType {
     }
 }
 
-lazy_static! {
-    pub static ref CUSTOM_SCALARS: HashMap<String, ScalarType> = {
-        let scalars: Vec<ScalarType> = vec![
-            ScalarType::Empty,
-            ScalarType::Email,
-            ScalarType::PhoneNumber,
-            ScalarType::Date,
-            ScalarType::Url,
-            ScalarType::JSON,
-            ScalarType::Int8,
-            ScalarType::Int16,
-            ScalarType::Int32,
-            ScalarType::Int64,
-            ScalarType::Int128,
-            ScalarType::UInt8,
-            ScalarType::UInt16,
-            ScalarType::UInt32,
-            ScalarType::UInt64,
-            ScalarType::UInt128,
-            ScalarType::Bytes,
-        ];
-        let mut hm = HashMap::new();
-
-        for scalar in scalars {
-            hm.insert(scalar.name(), scalar);
-        }
-        hm
-    };
-}
-lazy_static! {
-    static ref SCALAR_TYPES: HashSet<&'static str> = {
-        let mut set = HashSet::new();
-        set.extend(["String", "Int", "Float", "ID", "Boolean"]);
-        set.extend(CUSTOM_SCALARS.keys().map(|k| k.as_str()));
-        set
-    };
-}
-
 #[cfg(test)]
 mod test {
     use schemars::schema::Schema;
-    use strum::IntoEnumIterator;
 
-    use crate::core::scalar::{ScalarType, CUSTOM_SCALARS};
-
-    #[test]
-    fn test_all_varients_present() {
-        // It is easy to forget to add a new scalar type to the CUSTOM_SCALARS map
-        // This test ensures that all scalar types are correctly defined
-        macro_rules! check_custom_scalars {
-            ($enum_type:ty, $hashmap:expr) => {{
-                let mut failed = vec![];
-                for variant in <$enum_type>::iter() {
-                    let variant_name = format!("{:?}", variant);
-                    if !$hashmap.contains_key(&variant_name) {
-                        failed.push(variant_name);
-                    }
-                }
-                failed
-            }};
-        }
-        let failed = check_custom_scalars!(ScalarType, &CUSTOM_SCALARS);
-        assert!(
-            failed.is_empty(),
-            "Missing scalar types: {:?} in CUSTOM_SCALARS",
-            failed
-        );
-    }
+    use crate::core::scalar::CUSTOM_SCALARS;
 
     fn get_name(v: Schema) -> String {
         serde_json::to_value(v)
