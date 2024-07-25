@@ -173,9 +173,349 @@ impl ScalarType {
 
 #[cfg(test)]
 mod test {
+    use async_graphql_value::ConstValue;
     use schemars::schema::Schema;
 
-    use crate::core::scalar::CUSTOM_SCALARS;
+    use crate::core::scalar::{ScalarType, CUSTOM_SCALARS};
+
+    /// generates test asserts for valid scalar inputs
+    #[macro_export]
+    macro_rules! test_scalar_valid {
+    ($instance: expr, $($value: expr),+) => {
+        #[test]
+        fn test_scalar_valid() {
+            let value = $instance;
+
+            $(
+                assert!(value.validate::<async_graphql_value::ConstValue>(&$value));
+            )+
+        }
+    };
+}
+
+    // generates test asserts for invalid scalar inputs
+    #[macro_export]
+    macro_rules! test_scalar_invalid {
+    ($instance: expr, $($value: expr),+) => {
+        #[test]
+        fn test_scalar_invalid() {
+            let value = $instance;
+
+            $(
+                assert!(!value.validate::<async_graphql_value::ConstValue>(&$value));
+            )+
+        }
+    };
+}
+
+    mod bytes {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::Bytes,
+            ConstValue::String("\0\0".to_string())
+        }
+        test_scalar_invalid! {
+            ScalarType::Bytes,
+            ConstValue::Null,
+            ConstValue::Number(Number::from_f64(1.25).unwrap())
+        }
+    }
+
+    mod date {
+        use super::{ConstValue, ScalarType};
+        test_scalar_valid! {
+            ScalarType::Date,
+            ConstValue::String("2020-01-01T12:00:00Z".to_string())
+        }
+        test_scalar_invalid! {
+            ScalarType::Date,
+            ConstValue::String("2023-03-08T12:45:26".to_string()),
+            ConstValue::Null
+        }
+    }
+    mod email {
+        use super::{ConstValue, ScalarType};
+        test_scalar_valid! {
+            ScalarType::Email,
+            ConstValue::String("valid@email.com".to_string())
+        }
+        test_scalar_invalid! {
+            ScalarType::Email,
+            ConstValue::String("invalid_email".to_string()),
+            ConstValue::Null
+        }
+    }
+
+    mod i128 {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+        test_scalar_valid! {
+            ScalarType::Int128,
+            ConstValue::String("100".to_string()),
+            ConstValue::String("-15".to_string()),
+            ConstValue::String(i128::MAX.to_string())
+        }
+
+        test_scalar_invalid! {
+            ScalarType::Int128,
+            ConstValue::Null,
+            ConstValue::Number(Number::from(15)),
+            ConstValue::Number(
+                Number::from_f64(1.25).unwrap()
+            ),
+            ConstValue::String(format!("{}0", i128::MAX))
+        }
+    }
+
+    mod i16 {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::Int16,
+            ConstValue::Number(Number::from(100u32)),
+            ConstValue::Number(Number::from(2 * i8::MAX as i64)),
+            ConstValue::Number(
+                Number::from(-15)
+            )
+        }
+
+        test_scalar_invalid! {
+            ScalarType::Int16,
+            ConstValue::Null,
+            ConstValue::Number(Number::from(i16::MAX as i64 + 1)),
+            ConstValue::Number(Number::from(i16::MIN as i64 - 1)),
+            ConstValue::Number(
+                Number::from_f64(1.25).unwrap()
+            ),
+            ConstValue::String("4564846".to_string())
+        }
+    }
+
+    mod i32 {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::Int32,
+            ConstValue::Number(Number::from(100u32)),
+            ConstValue::Number(Number::from(i32::MAX as i64)),
+            ConstValue::Number(
+                Number::from(-15)
+            )
+        }
+
+        test_scalar_invalid! {
+            ScalarType::Int32,
+            ConstValue::Null,
+            ConstValue::Number(Number::from(i32::MAX as i64 + 1)),
+            ConstValue::Number(Number::from(i32::MIN as i64 - 1)),
+            ConstValue::Number(
+                Number::from_f64(1.25).unwrap()
+            ),
+            ConstValue::String("4564846".to_string())
+        }
+    }
+
+    mod i64 {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::Int64,
+            ConstValue::String("125".to_string()),
+            ConstValue::String("-15".to_string()),
+            ConstValue::String(i64::MAX.to_string())
+        }
+
+        test_scalar_invalid! {
+            ScalarType::Int64,
+            ConstValue::Null,
+            ConstValue::Number(Number::from(15)),
+            ConstValue::Number(
+                Number::from_f64(1.25).unwrap()
+            ),
+            ConstValue::String(format!("{}1", i64::MAX))
+        }
+    }
+
+    mod i8 {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::Int8,
+            ConstValue::Number(Number::from(100i32)),
+            ConstValue::Number(Number::from(127)),
+            ConstValue::Number(
+                Number::from(-15)
+            )
+        }
+
+        test_scalar_invalid! {
+            ScalarType::Int8,
+            ConstValue::Null,
+            ConstValue::Number(Number::from(128)),
+            ConstValue::Number(Number::from(-129)),
+            ConstValue::Number(
+                Number::from_f64(1.25).unwrap()
+            ),
+            ConstValue::String("4564846".to_string())
+        }
+    }
+
+    mod phone {
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::PhoneNumber,
+            ConstValue::String("+911234567890".to_string())
+        }
+
+        test_scalar_invalid! {
+            ScalarType::PhoneNumber,
+            ConstValue::String("1234567890".to_string()),
+            ConstValue::Null
+        }
+    }
+
+    mod u128 {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::UInt128,
+            ConstValue::String("100".to_string()),
+            ConstValue::String(u128::MAX.to_string())
+        }
+
+        test_scalar_invalid! {
+            ScalarType::UInt128,
+            ConstValue::Null,
+            ConstValue::Number(Number::from(15)),
+            ConstValue::Number(
+                Number::from_f64(1.25).unwrap()
+            ),
+            ConstValue::String("-1".to_string()),
+            ConstValue::String(format!("{}0", u128::MAX))
+        }
+    }
+
+    mod u16 {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::UInt16,
+            ConstValue::Number(Number::from(100u32)),
+            ConstValue::Number(Number::from(2 * u8::MAX as u64))
+        }
+
+        test_scalar_invalid! {
+           ScalarType::UInt16,
+            ConstValue::Null,
+            ConstValue::Number(Number::from(u16::MAX as u64 + 1)),
+            ConstValue::Number(Number::from(-1)),
+            ConstValue::Number(
+                Number::from_f64(1.25).unwrap()
+            ),
+            ConstValue::String("4564846".to_string())
+        }
+    }
+
+    mod u32 {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::UInt32,
+            ConstValue::Number(Number::from(100u32)),
+            ConstValue::Number(Number::from(u32::MAX as u64))
+        }
+
+        test_scalar_invalid! {
+            ScalarType::UInt32,
+            ConstValue::Null,
+            ConstValue::Number(Number::from(u32::MAX as u64 + 1)),
+            ConstValue::Number(Number::from(-1)),
+            ConstValue::Number(
+                Number::from_f64(1.25).unwrap()
+            ),
+            ConstValue::String("4564846".to_string())
+        }
+    }
+
+    mod u64 {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::UInt64,
+            ConstValue::String("125".to_string()),
+            ConstValue::String(u64::MAX.to_string())
+        }
+
+        test_scalar_invalid! {
+            ScalarType::UInt64,
+            ConstValue::Null,
+            ConstValue::Number(Number::from(15)),
+            ConstValue::Number(
+                Number::from_f64(1.25).unwrap()
+            ),
+            ConstValue::String("-1".to_string()),
+            ConstValue::String(format!("{}1", u64::MAX))
+        }
+    }
+
+    mod u8 {
+        use serde_json::Number;
+
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::UInt8,
+            ConstValue::Number(Number::from(15)),
+            ConstValue::Number(Number::from(255))
+        }
+
+        test_scalar_invalid! {
+            ScalarType::UInt8,
+            ConstValue::Null,
+            ConstValue::Number(Number::from(256)),
+            ConstValue::Number(Number::from(-1)),
+            ConstValue::Number(
+                Number::from_f64(1.25).unwrap()
+            ),
+            ConstValue::String("4564846".to_string())
+        }
+    }
+
+    mod url {
+        use super::{ConstValue, ScalarType};
+
+        test_scalar_valid! {
+            ScalarType::Url,
+            ConstValue::String("https://ssdd.dev".to_string())
+        }
+
+        test_scalar_invalid! {
+            ScalarType::Url,
+            ConstValue::Null,
+            ConstValue::String("localhost".to_string())
+        }
+    }
 
     fn get_name(v: Schema) -> String {
         serde_json::to_value(v)
