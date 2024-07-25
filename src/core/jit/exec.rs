@@ -97,6 +97,7 @@ where
         .await;
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn execute_inner<'b>(
         &'b self,
         field: &'b Field<Nested<Input>, Input>,
