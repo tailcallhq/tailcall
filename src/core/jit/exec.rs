@@ -103,7 +103,7 @@ where
         field: &'b Field<Nested<Input>, Input>,
         ctx: &'b Context<'b, Input, Output>,
         data_path: DataPath,
-        value: Option<&'a Output>,
+        value: Option<&'b Output>,
     ) -> Result<(), Error> {
         if field.type_of.is_list() {
             // Check if the value is an array
