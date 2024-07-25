@@ -10,6 +10,7 @@ mod tests {
     #![allow(dead_code)]
     use std::collections::HashSet;
 
+    use schemars::schema::Schema;
     use schemars::JsonSchema;
     use tailcall_typedefs_common::directive_definition::{
         into_directive_definition, Attrs, DirectiveDefinition,
@@ -23,7 +24,7 @@ mod tests {
     impl ScalarDefinition for FooScalar {
         fn scalar_definition() -> async_graphql::parser::types::TypeSystemDefinition {
             let root_schema = into_schemars::<Self>();
-            into_scalar_definition(root_schema, "FooScalar")
+            into_scalar_definition(Schema::Object(root_schema.schema), "FooScalar")
         }
     }
 
