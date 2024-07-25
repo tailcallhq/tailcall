@@ -126,7 +126,6 @@ where
         // Has to be an Object, we don't do anything while executing if its a Scalar
         else {
             join_all(field.nested_iter().map(|child| {
-                let value = if value.is_some() { value } else { ctx.value() };
                 let value = value.map(|v| v.get_key(&child.name).unwrap_or(v));
                 let ctx = if let Some(v) = value {
                     ctx.with_value_and_field(v, child)
