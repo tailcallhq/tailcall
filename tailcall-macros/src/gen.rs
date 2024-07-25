@@ -7,17 +7,15 @@ fn extract_gen_doc_ty(attrs: &[Attribute]) -> String {
         .iter()
         .filter_map(|attr| {
             if attr.path().is_ident("gen_doc") {
-                if let Meta::List(meta_list) = &attr.meta {
-                    let expr = meta_list.parse_args::<Expr>();
-                    if let Ok(Expr::Assign(assign)) = expr {
-                        if let Expr::Path(expr_path) = assign.left.as_ref() {
-                            if let Some(segment) = expr_path.path.segments.first() {
-                                if segment.ident == "ty" {
-                                    if let Expr::Lit(expr_lit) = *assign.right {
-                                        if let syn::Lit::Str(lit_str) = expr_lit.lit {
-                                            return Some(lit_str.value().trim().to_string());
-                                        }
-                                    }
+                let meta_list = attr.meta.require_list().ok()?;
+                let expr = meta_list.parse_args::<Expr>().ok()?;
+                if let Expr::Assign(assign) = expr {
+                    if let Expr::Path(expr_path) = assign.left.as_ref() {
+                        let segment = expr_path.path.segments.first()?;
+                        if segment.ident == "ty" {
+                            if let Expr::Lit(expr_lit) = *assign.right {
+                                if let syn::Lit::Str(lit_str) = expr_lit.lit {
+                                    return Some(lit_str.value().trim().to_string());
                                 }
                             }
                         }
