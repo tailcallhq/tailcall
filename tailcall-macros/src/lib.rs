@@ -17,9 +17,26 @@ pub fn directive_definitions_derive(input: TokenStream) -> TokenStream {
     expand_directive_definition(input)
 }
 
-#[proc_macro_derive(Doc)]
+#[proc_macro_derive(Doc, attributes(gen_doc))]
 pub fn scalar_definition_derive(input: TokenStream) -> TokenStream {
     gen::doc(input)
+}
+
+#[proc_macro]
+pub fn gen_doc(item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as syn::DeriveInput);
+    let name = &input.ident;
+    let gen = quote::quote! {
+        impl #name {
+            pub fn doc() -> &'static str {
+                stringify!(#name)
+            }
+        }
+    };
+    TokenStream::from(quote::quote! {
+        #input
+        #gen
+    })
 }
 
 #[proc_macro_derive(InputDefinition)]

@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use lazy_static::lazy_static;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
-use tailcall_macros::Doc;
+use tailcall_macros::{gen_doc, Doc};
 
 use crate::core::json::JsonLike;
 
@@ -12,38 +12,55 @@ use crate::core::json::JsonLike;
 )]
 pub enum ScalarType {
     /// Empty scalar type represents an empty value.
+    #[gen_doc(ty = "Null")]
     Empty,
     /// Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
+    #[gen_doc(ty = "String")]
     Email,
     /// Field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).
+    #[gen_doc(ty = "String")]
     PhoneNumber,
     /// Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339).
+    #[gen_doc(ty = "String")]
     Date,
     /// Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986).
+    #[gen_doc(ty = "String")]
     Url,
     /// Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259).
+    #[gen_doc(ty = "Object")]
     JSON,
     /// Field whose value is an 8-bit signed integer.
+    #[gen_doc(ty = "Number")]
     Int8,
     /// Field whose value is a 16-bit signed integer.
+    #[gen_doc(ty = "Number")]
     Int16,
     /// Field whose value is a 32-bit signed integer.
+    #[gen_doc(ty = "Number")]
     Int32,
     /// Field whose value is a 64-bit signed integer.
+    #[gen_doc(ty = "Number")]
     Int64,
     /// Field whose value is a 128-bit signed integer.
+    #[gen_doc(ty = "Number")]
     Int128,
     /// Field whose value is an 8-bit unsigned integer.
+    #[gen_doc(ty = "Number")]
     UInt8,
     /// Field whose value is a 16-bit unsigned integer.
+    #[gen_doc(ty = "Number")]
     UInt16,
     /// Field whose value is a 32-bit unsigned integer.
+    #[gen_doc(ty = "Number")]
     UInt32,
     /// Field whose value is a 64-bit unsigned integer.
+    #[gen_doc(ty = "Number")]
     UInt64,
     /// Field whose value is a 128-bit unsigned integer.
+    #[gen_doc(ty = "Number")]
     UInt128,
     /// Field whose value is a sequence of bytes.
+    #[gen_doc(ty = "String")]
     Bytes,
 }
 
@@ -120,8 +137,9 @@ impl ScalarType {
         let schemars = self.schema();
         tailcall_typedefs_common::scalar_definition::into_scalar_definition(schemars, &self.name())
     }
-    fn schema_inner(&self, type_of: InstanceType) -> Schema {
+    fn schema_inner(&self) -> Schema {
         let description = self.doc();
+        let type_of = self.ty();
         let format = match type_of {
             InstanceType::Integer => Some(self.name().to_lowercase()),
             _ => None,
@@ -141,25 +159,7 @@ impl ScalarType {
         Schema::Object(SchemaObject { metadata: Some(Box::new(metadata)), ..Default::default() })
     }
     pub fn schema(&self) -> Schema {
-        match self {
-            ScalarType::Empty => self.schema_inner(InstanceType::Null),
-            ScalarType::Email => self.schema_inner(InstanceType::String),
-            ScalarType::PhoneNumber => self.schema_inner(InstanceType::String),
-            ScalarType::Date => self.schema_inner(InstanceType::String),
-            ScalarType::Url => self.schema_inner(InstanceType::String),
-            ScalarType::JSON => self.schema_inner(InstanceType::Object),
-            ScalarType::Int8 => self.schema_inner(InstanceType::Integer),
-            ScalarType::Int16 => self.schema_inner(InstanceType::Integer),
-            ScalarType::Int32 => self.schema_inner(InstanceType::Integer),
-            ScalarType::Int64 => self.schema_inner(InstanceType::Integer),
-            ScalarType::Int128 => self.schema_inner(InstanceType::Integer),
-            ScalarType::UInt8 => self.schema_inner(InstanceType::Integer),
-            ScalarType::UInt16 => self.schema_inner(InstanceType::Integer),
-            ScalarType::UInt32 => self.schema_inner(InstanceType::Integer),
-            ScalarType::UInt64 => self.schema_inner(InstanceType::Integer),
-            ScalarType::UInt128 => self.schema_inner(InstanceType::Integer),
-            ScalarType::Bytes => self.schema_inner(InstanceType::String),
-        }
+        self.schema_inner()
     }
 }
 
