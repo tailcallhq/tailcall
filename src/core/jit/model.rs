@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
 use async_graphql::{Name, Pos, Positioned};
 use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
+use super::{Error, LocationError};
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
 
@@ -306,6 +307,7 @@ pub struct OperationPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
+    errors: Arc<Mutex<Vec<LocationError<Error>>>>,
     pub index: Arc<Index>,
 }
 
@@ -339,6 +341,7 @@ impl<Input> OperationPlan<Input> {
             operation_type: self.operation_type,
             nested,
             index: self.index,
+            errors: self.errors,
         })
     }
 }
@@ -359,11 +362,25 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        Self { flat: fields, nested, operation_type, index }
+        Self {
+            flat: fields,
+            nested,
+            operation_type,
+            index,
+            errors: Arc::new(Mutex::new(vec![])),
+        }
     }
 
     pub fn operation_type(&self) -> OperationType {
         self.operation_type
+    }
+
+    pub fn errors(&self) -> Vec<LocationError<Error>> {
+        self.errors.lock().unwrap().clone()
+    }
+
+    pub fn add_error(&self, error: LocationError<Error>) {
+        self.errors.lock().unwrap().push(error)
     }
 
     pub fn is_query(&self) -> bool {
