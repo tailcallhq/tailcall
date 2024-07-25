@@ -1,7 +1,9 @@
+
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
 
-use super::{Field, Nested, OperationPlan, Request};
+use super::exec::ExecutionEnv;
+use super::{Field, Nested, Request};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
 /// Rust representation of the GraphQL context available in the DSL
@@ -13,15 +15,17 @@ pub struct Context<'a, Input, Output> {
     // TODO: remove the args, since they're already present inside the fields and add support for
     // default values.
     field: &'a Field<Nested<Input>, Input>,
-    plan: &'a OperationPlan<Input>,
+    is_query: bool,
+    env: &'a ExecutionEnv,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     pub fn new(
         request: &'a Request<Input>,
         field: &'a Field<Nested<Input>, Input>,
-        plan: &'a OperationPlan<Input>,
+        is_query: bool,
+        env: &'a ExecutionEnv,
     ) -> Self {
-        Self { request, value: None, args: None, field, plan }
+        Self { request, value: None, args: None, field, is_query, env }
     }
 
     pub fn with_value_and_field(
@@ -34,7 +38,8 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             args: None,
             value: Some(value),
             field,
-            plan: self.plan,
+            is_query: self.is_query,
+            env: self.env,
         }
     }
 
@@ -46,7 +51,8 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             value: self.value,
             field,
             args,
-            plan: self.plan,
+            is_query: self.is_query,
+            env: self.env,
         }
     }
 
@@ -60,7 +66,8 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             value: self.value,
             args: Some(map),
             field: self.field,
-            plan: self.plan,
+            is_query: self.is_query,
+            env: self.env,
         }
     }
 
@@ -84,11 +91,11 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
     }
 
     fn is_query(&self) -> bool {
-        self.plan.is_query()
+        self.is_query
     }
 
     fn add_error(&self, error: ServerError) {
-        self.plan.add_error(error.into())
+        self.env.add_error(error.into())
     }
 }
 

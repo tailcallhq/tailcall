@@ -6,13 +6,31 @@ use derive_getters::Getters;
 use futures_util::future::join_all;
 
 use super::context::Context;
-use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
+use super::{DataPath, Field, LocationError, Nested, OperationPlan, Request, Response, Store};
 use crate::core::ir::model::IR;
-use crate::core::jit;
 use crate::core::jit::synth::Synth;
+use crate::core::jit::{self};
 use crate::core::json::JsonLike;
 
 type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Error>>>>;
+
+#[derive(Debug, Clone)]
+pub struct ExecutionEnv {
+    err: Arc<Mutex<Vec<LocationError<jit::error::Error>>>>,
+}
+
+impl ExecutionEnv {
+    pub fn new() -> Self {
+        Self { err: Arc::new(Mutex::new(vec![])) }
+    }
+    pub fn add_error(&self, error: LocationError<jit::error::Error>) {
+        self.err.lock().unwrap().push(error);
+    }
+
+    pub fn errors(&self) -> Vec<LocationError<jit::error::Error>> {
+        self.err.lock().unwrap().clone()
+    }
+}
 
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
@@ -20,6 +38,7 @@ type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Error>>>>;
 pub struct Executor<IRExec, Input> {
     plan: OperationPlan<Input>,
     exec: IRExec,
+    env: ExecutionEnv,
 }
 
 impl<Input, Output, Exec> Executor<Exec, Input>
@@ -29,12 +48,18 @@ where
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
     pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { plan, exec }
+        Self { plan, exec, env: ExecutionEnv::new() }
     }
 
     pub async fn store(&self, request: Request<Input>) -> Store<Result<Output, jit::Error>> {
         let store = Arc::new(Mutex::new(Store::new()));
-        let mut ctx = ExecutorInner::new(request, store.clone(), self.plan.to_owned(), &self.exec);
+        let mut ctx = ExecutorInner::new(
+            request,
+            store.clone(),
+            self.plan.to_owned(),
+            &self.exec,
+            &self.env,
+        );
         ctx.init().await;
 
         let store = mem::replace(&mut *store.lock().unwrap(), Store::new());
@@ -43,7 +68,7 @@ where
 
     pub async fn execute(self, synth: Synth<Output>) -> Response<Output, jit::Error> {
         let mut response = Response::new(synth.synthesize());
-        response.add_errors(self.plan.errors());
+        response.add_errors(self.env.errors());
 
         response
     }
@@ -55,6 +80,7 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
     store: SharedStore<Output, Error>,
     plan: OperationPlan<Input>,
     ir_exec: &'a Exec,
+    env: &'a ExecutionEnv,
 }
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
@@ -68,8 +94,9 @@ where
         store: SharedStore<Output, Error>,
         plan: OperationPlan<Input>,
         ir_exec: &'a Exec,
+        env: &'a ExecutionEnv,
     ) -> Self {
-        Self { request, store, plan, ir_exec }
+        Self { request, store, plan, ir_exec, env }
     }
 
     async fn init(&mut self) {
@@ -90,7 +117,8 @@ where
                     todo!()
                 }
             }
-            let ctx = Context::new(&self.request, field, &self.plan).with_args(arg_map);
+            let ctx = Context::new(&self.request, field, self.plan.is_query(), self.env)
+                .with_args(arg_map);
             self.execute(field, &ctx, DataPath::new()).await
         }))
         .await;
