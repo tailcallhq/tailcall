@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use async_graphql_value::ConstValue;
 use regex::Regex;
@@ -46,6 +46,7 @@ pub fn to_input_object_type_definition(
                 description: field.description.clone(),
                 default_value: field.default_value.clone(),
                 of_type: field.of_type.clone(),
+                renames: HashMap::new(),
             })
             .collect(),
         description: definition.description,
@@ -273,6 +274,7 @@ fn update_args<'a>(
                     description: arg.doc.clone(),
                     of_type: to_type(arg, None),
                     default_value: arg.default_value.clone(),
+                    renames: HashMap::new(),
                 })
             })
             .map(|args| FieldDefinition {
@@ -515,6 +517,7 @@ pub fn to_field_definition(
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
         .and(update_enum_alias())
         .and(update_union_resolver())
+        .and(update_input_field_resolver())
         .try_fold(
             &(config_module, field, type_of, name),
             FieldDefinition::default(),

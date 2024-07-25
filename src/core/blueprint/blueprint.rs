@@ -154,6 +154,7 @@ pub struct SchemaDefinition {
 pub struct InputFieldDefinition {
     pub name: String,
     pub of_type: Type,
+    pub renames: HashMap<Vec<String>, String>,
     pub default_value: Option<serde_json::Value>,
     pub description: Option<String>,
 }

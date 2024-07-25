@@ -179,6 +179,8 @@ impl FieldDefinition {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+
     use super::MustachePartsValidator;
     use crate::core::blueprint::{FieldDefinition, InputFieldDefinition};
     use crate::core::config::{Config, Field, Type};
@@ -209,6 +211,7 @@ mod test {
                 of_type: type_,
                 default_value: None,
                 description: None,
+                renames: HashMap::new(),
             }],
             of_type: crate::core::blueprint::Type::NamedType {
                 name: "T1".to_string(),

@@ -1,12 +1,14 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::{bail, Result};
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
-use async_graphql::ErrorExtensions;
+use async_graphql::{ErrorExtensions, Name};
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use strum::IntoEnumIterator;
+use indexmap::IndexMap;
 use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, Type};
@@ -88,9 +90,9 @@ fn to_type(def: &Definition) -> dynamic::Type {
             let mut object = dynamic::Object::new(def.name.clone());
             for field in def.fields.iter() {
                 let field = field.clone();
+                let field_copy = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
-
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
@@ -100,13 +102,55 @@ fn to_type(def: &Definition) -> dynamic::Type {
                         //                HOT CODE STARTS HERE
                         // --------------------------------------------------
 
+                        fn perform_rename(
+                            path: Vec<String>,
+                            data: &ConstValue,
+                            renames: &HashMap<Vec<String>, String>,
+                        ) -> ConstValue {
+                            match data {
+                                ConstValue::Object(obj) => {
+                                    let mut new_object = IndexMap::new();
+                                    for (name, item) in obj.into_iter() {
+                                        let mut key = path.clone();
+                                        key.push(name.to_string());
+                                        if let Some(rename) = renames.get(&key) {
+                                            new_object.insert(
+                                                Name::new(rename),
+                                                perform_rename(key, item, renames),
+                                            );
+                                        } else {
+                                            new_object.insert(
+                                                name.clone(),
+                                                perform_rename(key, item, renames),
+                                            );
+                                        }
+                                    }
+                                    ConstValue::Object(new_object)
+                                }
+                                _ => data.clone(),
+                            }
+                        }
+
+                        let args: ConstValue = {
+                            let mut new_map = IndexMap::new();
+                            let index_map = ctx.args.as_index_map();
+                            for arg in &field_copy.args {
+                                let renames = &arg.renames;
+                                let arg_key = Name::new(&arg.name);
+                                if let Some(data) = index_map.get(&arg_key) {
+                                    let data = perform_rename(vec![], data, renames);
+                                    new_map.insert(arg_key, data);
+                                }
+                            }
+                            ConstValue::Object(new_map)
+                        };
+
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
-
                         match &field.resolver {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
-                                let ctx = EvalContext::new(req_ctx, &ctx);
+                                let ctx = EvalContext::new(req_ctx, &ctx).with_args(args);
 
                                 match ctx.path_value(&[field_name]).map(|a| a.into_owned()) {
                                     Some(ConstValue::Null) => FieldFuture::Value(FieldValue::NONE),
@@ -123,7 +167,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();
-                                        let ctx = &mut EvalContext::new(req_ctx, &ctx);
+                                        let ctx =
+                                            &mut EvalContext::new(req_ctx, &ctx).with_args(args);
 
                                         let value =
                                             expr.eval(ctx).await.map_err(|err| err.extend())?;
