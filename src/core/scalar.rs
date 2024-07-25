@@ -138,8 +138,8 @@ impl ScalarType {
             ScalarType::UInt32 => eval_unsigned(value, u32::try_from),
         }
     }
-    pub fn scalar(name: &str) -> ScalarType {
-        CUSTOM_SCALARS.get(name).cloned().unwrap_or(Self::Empty)
+    pub fn scalar(name: &str) -> Option<&ScalarType> {
+        CUSTOM_SCALARS.get(name)
     }
     pub fn name(&self) -> String {
         self.to_string()
