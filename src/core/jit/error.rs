@@ -3,8 +3,6 @@ use async_graphql::{ErrorExtensions, PathSegment, Pos, ServerError};
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::core::lift::Lift;
-
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 #[error("Error while building the plan")]
 pub enum BuildError {
@@ -103,7 +101,7 @@ impl From<ServerError> for LocationError<Error> {
 impl From<LocationError<Error>> for ServerError {
     fn from(val: LocationError<Error>) -> Self {
         match val.error {
-            Error::ServerError(e) => e.into(),
+            Error::ServerError(e) => e,
             _ => {
                 let extensions = val.error.extend().extensions;
                 let mut server_error = ServerError::new(val.error.to_string(), Some(val.pos));
@@ -117,7 +115,7 @@ impl From<LocationError<Error>> for ServerError {
                     server_error.path = val.path;
                 }
 
-                server_error.into()
+                server_error
             }
         }
     }
