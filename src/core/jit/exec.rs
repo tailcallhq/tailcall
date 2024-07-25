@@ -104,9 +104,9 @@ where
         data_path: DataPath,
         value: Option<&'a Output>,
     ) -> Result<(), Error> {
-        if field.type_of.is_list() && value.is_some_and(|v| v.as_array().is_some()) {
+        if field.type_of.is_list() {
             // Check if the value is an array
-            if let Some(array) = value.unwrap().as_array() {
+            if let Some(array) = value.and_then(|v| v.as_array()) {
                 join_all(field.nested_iter().map(|field| {
                     join_all(array.iter().enumerate().map(|(index, value)| {
                         let new_value = value.get_key(&field.name).unwrap_or(value);
