@@ -3,11 +3,13 @@ use std::fmt::{Debug, Formatter};
 use std::sync::{Arc, Mutex};
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
-use async_graphql::{Name, Pos, Positioned as AsyncPositioned};
+use async_graphql::{
+    ErrorExtensions, Name, PathSegment, Pos, Positioned as AsyncPositioned, ServerError,
+};
 use async_graphql_value::ConstValue;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use super::{Error, Positioned};
+use super::Error;
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
 
@@ -475,6 +477,48 @@ impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
                     )
                 })
                 .collect::<Vec<_>>(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct Positioned<Value> {
+    pub value: Value,
+    pub pos: Pos,
+    pub path: Vec<PathSegment>,
+}
+
+// TODO: Improve conversion logic to avoid unnecessary round-trip conversions
+//       between ServerError and Positioned<Error>.
+impl From<ServerError> for Positioned<Error> {
+    fn from(val: ServerError) -> Self {
+        Self {
+            value: Error::ServerError(val.clone()),
+            pos: val.locations.first().cloned().unwrap_or_default(),
+            path: val.path.clone(),
+        }
+    }
+}
+
+impl From<Positioned<Error>> for ServerError {
+    fn from(val: Positioned<Error>) -> Self {
+        match val.value {
+            Error::ServerError(e) => e,
+            _ => {
+                let extensions = val.value.extend().extensions;
+                let mut server_error = ServerError::new(val.value.to_string(), Some(val.pos));
+
+                server_error.extensions = extensions;
+
+                // TODO: in order to be compatible with async_graphql path is only set for
+                // validation errors here but in general we might consider setting it
+                // for every error
+                if let Error::Validation(_) = val.value {
+                    server_error.path = val.path;
+                }
+
+                server_error
+            }
         }
     }
 }

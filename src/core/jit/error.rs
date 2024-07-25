@@ -1,6 +1,5 @@
 use async_graphql::parser::types::OperationType;
-use async_graphql::{ErrorExtensions, PathSegment, Pos, ServerError};
-use serde::Serialize;
+use async_graphql::{ErrorExtensions, ServerError};
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
@@ -76,47 +75,5 @@ impl From<Error> for ServerError {
         server_error.extensions = extensions;
 
         server_error
-    }
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct Positioned<Value> {
-    pub value: Value,
-    pub pos: Pos,
-    pub path: Vec<PathSegment>,
-}
-
-// TODO: Improve conversion logic to avoid unnecessary round-trip conversions
-//       between ServerError and Positioned<Error>.
-impl From<ServerError> for Positioned<Error> {
-    fn from(val: ServerError) -> Self {
-        Self {
-            value: Error::ServerError(val.clone()),
-            pos: val.locations.first().cloned().unwrap_or_default(),
-            path: val.path.clone(),
-        }
-    }
-}
-
-impl From<Positioned<Error>> for ServerError {
-    fn from(val: Positioned<Error>) -> Self {
-        match val.value {
-            Error::ServerError(e) => e,
-            _ => {
-                let extensions = val.value.extend().extensions;
-                let mut server_error = ServerError::new(val.value.to_string(), Some(val.pos));
-
-                server_error.extensions = extensions;
-
-                // TODO: in order to be compatible with async_graphql path is only set for
-                // validation errors here but in general we might consider setting it
-                // for every error
-                if let Error::Validation(_) = val.value {
-                    server_error.path = val.path;
-                }
-
-                server_error
-            }
-        }
     }
 }
