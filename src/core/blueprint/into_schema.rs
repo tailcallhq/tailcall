@@ -229,7 +229,7 @@ impl From<&Blueprint> for SchemaBuilder {
         let mutation = blueprint.mutation();
         let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
 
-        for scalar in scalar::ScalarType::iter() {
+        for scalar in scalar::Scalar::iter() {
             let k = scalar.name();
             schema = schema.register(dynamic::Type::Scalar(
                 dynamic::Scalar::new(k.clone()).validator(move |val| scalar.validate(val)),

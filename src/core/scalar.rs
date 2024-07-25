@@ -11,14 +11,14 @@ use crate::core::json::JsonLike;
 const PREDEFINED_SCALARS: &[&str] = &["Boolean", "Float", "ID", "Int", "String", "DateTime"];
 
 lazy_static! {
-    static ref CUSTOM_SCALARS: HashMap<String, ScalarType> =
-        ScalarType::iter().map(|v| (v.name(), v)).collect();
+    static ref CUSTOM_SCALARS: HashMap<String, Scalar> =
+        Scalar::iter().map(|v| (v.name(), v)).collect();
 }
 
 #[derive(
     schemars::JsonSchema, Debug, Clone, strum_macros::Display, strum_macros::EnumIter, Doc,
 )]
-pub enum ScalarType {
+pub enum Scalar {
     /// Empty scalar type represents an empty value.
     #[gen_doc(ty = "Null")]
     Empty,
@@ -100,7 +100,7 @@ fn eval_unsigned<
     val.as_u64().map_or(false, |n| fxn(n).is_ok())
 }
 
-impl ScalarType {
+impl Scalar {
     ///
     /// Check if the type is a predefined scalar
     pub fn is_predefined_scalar(type_name: &str) -> bool {
@@ -113,33 +113,31 @@ impl ScalarType {
 
     pub fn validate<'a, Value: JsonLike<'a> + 'a>(&self, value: &'a Value) -> bool {
         match self {
-            ScalarType::JSON => true,
-            ScalarType::Empty => true,
-            ScalarType::Email => eval_str(value, |s| {
+            Scalar::JSON => true,
+            Scalar::Empty => true,
+            Scalar::Email => eval_str(value, |s| {
                 async_graphql::validators::email(&s.to_string()).is_ok()
             }),
-            ScalarType::PhoneNumber => eval_str(value, |s| phonenumber::parse(None, s).is_ok()),
-            ScalarType::Date => {
-                eval_str(value, |s| chrono::DateTime::parse_from_rfc3339(s).is_ok())
-            }
-            ScalarType::Url => eval_str(value, |s| url::Url::parse(s).is_ok()),
-            ScalarType::Bytes => value.as_str().is_some(),
+            Scalar::PhoneNumber => eval_str(value, |s| phonenumber::parse(None, s).is_ok()),
+            Scalar::Date => eval_str(value, |s| chrono::DateTime::parse_from_rfc3339(s).is_ok()),
+            Scalar::Url => eval_str(value, |s| url::Url::parse(s).is_ok()),
+            Scalar::Bytes => value.as_str().is_some(),
 
-            ScalarType::Int64 => eval_str(value, |s| s.parse::<i64>().is_ok()),
-            ScalarType::UInt64 => eval_str(value, |s| s.parse::<u64>().is_ok()),
-            ScalarType::Int128 => eval_str(value, |s| s.parse::<i128>().is_ok()),
-            ScalarType::UInt128 => eval_str(value, |s| s.parse::<u128>().is_ok()),
+            Scalar::Int64 => eval_str(value, |s| s.parse::<i64>().is_ok()),
+            Scalar::UInt64 => eval_str(value, |s| s.parse::<u64>().is_ok()),
+            Scalar::Int128 => eval_str(value, |s| s.parse::<i128>().is_ok()),
+            Scalar::UInt128 => eval_str(value, |s| s.parse::<u128>().is_ok()),
 
-            ScalarType::Int8 => eval_signed(value, i8::try_from),
-            ScalarType::Int16 => eval_signed(value, i16::try_from),
-            ScalarType::Int32 => eval_signed(value, i32::try_from),
+            Scalar::Int8 => eval_signed(value, i8::try_from),
+            Scalar::Int16 => eval_signed(value, i16::try_from),
+            Scalar::Int32 => eval_signed(value, i32::try_from),
 
-            ScalarType::UInt8 => eval_unsigned(value, u8::try_from),
-            ScalarType::UInt16 => eval_unsigned(value, u16::try_from),
-            ScalarType::UInt32 => eval_unsigned(value, u32::try_from),
+            Scalar::UInt8 => eval_unsigned(value, u8::try_from),
+            Scalar::UInt16 => eval_unsigned(value, u16::try_from),
+            Scalar::UInt32 => eval_unsigned(value, u32::try_from),
         }
     }
-    pub fn scalar(name: &str) -> Option<&ScalarType> {
+    pub fn scalar(name: &str) -> Option<&Scalar> {
         CUSTOM_SCALARS.get(name)
     }
     pub fn name(&self) -> String {
@@ -176,7 +174,7 @@ mod test {
     use async_graphql_value::ConstValue;
     use schemars::schema::Schema;
 
-    use crate::core::scalar::{ScalarType, CUSTOM_SCALARS};
+    use crate::core::scalar::{Scalar, CUSTOM_SCALARS};
 
     /// generates test asserts for valid scalar inputs
     #[macro_export]
@@ -211,39 +209,39 @@ mod test {
     mod bytes {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::Bytes,
+            Scalar::Bytes,
             ConstValue::String("\0\0".to_string())
         }
         test_scalar_invalid! {
-            ScalarType::Bytes,
+            Scalar::Bytes,
             ConstValue::Null,
             ConstValue::Number(Number::from_f64(1.25).unwrap())
         }
     }
 
     mod date {
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
         test_scalar_valid! {
-            ScalarType::Date,
+            Scalar::Date,
             ConstValue::String("2020-01-01T12:00:00Z".to_string())
         }
         test_scalar_invalid! {
-            ScalarType::Date,
+            Scalar::Date,
             ConstValue::String("2023-03-08T12:45:26".to_string()),
             ConstValue::Null
         }
     }
     mod email {
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
         test_scalar_valid! {
-            ScalarType::Email,
+            Scalar::Email,
             ConstValue::String("valid@email.com".to_string())
         }
         test_scalar_invalid! {
-            ScalarType::Email,
+            Scalar::Email,
             ConstValue::String("invalid_email".to_string()),
             ConstValue::Null
         }
@@ -252,16 +250,16 @@ mod test {
     mod i128 {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
         test_scalar_valid! {
-            ScalarType::Int128,
+            Scalar::Int128,
             ConstValue::String("100".to_string()),
             ConstValue::String("-15".to_string()),
             ConstValue::String(i128::MAX.to_string())
         }
 
         test_scalar_invalid! {
-            ScalarType::Int128,
+            Scalar::Int128,
             ConstValue::Null,
             ConstValue::Number(Number::from(15)),
             ConstValue::Number(
@@ -274,10 +272,10 @@ mod test {
     mod i16 {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::Int16,
+            Scalar::Int16,
             ConstValue::Number(Number::from(100u32)),
             ConstValue::Number(Number::from(2 * i8::MAX as i64)),
             ConstValue::Number(
@@ -286,7 +284,7 @@ mod test {
         }
 
         test_scalar_invalid! {
-            ScalarType::Int16,
+            Scalar::Int16,
             ConstValue::Null,
             ConstValue::Number(Number::from(i16::MAX as i64 + 1)),
             ConstValue::Number(Number::from(i16::MIN as i64 - 1)),
@@ -300,10 +298,10 @@ mod test {
     mod i32 {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::Int32,
+            Scalar::Int32,
             ConstValue::Number(Number::from(100u32)),
             ConstValue::Number(Number::from(i32::MAX as i64)),
             ConstValue::Number(
@@ -312,7 +310,7 @@ mod test {
         }
 
         test_scalar_invalid! {
-            ScalarType::Int32,
+            Scalar::Int32,
             ConstValue::Null,
             ConstValue::Number(Number::from(i32::MAX as i64 + 1)),
             ConstValue::Number(Number::from(i32::MIN as i64 - 1)),
@@ -326,17 +324,17 @@ mod test {
     mod i64 {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::Int64,
+            Scalar::Int64,
             ConstValue::String("125".to_string()),
             ConstValue::String("-15".to_string()),
             ConstValue::String(i64::MAX.to_string())
         }
 
         test_scalar_invalid! {
-            ScalarType::Int64,
+            Scalar::Int64,
             ConstValue::Null,
             ConstValue::Number(Number::from(15)),
             ConstValue::Number(
@@ -349,10 +347,10 @@ mod test {
     mod i8 {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::Int8,
+            Scalar::Int8,
             ConstValue::Number(Number::from(100i32)),
             ConstValue::Number(Number::from(127)),
             ConstValue::Number(
@@ -361,7 +359,7 @@ mod test {
         }
 
         test_scalar_invalid! {
-            ScalarType::Int8,
+            Scalar::Int8,
             ConstValue::Null,
             ConstValue::Number(Number::from(128)),
             ConstValue::Number(Number::from(-129)),
@@ -373,15 +371,15 @@ mod test {
     }
 
     mod phone {
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::PhoneNumber,
+            Scalar::PhoneNumber,
             ConstValue::String("+911234567890".to_string())
         }
 
         test_scalar_invalid! {
-            ScalarType::PhoneNumber,
+            Scalar::PhoneNumber,
             ConstValue::String("1234567890".to_string()),
             ConstValue::Null
         }
@@ -390,16 +388,16 @@ mod test {
     mod u128 {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::UInt128,
+            Scalar::UInt128,
             ConstValue::String("100".to_string()),
             ConstValue::String(u128::MAX.to_string())
         }
 
         test_scalar_invalid! {
-            ScalarType::UInt128,
+            Scalar::UInt128,
             ConstValue::Null,
             ConstValue::Number(Number::from(15)),
             ConstValue::Number(
@@ -413,16 +411,16 @@ mod test {
     mod u16 {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::UInt16,
+            Scalar::UInt16,
             ConstValue::Number(Number::from(100u32)),
             ConstValue::Number(Number::from(2 * u8::MAX as u64))
         }
 
         test_scalar_invalid! {
-           ScalarType::UInt16,
+           Scalar::UInt16,
             ConstValue::Null,
             ConstValue::Number(Number::from(u16::MAX as u64 + 1)),
             ConstValue::Number(Number::from(-1)),
@@ -436,16 +434,16 @@ mod test {
     mod u32 {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::UInt32,
+            Scalar::UInt32,
             ConstValue::Number(Number::from(100u32)),
             ConstValue::Number(Number::from(u32::MAX as u64))
         }
 
         test_scalar_invalid! {
-            ScalarType::UInt32,
+            Scalar::UInt32,
             ConstValue::Null,
             ConstValue::Number(Number::from(u32::MAX as u64 + 1)),
             ConstValue::Number(Number::from(-1)),
@@ -459,16 +457,16 @@ mod test {
     mod u64 {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::UInt64,
+            Scalar::UInt64,
             ConstValue::String("125".to_string()),
             ConstValue::String(u64::MAX.to_string())
         }
 
         test_scalar_invalid! {
-            ScalarType::UInt64,
+            Scalar::UInt64,
             ConstValue::Null,
             ConstValue::Number(Number::from(15)),
             ConstValue::Number(
@@ -482,16 +480,16 @@ mod test {
     mod u8 {
         use serde_json::Number;
 
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::UInt8,
+            Scalar::UInt8,
             ConstValue::Number(Number::from(15)),
             ConstValue::Number(Number::from(255))
         }
 
         test_scalar_invalid! {
-            ScalarType::UInt8,
+            Scalar::UInt8,
             ConstValue::Null,
             ConstValue::Number(Number::from(256)),
             ConstValue::Number(Number::from(-1)),
@@ -503,15 +501,15 @@ mod test {
     }
 
     mod url {
-        use super::{ConstValue, ScalarType};
+        use super::{ConstValue, Scalar};
 
         test_scalar_valid! {
-            ScalarType::Url,
+            Scalar::Url,
             ConstValue::String("https://ssdd.dev".to_string())
         }
 
         test_scalar_invalid! {
-            ScalarType::Url,
+            Scalar::Url,
             ConstValue::Null,
             ConstValue::String("localhost".to_string())
         }
