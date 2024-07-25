@@ -14,7 +14,7 @@ use crate::core::json::JsonLike;
 
 type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Error>>>>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct ExecutionEnv<Input> {
     plan: OperationPlan<Input>,
     err: Arc<Mutex<Vec<LocationError<jit::error::Error>>>>,
@@ -28,7 +28,7 @@ impl<Input> ExecutionEnv<Input> {
         self.err.lock().unwrap().push(new_error);
     }
 
-    pub fn errors(&self) -> Vec<LocationError<jit::error::Error>> {
+    pub fn get_errors(&self) -> Vec<LocationError<jit::error::Error>> {
         self.err.lock().unwrap().clone()
     }
 }
@@ -62,7 +62,7 @@ where
 
     pub async fn execute(self, synth: Synth<Output>) -> Response<Output, jit::Error> {
         let mut response = Response::new(synth.synthesize());
-        response.add_errors(self.env.errors());
+        response.add_errors(self.env.get_errors());
 
         response
     }
@@ -109,8 +109,7 @@ where
                     todo!()
                 }
             }
-            let ctx = Context::new(&self.request, field, self.env.plan.is_query(), self.env)
-                .with_args(arg_map);
+            let ctx = Context::new(&self.request, field, self.env).with_args(arg_map);
 
             self.execute(field, &ctx, DataPath::new()).await
         }))

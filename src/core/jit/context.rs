@@ -14,17 +14,15 @@ pub struct Context<'a, Input, Output> {
     // TODO: remove the args, since they're already present inside the fields and add support for
     // default values.
     field: &'a Field<Nested<Input>, Input>,
-    is_query: bool,
     env: &'a ExecutionEnv<Input>,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     pub fn new(
         request: &'a Request<Input>,
         field: &'a Field<Nested<Input>, Input>,
-        is_query: bool,
         env: &'a ExecutionEnv<Input>,
     ) -> Self {
-        Self { request, value: None, args: None, field, is_query, env }
+        Self { request, value: None, args: None, field, env }
     }
 
     pub fn with_value_and_field(
@@ -37,7 +35,6 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             args: None,
             value: Some(value),
             field,
-            is_query: self.is_query,
             env: self.env,
         }
     }
@@ -50,7 +47,6 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             value: self.value,
             field,
             args,
-            is_query: self.is_query,
             env: self.env,
         }
     }
@@ -65,7 +61,6 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             value: self.value,
             args: Some(map),
             field: self.field,
-            is_query: self.is_query,
             env: self.env,
         }
     }
@@ -90,7 +85,7 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
     }
 
     fn is_query(&self) -> bool {
-        self.is_query
+        self.env.plan().is_query()
     }
 
     fn add_error(&self, error: ServerError) {
@@ -128,7 +123,7 @@ mod test {
         let field = plan.as_nested();
         let env = ExecutionEnv::new(plan.clone());
         let ctx: Context<async_graphql::Value, async_graphql::Value> =
-            Context::new(&req, &field[0], plan.is_query(), &env);
+            Context::new(&req, &field[0], &env);
         insta::assert_debug_snapshot!(ctx.field().unwrap());
     }
 }
