@@ -223,7 +223,7 @@ impl Builder {
                             skip,
                             include,
                             args,
-                            pos: selection.pos,
+                            pos: selection.pos.into(),
                             extensions: exts.clone(),
                             directives,
                         };

@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
 use async_graphql::{
-    ErrorExtensions, Name, PathSegment, Pos, Positioned as AsyncPositioned, ServerError,
+    ErrorExtensions, Name, PathSegment, Positioned as AsyncPositioned, ServerError,
 };
 use async_graphql_value::ConstValue;
 use serde::{Deserialize, Serialize};
@@ -481,6 +481,33 @@ impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
     }
 }
 
+/// Original position of an element in source code.
+///
+/// You can serialize and deserialize it to the GraphQL `locations` format
+/// ([reference](https://spec.graphql.org/October2021/#sec-Errors)).
+#[derive(
+    Debug, PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Default, Hash, Serialize, Deserialize,
+)]
+pub struct Pos {
+    /// One-based line number.
+    pub line: usize,
+
+    /// One-based column number.
+    pub column: usize,
+}
+
+impl From<async_graphql::Pos> for Pos {
+    fn from(pos: async_graphql::Pos) -> Self {
+        Self { line: pos.line, column: pos.column }
+    }
+}
+
+impl From<Pos> for async_graphql::Pos {
+    fn from(value: Pos) -> Self {
+        async_graphql::Pos { line: value.line, column: value.column }
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 pub struct Positioned<Value> {
     pub value: Value,
@@ -494,7 +521,7 @@ impl From<ServerError> for Positioned<Error> {
     fn from(val: ServerError) -> Self {
         Self {
             value: Error::ServerError(val.clone()),
-            pos: val.locations.first().cloned().unwrap_or_default(),
+            pos: val.locations.first().cloned().unwrap_or_default().into(),
             path: val.path.clone(),
         }
     }
@@ -506,7 +533,8 @@ impl From<Positioned<Error>> for ServerError {
             Error::ServerError(e) => e,
             _ => {
                 let extensions = val.value.extend().extensions;
-                let mut server_error = ServerError::new(val.value.to_string(), Some(val.pos));
+                let mut server_error =
+                    ServerError::new(val.value.to_string(), Some(val.pos.into()));
 
                 server_error.extensions = extensions;
 
