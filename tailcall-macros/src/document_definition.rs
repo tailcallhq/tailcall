@@ -76,22 +76,6 @@ pub fn expand_directive_definition(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-pub fn expand_scalar_definition(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    let struct_identifier = &input.ident;
-
-    let expanded = quote! {
-        impl tailcall_typedefs_common::scalar_definition::ScalarDefinition for #struct_identifier {
-            fn scalar_definition() -> async_graphql::parser::types::TypeSystemDefinition {
-                let schemars = tailcall_typedefs_common::into_schemars::<Self>();
-                tailcall_typedefs_common::scalar_definition::into_scalar_definition(schemars, stringify!(#struct_identifier))
-            }
-        }
-    };
-
-    TokenStream::from(expanded)
-}
-
 pub fn expand_input_definition(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let struct_identifier = &input.ident;
