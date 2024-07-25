@@ -198,7 +198,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
             if let Some(description) = &def.description {
                 scalar = scalar.description(description);
             }
-            let name = def.validator.clone();
+            let name = def.scalar.clone();
             scalar = scalar.validator(move |v| name.validate(v));
             dynamic::Type::Scalar(scalar)
         }

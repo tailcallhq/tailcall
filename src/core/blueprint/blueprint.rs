@@ -191,7 +191,7 @@ pub struct ScalarTypeDefinition {
     pub name: String,
     pub directive: Vec<Directive>,
     pub description: Option<String>,
-    pub validator: scalar::ScalarType,
+    pub scalar: scalar::ScalarType,
 }
 
 #[derive(Clone, Debug)]

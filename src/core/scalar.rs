@@ -56,6 +56,12 @@ fn eval_unsigned<
 }
 
 impl ScalarType {
+    ///
+    /// Check if the type is a predefined scalar
+    pub fn is_predefined_scalar(type_name: &str) -> bool {
+        SCALAR_TYPES.contains(type_name)
+    }
+
     pub fn validate<'a, Value: JsonLike<'a> + 'a>(&self, value: &'a Value) -> bool {
         match self {
             ScalarType::JSON => true,
@@ -256,12 +262,6 @@ lazy_static! {
     };
 }
 
-///
-/// Check if the type is a predefined scalar
-pub fn is_predefined_scalar(type_name: &str) -> bool {
-    SCALAR_TYPES.contains(type_name)
-}
-
 #[cfg(test)]
 mod test {
     use schemars::schema::Schema;
@@ -275,18 +275,16 @@ mod test {
         // This test ensures that all scalar types are correctly defined
         macro_rules! check_custom_scalars {
             ($enum_type:ty, $hashmap:expr) => {{
-                let mut all_present = true;
                 for variant in <$enum_type>::iter() {
                     let variant_name = format!("{:?}", variant);
-                    if !$hashmap.contains_key(&variant_name) {
-                        all_present = false;
-                        println!("Missing variant: {}", variant_name);
-                    }
+                    $hashmap.get(&variant_name).expect(&format!(
+                        "Scalar type {:?} is not present in CUSTOM_SCALARS",
+                        variant_name
+                    ));
                 }
-                all_present
             }};
         }
-        assert!(check_custom_scalars!(ScalarType, &CUSTOM_SCALARS));
+        check_custom_scalars!(ScalarType, &CUSTOM_SCALARS);
     }
 
     fn get_name(v: Schema) -> String {
