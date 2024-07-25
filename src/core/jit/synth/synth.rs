@@ -133,7 +133,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
         let include = self.include(node);
         if include && node.is_scalar {
             let scalar =
-                scalar::Scalar::scalar(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
+                scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
 
             // TODO: add validation for input type as well. But input types are not checked
             // by async_graphql anyway so it should be done after replacing

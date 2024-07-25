@@ -18,7 +18,7 @@ pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
         name: name.to_string(),
         directive: Vec::new(),
         description: None,
-        scalar: scalar::Scalar::scalar(name)
+        scalar: scalar::Scalar::find(name)
             .unwrap_or(&scalar::Scalar::Empty)
             .clone(),
     }))

@@ -137,7 +137,7 @@ impl Scalar {
             Scalar::UInt32 => eval_unsigned(value, u32::try_from),
         }
     }
-    pub fn scalar(name: &str) -> Option<&Scalar> {
+    pub fn find(name: &str) -> Option<&Scalar> {
         CUSTOM_SCALARS.get(name)
     }
     pub fn name(&self) -> String {
