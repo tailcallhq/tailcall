@@ -30,34 +30,34 @@ pub enum ScalarType {
     #[gen_doc(ty = "Object")]
     JSON,
     /// Field whose value is an 8-bit signed integer.
-    #[gen_doc(ty = "Number")]
+    #[gen_doc(ty = "Integer")]
     Int8,
     /// Field whose value is a 16-bit signed integer.
-    #[gen_doc(ty = "Number")]
+    #[gen_doc(ty = "Integer")]
     Int16,
     /// Field whose value is a 32-bit signed integer.
-    #[gen_doc(ty = "Number")]
+    #[gen_doc(ty = "Integer")]
     Int32,
     /// Field whose value is a 64-bit signed integer.
-    #[gen_doc(ty = "Number")]
+    #[gen_doc(ty = "Integer")]
     Int64,
     /// Field whose value is a 128-bit signed integer.
-    #[gen_doc(ty = "Number")]
+    #[gen_doc(ty = "Integer")]
     Int128,
     /// Field whose value is an 8-bit unsigned integer.
-    #[gen_doc(ty = "Number")]
+    #[gen_doc(ty = "Integer")]
     UInt8,
     /// Field whose value is a 16-bit unsigned integer.
-    #[gen_doc(ty = "Number")]
+    #[gen_doc(ty = "Integer")]
     UInt16,
     /// Field whose value is a 32-bit unsigned integer.
-    #[gen_doc(ty = "Number")]
+    #[gen_doc(ty = "Integer")]
     UInt32,
     /// Field whose value is a 64-bit unsigned integer.
-    #[gen_doc(ty = "Number")]
+    #[gen_doc(ty = "Integer")]
     UInt64,
     /// Field whose value is a 128-bit unsigned integer.
-    #[gen_doc(ty = "Number")]
+    #[gen_doc(ty = "Integer")]
     UInt128,
     /// Field whose value is a sequence of bytes.
     #[gen_doc(ty = "String")]
@@ -137,8 +137,7 @@ impl ScalarType {
         let schemars = self.schema();
         tailcall_typedefs_common::scalar_definition::into_scalar_definition(schemars, &self.name())
     }
-    fn schema_inner(&self) -> Schema {
-        let description = self.doc();
+    pub fn schema(&self) -> Schema {
         let type_of = self.ty();
         let format = match type_of {
             InstanceType::Integer => Some(self.name().to_lowercase()),
@@ -148,7 +147,7 @@ impl ScalarType {
             {
                 "title": self.name(),
                 "type": type_of,
-                "description": description,
+                "description": self.doc(),
             }
         );
         if let Some(format) = format {
@@ -157,9 +156,6 @@ impl ScalarType {
 
         let metadata = serde_json::from_value(value).unwrap();
         Schema::Object(SchemaObject { metadata: Some(Box::new(metadata)), ..Default::default() })
-    }
-    pub fn schema(&self) -> Schema {
-        self.schema_inner()
     }
 }
 

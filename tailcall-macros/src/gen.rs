@@ -72,7 +72,7 @@ pub fn doc(input: TokenStream) -> TokenStream {
         let ty = extract_gen_doc_ty(&variant.attrs).to_lowercase();
 
         let instance_type = match ty.as_str() {
-            "number" => quote! { InstanceType::Number },
+            "integer" => quote! { InstanceType::Integer },
             "string" => quote! { InstanceType::String },
             "object" => quote! { InstanceType::Integer },
             _ => quote! { InstanceType::Null },
