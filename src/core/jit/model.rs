@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 
-use async_graphql::parser::types::OperationType;
-use async_graphql::Pos;
+use async_graphql::parser::types::{ConstDirective, OperationType};
+use async_graphql::{Name, Pos, Positioned};
+use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 use serde::Deserialize;
 
@@ -26,6 +27,16 @@ impl<Value> Variables<Value> {
     }
     pub fn insert(&mut self, key: String, value: Value) {
         self.0.insert(key, value);
+    }
+    pub fn try_map<Output, Error>(
+        self,
+        map: impl Fn(Value) -> Result<Output, Error>,
+    ) -> Result<Variables<Output>, Error> {
+        let mut hm = HashMap::new();
+        for (k, v) in self.0 {
+            hm.insert(k, map(v)?);
+        }
+        Ok(Variables(hm))
     }
 }
 
@@ -104,6 +115,7 @@ pub struct Field<Extensions, Input> {
     pub extensions: Option<Extensions>,
     pub pos: Pos,
     pub is_scalar: bool,
+    pub directives: Vec<Directive<Input>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -121,11 +133,62 @@ impl Variable {
     }
 }
 
-impl<Extensions, Input> Field<Extensions, Input> {
+impl<Input> Field<Nested<Input>, Input> {
+    pub fn try_map<Output, Error>(
+        self,
+        map: &impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<Field<Nested<Output>, Output>, Error> {
+        let mut extensions = None;
+
+        if let Some(nested) = self.extensions {
+            let fields = nested
+                .fields
+                .into_iter()
+                .map(|v| v.try_map(map))
+                .collect::<Result<_, _>>()?;
+            let by_type = nested
+                .by_type
+                .into_iter()
+                .map(|(k, fields)| {
+                    fields
+                        .into_iter()
+                        .map(|v| v.try_map(map))
+                        .collect::<Result<_, _>>()
+                        .map(|v| (k, v))
+                })
+                .collect::<Result<_, _>>()?;
+            extensions = Some(Nested { fields, by_type });
+        }
+
+        Ok(Field {
+            id: self.id,
+            name: self.name,
+            ir: self.ir,
+            type_of: self.type_of,
+            extensions,
+            pos: self.pos,
+            skip: self.skip,
+            include: self.include,
+            args: self
+                .args
+                .into_iter()
+                .map(|arg| arg.try_map(map))
+                .collect::<Result<_, _>>()?,
+            is_scalar: false,
+            directives: self
+                .directives
+                .into_iter()
+                .map(|directive| directive.try_map(map))
+                .collect::<Result<_, _>>()?,
+        })
+    }
+}
+
+impl<Input> Field<Flat, Input> {
     pub fn try_map<Output, Error>(
         self,
         map: impl Fn(Input) -> Result<Output, Error>,
-    ) -> Result<Field<Extensions, Output>, Error> {
+    ) -> Result<Field<Flat, Output>, Error> {
         Ok(Field {
             id: self.id,
             name: self.name,
@@ -141,6 +204,11 @@ impl<Extensions, Input> Field<Extensions, Input> {
                 .map(|arg| arg.try_map(&map))
                 .collect::<Result<_, _>>()?,
             is_scalar: self.is_scalar,
+            directives: self
+                .directives
+                .into_iter()
+                .map(|directive| directive.try_map(&map))
+                .collect::<Result<_, _>>()?,
         })
     }
 }
@@ -218,6 +286,7 @@ impl<Input> Field<Flat, Input> {
             pos: self.pos,
             extensions,
             is_scalar: self.is_scalar,
+            directives: self.directives,
         }
     }
 }
@@ -238,7 +307,13 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("extensions", &self.extensions);
         }
         debug_struct.field("is_scalar", &self.is_scalar);
-
+        if self.skip.is_some() {
+            debug_struct.field("skip", &self.skip);
+        }
+        if self.include.is_some() {
+            debug_struct.field("include", &self.include);
+        }
+        debug_struct.field("directives", &self.directives);
         debug_struct.finish()
     }
 }
@@ -276,6 +351,27 @@ pub struct OperationPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
+}
+
+impl<Input> OperationPlan<Input> {
+    pub fn try_map<Output, Error>(
+        self,
+        map: impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<OperationPlan<Output>, Error> {
+        let mut flat = vec![];
+
+        for f in self.flat {
+            flat.push(f.try_map(&map)?);
+        }
+
+        let mut nested = vec![];
+
+        for n in self.nested {
+            nested.push(n.try_map(&map)?);
+        }
+
+        Ok(OperationPlan { flat, operation_type: self.operation_type, nested })
+    }
 }
 
 impl<Input> OperationPlan<Input> {
@@ -333,5 +429,65 @@ impl<Input> OperationPlan<Input> {
 
     pub fn size(&self) -> usize {
         self.flat.len()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Directive<Input> {
+    pub name: String,
+    pub arguments: Vec<(String, Input)>,
+}
+
+impl<Input> Directive<Input> {
+    pub fn try_map<Output, Error>(
+        self,
+        map: impl Fn(Input) -> Result<Output, Error>,
+    ) -> Result<Directive<Output>, Error> {
+        Ok(Directive {
+            name: self.name,
+            arguments: self
+                .arguments
+                .into_iter()
+                .map(|(k, v)| map(v).map(|mapped_value| (k, mapped_value)))
+                .collect::<Result<Vec<_>, _>>()?,
+        })
+    }
+}
+
+impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
+    fn from(value: &'a Directive<ConstValue>) -> Self {
+        // we don't use pos required in Positioned struct, hence using defaults.
+        ConstDirective {
+            name: Positioned::new(Name::new(&value.name), Default::default()),
+            arguments: value
+                .arguments
+                .iter()
+                .map(|a| {
+                    (
+                        Positioned::new(Name::new(a.0.clone()), Default::default()),
+                        Positioned::new(a.1.clone(), Default::default()),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use async_graphql::parser::types::ConstDirective;
+    use async_graphql_value::ConstValue;
+
+    use super::Directive;
+
+    #[test]
+    fn test_from_custom_directive() {
+        let custom_directive = Directive {
+            name: "options".to_string(),
+            arguments: vec![("paging".to_string(), ConstValue::Boolean(true))],
+        };
+
+        let async_directive: ConstDirective = (&custom_directive).into();
+        insta::assert_debug_snapshot!(async_directive);
     }
 }

@@ -39,7 +39,7 @@ type Mutation {
 scalar PhoneNumber
 
 type Query {
-  user(id: Int!): User
+  user: User
 }
 
 scalar UInt128

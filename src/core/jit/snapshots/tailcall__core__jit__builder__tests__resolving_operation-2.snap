@@ -1,0 +1,77 @@
+---
+source: src/core/jit/builder.rs
+expression: plan.into_nested()
+---
+[
+    Field {
+        id: 0,
+        name: "createPost",
+        ir: "Some(..)",
+        type_of: Post,
+        args: [
+            Arg {
+                id: 0,
+                name: "post",
+                type_of: InputPost!,
+                value: Some(
+                    Object(
+                        {
+                            Name(
+                                "userId",
+                            ): Number(
+                                Number(1),
+                            ),
+                            Name(
+                                "title",
+                            ): String(
+                                "test-12",
+                            ),
+                            Name(
+                                "body",
+                            ): String(
+                                "test-12",
+                            ),
+                        },
+                    ),
+                ),
+                default_value: None,
+            },
+        ],
+        extensions: Some(
+            Nested(
+                [
+                    Field {
+                        id: 1,
+                        name: "id",
+                        type_of: ID!,
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 2,
+                        name: "userId",
+                        type_of: ID!,
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 3,
+                        name: "title",
+                        type_of: String!,
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 4,
+                        name: "body",
+                        type_of: String!,
+                        is_scalar: true,
+                        directives: [],
+                    },
+                ],
+            ),
+        ),
+        is_scalar: false,
+        directives: [],
+    },
+]

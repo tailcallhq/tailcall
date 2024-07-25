@@ -7,9 +7,10 @@ use derive_getters::Getters;
 use futures_util::future::join_all;
 
 use super::context::Context;
-use super::synth::Synthesizer;
 use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
 use crate::core::ir::model::IR;
+use crate::core::jit;
+use crate::core::jit::synth::Synth;
 use crate::core::ir::TypeName;
 use crate::core::json::JsonLike;
 
@@ -18,31 +19,25 @@ type SharedStore<Output, Error> = Arc<Mutex<Store<Result<ExecResult<Output>, Pos
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
-pub struct Executor<Synth, IRExec, Input> {
+pub struct Executor<IRExec, Input> {
     plan: OperationPlan<Input>,
-    synth: Synth,
     exec: IRExec,
 }
 
-impl<Input, Output, Error, Synth, Exec> Executor<Synth, Exec, Input>
+impl<Input, Output, Exec> Executor<Exec, Input>
 where
-    Output: for<'a> JsonLike<'a> + Debug,
+    Output: for<'a> JsonLike<'a> + Debug + Clone,
     Input: Clone + Debug,
-    Synth: Synthesizer<
-        Value = Result<ExecResult<Output>, Positioned<Error>>,
-        Output = Result<Output, Positioned<Error>>,
-        Variable = Input,
-    >,
-    Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
+    Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
-    pub fn new(plan: OperationPlan<Input>, synth: Synth, exec: Exec) -> Self {
-        Self { plan, synth, exec }
+    pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
+        Self { plan, exec }
     }
 
-    async fn execute_inner(
+    pub async fn store(
         &self,
         request: Request<Input>,
-    ) -> Store<Result<ExecResult<Output>, Positioned<Error>>> {
+    ) -> Store<Result<ExecResult<Output>, Positioned<jit::Error>>> {
         let store = Arc::new(Mutex::new(Store::new()));
         let mut ctx = ExecutorInner::new(request, store.clone(), self.plan.to_owned(), &self.exec);
         ctx.init().await;
@@ -51,10 +46,8 @@ where
         store
     }
 
-    pub async fn execute(self, request: Request<Input>) -> Response<Output, Error> {
-        let vars = request.variables.clone();
-        let store = self.execute_inner(request).await;
-        Response::new(self.synth.synthesize(store, vars))
+    pub async fn execute(self, synth: Synth<Output>) -> Response<Output, jit::Error> {
+        Response::new(synth.synthesize())
     }
 }
 
@@ -82,7 +75,6 @@ where
     }
 
     async fn init(&mut self) {
-        let ctx = Context::new(&self.request, self.plan.is_query());
         join_all(self.plan.as_nested().iter().map(|field| async {
             let mut arg_map = indexmap::IndexMap::new();
             for arg in field.args.iter() {
@@ -100,7 +92,7 @@ where
                     todo!()
                 }
             }
-            let ctx = ctx.with_args(arg_map);
+            let ctx = Context::new(&self.request, self.plan.is_query(), field).with_args(arg_map);
             self.execute(field, &ctx, DataPath::new()).await
         }))
         .await;
@@ -129,7 +121,8 @@ where
                             };
 
                             join_all(field.nested_iter(type_name).map(|field| {
-                                let ctx = ctx.with_value(value); // Output::JsonArray::Value
+                                let new_value = value.get_key(&field.name).unwrap_or(value);
+                                let ctx = ctx.with_value_and_field(new_value, field);
                                 let data_path = data_path.clone().with_index(index);
                                 async move { self.execute(field, &ctx, data_path).await }
                             }))
@@ -150,7 +143,8 @@ where
                     };
 
                     join_all(field.nested_iter(type_name).map(|child| {
-                        let ctx = ctx.with_value(value);
+                        let new_value = value.get_key(&child.name).unwrap_or(value);
+                        let ctx = ctx.with_value_and_field(new_value, child);
                         let data_path = data_path.clone();
                         async move { self.execute(child, &ctx, data_path).await }
                     }))
@@ -165,6 +159,20 @@ where
                 &data_path,
                 result.map_err(|e| Positioned::new(e, field.pos)),
             );
+        } else {
+            // if the present field doesn't have IR, still go through it's extensions to see
+            // if they've IR.
+            join_all(field.nested_iter(field.type_of.name()).map(|child| {
+                let value = ctx.value().map(|v| v.get_key(&child.name).unwrap_or(v));
+                let ctx = if let Some(v) = value {
+                    ctx.with_value_and_field(v, child)
+                } else {
+                    ctx.with_field(child)
+                };
+                let data_path = data_path.clone();
+                async move { self.execute(child, &ctx, data_path).await }
+            }))
+            .await;
         }
 
         Ok(())

@@ -4,12 +4,12 @@ use async_graphql_value::ConstValue;
 
 use super::context::Context;
 use super::exec::{ExecResult, Executor, IRExecutor};
-use super::synth::SynthConst;
 use super::{Error, OperationPlan, Request, Response, Result};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::ir::model::IR;
 use crate::core::ir::EvalContext;
+use crate::core::jit::synth::Synth;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
@@ -29,9 +29,11 @@ impl ConstValueExecutor {
         let exec = ConstValueExec::new(req_ctx);
         let plan = self.plan;
         // TODO: drop the clones in plan
-        let synth = SynthConst::new(plan.clone());
-        let exe = Executor::new(plan, synth, exec);
-        exe.execute(request).await
+        let vars = request.variables.clone();
+        let exe = Executor::new(plan.clone(), exec);
+        let store = exe.store(request).await;
+        let synth = Synth::new(plan, store, vars);
+        exe.execute(synth).await
     }
 }
 

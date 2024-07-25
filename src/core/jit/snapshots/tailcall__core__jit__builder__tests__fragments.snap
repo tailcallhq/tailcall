@@ -22,6 +22,7 @@ expression: plan.into_nested()
             },
         ],
         extensions: Some(
+<<<<<<< HEAD
             Nested {
                 fields: [],
                 by_type: {
@@ -61,7 +62,35 @@ expression: plan.into_nested()
                     ],
                 },
             },
+=======
+            Nested(
+                [
+                    Field {
+                        id: 1,
+                        name: "name",
+                        type_of: String!,
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 2,
+                        name: "email",
+                        type_of: String!,
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 3,
+                        name: "phone",
+                        type_of: String,
+                        is_scalar: true,
+                        directives: [],
+                    },
+                ],
+            ),
+>>>>>>> origin/main
         ),
         is_scalar: false,
+        directives: [],
     },
 ]
