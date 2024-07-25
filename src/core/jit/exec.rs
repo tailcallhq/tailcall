@@ -97,6 +97,44 @@ where
         .await;
     }
 
+    async fn execute_inner<'b>(
+        &'b self,
+        field: &'b Field<Nested<Input>, Input>,
+        ctx: &'b Context<'b, Input, Output>,
+        data_path: DataPath,
+        value: Option<&'a Output>,
+    ) -> Result<(), Error> {
+        if field.type_of.is_list() && value.is_some_and(|v| v.as_array().is_some()) {
+            // Check if the value is an array
+            if let Some(array) = value.unwrap().as_array() {
+                join_all(field.nested_iter().map(|field| {
+                    join_all(array.iter().enumerate().map(|(index, value)| {
+                        let new_value = value.get_key(&field.name).unwrap_or(value);
+                        let ctx = ctx.with_value_and_field(new_value, field);
+                        let data_path = data_path.clone().with_index(index);
+                        async move { self.execute(field, &ctx, data_path).await }
+                    }))
+                }))
+                .await;
+            }
+        } else {
+            join_all(field.nested_iter().map(|child| {
+                let value = if value.is_some() { value } else { ctx.value() };
+                let value = value.map(|v| v.get_key(&child.name).unwrap_or(v));
+                let ctx = if let Some(v) = value {
+                    ctx.with_value_and_field(v, child)
+                } else {
+                    ctx.with_field(child)
+                };
+                let data_path = data_path.clone();
+                async move { self.execute(child, &ctx, data_path).await }
+            }))
+            .await;
+        }
+
+        Ok(())
+    }
+
     async fn execute<'b>(
         &'b self,
         field: &'b Field<Nested<Input>, Input>,
@@ -107,36 +145,8 @@ where
             let result = self.ir_exec.execute(ir, ctx).await;
 
             if let Ok(ref value) = result {
-                // Array
-                // Check if the field expects a list
-                if field.type_of.is_list() {
-                    // Check if the value is an array
-                    if let Some(array) = value.as_array() {
-                        join_all(field.nested_iter().map(|field| {
-                            join_all(array.iter().enumerate().map(|(index, value)| {
-                                let new_value = value.get_key(&field.name).unwrap_or(value);
-                                let ctx = ctx.with_value_and_field(new_value, field);
-                                let data_path = data_path.clone().with_index(index);
-                                async move { self.execute(field, &ctx, data_path).await }
-                            }))
-                        }))
-                        .await;
-                    }
-                    // TODO:  We should throw an error stating that we expected
-                    // a list type here but because the `Error` is a
-                    // type-parameter, its not possible
-                }
-                // TODO: Validate if the value is an Object
-                // Has to be an Object, we don't do anything while executing if its a Scalar
-                else {
-                    join_all(field.nested_iter().map(|child| {
-                        let new_value = value.get_key(&child.name).unwrap_or(value);
-                        let ctx = ctx.with_value_and_field(new_value, child);
-                        let data_path = data_path.clone();
-                        async move { self.execute(child, &ctx, data_path).await }
-                    }))
-                    .await;
-                }
+                self.execute_inner(field, ctx, data_path.clone(), Some(value))
+                    .await?;
             }
 
             let mut store = self.store.lock().unwrap();
@@ -147,19 +157,8 @@ where
                 result.map_err(|e| Positioned::new(e, field.pos)),
             );
         } else {
-            // if the present field doesn't have IR, still go through it's extensions to see
-            // if they've IR.
-            join_all(field.nested_iter().map(|child| {
-                let value = ctx.value().map(|v| v.get_key(&child.name).unwrap_or(v));
-                let ctx = if let Some(v) = value {
-                    ctx.with_value_and_field(v, child)
-                } else {
-                    ctx.with_field(child)
-                };
-                let data_path = data_path.clone();
-                async move { self.execute(child, &ctx, data_path).await }
-            }))
-            .await;
+            self.execute_inner(field, ctx, data_path.clone(), ctx.value())
+                .await?;
         }
 
         Ok(())
