@@ -1,4 +1,3 @@
-
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
 
@@ -16,14 +15,14 @@ pub struct Context<'a, Input, Output> {
     // default values.
     field: &'a Field<Nested<Input>, Input>,
     is_query: bool,
-    env: &'a ExecutionEnv,
+    env: &'a ExecutionEnv<Input>,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     pub fn new(
         request: &'a Request<Input>,
         field: &'a Field<Nested<Input>, Input>,
         is_query: bool,
-        env: &'a ExecutionEnv,
+        env: &'a ExecutionEnv<Input>,
     ) -> Self {
         Self { request, value: None, args: None, field, is_query, env }
     }
@@ -105,6 +104,7 @@ mod test {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::ResolverContextLike;
+    use crate::core::jit::exec::ExecutionEnv;
     use crate::core::jit::{OperationPlan, Request};
     use crate::core::valid::Validator;
 
@@ -126,8 +126,9 @@ mod test {
     fn test_field() {
         let (plan, req) = setup("query {posts {id title}}");
         let field = plan.as_nested();
+        let env = ExecutionEnv::new(plan.clone());
         let ctx: Context<async_graphql::Value, async_graphql::Value> =
-            Context::new(&req, &field[0], &plan);
+            Context::new(&req, &field[0], plan.is_query(), &env);
         insta::assert_debug_snapshot!(ctx.field().unwrap());
     }
 }

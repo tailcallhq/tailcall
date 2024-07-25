@@ -15,16 +15,17 @@ use crate::core::json::JsonLike;
 type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Error>>>>;
 
 #[derive(Debug, Clone)]
-pub struct ExecutionEnv {
+pub struct ExecutionEnv<Input> {
+    plan: OperationPlan<Input>,
     err: Arc<Mutex<Vec<LocationError<jit::error::Error>>>>,
 }
 
-impl ExecutionEnv {
-    pub fn new() -> Self {
-        Self { err: Arc::new(Mutex::new(vec![])) }
+impl<Input> ExecutionEnv<Input> {
+    pub fn new(plan: OperationPlan<Input>) -> Self {
+        Self { plan, err: Arc::new(Mutex::new(vec![])) }
     }
-    pub fn add_error(&self, error: LocationError<jit::error::Error>) {
-        self.err.lock().unwrap().push(error);
+    pub fn add_error(&self, new_error: LocationError<jit::error::Error>) {
+        self.err.lock().unwrap().push(new_error);
     }
 
     pub fn errors(&self) -> Vec<LocationError<jit::error::Error>> {
@@ -36,9 +37,8 @@ impl ExecutionEnv {
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
 pub struct Executor<IRExec, Input> {
-    plan: OperationPlan<Input>,
+    env: ExecutionEnv<Input>,
     exec: IRExec,
-    env: ExecutionEnv,
 }
 
 impl<Input, Output, Exec> Executor<Exec, Input>
@@ -48,18 +48,12 @@ where
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
     pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { plan, exec, env: ExecutionEnv::new() }
+        Self { exec, env: ExecutionEnv::new(plan) }
     }
 
     pub async fn store(&self, request: Request<Input>) -> Store<Result<Output, jit::Error>> {
         let store = Arc::new(Mutex::new(Store::new()));
-        let mut ctx = ExecutorInner::new(
-            request,
-            store.clone(),
-            self.plan.to_owned(),
-            &self.exec,
-            &self.env,
-        );
+        let mut ctx = ExecutorInner::new(request, store.clone(), &self.exec, &self.env);
         ctx.init().await;
 
         let store = mem::replace(&mut *store.lock().unwrap(), Store::new());
@@ -78,9 +72,8 @@ where
 struct ExecutorInner<'a, Input, Output, Error, Exec> {
     request: Request<Input>,
     store: SharedStore<Output, Error>,
-    plan: OperationPlan<Input>,
     ir_exec: &'a Exec,
-    env: &'a ExecutionEnv,
+    env: &'a ExecutionEnv<Input>,
 }
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
@@ -92,15 +85,14 @@ where
     fn new(
         request: Request<Input>,
         store: SharedStore<Output, Error>,
-        plan: OperationPlan<Input>,
         ir_exec: &'a Exec,
-        env: &'a ExecutionEnv,
+        env: &'a ExecutionEnv<Input>,
     ) -> Self {
-        Self { request, store, plan, ir_exec, env }
+        Self { request, store, ir_exec, env }
     }
 
     async fn init(&mut self) {
-        join_all(self.plan.as_nested().iter().map(|field| async {
+        join_all(self.env.plan.as_nested().iter().map(|field| async {
             let mut arg_map = indexmap::IndexMap::new();
             for arg in field.args.iter() {
                 let name = arg.name.as_str();
@@ -117,8 +109,9 @@ where
                     todo!()
                 }
             }
-            let ctx = Context::new(&self.request, field, self.plan.is_query(), self.env)
+            let ctx = Context::new(&self.request, field, self.env.plan.is_query(), self.env)
                 .with_args(arg_map);
+
             self.execute(field, &ctx, DataPath::new()).await
         }))
         .await;
