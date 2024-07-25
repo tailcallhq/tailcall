@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com/") {
+  query: Query
+}
+
+input Bar {
+  buzz: String! @modify(name: "fizz")
+  sun: Sun!
+}
+
+input Sun {
+  comments: String @modify(name: "rocks")
+  moons: String! @modify(name: "planets")
+}
+
+type Foo {
+  alpha: String!
+  beta: String!
+  id: Int!
+}
+
+type Query {
+  foo(extra_input: Bar, input: Bar): [Foo]! @http(body: "{{.args.input}}", method: "POST", path: "/foo")
+}
