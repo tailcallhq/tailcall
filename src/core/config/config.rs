@@ -900,7 +900,7 @@ impl Config {
     pub fn is_scalar(&self, type_name: &str) -> bool {
         self.types
             .get(type_name)
-            .map_or(scalar::Scalar::is_predefined_scalar(type_name), |ty| {
+            .map_or(scalar::Scalar::is_predefined(type_name), |ty| {
                 ty.scalar()
             })
     }

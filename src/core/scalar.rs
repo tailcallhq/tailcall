@@ -103,7 +103,7 @@ fn eval_unsigned<
 impl Scalar {
     ///
     /// Check if the type is a predefined scalar
-    pub fn is_predefined_scalar(type_name: &str) -> bool {
+    pub fn is_predefined(type_name: &str) -> bool {
         if PREDEFINED_SCALARS.iter().any(|v| type_name.eq(*v)) {
             true
         } else {
