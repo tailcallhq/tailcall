@@ -133,12 +133,12 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
         data_path: &DataPath,
     ) -> Result<Value, LocationError<Error>> {
         let include = self.include(node);
-        if parent.is_null() {
+
+        let result = if parent.is_null() {
             if node.type_of.is_nullable() {
                 Ok(Value::null())
             } else {
                 Err(ValidationError::ValueRequired.into())
-                    .map_err(|e| self.to_location_error(e, node))
             }
         } else if include && self.plan.field_is_scalar(node) {
             let scalar = scalar::get_scalar(node.type_of.name());
@@ -152,7 +152,6 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                     ValidationError::ScalarInvalid { type_of: node.type_of.name().to_string() }
                         .into(),
                 )
-                .map_err(|e| self.to_location_error(e, node))
             }
         } else if self.plan.field_is_enum(node) {
             if parent
@@ -166,7 +165,6 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                     ValidationError::EnumInvalid { type_of: node.type_of.name().to_string() }
                         .into(),
                 )
-                .map_err(|e| self.to_location_error(e, node))
             }
         } else {
             match (parent.as_array(), parent.as_object()) {
@@ -226,7 +224,9 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                 }
                 _ => Ok(parent.clone()),
             }
-        }
+        };
+
+        result.map_err(|e| self.to_location_error(e, node))
     }
 
     fn to_location_error(
