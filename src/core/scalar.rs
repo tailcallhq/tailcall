@@ -275,16 +275,22 @@ mod test {
         // This test ensures that all scalar types are correctly defined
         macro_rules! check_custom_scalars {
             ($enum_type:ty, $hashmap:expr) => {{
+                let mut failed = vec![];
                 for variant in <$enum_type>::iter() {
                     let variant_name = format!("{:?}", variant);
-                    $hashmap.get(&variant_name).expect(&format!(
-                        "Scalar type {:?} is not present in CUSTOM_SCALARS",
-                        variant_name
-                    ));
+                    if !$hashmap.contains_key(&variant_name) {
+                        failed.push(variant_name);
+                    }
                 }
+                failed
             }};
         }
-        check_custom_scalars!(ScalarType, &CUSTOM_SCALARS);
+        let failed = check_custom_scalars!(ScalarType, &CUSTOM_SCALARS);
+        assert!(
+            failed.is_empty(),
+            "Missing scalar types: {:?} in CUSTOM_SCALARS",
+            failed
+        );
     }
 
     fn get_name(v: Schema) -> String {
