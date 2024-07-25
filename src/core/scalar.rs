@@ -8,6 +8,8 @@ use tailcall_macros::{gen_doc, Doc};
 
 use crate::core::json::JsonLike;
 
+const PREDEFINED_SCALARS: &[&str] = &["Boolean", "Float", "ID", "Int", "String", "DateTime"];
+
 lazy_static! {
     static ref CUSTOM_SCALARS: HashMap<String, ScalarType> =
         ScalarType::iter().map(|v| (v.name(), v)).collect();
@@ -102,8 +104,7 @@ impl ScalarType {
     ///
     /// Check if the type is a predefined scalar
     pub fn is_predefined_scalar(type_name: &str) -> bool {
-        let predefined = ["String", "Int", "Float", "ID", "Boolean"];
-        if predefined.iter().any(|v| type_name.eq(*v)) {
+        if PREDEFINED_SCALARS.iter().any(|v| type_name.eq(*v)) {
             true
         } else {
             CUSTOM_SCALARS.get(type_name).is_some()
