@@ -3,11 +3,11 @@ use std::fmt::{Debug, Formatter};
 use std::sync::{Arc, Mutex};
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
-use async_graphql::{Name, Pos, Positioned};
+use async_graphql::{Name, Pos, Positioned as AsyncPositioned};
 use async_graphql_value::ConstValue;
 use serde::Deserialize;
 
-use super::{Error, LocationError};
+use super::{Error, Positioned};
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
 
@@ -307,7 +307,7 @@ pub struct OperationPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
-    errors: Arc<Mutex<Vec<LocationError<Error>>>>,
+    errors: Arc<Mutex<Vec<Positioned<Error>>>>,
     pub index: Arc<Index>,
 }
 
@@ -375,11 +375,11 @@ impl<Input> OperationPlan<Input> {
         self.operation_type
     }
 
-    pub fn errors(&self) -> Vec<LocationError<Error>> {
+    pub fn errors(&self) -> Vec<Positioned<Error>> {
         self.errors.lock().unwrap().clone()
     }
 
-    pub fn add_error(&self, error: LocationError<Error>) {
+    pub fn add_error(&self, error: Positioned<Error>) {
         self.errors.lock().unwrap().push(error)
     }
 
@@ -464,14 +464,14 @@ impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
     fn from(value: &'a Directive<ConstValue>) -> Self {
         // we don't use pos required in Positioned struct, hence using defaults.
         ConstDirective {
-            name: Positioned::new(Name::new(&value.name), Default::default()),
+            name: AsyncPositioned::new(Name::new(&value.name), Default::default()),
             arguments: value
                 .arguments
                 .iter()
                 .map(|a| {
                     (
-                        Positioned::new(Name::new(a.0.clone()), Default::default()),
-                        Positioned::new(a.1.clone(), Default::default()),
+                        AsyncPositioned::new(Name::new(a.0.clone()), Default::default()),
+                        AsyncPositioned::new(a.1.clone(), Default::default()),
                     )
                 })
                 .collect::<Vec<_>>(),

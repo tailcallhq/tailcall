@@ -2,7 +2,7 @@ use async_graphql::PathSegment;
 
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
-use crate::core::jit::{Error, LocationError, ValidationError};
+use crate::core::jit::{Error, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar::{self, Scalar};
 
@@ -50,7 +50,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     }
 
     #[inline(always)]
-    pub fn synthesize(&'a self) -> Result<Value, LocationError<Error>> {
+    pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
         let mut data = Value::JsonObject::new();
 
         for child in self.plan.as_nested().iter() {
@@ -76,7 +76,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
         node: &'a Field<Nested<Value>, Value>,
         parent: Option<&'a Value>,
         data_path: &DataPath,
-    ) -> Result<Value, LocationError<Error>> {
+    ) -> Result<Value, Positioned<Error>> {
         // TODO: this implementation prefer parent value over value in the store
         // that's opposite to the way async_graphql engine works in tailcall
         match parent {
@@ -131,7 +131,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
         node: &'a Field<Nested<Value>, Value>,
         parent: &'a Value,
         data_path: &DataPath,
-    ) -> Result<Value, LocationError<Error>> {
+    ) -> Result<Value, Positioned<Error>> {
         let include = self.include(node);
 
         let result = if parent.is_null() {
@@ -233,7 +233,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
         &'a self,
         error: Error,
         node: &'a Field<Nested<Value>, Value>,
-    ) -> LocationError<Error> {
+    ) -> Positioned<Error> {
         // create path from the root to the current node in the fields tree
         let path = {
             let mut path = Vec::new();
@@ -251,7 +251,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
             path
         };
 
-        LocationError { error, pos: node.pos, path }
+        Positioned { value: error, pos: node.pos, path }
     }
 }
 

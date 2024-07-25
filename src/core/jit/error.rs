@@ -80,38 +80,38 @@ impl From<Error> for ServerError {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct LocationError<Err> {
-    pub error: Err,
+pub struct Positioned<Value> {
+    pub value: Value,
     pub pos: Pos,
     pub path: Vec<PathSegment>,
 }
 
 // TODO: Improve conversion logic to avoid unnecessary round-trip conversions
-//       between ServerError and LocationError<Error>.
-impl From<ServerError> for LocationError<Error> {
+//       between ServerError and Positioned<Error>.
+impl From<ServerError> for Positioned<Error> {
     fn from(val: ServerError) -> Self {
         Self {
-            error: Error::ServerError(val.clone()),
+            value: Error::ServerError(val.clone()),
             pos: val.locations.first().cloned().unwrap_or_default(),
             path: val.path.clone(),
         }
     }
 }
 
-impl From<LocationError<Error>> for ServerError {
-    fn from(val: LocationError<Error>) -> Self {
-        match val.error {
+impl From<Positioned<Error>> for ServerError {
+    fn from(val: Positioned<Error>) -> Self {
+        match val.value {
             Error::ServerError(e) => e,
             _ => {
-                let extensions = val.error.extend().extensions;
-                let mut server_error = ServerError::new(val.error.to_string(), Some(val.pos));
+                let extensions = val.value.extend().extensions;
+                let mut server_error = ServerError::new(val.value.to_string(), Some(val.pos));
 
                 server_error.extensions = extensions;
 
                 // TODO: in order to be compatible with async_graphql path is only set for
                 // validation errors here but in general we might consider setting it
                 // for every error
-                if let Error::Validation(_) = val.error {
+                if let Error::Validation(_) = val.value {
                     server_error.path = val.path;
                 }
 
