@@ -30,7 +30,7 @@ type Foo {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/foo
-    body: {"buzz":"test","sun":{"moons":"test"}}
+    body: {"buzz": "test", "sun": {"moons": "test"}}
   response:
     status: 200
     body:
