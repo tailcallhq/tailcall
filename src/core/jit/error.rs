@@ -100,7 +100,7 @@ impl From<ServerError> for LocationError<Error> {
     }
 }
 
-impl From<LocationError<Error>> for Lift<ServerError> {
+impl From<LocationError<Error>> for ServerError {
     fn from(val: LocationError<Error>) -> Self {
         match val.error {
             Error::ServerError(e) => e.into(),
