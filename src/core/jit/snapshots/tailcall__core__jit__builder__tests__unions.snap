@@ -31,6 +31,7 @@ expression: plan.into_nested()
                             name: "id",
                             type_of: ID!,
                             is_scalar: true,
+                            directives: [],
                         },
                     ],
                     "UserEmail": [
@@ -39,6 +40,7 @@ expression: plan.into_nested()
                             name: "email",
                             type_of: String!,
                             is_scalar: true,
+                            directives: [],
                         },
                     ],
                 },

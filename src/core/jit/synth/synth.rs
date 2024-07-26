@@ -1,18 +1,18 @@
 use async_graphql::Positioned;
 
 use crate::core::ir::TypeName;
-use crate::core::jit::exec::{ExecResult, ExecResultRef};
+use crate::core::jit::exec::ExecResult;
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar;
 
-type ConstValueStore<Value> = Store<Result<ExecResult<Value>, Positioned<Error>>>;
+type ValueStore<Value> = Store<Result<ExecResult<Value>, Positioned<Error>>>;
 
 pub struct Synth<Value> {
     selection: Vec<Field<Nested<Value>, Value>>,
-    store: ConstValueStore<Value>,
+    store: ValueStore<Value>,
     variables: Variables<Value>,
 }
 
@@ -42,7 +42,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: OperationPlan<Value>,
-        store: ConstValueStore<Value>,
+        store: ValueStore<Value>,
         variables: Variables<Value>,
     ) -> Self {
         Self { selection: plan.into_nested(), store, variables }
@@ -61,7 +61,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
             if !self.include(child) {
                 continue;
             }
-            let val = self.iter(child, None, &DataPath::new())?;
+            let val = self.iter(child, None, &None, &DataPath::new())?;
             data = data.insert_key(child.name.as_str(), val);
         }
 
@@ -78,7 +78,10 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     fn iter(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        result: Option<ExecResultRef<'a, Value>>,
+        // TODO: replace value and type_name with single `result: Option<ExecResultRef<'a, Value>>`
+        // to simplify usage and passing arguments around iter and iter_inner
+        value: Option<&'a Value>,
+        type_name: &Option<TypeName>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         match self.store.get(&node.id) {
@@ -100,11 +103,12 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                             Ok(result) => result,
                             Err(err) => return Err(err.clone()),
                         };
+                        let ExecResult { value, type_name } = result;
 
-                        if !Self::is_array(&node.type_of, &result.value) {
+                        if !Self::is_array(&node.type_of, value) {
                             return Ok(Value::null());
                         }
-                        self.iter_inner(node, result.as_ref(), data_path)
+                        self.iter_inner(node, value, type_name, data_path)
                     }
                     _ => {
                         // TODO: should bailout instead of returning Null
@@ -112,8 +116,8 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                     }
                 }
             }
-            None => match result {
-                Some(result) => self.iter_inner(node, result, data_path),
+            None => match value {
+                Some(value) => self.iter_inner(node, value, type_name, data_path),
                 None => Ok(Value::null()),
             },
         }
@@ -122,14 +126,13 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     fn iter_inner(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        result: ExecResultRef<'a, Value>,
+        value: &'a Value,
+        type_name: &Option<TypeName>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         if !self.include(node) {
             return Ok(Value::null());
         }
-
-        let ExecResultRef { value, type_name } = result;
 
         if node.is_scalar {
             let scalar =
@@ -179,7 +182,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
 
                             ans = ans.insert_key(
                                 child.name.as_str(),
-                                self.iter(child, val.map(ExecResultRef::new), data_path)?,
+                                self.iter(child, val, &None, data_path)?,
                             );
                         }
                     }
@@ -191,7 +194,8 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                     for (i, val) in arr.iter().enumerate() {
                         let val = self.iter_inner(
                             node,
-                            result.map(|_| val),
+                            val,
+                            type_name,
                             &data_path.clone().with_index(i),
                         )?;
                         ans.push(val)
@@ -209,7 +213,6 @@ mod tests {
     use async_graphql_value::ConstValue;
     use serde::{Deserialize, Serialize};
 
-    use crate::core::{blueprint::Blueprint, jit::exec::ExecResult};
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JP;
@@ -218,6 +221,7 @@ mod tests {
     use crate::core::jit::synth::Synth;
     use crate::core::json::JsonLike;
     use crate::core::valid::Validator;
+    use crate::core::{blueprint::Blueprint, jit::exec::ExecResult};
 
     const POSTS: &str = r#"
         [
@@ -282,7 +286,9 @@ mod tests {
                     .enumerate()
                     .collect(),
                 ),
-                TestData::Users => Data::Single(ExecResult::new(serde_json::from_str(USERS).unwrap())),
+                TestData::Users => {
+                    Data::Single(ExecResult::new(serde_json::from_str(USERS).unwrap()))
+                }
             }
         }
     }

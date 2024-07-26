@@ -22,7 +22,6 @@ expression: plan.into_nested()
             },
         ],
         extensions: Some(
-<<<<<<< HEAD
             Nested {
                 fields: [],
                 by_type: {
@@ -32,18 +31,21 @@ expression: plan.into_nested()
                             name: "name",
                             type_of: String!,
                             is_scalar: true,
+                            directives: [],
                         },
                         Field {
                             id: 2,
                             name: "email",
                             type_of: String!,
                             is_scalar: true,
+                            directives: [],
                         },
                         Field {
                             id: 3,
                             name: "phone",
                             type_of: String,
                             is_scalar: true,
+                            directives: [],
                         },
                     ],
                     "Post": [
@@ -52,43 +54,18 @@ expression: plan.into_nested()
                             name: "title",
                             type_of: String!,
                             is_scalar: true,
+                            directives: [],
                         },
                         Field {
                             id: 5,
                             name: "body",
                             type_of: String!,
                             is_scalar: true,
+                            directives: [],
                         },
                     ],
                 },
             },
-=======
-            Nested(
-                [
-                    Field {
-                        id: 1,
-                        name: "name",
-                        type_of: String!,
-                        is_scalar: true,
-                        directives: [],
-                    },
-                    Field {
-                        id: 2,
-                        name: "email",
-                        type_of: String!,
-                        is_scalar: true,
-                        directives: [],
-                    },
-                    Field {
-                        id: 3,
-                        name: "phone",
-                        type_of: String,
-                        is_scalar: true,
-                        directives: [],
-                    },
-                ],
-            ),
->>>>>>> origin/main
         ),
         is_scalar: false,
         directives: [],

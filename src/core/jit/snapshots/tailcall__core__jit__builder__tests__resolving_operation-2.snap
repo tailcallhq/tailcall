@@ -38,8 +38,8 @@ expression: plan.into_nested()
             },
         ],
         extensions: Some(
-            Nested(
-                [
+            Nested {
+                fields: [
                     Field {
                         id: 1,
                         name: "id",
@@ -69,7 +69,8 @@ expression: plan.into_nested()
                         directives: [],
                     },
                 ],
-            ),
+                by_type: {},
+            },
         ),
         is_scalar: false,
         directives: [],
