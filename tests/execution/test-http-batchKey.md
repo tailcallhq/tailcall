@@ -23,7 +23,6 @@ type Foo {
     @http(
       path: "/bar"
       query: [{key: "barId[]", value: "{{.value.barId}}"}]
-      batchKey: "barId[]"
       batchKey: ["bars", "id"]
     )
 }
