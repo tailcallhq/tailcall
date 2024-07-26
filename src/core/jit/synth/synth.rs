@@ -184,10 +184,18 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                                             self.iter_inner(child, val, data_path)?,
                                         );
                                     } else {
-                                        ans = ans.insert_key(
-                                            child.name.as_str(),
-                                            self.iter(child, None, data_path)?,
-                                        );
+                                        let _null_ty = Value::null();
+                                        let result = self.iter(child, None, data_path)?;
+                                        let is_null = matches!(result, _null_ty);
+                                        if child.type_of.is_nullable() || !is_null {
+                                            ans = ans.insert_key(
+                                                child.name.as_str(),
+                                                self.iter(child, None, data_path)?,
+                                            );
+                                        } else {
+                                            return Err(ValidationError::ValueRequired.into())
+                                                .map_err(|e| self.to_location_error(e, child));
+                                        }
                                     }
                                 }
                             }
@@ -197,7 +205,12 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                             if let Some(val) = val {
                                 ans = ans.insert_key(node.name.as_str(), val.to_owned());
                             } else {
-                                return Ok(Value::null());
+                                if node.type_of.is_nullable() {
+                                    return Ok(Value::null());
+                                } else {
+                                    return Err(ValidationError::ValueRequired.into())
+                                        .map_err(|e| self.to_location_error(e, &node));
+                                }
                             }
                         }
                     } else {
@@ -206,7 +219,12 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                         if let Some(val) = val {
                             ans = ans.insert_key(node.name.as_str(), val.to_owned());
                         } else {
-                            return Ok(Value::null());
+                            if node.type_of.is_nullable() {
+                                return Ok(Value::null());
+                            } else {
+                                return Err(ValidationError::ValueRequired.into())
+                                    .map_err(|e| self.to_location_error(e, &node));
+                            }
                         }
                     }
                     Ok(Value::object(ans))
