@@ -3,26 +3,30 @@ use async_graphql::Positioned;
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, ValidationError};
-use crate::core::json::{JsonLikeOwned, JsonObjectLike};
-use crate::core::scalar::get_scalar;
+use crate::core::json::{JsonLike, JsonObjectLike};
+use crate::core::scalar;
 
 pub struct Synth<Value> {
     selection: Vec<Field<Nested<Value>, Value>>,
     store: Store<Result<Value, Positioned<Error>>>,
-    variables: Variables<async_graphql_value::ConstValue>,
+    variables: Variables<Value>,
 }
 
 impl<Extensions, Input> Field<Extensions, Input> {
     #[inline(always)]
-    pub fn skip<Value: JsonLikeOwned>(&self, variables: &Variables<Value>) -> bool {
-        let eval =
-            |variable_option: Option<&Variable>, variables: &Variables<Value>, default: bool| {
-                variable_option
-                    .map(|a| a.as_str())
-                    .and_then(|name| variables.get(name))
-                    .and_then(|value| value.as_bool())
-                    .unwrap_or(default)
-            };
+    pub fn skip<'json, Value: JsonLike<'json>>(
+        &'json self,
+        variables: &'json Variables<Value>,
+    ) -> bool {
+        let eval = |variable_option: Option<&'json Variable>,
+                    variables: &'json Variables<Value>,
+                    default: bool| {
+            variable_option
+                .map(|a| a.as_str())
+                .and_then(|name| variables.get(name))
+                .and_then(|value| value.as_bool())
+                .unwrap_or(default)
+        };
         let skip = eval(self.skip.as_ref(), variables, false);
         let include = eval(self.include.as_ref(), variables, true);
 
@@ -30,23 +34,23 @@ impl<Extensions, Input> Field<Extensions, Input> {
     }
 }
 
-impl<Value: JsonLikeOwned + Clone> Synth<Value> {
+impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: OperationPlan<Value>,
         store: Store<Result<Value, Positioned<Error>>>,
-        variables: Variables<async_graphql_value::ConstValue>,
+        variables: Variables<Value>,
     ) -> Self {
         Self { selection: plan.into_nested(), store, variables }
     }
 
     #[inline(always)]
-    fn include<T>(&self, field: &Field<T, Value>) -> bool {
+    fn include<T>(&'a self, field: &'a Field<T, Value>) -> bool {
         !field.skip(&self.variables)
     }
 
     #[inline(always)]
-    pub fn synthesize(&self) -> Result<Value, Positioned<Error>> {
+    pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
         let mut data = Value::JsonObject::new();
 
         for child in self.selection.iter() {
@@ -62,15 +66,15 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
 
     /// checks if type_of is an array and value is an array
     #[inline(always)]
-    fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
+    fn is_array(type_of: &crate::core::blueprint::Type, value: &'a Value) -> bool {
         type_of.is_list() == value.as_array().is_some()
     }
 
     #[inline(always)]
-    fn iter<'b>(
-        &'b self,
-        node: &'b Field<Nested<Value>, Value>,
-        parent: Option<&'b Value>,
+    fn iter(
+        &'a self,
+        node: &'a Field<Nested<Value>, Value>,
+        parent: Option<&'a Value>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         // TODO: this implementation prefer parent value over value in the store
@@ -99,7 +103,11 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
                         }
 
                         match data {
-                            Data::Single(val) => self.iter(node, Some(&val.clone()?), data_path),
+                            Data::Single(val) => self.iter(
+                                node,
+                                Some(val.as_ref().map_err(Clone::clone)?),
+                                data_path,
+                            ),
                             _ => {
                                 // TODO: should bailout instead of returning Null
                                 Ok(Value::null())
@@ -116,20 +124,21 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
         }
     }
     #[inline(always)]
-    fn iter_inner<'b>(
-        &'b self,
-        node: &'b Field<Nested<Value>, Value>,
-        parent: &'b Value,
-        data_path: &'b DataPath,
+    fn iter_inner(
+        &'a self,
+        node: &'a Field<Nested<Value>, Value>,
+        parent: &'a Value,
+        data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         let include = self.include(node);
         if include && node.is_scalar {
-            let validation = get_scalar(node.type_of.name());
+            let scalar =
+                scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
 
             // TODO: add validation for input type as well. But input types are not checked
             // by async_graphql anyway so it should be done after replacing
             // default engine with JIT
-            if validation(parent) {
+            if scalar.validate(parent) {
                 Ok(parent.clone())
             } else {
                 Err(Positioned {
@@ -205,18 +214,17 @@ impl<Value: JsonLikeOwned + Clone> Synth<Value> {
 
 #[cfg(test)]
 mod tests {
-
     use async_graphql_value::ConstValue;
-    use serde::de::DeserializeOwned;
-    use serde::Serialize;
+    use serde::{Deserialize, Serialize};
 
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
-    use crate::core::jit::common::JsonPlaceholder;
+    use crate::core::jit::common::JP;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
-    use crate::core::json::JsonLikeOwned;
+    use crate::core::jit::synth::Synth;
+    use crate::core::json::JsonLike;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -260,6 +268,7 @@ mod tests {
         ]
     "#;
 
+    #[derive(Clone)]
     enum TestData {
         Posts,
         UsersData,
@@ -268,7 +277,7 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value<Value: JsonLikeOwned + DeserializeOwned>(self) -> Data<Value> {
+        fn into_value<'a, Value: JsonLike<'a> + Deserialize<'a>>(self) -> Data<Value> {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
@@ -288,10 +297,13 @@ mod tests {
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn init<Value: JsonLikeOwned + DeserializeOwned + Serialize + Clone>(
+    fn make_store<
+        'a,
+        Value: JsonLike<'a> + Deserialize<'a> + Serialize + Clone + 'a + std::fmt::Debug,
+    >(
         query: &str,
         store: Vec<(FieldId, TestData)>,
-    ) -> String {
+    ) -> Synth<Value> {
         let store = store
             .into_iter()
             .map(|(id, data)| (id, data.into_value()))
@@ -303,12 +315,7 @@ mod tests {
 
         let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
         let plan = builder.build(&Variables::new(), None).unwrap();
-        let plan = plan
-            .try_map(|v: ConstValue| {
-                let v = v.into_json()?;
-                Ok::<_, anyhow::Error>(serde_json::from_value::<Value>(v)?)
-            })
-            .unwrap();
+        let plan = plan.try_map(Deserialize::deserialize).unwrap();
 
         let store = store
             .into_iter()
@@ -317,40 +324,54 @@ mod tests {
                 store
             });
         let vars = Variables::new();
-        let synth = super::Synth::new(plan, store, vars);
-        let val = synth.synthesize().unwrap();
 
-        serde_json::to_string_pretty(&val).unwrap()
+        super::Synth::new(plan, store, vars)
+    }
+
+    struct Synths<'a> {
+        synth_const: Synth<async_graphql::Value>,
+        synth_borrow: Synth<serde_json_borrow::Value<'a>>,
+    }
+
+    impl<'a> Synths<'a> {
+        fn init(query: &str, store: Vec<(FieldId, TestData)>) -> Self {
+            let synth_const = make_store::<ConstValue>(query, store.clone());
+            let synth_borrow = make_store::<serde_json_borrow::Value>(query, store.clone());
+            Self { synth_const, synth_borrow }
+        }
+        fn assert(self) {
+            let val_const = self.synth_const.synthesize().unwrap();
+            let val_const = serde_json::to_string_pretty(&val_const).unwrap();
+            let val_borrow = self.synth_borrow.synthesize().unwrap();
+            let val_borrow = serde_json::to_string_pretty(&val_borrow).unwrap();
+            assert_eq!(val_const, val_borrow);
+        }
     }
 
     #[test]
     fn test_posts() {
         let store = vec![(FieldId::new(0), TestData::Posts)];
-
-        let val = init::<ConstValue>(
-            r#"
+        let query = r#"
             query {
                 posts { id }
             }
-        "#,
-            store,
-        );
-        insta::assert_snapshot!(val);
+        "#;
+
+        let synths = Synths::init(query, store);
+        synths.assert();
     }
 
     #[test]
     fn test_user() {
         let store = vec![(FieldId::new(0), TestData::User1)];
-
-        let val = init::<ConstValue>(
-            r#"
+        let query = r#"
                 query {
                     user(id: 1) { id }
                 }
-            "#,
-            store,
-        );
-        insta::assert_snapshot!(val);
+            "#;
+
+        let synths = Synths::init(query, store);
+        synths.assert();
     }
 
     #[test]
@@ -359,16 +380,13 @@ mod tests {
             (FieldId::new(0), TestData::Posts),
             (FieldId::new(3), TestData::UsersData),
         ];
-
-        let val = init::<ConstValue>(
-            r#"
+        let query = r#"
                 query {
                     posts { id title user { id name } }
                 }
-            "#,
-            store,
-        );
-        insta::assert_snapshot!(val);
+            "#;
+        let synths = Synths::init(query, store);
+        synths.assert();
     }
 
     #[test]
@@ -378,23 +396,29 @@ mod tests {
             (FieldId::new(3), TestData::UsersData),
             (FieldId::new(6), TestData::Users),
         ];
-
-        let val = init::<ConstValue>(
-            r#"
+        let query = r#"
                 query {
                     posts { id title user { id name } }
                     users { id name }
                 }
-            "#,
-            store,
-        );
-        insta::assert_snapshot!(val)
+            "#;
+        let synths = Synths::init(query, store);
+        synths.assert();
     }
 
     #[test]
     fn test_json_placeholder() {
-        let synth = JsonPlaceholder::init("{ posts { id title userId user { id name } } }");
-        let val = synth.synthesize().unwrap();
+        let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let synth = jp.synth();
+        let val: async_graphql::Value = synth.synthesize().unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
+    }
+
+    #[test]
+    fn test_json_placeholder_borrowed() {
+        let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let synth = jp.synth();
+        let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
     }
 }

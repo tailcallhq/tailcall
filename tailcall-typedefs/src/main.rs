@@ -9,11 +9,11 @@ use anyhow::{anyhow, Result};
 use schemars::schema::{RootSchema, Schema};
 use schemars::Map;
 use serde_json::{json, Value};
+use strum::IntoEnumIterator;
 use tailcall::cli;
 use tailcall::core::config::Config;
-use tailcall::core::scalar::{Scalar, CUSTOM_SCALARS};
 use tailcall::core::tracing::default_tracing_for_name;
-use tailcall::core::{Error, FileIO};
+use tailcall::core::{Error, scalar, FileIO};
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 static GRAPHQL_SCHEMA_FILE: &str = "../generated/.tailcallrc.graphql";
@@ -106,9 +106,8 @@ fn get_file_path() -> PathBuf {
 
 async fn get_updated_json() -> Result<Value> {
     let mut schema: RootSchema = schemars::schema_for!(Config);
-    let scalar = CUSTOM_SCALARS
-        .iter()
-        .map(|(k, v)| (k.clone(), v.schema()))
+    let scalar = scalar::Scalar::iter()
+        .map(|scalar| (scalar.name(), scalar.schema()))
         .collect::<Map<String, Schema>>();
     schema.definitions.extend(scalar);
 

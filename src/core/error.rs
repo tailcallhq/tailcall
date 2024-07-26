@@ -219,6 +219,29 @@ pub mod file {
 
     pub type Result<A> = std::result::Result<A, Error>;
 }
+pub mod cache {
+    use std::sync::Arc;
+
+    use derive_more::{DebugCustom, From};
+
+    #[derive(From, DebugCustom, Clone)]
+    pub enum Error {
+        #[debug(fmt = "Serde Json Error: {}", _0)]
+        SerdeJson(Arc<serde_json::Error>),
+
+        #[debug(fmt = "Kv Error: {}", _0)]
+        #[from(ignore)]
+        Kv(String),
+    }
+
+    impl From<serde_json::Error> for Error {
+        fn from(error: serde_json::Error) -> Self {
+            Error::SerdeJson(Arc::new(error))
+        }
+    }
+
+    pub type Result<A> = std::result::Result<A, Error>;
+}
 
 impl Display for file::Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -243,6 +266,15 @@ impl Display for file::Error {
                 write!(f, "Cloudflare Worker Execution Error: {}", error)
             }
             file::Error::Anyhow(msg) => write!(f, "Error: {}", msg),
+        }
+    }
+}
+
+impl Display for cache::Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            cache::Error::SerdeJson(error) => write!(f, "Serde Json Error: {}", error),
+            cache::Error::Kv(error) => write!(f, "Kv Error: {}", error),
         }
     }
 }

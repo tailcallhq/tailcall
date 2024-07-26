@@ -67,42 +67,62 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
         keys: &[DataLoaderRequest],
     ) -> async_graphql::Result<HashMap<DataLoaderRequest, Self::Value>, Self::Error> {
         if let Some(group_by) = &self.group_by {
-            let mut keys = keys.to_vec();
-            keys.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
+            let query_name = group_by.key();
+            let mut dl_requests = keys.to_vec();
 
-            let mut request = keys[0].to_request();
+            // Sort keys to build consistent URLs
+            // TODO: enable in tests only
+            dl_requests.sort_by(|a, b| a.to_request().url().cmp(b.to_request().url()));
+
+            // Create base request
+            let mut request = dl_requests[0].to_request();
             let first_url = request.url_mut();
 
-            for key in &keys[1..] {
+            // Merge query params in the request
+            for key in &dl_requests[1..] {
                 let request = key.to_request();
                 let url = request.url();
                 let pairs: Vec<_> = url
                     .query_pairs()
-                    .filter(|(key, _)| group_by.path().contains(&key.to_string()))
+                    .filter(|(key, _)| group_by.key().eq(&key.to_string()))
                     .collect();
                 first_url.query_pairs_mut().extend_pairs(pairs);
             }
 
+            // Dispatch request
             let res = self
                 .runtime
                 .http
                 .execute(request)
                 .await?
                 .to_json::<ConstValue>()?;
-            #[allow(clippy::mutable_key_type)]
-            let mut hashmap = HashMap::with_capacity(keys.len());
-            let path = &group_by.path();
-            let body_value = res.body.group_by(path);
 
-            for key in &keys {
-                let req = key.to_request();
-                let query_set: std::collections::HashMap<_, _> = req.url().query_pairs().collect();
-                let id = query_set.get(group_by.key()).ok_or(anyhow::anyhow!(
+            // Create a response HashMap
+            #[allow(clippy::mutable_key_type)]
+            let mut hashmap = HashMap::with_capacity(dl_requests.len());
+
+            // Parse the response body and group it by batchKey
+            let path = &group_by.path();
+
+            // ResponseMap contains the response body grouped by the batchKey
+            let response_map = res.body.group_by(path);
+
+            // For each request and insert its corresponding value
+            for dl_req in dl_requests.iter() {
+                let url = dl_req.url();
+                let query_set: HashMap<_, _> = url.query_pairs().collect();
+                let id = query_set.get(query_name).ok_or(anyhow::anyhow!(
                     "Unable to find key {} in query params",
-                    group_by.key()
+                    query_name
                 ))?;
-                hashmap.insert(key.clone(), res.clone().body((self.body)(&body_value, id)));
+
+                // Clone the response and set the body
+                let body = (self.body)(&response_map, id);
+                let res = res.clone().body(body);
+
+                hashmap.insert(dl_req.clone(), res);
             }
+
             Ok(hashmap)
         } else {
             let results = keys.iter().map(|key| async {

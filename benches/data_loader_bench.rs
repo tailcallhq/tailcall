@@ -11,6 +11,7 @@ use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::core::config::Batch;
 use tailcall::core::error::file;
+use tailcall::core::error::cache;
 use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
 use tailcall::core::ir::model::IoId;
 use tailcall::core::runtime::TargetRuntime;
@@ -55,11 +56,11 @@ impl tailcall::core::Cache for Cache {
     type Key = IoId;
     type Value = ConstValue;
 
-    async fn set<'a>(&'a self, _: Self::Key, _: Self::Value, _: NonZeroU64) -> anyhow::Result<()> {
+    async fn set<'a>(&'a self, _: Self::Key, _: Self::Value, _: NonZeroU64) -> cache::Result<()> {
         unimplemented!("Not needed for this bench")
     }
 
-    async fn get<'a>(&'a self, _: &'a Self::Key) -> anyhow::Result<Option<Self::Value>> {
+    async fn get<'a>(&'a self, _: &'a Self::Key) -> cache::Result<Option<Self::Value>> {
         unimplemented!("Not needed for this bench")
     }
 
