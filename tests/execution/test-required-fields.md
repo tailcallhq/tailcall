@@ -40,7 +40,6 @@ type User {
         title: "graphql vs rest"
       - id: 2
         title: null
-
 ```
 
 ```yml @test
