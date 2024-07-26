@@ -24,7 +24,13 @@ scalar JSON
 
 scalar PhoneNumber
 
+type Post {
+  id: Int!
+  title: String!
+}
+
 type Query {
+  posts: [Post]
   users: [User]
 }
 
