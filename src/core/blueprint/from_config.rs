@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use async_graphql::dynamic::SchemaBuilder;
 use chrono::Utc;
+
 use self::telemetry::to_opentelemetry;
 use super::{Server, TypeLike};
 use crate::core::blueprint::compress::compress;
@@ -119,8 +120,6 @@ where
     }
 }
 
-
-
 impl TryFrom<&ConfigModule> for Blueprint {
     type Error = ValidationError<String>;
 
@@ -144,7 +143,7 @@ impl TryFrom<&ConfigModule> for Blueprint {
             .to_result();
         let end = Utc::now();
         let end = end.timestamp_subsec_millis();
-        tracing::info!("🏭 Blueprint generated in {}ms", end-start);
+        tracing::info!("🏭 Blueprint generated in {}ms", end - start);
 
         blueprint
     }
