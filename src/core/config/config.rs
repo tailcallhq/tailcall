@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -871,7 +871,7 @@ impl Config {
         }
     }
 
-    pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
+    pub fn n_plus_one(&self) -> HashMap<&str, HashSet<&str>> {
         super::n_plus_one::n_plus_one(self)
     }
 

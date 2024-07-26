@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use colored::*;
 
 use crate::core::config::Config;
@@ -17,13 +19,10 @@ impl Fmt {
         println!("{}", s);
     }
 
-    pub fn format_n_plus_one_queries(n_plus_one_info: Vec<Vec<(String, String)>>) -> String {
-        let query_paths: Vec<Vec<&String>> = n_plus_one_info
-            .iter()
-            .map(|item| {
-                item.iter()
-                    .map(|(_, field_name)| field_name)
-                    .collect::<Vec<&String>>()
+    pub fn format_n_plus_one_queries(n_plus_one_info: HashMap<&str, HashSet<&str>>) -> String {
+        let query_paths: Vec<Vec<&str>> = n_plus_one_info.values().map(|item| {
+                item.iter().copied()
+                    .collect::<Vec<&str>>()
             })
             .collect();
 
