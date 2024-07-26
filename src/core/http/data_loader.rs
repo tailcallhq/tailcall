@@ -112,7 +112,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             for dl_req in dl_requests.iter() {
                 let url = dl_req.url();
                 let query_set: HashMap<_, _> = url.query_pairs().collect();
-                let id = query_set.get(group_by.key()).unwrap_or(&Cow::Borrowed(""));
+                let id = query_set.get(query_name).unwrap_or(&Cow::Borrowed(""));
 
                 // Clone the response and set the body
                 let body = (self.body)(&response_map, id);
