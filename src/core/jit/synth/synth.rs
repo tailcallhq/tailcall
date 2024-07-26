@@ -186,12 +186,9 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                                     } else {
                                         let result = self.iter(child, None, data_path)?;
                                         let _null_ty = Value::null();
-                                        let is_null = matches!(result, _null_ty);
+                                        let is_null = matches!(result.clone(), _null_ty);
                                         if child.type_of.is_nullable() || !is_null {
-                                            ans = ans.insert_key(
-                                                child.name.as_str(),
-                                                self.iter(child, None, data_path)?,
-                                            );
+                                            ans = ans.insert_key(child.name.as_str(), result);
                                         } else {
                                             return Err(ValidationError::ValueRequired.into())
                                                 .map_err(|e| self.to_location_error(e, child));
@@ -207,9 +204,9 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                             } else {
                                 if node.type_of.is_nullable() {
                                     return Ok(Value::null());
-                                }else{
+                                } else {
                                     return Err(ValidationError::ValueRequired.into())
-                                                .map_err(|e| self.to_location_error(e, &node));
+                                        .map_err(|e| self.to_location_error(e, &node));
                                 }
                             }
                         }
@@ -221,9 +218,9 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                         } else {
                             if node.type_of.is_nullable() {
                                 return Ok(Value::null());
-                            }else{
+                            } else {
                                 return Err(ValidationError::ValueRequired.into())
-                                            .map_err(|e| self.to_location_error(e, &node));
+                                    .map_err(|e| self.to_location_error(e, &node));
                             }
                         }
                     }
