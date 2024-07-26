@@ -590,8 +590,9 @@ pub struct Http {
     /// This represents the query parameters of your API call. You can pass it
     /// as a static object or use Mustache template for dynamic parameters.
     /// These parameters will be added to the URL.
-    /// When `batchKey` is present Tailcall uses the first query parameter as
-    /// the key for the groupBy operator.
+    /// When `batchKey` is present Tailcall uses the last query parameter as
+    /// the key for the groupBy operator. You can overwrite this behavior by
+    /// specifying the `key` property.
     pub query: Vec<KeyValue>,
 }
 
