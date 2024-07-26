@@ -20,10 +20,9 @@ impl Fmt {
     }
 
     pub fn format_n_plus_one_queries(n_plus_one_info: HashMap<&str, HashSet<&str>>) -> String {
-        let query_paths: Vec<Vec<&str>> = n_plus_one_info.values().map(|item| {
-                item.iter().copied()
-                    .collect::<Vec<&str>>()
-            })
+        let query_paths: Vec<Vec<&str>> = n_plus_one_info
+            .values()
+            .map(|item| item.iter().copied().collect::<Vec<&str>>())
             .collect();
 
         let query_data: Vec<String> = query_paths

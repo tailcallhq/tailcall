@@ -2,15 +2,15 @@ use std::collections::{HashMap, HashSet};
 
 use crate::core::config::Config;
 
-struct FindFanOutContext1<'a> {
+struct FindFanOutContext<'a> {
     config: &'a Config,
     type_name: &'a str,
     is_list: bool,
 }
 
 #[inline(always)]
-fn find_fan_out1<'a>(
-    ctx: FindFanOutContext1<'a>,
+fn find_fan_out<'a>(
+    ctx: FindFanOutContext<'a>,
     visited: &mut HashMap<&'a str, HashSet<&'a str>>,
 ) -> HashMap<&'a str, HashSet<&'a str>> {
     let config = ctx.config;
@@ -29,17 +29,14 @@ fn find_fan_out1<'a>(
             if x {
                 continue;
             } else {
-                visited
-                    .entry(type_name)
-                    .or_default()
-                    .insert(cur);
+                visited.entry(type_name).or_default().insert(cur);
             }
 
             if field.has_resolver() && !field.has_batched_resolver() && is_list {
                 ans.entry(type_name).or_insert(HashSet::new()).insert(cur);
             } else {
-                let next = find_fan_out1(
-                    FindFanOutContext1 {
+                let next = find_fan_out(
+                    FindFanOutContext {
                         config,
                         type_name: &field.type_of,
                         is_list: field.list || is_list,
@@ -64,11 +61,10 @@ fn find_fan_out1<'a>(
 }
 
 pub fn n_plus_one(config: &Config) -> HashMap<&str, HashSet<&str>> {
-    // let mut map = HashMap::new();
     let mut visited = HashMap::new();
     if let Some(query) = &config.schema.query {
-        find_fan_out1(
-            FindFanOutContext1 { config, type_name: query, is_list: false },
+        find_fan_out(
+            FindFanOutContext { config, type_name: query, is_list: false },
             &mut visited,
         )
     } else {
