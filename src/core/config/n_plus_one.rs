@@ -22,11 +22,12 @@ fn find_fan_out<'a>(
         for (field_name, field) in type_.fields.iter() {
             let cur = field_name.as_str();
 
-            let x = visited
+            let condition = visited
                 .get(type_name)
                 .map(|v: &HashSet<&str>| v.contains(cur))
                 .unwrap_or_default();
-            if x {
+
+            if condition {
                 continue;
             } else {
                 visited.entry(type_name).or_default().insert(cur);
@@ -45,13 +46,7 @@ fn find_fan_out<'a>(
                 );
                 for (k, v) in next {
                     ans.entry(k).or_insert(HashSet::new()).extend(v);
-                    if let Some(set) = ans.get_mut(type_name) {
-                        set.insert(cur);
-                    } else {
-                        let mut set = HashSet::new();
-                        set.insert(cur);
-                        ans.insert(type_name, set);
-                    }
+                    ans.entry(type_name).or_insert(HashSet::new()).insert(cur);
                 }
             }
         }
