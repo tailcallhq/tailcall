@@ -201,13 +201,11 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                             // if it's a leaf node, then push the value
                             if let Some(val) = val {
                                 ans = ans.insert_key(node.name.as_str(), val.to_owned());
+                            } else if node.type_of.is_nullable() {
+                                return Ok(Value::null());
                             } else {
-                                if node.type_of.is_nullable() {
-                                    return Ok(Value::null());
-                                } else {
-                                    return Err(ValidationError::ValueRequired.into())
-                                        .map_err(|e| self.to_location_error(e, &node));
-                                }
+                                return Err(ValidationError::ValueRequired.into())
+                                    .map_err(|e| self.to_location_error(e, node));
                             }
                         }
                     } else {
@@ -215,13 +213,11 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                         // if it's a leaf node, then push the value
                         if let Some(val) = val {
                             ans = ans.insert_key(node.name.as_str(), val.to_owned());
+                        } else if node.type_of.is_nullable() {
+                            return Ok(Value::null());
                         } else {
-                            if node.type_of.is_nullable() {
-                                return Ok(Value::null());
-                            } else {
-                                return Err(ValidationError::ValueRequired.into())
-                                    .map_err(|e| self.to_location_error(e, &node));
-                            }
+                            return Err(ValidationError::ValueRequired.into())
+                                .map_err(|e| self.to_location_error(e, node));
                         }
                     }
                     Ok(Value::object(ans))

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::sync::{Arc};
+use std::sync::Arc;
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
 use async_graphql::{Name, Pos, Positioned};

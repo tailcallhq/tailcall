@@ -1,8 +1,7 @@
 # Test API
+
 ```graphql @config
-schema
-  @server
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
