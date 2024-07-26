@@ -123,7 +123,9 @@ impl TryFrom<&ConfigModule> for Blueprint {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
-        config_blueprint()
+        let inst = wasm_timer::Instant::now();
+
+        let blueprint = config_blueprint()
             .try_fold(
                 // Apply required transformers to the configuration
                 &config_module.to_owned().transform(Required).to_result()?,
@@ -136,6 +138,10 @@ impl TryFrom<&ConfigModule> for Blueprint {
                     Err(e) => Valid::fail(e.to_string()),
                 }
             })
-            .to_result()
+            .to_result();
+        let end = inst.elapsed();
+
+        tracing::info!("Blueprint generated in {}ms", end.as_secs_f32());
+        blueprint
     }
 }
