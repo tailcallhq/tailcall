@@ -124,8 +124,7 @@ impl TryFrom<&ConfigModule> for Blueprint {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
-        let start = Utc::now();
-        let start = start.timestamp_subsec_millis();
+        let start = Utc::now().timestamp_millis();
 
         let blueprint = config_blueprint()
             .try_fold(
@@ -141,10 +140,10 @@ impl TryFrom<&ConfigModule> for Blueprint {
                 }
             })
             .to_result();
-        let end = Utc::now();
-        let end = end.timestamp_subsec_millis();
 
-        tracing::info!("🏭 Blueprint generated in {}ms", end - start);
+        let end = Utc::now().timestamp_millis();
+        let elapsed = ((end - start) as f32) / 1000.0;
+        tracing::info!("🏭 Blueprint generated in {:.3} seconds", elapsed);
 
         blueprint
     }
