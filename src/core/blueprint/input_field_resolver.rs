@@ -84,7 +84,14 @@ pub fn update_input_field_resolver<'a>(
                             arg_type: arg.of_type.name().to_string(),
                         };
 
-                        arg.resolver = Some(IR::ModifyInput(input_transforms));
+                        if input_transforms.subfield_renames.len() > 0 {
+                            arg.resolver = match arg.resolver {
+                                Some(expr) => Some(IR::ModifyInput(input_transforms).pipe(expr)),
+                                None => Some(IR::ModifyInput(input_transforms)),
+                            };
+                        }
+
+
                         arg
                     })
                     .collect::<Vec<_>>();
