@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use async_graphql::dynamic::SchemaBuilder;
+use chrono::Utc;
 
 use self::telemetry::to_opentelemetry;
 use super::{Server, TypeLike};
@@ -123,7 +124,10 @@ impl TryFrom<&ConfigModule> for Blueprint {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
-        config_blueprint()
+        let start = Utc::now();
+        let start = start.timestamp_subsec_millis();
+
+        let blueprint = config_blueprint()
             .try_fold(
                 // Apply required transformers to the configuration
                 &config_module.to_owned().transform(Required).to_result()?,
@@ -136,6 +140,12 @@ impl TryFrom<&ConfigModule> for Blueprint {
                     Err(e) => Valid::fail(e.to_string()),
                 }
             })
-            .to_result()
+            .to_result();
+        let end = Utc::now();
+        let end = end.timestamp_subsec_millis();
+
+        tracing::info!("🏭 Blueprint generated in {}ms", end - start);
+
+        blueprint
     }
 }
