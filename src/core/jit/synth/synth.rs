@@ -117,27 +117,17 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                         }
                     }
                     None => {
-                        // IR exists, so there must be a value.
-                        // if there is no value then we must return Null
-                        Ok(Value::null())
+                        if node.type_of.is_nullable() || node.ir.is_some() {
+                            // IR exists, so there must be a value.
+                            // if there is no value then we must return Null
+                            Ok(Value::null())
+                        } else {
+                            Err(ValidationError::ValueRequired.into())
+                                .map_err(|e| self.to_location_error(e, node))
+                        }
                     }
                 }
             }
-        }
-    }
-
-    fn validate_field(
-        &'a self,
-        node: &'a Field<Nested<Value>, Value>,
-        obj: &'a Value::JsonObject,
-    ) -> Result<Value, LocationError<Error>> {
-        match obj.get_key(node.name.as_str()) {
-            Some(val) if val.is_null() && !node.type_of.is_nullable() && node.ir.is_none() => {
-                Err(self.to_location_error(ValidationError::ValueRequired.into(), node))
-            }
-            Some(val) => Ok(val.to_owned()),
-            None if node.type_of.is_nullable() || node.ir.is_some() => Ok(Value::null()),
-            None => Err(self.to_location_error(ValidationError::ValueRequired.into(), node)),
         }
     }
 
@@ -200,29 +190,30 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                                             self.iter_inner(child, val, data_path)?,
                                         );
                                     } else {
-                                        let result = self.iter(child, None, data_path)?;
-                                        // TODO: Refactor to use `result.is_null()` when lifetime
-                                        // issues are resolved
-                                        let _null_ty = Value::null();
-                                        let is_response_null = matches!(result.clone(), _null_ty);
-                                        if child.type_of.is_nullable()
-                                            || !is_response_null
-                                            || child.ir.is_some()
-                                        {
-                                            ans = ans.insert_key(child.name.as_str(), result);
-                                        } else {
-                                            return Err(ValidationError::ValueRequired.into())
-                                                .map_err(|e| self.to_location_error(e, child));
-                                        }
+                                        ans = ans.insert_key(
+                                            child.name.as_str(),
+                                            self.iter(child, None, data_path)?,
+                                        );
                                     }
                                 }
                             }
                         } else {
-                            ans =
-                                ans.insert_key(node.name.as_str(), self.validate_field(node, obj)?);
+                            let val = obj.get_key(node.name.as_str());
+                            // if it's a leaf node, then push the value
+                            if let Some(val) = val {
+                                ans = ans.insert_key(node.name.as_str(), val.to_owned());
+                            } else {
+                                return Ok(Value::null());
+                            }
                         }
                     } else {
-                        ans = ans.insert_key(node.name.as_str(), self.validate_field(node, obj)?);
+                        let val = obj.get_key(node.name.as_str());
+                        // if it's a leaf node, then push the value
+                        if let Some(val) = val {
+                            ans = ans.insert_key(node.name.as_str(), val.to_owned());
+                        } else {
+                            return Ok(Value::null());
+                        }
                     }
                     Ok(Value::object(ans))
                 }
