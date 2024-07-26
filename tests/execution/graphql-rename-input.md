@@ -6,40 +6,32 @@ schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.c
 }
 
 type Query {
-  foo(input: Bar, extra_input: Bar): [Foo]! @http(method: POST, path: "/foo", body: "{{.args.input}}")
+  foo(input: Bar!, extra_input: Spam!): String! @http(method: POST, path: "/foo", body: "{{.args.input}}", query: [{key: "spamIds[]", value: "{{.args.extra_input.id}}"}])
 }
 
 input Bar {
-  buzz: String! @modify(name: "fizz")
-  sun: Sun!
+  info: String! @modify(name: "bar")
+  foo: [Foo!] @modify(name: "buzz")
 }
 
-input Sun {
-  moons: String! @modify(name: "planets")
-  comments: String @modify(name: "rocks")
+input Foo {
+  info: String! @modify(name: "foo")
+  bar: Bar @modify(name: "fizz")
 }
 
-type Foo {
-  id: Int!
-  alpha: String!
-  beta: String!
+input Spam {
+  id: ID! @modify(name: "identifier")
 }
 ```
 
 ```yml @mock
 - request:
     method: POST
-    url: http://jsonplaceholder.typicode.com/foo
-    body: {"buzz": "test", "sun": {"moons": "test"}}
+    url: http://jsonplaceholder.typicode.com/foo?spamIds[]=1
+    body: {"foo":[{"bar":{"info":"bar_1"},"info":"foo_1"},{"bar":{"info":"bar_1"},"info":"foo_1"}],"info":"bar"}
   response:
     status: 200
-    body:
-      - id: 1
-        alpha: "Foo 1"
-        beta: "Foo 1_1"
-      - id: 2
-        alpha: "Foo 2"
-        beta: "Foo 2_1"
+    body: Hello from buzz
 ```
 
 ```yml @test
@@ -48,8 +40,9 @@ type Foo {
   body:
     query: |
       {
-        foo(input: {fizz: "test", sun: {planets: "test"}}, extra_input: {fizz: "test", sun: {planets: "test"}}) {
-          id
-        }
+        foo(
+          input: {buzz: [{fizz: {bar: "bar_1"}, foo: "foo_1"}, {fizz: {bar: "bar_1"}, foo: "foo_1"}], bar: "bar"}
+          extra_input: {identifier: 1}
+        )
       }
 ```

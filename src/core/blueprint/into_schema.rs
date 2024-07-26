@@ -1,10 +1,9 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::{bail, Result};
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
-use async_graphql::{ErrorExtensions, Name};
+use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use strum::IntoEnumIterator;
@@ -102,73 +101,39 @@ fn to_type(def: &Definition) -> dynamic::Type {
                         //                HOT CODE STARTS HERE
                         // --------------------------------------------------
 
-                        fn perform_rename(
-                            path: Vec<String>,
-                            data: &ConstValue,
-                            renames: &HashMap<Vec<String>, String>,
-                        ) -> ConstValue {
-                            match data {
-                                ConstValue::Object(obj) => {
-                                    let mut new_object = IndexMap::new();
-                                    for (name, item) in obj.into_iter() {
-                                        let mut key = path.clone();
-                                        key.push(name.to_string());
-                                        if let Some(rename) = renames.get(&key) {
-                                            new_object.insert(
-                                                Name::new(rename),
-                                                perform_rename(key, item, renames),
-                                            );
-                                        } else {
-                                            new_object.insert(
-                                                name.clone(),
-                                                perform_rename(key, item, renames),
-                                            );
-                                        }
-                                    }
-                                    ConstValue::Object(new_object)
-                                }
-                                _ => data.clone(),
-                            }
-                        }
-
-                        let args: ConstValue = {
-                            let mut new_map = IndexMap::new();
-                            let index_map = ctx.args.as_index_map();
-                            for arg in &field_copy.args {
-                                let renames = &arg.renames;
-                                let arg_key = Name::new(&arg.name);
-                                if let Some(data) = index_map.get(&arg_key) {
-                                    let data = perform_rename(vec![], data, renames);
-                                    new_map.insert(arg_key, data);
-                                }
-                            }
-                            ConstValue::Object(new_map)
-                        };
-
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
+                        let input_resolvers = field_copy
+                            .args
+                            .iter()
+                            .filter_map(|input_argument| input_argument.resolver.clone())
+                            .reduce(|first, second| first.pipe(second));
+
                         match &field.resolver {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
-                                let ctx = EvalContext::new(req_ctx, &ctx).with_args(args);
-
+                                let ctx = EvalContext::new(req_ctx, &ctx);
                                 match ctx.path_value(&[field_name]).map(|a| a.into_owned()) {
                                     Some(ConstValue::Null) => FieldFuture::Value(FieldValue::NONE),
                                     a => FieldFuture::from_value(a),
                                 }
                             }
                             Some(expr) => {
+                                let expr = if let Some(input_expr) = input_resolvers {
+                                    input_expr.pipe(expr.to_owned())
+                                } else {
+                                    expr.to_owned()
+                                };
+
                                 let span = tracing::info_span!(
                                     "field_resolver",
                                     otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
                                 );
 
-                                let expr = expr.to_owned();
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();
-                                        let ctx =
-                                            &mut EvalContext::new(req_ctx, &ctx).with_args(args);
+                                        let ctx = &mut EvalContext::new(req_ctx, &ctx);
 
                                         let value =
                                             expr.eval(ctx).await.map_err(|err| err.extend())?;

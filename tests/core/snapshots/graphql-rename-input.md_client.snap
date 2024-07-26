@@ -3,8 +3,8 @@ source: tests/core/spec.rs
 expression: formatted
 ---
 input Bar {
-  fizz: String!
-  sun: Sun!
+  bar: String!
+  buzz: [Foo!]
 }
 
 scalar Bytes
@@ -15,10 +15,9 @@ scalar Email
 
 scalar Empty
 
-type Foo {
-  alpha: String!
-  beta: String!
-  id: Int!
+input Foo {
+  fizz: Bar
+  foo: String!
 }
 
 scalar Int128
@@ -36,12 +35,11 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
-  foo(extra_input: Bar, input: Bar): [Foo]!
+  foo(extra_input: Spam!, input: Bar!): String!
 }
 
-input Sun {
-  planets: String!
-  rocks: String
+input Spam {
+  identifier: ID!
 }
 
 scalar UInt128

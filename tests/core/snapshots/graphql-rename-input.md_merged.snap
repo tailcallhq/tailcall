@@ -7,21 +7,25 @@ schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.c
 }
 
 input Bar {
-  buzz: String! @modify(name: "fizz")
-  sun: Sun!
+  foo: [Foo!] @modify(name: "buzz")
+  info: String! @modify(name: "bar")
 }
 
-input Sun {
-  comments: String @modify(name: "rocks")
-  moons: String! @modify(name: "planets")
+input Foo {
+  bar: Bar @modify(name: "fizz")
+  info: String! @modify(name: "foo")
 }
 
-type Foo {
-  alpha: String!
-  beta: String!
-  id: Int!
+input Spam {
+  id: ID! @modify(name: "identifier")
 }
 
 type Query {
-  foo(extra_input: Bar, input: Bar): [Foo]! @http(body: "{{.args.input}}", method: "POST", path: "/foo")
+  foo(extra_input: Spam!, input: Bar!): String!
+    @http(
+      body: "{{.args.input}}"
+      method: "POST"
+      path: "/foo"
+      query: [{key: "spamIds[]", value: "{{.args.extra_input.id}}"}]
+    )
 }

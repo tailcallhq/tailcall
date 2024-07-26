@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
 use crate::core::config::{ConfigModule, Field};
+use crate::core::ir::model::{InputTransforms, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
 
@@ -22,50 +23,68 @@ pub fn update_input_field_resolver<'a>(
                     .args
                     .into_iter()
                     .map(|mut arg| {
+                        type InputFieldHashMap = HashMap<(String, String), String>;
                         let of_type = &arg.of_type;
-                        let mut renames: HashMap<Vec<String>, String> = HashMap::new();
+                        let mut subfield_renames: InputFieldHashMap = HashMap::new();
+                        let mut subfield_types: InputFieldHashMap = HashMap::new();
                         let mut visited: Vec<String> = Vec::new();
 
                         fn extract_rename_paths(
-                            path_and_target: (Vec<String>, &str),
+                            target_type: &str,
                             config: &&ConfigModule,
-                            renames: &mut HashMap<Vec<String>, String>,
-                            visited: &mut Vec<String>,
+                            data: (
+                                &mut InputFieldHashMap,
+                                &mut InputFieldHashMap,
+                                &mut Vec<String>,
+                            ),
                         ) {
-                            let (path, target_name) = path_and_target;
-                            if visited.contains(&target_name.to_string()) {
+                            let (subfield_renames, subfield_types, visited) = data;
+                            if visited.contains(&target_type.to_string()) {
                                 return;
                             }
-                            visited.push(target_name.to_string());
+                            visited.push(target_type.to_string());
                             for (type_name, metadata) in &config.types {
-                                if target_name.eq(type_name) {
+                                if target_type.eq(type_name) {
                                     for (field_name, field) in &metadata.fields {
-                                        if let Some(modify) = &field.modify {
+                                        let key = if let Some(modify) = &field.modify {
                                             if let Some(modified_name) = &modify.name {
-                                                let mut new_path = path.clone();
-                                                new_path.push(modified_name.to_string());
-                                                renames.insert(new_path, field_name.to_string());
+                                                let key = (
+                                                    target_type.to_string(),
+                                                    modified_name.to_string(),
+                                                );
+                                                subfield_renames
+                                                    .insert(key.clone(), field_name.to_string());
+                                                key
+                                            } else {
+                                                (target_type.to_string(), field_name.to_string())
                                             }
-                                        }
-                                        let mut new_path = path.clone();
-                                        new_path.push(field_name.to_string());
+                                        } else {
+                                            (target_type.to_string(), field_name.to_string())
+                                        };
+                                        subfield_types.insert(key, field.type_of.clone());
                                         extract_rename_paths(
-                                            (new_path, &field.type_of),
+                                            &field.type_of,
                                             config,
-                                            renames,
-                                            visited,
+                                            (subfield_renames, subfield_types, visited),
                                         );
                                     }
                                 }
                             }
                         }
                         extract_rename_paths(
-                            (vec![], of_type.name()),
+                            of_type.name(),
                             config,
-                            &mut renames,
-                            &mut visited,
+                            (&mut subfield_renames, &mut subfield_types, &mut visited),
                         );
-                        arg.renames = renames;
+
+                        let input_transforms = InputTransforms {
+                            subfield_renames,
+                            subfield_types,
+                            arg_name: arg.name.clone(),
+                            arg_type: arg.of_type.name().to_string(),
+                        };
+
+                        arg.resolver = Some(IR::ModifyInput(input_transforms));
                         arg
                     })
                     .collect::<Vec<_>>();

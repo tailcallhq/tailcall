@@ -26,6 +26,7 @@ pub enum IR {
     Map(Map),
     Pipe(Box<IR>, Box<IR>),
     Discriminate(Discriminator, Box<IR>),
+    ModifyInput(InputTransforms),
 }
 
 #[derive(Clone, Debug)]
@@ -108,6 +109,14 @@ impl Cache {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct InputTransforms {
+    pub subfield_types: HashMap<(String, String), String>,
+    pub subfield_renames: HashMap<(String, String), String>,
+    pub arg_name: String,
+    pub arg_type: String,
+}
+
 impl IR {
     pub fn pipe(self, next: Self) -> Self {
         IR::Pipe(Box::new(self), Box::new(next))
@@ -149,6 +158,7 @@ impl IR {
                     IR::Discriminate(discriminator, expr) => {
                         IR::Discriminate(discriminator, expr.modify_box(modifier))
                     }
+                    IR::ModifyInput(_) => expr,
                 }
             }
         }
