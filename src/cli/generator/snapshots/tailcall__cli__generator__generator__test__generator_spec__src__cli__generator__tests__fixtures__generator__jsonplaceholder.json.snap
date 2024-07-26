@@ -14,6 +14,14 @@ type Address {
   zipcode: String
 }
 
+type Comment {
+  body: String
+  email: String
+  id: Int
+  name: String
+  postId: Int
+}
+
 type Company {
   bs: String
   catchPhrase: String
@@ -40,21 +48,13 @@ type Post {
   userId: Int
 }
 
-type PostComment {
-  body: String
-  email: String
-  id: Int
-  name: String
-  postId: Int
-}
-
 type Query {
-  comment(p1: Int!): PostComment @http(path: "/comments/{{.args.p1}}")
-  comments: [PostComment] @http(path: "/comments")
+  comment(p1: Int!): Comment @http(path: "/comments/{{.args.p1}}")
+  comments: [Comment] @http(path: "/comments")
   photo(p1: Int!): Photo @http(path: "/photos/{{.args.p1}}")
   photos: [Photo] @http(path: "/photos")
   post(p1: Int!): Post @http(path: "/posts/{{.args.p1}}")
-  postComments(postId: Int): [PostComment] @http(path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
+  postComments(postId: Int): [Comment] @http(path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
   posts: [Post] @http(path: "/posts")
   todo(p1: Int!): Todo @http(path: "/todos/{{.args.p1}}")
   todos: [Todo] @http(path: "/todos")

@@ -6,12 +6,13 @@ use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
+use strum::IntoEnumIterator;
 use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, Type};
 use crate::core::http::RequestContext;
 use crate::core::ir::{EvalContext, ResolverContext, TypeName};
-use crate::core::scalar::{Scalar, CUSTOM_SCALARS};
+use crate::core::scalar;
 
 fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
     match type_of {
@@ -198,7 +199,8 @@ fn to_type(def: &Definition) -> dynamic::Type {
             if let Some(description) = &def.description {
                 scalar = scalar.description(description);
             }
-            scalar = scalar.validator(def.validator);
+            let name = def.scalar.clone();
+            scalar = scalar.validator(move |v| name.validate(v));
             dynamic::Type::Scalar(scalar)
         }
         Definition::Enum(def) => {
@@ -227,9 +229,10 @@ impl From<&Blueprint> for SchemaBuilder {
         let mutation = blueprint.mutation();
         let mut schema = dynamic::Schema::build(query.as_str(), mutation.as_deref(), None);
 
-        for (k, v) in CUSTOM_SCALARS.iter() {
+        for scalar in scalar::Scalar::iter() {
+            let k = scalar.name();
             schema = schema.register(dynamic::Type::Scalar(
-                dynamic::Scalar::new(k.clone()).validator(v.validate::<ConstValue>()),
+                dynamic::Scalar::new(k.clone()).validator(move |val| scalar.validate(val)),
             ));
         }
 
