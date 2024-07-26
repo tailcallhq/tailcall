@@ -80,7 +80,6 @@ mod tests {
 
     macro_rules! assert_eq_map {
         ($actual:expr, $expected_vec:expr) => {{
-            // Define the conversion logic
             let mut expected: HashMap<&str, HashSet<&str>> = HashMap::new();
 
             for vec in $expected_vec {
@@ -93,7 +92,6 @@ mod tests {
                 }
             }
 
-            // Assert equality
             assert_eq!($actual, expected);
         }};
     }
