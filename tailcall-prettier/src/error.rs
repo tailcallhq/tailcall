@@ -1,5 +1,6 @@
-use std::{fmt::Display, sync::Arc};
+use std::fmt::Display;
 use std::string::FromUtf8Error;
+use std::sync::Arc;
 
 use derive_more::{DebugCustom, From};
 use tokio::task::JoinError;
@@ -25,10 +26,7 @@ pub enum Error {
     UnsupportedFiletype,
 
     #[debug(fmt = "{}\n\nCaused by:\n    {}", context, source)]
-    Context {
-        source: Arc<Error>,
-        context: String,
-    },
+    Context { source: Arc<Error>, context: String },
 }
 
 impl Display for Error {
@@ -51,10 +49,7 @@ impl Display for Error {
 
 impl Error {
     pub fn with_context(self, context: String) -> Self {
-        Error::Context {
-            source: Arc::new(self),
-            context,
-        }
+        Error::Context { source: Arc::new(self), context }
     }
 }
 
