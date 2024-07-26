@@ -125,6 +125,27 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
             }
         }
     }
+
+    fn validate_field(
+        &'a self,
+        node: &'a Field<Nested<Value>, Value>,
+        obj: &'a Value::JsonObject,
+    ) -> Result<Value, LocationError<Error>> {
+        match obj.get_key(node.name.as_str()) {
+            Some(val) => {
+                if val.is_null() && !node.type_of.is_nullable() {
+                    Err(ValidationError::ValueRequired.into())
+                        .map_err(|e| self.to_location_error(e, node))
+                } else {
+                    Ok(val.to_owned())
+                }
+            }
+            None if node.type_of.is_nullable() => Ok(Value::null()),
+            None => Err(ValidationError::ValueRequired.into())
+                .map_err(|e| self.to_location_error(e, node)),
+        }
+    }
+
     #[inline(always)]
     fn iter_inner(
         &'a self,
@@ -201,28 +222,11 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                                 }
                             }
                         } else {
-                            let val = obj.get_key(node.name.as_str());
-                            // if it's a leaf node, then push the value
-                            if let Some(val) = val {
-                                ans = ans.insert_key(node.name.as_str(), val.to_owned());
-                            } else if node.type_of.is_nullable() {
-                                return Ok(Value::null());
-                            } else {
-                                return Err(ValidationError::ValueRequired.into())
-                                    .map_err(|e| self.to_location_error(e, node));
-                            }
+                            ans =
+                                ans.insert_key(node.name.as_str(), self.validate_field(node, obj)?);
                         }
                     } else {
-                        let val = obj.get_key(node.name.as_str());
-                        // if it's a leaf node, then push the value
-                        if let Some(val) = val {
-                            ans = ans.insert_key(node.name.as_str(), val.to_owned());
-                        } else if node.type_of.is_nullable() {
-                            return Ok(Value::null());
-                        } else {
-                            return Err(ValidationError::ValueRequired.into())
-                                .map_err(|e| self.to_location_error(e, node));
-                        }
+                        ans = ans.insert_key(node.name.as_str(), self.validate_field(node, obj)?);
                     }
                     Ok(Value::object(ans))
                 }
