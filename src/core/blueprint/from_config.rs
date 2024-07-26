@@ -143,6 +143,7 @@ impl TryFrom<&ConfigModule> for Blueprint {
             .to_result();
         let end = Utc::now();
         let end = end.timestamp_subsec_millis();
+
         tracing::info!("🏭 Blueprint generated in {}ms", end - start);
 
         blueprint
