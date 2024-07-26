@@ -45,10 +45,12 @@ expression: plan.into_nested()
                         name: "id",
                         type_of: ID!,
                         is_scalar: true,
+                        directives: [],
                     },
                 ],
             ),
         ),
         is_scalar: false,
+        directives: [],
     },
 ]

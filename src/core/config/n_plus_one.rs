@@ -116,7 +116,7 @@ mod tests {
                     Field::default()
                         .type_of("F2".to_string())
                         .into_list()
-                        .http(Http { group_by: vec!["id".into()], ..Default::default() }),
+                        .http(Http { batch_key: vec!["id".into()], ..Default::default() }),
                 )]),
             ),
             (

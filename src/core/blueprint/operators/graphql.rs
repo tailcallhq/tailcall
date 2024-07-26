@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{Config, ConfigModule, Field, GraphQL, GraphQLOperationType, Type};
@@ -9,18 +9,29 @@ use crate::core::ir::RelatedFields;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
 
-fn create_related_fields(config: &Config, type_name: &str) -> RelatedFields {
+fn create_related_fields(
+    config: &Config,
+    type_name: &str,
+    visited: &mut HashSet<String>,
+) -> RelatedFields {
     let mut map = HashMap::new();
+    if visited.contains(type_name) {
+        return RelatedFields(map);
+    }
+    visited.insert(type_name.to_string());
 
     if let Some(type_) = config.find_type(type_name) {
         for (name, field) in &type_.fields {
             if !field.has_resolver() {
-                map.insert(name.clone(), create_related_fields(config, &field.type_of));
+                map.insert(
+                    name.clone(),
+                    create_related_fields(config, &field.type_of, visited),
+                );
             }
         }
     } else if let Some(union_) = config.find_union(type_name) {
         for type_name in &union_.types {
-            map.extend(create_related_fields(config, type_name).0);
+            map.extend(create_related_fields(config, type_name, visited).0);
         }
     };
 
@@ -50,7 +61,7 @@ pub fn compile_graphql(
                 &graphql.name,
                 args,
                 headers,
-                create_related_fields(config, type_name),
+                create_related_fields(config, type_name, &mut HashSet::new()),
             )
             .map_err(|e| ValidationError::new(e.to_string())),
         )
