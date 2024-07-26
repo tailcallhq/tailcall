@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::{fs, panic};
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use colored::Colorize;
 use futures_util::future::join_all;
 use hyper::{Body, Request};
@@ -131,12 +131,12 @@ async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
 
                 let actual = tailcall_prettier::format(actual, &tailcall_prettier::Parser::Gql)
                     .await
-                    .map_err(|_| anyhow!("{}", context.clone()))
+                    .map_err(|e| e.with_context(context.clone()))
                     .unwrap();
 
                 let expected = tailcall_prettier::format(content, &tailcall_prettier::Parser::Gql)
                     .await
-                    .map_err(|_| anyhow!("{}", context))
+                    .map_err(|e| e.with_context(context.clone()))
                     .unwrap();
 
                 pretty_assertions::assert_eq!(

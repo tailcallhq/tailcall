@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 use std::string::FromUtf8Error;
 
 use derive_more::{DebugCustom, From};
@@ -23,6 +23,12 @@ pub enum Error {
 
     #[debug(fmt = "Unsupported file type")]
     UnsupportedFiletype,
+
+    #[debug(fmt = "{}\n\nCaused by:\n    {}", context, source)]
+    Context {
+        source: Arc<Error>,
+        context: String,
+    },
 }
 
 impl Display for Error {
@@ -36,6 +42,18 @@ impl Display for Error {
             }
             Error::FileExtensionNotFound => write!(f, "No file extension found"),
             Error::UnsupportedFiletype => write!(f, "Unsupported file type"),
+            Error::Context { source, context } => {
+                write!(f, "{}\n\nCaused by:\n    {}", context, source)
+            }
+        }
+    }
+}
+
+impl Error {
+    pub fn with_context(self, context: String) -> Self {
+        Error::Context {
+            source: Arc::new(self),
+            context,
         }
     }
 }
