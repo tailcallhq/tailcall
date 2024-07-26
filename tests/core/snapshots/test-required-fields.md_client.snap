@@ -10,6 +10,10 @@ scalar Email
 
 scalar Empty
 
+type Foo {
+  id: Int
+}
+
 scalar Int128
 
 scalar Int16
@@ -30,6 +34,9 @@ type Post {
 }
 
 type Query {
+  foo: [Foo]!
+  fooInner: [Foo!]
+  post: Post!
   posts: [Post]
   users: [User]
 }

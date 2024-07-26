@@ -20,6 +20,7 @@ expression: response
         ],
         "path": [
           "posts",
+          1,
           "title"
         ]
       }

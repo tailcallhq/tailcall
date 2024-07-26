@@ -6,12 +6,19 @@ schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
+type Foo {
+  id: Int
+}
+
 type Post {
   id: Int!
   title: String!
 }
 
 type Query {
+  foo: [Foo]! @http(path: "/foos")
+  fooInner: [Foo!] @http(path: "/foos-inner")
+  post: Post! @http(path: "/posts/12")
   posts: [Post] @http(path: "/posts")
   users: [User] @http(path: "/users")
 }

@@ -82,7 +82,12 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
         match parent {
             Some(parent) => {
                 if !Self::is_array(&node.type_of, parent) {
-                    return Ok(Value::null());
+                    if node.type_of.is_nullable() {
+                        return Ok(Value::null());
+                    } else {
+                        return Err(ValidationError::ValueRequired.into())
+                            .map_err(|e| self.to_location_error(e, node));
+                    }
                 }
                 self.iter_inner(node, parent, data_path)
             }
