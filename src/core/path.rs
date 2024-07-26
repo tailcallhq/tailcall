@@ -136,7 +136,6 @@ mod tests {
         use std::collections::BTreeMap;
         use std::sync::Arc;
 
-        use async_graphql::SelectionField;
         use async_graphql_value::{ConstValue as Value, Name, Number};
         use hyper::header::HeaderValue;
         use hyper::HeaderMap;
@@ -144,7 +143,7 @@ mod tests {
         use once_cell::sync::Lazy;
 
         use crate::core::http::RequestContext;
-        use crate::core::ir::{EvalContext, ResolverContextLike};
+        use crate::core::ir::{EvalContext, ResolverContextLike, SelectionField};
         use crate::core::path::{PathGraphql, PathString, PathValue, ValueString};
         use crate::core::EnvIO;
 
