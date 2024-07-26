@@ -201,15 +201,12 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                                         );
                                     } else {
                                         let result = self.iter(child, None, data_path)?;
-                                        // TODO: can't use `result.is_null()`, because of tight
-                                        // lifetimes, for now keeping like following
-                                        // but need to migrate following change to use
-                                        // `result.is_null()`.
+                                        // TODO: Refactor to use `result.is_null()` when lifetime
+                                        // issues are resolved
                                         let _null_ty = Value::null();
-                                        let is_null = matches!(result.clone(), _null_ty);
-                                        // if field has some IR, then there must be some value.
+                                        let is_response_null = matches!(result.clone(), _null_ty);
                                         if child.type_of.is_nullable()
-                                            || !is_null
+                                            || !is_response_null
                                             || child.ir.is_some()
                                         {
                                             ans = ans.insert_key(child.name.as_str(), result);
