@@ -132,17 +132,12 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
         obj: &'a Value::JsonObject,
     ) -> Result<Value, LocationError<Error>> {
         match obj.get_key(node.name.as_str()) {
-            Some(val) => {
-                if val.is_null() && !node.type_of.is_nullable() && node.ir.is_none() {
-                    Err(ValidationError::ValueRequired.into())
-                        .map_err(|e| self.to_location_error(e, node))
-                } else {
-                    Ok(val.to_owned())
-                }
+            Some(val) if val.is_null() && !node.type_of.is_nullable() && node.ir.is_none() => {
+                Err(self.to_location_error(ValidationError::ValueRequired.into(), node))
             }
+            Some(val) => Ok(val.to_owned()),
             None if node.type_of.is_nullable() || node.ir.is_some() => Ok(Value::null()),
-            None => Err(ValidationError::ValueRequired.into())
-                .map_err(|e| self.to_location_error(e, node)),
+            None => Err(self.to_location_error(ValidationError::ValueRequired.into(), node)),
         }
     }
 
