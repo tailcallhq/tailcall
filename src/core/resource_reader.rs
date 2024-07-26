@@ -5,7 +5,6 @@ use futures_util::future::join_all;
 use futures_util::TryFutureExt;
 use url::Url;
 
-use super::error::file;
 use super::Error;
 use crate::core::runtime::TargetRuntime;
 
@@ -57,7 +56,7 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
             let resource: Resource = path.into();
             let resource_path = resource.to_string();
             self.read_file(resource)
-                .map_err(|_| Error::File(file::Error::FileReadFailed(resource_path)))
+                .map_err(|e| e.with_context(resource_path))
         }))
         .await;
 

@@ -13,7 +13,7 @@ use strum::IntoEnumIterator;
 use tailcall::cli;
 use tailcall::core::config::Config;
 use tailcall::core::tracing::default_tracing_for_name;
-use tailcall::core::{Error, scalar, FileIO};
+use tailcall::core::{scalar, Error, FileIO};
 
 static JSON_SCHEMA_FILE: &str = "../generated/.tailcallrc.schema.json";
 static GRAPHQL_SCHEMA_FILE: &str = "../generated/.tailcallrc.graphql";

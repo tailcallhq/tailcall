@@ -14,8 +14,8 @@ use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
-use crate::core::Error;
 use crate::core::valid::{ValidateInto, Validator};
+use crate::core::Error;
 
 /// CLI that reads the the config file and generates the required tailcall
 /// configuration.

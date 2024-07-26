@@ -12,8 +12,8 @@ use url::Url;
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
 use crate::core::mustache::Mustache;
-use crate::core::Error;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
+use crate::core::Error;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]

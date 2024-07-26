@@ -1,5 +1,6 @@
 use std::fmt::Display;
 use std::string::FromUtf8Error;
+use std::sync::Arc;
 
 use derive_more::From;
 
@@ -45,6 +46,9 @@ pub enum Error {
 
     #[error("Schema mismatch Error")]
     SchemaMismatch,
+
+    #[error("{}\n\nCaused by:\n    {}", context, source)]
+    Context { source: Arc<Error>, context: String },
 
     #[error("Error: {}", _0)]
     Anyhow(anyhow::Error),
@@ -276,6 +280,12 @@ impl Display for cache::Error {
             cache::Error::SerdeJson(error) => write!(f, "Serde Json Error: {}", error),
             cache::Error::Kv(error) => write!(f, "Kv Error: {}", error),
         }
+    }
+}
+
+impl Error {
+    pub fn with_context(self, context: String) -> Self {
+        Error::Context { source: Arc::new(self), context }
     }
 }
 
