@@ -1,12 +1,11 @@
 use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use async_graphql::{ServerError, Value};
 use reqwest::header::HeaderMap;
 
 use super::discriminator::TypeName;
-use super::model::IR;
 use super::{GraphQLOperationContext, RelatedFields, ResolverContextLike, SelectionField};
 use crate::core::document::print_directives;
 use crate::core::http::RequestContext;
@@ -27,9 +26,6 @@ pub struct EvalContext<'a, Ctx: ResolverContextLike> {
     // Overridden Arguments for Async GraphQL Context
     graphql_ctx_args: Option<Arc<Value>>,
 
-    /// Holds input field resolvers
-    graphql_input_resolvers: Option<HashMap<String, IR>>,
-
     /// Type name of resolved data that is calculated
     /// dynamically based on the shape of the value itself.
     /// Required for proper Union type resolutions.
@@ -38,7 +34,7 @@ pub struct EvalContext<'a, Ctx: ResolverContextLike> {
 }
 
 impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
-    pub fn with_value(&self, value: Value) -> EvalContext<'a, Ctx> {
+    pub fn with_value(&mut self, value: Value) -> EvalContext<'a, Ctx> {
         let mut ctx = self.clone();
         ctx.graphql_ctx_value = Some(Arc::new(value));
         ctx
@@ -48,18 +44,6 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
         let mut ctx = self.clone();
         ctx.graphql_ctx_args = Some(Arc::new(args));
         ctx
-    }
-
-    pub fn with_input_resolvers(
-        mut self,
-        resolvers: Option<HashMap<String, IR>>,
-    ) -> EvalContext<'a, Ctx> {
-        self.graphql_input_resolvers = resolvers;
-        self
-    }
-
-    pub fn input_resolvers(&self) -> &Option<HashMap<String, IR>> {
-        &self.graphql_input_resolvers
     }
 
     pub fn is_query(&self) -> bool {
@@ -72,7 +56,6 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
             graphql_ctx,
             graphql_ctx_value: None,
             graphql_ctx_args: None,
-            graphql_input_resolvers: None,
             type_name: None,
         }
     }
