@@ -185,6 +185,10 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                                         );
                                     } else {
                                         let result = self.iter(child, None, data_path)?;
+                                        // TODO: can't use `result.is_null()`, because of tight
+                                        // lifetimes, for now keeping like following
+                                        // but need to migrate following change to use
+                                        // `result.is_null()`.
                                         let _null_ty = Value::null();
                                         let is_null = matches!(result.clone(), _null_ty);
                                         if child.type_of.is_nullable() || !is_null {
