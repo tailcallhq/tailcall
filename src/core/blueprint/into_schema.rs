@@ -7,7 +7,6 @@ use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
 use futures_util::TryFutureExt;
 use strum::IntoEnumIterator;
-use indexmap::IndexMap;
 use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, Type};

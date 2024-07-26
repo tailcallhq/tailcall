@@ -6,7 +6,13 @@ schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.c
 }
 
 type Query {
-  foo(input: Bar!, extra_input: Spam!): String! @http(method: POST, path: "/foo", body: "{{.args.input}}", query: [{key: "spamIds[]", value: "{{.args.extra_input.id}}"}])
+  foo(input: Bar!, extra_input: Spam!): String!
+    @http(
+      method: POST
+      path: "/foo"
+      body: "{{.args.input}}"
+      query: [{key: "spamIds[]", value: "{{.args.extra_input.id}}"}]
+    )
 }
 
 input Bar {
@@ -28,7 +34,8 @@ input Spam {
 - request:
     method: POST
     url: http://jsonplaceholder.typicode.com/foo?spamIds[]=1
-    body: {"foo":[{"bar":{"info":"bar_1"},"info":"foo_1"},{"bar":{"info":"bar_1"},"info":"foo_1"}],"info":"bar"}
+    body:
+      {"foo": [{"bar": {"info": "bar_1"}, "info": "foo_1"}, {"bar": {"info": "bar_1"}, "info": "foo_1"}], "info": "bar"}
   response:
     status: 200
     body: Hello from buzz
