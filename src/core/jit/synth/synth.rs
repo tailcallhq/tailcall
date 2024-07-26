@@ -133,14 +133,14 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     ) -> Result<Value, LocationError<Error>> {
         match obj.get_key(node.name.as_str()) {
             Some(val) => {
-                if val.is_null() && !node.type_of.is_nullable() {
+                if val.is_null() && !node.type_of.is_nullable() && node.ir.is_none() {
                     Err(ValidationError::ValueRequired.into())
                         .map_err(|e| self.to_location_error(e, node))
                 } else {
                     Ok(val.to_owned())
                 }
             }
-            None if node.type_of.is_nullable() => Ok(Value::null()),
+            None if node.type_of.is_nullable() || node.ir.is_some() => Ok(Value::null()),
             None => Err(ValidationError::ValueRequired.into())
                 .map_err(|e| self.to_location_error(e, node)),
         }
@@ -212,7 +212,11 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                                         // `result.is_null()`.
                                         let _null_ty = Value::null();
                                         let is_null = matches!(result.clone(), _null_ty);
-                                        if child.type_of.is_nullable() || !is_null {
+                                        // if field has some IR, then there must be some value.
+                                        if child.type_of.is_nullable()
+                                            || !is_null
+                                            || child.ir.is_some()
+                                        {
                                             ans = ans.insert_key(child.name.as_str(), result);
                                         } else {
                                             return Err(ValidationError::ValueRequired.into())
