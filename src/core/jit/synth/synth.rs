@@ -86,7 +86,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                         return Ok(Value::null());
                     } else {
                         return Err(ValidationError::ValueRequired.into())
-                            .map_err(|e| self.to_location_error(e, node));
+                            .map_err(|e| self.to_location_error(e, node, data_path));
                     }
                 }
                 self.iter_inner(node, parent, data_path)
@@ -109,10 +109,9 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                         match data {
                             Data::Single(val) => self.iter(
                                 node,
-                                Some(
-                                    val.as_ref()
-                                        .map_err(|e| self.to_location_error(e.to_owned(), node))?,
-                                ),
+                                Some(val.as_ref().map_err(|e| {
+                                    self.to_location_error(e.to_owned(), node, data_path)
+                                })?),
                                 data_path,
                             ),
                             _ => {
@@ -128,7 +127,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                             Ok(Value::null())
                         } else {
                             Err(ValidationError::ValueRequired.into())
-                                .map_err(|e| self.to_location_error(e, node))
+                                .map_err(|e| self.to_location_error(e, node, data_path))
                         }
                     }
                 }
@@ -237,21 +236,26 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
             }
         };
 
-        result.map_err(|e| self.to_location_error(e, node))
+        result.map_err(|e| self.to_location_error(e, node, data_path))
     }
 
     fn to_location_error(
         &'a self,
         error: Error,
         node: &'a Field<Nested<Value>, Value>,
+        data_path: &DataPath,
     ) -> LocationError<Error> {
         // create path from the root to the current node in the fields tree
         let path = {
             let mut path = Vec::new();
-
+            let data_path = data_path.as_slice();
+            let mut idx = 0;
             let mut parent = self.plan.find_field(node.id.clone());
-
             while let Some(field) = parent {
+                if field.type_of.is_list() && idx < data_path.len() {
+                    path.push(PathSegment::Index(data_path[idx]));
+                    idx += 1;
+                }
                 path.push(PathSegment::Field(field.name.to_string()));
                 parent = field
                     .parent()
