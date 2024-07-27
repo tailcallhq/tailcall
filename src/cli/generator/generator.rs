@@ -156,7 +156,8 @@ impl Generator {
             .validate_into()
             .to_result()?;
 
-        // add user suggested names to preset, so that type name generator can prioritize these names.
+        // add user suggested names to preset, so that type name generator can
+        // prioritize these names.
         let suggest_field_names = config
             .inputs
             .iter()
