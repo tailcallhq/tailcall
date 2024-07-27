@@ -117,14 +117,6 @@ impl<'a> CandidateGeneration<'a> {
                             }
                             false => 1,
                         };
-
-                        println!(
-                            "[Finder]: {:#?} and {:#?} and {:#?} and {:#?}",
-                            field_name,
-                            priority,
-                            type_name,
-                            self.config.is_root_operation_type(type_name)
-                        );
                         inner_map.insert(
                             singularized_candidate,
                             CandidateStats { frequency: 1, priority },
@@ -133,7 +125,6 @@ impl<'a> CandidateGeneration<'a> {
                 }
             }
         }
-        println!("[Finder]: {:#?}", self.candidates);
         CandidateConvergence::new(self)
     }
 }
@@ -272,7 +263,6 @@ mod test {
         let config = Config::from_sdl(read_fixture(configs::CONFLICTING_TYPE_NAMES).as_str())
             .to_result()
             .unwrap();
-
 
         let transformed_config = ImproveTypeNames::new(HashSet::default())
             .transform(config)
