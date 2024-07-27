@@ -75,6 +75,7 @@ impl<'a> CandidateGeneration<'a> {
     /// This method iterates over the configuration and collects candidate type
     /// names for each type.
     fn generate(mut self) -> CandidateConvergence<'a> {
+        // process the user suggest field names over the auto inferred names.
         let mut ty_names = self.config.types.keys().collect::<Vec<_>>();
         if let Some(ref operation_ty_name) = self.config.schema.query {
             ty_names.insert(0, operation_ty_name);
