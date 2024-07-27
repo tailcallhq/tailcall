@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
+
 use crate::core::config::Config;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
@@ -19,7 +20,6 @@ impl Display for FieldName<'_> {
     }
 }
 
-
 struct FindFanOutContext<'a> {
     config: &'a Config,
     type_name: &'a str,
@@ -31,7 +31,6 @@ fn find_fan_out<'a>(
     ctx: FindFanOutContext<'a>,
     visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
 ) -> HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>> {
-
     let config = ctx.config;
     let type_name: TypeName = TypeName(ctx.type_name);
     let is_list = ctx.is_list;
@@ -113,56 +112,6 @@ mod tests {
             assert_eq!($actual, expected);
         }};
     }
-/*    fn foo<'a>(
-        map: &HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
-        ty: &TypeName<'a>,
-        visited: &mut HashSet<TypeName<'a>>,
-    ) -> Option<String> {
-        if visited.contains(ty) {
-            return None;
-        }else {
-            visited.insert(*ty);
-        }
-
-        let val = map.get(ty)?;
-        let ans = val.iter().map(|(field_name, ty_of)| {
-            let val = match foo(map, ty_of, visited) {
-                Some(nested) => {
-                    format!("{} {{ {} }}", field_name, nested)
-                }
-                None => field_name.to_string(),
-            };
-            val
-        }).collect::<Vec<_>>().join("\n");
-
-        Some(ans)
-    }*/
-
-    fn foo<'a>(
-        map: &HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
-        ty: &TypeName<'a>,
-        visited: &mut HashSet<TypeName<'a>>,
-    ) -> Vec<&'a str> {
-        if visited.contains(ty) {
-            return vec![];
-        } else {
-            visited.insert(*ty);
-        }
-
-        let val = match map.get(ty) {
-            Some(fields) => fields,
-            None => return vec![],
-        };
-
-        let mut result = Vec::new();
-        for (field_name, ty_of) in val {
-            result.push(field_name.0);
-            let nested_fields = foo(map, ty_of, visited);
-            result.extend(nested_fields);
-        }
-
-        result
-    }
 
     #[test]
     fn test_nplusone_resolvers() {
@@ -194,8 +143,6 @@ mod tests {
             ),
         ]);
         let actual = config.n_plus_one();
-        let foo = foo(&actual, &TypeName("Query"), &mut HashSet::new());
-        println!("{:?}", foo);
         let expected = vec![vec![("Query", ("f1", "F1")), ("F1", ("f2", "F2"))]];
 
         assert_eq_map!(actual, expected);
@@ -275,14 +222,13 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let foo = foo(&actual, &TypeName("Query"), &mut HashSet::new());
-        println!("{:?}", foo);
         let expected = vec![vec![
             ("Query", ("f1", "F1")),
             ("F1", ("f2", "F2")),
             ("F2", ("f3", "F3")),
             ("F3", ("f4", "String")),
         ]];
+
         assert_eq_map!(actual, expected);
     }
 
@@ -330,6 +276,7 @@ mod tests {
             ("F3", ("f4", "String")),
         ]];
         let actual = config.n_plus_one();
+
         assert_eq_map!(actual, expected);
     }
 
@@ -362,6 +309,7 @@ mod tests {
 
         let expected: Vec<Vec<_>> = vec![];
         let actual = config.n_plus_one();
+
         assert_eq_map!(actual, expected);
     }
 
@@ -435,18 +383,13 @@ mod tests {
             vec![
                 ("Query", ("f1", "F1")),
                 ("F1", ("f1", "F1")),
-                ("F1", ("f2", "String"))
+                ("F1", ("f2", "String")),
             ],
-            vec![
-                ("Query", ("f1", "F1")),
-                ("F1", ("f2", "String"))
-            ],
+            vec![("Query", ("f1", "F1")), ("F1", ("f2", "String"))],
         ];
-        let foo = foo(&actual, &TypeName("Query"), &mut HashSet::new());
-        println!("{:?}", foo);
+
         assert_eq_map!(actual, expected);
     }
-
     #[test]
     fn test_nplusone_nested_non_list() {
         let f_field = Field::default()
