@@ -158,7 +158,7 @@ impl Generator {
 
         // add user suggested names to preset, so that type name generator can
         // prioritize these names.
-        let suggest_field_names = config
+        let suggested_names = config
             .inputs
             .iter()
             .filter_map(|input| match &input.source {
@@ -167,7 +167,7 @@ impl Generator {
             })
             .collect::<HashSet<_>>();
 
-        let preset = preset.user_suggested_field_names(suggest_field_names);
+        let preset = preset.suggested_names(suggested_names);
 
         let input_samples = self.resolve_io(config).await?;
 

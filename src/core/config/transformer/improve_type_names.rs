@@ -132,7 +132,8 @@ impl<'a> CandidateGeneration<'a> {
 
 #[derive(Default)]
 pub struct ImproveTypeNames {
-    // given set of names, transformer prioritizes given names over the frequency in the final config.
+    // given set of names, transformer prioritizes given names over the frequency in the final
+    // config.
     suggested_names: HashSet<String>,
 }
 
