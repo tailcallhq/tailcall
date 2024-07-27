@@ -5,7 +5,7 @@ use derive_more::From;
 use thiserror::Error;
 
 use crate::core::auth;
-use crate::core::error::worker;
+use crate::core::worker;
 use crate::core::cache;
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
@@ -35,7 +35,7 @@ pub enum Error {
     AuthError(auth::error::Error),
 
     #[error("Worker Error: {0}")]
-    WorkerError(worker::Error),
+    WorkerError(worker::error::Error),
 
     #[error("Cache Error: {0}")]
     CacheError(cache::Error),
