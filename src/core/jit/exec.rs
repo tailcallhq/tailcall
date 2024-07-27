@@ -11,7 +11,7 @@ use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::jit;
 use crate::core::jit::synth::Synth;
-use crate::core::json::JsonLike;
+use crate::core::json::{JsonLike, JsonObjectLike};
 
 type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Positioned<Error>>>>>;
 
@@ -114,8 +114,7 @@ where
                     if let Some(array) = value.as_array() {
                         join_all(field.nested_iter().map(|field| {
                             join_all(array.iter().enumerate().map(|(index, value)| {
-                                let new_value = value.get_key(&field.name).unwrap_or(value);
-                                let ctx = ctx.with_value_and_field(new_value, field);
+                                let ctx = ctx.with_value_and_field(value, field);
                                 let data_path = data_path.clone().with_index(index);
                                 async move { self.execute(field, &ctx, data_path).await }
                             }))
@@ -130,8 +129,7 @@ where
                 // Has to be an Object, we don't do anything while executing if its a Scalar
                 else {
                     join_all(field.nested_iter().map(|child| {
-                        let new_value = value.get_key(&child.name).unwrap_or(value);
-                        let ctx = ctx.with_value_and_field(new_value, child);
+                        let ctx = ctx.with_value_and_field(value, child);
                         let data_path = data_path.clone();
                         async move { self.execute(child, &ctx, data_path).await }
                     }))
@@ -147,15 +145,22 @@ where
                 result.map_err(|e| Positioned::new(e, field.pos)),
             );
         } else {
+            let default_obj = Output::object(Output::JsonObject::new());
+            let value = ctx
+                .value()
+                .and_then(|v| v.get_key(&field.name))
+                // in case there is no value we still put some dumb empty value anyway
+                // to force execution of the nested fields even when parent object is not present.
+                // For async_graphql it's done by `fix_dangling_resolvers` fn that basically creates
+                // fake IR that resolves to empty object. The `fix_dangling_resolvers` is also
+                // working here, but eventually it can be replaced by this logic
+                // here without doing the "fix"
+                .unwrap_or(&default_obj);
+
             // if the present field doesn't have IR, still go through it's extensions to see
             // if they've IR.
             join_all(field.nested_iter().map(|child| {
-                let value = ctx.value().map(|v| v.get_key(&child.name).unwrap_or(v));
-                let ctx = if let Some(v) = value {
-                    ctx.with_value_and_field(v, child)
-                } else {
-                    ctx.with_field(child)
-                };
+                let ctx = ctx.with_value_and_field(value, child);
                 let data_path = data_path.clone();
                 async move { self.execute(child, &ctx, data_path).await }
             }))
