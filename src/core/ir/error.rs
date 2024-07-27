@@ -33,7 +33,7 @@ pub enum Error {
     AuthError(auth::error::Error),
 
     #[error("Worker Error: {0}")]
-    WorkerError(worker::error::Error),
+    WorkerError(worker::Error),
 
     #[error("Cache Error: {0}")]
     CacheError(cache::Error),
