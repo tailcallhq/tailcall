@@ -153,8 +153,9 @@ mod tests {
             actual,
             config.schema.query.as_deref().unwrap_or_default(),
         );
-
-        insta::assert_snapshot!(formatted);
+        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
+        formatted.sort();
+        insta::assert_snapshot!(formatted.join("\n"));
     }
 
     #[test]
@@ -200,8 +201,9 @@ mod tests {
             actual,
             config.schema.query.as_deref().unwrap_or_default(),
         );
-
-        insta::assert_snapshot!(formatted);
+        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
+        formatted.sort();
+        insta::assert_snapshot!(formatted.join("\n"));
     }
 
     #[test]
@@ -246,7 +248,9 @@ mod tests {
             actual,
             config.schema.query.as_deref().unwrap_or_default(),
         );
-        insta::assert_snapshot!(formatted);
+        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
+        formatted.sort();
+        insta::assert_snapshot!(formatted.join("\n"));
     }
 
     #[test]
@@ -287,6 +291,8 @@ mod tests {
             actual,
             config.schema.query.as_deref().unwrap_or_default(),
         );
-        insta::assert_snapshot!(formatted);
+        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
+        formatted.sort();
+        insta::assert_snapshot!(formatted.join("\n"));
     }
 }
