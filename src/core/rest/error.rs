@@ -43,7 +43,7 @@ pub enum Error {
     Validation(ValidationError<std::string::String>),
 
     #[error("Async Graphql Parser Error: {}", _0)]
-    AsyncgraphqlParser(async_graphql::parser::Error),
+    ParseGraphQL(async_graphql::parser::Error),
 
     #[error("Hyper HTTP Invalid URI Error: {}", _0)]
     HyperHttpInvalidUri(hyper::http::uri::InvalidUri),
@@ -55,7 +55,7 @@ pub enum Error {
     Hyper(hyper::Error),
 
     #[error("Async Graphql Server Error: {}", _0)]
-    AsyncgraphqlServer(ServerError),
+    GraphQLServer(ServerError),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

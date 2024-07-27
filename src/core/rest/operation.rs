@@ -25,7 +25,7 @@ impl OperationQuery {
             .await
             .errors
             .iter()
-            .map(|v| Error::AsyncgraphqlServer(v.clone()))
+            .map(|v| Error::GraphQLServer(v.clone()))
             .collect()
     }
 }
