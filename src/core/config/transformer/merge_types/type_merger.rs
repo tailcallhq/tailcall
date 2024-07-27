@@ -37,9 +37,12 @@ impl TypeMerger {
         let mut stat_gen = Similarity::new(&config);
         let mergeable_types = MergeableTypes::new(&config, self.threshold);
 
+        let mut types = mergeable_types.iter().cloned().collect::<Vec<_>>();
+        types.sort();
+
         // step 1: identify all the types that satisfies the thresh criteria and group
         // them.
-        for type_name_1 in mergeable_types.iter() {
+        for type_name_1 in types.iter() {
             if let Some(type_info_1) = config.types.get(type_name_1) {
                 if visited_types.contains(type_name_1) {
                     continue;
@@ -48,7 +51,7 @@ impl TypeMerger {
                 let mut similar_type_set = BTreeSet::new();
                 similar_type_set.insert(type_name_1.to_string());
 
-                for type_name_2 in mergeable_types.iter().skip(i + 1) {
+                for type_name_2 in types.iter().skip(i + 1) {
                     if visited_types.contains(type_name_2)
                         || !mergeable_types.mergeable(type_name_1, type_name_2)
                     {
