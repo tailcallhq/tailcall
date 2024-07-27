@@ -537,8 +537,9 @@ input Step {
 input KeyValue {
   key: String!
   """
-  When specified in query params will skip the param whole value is null the default 
-  value of this argument is false
+  Determines whether to ignore query parameters with empty values when forming URLs.When 
+  set to true, query parameters without values are completely ignored during URL formation. 
+  When false (default), parameters without values are included in the URL.
   """
   skipNull: Boolean
   value: String!

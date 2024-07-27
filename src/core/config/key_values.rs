@@ -25,13 +25,17 @@ impl FromIterator<(String, Value)> for KeyValues {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Eq, PartialEq, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct KeyValue {
     pub key: String,
     pub value: String,
     #[serde(default, skip_serializing_if = "is_default")]
-    #[serde(rename = "skipNull")]
-    /// When specified in query params will skip the param whole value is null
-    /// the default value of this argument is false
+    /// Determines whether to ignore query parameters with empty values when
+    /// forming URLs.
+    ///
+    /// When set to true, query parameters without values are completely ignored
+    /// during URL formation. When false (default), parameters without values
+    /// are included in the URL.
     pub skip_null: Option<bool>,
 }
 

@@ -790,7 +790,7 @@
           "type": "string"
         },
         "skipNull": {
-          "description": "When specified in query params will skip the param whole value is null the default value of this argument is false",
+          "description": "Determines whether to ignore query parameters with empty values when forming URLs.\n\nWhen set to true, query parameters without values are completely ignored during URL formation. When false (default), parameters without values are included in the URL.",
           "type": [
             "boolean",
             "null"

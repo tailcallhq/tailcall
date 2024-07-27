@@ -8,7 +8,7 @@ schema
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts?id=11&id=3&foo=1")
+  posts: [Post] @http(path: "/posts")
 }
 
 type Post {
@@ -33,7 +33,7 @@ type User {
 ```yml @mock
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/posts?id=11&id=3&foo=1
+    url: http://jsonplaceholder.typicode.com/posts
   response:
     status: 200
     body:
