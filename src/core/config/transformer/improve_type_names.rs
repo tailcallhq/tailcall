@@ -107,12 +107,14 @@ impl<'a> CandidateGeneration<'a> {
                         key_val.frequency += 1
                     } else {
                         let priority = match self.config.is_root_operation_type(type_name) {
-                            true => if self.suggested_names.contains(field_name) {
-                            // priority of user suggested name is higher than anything.
-                                2
-                            }else{
-                                0
-                            }, 
+                            true => {
+                                if self.suggested_names.contains(field_name) {
+                                    // priority of user suggested name is higher than anything.
+                                    2
+                                } else {
+                                    0
+                                }
+                            }
                             false => 1,
                         };
 
@@ -130,20 +132,20 @@ impl<'a> CandidateGeneration<'a> {
 
 #[derive(Default)]
 pub struct ImproveTypeNames {
-    suggested_field_names: HashSet<String>
+    suggested_field_names: HashSet<String>,
 }
 
 impl ImproveTypeNames {
     pub fn new(name: HashSet<String>) -> Self {
-        Self {
-            suggested_field_names: name
-        }
+        Self { suggested_field_names: name }
     }
 
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
     fn generate_type_names(&self, mut config: Config) -> Config {
-        let finalized_candidates = CandidateGeneration::new(&config, &self.suggested_field_names).generate().converge();
+        let finalized_candidates = CandidateGeneration::new(&config, &self.suggested_field_names)
+            .generate()
+            .converge();
 
         for (old_type_name, new_type_name) in finalized_candidates {
             if let Some(type_) = config.types.remove(old_type_name.as_str()) {
@@ -177,6 +179,7 @@ impl Transform for ImproveTypeNames {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
     use std::fs;
 
     use anyhow::Ok;
@@ -197,7 +200,10 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames::new(HashSet::default())
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
     }
 
@@ -207,7 +213,10 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames::new(HashSet::default())
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
@@ -219,7 +228,10 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames::new(HashSet::default())
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
