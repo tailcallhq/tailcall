@@ -4,7 +4,7 @@ use std::rc::Rc;
 use async_graphql_value::ConstValue;
 use serde_json::Value;
 use tailcall::core::ir::model::IoId;
-use tailcall::core::{error, Cache};
+use tailcall::core::{cache, Cache};
 use worker::kv::KvStore;
 
 pub struct CloudflareChronoCache {
@@ -19,10 +19,10 @@ impl CloudflareChronoCache {
     pub fn init(env: Rc<worker::Env>) -> Self {
         Self { env }
     }
-    fn get_kv(&self) -> error::cache::Result<KvStore> {
+    fn get_kv(&self) -> cache::Result<KvStore> {
         self.env
             .kv("TMP_KV")
-            .map_err(|e| error::cache::Error::Kv(e.to_string()))
+            .map_err(|e| cache::Error::Kv(e.to_string()))
     }
 }
 // TODO: Needs fix
@@ -35,22 +35,22 @@ impl Cache for CloudflareChronoCache {
         key: IoId,
         value: ConstValue,
         ttl: NonZeroU64,
-    ) -> error::cache::Result<()> {
+    ) -> cache::Result<()> {
         let kv_store = self.get_kv()?;
         let ttl = ttl.get();
         async_std::task::spawn_local(async move {
             kv_store
                 .put(&key.as_u64().to_string(), value.to_string())
-                .map_err(|e| error::cache::Error::Kv(e.to_string()))?
+                .map_err(|e| cache::Error::Kv(e.to_string()))?
                 .expiration_ttl(ttl)
                 .execute()
                 .await
-                .map_err(|e| error::cache::Error::Kv(e.to_string()))
+                .map_err(|e| cache::Error::Kv(e.to_string()))
         })
         .await
     }
 
-    async fn get<'a>(&'a self, key: &'a IoId) -> error::cache::Result<Option<Self::Value>> {
+    async fn get<'a>(&'a self, key: &'a IoId) -> cache::Result<Option<Self::Value>> {
         let kv_store = self.get_kv()?;
         let key = key.as_u64().to_string();
         async_std::task::spawn_local(async move {
@@ -58,7 +58,7 @@ impl Cache for CloudflareChronoCache {
                 .get(&key)
                 .json::<Value>()
                 .await
-                .map_err(|e| error::cache::Error::Kv(e.to_string()))?;
+                .map_err(|e| cache::Error::Kv(e.to_string()))?;
             Ok(val.map(ConstValue::from_json).transpose()?)
         })
         .await

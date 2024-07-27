@@ -5,7 +5,8 @@ use derive_more::From;
 use thiserror::Error;
 
 use crate::core::auth;
-use crate::core::error::{cache, worker};
+use crate::core::error::worker;
+use crate::core::cache;
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     #[error("IOException: {0}")]

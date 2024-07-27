@@ -1,4 +1,3 @@
-pub mod cache;
 pub mod worker;
 
 use derive_more::From;
