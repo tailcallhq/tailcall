@@ -12,7 +12,6 @@ npm i @tailcallhq/tailcall-wasm
 
 ## Local setup
 
-````bash
 Go to tailcall-wasm dir
 
 ```bash
@@ -66,6 +65,10 @@ Run simple http server in `tailcall-wasm` dir:
 ```bash
 python3 -m http.server 8000
 ```
+
+you need to pass the schema url as a query parameter as `http://<url>:<port>/?config=<schema-url>`
+
+sample playground: [link](http://0.0.0.0:8000/example/browser/?config=https://raw.githubusercontent.com/tailcallhq/tailcall/main/examples/jsonplaceholder.graphql)
 
 # Example
 
