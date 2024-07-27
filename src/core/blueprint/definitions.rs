@@ -16,7 +16,7 @@ use crate::core::{config, scalar};
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
     if scalar::Scalar::is_predefined(name) {
         Valid::fail(format!("Scalar type {} is predefined", name))
-    }else {
+    } else {
         Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
             name: name.to_string(),
             directive: Vec::new(),
