@@ -1,6 +1,7 @@
 mod directive;
 mod endpoint;
 mod endpoint_set;
+pub mod error;
 mod operation;
 mod partial_request;
 mod path;
@@ -11,3 +12,4 @@ mod typed_variables;
 pub use endpoint_set::{Checked, EndpointSet, Unchecked};
 
 type Request = hyper::Request<hyper::Body>;
+pub use error::{Error, Result};
