@@ -3,9 +3,9 @@ use std::io::Write;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-use anyhow::{anyhow, Result};
 use tokio::runtime::Runtime;
 
+use super::{Error, Result};
 use crate::Parser;
 
 /// Struct representing a Prettier formatter.
@@ -81,9 +81,8 @@ impl Prettier {
                 if output.status.success() {
                     Ok(String::from_utf8(output.stdout)?)
                 } else {
-                    Err(anyhow!(
-                        "Prettier formatting failed: {}",
-                        String::from_utf8(output.stderr).unwrap()
+                    Err(Error::PrettierFormattingFailed(
+                        String::from_utf8(output.stderr).unwrap(),
                     ))
                 }
             })

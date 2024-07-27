@@ -38,18 +38,6 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         }
     }
 
-    pub fn with_field(&self, field: &'a Field<Nested<Input>, Input>) -> Self {
-        let args = self.args.clone();
-
-        Self {
-            request: self.request,
-            is_query: self.is_query,
-            value: self.value,
-            field,
-            args,
-        }
-    }
-
     pub fn with_args(&self, args: indexmap::IndexMap<&str, Input>) -> Self {
         let mut map = indexmap::IndexMap::new();
         for (key, value) in args {
