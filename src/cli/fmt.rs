@@ -118,7 +118,6 @@ impl Fmt {
 #[cfg(test)]
 mod tests {
     use crate::cli::fmt::Fmt;
-
     use crate::core::config::{Config, Field, Http, Type};
     #[test]
     fn test_nplusone_resolvers() {
