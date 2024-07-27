@@ -1,10 +1,8 @@
-use std::cell::Cell;
 use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
 use tokio::sync::oneshot::{self};
-use tracing::subscriber::DefaultGuard;
 
 use super::http_1::start_http_1;
 use super::http_2::start_http_2;
@@ -13,9 +11,6 @@ use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
 use crate::core::blueprint::{Blueprint, Http};
 use crate::core::config::ConfigModule;
-thread_local! {
-    static TRACING_GUARD: Cell<Option<DefaultGuard>> = const { Cell::new(None) };
-}
 
 pub struct Server {
     config_module: ConfigModule,
@@ -55,27 +50,10 @@ impl Server {
     pub async fn fork_start(self) -> Result<()> {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(self.config_module.deref().server.get_workers())
-            .on_thread_start(|| {
-                // initialize default tracing setup for the cli execution for every thread that
-                // is spawned based on https://github.com/tokio-rs/tracing/issues/593#issuecomment-589857097
-                // and required due to the fact that later for tracing the global subscriber
-                // will be set by `src/cli/opentelemetry.rs` and until that we need
-                // to use the default tracing configuration for cli output. And
-                // since `set_default` works only for current thread incorporate this
-                // with tokio runtime
-                let guard = tracing::subscriber::set_default(
-                    crate::core::tracing::default_tracing_tailcall(),
-                );
-
-                TRACING_GUARD.set(Some(guard));
-            })
-            .on_thread_stop(|| {
-                TRACING_GUARD.take();
-            })
             .enable_all()
             .build()?;
 
-        let result = runtime.spawn(self.start()).await?;
+        let result = runtime.spawn(async { self.start().await }).await?;
         runtime.shutdown_background();
 
         result
