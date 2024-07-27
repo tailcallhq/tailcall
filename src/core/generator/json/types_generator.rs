@@ -3,6 +3,7 @@ use serde_json::{Map, Value};
 use crate::core::config::{Config, Field, Type};
 use crate::core::generator::NameGenerator;
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
+use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
@@ -35,8 +36,9 @@ impl TypeMerger {
             for (key, new_field) in current_type.fields {
                 if let Some(existing_field) = ty.fields.get(&key) {
                     if existing_field.type_of.is_empty()
-                        || existing_field.type_of == "Empty"
-                        || (existing_field.type_of == "Any" && new_field.type_of != "Empty")
+                        || existing_field.type_of == Scalar::Empty.to_string()
+                        || (existing_field.type_of == Scalar::JSON.to_string()
+                            && new_field.type_of != Scalar::Empty.to_string())
                     {
                         ty.fields.insert(key, new_field);
                     }
@@ -72,13 +74,13 @@ impl<'a, T1> TypesGenerator<'a, T1>
 where
     T1: OperationGenerator,
 {
-    fn generate_scalar(&self, config: &mut Config) -> String {
-        let any_scalar = "Any";
-        if config.types.contains_key(any_scalar) {
-            return any_scalar.to_string();
+    fn generate_scalar(&self, config: &mut Config) -> Scalar {
+        let any_scalar = Scalar::JSON;
+        if config.types.contains_key(&any_scalar.name()) {
+            return any_scalar;
         }
         config.types.insert(any_scalar.to_string(), Type::default());
-        any_scalar.to_string()
+        any_scalar
     }
 
     fn create_type_from_object(
@@ -92,7 +94,7 @@ where
                 // if object, array is empty or object has in-compatible fields then
                 // generate scalar for it.
                 Field {
-                    type_of: self.generate_scalar(config),
+                    type_of: self.generate_scalar(config).to_string(),
                     list: json_val.is_array(),
                     ..Default::default()
                 }
@@ -126,7 +128,7 @@ where
                 for json_item in json_arr {
                     if let Value::Object(json_obj) = json_item {
                         if !JSONValidator::is_graphql_compatible(json_item) {
-                            return self.generate_scalar(config);
+                            return self.generate_scalar(config).to_string();
                         }
                         object_types.push(self.create_type_from_object(json_obj, config));
                     } else {
@@ -145,11 +147,11 @@ where
                 }
 
                 // generate a scalar if array is empty.
-                self.generate_scalar(config)
+                self.generate_scalar(config).to_string()
             }
             Value::Object(json_obj) => {
                 if !JSONValidator::is_graphql_compatible(json_value) {
-                    return self.generate_scalar(config);
+                    return self.generate_scalar(config).to_string();
                 }
                 let ty = self.create_type_from_object(json_obj, config);
                 let generate_type_name = self.type_name_generator.next();
