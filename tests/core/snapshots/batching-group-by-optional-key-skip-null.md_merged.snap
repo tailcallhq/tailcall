@@ -26,7 +26,7 @@ type Post {
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts?id=11&id=3&foo=1")
+  posts: [Post] @http(path: "/posts")
 }
 
 type User {
