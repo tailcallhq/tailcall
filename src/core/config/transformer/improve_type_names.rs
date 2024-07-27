@@ -266,4 +266,20 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn test_type_names_transformation_without_prioritization() -> anyhow::Result<()> {
+        let config = Config::from_sdl(read_fixture(configs::CONFLICTING_TYPE_NAMES).as_str())
+            .to_result()
+            .unwrap();
+
+
+        let transformed_config = ImproveTypeNames::new(HashSet::default())
+            .transform(config)
+            .to_result()
+            .unwrap();
+        insta::assert_snapshot!(transformed_config.to_sdl());
+
+        Ok(())
+    }
 }
