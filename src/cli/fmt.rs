@@ -19,36 +19,15 @@ impl Fmt {
         println!("{}", s);
     }
 
-/*    fn foo(
-        map: &HashMap<TypeName, HashSet<FieldName>>,
-        cur_ty: &TypeName,
-    ) {
-        let mut path = "query { ".to_string();
-        let query_path = map.get(cur_ty).unwrap();
-        path.push_str(
-            query_path
-                .iter()
-                .rfold("".to_string(), |s, field_name| {
-                    if s.is_empty() {
-                        field_name.to_string()
-                    } else {
-                        format!("{} {{ {} }}", field_name, s)
-                    }
-                })
-                .as_str(),
-        );
-        path.push_str(" }");
-    }*/
-
-    pub fn format_n_plus_one_queries(n_plus_one_info: HashMap<TypeName, HashSet<(FieldName, TypeName)>>) -> String {
+    pub fn format_n_plus_one_queries(n_plus_one_info: HashMap<TypeName, HashSet<(FieldName, TypeName)>>, root: &str) -> String {
         let query_paths = n_plus_one_info
-            .iter()
-            .map(|(key, val)| (*key, val.iter().copied().collect::<Vec<_>>()))
-            .collect::<Vec<(_, _)>>();
+            .values()
+            .map(|val| val.iter().copied().collect::<Vec<_>>())
+            .collect::<Vec<_>>();
 
         let query_data: Vec<String> = query_paths
             .iter()
-            .map(|(ty, query_path)| {
+            .map(|query_path| {
                 let mut path = "query { ".to_string();
                 path.push_str(
                     query_path
@@ -82,7 +61,7 @@ impl Fmt {
 
         if show_npo {
             message.push('\n');
-            message.push_str(&Fmt::format_n_plus_one_queries(n_plus_one_info));
+            message.push_str(&Fmt::format_n_plus_one_queries(n_plus_one_info, config.schema.query.as_ref().map(|v| v.as_str()).unwrap_or_default()));
         }
 
         tracing::info!("{}", message);
