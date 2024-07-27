@@ -101,27 +101,26 @@ fn print_schema(schema: &SchemaDefinition) -> String {
         directives, query, mutation, subscription
     )
 }
+
 fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
     DirectiveDefinition {
         description: None,
-        name: pos(Name::new(directive.name.node.clone())),
+        name: pos(Name::new(directive.name.node.as_str())),
         arguments: directive
             .arguments
             .iter()
-            .filter_map(|(name, value)| {
-                if value.node.clone() != ConstValue::Null {
+            .filter_map(|(k, v)| {
+                if v.node != ConstValue::Null {
                     Some(pos(InputValueDefinition {
                         description: None,
-                        name: pos(Name::new(name.node.clone())),
+                        name: pos(Name::new(k.node.clone())),
                         ty: pos(Type {
                             nullable: true,
                             base: async_graphql::parser::types::BaseType::Named(Name::new(
-                                value.node.clone().to_string(),
+                                v.to_string(),
                             )),
                         }),
-                        default_value: Some(pos(ConstValue::String(
-                            value.node.clone().to_string(),
-                        ))),
+                        default_value: Some(pos(ConstValue::String(v.to_string()))),
                         directives: Vec::new(),
                     }))
                 } else {
@@ -133,6 +132,7 @@ fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
         locations: vec![],
     }
 }
+
 fn print_type_def(type_def: &TypeDefinition) -> String {
     match &type_def.kind {
         TypeKind::Scalar => {

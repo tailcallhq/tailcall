@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
 use async_graphql::{Name, ServerError, Value};
+use async_graphql_value::ConstValue;
 use indexmap::IndexMap;
 
 use crate::core::jit::Nested;
@@ -84,17 +85,15 @@ impl From<async_graphql::SelectionField<'_>> for SelectionField {
     }
 }
 
-impl<'a, Input: ToString> From<&'a crate::core::jit::Field<Nested<Input>, Input>>
-    for SelectionField
-{
-    fn from(value: &'a crate::core::jit::Field<Nested<Input>, Input>) -> Self {
+impl<'a> From<&'a crate::core::jit::Field<Nested<ConstValue>, ConstValue>> for SelectionField {
+    fn from(value: &'a crate::core::jit::Field<Nested<ConstValue>, ConstValue>) -> Self {
         Self::from_jit_field(value)
     }
 }
 
 impl SelectionField {
-    fn from_jit_field<Input: ToString>(
-        field: &crate::core::jit::Field<Nested<Input>, Input>,
+    fn from_jit_field(
+        field: &crate::core::jit::Field<Nested<ConstValue>, ConstValue>,
     ) -> SelectionField {
         let name = field.name.clone();
         let selection_set = field.nested_iter().map(Self::from_jit_field).collect();
@@ -104,8 +103,22 @@ impl SelectionField {
             .filter_map(|a| a.value.as_ref().map(|v| (a.name.to_owned(), v.to_string())))
             .collect::<Vec<_>>();
 
-        // TODO: add support for directives.
-        SelectionField { name, args, directives: None, selection_set }
+        SelectionField {
+            name,
+            args,
+            directives: if field.directives.is_empty() {
+                None
+            } else {
+                Some(
+                    field
+                        .directives
+                        .iter()
+                        .map(|d| d.into())
+                        .collect::<Vec<ConstDirective>>(),
+                )
+            },
+            selection_set,
+        }
     }
 
     fn from_async_selection_field(field: async_graphql::SelectionField) -> SelectionField {
@@ -121,13 +134,17 @@ impl SelectionField {
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect::<Vec<_>>();
 
-        let directives = field.directives().ok();
         let selection_set = field
             .selection_set()
             .map(Self::from_async_selection_field)
             .collect();
 
-        Self { name, args, selection_set, directives }
+        Self {
+            name,
+            args,
+            selection_set,
+            directives: field.directives().ok(),
+        }
     }
 
     pub fn directives(&self) -> &Option<Vec<ConstDirective>> {
