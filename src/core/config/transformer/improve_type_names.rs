@@ -46,7 +46,7 @@ impl<'a> CandidateConvergence<'a> {
 
             // Find the candidate with the highest frequency and priority
             if let Some((candidate_name, _)) = candidates_to_consider
-                .max_by_key(|(key, value)| (value.frequency, value.priority, *key))
+                .max_by_key(|(key, value)| (value.priority, value.frequency, *key))
             {
                 let singularized_candidate_name = candidate_name.to_pascal_case();
                 finalized_candidates
@@ -63,12 +63,13 @@ struct CandidateGeneration<'a> {
     /// maintains the generated candidates in the form of
     /// {TypeName: {{candidate_name: {frequency: 1, priority: 0}}}}
     candidates: IndexMap<String, IndexMap<String, CandidateStats>>,
+    suggested_names: &'a HashSet<String>,
     config: &'a Config,
 }
 
 impl<'a> CandidateGeneration<'a> {
-    fn new(config: &'a Config) -> Self {
-        Self { candidates: Default::default(), config }
+    fn new(config: &'a Config, suggested_names: &'a HashSet<String>) -> Self {
+        Self { candidates: Default::default(), config, suggested_names }
     }
 
     /// Generates candidate type names based on the provided configuration.
@@ -105,11 +106,13 @@ impl<'a> CandidateGeneration<'a> {
                     if let Some(key_val) = inner_map.get_mut(&singularized_candidate) {
                         key_val.frequency += 1
                     } else {
-                        // in order to infer the types correctly, always prioritize the
-                        // non-operation types but final selection will
-                        // still depend upon the frequency.
                         let priority = match self.config.is_root_operation_type(type_name) {
-                            true => 0,
+                            true => if self.suggested_names.contains(field_name) {
+                            // priority of user suggested name is higher than anything.
+                                2
+                            }else{
+                                0
+                            }, 
                             false => 1,
                         };
 
@@ -126,13 +129,21 @@ impl<'a> CandidateGeneration<'a> {
 }
 
 #[derive(Default)]
-pub struct ImproveTypeNames;
+pub struct ImproveTypeNames {
+    suggested_field_names: HashSet<String>
+}
 
 impl ImproveTypeNames {
+    pub fn new(name: HashSet<String>) -> Self {
+        Self {
+            suggested_field_names: name
+        }
+    }
+
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
     fn generate_type_names(&self, mut config: Config) -> Config {
-        let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
+        let finalized_candidates = CandidateGeneration::new(&config, &self.suggested_field_names).generate().converge();
 
         for (old_type_name, new_type_name) in finalized_candidates {
             if let Some(type_) = config.types.remove(old_type_name.as_str()) {
