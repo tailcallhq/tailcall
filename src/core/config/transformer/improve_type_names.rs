@@ -87,35 +87,36 @@ impl<'a> CandidateGeneration<'a> {
         }
 
         for type_name in ty_names {
-            let type_info = self.config.types.get(type_name).unwrap();
-            for (field_name, field_info) in type_info.fields.iter() {
-                if self.config.is_scalar(&field_info.type_of) {
-                    // If field type is scalar then ignore type name inference.
-                    continue;
-                }
+            if let Some(type_info) = self.config.types.get(type_name) {
+                for (field_name, field_info) in type_info.fields.iter() {
+                    if self.config.is_scalar(&field_info.type_of) {
+                        // If field type is scalar then ignore type name inference.
+                        continue;
+                    }
 
-                let inner_map = self
-                    .candidates
-                    .entry(field_info.type_of.to_owned())
-                    .or_default();
+                    let inner_map = self
+                        .candidates
+                        .entry(field_info.type_of.to_owned())
+                        .or_default();
 
-                let singularized_candidate = field_name.to_singular();
+                    let singularized_candidate = field_name.to_singular();
 
-                if let Some(key_val) = inner_map.get_mut(&singularized_candidate) {
-                    key_val.frequency += 1
-                } else {
-                    // in order to infer the types correctly, always prioritize the non-operation
-                    // types but final selection will still depend upon the
-                    // frequency.
-                    let priority = match self.config.is_root_operation_type(type_name) {
-                        true => 0,
-                        false => 1,
-                    };
+                    if let Some(key_val) = inner_map.get_mut(&singularized_candidate) {
+                        key_val.frequency += 1
+                    } else {
+                        // in order to infer the types correctly, always prioritize the
+                        // non-operation types but final selection will
+                        // still depend upon the frequency.
+                        let priority = match self.config.is_root_operation_type(type_name) {
+                            true => 0,
+                            false => 1,
+                        };
 
-                    inner_map.insert(
-                        singularized_candidate,
-                        CandidateStats { frequency: 1, priority },
-                    );
+                        inner_map.insert(
+                            singularized_candidate,
+                            CandidateStats { frequency: 1, priority },
+                        );
+                    }
                 }
             }
         }
