@@ -315,12 +315,14 @@ mod test {
     }
 
     mod generator_spec {
+        use std::collections::HashSet;
         use std::path::Path;
         use std::sync::Arc;
 
         use tokio::runtime::Runtime;
 
         use super::http::NativeHttpTest;
+        use crate::cli::generator::config::Source;
         use crate::cli::generator::Generator;
         use crate::core::blueprint::Blueprint;
         use crate::core::config::{self, ConfigModule};
@@ -348,6 +350,17 @@ mod test {
                 .unwrap_or_default()
                 .validate_into()
                 .to_result()?;
+
+            let suggested_names = config
+                .inputs
+                .iter()
+                .filter_map(|input| match &input.source {
+                    Source::Curl { field_name, .. } => Some(field_name.clone()),
+                    _ => None,
+                })
+                .collect::<HashSet<_>>();
+
+            let preset = preset.suggested_names(suggested_names);
 
             // resolve i/o's
             let input_samples = generator.resolve_io(config).await?;
