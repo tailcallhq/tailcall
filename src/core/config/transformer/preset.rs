@@ -14,7 +14,7 @@ pub struct Preset {
     pub tree_shake: bool,
     pub use_better_names: bool,
     unwrap_single_field_types: bool,
-    user_suggested_field_names: HashSet<String>,
+    suggested_names: HashSet<String>,
 }
 
 impl Preset {
@@ -25,7 +25,7 @@ impl Preset {
             tree_shake: false,
             use_better_names: false,
             unwrap_single_field_types: true,
-            user_suggested_field_names: HashSet::new(),
+            suggested_names: HashSet::new(),
         }
     }
 }
@@ -47,7 +47,7 @@ impl Transform for Preset {
             )
             .pipe(super::FlattenSingleField.when(self.unwrap_single_field_types))
             .pipe(
-                super::ImproveTypeNames::new(self.user_suggested_field_names.clone())
+                super::ImproveTypeNames::new(self.suggested_names.clone())
                     .when(self.use_better_names),
             )
             .pipe(
@@ -66,7 +66,7 @@ impl Default for Preset {
             use_better_names: true,
             tree_shake: true,
             unwrap_single_field_types: true,
-            user_suggested_field_names: HashSet::new(),
+            suggested_names: HashSet::new(),
         }
     }
 }

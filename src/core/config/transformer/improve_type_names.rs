@@ -132,18 +132,19 @@ impl<'a> CandidateGeneration<'a> {
 
 #[derive(Default)]
 pub struct ImproveTypeNames {
-    suggested_field_names: HashSet<String>,
+    // given set of names, transformer prioritizes given names over the frequency in the final config.
+    suggested_names: HashSet<String>,
 }
 
 impl ImproveTypeNames {
     pub fn new(name: HashSet<String>) -> Self {
-        Self { suggested_field_names: name }
+        Self { suggested_names: name }
     }
 
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
     fn generate_type_names(&self, mut config: Config) -> Config {
-        let finalized_candidates = CandidateGeneration::new(&config, &self.suggested_field_names)
+        let finalized_candidates = CandidateGeneration::new(&config, &self.suggested_names)
             .generate()
             .converge();
 
