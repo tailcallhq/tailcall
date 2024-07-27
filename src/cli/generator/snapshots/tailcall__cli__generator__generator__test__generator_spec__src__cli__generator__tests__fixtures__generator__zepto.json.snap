@@ -1,0 +1,241 @@
+---
+source: src/cli/generator/generator.rs
+expression: config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://cx.zepto.co.in") {
+  query: Query
+}
+
+scalar Any
+
+type Benefit {
+  applicationType: String
+  config: Config
+  description: String
+  detailedDescription: String
+  detailedTitle: String
+  icon: Icon
+  id: String
+  title: [Title]
+  type: String
+}
+
+type BrandDeliveryOfferDetail {
+  offerIconPath: String
+  offerMessage: String
+}
+
+type Config {
+  mov: Int
+  mov_in_rupees: Int
+}
+
+type Filter {
+  applicableFilters: [Any]
+  appliedFilters: [Any]
+}
+
+type Icon {
+  height: Int
+  url: String
+  width: Int
+}
+
+type Image {
+  height: Int
+  hidePadding: Boolean
+  id: String
+  lottiePath: String
+  mediaType: String
+  name: String
+  path: String
+  videoPath: String
+  width: Int
+}
+
+type LifetimeSaving {
+  totalPreviousSavingsAmount: Int
+  totalPurchaseFee: Int
+  totalSavingsAmount: Int
+}
+
+type Meum {
+  tags: [Tag]
+  tagsV2: TagsV2
+}
+
+type Overview {
+  badgeVariant: String
+  brandsInfo: [Any]
+  experimentVariant: String
+  isPassInvisible: Boolean
+  lifetimeSavings: LifetimeSaving
+  membership: Empty
+  passLockedStateText: String
+  passType: String
+  productOffers: [String]
+  profileInfo: ProfileInfo
+  renewalDurationTitle: [Any]
+  renewalPreExpiryInfo: [Any]
+  showBadge: Boolean
+  showBottomsheet: Boolean
+  suggestedPass: SuggestedPass
+  userCohort: String
+  variantName: String
+}
+
+type P3 {
+  attachment: Image
+  id: String
+  pdpAttachment: Empty
+  position: String
+  tagName: String
+  tagText: Empty
+  tagType: String
+}
+
+type Product {
+  brand: String
+  discountApplicable: Boolean
+  id: String
+  imported: Boolean
+  minimumRequiredAge: Int
+  name: String
+  pharmaceuticalInfo: Empty
+  primarySubcategoryId: Empty
+}
+
+type ProductVariant {
+  formattedPacksize: String
+  id: String
+  images: [Image]
+  maxAllowedQuantity: Int
+  mrp: Int
+  packsize: Int
+  pharmaceuticalInfo: Empty
+  productTheme: String
+  quantity: Int
+  unitOfMeasure: String
+  unlisted: Boolean
+  weightInGms: Int
+}
+
+type ProfileInfo {
+  title: [Title]
+}
+
+type Query {
+  overview: Overview @http(path: "/api/v1/pass/overview")
+  storeProducts(page_number: Int, store_id: String, subcategory_id: String, user_session_id: String): StoreProduct @http(baseURL: "https://api.zepto.co.in", path: "/api/v3/inventory/catalogue/store-products/", query: [{key: "store_id", value: "{{.args.store_id}}"}, {key: "subcategory_id", value: "{{.args.subcategory_id}}"}, {key: "page_number", value: "{{.args.page_number}}"}, {key: "user_session_id", value: "{{.args.user_session_id}}"}])
+}
+
+type StoreProduct {
+  endOfList: Boolean
+  filters: Filter
+  previewMode: Boolean
+  storeProducts: [T431]
+  userSessionId: String
+}
+
+type Style {
+  color: String
+}
+
+type SuggestedPass {
+  averagePassSavings: Int
+  averagePassSavingsTitle: [Title]
+  benefits: [Benefit]
+  cartBenefits: [String]
+  ctaTitle: String
+  discountedFee: Int
+  discountedPercentage: Int
+  discountedSubcategories: [Any]
+  faqs: [Any]
+  fee: Int
+  homePageBenefits: [String]
+  id: String
+  productDiscountMov: Int
+  readableDuration: String
+  status: String
+  termsAndConditions: String
+  validityInDays: Int
+}
+
+type T431 {
+  adsResponseId: Empty
+  allocatedQuantity: Int
+  analyticsMeta: Any
+  availableQuantity: Int
+  bpcGroupDetails: Empty
+  brandDeliveryOfferDetails: BrandDeliveryOfferDetail
+  bundleItems: [Any]
+  bxgyOfferDetails: Empty
+  discountAmount: Int
+  discountPercent: Int
+  discountedSellingPrice: Int
+  experiments: Any
+  id: String
+  isBestOffer: Boolean
+  isCrossSellEnabled: Boolean
+  isNewProduct: Boolean
+  isPrimary: Boolean
+  isSponsored: Boolean
+  itemVariant: Empty
+  meta: Meum
+  mrp: Int
+  objectId: String
+  outOfStock: Boolean
+  pdpAdAnimationDuration: Int
+  pdpAdDelay: Int
+  pricingCampaigns: [ZeptoPassPricingCampaign]
+  primaryCategoryName: String
+  primarySubcategoryName: String
+  priority: Int
+  product: Product
+  productType: Empty
+  productVariant: ProductVariant
+  quantity: Empty
+  recommendationId: String
+  recommendationSource: Empty
+  rollUpIds: [Any]
+  rollUpVariantsDetails: [Any]
+  storeId: String
+  uclId: String
+  valueBasedDiscount: ValueBasedDiscount
+  zeptoPassPrice: Int
+  zeptoPassPriceDiscountPercent: Int
+  zeptoPassPriceDiscountPercentDifference: Int
+  zeptoPassPricingCampaigns: [ZeptoPassPricingCampaign]
+}
+
+type Tag {
+  type: String
+}
+
+type TagsV2 {
+  P0: P3
+  P3: P3
+}
+
+type Title {
+  icon: Empty
+  style: Style
+  text: String
+  type: String
+  variant: String
+}
+
+type ValueBasedDiscount {
+  nonPassDiscountTier: String
+  nonPassTotalDiscount: Int
+  passDiscountTier: Empty
+  passTotalDiscount: Empty
+}
+
+type ZeptoPassPricingCampaign {
+  campaignId: String
+  campaignType: String
+  isDiscounted: Boolean
+  priceChangeLog: Empty
+  storeProductId: String
+}

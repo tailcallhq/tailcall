@@ -1,0 +1,71 @@
+{
+  "inputs": [
+    {
+      "curl": {
+        "src": "https://cx.zepto.co.in/api/v1/pass/overview",
+        "fieldName": "overview",
+        "headers": {
+          "accept": "application/json, text/plain, */*",
+          "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+          "appversion": "11.3.1-WEB",
+          "authorization": "Bearer {{.env.TOKEN}}",
+          "cache-control": "no-cache",
+          "compatible_components": "CONVENIENCE_FEE,RAIN_FEE,EXTERNAL_COUPONS,STANDSTILL,BUNDLE,MULTI_SELLER_ENABLED,PIP_V1,ROLLUPS,SCHEDULED_DELIVERY,SAMPLING_ENABLED,ETA_NORMAL_WITH_149_DELIVERY,ETA_NORMAL_WITH_199_DELIVERY,HOMEPAGE_V2,NEW_ETA_BANNER,VERTICAL_FEED_PRODUCT_GRID,AUTOSUGGESTION_PAGE_ENABLED,AUTOSUGGESTION_PIP,AUTOSUGGESTION_AD_PIP,BOTTOM_NAV_FULL_ICON,COUPON_WIDGET_CART_REVAMP,DELIVERY_UPSELLING_WIDGET,ZEPTO_PASS,ZEPTO_PASS:1,ZEPTO_PASS_RENEWAL,NEW_FEE_STRUCTURE,NEW_BILL_INFO,RE_PROMISE_ETA_ORDER_SCREEN_ENABLED,MANUALLY_APPLIED_DELIVERY_FEE_RECEIVABLE,MARKETPLACE_REPLACEMENT,ZEPTO_PASS,ZEPTO_PASS:1,ZEPTO_PASS_RENEWAL",
+          "deviceid": "7155916704990858",
+          "platform": "WEB",
+          "pragma": "no-cache",
+          "priority": "u=1, i",
+          "requestid": "8933443057428010",
+          "sec-ch-ua": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\"",
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": "\"macOS\"",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "cross-site",
+          "sessionid": "2301731813531412",
+          "storeid": "bc6a4a81-1c35-457e-a732-7ca7198ee2ef"
+        }
+      }
+    },
+    {
+      "curl": {
+        "src": "https://api.zepto.co.in/api/v3/inventory/catalogue/store-products/?store_id=bc6a4a81-1c35-457e-a732-7ca7198ee2ef&subcategory_id=84f270cf-ae95-4d61-a556-b35b563fb947&page_number=2&user_session_id=4d8c9ce6-d3b2-45e3-a22c-d9bf0c99b589",
+        "fieldName": "storeProducts",
+        "headers": {
+          "accept": "application/json, text/plain, */*",
+          "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+          "appversion": "11.3.1-WEB",
+          "authorization": "Bearer {{.env.TOKEN}}",
+          "cache-control": "no-cache",
+          "compatible_components": "CONVENIENCE_FEE,RAIN_FEE,EXTERNAL_COUPONS,STANDSTILL,BUNDLE,MULTI_SELLER_ENABLED,PIP_V1,ROLLUPS,SCHEDULED_DELIVERY,SAMPLING_ENABLED,ETA_NORMAL_WITH_149_DELIVERY,ETA_NORMAL_WITH_199_DELIVERY,HOMEPAGE_V2,NEW_ETA_BANNER,VERTICAL_FEED_PRODUCT_GRID,AUTOSUGGESTION_PAGE_ENABLED,AUTOSUGGESTION_PIP,AUTOSUGGESTION_AD_PIP,BOTTOM_NAV_FULL_ICON,COUPON_WIDGET_CART_REVAMP,DELIVERY_UPSELLING_WIDGET,ZEPTO_PASS,ZEPTO_PASS:1,ZEPTO_PASS_RENEWAL,NEW_FEE_STRUCTURE,NEW_BILL_INFO,RE_PROMISE_ETA_ORDER_SCREEN_ENABLED,MANUALLY_APPLIED_DELIVERY_FEE_RECEIVABLE,MARKETPLACE_REPLACEMENT,ZEPTO_PASS,ZEPTO_PASS:1,ZEPTO_PASS_RENEWAL",
+          "deviceid": "7155916704990858",
+          "platform": "WEB",
+          "pragma": "no-cache",
+          "priority": "u=1, i",
+          "requestid": "8933443057428010",
+          "sec-ch-ua": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\"",
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": "\"macOS\"",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "cross-site",
+          "sessionid": "2301731813531412",
+          "storeid": "bc6a4a81-1c35-457e-a732-7ca7198ee2ef"
+        }
+      }
+    }
+  ],
+  "preset": {
+    "mergeType": 0.9,
+    "consolidateURL": 0.5,
+    "useBetterNames": true,
+    "treeShake": true
+  },
+  "output": {
+    "path": "./generated.graphql",
+    "format": "graphQL"
+  },
+  "schema": {
+    "query": "Query"
+  }
+}
