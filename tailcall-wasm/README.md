@@ -16,7 +16,7 @@ Go to tailcall-wasm dir
 
 ```bash
 cd tailcall-wasm
-````
+```
 
 The [package.json](package.json) file contains the scripts to run the project.
 
