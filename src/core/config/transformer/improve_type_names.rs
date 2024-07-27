@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use inflector::Inflector;
 
 use crate::core::config::Config;
@@ -76,18 +76,18 @@ impl<'a> CandidateGeneration<'a> {
     /// names for each type.
     fn generate(mut self) -> CandidateConvergence<'a> {
         // process the user suggest field names over the auto inferred names.
-        let mut ty_names = self.config.types.keys().collect::<Vec<_>>();
-        if let Some(ref operation_ty_name) = self.config.schema.query {
-            ty_names.insert(0, operation_ty_name);
-        }
-        if let Some(ref operation_ty_name) = self.config.schema.mutation {
-            ty_names.insert(0, operation_ty_name);
-        }
-        if let Some(ref operation_ty_name) = self.config.schema.subscription {
-            ty_names.insert(0, operation_ty_name);
-        }
+        let ty_names = vec![
+            self.config.schema.query.as_ref(),
+            self.config.schema.mutation.as_ref(),
+            self.config.schema.subscription.as_ref(),
+        ]
+        .into_iter()
+        .flatten()
+        .map(|o| o.to_owned())
+        .chain(self.config.types.keys().cloned())
+        .collect::<IndexSet<_>>();
 
-        for type_name in ty_names {
+        for ref type_name in ty_names {
             if let Some(type_info) = self.config.types.get(type_name) {
                 for (field_name, field_info) in type_info.fields.iter() {
                     if self.config.is_scalar(&field_info.type_of) {
