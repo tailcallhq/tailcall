@@ -113,6 +113,56 @@ mod tests {
             assert_eq!($actual, expected);
         }};
     }
+/*    fn foo<'a>(
+        map: &HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
+        ty: &TypeName<'a>,
+        visited: &mut HashSet<TypeName<'a>>,
+    ) -> Option<String> {
+        if visited.contains(ty) {
+            return None;
+        }else {
+            visited.insert(*ty);
+        }
+
+        let val = map.get(ty)?;
+        let ans = val.iter().map(|(field_name, ty_of)| {
+            let val = match foo(map, ty_of, visited) {
+                Some(nested) => {
+                    format!("{} {{ {} }}", field_name, nested)
+                }
+                None => field_name.to_string(),
+            };
+            val
+        }).collect::<Vec<_>>().join("\n");
+
+        Some(ans)
+    }*/
+
+    fn foo<'a>(
+        map: &HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
+        ty: &TypeName<'a>,
+        visited: &mut HashSet<TypeName<'a>>,
+    ) -> Vec<&'a str> {
+        if visited.contains(ty) {
+            return vec![];
+        } else {
+            visited.insert(*ty);
+        }
+
+        let val = match map.get(ty) {
+            Some(fields) => fields,
+            None => return vec![],
+        };
+
+        let mut result = Vec::new();
+        for (field_name, ty_of) in val {
+            result.push(field_name.0);
+            let nested_fields = foo(map, ty_of, visited);
+            result.extend(nested_fields);
+        }
+
+        result
+    }
 
     #[test]
     fn test_nplusone_resolvers() {
@@ -144,6 +194,8 @@ mod tests {
             ),
         ]);
         let actual = config.n_plus_one();
+        let foo = foo(&actual, &TypeName("Query"), &mut HashSet::new());
+        println!("{:?}", foo);
         let expected = vec![vec![("Query", ("f1", "F1")), ("F1", ("f2", "F2"))]];
 
         assert_eq_map!(actual, expected);
@@ -223,7 +275,8 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-
+        let foo = foo(&actual, &TypeName("Query"), &mut HashSet::new());
+        println!("{:?}", foo);
         let expected = vec![vec![
             ("Query", ("f1", "F1")),
             ("F1", ("f2", "F2")),
@@ -389,7 +442,8 @@ mod tests {
                 ("F1", ("f2", "String"))
             ],
         ];
-
+        let foo = foo(&actual, &TypeName("Query"), &mut HashSet::new());
+        println!("{:?}", foo);
         assert_eq_map!(actual, expected);
     }
 
