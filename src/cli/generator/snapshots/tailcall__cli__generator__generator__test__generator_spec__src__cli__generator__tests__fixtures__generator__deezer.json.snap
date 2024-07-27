@@ -88,7 +88,7 @@ type Creator {
 }
 
 type Daum {
-  album: M3
+  album: M1
   artist: T42
   duration: Int
   explicit_content_cover: Int
@@ -116,7 +116,7 @@ type Genre {
   data: [T5]
 }
 
-type M3 {
+type M1 {
   cover: String
   cover_big: String
   cover_medium: String
@@ -198,7 +198,7 @@ type T145 {
 }
 
 type T165 {
-  album: M3
+  album: M1
   artist: T145
   duration: Int
   explicit_content_cover: Int
@@ -329,7 +329,7 @@ type T3 {
 }
 
 type T37 {
-  album: M3
+  album: M1
   artist: Creator
   duration: Int
   explicit_content_cover: Int

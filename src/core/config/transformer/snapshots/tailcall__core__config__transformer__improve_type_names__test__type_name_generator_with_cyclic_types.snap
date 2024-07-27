@@ -6,19 +6,19 @@ schema @server @upstream {
   query: Query
 }
 
-type Cycle {
-  cycle: Cycle
-  id: ID!
-}
-
-type F1 {
+type Author {
   id: ID!
   name: String!
   posts: [Post]!
 }
 
+type Cycle {
+  cycle: Cycle
+  id: ID!
+}
+
 type Post {
-  author: F1!
+  author: Author!
   content: String!
   cycle: Cycle
   id: ID!
@@ -26,5 +26,5 @@ type Post {
 }
 
 type Query {
-  f1: [F1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+  f1: [Author] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
 }
