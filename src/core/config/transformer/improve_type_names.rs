@@ -1,5 +1,6 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
+use indexmap::IndexMap;
 use inflector::Inflector;
 
 use crate::core::config::Config;
@@ -15,7 +16,7 @@ struct CandidateStats {
 struct CandidateConvergence<'a> {
     /// maintains the generated candidates in the form of
     /// {TypeName: {{candidate_name: {frequency: 1, priority: 0}}}}
-    candidates: BTreeMap<String, BTreeMap<String, CandidateStats>>,
+    candidates: IndexMap<String, IndexMap<String, CandidateStats>>,
     config: &'a Config,
 }
 
@@ -30,8 +31,8 @@ impl<'a> CandidateConvergence<'a> {
     /// Converges on the most frequent candidate name for each type.
     /// This method selects the most frequent candidate name for each type,
     /// ensuring uniqueness.
-    fn converge(self) -> BTreeMap<String, String> {
-        let mut finalized_candidates = BTreeMap::new();
+    fn converge(self) -> IndexMap<String, String> {
+        let mut finalized_candidates = IndexMap::new();
         let mut converged_candidate_set = HashSet::new();
 
         for (type_name, candidate_list) in self.candidates.iter() {
@@ -61,7 +62,7 @@ impl<'a> CandidateConvergence<'a> {
 struct CandidateGeneration<'a> {
     /// maintains the generated candidates in the form of
     /// {TypeName: {{candidate_name: {frequency: 1, priority: 0}}}}
-    candidates: BTreeMap<String, BTreeMap<String, CandidateStats>>,
+    candidates: IndexMap<String, IndexMap<String, CandidateStats>>,
     config: &'a Config,
 }
 
@@ -74,7 +75,19 @@ impl<'a> CandidateGeneration<'a> {
     /// This method iterates over the configuration and collects candidate type
     /// names for each type.
     fn generate(mut self) -> CandidateConvergence<'a> {
-        for (type_name, type_info) in self.config.types.iter() {
+        let mut ty_names = self.config.types.keys().collect::<Vec<_>>();
+        if let Some(ref operation_ty_name) = self.config.schema.query {
+            ty_names.insert(0, operation_ty_name);
+        }
+        if let Some(ref operation_ty_name) = self.config.schema.mutation {
+            ty_names.insert(0, operation_ty_name);
+        }
+        if let Some(ref operation_ty_name) = self.config.schema.subscription {
+            ty_names.insert(0, operation_ty_name);
+        }
+
+        for type_name in ty_names {
+            let type_info = self.config.types.get(type_name).unwrap();
             for (field_name, field_info) in type_info.fields.iter() {
                 if self.config.is_scalar(&field_info.type_of) {
                     // If field type is scalar then ignore type name inference.
