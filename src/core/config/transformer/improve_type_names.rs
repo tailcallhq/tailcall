@@ -118,6 +118,13 @@ impl<'a> CandidateGeneration<'a> {
                             false => 1,
                         };
 
+                        println!(
+                            "[Finder]: {:#?} and {:#?} and {:#?} and {:#?}",
+                            field_name,
+                            priority,
+                            type_name,
+                            self.config.is_root_operation_type(type_name)
+                        );
                         inner_map.insert(
                             singularized_candidate,
                             CandidateStats { frequency: 1, priority },
@@ -126,6 +133,7 @@ impl<'a> CandidateGeneration<'a> {
                 }
             }
         }
+        println!("[Finder]: {:#?}", self.candidates);
         CandidateConvergence::new(self)
     }
 }
@@ -231,6 +239,26 @@ mod test {
             .unwrap();
 
         let transformed_config = ImproveTypeNames::new(HashSet::default())
+            .transform(config)
+            .to_result()
+            .unwrap();
+        insta::assert_snapshot!(transformed_config.to_sdl());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_prioritize_suggested_name() -> anyhow::Result<()> {
+        let config = Config::from_sdl(read_fixture(configs::CONFLICTING_TYPE_NAMES).as_str())
+            .to_result()
+            .unwrap();
+
+        let mut suggested_names = HashSet::default();
+        suggested_names.insert("post".to_owned());
+        suggested_names.insert("todos".to_owned());
+        suggested_names.insert("userPosts".to_owned());
+
+        let transformed_config = ImproveTypeNames::new(suggested_names)
             .transform(config)
             .to_result()
             .unwrap();

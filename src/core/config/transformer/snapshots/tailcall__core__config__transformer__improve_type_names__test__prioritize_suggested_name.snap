@@ -1,0 +1,30 @@
+---
+source: src/core/config/transformer/improve_type_names.rs
+expression: transformed_config.to_sdl()
+---
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, headers: []}, httpCache: 42) {
+  query: Query
+}
+
+type Post {
+  body: String
+  id: ID
+  title: String
+}
+
+type Query {
+  post(id: ID!): Post @http(path: "/posts")
+  todos: [Todo] @http(path: "/todos")
+  users: [User] @http(path: "/users")
+}
+
+type Todo {
+  id: ID
+  todoPost: Post
+}
+
+type User {
+  id: ID
+  name: String
+  relatedPosts: [Post] @http(path: "/posts", query: [{key: "id", value: "{{.value.id}}"}])
+}

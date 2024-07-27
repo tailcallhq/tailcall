@@ -1,0 +1,28 @@
+schema
+  @server(port: 8000)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  query: Query
+}
+
+type Query {
+  post(id: ID!): T1 @http(path: "/posts")
+  users: [T2] @http(path: "/users")
+  todos: [T3] @http(path: "/todos")
+}
+
+type T3 {
+  id: ID
+  todoPost: T1
+}
+
+type T2 {
+  id: ID
+  name: String
+  relatedPosts: [T1] @http(path: "/posts", query: [{key: "id", value: "{{.value.id}}"}])
+}
+
+type T1 {
+  title: String
+  id: ID
+  body: String
+}
