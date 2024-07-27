@@ -5,9 +5,8 @@ use std::thread;
 use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
-use crate::core::worker;
 use crate::core::worker::{Command, Event, WorkerRequest};
-use crate::core::{blueprint, WorkerIO};
+use crate::core::{blueprint, worker, WorkerIO};
 
 struct LocalRuntime(Context);
 
@@ -101,7 +100,11 @@ impl WorkerIO<Event, Command> for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
-    async fn call(&self, name: &str, input: ConstValue) -> worker::error::Result<Option<ConstValue>> {
+    async fn call(
+        &self,
+        name: &str,
+        input: ConstValue,
+    ) -> worker::error::Result<Option<ConstValue>> {
         let script = self.script.clone();
         let name = name.to_string();
         let value = serde_json::to_string(&input)?;
@@ -142,7 +145,9 @@ fn prepare_args<'js>(ctx: &Ctx<'js>, req: WorkerRequest) -> rquickjs::Result<(Va
 
 fn call(name: String, event: Event) -> worker::error::Result<Option<Command>> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
-        let runtime = cell.get_mut().ok_or(worker::error::Error::RuntimeNotInitialized)?;
+        let runtime = cell
+            .get_mut()
+            .ok_or(worker::error::Error::RuntimeNotInitialized)?;
         runtime.0.with(|ctx| match event {
             Event::Request(req) => {
                 let fn_as_value = ctx
@@ -154,8 +159,8 @@ fn call(name: String, event: Event) -> worker::error::Result<Option<Command>> {
                     .as_function()
                     .ok_or(worker::error::Error::InvalidFunction(name))?;
 
-                let args =
-                    prepare_args(&ctx, req).map_err(|e| worker::error::Error::Rquickjs(e.to_string()))?;
+                let args = prepare_args(&ctx, req)
+                    .map_err(|e| worker::error::Error::Rquickjs(e.to_string()))?;
                 let command: Option<Value> = function.call(args).ok();
                 command
                     .map(|output| Command::from_js(&ctx, output))
@@ -168,7 +173,9 @@ fn call(name: String, event: Event) -> worker::error::Result<Option<Command>> {
 
 fn execute_inner(name: String, value: String) -> worker::error::Result<ConstValue> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
-        let runtime = cell.get_mut().ok_or(worker::error::Error::RuntimeNotInitialized)?;
+        let runtime = cell
+            .get_mut()
+            .ok_or(worker::error::Error::RuntimeNotInitialized)?;
         runtime.0.with(|ctx| {
             let fn_as_value = ctx
                 .globals()

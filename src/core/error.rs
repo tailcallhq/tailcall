@@ -1,5 +1,6 @@
-use super::worker;
 use derive_more::From;
+
+use super::worker;
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {

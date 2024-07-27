@@ -30,12 +30,7 @@ impl CloudflareChronoCache {
 impl Cache for CloudflareChronoCache {
     type Key = IoId;
     type Value = ConstValue;
-    async fn set<'a>(
-        &'a self,
-        key: IoId,
-        value: ConstValue,
-        ttl: NonZeroU64,
-    ) -> cache::Result<()> {
+    async fn set<'a>(&'a self, key: IoId, value: ConstValue, ttl: NonZeroU64) -> cache::Result<()> {
         let kv_store = self.get_kv()?;
         let ttl = ttl.get();
         async_std::task::spawn_local(async move {
