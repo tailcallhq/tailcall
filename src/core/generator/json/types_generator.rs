@@ -79,7 +79,6 @@ where
         if config.types.contains_key(&any_scalar.name()) {
             return any_scalar;
         }
-        config.types.insert(any_scalar.to_string(), Type::default());
         any_scalar
     }
 
