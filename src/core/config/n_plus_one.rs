@@ -1,6 +1,24 @@
 use std::collections::{HashMap, HashSet};
-
+use std::fmt::Display;
 use crate::core::config::Config;
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub struct TypeName<'a>(pub &'a str);
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub struct FieldName<'a>(pub &'a str);
+
+impl Display for TypeName<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Display for FieldName<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 
 struct FindFanOutContext<'a> {
     config: &'a Config,
@@ -11,20 +29,22 @@ struct FindFanOutContext<'a> {
 #[inline(always)]
 fn find_fan_out<'a>(
     ctx: FindFanOutContext<'a>,
-    visited: &mut HashMap<&'a str, HashSet<&'a str>>,
-) -> HashMap<&'a str, HashSet<&'a str>> {
+    visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
+) -> HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>> {
+
     let config = ctx.config;
-    let type_name = ctx.type_name;
+    let type_name: TypeName = TypeName(ctx.type_name);
     let is_list = ctx.is_list;
     let mut ans = HashMap::new();
 
-    if let Some(type_) = config.find_type(type_name) {
+    if let Some(type_) = config.find_type(type_name.0) {
         for (field_name, field) in type_.fields.iter() {
-            let cur = field_name.as_str();
+            let cur: FieldName = FieldName(field_name.as_str());
+            let tuple: (FieldName, TypeName) = (cur, TypeName(field.type_of.as_str()));
 
             let condition = visited
-                .get(type_name)
-                .map(|v: &HashSet<&str>| v.contains(cur))
+                .get(&type_name)
+                .map(|v: &HashSet<FieldName>| v.contains(&cur))
                 .unwrap_or_default();
 
             if condition {
@@ -34,7 +54,7 @@ fn find_fan_out<'a>(
             }
 
             if field.has_resolver() && !field.has_batched_resolver() && is_list {
-                ans.entry(type_name).or_insert(HashSet::new()).insert(cur);
+                ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
             } else {
                 let next = find_fan_out(
                     FindFanOutContext {
@@ -46,7 +66,7 @@ fn find_fan_out<'a>(
                 );
                 for (k, v) in next {
                     ans.entry(k).or_insert(HashSet::new()).extend(v);
-                    ans.entry(type_name).or_insert(HashSet::new()).insert(cur);
+                    ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
                 }
             }
         }
@@ -55,7 +75,7 @@ fn find_fan_out<'a>(
     ans
 }
 
-pub fn n_plus_one(config: &Config) -> HashMap<&str, HashSet<&str>> {
+pub fn n_plus_one(config: &Config) -> HashMap<TypeName, HashSet<(FieldName, TypeName)>> {
     let mut visited = HashMap::new();
     if let Some(query) = &config.schema.query {
         find_fan_out(
@@ -71,15 +91,18 @@ pub fn n_plus_one(config: &Config) -> HashMap<&str, HashSet<&str>> {
 mod tests {
     use std::collections::{HashMap, HashSet};
 
-    use crate::core::config::{Config, Field, Http, Type};
+    use crate::core::config::{Config, Field, FieldName, Http, Type, TypeName};
 
     macro_rules! assert_eq_map {
         ($actual:expr, $expected_vec:expr) => {{
-            let mut expected: HashMap<&str, HashSet<&str>> = HashMap::new();
+            let mut expected: HashMap<TypeName, HashSet<(FieldName, TypeName)>> = HashMap::new();
 
             for vec in $expected_vec {
                 for value in vec {
-                    let (key, value) = value;
+                    let (key, (value, ty_of)) = value;
+                    let key = TypeName(key);
+                    let value = (FieldName(value), TypeName(ty_of));
+
                     expected
                         .entry(key)
                         .or_insert_with(HashSet::new)
@@ -121,7 +144,7 @@ mod tests {
             ),
         ]);
         let actual = config.n_plus_one();
-        let expected = vec![vec![("Query", "f1"), ("F1", "f2")]];
+        let expected = vec![vec![("Query", ("f1", "F1")), ("F1", ("f2", "F2"))]];
 
         assert_eq_map!(actual, expected);
     }
@@ -157,7 +180,7 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let expected: Vec<Vec<(&str, &str)>> = vec![];
+        let expected: Vec<Vec<_>> = vec![];
         assert_eq_map!(actual, expected);
     }
 
@@ -202,10 +225,10 @@ mod tests {
         let actual = config.n_plus_one();
 
         let expected = vec![vec![
-            ("Query", "f1"),
-            ("F1", "f2"),
-            ("F2", "f3"),
-            ("F3", "f4"),
+            ("Query", ("f1", "F1")),
+            ("F1", ("f2", "F2")),
+            ("F2", ("f3", "F3")),
+            ("F3", ("f4", "String")),
         ]];
         assert_eq_map!(actual, expected);
     }
@@ -248,10 +271,10 @@ mod tests {
         ]);
 
         let expected = vec![vec![
-            ("Query", "f1"),
-            ("F1", "f2"),
-            ("F2", "f3"),
-            ("F3", "f4"),
+            ("Query", ("f1", "F1")),
+            ("F1", ("f2", "F2")),
+            ("F2", ("f3", "F3")),
+            ("F3", ("f4", "String")),
         ]];
         let actual = config.n_plus_one();
         assert_eq_map!(actual, expected);
@@ -284,7 +307,7 @@ mod tests {
             ),
         ]);
 
-        let expected: Vec<Vec<(&str, &str)>> = vec![];
+        let expected: Vec<Vec<_>> = vec![];
         let actual = config.n_plus_one();
         assert_eq_map!(actual, expected);
     }
@@ -317,7 +340,7 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let expected: Vec<Vec<(&str, &str)>> = vec![];
+        let expected: Vec<Vec<_>> = vec![];
 
         assert_eq_map!(actual, expected);
     }
@@ -356,8 +379,15 @@ mod tests {
 
         let actual = config.n_plus_one();
         let expected = vec![
-            vec![("Query", "f1"), ("F1", "f1"), ("F1", "f2")],
-            vec![("Query", "f1"), ("F1", "f2")],
+            vec![
+                ("Query", ("f1", "F1")),
+                ("F1", ("f1", "F1")),
+                ("F1", ("f2", "String"))
+            ],
+            vec![
+                ("Query", ("f1", "F1")),
+                ("F1", ("f2", "String"))
+            ],
         ];
 
         assert_eq_map!(actual, expected);
@@ -388,7 +418,7 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let expected = Vec::<Vec<(&str, &str)>>::new();
+        let expected = Vec::<Vec<_>>::new();
 
         assert_eq_map!(actual, expected);
     }

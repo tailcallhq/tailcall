@@ -8,6 +8,7 @@ pub use server::*;
 pub use source::*;
 pub use telemetry::*;
 pub use upstream::*;
+pub use n_plus_one::{FieldName, TypeName};
 mod apollo;
 mod config;
 mod config_module;
