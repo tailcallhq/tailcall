@@ -6,7 +6,7 @@ use crate::core::config::Config;
 use crate::core::valid::Valid;
 use crate::core::Transform;
 
-// goes through operation type names and set's it's output type name;
+// goes through operation type names and set's it's output type name from suggested names;
 pub struct SuggestNames(HashSet<String>);
 
 impl SuggestNames {
@@ -68,5 +68,50 @@ impl Transform for SuggestNames {
 
     fn transform(&self, value: Self::Value) -> crate::core::valid::Valid<Self::Value, Self::Error> {
         Valid::succeed(self.apply(value))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashSet;
+    use std::fs;
+    use tailcall_fixtures::configs;
+
+    use crate::core::config::transformer::SuggestNames;
+    use crate::core::config::Config;
+    use crate::core::transform::Transform;
+    use crate::core::valid::Validator;
+
+    fn read_fixture(path: &str) -> String {
+        fs::read_to_string(path).unwrap()
+    }
+
+    #[test]
+    fn test_should_use_user_suggested_name() {
+        let config = Config::from_sdl(read_fixture(configs::CONFLICTING_TYPE_NAMES).as_str())
+            .to_result()
+            .unwrap();
+
+        let mut suggested_names = HashSet::new();
+        suggested_names.insert("post".to_owned());
+        suggested_names.insert("users".to_owned());
+        suggested_names.insert("todos".to_owned());
+
+
+        // transformer without suggested names, should modify the config with user suggested names.
+        let transformed_config = SuggestNames::new(suggested_names)
+            .transform(config.clone())
+            .to_result()
+            .unwrap();
+        insta::assert_snapshot!("with_suggested_names",transformed_config.to_sdl());
+
+
+    
+        // transformer without suggested names, should not modify the config.
+        let transformed_config = SuggestNames::new(HashSet::new())
+            .transform(config)
+            .to_result()
+            .unwrap();
+        insta::assert_snapshot!("without_suggested_names",transformed_config.to_sdl());
     }
 }
