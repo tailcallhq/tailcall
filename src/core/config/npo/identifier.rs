@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
-use super::Output;
+use super::Queries;
 use crate::core::config::Config;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
@@ -45,7 +45,7 @@ impl<'a> Identifier<'a> {
         Self { config }
     }
 
-    pub fn identify(self) -> Output<'a> {
+    pub fn identify(self) -> Queries<'a> {
         let mut visited = HashMap::new();
         if let Some(query) = &self.config.schema.query {
             self.find_fan_out(query, false, &mut visited)
@@ -59,7 +59,7 @@ impl<'a> Identifier<'a> {
         type_name: &'a str,
         is_list: bool,
         visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
-    ) -> Output<'a> {
+    ) -> Queries<'a> {
         let config = self.config;
         let type_name: TypeName = TypeName(type_name);
         let mut ans = HashMap::new();
@@ -92,7 +92,7 @@ impl<'a> Identifier<'a> {
             }
         }
 
-        Output::new(ans, type_name.as_str())
+        Queries::new(ans, type_name.as_str())
     }
 }
 
@@ -101,7 +101,7 @@ mod tests {
     use std::collections::{HashMap, HashSet};
 
     use super::*;
-    use crate::core::config::npo::Output;
+    use crate::core::config::npo::Queries;
     use crate::core::config::{Config, Field, Http, Type};
 
     macro_rules! assert_eq_map {
@@ -121,7 +121,7 @@ mod tests {
                 }
             }
 
-            assert_eq!($actual, Output::new(expected, ($actual).root()));
+            assert_eq!($actual, Queries::new(expected, ($actual).root()));
         }};
     }
 

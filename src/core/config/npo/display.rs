@@ -1,10 +1,10 @@
 use std::fmt::{Display, Formatter};
 
-use crate::core::config::npo::Output;
+use crate::core::config::npo::Queries;
 
-impl<'a> Display for Output<'a> {
+impl<'a> Display for Queries<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let query_paths = self.query_paths();
+        let query_paths = self.as_path();
 
         let query_data: Vec<String> = query_paths
             .iter()

@@ -3,7 +3,7 @@ pub use config::*;
 pub use config_module::*;
 pub use key_values::*;
 pub use link::*;
-pub use npo::Output;
+pub use npo::Queries;
 pub use reader_context::*;
 pub use server::*;
 pub use source::*;

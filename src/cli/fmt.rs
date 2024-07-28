@@ -1,6 +1,6 @@
 use colored::*;
 
-use crate::core::config::{Config, Output};
+use crate::core::config::{Config, Queries};
 
 pub struct Fmt {}
 
@@ -17,7 +17,7 @@ impl Fmt {
         println!("{}", s);
     }
 
-    pub fn format_n_plus_one_queries(n_plus_one_info: Output) -> String {
+    pub fn format_n_plus_one_queries(n_plus_one_info: Queries) -> String {
         Fmt::meta(&n_plus_one_info.to_string())
     }
 

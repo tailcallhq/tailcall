@@ -15,7 +15,7 @@ use tailcall_typedefs_common::ServiceDocumentBuilder;
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
-use crate::core::config::npo::Output;
+use crate::core::config::npo::Queries;
 use crate::core::config::source::Source;
 use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
@@ -872,7 +872,7 @@ impl Config {
         }
     }
 
-    pub fn n_plus_one(&self) -> Output {
+    pub fn n_plus_one(&self) -> Queries {
         super::npo::Identifier::new(self).identify()
     }
 

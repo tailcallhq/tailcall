@@ -1,6 +1,6 @@
 mod display;
 mod identifier;
-mod output;
+mod queries;
 
 pub use identifier::*;
-pub use output::*;
+pub use queries::*;
