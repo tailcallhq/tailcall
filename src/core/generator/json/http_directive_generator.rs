@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use convert_case::{Case, Casing};
 use regex::Regex;
 use url::Url;
 
@@ -94,7 +95,8 @@ impl<'a> HttpDirectiveGenerator<'a> {
                 ..Default::default()
             };
 
-            let value: String = format!("{{{{.args.{}}}}}", query.key);
+            let camel_case_key = query.key.to_case(Case::Camel);
+            let value: String = format!("{{{{.args.{}}}}}", camel_case_key);
             self.http
                 .query
                 .push(KeyValue { key: query.key.clone(), value });
