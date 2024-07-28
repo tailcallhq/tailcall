@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
+use std::ops::Deref;
 
 use crate::core::config::Config;
 
@@ -20,6 +21,29 @@ impl Display for FieldName<'_> {
     }
 }
 
+#[derive(Default, Debug, PartialEq)]
+struct YieldInner<'a>(HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>);
+
+impl<'a> YieldInner<'a> {
+    fn into_yield(self, root: &'a str) -> Yield<'a> {
+        Yield { map: self.0, root }
+    }
+}
+
+#[derive(Default, Debug, PartialEq)]
+pub struct Yield<'a> {
+    pub map: HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
+    pub root: &'a str,
+}
+
+impl<'a> Deref for Yield<'a> {
+    type Target = HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.map
+    }
+}
+
 struct FindFanOutContext<'a> {
     config: &'a Config,
     type_name: &'a str,
@@ -30,7 +54,7 @@ struct FindFanOutContext<'a> {
 fn find_fan_out<'a>(
     ctx: FindFanOutContext<'a>,
     visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
-) -> HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>> {
+) -> YieldInner<'a> {
     let config = ctx.config;
     let type_name: TypeName = TypeName(ctx.type_name);
     let is_list = ctx.is_list;
@@ -63,7 +87,7 @@ fn find_fan_out<'a>(
                     },
                     visited,
                 );
-                for (k, v) in next {
+                for (k, v) in next.0 {
                     ans.entry(k).or_insert(HashSet::new()).extend(v);
                     ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
                 }
@@ -71,16 +95,17 @@ fn find_fan_out<'a>(
         }
     }
 
-    ans
+    YieldInner(ans)
 }
 
-pub fn n_plus_one(config: &Config) -> HashMap<TypeName, HashSet<(FieldName, TypeName)>> {
+pub fn n_plus_one(config: &Config) -> Yield {
     let mut visited = HashMap::new();
     if let Some(query) = &config.schema.query {
-        find_fan_out(
+        let yield_inner = find_fan_out(
             FindFanOutContext { config, type_name: query, is_list: false },
             &mut visited,
-        )
+        );
+        yield_inner.into_yield(query)
     } else {
         Default::default()
     }
@@ -90,7 +115,9 @@ pub fn n_plus_one(config: &Config) -> HashMap<TypeName, HashSet<(FieldName, Type
 mod tests {
     use std::collections::{HashMap, HashSet};
 
-    use crate::core::config::{Config, Field, FieldName, Http, Type, TypeName};
+    use super::*;
+    use crate::core::config::npo::Yield;
+    use crate::core::config::{Config, Field, Http, Type};
 
     macro_rules! assert_eq_map {
         ($actual:expr, $expected_vec:expr) => {{
@@ -109,7 +136,7 @@ mod tests {
                 }
             }
 
-            assert_eq!($actual, expected);
+            assert_eq!($actual, Yield { map: expected, root: ($actual).root });
         }};
     }
 

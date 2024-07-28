@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -15,7 +15,7 @@ use tailcall_typedefs_common::ServiceDocumentBuilder;
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
-use crate::core::config::n_plus_one::{FieldName, TypeName};
+use crate::core::config::npo::Yield;
 use crate::core::config::source::Source;
 use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
@@ -872,8 +872,8 @@ impl Config {
         }
     }
 
-    pub fn n_plus_one(&self) -> HashMap<TypeName, HashSet<(FieldName, TypeName)>> {
-        super::n_plus_one::n_plus_one(self)
+    pub fn n_plus_one(&self) -> Yield {
+        super::npo::n_plus_one(self)
     }
 
     ///
