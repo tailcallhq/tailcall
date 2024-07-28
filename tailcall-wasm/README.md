@@ -31,7 +31,7 @@ npm run "dev-node" # compiles in debug mode
 For release build:
 
 ```bash
-npm run "compile-node"  # compiles in release mode with optimizations
+npm run "build-release-node"  # compiles in release mode with optimizations
 ```
 
 By default, the output is in the `node` folder.
@@ -53,7 +53,7 @@ npm run "dev-browser" # compiles in debug mode
 For release build:
 
 ```bash
-npm run "compile-browser"  # compiles in release mode with optimizations
+npm run "build-release-browser"  # compiles in release mode with optimizations
 ```
 
 By default, the output is in the `browser` folder.
