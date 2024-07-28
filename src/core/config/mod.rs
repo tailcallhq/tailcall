@@ -3,6 +3,7 @@ pub use config::*;
 pub use config_module::*;
 pub use key_values::*;
 pub use link::*;
+pub use n_plus_one::{FieldName, TypeName};
 pub use reader_context::*;
 pub use server::*;
 pub use source::*;

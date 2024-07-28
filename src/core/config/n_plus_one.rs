@@ -1,62 +1,117 @@
+use std::collections::{HashMap, HashSet};
+use std::fmt::Display;
+
 use crate::core::config::Config;
 
-struct FindFanOutContext<'a> {
-    config: &'a Config,
-    type_name: &'a String,
-    path: Vec<(String, String)>,
-    is_list: bool,
-}
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub struct TypeName<'a>(pub &'a str);
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub struct FieldName<'a>(pub &'a str);
 
-fn find_fan_out(context: FindFanOutContext) -> Vec<Vec<(String, String)>> {
-    let config = context.config;
-    let type_name = context.type_name;
-    let path = context.path;
-    let is_list = context.is_list;
-    match config.find_type(type_name) {
-        Some(type_) => type_
-            .fields
-            .iter()
-            .flat_map(|(field_name, field)| {
-                let mut new_path = path.clone();
-                new_path.push((type_name.clone(), field_name.clone()));
-                if path
-                    .iter()
-                    .any(|item| &item.0 == type_name && &item.1 == field_name)
-                {
-                    Vec::new()
-                } else if field.has_resolver() && !field.has_batched_resolver() && is_list {
-                    vec![new_path]
-                } else {
-                    find_fan_out(FindFanOutContext {
-                        config,
-                        type_name: &field.type_of,
-                        path: new_path,
-                        is_list: field.list || is_list,
-                    })
-                }
-            })
-            .collect(),
-        None => Vec::new(),
+impl Display for TypeName<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
-pub fn n_plus_one(config: &Config) -> Vec<Vec<(String, String)>> {
+impl Display for FieldName<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+struct FindFanOutContext<'a> {
+    config: &'a Config,
+    type_name: &'a str,
+    is_list: bool,
+}
+
+#[inline(always)]
+fn find_fan_out<'a>(
+    ctx: FindFanOutContext<'a>,
+    visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
+) -> HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>> {
+    let config = ctx.config;
+    let type_name: TypeName = TypeName(ctx.type_name);
+    let is_list = ctx.is_list;
+    let mut ans = HashMap::new();
+
+    if let Some(type_) = config.find_type(type_name.0) {
+        for (field_name, field) in type_.fields.iter() {
+            let cur: FieldName = FieldName(field_name.as_str());
+            let tuple: (FieldName, TypeName) = (cur, TypeName(field.type_of.as_str()));
+
+            let condition = visited
+                .get(&type_name)
+                .map(|v: &HashSet<FieldName>| v.contains(&cur))
+                .unwrap_or_default();
+
+            if condition {
+                continue;
+            } else {
+                visited.entry(type_name).or_default().insert(cur);
+            }
+
+            if field.has_resolver() && !field.has_batched_resolver() && is_list {
+                ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
+            } else {
+                let next = find_fan_out(
+                    FindFanOutContext {
+                        config,
+                        type_name: &field.type_of,
+                        is_list: field.list || is_list,
+                    },
+                    visited,
+                );
+                for (k, v) in next {
+                    ans.entry(k).or_insert(HashSet::new()).extend(v);
+                    ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
+                }
+            }
+        }
+    }
+
+    ans
+}
+
+pub fn n_plus_one(config: &Config) -> HashMap<TypeName, HashSet<(FieldName, TypeName)>> {
+    let mut visited = HashMap::new();
     if let Some(query) = &config.schema.query {
-        find_fan_out(FindFanOutContext {
-            config,
-            type_name: query,
-            path: Vec::new(),
-            is_list: false,
-        })
+        find_fan_out(
+            FindFanOutContext { config, type_name: query, is_list: false },
+            &mut visited,
+        )
     } else {
-        Vec::new()
+        Default::default()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::{HashMap, HashSet};
 
-    use crate::core::config::{Config, Field, Http, Type};
+    use crate::core::config::{Config, Field, FieldName, Http, Type, TypeName};
+
+    macro_rules! assert_eq_map {
+        ($actual:expr, $expected_vec:expr) => {{
+            let mut expected: HashMap<TypeName, HashSet<(FieldName, TypeName)>> = HashMap::new();
+
+            for vec in $expected_vec {
+                for value in vec {
+                    let (key, (value, ty_of)) = value;
+                    let key = TypeName(key);
+                    let value = (FieldName(value), TypeName(ty_of));
+
+                    expected
+                        .entry(key)
+                        .or_insert_with(HashSet::new)
+                        .insert(value);
+                }
+            }
+
+            assert_eq!($actual, expected);
+        }};
+    }
 
     #[test]
     fn test_nplusone_resolvers() {
@@ -87,13 +142,10 @@ mod tests {
                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
             ),
         ]);
-
         let actual = config.n_plus_one();
-        let expected = vec![vec![
-            ("Query".to_string(), "f1".to_string()),
-            ("F1".to_string(), "f2".to_string()),
-        ]];
-        assert_eq!(actual, expected)
+        let expected = vec![vec![("Query", ("f1", "F1")), ("F1", ("f2", "F2"))]];
+
+        assert_eq_map!(actual, expected);
     }
 
     #[test]
@@ -127,8 +179,8 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let expected: Vec<Vec<(String, String)>> = vec![];
-        assert_eq!(actual, expected)
+        let expected: Vec<Vec<_>> = vec![];
+        assert_eq_map!(actual, expected);
     }
 
     #[test]
@@ -171,12 +223,13 @@ mod tests {
 
         let actual = config.n_plus_one();
         let expected = vec![vec![
-            ("Query".to_string(), "f1".to_string()),
-            ("F1".to_string(), "f2".to_string()),
-            ("F2".to_string(), "f3".to_string()),
-            ("F3".to_string(), "f4".to_string()),
+            ("Query", ("f1", "F1")),
+            ("F1", ("f2", "F2")),
+            ("F2", ("f3", "F3")),
+            ("F3", ("f4", "String")),
         ]];
-        assert_eq!(actual, expected)
+
+        assert_eq_map!(actual, expected);
     }
 
     #[test]
@@ -216,14 +269,15 @@ mod tests {
             ),
         ]);
 
-        let actual = config.n_plus_one();
         let expected = vec![vec![
-            ("Query".to_string(), "f1".to_string()),
-            ("F1".to_string(), "f2".to_string()),
-            ("F2".to_string(), "f3".to_string()),
-            ("F3".to_string(), "f4".to_string()),
+            ("Query", ("f1", "F1")),
+            ("F1", ("f2", "F2")),
+            ("F2", ("f3", "F3")),
+            ("F3", ("f4", "String")),
         ]];
-        assert_eq!(actual, expected)
+        let actual = config.n_plus_one();
+
+        assert_eq_map!(actual, expected);
     }
 
     #[test]
@@ -253,9 +307,10 @@ mod tests {
             ),
         ]);
 
+        let expected: Vec<Vec<_>> = vec![];
         let actual = config.n_plus_one();
-        let expected: Vec<Vec<(String, String)>> = vec![];
-        assert_eq!(actual, expected)
+
+        assert_eq_map!(actual, expected);
     }
 
     #[test]
@@ -286,8 +341,9 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let expected: Vec<Vec<(String, String)>> = vec![];
-        assert_eq!(actual, expected)
+        let expected: Vec<Vec<_>> = vec![];
+
+        assert_eq_map!(actual, expected);
     }
 
     #[test]
@@ -325,19 +381,15 @@ mod tests {
         let actual = config.n_plus_one();
         let expected = vec![
             vec![
-                ("Query".to_string(), "f1".to_string()),
-                ("F1".to_string(), "f1".to_string()),
-                ("F1".to_string(), "f2".to_string()),
+                ("Query", ("f1", "F1")),
+                ("F1", ("f1", "F1")),
+                ("F1", ("f2", "String")),
             ],
-            vec![
-                ("Query".to_string(), "f1".to_string()),
-                ("F1".to_string(), "f2".to_string()),
-            ],
+            vec![("Query", ("f1", "F1")), ("F1", ("f2", "String"))],
         ];
 
-        assert_eq!(actual, expected)
+        assert_eq_map!(actual, expected);
     }
-
     #[test]
     fn test_nplusone_nested_non_list() {
         let f_field = Field::default()
@@ -363,8 +415,8 @@ mod tests {
         ]);
 
         let actual = config.n_plus_one();
-        let expected = Vec::<Vec<(String, String)>>::new();
+        let expected = Vec::<Vec<_>>::new();
 
-        assert_eq!(actual, expected)
+        assert_eq_map!(actual, expected);
     }
 }
