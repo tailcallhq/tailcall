@@ -1,6 +1,7 @@
 use super::pair_map::PairMap;
 use super::pair_set::PairSet;
 use crate::core::config::{Config, Type};
+use crate::core::scalar::Scalar;
 use crate::core::valid::{Valid, Validator};
 
 /// Given Two types,it tells similarity between two types based on a specified
@@ -63,7 +64,14 @@ impl<'a> Similarity<'a> {
                     if config.is_scalar(&field_1_type_of) && config.is_scalar(&field_2_type_of) {
                         // if field type_of is scalar and they don't match then we can't merge
                         // types.
-                        if field_1_type_of == field_2_type_of {
+
+                        // check if is this known type or not?
+                        let unknown_scalar_types =
+                            [Scalar::JSON.to_string(), Scalar::Empty.to_string()];
+                        if field_1_type_of == field_2_type_of
+                            || unknown_scalar_types.contains(&field_1_type_of)
+                            || unknown_scalar_types.contains(&field_2_type_of)
+                        {
                             if field_1.list == field_2.list {
                                 same_field_count += 1;
                             } else {
@@ -512,5 +520,31 @@ mod test {
 
         // Assert that merging incompatible list and non-list fields fails
         assert!(result.is_err())
+    }
+
+    #[test]
+    fn test_unknown_scalar_types_treated_as_same() {
+        let sdl = r#"
+            type A {
+                primarySubcategoryId: String
+            }
+            type B {
+                pharmaceuticalInfo: Empty
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let mut similarity = Similarity::new(&config);
+
+        let result = similarity
+            .similarity(
+                ("B", config.types.get("B").unwrap()),
+                ("A", config.types.get("A").unwrap()),
+                0.9,
+            )
+            .to_result()
+            .unwrap();
+
+        assert!(result)
     }
 }
