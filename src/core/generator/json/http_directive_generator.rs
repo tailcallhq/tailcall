@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use inflector::Inflector;
 use regex::Regex;
 use url::Url;
 
@@ -94,11 +95,13 @@ impl<'a> HttpDirectiveGenerator<'a> {
                 ..Default::default()
             };
 
-            let value: String = format!("{{{{.args.{}}}}}", query.key);
+            let camel_case_query = query.key.to_camel_case();
+            let value: String = format!("{{{{.args.{}}}}}", camel_case_query);
+
             self.http
                 .query
                 .push(KeyValue { key: query.key.clone(), value });
-            field.args.insert(query.key, arg);
+            field.args.insert(camel_case_query, arg);
         }
     }
 
