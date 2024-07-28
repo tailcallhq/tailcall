@@ -1,0 +1,6 @@
+---
+source: src/cli/fmt.rs
+expression: "formatted.join(\"\\n\")"
+---
+query { f1 { f1 { f2 } } }
+query { f1 { f2 } }
