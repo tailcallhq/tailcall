@@ -528,7 +528,7 @@ mod test {
     }
 
     #[test]
-    fn test_unknown_scalar_types_treated_as_same() {
+    fn test_unknown_scalar_types_treated_as_same_when_flag_set_to_true() {
         let sdl = r#"
             type A {
                 primarySubcategoryId: String
@@ -551,5 +551,30 @@ mod test {
             .unwrap();
 
         assert!(result)
+    }
+
+    #[test]
+    fn test_unknown_scalar_types_treated_different_when_flag_set_to_false() {
+        let sdl = r#"
+            type A {
+                primarySubcategoryId: String
+            }
+            type B {
+                primarySubcategoryId: Empty
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let mut similarity = Similarity::new(&config, false);
+
+        let result = similarity
+            .similarity(
+                ("B", config.types.get("B").unwrap()),
+                ("A", config.types.get("A").unwrap()),
+                0.9,
+            )
+            .to_result();
+
+        assert!(result.is_err())
     }
 }
