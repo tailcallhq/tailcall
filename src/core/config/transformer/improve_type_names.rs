@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 use inflector::Inflector;
 
 use crate::core::config::Config;
@@ -10,7 +10,6 @@ use crate::core::valid::Valid;
 #[derive(Debug, Default)]
 struct CandidateStats {
     frequency: u32,
-    priority: u8,
 }
 
 struct CandidateConvergence<'a> {
@@ -45,8 +44,8 @@ impl<'a> CandidateConvergence<'a> {
             });
 
             // Find the candidate with the highest frequency and priority
-            if let Some((candidate_name, _)) = candidates_to_consider
-                .max_by_key(|(key, value)| (value.priority, value.frequency, *key))
+            if let Some((candidate_name, _)) =
+                candidates_to_consider.max_by_key(|(key, value)| (value.frequency, *key))
             {
                 let singularized_candidate_name = candidate_name.to_pascal_case();
                 finalized_candidates
@@ -63,32 +62,19 @@ struct CandidateGeneration<'a> {
     /// maintains the generated candidates in the form of
     /// {TypeName: {{candidate_name: {frequency: 1, priority: 0}}}}
     candidates: IndexMap<String, IndexMap<String, CandidateStats>>,
-    suggested_names: &'a HashSet<String>,
     config: &'a Config,
 }
 
 impl<'a> CandidateGeneration<'a> {
-    fn new(config: &'a Config, suggested_names: &'a HashSet<String>) -> Self {
-        Self { candidates: Default::default(), config, suggested_names }
+    fn new(config: &'a Config) -> Self {
+        Self { candidates: Default::default(), config }
     }
 
     /// Generates candidate type names based on the provided configuration.
     /// This method iterates over the configuration and collects candidate type
     /// names for each type.
     fn generate(mut self) -> CandidateConvergence<'a> {
-        // process the user suggest field names over the auto inferred names.
-        let ty_names = vec![
-            self.config.schema.query.as_ref(),
-            self.config.schema.mutation.as_ref(),
-            self.config.schema.subscription.as_ref(),
-        ]
-        .into_iter()
-        .flatten()
-        .map(|o| o.to_owned())
-        .chain(self.config.types.keys().cloned())
-        .collect::<IndexSet<_>>();
-
-        for ref type_name in ty_names {
+        for type_name in self.config.types.keys() {
             if let Some(type_info) = self.config.types.get(type_name) {
                 for (field_name, field_info) in type_info.fields.iter() {
                     if self.config.is_scalar(&field_info.type_of) {
@@ -105,22 +91,8 @@ impl<'a> CandidateGeneration<'a> {
 
                     if let Some(key_val) = inner_map.get_mut(&singularized_candidate) {
                         key_val.frequency += 1
-                    } else {
-                        let priority = match self.config.is_root_operation_type(type_name) {
-                            true => {
-                                if self.suggested_names.contains(field_name) {
-                                    // priority of user suggested name is higher than anything.
-                                    2
-                                } else {
-                                    0
-                                }
-                            }
-                            false => 1,
-                        };
-                        inner_map.insert(
-                            singularized_candidate,
-                            CandidateStats { frequency: 1, priority },
-                        );
+                    } else if !self.config.is_root_operation_type(type_name) {
+                        inner_map.insert(singularized_candidate, CandidateStats { frequency: 1 });
                     }
                 }
             }
@@ -130,23 +102,13 @@ impl<'a> CandidateGeneration<'a> {
 }
 
 #[derive(Default)]
-pub struct ImproveTypeNames {
-    // given set of names, transformer prioritizes given names over the frequency in the final
-    // config.
-    suggested_names: HashSet<String>,
-}
+pub struct ImproveTypeNames;
 
 impl ImproveTypeNames {
-    pub fn new(name: HashSet<String>) -> Self {
-        Self { suggested_names: name }
-    }
-
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
     fn generate_type_names(&self, mut config: Config) -> Config {
-        let finalized_candidates = CandidateGeneration::new(&config, &self.suggested_names)
-            .generate()
-            .converge();
+        let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
 
         for (old_type_name, new_type_name) in finalized_candidates {
             if let Some(type_) = config.types.remove(old_type_name.as_str()) {
@@ -180,7 +142,6 @@ impl Transform for ImproveTypeNames {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
     use std::fs;
 
     use anyhow::Ok;
@@ -201,10 +162,7 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames::new(HashSet::default())
-            .transform(config)
-            .to_result()
-            .unwrap();
+        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
     }
 
@@ -214,10 +172,7 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames::new(HashSet::default())
-            .transform(config)
-            .to_result()
-            .unwrap();
+        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
@@ -229,47 +184,11 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames::new(HashSet::default())
-            .transform(config)
-            .to_result()
-            .unwrap();
+        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
     }
 
-    #[test]
-    fn test_prioritize_suggested_name() -> anyhow::Result<()> {
-        let config = Config::from_sdl(read_fixture(configs::CONFLICTING_TYPE_NAMES).as_str())
-            .to_result()
-            .unwrap();
-
-        let mut suggested_names = HashSet::default();
-        suggested_names.insert("post".to_owned());
-        suggested_names.insert("todos".to_owned());
-        suggested_names.insert("userPosts".to_owned());
-
-        let transformed_config = ImproveTypeNames::new(suggested_names)
-            .transform(config)
-            .to_result()
-            .unwrap();
-        insta::assert_snapshot!(transformed_config.to_sdl());
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_type_names_transformation_without_prioritization() -> anyhow::Result<()> {
-        let config = Config::from_sdl(read_fixture(configs::CONFLICTING_TYPE_NAMES).as_str())
-            .to_result()
-            .unwrap();
-
-        let transformed_config = ImproveTypeNames::new(HashSet::default())
-            .transform(config)
-            .to_result()
-            .unwrap();
-        insta::assert_snapshot!(transformed_config.to_sdl());
-
-        Ok(())
-    }
+    
 }

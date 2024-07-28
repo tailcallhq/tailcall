@@ -20,7 +20,16 @@ type Company {
   name: String
 }
 
-type F1 {
+type Geo {
+  lat: String
+  lng: String
+}
+
+type Query {
+  f1: [RootType1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
+}
+
+type RootType1 {
   address: Address
   company: Company
   email: String
@@ -29,13 +38,4 @@ type F1 {
   phone: String
   username: String
   website: String
-}
-
-type Geo {
-  lat: String
-  lng: String
-}
-
-type Query {
-  f1: [F1] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
 }
