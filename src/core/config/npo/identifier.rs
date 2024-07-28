@@ -1,88 +1,94 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
+use super::Queries;
 use crate::core::config::Config;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct TypeName<'a>(pub &'a str);
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-pub struct FieldName<'a>(pub &'a str);
-
+impl<'a> TypeName<'a> {
+    pub fn new(name: &'a str) -> Self {
+        Self(name)
+    }
+    pub fn as_str(self) -> &'a str {
+        self.0
+    }
+}
 impl Display for TypeName<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub struct FieldName<'a>(&'a str);
+impl<'a> FieldName<'a> {
+    pub fn new(name: &'a str) -> Self {
+        Self(name)
+    }
+    pub fn as_str(self) -> &'a str {
+        self.0
+    }
+}
 impl Display for FieldName<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-struct FindFanOutContext<'a> {
+pub struct Identifier<'a> {
     config: &'a Config,
-    type_name: &'a str,
-    is_list: bool,
+    visited: HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
 }
 
-#[inline(always)]
-fn find_fan_out<'a>(
-    ctx: FindFanOutContext<'a>,
-    visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
-) -> HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>> {
-    let config = ctx.config;
-    let type_name: TypeName = TypeName(ctx.type_name);
-    let is_list = ctx.is_list;
-    let mut ans = HashMap::new();
+impl<'a> Identifier<'a> {
+    pub fn new(config: &'a Config) -> Self {
+        Self { config, visited: HashMap::new() }
+    }
 
-    if let Some(type_) = config.find_type(type_name.0) {
-        for (field_name, field) in type_.fields.iter() {
-            let cur: FieldName = FieldName(field_name.as_str());
-            let tuple: (FieldName, TypeName) = (cur, TypeName(field.type_of.as_str()));
+    pub fn identify(mut self) -> Queries<'a> {
+        if let Some(query) = &self.config.schema.query {
+            self.find_fan_out(query, false)
+        } else {
+            Default::default()
+        }
+    }
+    #[inline(always)]
+    fn find_fan_out(&mut self, type_name: &'a str, is_list: bool) -> Queries<'a> {
+        let config = self.config;
+        let type_name: TypeName = TypeName(type_name);
+        let mut ans = HashMap::new();
 
-            let condition = visited
-                .get(&type_name)
-                .map(|v: &HashSet<FieldName>| v.contains(&cur))
-                .unwrap_or_default();
+        if let Some(type_) = config.find_type(type_name.0) {
+            for (field_name, field) in type_.fields.iter() {
+                let cur: FieldName = FieldName(field_name.as_str());
+                let tuple: (FieldName, TypeName) = (cur, TypeName(field.type_of.as_str()));
 
-            if condition {
-                continue;
-            } else {
-                visited.entry(type_name).or_default().insert(cur);
-            }
+                let condition = self
+                    .visited
+                    .get(&type_name)
+                    .map(|v: &HashSet<FieldName>| v.contains(&cur))
+                    .unwrap_or_default();
 
-            if field.has_resolver() && !field.has_batched_resolver() && is_list {
-                ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
-            } else {
-                let next = find_fan_out(
-                    FindFanOutContext {
-                        config,
-                        type_name: &field.type_of,
-                        is_list: field.list || is_list,
-                    },
-                    visited,
-                );
-                for (k, v) in next {
-                    ans.entry(k).or_insert(HashSet::new()).extend(v);
+                if condition {
+                    continue;
+                } else {
+                    self.visited.entry(type_name).or_default().insert(cur);
+                }
+
+                if field.has_resolver() && !field.has_batched_resolver() && is_list {
                     ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
+                } else {
+                    let next = self.find_fan_out(&field.type_of, field.list || is_list);
+                    for (k, v) in next.map() {
+                        ans.entry(*k).or_insert(HashSet::new()).extend(v);
+                        ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
+                    }
                 }
             }
         }
-    }
 
-    ans
-}
-
-pub fn n_plus_one(config: &Config) -> HashMap<TypeName, HashSet<(FieldName, TypeName)>> {
-    let mut visited = HashMap::new();
-    if let Some(query) = &config.schema.query {
-        find_fan_out(
-            FindFanOutContext { config, type_name: query, is_list: false },
-            &mut visited,
-        )
-    } else {
-        Default::default()
+        Queries::new(ans, type_name.as_str())
     }
 }
 
@@ -90,7 +96,9 @@ pub fn n_plus_one(config: &Config) -> HashMap<TypeName, HashSet<(FieldName, Type
 mod tests {
     use std::collections::{HashMap, HashSet};
 
-    use crate::core::config::{Config, Field, FieldName, Http, Type, TypeName};
+    use super::*;
+    use crate::core::config::npo::Queries;
+    use crate::core::config::{Config, Field, Http, Type};
 
     macro_rules! assert_eq_map {
         ($actual:expr, $expected_vec:expr) => {{
@@ -109,7 +117,7 @@ mod tests {
                 }
             }
 
-            assert_eq!($actual, expected);
+            assert_eq!($actual, Queries::new(expected, ($actual).root()));
         }};
     }
 

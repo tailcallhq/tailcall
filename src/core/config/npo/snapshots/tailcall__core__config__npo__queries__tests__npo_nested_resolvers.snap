@@ -1,0 +1,5 @@
+---
+source: src/core/config/npo/queries.rs
+expression: "formatted.join(\"\\n\")"
+---
+query { f1 { f2 { f3 { f4 } } } }
