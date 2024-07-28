@@ -343,6 +343,7 @@ mod tests {
             use_better_names: None,
             merge_type: Some(2.0),
             consolidate_url: None,
+            unwrap_single_field_types: None,
         };
 
         let transform_preset: Result<Preset, ValidationError<String>> =
@@ -357,6 +358,7 @@ mod tests {
             use_better_names: Some(true),
             merge_type: Some(0.5),
             consolidate_url: Some(1.0),
+            unwrap_single_field_types: Some(true),
         };
         let transform_preset: Preset = config_preset.validate_into().to_result().unwrap();
         let expected_preset = Preset::new()
