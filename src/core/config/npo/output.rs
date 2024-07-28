@@ -4,17 +4,6 @@ use derive_getters::Getters;
 
 use crate::core::config::npo::{FieldName, TypeName};
 
-#[derive(Default, Debug, PartialEq)]
-pub(super) struct OutputInner<'a>(
-    pub(super) HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
-);
-
-impl<'a> OutputInner<'a> {
-    pub fn into_output(self, root: &'a str) -> Output<'a> {
-        Output { map: self.0, root }
-    }
-}
-
 #[derive(Default, Debug, PartialEq, Getters)]
 pub struct Output<'a> {
     map: HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
@@ -28,7 +17,7 @@ impl<'a> Output<'a> {
     ) -> Self {
         Self { map, root }
     }
-    pub fn as_vec(&self) -> Vec<Vec<(&'a str, (&'a str, &'a str))>> {
+    pub fn query_paths(&self) -> Vec<Vec<FieldName<'a>>> {
         let mut result = Vec::new();
         let mut visited = HashSet::new();
 
@@ -64,5 +53,8 @@ impl<'a> Output<'a> {
         );
 
         result
+            .into_iter()
+            .map(|v| v.into_iter().map(|(_, (f, _))| FieldName::new(f)).collect())
+            .collect()
     }
 }

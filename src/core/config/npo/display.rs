@@ -4,15 +4,7 @@ use crate::core::config::npo::Output;
 
 impl<'a> Display for Output<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let reduced = self.as_vec();
-        let query_paths: Vec<Vec<_>> = reduced
-            .iter()
-            .map(|item| {
-                item.iter()
-                    .map(|(_, (field_name, _))| *field_name)
-                    .collect()
-            })
-            .collect();
+        let query_paths = self.query_paths();
 
         let query_data: Vec<String> = query_paths
             .iter()

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
-use super::{Output, OutputInner};
+use super::Output;
 use crate::core::config::Config;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
@@ -48,8 +48,7 @@ impl<'a> Identifier<'a> {
     pub fn identify(self) -> Output<'a> {
         let mut visited = HashMap::new();
         if let Some(query) = &self.config.schema.query {
-            let yield_inner = self.find_fan_out(query, false, &mut visited);
-            yield_inner.into_output(query)
+            self.find_fan_out(query, false, &mut visited)
         } else {
             Default::default()
         }
@@ -60,7 +59,7 @@ impl<'a> Identifier<'a> {
         type_name: &'a str,
         is_list: bool,
         visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
-    ) -> OutputInner<'a> {
+    ) -> Output<'a> {
         let config = self.config;
         let type_name: TypeName = TypeName(type_name);
         let mut ans = HashMap::new();
@@ -85,15 +84,15 @@ impl<'a> Identifier<'a> {
                     ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
                 } else {
                     let next = self.find_fan_out(&field.type_of, field.list || is_list, visited);
-                    for (k, v) in next.0 {
-                        ans.entry(k).or_insert(HashSet::new()).extend(v);
+                    for (k, v) in next.map() {
+                        ans.entry(*k).or_insert(HashSet::new()).extend(v);
                         ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
                     }
                 }
             }
         }
 
-        OutputInner(ans)
+        Output::new(ans, type_name.as_str())
     }
 }
 
