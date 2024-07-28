@@ -252,7 +252,7 @@ impl Config {
             pairs.join("&")
         })
     }
-
+    /// Resolves all the relative paths present inside the GeneratorConfig  
     pub fn into_resolved(
         self,
         config_path: &str,
@@ -273,24 +273,6 @@ impl Config {
         };
 
         Ok(Config { inputs, output, schema, preset: self.preset })
-    }
-    /// Resolves all the relative paths present inside the GeneratorConfig.
-    pub fn into_resolved(
-        self,
-        config_path: &str,
-        reader_context: ConfigReaderContext,
-    ) -> anyhow::Result<Config<Resolved>> {
-        let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
-
-        let inputs = self
-            .inputs
-            .into_iter()
-            .map(|input| input.resolve(parent_dir, &reader_context))
-            .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
-
-        let output = self.output.resolve(parent_dir)?;
-
-        Ok(Config { inputs, output, schema: self.schema, preset: self.preset })
     }
 }
 
