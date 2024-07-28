@@ -52,7 +52,7 @@
   "preset": {
     "mergeType": {
       "threshold": 1.0,
-      "merge_unknown_types": true
+      "mergeUnknownTypes": true
     },
     "consolidateURL": 0.5,
     "treeShake": true,
