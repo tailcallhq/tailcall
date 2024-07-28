@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use serde_json_borrow::{ObjectAsVec, Value};
 
 use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike};
@@ -33,6 +35,10 @@ impl<'a> JsonLike<'a> for Value<'a> {
 
     fn array(arr: Vec<Self>) -> Self {
         Value::Array(arr)
+    }
+
+    fn string(s: Cow<'a, str>) -> Self {
+        Value::Str(s)
     }
 
     fn as_array(&self) -> Option<&Vec<Value>> {
