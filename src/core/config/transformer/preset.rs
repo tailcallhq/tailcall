@@ -46,7 +46,10 @@ impl Transform for Preset {
                     .when(super::TypeMerger::is_enabled(self.merge_type)),
             )
             .pipe(super::FlattenSingleField.when(self.unwrap_single_field_types))
-            .pipe(super::SuggestNames::new(self.suggested_names.clone()).when(self.suggested_names.len() > 0))
+            .pipe(
+                super::SuggestNames::new(self.suggested_names.clone())
+                    .when(!self.suggested_names.is_empty()),
+            )
             .pipe(super::ImproveTypeNames.when(self.use_better_names))
             .pipe(
                 super::ConsolidateURL::new(self.consolidate_url)

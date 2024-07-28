@@ -1,7 +1,10 @@
-use inflector::Inflector;
 use std::collections::{HashMap, HashSet};
 
-use crate::core::{config::Config, valid::Valid, Transform};
+use inflector::Inflector;
+
+use crate::core::config::Config;
+use crate::core::valid::Valid;
+use crate::core::Transform;
 
 // goes through operation type names and set's it's output type name;
 pub struct SuggestNames(HashSet<String>);
