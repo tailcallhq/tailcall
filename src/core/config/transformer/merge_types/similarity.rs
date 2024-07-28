@@ -205,7 +205,7 @@ mod test {
         cfg.types.insert("Bar1".to_owned(), bar1);
         cfg.types.insert("Bar2".to_owned(), bar2);
 
-        let mut gen = Similarity::new(&cfg);
+        let mut gen = Similarity::new(&cfg, false);
         let is_similar = gen
             .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5)
             .to_result();
@@ -245,7 +245,7 @@ mod test {
         cfg.types.insert("Bar1".to_owned(), bar1);
         cfg.types.insert("Bar2".to_owned(), bar2);
 
-        let mut gen = Similarity::new(&cfg);
+        let mut gen = Similarity::new(&cfg, false);
         let is_similar = gen
             .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8)
             .to_result()
@@ -299,7 +299,7 @@ mod test {
         cfg.types.insert("Far1".to_owned(), far1);
         cfg.types.insert("Far2".to_owned(), far2);
 
-        let mut gen = Similarity::new(&cfg);
+        let mut gen = Similarity::new(&cfg, false);
         let is_similar = gen
             .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8)
             .to_result()
@@ -338,7 +338,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config)
+        let types_equal = Similarity::new(&config, false)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -369,7 +369,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config)
+        let types_equal = Similarity::new(&config, false)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -404,7 +404,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config)
+        let types_equal = Similarity::new(&config, false)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -432,7 +432,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config)
+        let types_equal = Similarity::new(&config, false)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -460,7 +460,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config)
+        let types_equal = Similarity::new(&config, false)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -489,7 +489,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config)
+        let types_equal = Similarity::new(&config, false)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -519,7 +519,7 @@ mod test {
         config.types.insert("Bar".to_owned(), bar.clone());
 
         // Calculate similarity between Foo and Bar
-        let result = Similarity::new(&config)
+        let result = Similarity::new(&config, false)
             .similarity(("Foo", &foo), ("Bar", &bar), 0.5)
             .to_result();
 
@@ -539,7 +539,7 @@ mod test {
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let mut similarity = Similarity::new(&config);
+        let mut similarity = Similarity::new(&config, true);
 
         let result = similarity
             .similarity(

@@ -34,11 +34,7 @@ impl Transform for Preset {
         &self,
         config: Self::Value,
     ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
-        let merge_unknown_types = if let Some(merge_unknown_types) = self.merge_type.1 {
-            merge_unknown_types
-        } else {
-            false
-        };
+        let merge_unknown_types = self.merge_type.1.unwrap_or_default();
 
         transform::default()
             .pipe(super::Required)

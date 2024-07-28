@@ -251,7 +251,7 @@ mod test {
         config.types.insert("Query".to_owned(), q_type);
         config = config.query("Query");
 
-        config = TypeMerger::new(0.5).transform(config).to_result()?;
+        config = TypeMerger::new(0.5, false).transform(config).to_result()?;
 
         insta::assert_snapshot!(config.to_sdl());
 
@@ -302,7 +302,7 @@ mod test {
 
         assert_eq!(config.types.len(), 5);
 
-        config = TypeMerger::new(1.0).transform(config).to_result()?;
+        config = TypeMerger::new(1.0, false).transform(config).to_result()?;
 
         assert_eq!(config.types.len(), 2);
         insta::assert_snapshot!(config.to_sdl());
@@ -352,7 +352,10 @@ mod test {
         config.types.insert("T1".to_string(), ty1);
         config.types.insert("T2".to_string(), ty2);
 
-        let config = TypeMerger::new(0.5).transform(config).to_result().unwrap();
+        let config = TypeMerger::new(0.5, false)
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
 

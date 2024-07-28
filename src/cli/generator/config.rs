@@ -348,7 +348,7 @@ mod tests {
         let config_preset = PresetConfig {
             tree_shake: None,
             use_better_names: None,
-            merge_type: Some(2.0),
+            merge_type: Some(MergeType { threshold: 2.0, merge_uknown_types: None }),
             consolidate_url: None,
             unwrap_single_field_types: None,
         };
@@ -363,7 +363,7 @@ mod tests {
         let config_preset = PresetConfig {
             tree_shake: Some(true),
             use_better_names: Some(true),
-            merge_type: Some(0.5),
+            merge_type: Some(MergeType { threshold: 0.5, merge_uknown_types: Some(true) }),
             consolidate_url: Some(1.0),
             unwrap_single_field_types: None,
         };
@@ -372,7 +372,7 @@ mod tests {
             .use_better_names(true)
             .tree_shake(true)
             .consolidate_url(1.0)
-            .merge_type(0.5);
+            .merge_type((0.5, Some(true)));
         assert_eq!(transform_preset, expected_preset);
     }
 
