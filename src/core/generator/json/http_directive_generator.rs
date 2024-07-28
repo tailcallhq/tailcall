@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use inflector::Inflector;
 use regex::Regex;
 use url::Url;
 
