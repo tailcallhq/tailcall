@@ -54,7 +54,12 @@ impl tailcall::core::Cache for Cache {
     type Key = IoId;
     type Value = ConstValue;
 
-    async fn set<'a>(&'a self, _: Self::Key, _: Self::Value, _: NonZeroU64) -> Result<(), cache::Error> {
+    async fn set<'a>(
+        &'a self,
+        _: Self::Key,
+        _: Self::Value,
+        _: NonZeroU64,
+    ) -> Result<(), cache::Error> {
         unimplemented!("Not needed for this bench")
     }
 

@@ -100,7 +100,11 @@ impl WorkerIO<Event, Command> for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
-    async fn call(&self, name: &str, input: ConstValue) -> Result<Option<ConstValue>, worker::Error> {
+    async fn call(
+        &self,
+        name: &str,
+        input: ConstValue,
+    ) -> Result<Option<ConstValue>, worker::Error> {
         let script = self.script.clone();
         let name = name.to_string();
         let value = serde_json::to_string(&input)?;
