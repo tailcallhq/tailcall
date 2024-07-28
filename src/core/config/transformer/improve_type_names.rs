@@ -86,7 +86,7 @@ impl<'a> CandidateGeneration<'a> {
                     .entry(field_info.type_of.to_owned())
                     .or_default();
 
-                let singularized_candidate = pluralizer::pluralize(&field_name, 1, false);
+                let singularized_candidate = pluralizer::pluralize(field_name, 1, false);
 
                 if let Some(key_val) = inner_map.get_mut(&singularized_candidate) {
                     key_val.frequency += 1
