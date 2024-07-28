@@ -534,7 +534,7 @@ mod test {
                 primarySubcategoryId: String
             }
             type B {
-                pharmaceuticalInfo: Empty
+                primarySubcategoryId: Empty
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
