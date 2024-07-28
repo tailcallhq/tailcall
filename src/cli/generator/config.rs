@@ -382,6 +382,21 @@ mod tests {
     }
 
     #[test]
+    fn test_convert_query_params_to_camel_case() {
+        let query = Some("page_number=1&user_id=42".to_string());
+        let converted_query = Config::convert_query_params_to_camel_case(&query);
+        assert_eq!(converted_query, Some("pageNumber=1&userId=42".to_string()));
+
+        let query = Some("".to_string());
+        let converted_query = Config::convert_query_params_to_camel_case(&query);
+        assert_eq!(converted_query, Some("".to_string()));
+
+        let query = None;
+        let converted_query = Config::convert_query_params_to_camel_case(&query);
+        assert_eq!(converted_query, None);
+    }
+
+    #[test]
     fn should_use_user_provided_presets_when_provided() {
         let config_preset = PresetConfig {
             tree_shake: Some(true),
