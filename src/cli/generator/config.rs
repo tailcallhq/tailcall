@@ -281,8 +281,6 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Arc;
 
-    use pretty_assertions::assert_eq;
-
     use super::*;
     use crate::core::tests::TestEnvIO;
     use crate::core::valid::{ValidateInto, ValidationError, Validator};
