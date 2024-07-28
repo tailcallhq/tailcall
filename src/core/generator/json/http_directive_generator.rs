@@ -95,13 +95,14 @@ impl<'a> HttpDirectiveGenerator<'a> {
                 ..Default::default()
             };
 
-            let camel_case_query = query.key.to_camel_case();
-            let value: String = format!("{{{{.args.{}}}}}", camel_case_query);
+            // Convert query key to camel case for better readability.
+            let query_key = query.key.to_camel_case();
+            let value: String = format!("{{{{.args.{}}}}}", query_key);
 
             self.http
                 .query
                 .push(KeyValue { key: query.key.clone(), value });
-            field.args.insert(camel_case_query, arg);
+            field.args.insert(query_key, arg);
         }
     }
 
