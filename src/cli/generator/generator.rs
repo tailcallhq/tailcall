@@ -361,10 +361,8 @@ mod test {
                 let path = entry.path();
                 if let Some(extension) = path.extension() {
                     if extension == "json" {
-                        let _ = generator_spec::run_config_generator_spec(&path).expect(&format!(
-                            "failed to generate the config, path: {}",
-                            path.to_string_lossy()
-                        ));
+                        generator_spec::run_config_generator_spec(&path).unwrap_or_else(|_| panic!("failed to generate the config, path: {}",
+                            path.to_string_lossy()));
                     }
                 }
             }
