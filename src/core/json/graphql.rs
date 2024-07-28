@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use async_graphql::Name;
@@ -116,5 +117,9 @@ impl<'a> JsonLike<'a> for ConstValue {
 
     fn array(arr: Vec<Self>) -> Self {
         ConstValue::List(arr)
+    }
+
+    fn string(s: Cow<'a, str>) -> Self {
+        ConstValue::String(s.to_string())
     }
 }
