@@ -14,7 +14,7 @@ pub struct Preset {
     unwrap_single_field_types: bool,
 }
 
-#[derive(Setters, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct PresetMergeTypeOption {
     pub threshold: f32,
     pub merge_unknown_types: bool,
