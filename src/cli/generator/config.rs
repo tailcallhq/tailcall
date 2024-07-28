@@ -33,6 +33,7 @@ pub struct PresetConfig {
     consolidate_url: Option<f32>,
     use_better_names: Option<bool>,
     tree_shake: Option<bool>,
+    unwrap_single_field_types: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -122,6 +123,10 @@ impl ValidateFrom<PresetConfig> for Preset {
 
         if let Some(tree_shake) = config.tree_shake {
             preset = preset.tree_shake(tree_shake);
+        }
+
+        if let Some(t) = config.unwrap_single_field_types {
+            preset = preset.unwrap_single_field_types(t);
         }
 
         // TODO: The field names in trace should be inserted at compile time.
