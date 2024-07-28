@@ -6,10 +6,11 @@ use crate::core::config::Config;
 use crate::core::valid::Valid;
 use crate::core::Transform;
 
-// goes through operation type names and set's it's output type name from suggested names;
-pub struct SuggestNames(HashSet<String>);
+// goes through operation type names and set's it's output type name from
+// suggested names;
+pub struct PreferredNameSetter(HashSet<String>);
 
-impl SuggestNames {
+impl PreferredNameSetter {
     pub fn new(suggested_names: HashSet<String>) -> Self {
         Self(suggested_names)
     }
@@ -62,7 +63,7 @@ impl SuggestNames {
     }
 }
 
-impl Transform for SuggestNames {
+impl Transform for PreferredNameSetter {
     type Value = Config;
     type Error = String;
 
@@ -75,9 +76,10 @@ impl Transform for SuggestNames {
 mod test {
     use std::collections::HashSet;
     use std::fs;
+
     use tailcall_fixtures::configs;
 
-    use crate::core::config::transformer::SuggestNames;
+    use crate::core::config::transformer::PreferredNameSetter;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
@@ -97,21 +99,19 @@ mod test {
         suggested_names.insert("users".to_owned());
         suggested_names.insert("todos".to_owned());
 
-
-        // transformer without suggested names, should modify the config with user suggested names.
-        let transformed_config = SuggestNames::new(suggested_names)
+        // transformer without suggested names, should modify the config with user
+        // suggested names.
+        let transformed_config = PreferredNameSetter::new(suggested_names)
             .transform(config.clone())
             .to_result()
             .unwrap();
-        insta::assert_snapshot!("with_suggested_names",transformed_config.to_sdl());
+        insta::assert_snapshot!("with_suggested_names", transformed_config.to_sdl());
 
-
-    
         // transformer without suggested names, should not modify the config.
-        let transformed_config = SuggestNames::new(HashSet::new())
+        let transformed_config = PreferredNameSetter::new(HashSet::new())
             .transform(config)
             .to_result()
             .unwrap();
-        insta::assert_snapshot!("without_suggested_names",transformed_config.to_sdl());
+        insta::assert_snapshot!("without_suggested_names", transformed_config.to_sdl());
     }
 }

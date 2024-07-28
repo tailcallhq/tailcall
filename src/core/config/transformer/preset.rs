@@ -47,7 +47,7 @@ impl Transform for Preset {
             )
             .pipe(super::FlattenSingleField.when(self.unwrap_single_field_types))
             .pipe(
-                super::SuggestNames::new(self.suggested_names.clone())
+                super::PreferredNameSetter::new(self.suggested_names.clone())
                     .when(!self.suggested_names.is_empty()),
             )
             .pipe(super::ImproveTypeNames.when(self.use_better_names))
