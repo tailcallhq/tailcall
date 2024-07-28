@@ -873,7 +873,7 @@ impl Config {
     }
 
     pub fn n_plus_one(&self) -> Output {
-        super::npo::NPOIdentifier::new(self).identify()
+        super::npo::Identifier::new(self).identify()
     }
 
     ///

@@ -27,11 +27,11 @@ struct FindFanOutContext<'a> {
     is_list: bool,
 }
 
-pub struct NPOIdentifier<'a> {
+pub struct Identifier<'a> {
     config: &'a Config,
 }
 
-impl<'a> NPOIdentifier<'a> {
+impl<'a> Identifier<'a> {
     pub fn new(config: &'a Config) -> Self {
         Self { config }
     }

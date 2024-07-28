@@ -1,6 +1,6 @@
 mod display;
-mod n_plus_one;
+mod identifier;
 mod output;
 
-pub use n_plus_one::*;
+pub use identifier::*;
 pub use output::*;
