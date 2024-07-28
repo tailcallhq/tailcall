@@ -3725,6 +3725,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pluralizer"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35e4616e94b67b8b61846ea69d4bf041a62147d569d16f437689229e2677d38c"
+dependencies = [
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
 name = "polling"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5293,6 +5303,7 @@ dependencies = [
  "path-clean",
  "pathdiff",
  "phonenumber",
+ "pluralizer",
  "pretty_assertions",
  "prometheus",
  "prost 0.13.1",
