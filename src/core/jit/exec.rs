@@ -9,9 +9,9 @@ use futures_util::future::join_all;
 use super::context::Context;
 use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
 use crate::core::ir::model::IR;
+use crate::core::ir::TypeName;
 use crate::core::jit;
 use crate::core::jit::synth::Synth;
-use crate::core::ir::TypeName;
 use crate::core::json::{JsonLike, JsonObjectLike};
 
 type SharedStore<Output, Error> = Arc<Mutex<Store<Result<ExecResult<Output>, Positioned<Error>>>>>;

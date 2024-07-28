@@ -74,6 +74,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
         type_of.is_list() == value.as_array().is_some()
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter(
         &'a self,
@@ -122,6 +123,8 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
             },
         }
     }
+
+    #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter_inner(
         &'a self,
@@ -213,15 +216,16 @@ mod tests {
     use async_graphql_value::ConstValue;
     use serde::{Deserialize, Serialize};
 
+    use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JP;
+    use crate::core::jit::exec::ExecResult;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::synth::Synth;
     use crate::core::json::JsonLike;
     use crate::core::valid::Validator;
-    use crate::core::{blueprint::Blueprint, jit::exec::ExecResult};
 
     const POSTS: &str = r#"
         [

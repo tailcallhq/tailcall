@@ -3,10 +3,11 @@ use std::collections::HashMap;
 use async_graphql::Positioned;
 use serde::Deserialize;
 
-use crate::core::{blueprint::Blueprint, jit::exec::ExecResult};
+use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit;
 use crate::core::jit::builder::Builder;
+use crate::core::jit::exec::ExecResult;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::{OperationPlan, Variables};
@@ -27,9 +28,11 @@ struct TestData<Value> {
     users: Vec<Value>,
 }
 
+type Entry<Value> = Data<Result<ExecResult<Value>, Positioned<jit::Error>>>;
+
 struct ProcessedTestData<Value> {
     posts: Value,
-    users: HashMap<usize, Data<Result<ExecResult<Value>, Positioned<jit::Error>>>>,
+    users: HashMap<usize, Entry<Value>>,
 }
 
 impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
