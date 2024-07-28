@@ -1,5 +1,5 @@
 ---
-source: src/cli/fmt.rs
+source: src/core/config/npo/queries.rs
 expression: "formatted.join(\"\\n\")"
 ---
 [33mquery { f1 { f1 { f2 } } }

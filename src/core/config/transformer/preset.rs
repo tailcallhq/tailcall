@@ -66,7 +66,7 @@ impl Default for Preset {
             consolidate_url: 0.5,
             use_better_names: true,
             tree_shake: true,
-            unwrap_single_field_types: true,
+            unwrap_single_field_types: false,
             suggested_names: HashSet::new(),
         }
     }
