@@ -1,4 +1,4 @@
-pub mod error;
 pub mod worker;
-pub use error::*;
+pub mod error;
 pub use worker::*;
+pub use error::Error;

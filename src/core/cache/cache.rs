@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use ttl_cache::TtlCache;
 
-use super::Result;
+use super::error::Result;
 
 pub struct InMemoryCache<K: Hash + Eq, V> {
     data: Arc<RwLock<TtlCache<K, V>>>,
