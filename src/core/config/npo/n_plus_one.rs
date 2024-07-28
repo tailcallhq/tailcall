@@ -121,7 +121,7 @@ mod tests {
                 }
             }
 
-            assert_eq!($actual, Yield { map: expected, root: ($actual).root });
+            assert_eq!($actual, Yield::new(expected, ($actual).root()));
         }};
     }
 
