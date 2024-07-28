@@ -1,7 +1,5 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::{Display, Formatter},
-};
+use std::collections::{HashMap, HashSet};
+use std::fmt::{Display, Formatter};
 
 use derive_getters::Getters;
 
