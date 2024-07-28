@@ -92,4 +92,8 @@ impl<'a> JsonLike<'a> for serde_json::Value {
     fn array(arr: Vec<Self>) -> Self {
         serde_json::Value::Array(arr)
     }
+
+    fn string(s: &'a str) -> Self {
+        serde_json::Value::String(s.to_owned())
+    }
 }

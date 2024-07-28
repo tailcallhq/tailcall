@@ -117,4 +117,8 @@ impl<'a> JsonLike<'a> for ConstValue {
     fn array(arr: Vec<Self>) -> Self {
         ConstValue::List(arr)
     }
+
+    fn string(s: &'a str) -> Self {
+        ConstValue::String(s.to_string())
+    }
 }
