@@ -27,54 +27,6 @@ struct FindFanOutContext<'a> {
     is_list: bool,
 }
 
-#[inline(always)]
-fn find_fan_out<'a>(
-    ctx: FindFanOutContext<'a>,
-    visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
-) -> YieldInner<'a> {
-    let config = ctx.config;
-    let type_name: TypeName = TypeName(ctx.type_name);
-    let is_list = ctx.is_list;
-    let mut ans = HashMap::new();
-
-    if let Some(type_) = config.find_type(type_name.0) {
-        for (field_name, field) in type_.fields.iter() {
-            let cur: FieldName = FieldName(field_name.as_str());
-            let tuple: (FieldName, TypeName) = (cur, TypeName(field.type_of.as_str()));
-
-            let condition = visited
-                .get(&type_name)
-                .map(|v: &HashSet<FieldName>| v.contains(&cur))
-                .unwrap_or_default();
-
-            if condition {
-                continue;
-            } else {
-                visited.entry(type_name).or_default().insert(cur);
-            }
-
-            if field.has_resolver() && !field.has_batched_resolver() && is_list {
-                ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
-            } else {
-                let next = find_fan_out(
-                    FindFanOutContext {
-                        config,
-                        type_name: &field.type_of,
-                        is_list: field.list || is_list,
-                    },
-                    visited,
-                );
-                for (k, v) in next.0 {
-                    ans.entry(k).or_insert(HashSet::new()).extend(v);
-                    ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
-                }
-            }
-        }
-    }
-
-    YieldInner(ans)
-}
-
 pub struct NPOIdentifier<'a> {
     config: &'a Config,
 }
@@ -86,7 +38,7 @@ impl<'a> NPOIdentifier<'a> {
     pub fn identify(self) -> Yield<'a> {
         let mut visited = HashMap::new();
         if let Some(query) = &self.config.schema.query {
-            let yield_inner = find_fan_out(
+            let yield_inner = Self::find_fan_out(
                 FindFanOutContext { config: self.config, type_name: query, is_list: false },
                 &mut visited,
             );
@@ -94,6 +46,53 @@ impl<'a> NPOIdentifier<'a> {
         } else {
             Default::default()
         }
+    }
+    #[inline(always)]
+    fn find_fan_out(
+        ctx: FindFanOutContext<'a>,
+        visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
+    ) -> YieldInner<'a> {
+        let config = ctx.config;
+        let type_name: TypeName = TypeName(ctx.type_name);
+        let is_list = ctx.is_list;
+        let mut ans = HashMap::new();
+
+        if let Some(type_) = config.find_type(type_name.0) {
+            for (field_name, field) in type_.fields.iter() {
+                let cur: FieldName = FieldName(field_name.as_str());
+                let tuple: (FieldName, TypeName) = (cur, TypeName(field.type_of.as_str()));
+
+                let condition = visited
+                    .get(&type_name)
+                    .map(|v: &HashSet<FieldName>| v.contains(&cur))
+                    .unwrap_or_default();
+
+                if condition {
+                    continue;
+                } else {
+                    visited.entry(type_name).or_default().insert(cur);
+                }
+
+                if field.has_resolver() && !field.has_batched_resolver() && is_list {
+                    ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
+                } else {
+                    let next = Self::find_fan_out(
+                        FindFanOutContext {
+                            config,
+                            type_name: &field.type_of,
+                            is_list: field.list || is_list,
+                        },
+                        visited,
+                    );
+                    for (k, v) in next.0 {
+                        ans.entry(k).or_insert(HashSet::new()).extend(v);
+                        ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
+                    }
+                }
+            }
+        }
+
+        YieldInner(ans)
     }
 }
 
