@@ -15,7 +15,7 @@ pub use flatten_single_field::FlattenSingleField;
 pub use improve_type_names::ImproveTypeNames;
 pub use merge_types::TypeMerger;
 pub use nested_unions::NestedUnions;
-pub use preset::Preset;
+pub use preset::{Preset, PresetMergeTypeOption};
 pub use required::Required;
 pub use tree_shake::TreeShake;
 pub use union_input_type::UnionInputType;

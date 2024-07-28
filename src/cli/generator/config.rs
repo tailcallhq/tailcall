@@ -9,7 +9,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::core::config::transformer::Preset;
+use crate::core::config::transformer::{Preset, PresetMergeTypeOption};
 use crate::core::config::{self, ConfigReaderContext};
 use crate::core::mustache::Mustache;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
@@ -41,6 +41,15 @@ pub struct PresetConfig {
 pub struct MergeType {
     threshold: f32,
     merge_unknown_types: Option<bool>,
+}
+
+impl From<MergeType> for PresetMergeTypeOption {
+    fn from(value: MergeType) -> Self {
+        Self {
+            threshold: value.threshold,
+            merge_unknown_types: value.merge_unknown_types.unwrap_or(false),
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -117,7 +126,7 @@ impl ValidateFrom<PresetConfig> for Preset {
         let mut preset = Preset::new();
 
         if let Some(merge_type) = config.merge_type {
-            preset = preset.merge_type((merge_type.threshold, merge_type.merge_unknown_types));
+            preset = preset.merge_type(merge_type.into());
         }
 
         if let Some(consolidate_url) = config.consolidate_url {
@@ -139,7 +148,8 @@ impl ValidateFrom<PresetConfig> for Preset {
         // TODO: The field names in trace should be inserted at compile time.
         Valid::succeed(preset)
             .and_then(|preset| {
-                let merge_types_th = between(preset.merge_type.0, 0.0, 1.0).trace("mergeType");
+                let merge_types_th =
+                    between(preset.merge_type.threshold, 0.0, 1.0).trace("mergeType");
                 let consolidate_url_th =
                     between(preset.consolidate_url, 0.0, 1.0).trace("consolidateURL");
 
@@ -372,7 +382,7 @@ mod tests {
             .use_better_names(true)
             .tree_shake(true)
             .consolidate_url(1.0)
-            .merge_type((0.5, Some(true)));
+            .merge_type(PresetMergeTypeOption::new(0.5, true));
         assert_eq!(transform_preset, expected_preset);
     }
 
