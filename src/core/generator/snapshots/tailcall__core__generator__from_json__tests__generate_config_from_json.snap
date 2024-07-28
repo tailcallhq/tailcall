@@ -6,8 +6,6 @@ schema @server @upstream(baseURL: "https://example.com") {
   query: Query
 }
 
-scalar Any
-
 type Children {
   age: Int
   name: String
@@ -17,6 +15,19 @@ type Container {
   age: Int
 }
 
+type F1 {
+  campaignTemplates: JSON
+  colors: [JSON]
+}
+
+type F3 {
+  people: [People]
+}
+
+type F4 {
+  container: T7
+}
+
 type People {
   age: Int
   children: [Children]
@@ -24,20 +35,11 @@ type People {
 }
 
 type Query {
-  f1: T1 @http(path: "/")
-  f2: [Any] @http(path: "/api/v2/users")
-  f3(children: Boolean): T4 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
-  f4: T8 @http(path: "/")
-  f5: Any @http(path: "/")
-}
-
-type T1 {
-  campaignTemplates: Any
-  colors: [Any]
-}
-
-type T4 {
-  people: [People]
+  f1: F1 @http(path: "/")
+  f2: [JSON] @http(path: "/api/v2/users")
+  f3(children: Boolean): F3 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
+  f4: F4 @http(path: "/")
+  f5: JSON @http(path: "/")
 }
 
 type T6 {
@@ -48,8 +50,4 @@ type T6 {
 type T7 {
   container: T6
   name: String
-}
-
-type T8 {
-  container: T7
 }

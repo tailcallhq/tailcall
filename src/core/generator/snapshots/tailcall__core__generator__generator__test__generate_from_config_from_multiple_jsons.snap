@@ -6,21 +6,19 @@ schema @server @upstream(baseURL: "https://example.com") {
   query: Query
 }
 
-scalar Any
-
-type Query {
-  f1: T1 @http(path: "/")
-  f2: [Any] @http(path: "/api/v2/users")
-  f3: [T2] @http(path: "/users")
+type F1 {
+  campaignTemplates: JSON
+  colors: [JSON]
 }
 
-type T1 {
-  campaignTemplates: Any
-  colors: [Any]
-}
-
-type T2 {
+type F3 {
   adult: Boolean
   age: Int
   name: String
+}
+
+type Query {
+  f1: F1 @http(path: "/")
+  f2: [JSON] @http(path: "/api/v2/users")
+  f3: [F3] @http(path: "/users")
 }
