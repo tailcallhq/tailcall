@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 pub trait JsonLikeOwned: for<'json> JsonLike<'json> {}
@@ -11,7 +12,7 @@ pub trait JsonLike<'a>: Sized {
     fn null() -> Self;
     fn object(obj: Self::JsonObject) -> Self;
     fn array(arr: Vec<Self>) -> Self;
-    fn string(s: &'a str) -> Self;
+    fn string(s: Cow<'a, str>) -> Self;
 
     // Operators
     fn as_array(&'a self) -> Option<&'a Vec<Self>>;

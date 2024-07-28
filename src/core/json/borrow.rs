@@ -37,8 +37,8 @@ impl<'a> JsonLike<'a> for Value<'a> {
         Value::Array(arr)
     }
 
-    fn string(s: &'a str) -> Self {
-        Value::Str(Cow::Borrowed(s))
+    fn string(s: Cow<'a, str>) -> Self {
+        Value::Str(s)
     }
 
     fn as_array(&self) -> Option<&Vec<Value>> {

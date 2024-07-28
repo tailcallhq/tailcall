@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use super::{JsonLike, JsonObjectLike};
@@ -93,7 +94,7 @@ impl<'a> JsonLike<'a> for serde_json::Value {
         serde_json::Value::Array(arr)
     }
 
-    fn string(s: &'a str) -> Self {
-        serde_json::Value::String(s.to_owned())
+    fn string(s: Cow<'a, str>) -> Self {
+        serde_json::Value::String(s.to_string())
     }
 }
