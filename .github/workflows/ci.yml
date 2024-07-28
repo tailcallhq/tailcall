@@ -393,7 +393,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd tailcall-wasm
-          npm run gen-root -- --version ${{ env.APP_VERSION }} --name @tailcallhq/tailcall
+          npm run publish
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
       - name: Publish packages
