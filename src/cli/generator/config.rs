@@ -40,7 +40,7 @@ pub struct PresetConfig {
 #[serde(rename_all = "camelCase")]
 pub struct MergeType {
     threshold: f32,
-    merge_uknown_types: Option<bool>,
+    merge_unknown_types: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -117,7 +117,7 @@ impl ValidateFrom<PresetConfig> for Preset {
         let mut preset = Preset::new();
 
         if let Some(merge_type) = config.merge_type {
-            preset = preset.merge_type((merge_type.threshold, merge_type.merge_uknown_types));
+            preset = preset.merge_type((merge_type.threshold, merge_type.merge_unknown_types));
         }
 
         if let Some(consolidate_url) = config.consolidate_url {
@@ -348,7 +348,7 @@ mod tests {
         let config_preset = PresetConfig {
             tree_shake: None,
             use_better_names: None,
-            merge_type: Some(MergeType { threshold: 2.0, merge_uknown_types: None }),
+            merge_type: Some(MergeType { threshold: 2.0, merge_unknown_types: None }),
             consolidate_url: None,
             unwrap_single_field_types: None,
         };
@@ -363,7 +363,7 @@ mod tests {
         let config_preset = PresetConfig {
             tree_shake: Some(true),
             use_better_names: Some(true),
-            merge_type: Some(MergeType { threshold: 0.5, merge_uknown_types: Some(true) }),
+            merge_type: Some(MergeType { threshold: 0.5, merge_unknown_types: Some(true) }),
             consolidate_url: Some(1.0),
             unwrap_single_field_types: None,
         };
