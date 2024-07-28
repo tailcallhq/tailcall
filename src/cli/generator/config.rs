@@ -125,8 +125,8 @@ impl ValidateFrom<PresetConfig> for Preset {
             preset = preset.tree_shake(tree_shake);
         }
 
-        if let Some(t) = config.unwrap_single_field_types {
-            preset = preset.unwrap_single_field_types(t);
+        if let Some(should_unwrap_single_field_types) = config.unwrap_single_field_types {
+            preset = preset.unwrap_single_field_types(should_unwrap_single_field_types);
         }
 
         // TODO: The field names in trace should be inserted at compile time.
