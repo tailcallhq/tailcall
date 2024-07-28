@@ -6,8 +6,6 @@ schema @server @upstream(baseURL: "https://api.deezer.com") {
   query: Query
 }
 
-scalar Any
-
 type Album {
   cover: String
   cover_big: String
@@ -132,7 +130,7 @@ type Query {
 }
 
 type Search {
-  data: [Any]
+  data: [JSON]
   next: String
   total: Int
 }
@@ -162,7 +160,7 @@ type T166 {
 }
 
 type T167 {
-  data: [Any]
+  data: [JSON]
   total: Int
 }
 

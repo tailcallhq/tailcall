@@ -3,7 +3,7 @@ use async_graphql::{Name, Variables};
 use async_graphql_value::ConstValue;
 
 use super::path::Path;
-use super::Request;
+use super::{Request, Result};
 use crate::core::async_graphql_hyper::GraphQLRequest;
 
 /// A partial GraphQLRequest that contains a parsed executable GraphQL document.
@@ -16,7 +16,7 @@ pub struct PartialRequest<'a> {
 }
 
 impl<'a> PartialRequest<'a> {
-    pub async fn into_request(self, request: Request) -> anyhow::Result<GraphQLRequest> {
+    pub async fn into_request(self, request: Request) -> Result<GraphQLRequest> {
         let mut variables = self.variables;
         if let Some(key) = self.body {
             let bytes = hyper::body::to_bytes(request.into_body()).await?;
