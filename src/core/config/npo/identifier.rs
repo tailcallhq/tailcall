@@ -21,12 +21,6 @@ impl Display for FieldName<'_> {
     }
 }
 
-struct FindFanOutContext<'a> {
-    config: &'a Config,
-    type_name: &'a str,
-    is_list: bool,
-}
-
 pub struct Identifier<'a> {
     config: &'a Config,
 }
@@ -35,13 +29,11 @@ impl<'a> Identifier<'a> {
     pub fn new(config: &'a Config) -> Self {
         Self { config }
     }
+
     pub fn identify(self) -> Output<'a> {
         let mut visited = HashMap::new();
         if let Some(query) = &self.config.schema.query {
-            let yield_inner = Self::find_fan_out(
-                FindFanOutContext { config: self.config, type_name: query, is_list: false },
-                &mut visited,
-            );
+            let yield_inner = self.find_fan_out(query, false, &mut visited);
             yield_inner.into_output(query)
         } else {
             Default::default()
@@ -49,12 +41,13 @@ impl<'a> Identifier<'a> {
     }
     #[inline(always)]
     fn find_fan_out(
-        ctx: FindFanOutContext<'a>,
+        &self,
+        type_name: &'a str,
+        is_list: bool,
         visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
     ) -> OutputInner<'a> {
-        let config = ctx.config;
-        let type_name: TypeName = TypeName(ctx.type_name);
-        let is_list = ctx.is_list;
+        let config = self.config;
+        let type_name: TypeName = TypeName(type_name);
         let mut ans = HashMap::new();
 
         if let Some(type_) = config.find_type(type_name.0) {
@@ -76,14 +69,7 @@ impl<'a> Identifier<'a> {
                 if field.has_resolver() && !field.has_batched_resolver() && is_list {
                     ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
                 } else {
-                    let next = Self::find_fan_out(
-                        FindFanOutContext {
-                            config,
-                            type_name: &field.type_of,
-                            is_list: field.list || is_list,
-                        },
-                        visited,
-                    );
+                    let next = self.find_fan_out(&field.type_of, field.list || is_list, visited);
                     for (k, v) in next.0 {
                         ans.entry(k).or_insert(HashSet::new()).extend(v);
                         ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
