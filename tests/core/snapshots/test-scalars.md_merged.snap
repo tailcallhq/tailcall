@@ -8,8 +8,6 @@ schema @server(hostname: "localhost", port: 8000) @upstream {
 
 scalar AnyScalar
 
-scalar Email
-
 type Query {
   any(value: AnyScalar!): AnyScalar @expr(body: "{{.args.value}}")
   bytes(value: Bytes): Bytes @expr(body: "{{.args.value}}")
