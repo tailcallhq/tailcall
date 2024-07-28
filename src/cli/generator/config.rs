@@ -3,6 +3,7 @@ use std::env;
 use std::marker::PhantomData;
 use std::path::Path;
 
+use convert_case::{Case, Casing};
 use derive_setters::Setters;
 use path_clean::PathClean;
 use schemars::JsonSchema;
@@ -238,6 +239,41 @@ impl Input<UnResolved> {
 }
 
 impl Config {
+    fn convert_query_params_to_camel_case(query: &Option<String>) -> Option<String> {
+        query.as_ref().map(|q| {
+            let mut pairs: Vec<String> = vec![];
+            for pair in q.split('&') {
+                let mut key_value = pair.split('=');
+                if let (Some(key), Some(value)) = (key_value.next(), key_value.next()) {
+                    let camel_case_key = key.to_case(Case::Camel);
+                    pairs.push(format!("{}={}", camel_case_key, value));
+                }
+            }
+            pairs.join("&")
+        })
+    }
+
+    pub fn into_resolved(
+        self,
+        config_path: &str,
+        reader_context: ConfigReaderContext,
+    ) -> anyhow::Result<Config<Resolved>> {
+        let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
+
+        let inputs = self
+            .inputs
+            .into_iter()
+            .map(|input| input.resolve(parent_dir, &reader_context))
+            .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
+
+        let output = self.output.resolve(parent_dir)?;
+
+        let schema = Schema {
+            query: Self::convert_query_params_to_camel_case(&self.schema.query),
+        };
+
+        Ok(Config { inputs, output, schema, preset: self.preset })
+    }
     /// Resolves all the relative paths present inside the GeneratorConfig.
     pub fn into_resolved(
         self,

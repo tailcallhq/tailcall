@@ -1,7 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
-use async_graphql::dynamic::SchemaBuilder;
-
 use self::telemetry::to_opentelemetry;
 use super::{Server, TypeLike};
 use crate::core::blueprint::compress::compress;
@@ -12,6 +10,9 @@ use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
+use async_graphql::dynamic::SchemaBuilder;
+use std::time::Instant;
+use tracing::info;
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
@@ -123,7 +124,9 @@ impl TryFrom<&ConfigModule> for Blueprint {
     type Error = ValidationError<String>;
 
     fn try_from(config_module: &ConfigModule) -> Result<Self, Self::Error> {
-        config_blueprint()
+        let start_time = Instant::now();
+
+        let result = config_blueprint()
             .try_fold(
                 // Apply required transformers to the configuration
                 &config_module.to_owned().transform(Required).to_result()?,
@@ -136,6 +139,11 @@ impl TryFrom<&ConfigModule> for Blueprint {
                     Err(e) => Valid::fail(e.to_string()),
                 }
             })
-            .to_result()
+            .to_result();
+
+        let duration = start_time.elapsed();
+        info!("🏭  Blueprint generated in {}ms", duration.as_millis());
+
+        result
     }
 }
