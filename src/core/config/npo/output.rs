@@ -43,7 +43,7 @@ impl<'a> Output<'a> {
             if let Some(fields) = map.get(&ty) {
                 for (field_name, ty_of) in fields {
                     let mut new_path = path.clone();
-                    new_path.push((ty.0, (field_name.0, ty_of.0)));
+                    new_path.push((ty.0, (field_name.as_str(), ty_of.0)));
                     if !visited.contains(&(ty, *field_name)) {
                         visited.insert((ty, *field_name));
                         dfs(map, *ty_of, new_path, result, visited);

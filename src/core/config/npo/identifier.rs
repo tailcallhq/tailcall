@@ -6,15 +6,30 @@ use crate::core::config::Config;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct TypeName<'a>(pub &'a str);
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-pub struct FieldName<'a>(pub &'a str);
-
+impl<'a> TypeName<'a> {
+    pub fn new(name: &'a str) -> Self {
+        Self(name)
+    }
+    pub fn as_str(self) -> &'a str {
+        self.0
+    }
+}
 impl Display for TypeName<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub struct FieldName<'a>(&'a str);
+impl<'a> FieldName<'a> {
+    pub fn new(name: &'a str) -> Self {
+        Self(name)
+    }
+    pub fn as_str(self) -> &'a str {
+        self.0
+    }
+}
 impl Display for FieldName<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
