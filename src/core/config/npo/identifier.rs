@@ -38,28 +38,23 @@ impl Display for FieldName<'_> {
 
 pub struct Identifier<'a> {
     config: &'a Config,
+    visited: HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
 }
 
 impl<'a> Identifier<'a> {
     pub fn new(config: &'a Config) -> Self {
-        Self { config }
+        Self { config, visited: HashMap::new() }
     }
 
-    pub fn identify(self) -> Queries<'a> {
-        let mut visited = HashMap::new();
+    pub fn identify(mut self) -> Queries<'a> {
         if let Some(query) = &self.config.schema.query {
-            self.find_fan_out(query, false, &mut visited)
+            self.find_fan_out(query, false)
         } else {
             Default::default()
         }
     }
     #[inline(always)]
-    fn find_fan_out(
-        &self,
-        type_name: &'a str,
-        is_list: bool,
-        visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
-    ) -> Queries<'a> {
+    fn find_fan_out(&mut self, type_name: &'a str, is_list: bool) -> Queries<'a> {
         let config = self.config;
         let type_name: TypeName = TypeName(type_name);
         let mut ans = HashMap::new();
@@ -69,7 +64,8 @@ impl<'a> Identifier<'a> {
                 let cur: FieldName = FieldName(field_name.as_str());
                 let tuple: (FieldName, TypeName) = (cur, TypeName(field.type_of.as_str()));
 
-                let condition = visited
+                let condition = self
+                    .visited
                     .get(&type_name)
                     .map(|v: &HashSet<FieldName>| v.contains(&cur))
                     .unwrap_or_default();
@@ -77,13 +73,13 @@ impl<'a> Identifier<'a> {
                 if condition {
                     continue;
                 } else {
-                    visited.entry(type_name).or_default().insert(cur);
+                    self.visited.entry(type_name).or_default().insert(cur);
                 }
 
                 if field.has_resolver() && !field.has_batched_resolver() && is_list {
                     ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);
                 } else {
-                    let next = self.find_fan_out(&field.type_of, field.list || is_list, visited);
+                    let next = self.find_fan_out(&field.type_of, field.list || is_list);
                     for (k, v) in next.map() {
                         ans.entry(*k).or_insert(HashSet::new()).extend(v);
                         ans.entry(type_name).or_insert(HashSet::new()).insert(tuple);

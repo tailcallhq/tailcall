@@ -2,6 +2,8 @@ use std::fmt::{Display, Formatter};
 
 use crate::core::config::npo::Queries;
 
+///
+/// Represents a list of query paths that can issue a N + 1 query
 impl<'a> Display for Queries<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let query_paths = self.as_path();
