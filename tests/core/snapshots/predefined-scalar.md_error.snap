@@ -1,0 +1,176 @@
+---
+source: tests/core/spec.rs
+expression: errors
+---
+[
+  {
+    "message": "Scalar type Boolean is predefined",
+    "trace": [
+      "Boolean"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Bytes is predefined",
+    "trace": [
+      "Bytes"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Date is predefined",
+    "trace": [
+      "Date"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type DateTime is predefined",
+    "trace": [
+      "DateTime"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Email is predefined",
+    "trace": [
+      "Email"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Empty is predefined",
+    "trace": [
+      "Empty"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Float is predefined",
+    "trace": [
+      "Float"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type ID is predefined",
+    "trace": [
+      "ID"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Int is predefined",
+    "trace": [
+      "Int"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Int128 is predefined",
+    "trace": [
+      "Int128"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Int16 is predefined",
+    "trace": [
+      "Int16"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Int32 is predefined",
+    "trace": [
+      "Int32"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Int64 is predefined",
+    "trace": [
+      "Int64"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Int8 is predefined",
+    "trace": [
+      "Int8"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type JSON is predefined",
+    "trace": [
+      "JSON"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type PhoneNumber is predefined",
+    "trace": [
+      "PhoneNumber"
+    ],
+    "description": null
+  },
+  {
+    "message": "expected object",
+    "trace": [
+      "Query",
+      "hello",
+      "@expr"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type String is predefined",
+    "trace": [
+      "String"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type UInt128 is predefined",
+    "trace": [
+      "UInt128"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type UInt16 is predefined",
+    "trace": [
+      "UInt16"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type UInt32 is predefined",
+    "trace": [
+      "UInt32"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type UInt64 is predefined",
+    "trace": [
+      "UInt64"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type UInt8 is predefined",
+    "trace": [
+      "UInt8"
+    ],
+    "description": null
+  },
+  {
+    "message": "Scalar type Url is predefined",
+    "trace": [
+      "Url"
+    ],
+    "description": null
+  }
+]
