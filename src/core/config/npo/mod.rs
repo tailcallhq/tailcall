@@ -1,6 +1,6 @@
 mod display;
 mod n_plus_one;
-mod r#yield;
+mod output;
 
 pub use n_plus_one::*;
-pub use r#yield::*;
+pub use output::*;

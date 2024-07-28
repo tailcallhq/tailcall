@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
-use super::{Yield, YieldInner};
+use super::{Output, OutputInner};
 use crate::core::config::Config;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
@@ -35,14 +35,14 @@ impl<'a> NPOIdentifier<'a> {
     pub fn new(config: &'a Config) -> Self {
         Self { config }
     }
-    pub fn identify(self) -> Yield<'a> {
+    pub fn identify(self) -> Output<'a> {
         let mut visited = HashMap::new();
         if let Some(query) = &self.config.schema.query {
             let yield_inner = Self::find_fan_out(
                 FindFanOutContext { config: self.config, type_name: query, is_list: false },
                 &mut visited,
             );
-            yield_inner.into_yield(query)
+            yield_inner.into_output(query)
         } else {
             Default::default()
         }
@@ -51,7 +51,7 @@ impl<'a> NPOIdentifier<'a> {
     fn find_fan_out(
         ctx: FindFanOutContext<'a>,
         visited: &mut HashMap<TypeName<'a>, HashSet<FieldName<'a>>>,
-    ) -> YieldInner<'a> {
+    ) -> OutputInner<'a> {
         let config = ctx.config;
         let type_name: TypeName = TypeName(ctx.type_name);
         let is_list = ctx.is_list;
@@ -92,7 +92,7 @@ impl<'a> NPOIdentifier<'a> {
             }
         }
 
-        YieldInner(ans)
+        OutputInner(ans)
     }
 }
 
@@ -101,7 +101,7 @@ mod tests {
     use std::collections::{HashMap, HashSet};
 
     use super::*;
-    use crate::core::config::npo::Yield;
+    use crate::core::config::npo::Output;
     use crate::core::config::{Config, Field, Http, Type};
 
     macro_rules! assert_eq_map {
@@ -121,7 +121,7 @@ mod tests {
                 }
             }
 
-            assert_eq!($actual, Yield::new(expected, ($actual).root()));
+            assert_eq!($actual, Output::new(expected, ($actual).root()));
         }};
     }
 

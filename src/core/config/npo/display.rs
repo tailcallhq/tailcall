@@ -1,8 +1,8 @@
 use std::fmt::{Display, Formatter};
 
-use crate::core::config::npo::Yield;
+use crate::core::config::npo::Output;
 
-impl<'a> Display for Yield<'a> {
+impl<'a> Display for Output<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let reduced = self.as_vec();
         let query_paths: Vec<Vec<_>> = reduced

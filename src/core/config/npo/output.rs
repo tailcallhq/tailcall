@@ -5,23 +5,23 @@ use derive_getters::Getters;
 use crate::core::config::npo::{FieldName, TypeName};
 
 #[derive(Default, Debug, PartialEq)]
-pub(super) struct YieldInner<'a>(
+pub(super) struct OutputInner<'a>(
     pub(super) HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
 );
 
-impl<'a> YieldInner<'a> {
-    pub fn into_yield(self, root: &'a str) -> Yield<'a> {
-        Yield { map: self.0, root }
+impl<'a> OutputInner<'a> {
+    pub fn into_output(self, root: &'a str) -> Output<'a> {
+        Output { map: self.0, root }
     }
 }
 
 #[derive(Default, Debug, PartialEq, Getters)]
-pub struct Yield<'a> {
+pub struct Output<'a> {
     map: HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
     root: &'a str,
 }
 
-impl<'a> Yield<'a> {
+impl<'a> Output<'a> {
     pub fn new(
         map: HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
         root: &'a str,
