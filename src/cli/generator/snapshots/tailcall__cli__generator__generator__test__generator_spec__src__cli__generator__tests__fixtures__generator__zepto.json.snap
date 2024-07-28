@@ -6,8 +6,6 @@ schema @server @upstream(baseURL: "https://cx.zepto.co.in") {
   query: Query
 }
 
-scalar Any
-
 type Benefit {
   applicationType: String
   config: Config
@@ -31,8 +29,8 @@ type Config {
 }
 
 type Filter {
-  applicableFilters: [Any]
-  appliedFilters: [Any]
+  applicableFilters: [JSON]
+  appliedFilters: [JSON]
 }
 
 type Icon {
@@ -66,7 +64,7 @@ type Meum {
 
 type Overview {
   badgeVariant: String
-  brandsInfo: [Any]
+  brandsInfo: [JSON]
   experimentVariant: String
   isPassInvisible: Boolean
   lifetimeSavings: LifetimeSaving
@@ -75,8 +73,8 @@ type Overview {
   passType: String
   productOffers: [String]
   profileInfo: ProfileInfo
-  renewalDurationTitle: [Any]
-  renewalPreExpiryInfo: [Any]
+  renewalDurationTitle: [JSON]
+  renewalPreExpiryInfo: [JSON]
   showBadge: Boolean
   showBottomsheet: Boolean
   suggestedPass: SuggestedPass
@@ -149,8 +147,8 @@ type SuggestedPass {
   ctaTitle: String
   discountedFee: Int
   discountedPercentage: Int
-  discountedSubcategories: [Any]
-  faqs: [Any]
+  discountedSubcategories: [JSON]
+  faqs: [JSON]
   fee: Int
   homePageBenefits: [String]
   id: String
@@ -164,16 +162,16 @@ type SuggestedPass {
 type T431 {
   adsResponseId: Empty
   allocatedQuantity: Int
-  analyticsMeta: Any
+  analyticsMeta: JSON
   availableQuantity: Int
   bpcGroupDetails: Empty
   brandDeliveryOfferDetails: BrandDeliveryOfferDetail
-  bundleItems: [Any]
+  bundleItems: [JSON]
   bxgyOfferDetails: Empty
   discountAmount: Int
   discountPercent: Int
   discountedSellingPrice: Int
-  experiments: Any
+  experiments: JSON
   id: String
   isBestOffer: Boolean
   isCrossSellEnabled: Boolean
@@ -197,8 +195,8 @@ type T431 {
   quantity: Empty
   recommendationId: String
   recommendationSource: Empty
-  rollUpIds: [Any]
-  rollUpVariantsDetails: [Any]
+  rollUpIds: [JSON]
+  rollUpVariantsDetails: [JSON]
   storeId: String
   uclId: String
   valueBasedDiscount: ValueBasedDiscount

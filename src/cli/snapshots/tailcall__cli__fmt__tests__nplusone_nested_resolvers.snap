@@ -1,5 +1,5 @@
 ---
 source: src/cli/fmt.rs
-expression: formatted
+expression: "formatted.join(\"\\n\")"
 ---
-query { f1 { f2 { f3 { f4 } } } }
+[33mquery { f1 { f2 { f3 { f4 } } } }[0m
