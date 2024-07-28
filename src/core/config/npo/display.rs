@@ -5,7 +5,7 @@ use super::n_plus_one::*;
 use crate::core::config::npo::Yield;
 
 impl<'a> Yield<'a> {
-    fn reduce(&self) -> Vec<Vec<(&'a str, (&'a str, &'a str))>> {
+    fn as_vec(&self) -> Vec<Vec<(&'a str, (&'a str, &'a str))>> {
         let mut result = Vec::new();
         let mut visited = HashSet::new();
 
@@ -33,7 +33,7 @@ impl<'a> Yield<'a> {
         }
 
         dfs(
-            self,
+            &self.map,
             TypeName(self.root),
             Vec::new(),
             &mut result,
@@ -46,7 +46,7 @@ impl<'a> Yield<'a> {
 
 impl<'a> Display for Yield<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let reduced = self.reduce();
+        let reduced = self.as_vec();
         let query_paths: Vec<Vec<_>> = reduced
             .iter()
             .map(|item| {
@@ -86,5 +86,174 @@ impl<'a> Display for Yield<'a> {
         });
 
         f.write_str(&val)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::core::config::{Config, Field, Http, Type};
+    #[test]
+    fn test_nplusone_resolvers() {
+        let config = Config::default().query("Query").types(vec![
+            (
+                "Query",
+                Type::default().fields(vec![(
+                    "f1",
+                    Field::default()
+                        .type_of("F1".to_string())
+                        .into_list()
+                        .http(Http::default()),
+                )]),
+            ),
+            (
+                "F1",
+                Type::default().fields(vec![(
+                    "f2",
+                    Field::default()
+                        .type_of("F2".to_string())
+                        .into_list()
+                        .http(Http::default()),
+                )]),
+            ),
+            (
+                "F2",
+                Type::default()
+                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+            ),
+        ]);
+        let actual = config.n_plus_one();
+        let formatted = actual.to_string();
+        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
+        formatted.sort();
+        insta::assert_snapshot!(formatted.join("\n"));
+    }
+
+    #[test]
+    fn test_nplusone_nested_resolvers() {
+        let config = Config::default().query("Query").types(vec![
+            (
+                "Query",
+                Type::default().fields(vec![(
+                    "f1",
+                    Field::default()
+                        .type_of("F1".to_string())
+                        .into_list()
+                        .http(Http::default()),
+                )]),
+            ),
+            (
+                "F1",
+                Type::default().fields(vec![(
+                    "f2",
+                    Field::default().type_of("F2".to_string()).into_list(),
+                )]),
+            ),
+            (
+                "F2",
+                Type::default().fields(vec![(
+                    "f3",
+                    Field::default().type_of("F3".to_string()).into_list(),
+                )]),
+            ),
+            (
+                "F3",
+                Type::default().fields(vec![(
+                    "f4",
+                    Field::default()
+                        .type_of("String".to_string())
+                        .http(Http::default()),
+                )]),
+            ),
+        ]);
+
+        let actual = config.n_plus_one();
+        let formatted = actual.to_string();
+        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
+        formatted.sort();
+        insta::assert_snapshot!(formatted.join("\n"));
+    }
+
+    #[test]
+    fn test_nplusone_nested_resolvers_non_list_resolvers() {
+        let config = Config::default().query("Query").types(vec![
+            (
+                "Query",
+                Type::default().fields(vec![(
+                    "f1",
+                    Field::default()
+                        .type_of("F1".to_string())
+                        .http(Http::default()),
+                )]),
+            ),
+            (
+                "F1",
+                Type::default().fields(vec![(
+                    "f2",
+                    Field::default().type_of("F2".to_string()).into_list(),
+                )]),
+            ),
+            (
+                "F2",
+                Type::default().fields(vec![(
+                    "f3",
+                    Field::default().type_of("F3".to_string()).into_list(),
+                )]),
+            ),
+            (
+                "F3",
+                Type::default().fields(vec![(
+                    "f4",
+                    Field::default()
+                        .type_of("String".to_string())
+                        .http(Http::default()),
+                )]),
+            ),
+        ]);
+
+        let actual = config.n_plus_one();
+        let formatted = actual.to_string();
+        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
+        formatted.sort();
+        insta::assert_snapshot!(formatted.join("\n"));
+    }
+
+    #[test]
+    fn test_nplusone_cycles_with_resolvers() {
+        let config = Config::default().query("Query").types(vec![
+            (
+                "Query",
+                Type::default().fields(vec![(
+                    "f1",
+                    Field::default()
+                        .type_of("F1".to_string())
+                        .into_list()
+                        .http(Http::default()),
+                )]),
+            ),
+            (
+                "F1",
+                Type::default().fields(vec![
+                    ("f1", Field::default().type_of("F1".to_string()).into_list()),
+                    (
+                        "f2",
+                        Field::default()
+                            .type_of("String".to_string())
+                            .http(Http::default()),
+                    ),
+                ]),
+            ),
+            (
+                "F2",
+                Type::default()
+                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+            ),
+        ]);
+
+        let actual = config.n_plus_one();
+
+        let formatted = actual.to_string();
+        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
+        formatted.sort();
+        insta::assert_snapshot!(formatted.join("\n"));
     }
 }

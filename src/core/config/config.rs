@@ -873,7 +873,7 @@ impl Config {
     }
 
     pub fn n_plus_one(&self) -> Yield {
-        super::npo::n_plus_one(self)
+        super::npo::NPOIdentifier::new(self).identify()
     }
 
     ///

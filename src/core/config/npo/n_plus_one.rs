@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
-use std::ops::Deref;
 
+use super::{Yield, YieldInner};
 use crate::core::config::Config;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
@@ -18,29 +18,6 @@ impl Display for TypeName<'_> {
 impl Display for FieldName<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-#[derive(Default, Debug, PartialEq)]
-struct YieldInner<'a>(HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>);
-
-impl<'a> YieldInner<'a> {
-    fn into_yield(self, root: &'a str) -> Yield<'a> {
-        Yield { map: self.0, root }
-    }
-}
-
-#[derive(Default, Debug, PartialEq)]
-pub struct Yield<'a> {
-    pub map: HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
-    pub root: &'a str,
-}
-
-impl<'a> Deref for Yield<'a> {
-    type Target = HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.map
     }
 }
 
@@ -98,16 +75,25 @@ fn find_fan_out<'a>(
     YieldInner(ans)
 }
 
-pub fn n_plus_one(config: &Config) -> Yield {
-    let mut visited = HashMap::new();
-    if let Some(query) = &config.schema.query {
-        let yield_inner = find_fan_out(
-            FindFanOutContext { config, type_name: query, is_list: false },
-            &mut visited,
-        );
-        yield_inner.into_yield(query)
-    } else {
-        Default::default()
+pub struct NPOIdentifier<'a> {
+    config: &'a Config,
+}
+
+impl<'a> NPOIdentifier<'a> {
+    pub fn new(config: &'a Config) -> Self {
+        Self { config }
+    }
+    pub fn identify(self) -> Yield<'a> {
+        let mut visited = HashMap::new();
+        if let Some(query) = &self.config.schema.query {
+            let yield_inner = find_fan_out(
+                FindFanOutContext { config: self.config, type_name: query, is_list: false },
+                &mut visited,
+            );
+            yield_inner.into_yield(query)
+        } else {
+            Default::default()
+        }
     }
 }
 
