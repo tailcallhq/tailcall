@@ -55,16 +55,12 @@ type News @tag(id: "news.News") {
   title: String
 }
 
-type NewsNewsServiceGetMultipleNew @tag(id: "news.NewsList") {
-  news: [News]
-}
-
 type Query {
   news__NewsService__AddNews(news: news__NewsInput!): News! @grpc(body: "{{.args.news}}", method: "news.NewsService.AddNews")
   news__NewsService__DeleteNews(newsId: news__NewsId!): Empty! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.DeleteNews")
   news__NewsService__EditNews(news: news__NewsInput!): News! @grpc(body: "{{.args.news}}", method: "news.NewsService.EditNews")
-  news__NewsService__GetAllNews: NewsNewsServiceGetMultipleNew! @grpc(method: "news.NewsService.GetAllNews")
-  news__NewsService__GetMultipleNews(multipleNewsId: news__MultipleNewsId!): NewsNewsServiceGetMultipleNew! @grpc(body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
+  news__NewsService__GetAllNews: news__NewsList! @grpc(method: "news.NewsService.GetAllNews")
+  news__NewsService__GetMultipleNews(multipleNewsId: news__MultipleNewsId!): news__NewsList! @grpc(body: "{{.args.multipleNewsId}}", method: "news.NewsService.GetMultipleNews")
   news__NewsService__GetNews(newsId: news__NewsId!): News! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
   users: [User] @http(path: "/users")
 }
@@ -78,4 +74,8 @@ type User {
   phone: String
   username: String
   website: String
+}
+
+type news__NewsList @tag(id: "news.NewsList") {
+  news: [News]
 }
