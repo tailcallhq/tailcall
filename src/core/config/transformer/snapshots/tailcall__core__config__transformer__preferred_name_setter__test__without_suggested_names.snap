@@ -1,5 +1,5 @@
 ---
-source: src/core/config/transformer/use_suggested_names.rs
+source: src/core/config/transformer/preferred_name_setter.rs
 expression: transformed_config.to_sdl()
 ---
 schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {delay: 100, headers: []}, httpCache: 42) {
