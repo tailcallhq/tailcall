@@ -28,12 +28,19 @@ pub struct Config<Status = UnResolved> {
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PresetConfig {
-    merge_type: Option<f32>,
+    merge_type: Option<MergeType>,
     #[serde(rename = "consolidateURL")]
     consolidate_url: Option<f32>,
     use_better_names: Option<bool>,
     tree_shake: Option<bool>,
     unwrap_single_field_types: Option<bool>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MergeType {
+    threshold: f32,
+    merge_uknown_types: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -110,7 +117,7 @@ impl ValidateFrom<PresetConfig> for Preset {
         let mut preset = Preset::new();
 
         if let Some(merge_type) = config.merge_type {
-            preset = preset.merge_type(merge_type);
+            preset = preset.merge_type((merge_type.threshold, merge_type.merge_uknown_types));
         }
 
         if let Some(consolidate_url) = config.consolidate_url {
@@ -132,7 +139,7 @@ impl ValidateFrom<PresetConfig> for Preset {
         // TODO: The field names in trace should be inserted at compile time.
         Valid::succeed(preset)
             .and_then(|preset| {
-                let merge_types_th = between(preset.merge_type, 0.0, 1.0).trace("mergeType");
+                let merge_types_th = between(preset.merge_type.0, 0.0, 1.0).trace("mergeType");
                 let consolidate_url_th =
                     between(preset.consolidate_url, 0.0, 1.0).trace("consolidateURL");
 

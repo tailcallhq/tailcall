@@ -10,11 +10,12 @@ use crate::core::valid::{Valid, Validator};
 pub struct TypeMerger {
     /// threshold required for the merging process.
     threshold: f32,
+    merge_unknown_types: bool,
 }
 
 impl TypeMerger {
-    pub fn new(threshold: f32) -> Self {
-        Self { threshold }
+    pub fn new(threshold: f32, merge_unknown_types: bool) -> Self {
+        Self { threshold, merge_unknown_types }
     }
 
     pub fn is_enabled(threshold: f32) -> bool {
@@ -24,7 +25,7 @@ impl TypeMerger {
 
 impl Default for TypeMerger {
     fn default() -> Self {
-        Self { threshold: 1.0 }
+        Self { threshold: 1.0, merge_unknown_types: false }
     }
 }
 
@@ -34,7 +35,7 @@ impl TypeMerger {
         let mut similar_type_group_list: Vec<BTreeSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
-        let mut stat_gen = Similarity::new(&config);
+        let mut stat_gen = Similarity::new(&config, self.merge_unknown_types);
         let mergeable_types = MergeableTypes::new(&config, self.threshold);
 
         // step 1: identify all the types that satisfies the thresh criteria and group

@@ -9,6 +9,7 @@ use crate::core::valid::{Valid, Validator};
 pub struct Similarity<'a> {
     config: &'a Config,
     type_similarity_cache: PairMap<String, bool>,
+    merge_unknown_types: bool,
 }
 
 /// holds the necessary information for comparing the similarity between two
@@ -21,8 +22,12 @@ struct SimilarityTypeInfo<'a> {
 }
 
 impl<'a> Similarity<'a> {
-    pub fn new(config: &'a Config) -> Similarity {
-        Similarity { config, type_similarity_cache: PairMap::default() }
+    pub fn new(config: &'a Config, merge_unknown_types: bool) -> Similarity {
+        Similarity {
+            config,
+            type_similarity_cache: PairMap::default(),
+            merge_unknown_types,
+        }
     }
 
     pub fn similarity(
@@ -65,12 +70,12 @@ impl<'a> Similarity<'a> {
                         // if field type_of is scalar and they don't match then we can't merge
                         // types.
 
-                        // check if is this known type or not?
                         let unknown_scalar_types =
                             [Scalar::JSON.to_string(), Scalar::Empty.to_string()];
                         if field_1_type_of == field_2_type_of
-                            || unknown_scalar_types.contains(&field_1_type_of)
-                            || unknown_scalar_types.contains(&field_2_type_of)
+                            || self.merge_unknown_types
+                                && (unknown_scalar_types.contains(&field_1_type_of)
+                                    || unknown_scalar_types.contains(&field_2_type_of))
                         {
                             if field_1.list == field_2.list {
                                 same_field_count += 1;
