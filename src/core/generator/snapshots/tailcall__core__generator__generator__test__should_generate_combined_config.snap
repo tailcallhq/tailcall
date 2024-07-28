@@ -6,8 +6,6 @@ schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "https://exam
   query: Query
 }
 
-scalar Any
-
 input Id @tag(id: "news.NewsId") {
   id: Int
 }
@@ -46,8 +44,8 @@ type Comment {
 }
 
 type F1 {
-  campaignTemplates: Any
-  colors: [Any]
+  campaignTemplates: JSON
+  colors: [JSON]
 }
 
 type News @tag(id: "news.News") {
