@@ -19,7 +19,7 @@ impl CloudflareChronoCache {
     pub fn init(env: Rc<worker::Env>) -> Self {
         Self { env }
     }
-    fn get_kv(&self) -> cache::Result<KvStore> {
+    fn get_kv(&self) -> Result<KvStore, cache::Error> {
         self.env
             .kv("TMP_KV")
             .map_err(|e| cache::Error::Kv(e.to_string()))
@@ -30,7 +30,7 @@ impl CloudflareChronoCache {
 impl Cache for CloudflareChronoCache {
     type Key = IoId;
     type Value = ConstValue;
-    async fn set<'a>(&'a self, key: IoId, value: ConstValue, ttl: NonZeroU64) -> cache::Result<()> {
+    async fn set<'a>(&'a self, key: IoId, value: ConstValue, ttl: NonZeroU64) -> Result<(), cache::Error> {
         let kv_store = self.get_kv()?;
         let ttl = ttl.get();
         async_std::task::spawn_local(async move {
@@ -45,7 +45,7 @@ impl Cache for CloudflareChronoCache {
         .await
     }
 
-    async fn get<'a>(&'a self, key: &'a IoId) -> cache::Result<Option<Self::Value>> {
+    async fn get<'a>(&'a self, key: &'a IoId) -> Result<Option<Self::Value>, cache::Error> {
         let kv_store = self.get_kv()?;
         let key = key.as_u64().to_string();
         async_std::task::spawn_local(async move {

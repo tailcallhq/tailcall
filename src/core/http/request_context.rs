@@ -137,7 +137,7 @@ impl RequestContext {
         }
     }
 
-    pub async fn cache_get(&self, key: &IoId) -> cache::Result<Option<ConstValue>> {
+    pub async fn cache_get(&self, key: &IoId) -> Result<Option<ConstValue>, cache::Error> {
         self.runtime.cache.get(key).await
     }
 
@@ -147,7 +147,7 @@ impl RequestContext {
         key: IoId,
         value: ConstValue,
         ttl: NonZeroU64,
-    ) -> cache::Result<()> {
+    ) -> Result<(), cache::Error> {
         self.runtime.cache.set(key, value, ttl).await
     }
 

@@ -81,8 +81,8 @@ pub trait Cache: Send + Sync {
         key: Self::Key,
         value: Self::Value,
         ttl: NonZeroU64,
-    ) -> cache::Result<()>;
-    async fn get<'a>(&'a self, key: &'a Self::Key) -> cache::Result<Option<Self::Value>>;
+    ) -> Result<(), cache::Error>;
+    async fn get<'a>(&'a self, key: &'a Self::Key) -> Result<Option<Self::Value>, cache::Error>;
 
     fn hit_rate(&self) -> Option<f64>;
 }
