@@ -36,12 +36,13 @@ impl OperationTypeGenerator {
                 // generate the input type.
                 let root_ty = TypeGenerator::new(name_generator).generate_types(body, &mut config);
                 // add input type to field.
+                let arg_name = root_ty.to_case(Case::Camel);
                 if let Some(http_) = &mut field.http {
-                    http_.body = Some(format!("{{{{.args.{}}}}}", root_type));
+                    http_.body = Some(format!("{{{{.args.{}}}}}", arg_name.clone()));
                     http_.method = Method::POST;
                 }
                 field.args.insert(
-                    root_ty.to_case(Case::Camel),
+                    arg_name,
                     Arg { type_of: root_ty, ..Default::default() },
                 );
                 "Mutation"
