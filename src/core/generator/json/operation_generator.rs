@@ -8,10 +8,12 @@ use crate::core::valid::Valid;
 pub struct OperationTypeGenerator;
 
 impl OperationTypeGenerator {
+    #[allow(clippy::too_many_arguments)]
     pub fn generate(
         &self,
         request_sample: &RequestSample,
         root_type: &str,
+        name_generator: &NameGenerator,
         mut config: Config,
     ) -> Valid<Config, String> {
         let mut field = Field {
@@ -25,23 +27,13 @@ impl OperationTypeGenerator {
         let http_directive_gen = HttpDirectiveGenerator::new(request_sample.url());
         field.http = Some(http_directive_gen.generate_http_directive(&mut field));
 
-        match &request_sample.operation_type() {
-            OperationType::Query => {
-                if let Some(type_) = config.types.get_mut("Query") {
-                    type_
-                        .fields
-                        .insert(request_sample.field_name().to_owned(), field);
-                } else {
-                    let mut ty = Type::default();
-                    ty.fields
-                        .insert(request_sample.field_name().to_owned(), field);
-                    config.types.insert("Query".to_owned(), ty);
-                }
-            }
-            OperationType::Mutation { body: _body } => {
+        // we provide default names for operation name, then we change it in subsequent steps.
+        let operation_name = match &request_sample.operation_type() {
+            OperationType::Query => "Query",
+            OperationType::Mutation { body } => {
                 // generate the input type.
-                let root_ty = TypeGenerator::new(&NameGenerator::new("Input"))
-                    .generate_types(_body, &mut config);
+                let root_ty = TypeGenerator::new(name_generator).generate_types(body, &mut config);
+                // add input type to field.
                 if let Some(http_) = &mut field.http {
                     http_.body = Some(format!("{{{{.args.{}}}}}", root_type));
                     http_.method = Method::POST;
@@ -50,19 +42,20 @@ impl OperationTypeGenerator {
                     root_type.to_owned(),
                     Arg { type_of: root_ty, ..Default::default() },
                 );
-
-                // if type is already present, then append the new field to it else create one.
-                if let Some(type_) = config.types.get_mut("Mutation") {
-                    type_
-                        .fields
-                        .insert(request_sample.field_name().to_owned(), field);
-                } else {
-                    let mut ty = Type::default();
-                    ty.fields
-                        .insert(request_sample.field_name().to_owned(), field);
-                    config.types.insert("Mutation".to_owned(), ty);
-                }
+                "Mutation"
             }
+        };
+
+        // if type is already present, then append the new field to it else create one.
+        if let Some(type_) = config.types.get_mut(operation_name) {
+            type_
+                .fields
+                .insert(request_sample.field_name().to_owned(), field);
+        } else {
+            let mut ty = Type::default();
+            ty.fields
+                .insert(request_sample.field_name().to_owned(), field);
+            config.types.insert(operation_name.to_owned(), ty);
         }
 
         Valid::succeed(config)

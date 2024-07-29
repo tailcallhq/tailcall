@@ -170,6 +170,11 @@ impl Transform for GraphQLTypesGenerator<'_> {
             .generate_types(self.request_sample.response(), &mut config);
 
         // generate the required field in operation type.
-        OperationTypeGenerator.generate(self.request_sample, &root_type, config)
+        OperationTypeGenerator.generate(
+            self.request_sample,
+            &root_type,
+            self.type_name_generator,
+            config,
+        )
     }
 }
