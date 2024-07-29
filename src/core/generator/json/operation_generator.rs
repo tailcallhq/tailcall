@@ -29,7 +29,8 @@ impl OperationTypeGenerator {
         let http_directive_gen = HttpDirectiveGenerator::new(request_sample.url());
         field.http = Some(http_directive_gen.generate_http_directive(&mut field));
 
-        // we provide default names for operation name, then we change it in subsequent steps.
+        // we provide default names for operation name, then we change it in subsequent
+        // steps.
         let operation_name = match &request_sample.operation_type() {
             OperationType::Query => "Query",
             OperationType::Mutation { body } => {
