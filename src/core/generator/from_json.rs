@@ -60,14 +60,14 @@ impl Transform for FromJsonGenerator<'_> {
 
         Valid::from_iter(config_gen_req, |sample| {
             // these transformations are required in order to generate a base config.
-            GraphQLTypesGenerator::new(&sample, type_name_gen)
+            GraphQLTypesGenerator::new(sample, type_name_gen)
                 .pipe(json::SchemaGenerator::new(
-                    &self.query_name,
-                    &self.mutation_name,
+                    self.query_name,
+                    self.mutation_name,
                 ))
                 .pipe(json::FieldBaseUrlGenerator::new(
                     &sample.url,
-                    &self.query_name,
+                    self.query_name,
                 ))
                 .transform(config.clone())
         })
@@ -84,8 +84,7 @@ mod tests {
     use serde::Deserialize;
 
     use crate::core::config::transformer::Preset;
-    use crate::core::generator::OperationType;
-    use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
+    use crate::core::generator::{FromJsonGenerator, NameGenerator, OperationType, RequestSample};
     use crate::core::transform::TransformerOps;
     use crate::core::valid::Validator;
 

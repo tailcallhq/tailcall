@@ -6,7 +6,7 @@ mod json;
 mod proto;
 
 pub use from_json::{FromJsonGenerator, RequestSample};
-pub use generator::{Generator, Input};
+pub use generator::{Generator, Input, OperationType};
 
 use crate::core::counter::{Count, Counter};
 

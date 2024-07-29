@@ -1,13 +1,12 @@
 use serde_json::{Map, Value};
 
+use super::OperationTypeGenerator;
 use crate::core::config::{Config, Field, Type};
 use crate::core::generator::{NameGenerator, RequestSample};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
-
-use super::OperationTypeGenerator;
 
 struct JSONValidator;
 
@@ -171,6 +170,6 @@ impl Transform for GraphQLTypesGenerator<'_> {
             .generate_types(self.request_sample.response(), &mut config);
 
         // generate the required field in operation type.
-        OperationTypeGenerator.generate(&self.request_sample, &root_type, config)
+        OperationTypeGenerator.generate(self.request_sample, &root_type, config)
     }
 }

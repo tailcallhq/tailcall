@@ -162,8 +162,7 @@ mod test {
     use super::Generator;
     use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::Input;
-    use crate::core::generator::NameGenerator;
-    use crate::core::generator::OperationType;
+    use crate::core::generator::{NameGenerator, OperationType};
     use crate::core::proto_reader::ProtoMetadata;
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
