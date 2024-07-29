@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use inflector::Inflector;
+use convert_case::Casing;
 use regex::Regex;
 use url::Url;
 
@@ -96,7 +96,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
             };
 
             // Convert query key to camel case for better readability.
-            let query_key = query.key.to_camel_case();
+            let query_key = query.key.to_case(convert_case::Case::Camel);
             let value: String = format!("{{{{.args.{}}}}}", query_key);
 
             self.http
