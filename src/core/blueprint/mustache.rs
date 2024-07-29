@@ -209,7 +209,6 @@ mod test {
                 of_type: type_,
                 default_value: None,
                 description: None,
-                resolver: None,
             }],
             of_type: crate::core::blueprint::Type::NamedType {
                 name: "T1".to_string(),

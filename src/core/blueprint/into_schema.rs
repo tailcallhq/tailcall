@@ -88,7 +88,6 @@ fn to_type(def: &Definition) -> dynamic::Type {
             let mut object = dynamic::Object::new(def.name.clone());
             for field in def.fields.iter() {
                 let field = field.clone();
-                let field_copy = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
                 let mut dyn_schema_field = dynamic::Field::new(
@@ -102,12 +101,6 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
-                        let input_resolvers = field_copy
-                            .args
-                            .iter()
-                            .filter_map(|input_argument| input_argument.resolver.clone())
-                            .reduce(|first, second| first.pipe(second));
-
                         match &field.resolver {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
@@ -118,17 +111,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                 }
                             }
                             Some(expr) => {
-                                let expr = if let Some(input_expr) = input_resolvers {
-                                    input_expr.pipe(expr.to_owned())
-                                } else {
-                                    expr.to_owned()
-                                };
-
                                 let span = tracing::info_span!(
                                     "field_resolver",
                                     otel.name = ctx.path_node.map(|p| p.to_string()).unwrap_or(field_name.clone()), graphql.returnType = %type_ref
                                 );
 
+                                let expr = expr.to_owned();
                                 FieldFuture::new(
                                     async move {
                                         let ctx: ResolverContext = ctx.into();

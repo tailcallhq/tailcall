@@ -154,7 +154,6 @@ pub struct SchemaDefinition {
 pub struct InputFieldDefinition {
     pub name: String,
     pub of_type: Type,
-    pub resolver: Option<IR>,
     pub default_value: Option<serde_json::Value>,
     pub description: Option<String>,
 }

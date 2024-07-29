@@ -19,10 +19,10 @@ pub fn update_input_field_resolver<'a>(
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         |(config, field, _typ, _), mut b_field| {
             if !field.args.is_empty() {
-                b_field.args = b_field
+                let resolver = b_field
                     .args
-                    .into_iter()
-                    .map(|mut arg| {
+                    .iter()
+                    .filter_map(|arg| {
                         type InputFieldHashMap = HashMap<(String, String), String>;
                         let of_type = &arg.of_type;
                         let mut subfield_renames: InputFieldHashMap = HashMap::new();
@@ -85,16 +85,22 @@ pub fn update_input_field_resolver<'a>(
                         };
 
                         if !input_transforms.subfield_renames.is_empty() {
-                            arg.resolver = match arg.resolver {
-                                Some(expr) => Some(IR::ModifyInput(input_transforms).pipe(expr)),
-                                None => Some(IR::ModifyInput(input_transforms)),
-                            };
+                            Some(IR::ModifyInput(input_transforms))
+                        } else {
+                            None
                         }
-
-                        arg
                     })
-                    .collect::<Vec<_>>();
-            }
+                    .reduce(|first, second| first.pipe(second));
+                b_field.resolver = match (b_field.resolver, resolver) {
+                    (None, None) => None,
+                    (None, Some(input_resolvers)) => Some(input_resolvers),
+                    (Some(field_resolver), None) => Some(field_resolver),
+                    (Some(field_resolver), Some(input_resolvers)) => {
+                        Some(input_resolvers.pipe(field_resolver))
+                    }
+                };
+            };
+
             Valid::succeed(b_field)
         },
     )
