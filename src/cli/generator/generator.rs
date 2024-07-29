@@ -103,24 +103,19 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src, field_name, headers, body: _body } => {
+                Source::Curl { src, field_name, headers, body } => {
                     let url = src.0;
-                    let val = if let Some(val) = _body {
-                        val
-                    } else {
-                        serde_json::Value::Null
-                    };
+                    let body = body.unwrap_or_default();
 
-                    let mut request_method = reqwest::Method::GET;
-                    let operation_type = if val != serde_json::Value::Null {
-                        request_method = reqwest::Method::POST;
-                        OperationType::Mutation { body: val.clone() }
-                    } else {
-                        OperationType::Query
+                    let (request_method, operation_type) = match body {
+                        serde_json::Value::Null => (reqwest::Method::GET, OperationType::Query),
+                        _ => (
+                            reqwest::Method::POST,
+                            OperationType::Mutation { body: body.clone() },
+                        ),
                     };
-
                     let mut request = reqwest::Request::new(request_method, url.parse()?);
-                    request.body_mut().replace(val.to_string().into());
+                    request.body_mut().replace(body.to_string().into());
                     if let Some(headers_inner) = headers.get() {
                         let mut header_map = HeaderMap::new();
                         for (key, value) in headers_inner {
