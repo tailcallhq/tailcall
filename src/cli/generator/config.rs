@@ -220,6 +220,7 @@ impl Source<UnResolved> {
             Source::Curl { src, field_name, headers, body } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 let resolved_headers = headers.resolve(reader_context)?;
+                // TODO: make body mustache template compatible.
                 // let resolved_body = body.resolve(reader_context)?;
 
                 Ok(Source::Curl {
