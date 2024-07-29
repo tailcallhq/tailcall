@@ -115,7 +115,9 @@ impl Generator {
                         ),
                     };
                     let mut request = reqwest::Request::new(request_method, url.parse()?);
-                    request.body_mut().replace(body.to_string().into());
+                    if !body.is_null() {
+                        request.body_mut().replace(body.to_string().into());
+                    }
                     if let Some(headers_inner) = headers.get() {
                         let mut header_map = HeaderMap::new();
                         for (key, value) in headers_inner {
