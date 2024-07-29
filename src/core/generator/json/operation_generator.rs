@@ -1,3 +1,5 @@
+use convert_case::{Case, Casing};
+
 use super::http_directive_generator::HttpDirectiveGenerator;
 use crate::core::config::{Arg, Config, Field, Type};
 use crate::core::generator::json::types_generator::TypeGenerator;
@@ -39,7 +41,7 @@ impl OperationTypeGenerator {
                     http_.method = Method::POST;
                 }
                 field.args.insert(
-                    root_type.to_owned(),
+                    root_ty.to_case(Case::Camel),
                     Arg { type_of: root_ty, ..Default::default() },
                 );
                 "Mutation"
