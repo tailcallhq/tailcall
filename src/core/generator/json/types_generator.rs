@@ -1,11 +1,13 @@
 use serde_json::{Map, Value};
 
 use crate::core::config::{Config, Field, Type};
-use crate::core::generator::NameGenerator;
+use crate::core::generator::{NameGenerator, RequestSample};
 use crate::core::helpers::gql_type::{is_primitive, is_valid_field_name, to_gql_type};
 use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
+
+use super::OperationTypeGenerator;
 
 struct JSONValidator;
 
@@ -51,29 +53,15 @@ impl TypeMerger {
     }
 }
 
-pub struct TypesGenerator<'a, T1: OperationGenerator> {
-    json_value: &'a Value,
-    operation_generator: T1,
+pub struct TypeGenerator<'a> {
     type_name_generator: &'a NameGenerator,
 }
 
-impl<'a, T1> TypesGenerator<'a, T1>
-where
-    T1: OperationGenerator,
-{
-    pub fn new(
-        json_value: &'a Value,
-        operation_generator: T1,
-        type_name_generator: &'a NameGenerator,
-    ) -> Self {
-        Self { json_value, operation_generator, type_name_generator }
+impl<'a> TypeGenerator<'a> {
+    pub fn new(type_name_generator: &'a NameGenerator) -> Self {
+        Self { type_name_generator }
     }
-}
 
-impl<'a, T1> TypesGenerator<'a, T1>
-where
-    T1: OperationGenerator,
-{
     fn generate_scalar(&self, config: &mut Config) -> Scalar {
         let any_scalar = Scalar::JSON;
         if config.types.contains_key(&any_scalar.name()) {
@@ -113,7 +101,7 @@ where
         ty
     }
 
-    fn generate_types(&self, json_value: &'a Value, config: &mut Config) -> String {
+    pub fn generate_types(&self, json_value: &'a Value, config: &mut Config) -> String {
         match json_value {
             Value::Array(json_arr) => {
                 let vec_capacity = json_arr.first().map_or(0, |json_item| {
@@ -162,23 +150,27 @@ where
     }
 }
 
-impl<T1> Transform for TypesGenerator<'_, T1>
-where
-    T1: OperationGenerator,
-{
+pub struct GraphQLTypesGenerator<'a> {
+    request_sample: &'a RequestSample,
+    type_name_generator: &'a NameGenerator,
+}
+
+impl<'a> GraphQLTypesGenerator<'a> {
+    pub fn new(request_sample: &'a RequestSample, type_name_generator: &'a NameGenerator) -> Self {
+        Self { request_sample, type_name_generator }
+    }
+}
+
+impl Transform for GraphQLTypesGenerator<'_> {
     type Value = Config;
     type Error = String;
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
-        let root_type_name = self.generate_types(self.json_value, &mut config);
-        self.operation_generator
-            .generate(root_type_name.as_str(), config)
-    }
-}
+        // generate the required types.
+        let root_type = TypeGenerator::new(self.type_name_generator)
+            .generate_types(self.request_sample.response(), &mut config);
 
-/// For generated types we also have to generate the appropriate operation type.
-/// OperationGenerator should be implemented by Query, Subscription and
-/// Mutation.
-pub trait OperationGenerator {
-    fn generate(&self, root_type: &str, config: Config) -> Valid<Config, String>;
+        // generate the required field in operation type.
+        OperationTypeGenerator.generate(&self.request_sample, &root_type, config)
+    }
 }

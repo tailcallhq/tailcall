@@ -14,14 +14,20 @@ use crate::core::valid::Validator;
 
 /// Generator offers an abstraction over the actual config generators and allows
 /// to generate the single config from multiple sources. i.e (Protobuf and Json)
-/// TODO: add support for is_mutation.
 
 #[derive(Setters)]
 pub struct Generator {
-    operation_name: String,
+    query: Option<String>,
+    mutation: Option<String>,
     inputs: Vec<Input>,
     type_name_prefix: String,
     transformers: Vec<Box<dyn Transform<Value = Config, Error = String>>>,
+}
+
+#[derive(Clone)]
+pub enum OperationType {
+    Query,
+    Mutation { body: serde_json::Value },
 }
 
 #[derive(Clone)]
@@ -30,6 +36,7 @@ pub enum Input {
         url: Url,
         response: Value,
         field_name: String,
+        operation_type: OperationType,
     },
     Proto(ProtoMetadata),
     Config {
@@ -47,7 +54,8 @@ impl Default for Generator {
 impl Generator {
     pub fn new() -> Generator {
         Generator {
-            operation_name: "Query".to_string(),
+            query: None,
+            mutation: None,
             inputs: Vec::new(),
             type_name_prefix: "T".to_string(),
             transformers: Default::default(),
@@ -60,11 +68,14 @@ impl Generator {
         type_name_generator: &NameGenerator,
         json_samples: &[RequestSample],
     ) -> anyhow::Result<Config> {
-        Ok(
-            FromJsonGenerator::new(json_samples, type_name_generator, &self.operation_name)
-                .generate()
-                .to_result()?,
+        Ok(FromJsonGenerator::new(
+            json_samples,
+            type_name_generator,
+            &self.query,
+            &self.mutation,
         )
+        .generate()
+        .to_result()?)
     }
 
     /// Generates the configuration from the provided protobuf.
@@ -93,16 +104,24 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                Input::Json { url, response, field_name } => {
-                    let request_sample =
-                        RequestSample::new(url.to_owned(), response.to_owned(), field_name);
+                Input::Json { url, response, field_name, operation_type } => {
+                    let request_sample = RequestSample::new(
+                        url.to_owned(),
+                        response.to_owned(),
+                        field_name,
+                        operation_type.to_owned(),
+                    );
                     config = config.merge_right(
                         self.generate_from_json(&type_name_generator, &[request_sample])?,
                     );
                 }
                 Input::Proto(proto_input) => {
-                    config = config
-                        .merge_right(self.generate_from_proto(proto_input, &self.operation_name)?);
+                    if let Some(ref query_name) = self.query {
+                        config =
+                            config.merge_right(self.generate_from_proto(proto_input, query_name)?);
+                    } else {
+                        anyhow::bail!("Unsupported operation: Only `Query` operation can be generated for gRPC files. Please revise the operation type.")
+                    }
                 }
             }
         }
@@ -144,6 +163,7 @@ mod test {
     use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::Input;
     use crate::core::generator::NameGenerator;
+    use crate::core::generator::OperationType;
     use crate::core::proto_reader::ProtoMetadata;
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
@@ -167,6 +187,7 @@ mod test {
         let set = compile_protobuf(&[news_proto])?;
 
         let cfg_module = Generator::default()
+            .query(Some("Query".into()))
             .inputs(vec![Input::Proto(ProtoMetadata {
                 descriptor_set: set,
                 path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
@@ -195,10 +216,12 @@ mod test {
         let parsed_content =
             parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
         let cfg_module = Generator::default()
+            .query(Some("Query".into()))
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
                 field_name: "f1".to_string(),
+                operation_type: OperationType::Query,
             }])
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
@@ -229,11 +252,13 @@ mod test {
             url: parsed_content.url.parse()?,
             response: parsed_content.body,
             field_name: "f1".to_string(),
+            operation_type: OperationType::Query,
         };
 
         // Combine inputs
         let cfg_module = Generator::default()
             .inputs(vec![proto_input, json_input, config_input])
+            .query(Some("Query".into()))
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
 
@@ -257,11 +282,13 @@ mod test {
                 url: parsed_content.url.parse()?,
                 response: parsed_content.body,
                 field_name: field_name_generator.next(),
+                operation_type: OperationType::Query,
             });
         }
 
         let cfg_module = Generator::default()
             .inputs(inputs)
+            .query(Some("Query".into()))
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
         insta::assert_snapshot!(cfg_module.config().to_sdl());

@@ -3,6 +3,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall::core::generator::OperationType;
 use tailcall::core::generator::{Generator, Input};
 use url::Url;
 
@@ -38,10 +39,12 @@ fn load_json(path: &Path) -> anyhow::Result<(String, Value)> {
 
 fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {
     let config = Generator::default()
+        .query(Some("Query".into()))
         .inputs(vec![Input::Json {
             url,
             response: body,
             field_name: "f1".to_string(),
+            operation_type: OperationType::Query,
         }])
         .generate(true)?;
 

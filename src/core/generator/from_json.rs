@@ -1,41 +1,52 @@
+use derive_getters::Getters;
 use serde_json::Value;
 use url::Url;
 
-use super::json::{self, TypesGenerator};
-use super::NameGenerator;
+use super::json::{self, GraphQLTypesGenerator};
+use super::{NameGenerator, OperationType};
 use crate::core::config::Config;
 use crate::core::merge_right::MergeRight;
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::{Valid, Validator};
 
+#[derive(Getters)]
 pub struct RequestSample {
     url: Url,
     response: Value,
     field_name: String,
+    operation_type: OperationType,
 }
 
 impl RequestSample {
-    pub fn new(url: Url, resp: Value, field_name: &str) -> Self {
-        Self { url, response: resp, field_name: field_name.to_string() }
+    pub fn new(url: Url, resp: Value, field_name: &str, operation_type: OperationType) -> Self {
+        Self {
+            url,
+            response: resp,
+            field_name: field_name.to_string(),
+            operation_type,
+        }
     }
 }
 
 pub struct FromJsonGenerator<'a> {
     request_samples: &'a [RequestSample],
     type_name_generator: &'a NameGenerator,
-    operation_name: String,
+    query_name: &'a Option<String>,
+    mutation_name: &'a Option<String>,
 }
 
 impl<'a> FromJsonGenerator<'a> {
     pub fn new(
         request_samples: &'a [RequestSample],
         type_name_generator: &'a NameGenerator,
-        operation_name: &str,
+        query_name: &'a Option<String>,
+        mutation_name: &'a Option<String>,
     ) -> Self {
         Self {
             request_samples,
             type_name_generator,
-            operation_name: operation_name.to_string(),
+            query_name,
+            mutation_name,
         }
     }
 }
@@ -46,21 +57,18 @@ impl Transform for FromJsonGenerator<'_> {
     fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let config_gen_req = self.request_samples;
         let type_name_gen = self.type_name_generator;
-        let query = &self.operation_name;
 
         Valid::from_iter(config_gen_req, |sample| {
-            let field_name = &sample.field_name;
-            let query_generator = json::QueryGenerator::new(
-                sample.response.is_array(),
-                &sample.url,
-                query,
-                field_name,
-            );
-
             // these transformations are required in order to generate a base config.
-            TypesGenerator::new(&sample.response, query_generator, type_name_gen)
-                .pipe(json::SchemaGenerator::new(query.to_owned()))
-                .pipe(json::FieldBaseUrlGenerator::new(&sample.url, query))
+            GraphQLTypesGenerator::new(&sample, type_name_gen)
+                .pipe(json::SchemaGenerator::new(
+                    &self.query_name,
+                    &self.mutation_name,
+                ))
+                .pipe(json::FieldBaseUrlGenerator::new(
+                    &sample.url,
+                    &self.query_name,
+                ))
                 .transform(config.clone())
         })
         .map(|configs| {
@@ -76,6 +84,7 @@ mod tests {
     use serde::Deserialize;
 
     use crate::core::config::transformer::Preset;
+    use crate::core::generator::OperationType;
     use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
     use crate::core::transform::TransformerOps;
     use crate::core::valid::Validator;
@@ -108,13 +117,19 @@ mod tests {
                 parsed_content.url.parse()?,
                 parsed_content.body,
                 &field_name_generator.next(),
+                OperationType::Query,
             ));
         }
 
-        let config = FromJsonGenerator::new(&request_samples, &NameGenerator::new("T"), "Query")
-            .pipe(Preset::default())
-            .generate()
-            .to_result()?;
+        let config = FromJsonGenerator::new(
+            &request_samples,
+            &NameGenerator::new("T"),
+            &Some("Query".into()),
+            &None,
+        )
+        .pipe(Preset::default())
+        .generate()
+        .to_result()?;
 
         insta::assert_snapshot!(config.to_sdl());
         Ok(())

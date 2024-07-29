@@ -64,6 +64,7 @@ pub enum Source<Status = UnResolved> {
     Curl {
         src: Location<Status>,
         headers: Headers<Status>,
+        body: Option<serde_json::Value>,
         field_name: String,
     },
     Proto {
@@ -94,6 +95,8 @@ pub struct UnResolved {}
 pub struct Schema {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mutation: Option<String>,
 }
 
 fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
@@ -171,16 +174,13 @@ impl Location<UnResolved> {
 }
 
 impl<A> Headers<A> {
-    pub fn headers(&self) -> &Option<BTreeMap<String, String>> {
+    pub fn get(&self) -> &Option<BTreeMap<String, String>> {
         &self.0
     }
 }
 
 impl Headers<UnResolved> {
-    pub fn resolve(
-        self,
-        reader_context: &ConfigReaderContext,
-    ) -> anyhow::Result<Headers<Resolved>> {
+    pub fn resolve(self, reader_context: &ConfigReaderContext) -> anyhow::Result<Headers<Resolved>> {
         // Resolve the header values with mustache template.
         let resolved_headers = if let Some(headers_inner) = self.0 {
             let mut resolved_headers = BTreeMap::new();
@@ -214,10 +214,17 @@ impl Source<UnResolved> {
         reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, field_name, headers } => {
+            Source::Curl { src, field_name, headers, body } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 let resolved_headers = headers.resolve(reader_context)?;
-                Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
+                // let resolved_body = body.resolve(reader_context)?;
+
+                Ok(Source::Curl {
+                    src: resolved_path,
+                    field_name,
+                    headers: resolved_headers,
+                    body,
+                })
             }
             Source::Proto { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -309,7 +316,7 @@ mod tests {
 
         let expected = format!("Bearer {token}");
         let result = resolved_headers
-            .headers()
+            .get()
             .to_owned()
             .unwrap()
             .get("Authorization")
@@ -329,6 +336,7 @@ mod tests {
             source: Source::Curl {
                 src: location("https://example.com"),
                 headers: to_headers(headers),
+                body: None,
                 field_name: "test".to_string(),
             },
         }]);

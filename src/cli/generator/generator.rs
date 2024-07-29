@@ -10,7 +10,7 @@ use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
-use crate::core::generator::{Generator as ConfigGenerator, Input};
+use crate::core::generator::{Generator as ConfigGenerator, Input, OperationType};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
@@ -103,10 +103,25 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src, field_name, headers: resolved_headers } => {
+                Source::Curl { src, field_name, headers, body: _body } => {
                     let url = src.0;
-                    let mut request = reqwest::Request::new(reqwest::Method::GET, url.parse()?);
-                    if let Some(headers_inner) = resolved_headers.headers() {
+                    let val = if let Some(val) = _body {
+                        val
+                    } else {
+                        serde_json::Value::Null
+                    };
+
+                    let mut request_method = reqwest::Method::GET;
+                    let operation_type = if val != serde_json::Value::Null {
+                        request_method = reqwest::Method::POST;
+                        OperationType::Mutation { body: val.clone() }
+                    } else {
+                        OperationType::Query
+                    };
+
+                    let mut request = reqwest::Request::new(request_method, url.parse()?);
+                    request.body_mut().replace(val.to_string().into());
+                    if let Some(headers_inner) = headers.get() {
                         let mut header_map = HeaderMap::new();
                         for (key, value) in headers_inner {
                             let header_name = HeaderName::try_from(key)?;
@@ -115,12 +130,14 @@ impl Generator {
                         }
                         *request.headers_mut() = header_map;
                     }
+
                     let resource: Resource = request.into();
                     let response = reader.read_file(resource).await?;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
                         response: serde_json::from_str(&response.content)?,
                         field_name,
+                        operation_type,
                     });
                 }
                 Source::Proto { src } => {
@@ -148,6 +165,8 @@ impl Generator {
         let config = self.read().await?;
         let path = config.output.path.0.to_owned();
         let query_type = config.schema.query.clone();
+        let mutation_type_name = config.schema.mutation.clone();
+
         let preset: Preset = config
             .preset
             .clone()
@@ -159,10 +178,8 @@ impl Generator {
         let mut config_gen = ConfigGenerator::default()
             .inputs(input_samples)
             .transformers(vec![Box::new(preset)]);
-        if let Some(query_type_name) = query_type {
-            // presently only query opeartion is supported.
-            config_gen = config_gen.operation_name(query_type_name);
-        }
+
+        config_gen = config_gen.query(query_type).mutation(mutation_type_name);
 
         let config = config_gen.generate(true)?;
 
