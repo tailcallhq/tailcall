@@ -341,6 +341,8 @@ mod test {
 
             let generator = Generator::new(path, runtime);
             let config = generator.read().await?;
+            let query_type = config.schema.query.clone();
+            let mutation_type_name = config.schema.mutation.clone();
             let preset: config::transformer::Preset = config
                 .preset
                 .clone()
@@ -352,6 +354,8 @@ mod test {
             let input_samples = generator.resolve_io(config).await?;
 
             let cfg_module = ConfigGenerator::default()
+                .query(query_type)
+                .mutation(mutation_type_name)
                 .inputs(input_samples)
                 .transformers(vec![Box::new(preset)])
                 .generate(true)?;

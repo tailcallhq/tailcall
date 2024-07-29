@@ -17,14 +17,17 @@ impl Transform for SchemaGenerator<'_> {
     type Value = Config;
     type Error = String;
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
-        if let Some(q_name) = self.query_name {
-            config.schema.query = Some(q_name.to_owned());
-        } else if let Some(mutation_name) = self.mutation_name {
-            config.schema.mutation = Some(mutation_name.to_owned());
-        } else {
+        if self.query_name.is_none() && self.mutation_name.is_none() {
             return Valid::fail(
                 "Error: Query or Mutation type is missing from the schema.".to_owned(),
             );
+        }
+
+        if let Some(q_name) = self.query_name {
+            config.schema.query = Some(q_name.to_owned());
+        }
+        if let Some(mutation_name) = self.mutation_name {
+            config.schema.mutation = Some(mutation_name.to_owned());
         }
         Valid::succeed(config)
     }
