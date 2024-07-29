@@ -217,6 +217,9 @@ pub mod file {
         #[from(ignore)]
         Cloudflare(String),
 
+        #[debug(fmt = "File IO is not supported")]
+        FileIONotSupported,
+
         #[debug(fmt = "Error : {}", _0)]
         Anyhow(anyhow::Error),
     }
@@ -268,6 +271,9 @@ impl Display for file::Error {
             }
             file::Error::Cloudflare(error) => {
                 write!(f, "Cloudflare Worker Execution Error: {}", error)
+            }
+            file::Error::FileIONotSupported => {
+                write!(f, "File IO is not supported")
             }
             file::Error::Anyhow(msg) => write!(f, "Error: {}", msg),
         }
