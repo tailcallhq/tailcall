@@ -90,6 +90,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                 let field = field.clone();
                 let type_ref = to_type_ref(&field.of_type);
                 let field_name = &field.name.clone();
+
                 let mut dyn_schema_field = dynamic::Field::new(
                     field_name,
                     type_ref.clone(),
@@ -101,10 +102,12 @@ fn to_type(def: &Definition) -> dynamic::Type {
 
                         let req_ctx = ctx.ctx.data::<Arc<RequestContext>>().unwrap();
                         let field_name = &field.name;
+
                         match &field.resolver {
                             None => {
                                 let ctx: ResolverContext = ctx.into();
                                 let ctx = EvalContext::new(req_ctx, &ctx);
+
                                 match ctx.path_value(&[field_name]).map(|a| a.into_owned()) {
                                     Some(ConstValue::Null) => FieldFuture::Value(FieldValue::NONE),
                                     a => FieldFuture::from_value(a),
