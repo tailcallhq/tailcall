@@ -22,7 +22,7 @@ impl Transform for SchemaGenerator<'_> {
         } else if let Some(mutation_name) = self.mutation_name {
             config.schema.mutation = Some(mutation_name.to_owned());
         } else {
-            return Valid::fail("Query or Mutation type is not existed.".to_owned());
+            return Valid::fail("Validation Error: Query or Mutation type is missing from the schema.".to_owned());
         }
         Valid::succeed(config)
     }
