@@ -8,11 +8,28 @@ use crate::core::valid::Valid;
 pub struct FieldBaseUrlGenerator<'a> {
     url: &'a Url,
     query: &'a Option<String>,
+    mutation: &'a Option<String>,
 }
 
 impl<'a> FieldBaseUrlGenerator<'a> {
-    pub fn new(url: &'a Url, query: &'a Option<String>) -> Self {
-        Self { url, query }
+    pub fn new(url: &'a Url, query: &'a Option<String>, mutation: &'a Option<String>) -> Self {
+        Self { url, query, mutation }
+    }
+
+    fn update_base_urls(&self, config: &mut Config, operation_name: &str, base_url: &str) {
+        if let Some(query_type) = config.types.get_mut(operation_name) {
+            for field in query_type.fields.values_mut() {
+                field.http = match field.http.clone() {
+                    Some(mut http) => {
+                        if http.base_url.is_none() {
+                            http.base_url = Some(base_url.to_owned());
+                        }
+                        Some(http)
+                    }
+                    None => None,
+                }
+            }
+        }
     }
 }
 
@@ -27,20 +44,12 @@ impl Transform for FieldBaseUrlGenerator<'_> {
             }
         };
 
-        if let Some(query_op_name) = self.query {
-            if let Some(query_type) = config.types.get_mut(query_op_name) {
-                for field in query_type.fields.values_mut() {
-                    field.http = match field.http.clone() {
-                        Some(mut http) => {
-                            if http.base_url.is_none() {
-                                http.base_url = Some(base_url.clone());
-                            }
-                            Some(http)
-                        }
-                        None => None,
-                    }
-                }
-            }
+        if let Some(operation_name) = self.query {
+            self.update_base_urls(&mut config, operation_name, &base_url);
+        }
+
+        if let Some(operation_name) = self.mutation {
+            self.update_base_urls(&mut config, operation_name, &base_url);
         }
 
         Valid::succeed(config)
@@ -49,7 +58,6 @@ impl Transform for FieldBaseUrlGenerator<'_> {
 
 #[cfg(test)]
 mod test {
-    use anyhow::Ok;
     use url::Url;
 
     use super::FieldBaseUrlGenerator;
@@ -58,10 +66,10 @@ mod test {
     use crate::core::valid::Validator;
 
     #[test]
-    fn should_add_base_url_for_http_fields() -> anyhow::Result<()> {
+    fn should_add_base_url_for_http_fields() {
         let url = Url::parse("https://example.com").unwrap();
         let query = Some("Query".to_owned());
-        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &query);
+        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &query, &None);
 
         let mut config = Config::default();
         let mut query_type = Type::default();
@@ -91,17 +99,16 @@ mod test {
         );
         config.types.insert("Query".to_string(), query_type);
 
-        config = field_base_url_gen.transform(config).to_result()?;
+        config = field_base_url_gen.transform(config).to_result().unwrap();
 
         insta::assert_snapshot!(config.to_sdl());
-        Ok(())
     }
 
     #[test]
-    fn should_add_base_url_if_not_present() -> anyhow::Result<()> {
+    fn should_add_base_url_if_not_present() {
         let url = Url::parse("http://localhost:8080").unwrap();
         let query = Some("Query".to_owned());
-        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &query);
+        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &query, &None);
 
         let mut config = Config::default();
         let mut query_type = Type::default();
@@ -135,22 +142,21 @@ mod test {
         );
         config.types.insert("Query".to_string(), query_type);
 
-        config = field_base_url_gen.transform(config).to_result()?;
+        config = field_base_url_gen.transform(config).to_result().unwrap();
 
         insta::assert_snapshot!(config.to_sdl());
-        Ok(())
     }
 
     #[test]
-    fn should_not_add_base_url_when_query_not_present() -> anyhow::Result<()> {
+    fn should_not_add_base_url_when_query_not_present() {
         let url = Url::parse("https://example.com").unwrap();
         let query = Some("Query".to_owned());
-        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &query);
+        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &query, &None);
         assert!(field_base_url_gen
             .transform(Default::default())
-            .to_result()?
+            .to_result()
+            .unwrap()
             .to_sdl()
             .is_empty());
-        Ok(())
     }
 }

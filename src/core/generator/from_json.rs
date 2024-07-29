@@ -68,6 +68,7 @@ impl Transform for FromJsonGenerator<'_> {
                 .pipe(json::FieldBaseUrlGenerator::new(
                     &sample.url,
                     self.query_name,
+                    self.mutation_name,
                 ))
                 .transform(config.clone())
         })
