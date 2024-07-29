@@ -6,13 +6,11 @@ schema @server @upstream {
   query: Query
 }
 
-scalar Any
-
 type Query {
   f1: T1 @http(baseURL: "https://example.com", path: "/")
 }
 
 type T1 {
-  campaignTemplates: Any
-  colors: [Any]
+  campaignTemplates: JSON
+  colors: [JSON]
 }

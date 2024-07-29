@@ -34,6 +34,7 @@ pub struct PresetConfig {
     consolidate_url: Option<f32>,
     use_better_names: Option<bool>,
     tree_shake: Option<bool>,
+    unwrap_single_field_types: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -119,6 +120,10 @@ impl ValidateFrom<PresetConfig> for Preset {
 
         if let Some(use_better_names) = config.use_better_names {
             preset = preset.use_better_names(use_better_names);
+        }
+
+        if let Some(unwrap_single_field_types) = config.unwrap_single_field_types {
+            preset = preset.unwrap_single_field_types(unwrap_single_field_types);
         }
 
         if let Some(tree_shake) = config.tree_shake {
@@ -339,6 +344,7 @@ mod tests {
             use_better_names: None,
             merge_type: Some(2.0),
             consolidate_url: None,
+            unwrap_single_field_types: None,
         };
 
         let transform_preset: Result<Preset, ValidationError<String>> =
@@ -353,6 +359,7 @@ mod tests {
             use_better_names: Some(true),
             merge_type: Some(0.5),
             consolidate_url: Some(1.0),
+            unwrap_single_field_types: None,
         };
         let transform_preset: Preset = config_preset.validate_into().to_result().unwrap();
         let expected_preset = Preset::new()
