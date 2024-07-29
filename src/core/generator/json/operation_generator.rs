@@ -24,7 +24,6 @@ impl OperationTypeGenerator {
             ..Default::default()
         };
 
-        // if type is already present, then append the new field to it else create one.
         // generate required http directive.
         let http_directive_gen = HttpDirectiveGenerator::new(request_sample.url());
         field.http = Some(http_directive_gen.generate_http_directive(&mut field));
