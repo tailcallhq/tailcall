@@ -94,7 +94,7 @@ async-std = { version = "1.12.0", features = [
     "wasm-bindgen-futures",
     "unstable",
 ] }
-ttl_cache = { version = "0.5.1", features = ["stats"] }
+ttl_cache = "0.5.1"
 protox = "0.6.0"
 protox-parse = "0.6.0"
 prost-reflect = { version = "0.13.1", features = ["serde"] }
@@ -237,7 +237,9 @@ members = [
     "tailcall-fixtures",
     "tailcall-upstream-grpc",
     "tailcall-tracker",
-    "tailcall-hasher",
+    "tailcall-wasm",
+    "tailcall-hasher"
+,
     "tailcall-http-cache",
     "tailcall-version",
 ]
