@@ -41,10 +41,9 @@ impl OperationTypeGenerator {
                     http_.body = Some(format!("{{{{.args.{}}}}}", arg_name.clone()));
                     http_.method = Method::POST;
                 }
-                field.args.insert(
-                    arg_name,
-                    Arg { type_of: root_ty, ..Default::default() },
-                );
+                field
+                    .args
+                    .insert(arg_name, Arg { type_of: root_ty, ..Default::default() });
                 "Mutation"
             }
         };
