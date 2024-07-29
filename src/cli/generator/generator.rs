@@ -12,7 +12,7 @@ use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input, OperationType};
 use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::{Resource, ResourceReader};
+use crate::core::resource_reader::{Direct, Reader, Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
 use crate::core::valid::{ValidateInto, Validator};
 
@@ -95,8 +95,9 @@ impl Generator {
     async fn resolve_io(&self, config: Config<Resolved>) -> anyhow::Result<Vec<Input>> {
         let mut input_samples = vec![];
 
-        let reader = ResourceReader::cached(self.runtime.clone());
-        let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
+        let cached_reader = ResourceReader::cached(self.runtime.clone());
+        let direct = Direct::init(self.runtime.clone());
+        let proto_reader = ProtoReader::init(cached_reader.clone(), self.runtime.clone());
         let output_dir = Path::new(&config.output.path.0)
             .parent()
             .unwrap_or(Path::new(""));
@@ -129,7 +130,7 @@ impl Generator {
                     }
 
                     let resource: Resource = request.into();
-                    let response = reader.read_file(resource).await?;
+                    let response = direct.read(resource).await?;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
                         response: serde_json::from_str(&response.content)?,
@@ -148,7 +149,7 @@ impl Generator {
                 Source::Config { src } => {
                     let path = src.0;
                     let source = config::Source::detect(&path)?;
-                    let schema = reader.read_file(path).await?.content;
+                    let schema = cached_reader.read_file(path).await?.content;
                     input_samples.push(Input::Config { schema, source });
                 }
             }
