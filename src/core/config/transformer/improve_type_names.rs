@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashSet};
 
-use inflector::Inflector;
+use convert_case::{Case, Casing};
 
 use crate::core::config::Config;
 use crate::core::transform::Transform;
@@ -38,7 +38,7 @@ impl<'a> CandidateConvergence<'a> {
             // Filter out candidates that have already been converged or are already present
             // in types
             let candidates_to_consider = candidate_list.iter().filter(|(candidate_name, _)| {
-                let candidate_type_name = candidate_name.to_pascal_case();
+                let candidate_type_name = candidate_name.to_case(Case::Pascal);
                 !converged_candidate_set.contains(&candidate_type_name)
                     && !self.config.types.contains_key(&candidate_type_name)
             });
@@ -47,7 +47,7 @@ impl<'a> CandidateConvergence<'a> {
             if let Some((candidate_name, _)) = candidates_to_consider
                 .max_by_key(|(key, value)| (value.frequency, value.priority, *key))
             {
-                let singularized_candidate_name = candidate_name.to_pascal_case();
+                let singularized_candidate_name = candidate_name.to_case(Case::Pascal);
                 finalized_candidates
                     .insert(type_name.to_owned(), singularized_candidate_name.clone());
                 converged_candidate_set.insert(singularized_candidate_name);
