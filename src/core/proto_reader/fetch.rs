@@ -149,7 +149,7 @@ impl GrpcReflection {
         };
 
         let req = req_template.render(&ctx)?.to_request()?;
-
+        // http2_only is required for grpc reflection
         let resp = self.target_runtime.http2_only.execute(req).await?;
         let body = resp.body.as_bytes();
 
