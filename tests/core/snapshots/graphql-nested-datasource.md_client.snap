@@ -24,6 +24,8 @@ type C {
 
 scalar Date
 
+scalar DateTime
+
 scalar Email
 
 scalar Empty
