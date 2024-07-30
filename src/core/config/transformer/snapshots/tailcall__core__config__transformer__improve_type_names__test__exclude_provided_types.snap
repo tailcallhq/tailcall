@@ -1,0 +1,15 @@
+---
+source: src/core/config/transformer/improve_type_names.rs
+expression: config.to_sdl()
+---
+type Post {
+  id: Int
+}
+
+type Query {
+  userInfo: UserInfo
+}
+
+type UserInfo {
+  userPosts: [Posts]
+}

@@ -73,12 +73,18 @@ impl<'a> CandidateGeneration<'a> {
     /// Generates candidate type names based on the provided configuration.
     /// This method iterates over the configuration and collects candidate type
     /// names for each type.
-    fn generate(mut self) -> CandidateConvergence<'a> {
+    fn generate(mut self, exclude_types: &HashSet<String>) -> CandidateConvergence<'a> {
+        let exclude_types = exclude_types
+            .iter()
+            .map(|s| s.to_lowercase())
+            .collect::<HashSet<_>>();
         for type_name in self.config.types.keys() {
             if let Some(type_info) = self.config.types.get(type_name) {
                 for (field_name, field_info) in type_info.fields.iter() {
-                    if self.config.is_scalar(&field_info.type_of) {
-                        // If field type is scalar then ignore type name inference.
+                    if self.config.is_scalar(&field_info.type_of)
+                        || exclude_types.contains(&field_info.type_of.to_lowercase())
+                    {
+                        // if output type is scalar or present in exclude list then skip it.
                         continue;
                     }
 
@@ -102,13 +108,21 @@ impl<'a> CandidateGeneration<'a> {
 }
 
 #[derive(Default)]
-pub struct ImproveTypeNames;
+pub struct ImproveTypeNames {
+    exclude_types: HashSet<String>,
+}
 
 impl ImproveTypeNames {
+    pub fn new(exclude_types: HashSet<String>) -> Self {
+        Self { exclude_types }
+    }
+
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
     fn generate_type_names(&self, mut config: Config) -> Config {
-        let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
+        let finalized_candidates = CandidateGeneration::new(&config)
+            .generate(&self.exclude_types)
+            .converge();
 
         for (old_type_name, new_type_name) in finalized_candidates {
             if let Some(type_) = config.types.remove(old_type_name.as_str()) {
@@ -142,6 +156,7 @@ impl Transform for ImproveTypeNames {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
     use std::fs;
 
     use anyhow::Ok;
@@ -162,7 +177,10 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames::default()
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
     }
 
@@ -172,7 +190,10 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames::default()
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
@@ -184,9 +205,38 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames::default()
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
+    }
+
+    #[test]
+    fn test_exclude_provided_types() {
+        let sdl = r#"
+            type Post {
+                id: Int
+            }
+            type T2 {
+                userPosts: [Posts]
+            }
+            type Query {
+                userInfo: T2
+            }
+        "#;
+
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+        let mut ignore_types = HashSet::new();
+        ignore_types.insert("userPosts".to_owned());
+
+        let config = ImproveTypeNames::default()
+            .transform(config)
+            .to_result()
+            .unwrap();
+
+        insta::assert_snapshot!(config.to_sdl());
     }
 }

@@ -50,7 +50,10 @@ impl Transform for Preset {
                 super::PreferredNameSetter::new(self.suggested_names.clone())
                     .when(!self.suggested_names.is_empty()),
             )
-            .pipe(super::ImproveTypeNames.when(self.use_better_names))
+            .pipe(
+                super::ImproveTypeNames::new(self.suggested_names.clone())
+                    .when(self.use_better_names),
+            )
             .pipe(
                 super::ConsolidateURL::new(self.consolidate_url)
                     .when(super::ConsolidateURL::is_enabled(self.consolidate_url)),
