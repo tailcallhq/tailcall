@@ -14,7 +14,7 @@ struct CandidateStats {
 
 struct CandidateConvergence<'a> {
     /// maintains the generated candidates in the form of
-    /// {TypeName: {{candidate_name: {frequency: 1, priority: 0}}}}
+    /// {TypeName: {{candidate_name: {frequency: 1}}}}
     candidates: IndexMap<String, IndexMap<String, CandidateStats>>,
     config: &'a Config,
 }
@@ -60,7 +60,7 @@ impl<'a> CandidateConvergence<'a> {
 
 struct CandidateGeneration<'a> {
     /// maintains the generated candidates in the form of
-    /// {TypeName: {{candidate_name: {frequency: 1, priority: 0}}}}
+    /// {TypeName: {{candidate_name: {frequency: 1}}}}
     candidates: IndexMap<String, IndexMap<String, CandidateStats>>,
     config: &'a Config,
 }
