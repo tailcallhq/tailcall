@@ -1,6 +1,6 @@
 {
   "url": "https://example.com/api/v2/users",
-  "body": [
+  "response": [
     {"name": "test-1", "age": 21, "is adult": true},
     {"name": "test-1", "age": 17, "is adult": false}
   ]

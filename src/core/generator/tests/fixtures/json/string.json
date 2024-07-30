@@ -1,4 +1,4 @@
 {
   "url": "https://example.com/login/status",
-  "body": "successfully"
+  "response": "successfully"
 }

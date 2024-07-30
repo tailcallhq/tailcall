@@ -1,6 +1,6 @@
 {
   "url": "https://example.com/users?children=true",
-  "body": {
+  "response": {
     "people": [
       {
         "name": "Alice",
