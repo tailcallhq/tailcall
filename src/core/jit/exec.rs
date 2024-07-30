@@ -25,7 +25,7 @@ pub struct Executor<IRExec, Input> {
 
 impl<Input, Output, Exec> Executor<Exec, Input>
 where
-    Output: for<'a> JsonLike<'a> + Debug + Clone,
+    Output: for <'b> JsonLike<'b, JsonObject<'b>: JsonObjectLike<'b, Value=Output>> + Debug + Clone,
     Input: Clone + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {

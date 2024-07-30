@@ -5,35 +5,35 @@ pub trait JsonLikeOwned: for<'json> JsonLike<'json> {}
 impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}
 
 /// A trait for objects that can be used as JSON values
-pub trait JsonLike<'a>: Sized {
-    type JsonObject: JsonObjectLike<'a, Value = Self>;
+pub trait JsonLike<'json>: Sized {
+    type JsonObject<'obj>: JsonObjectLike<'obj, Value: JsonLike<'obj>>;
 
     // Constructors
     fn null() -> Self;
-    fn object(obj: Self::JsonObject) -> Self;
+    fn object(obj: Self::JsonObject<'json>) -> Self;
     fn array(arr: Vec<Self>) -> Self;
-    fn string(s: Cow<'a, str>) -> Self;
+    fn string(s: Cow<'json, str>) -> Self;
 
     // Operators
-    fn as_array(&'a self) -> Option<&'a Vec<Self>>;
-    fn as_object(&'a self) -> Option<&Self::JsonObject>;
-    fn as_str(&'a self) -> Option<&str>;
-    fn as_i64(&'a self) -> Option<i64>;
-    fn as_u64(&'a self) -> Option<u64>;
-    fn as_f64(&'a self) -> Option<f64>;
-    fn as_bool(&'a self) -> Option<bool>;
-    fn is_null(&'a self) -> bool;
-    fn get_path<T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self>;
-    fn get_key(&'a self, path: &'a str) -> Option<&Self>;
-    fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>>;
+    fn as_array(&self) -> Option<&Vec<Self>>;
+    fn as_object(&'json self) -> Option<&Self::JsonObject<'json>>;
+    fn as_str(&self) -> Option<&str>;
+    fn as_i64(&self) -> Option<i64>;
+    fn as_u64(&self) -> Option<u64>;
+    fn as_f64(&self) -> Option<f64>;
+    fn as_bool(&self) -> Option<bool>;
+    fn is_null(&self) -> bool;
+    fn get_path<T: AsRef<str>>(&'json self, path: &[T]) -> Option<&Self>;
+    fn get_key(&'json self, path: &str) -> Option<&Self>;
+    fn group_by(&'json self, path: &[String]) -> HashMap<String, Vec<&Self>>;
 }
 
 /// A trait for objects that can be used as JSON objects
-pub trait JsonObjectLike<'a>: Sized {
+pub trait JsonObjectLike<'obj>: Sized {
     type Value;
     fn new() -> Self;
-    fn get_key(&'a self, key: &str) -> Option<&Self::Value>;
-    fn insert_key(self, key: &'a str, value: Self::Value) -> Self;
+    fn get_key(&'obj self, key: &str) -> Option<&Self::Value>;
+    fn insert_key(&mut self, key: &'obj str, value: Self::Value);
 }
 
 #[cfg(test)]
