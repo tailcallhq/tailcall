@@ -19,10 +19,10 @@ impl Transform for SchemaGenerator<'_> {
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         if self.query_name.is_none() && self.mutation_name.is_none() {
             return Valid::fail(
-                "Error: Query or Mutation type is missing from the schema.".to_owned(),
+                "Error: At least one of Query or Mutation type must be present in the schema."
+                    .to_owned(),
             );
         }
-
         if let Some(q_name) = self.query_name {
             config.schema.query = Some(q_name.to_owned());
         }

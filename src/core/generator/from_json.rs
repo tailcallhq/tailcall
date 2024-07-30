@@ -60,7 +60,14 @@ impl Transform for FromJsonGenerator<'_> {
 
         Valid::from_iter(config_gen_req, |sample| {
             // these transformations are required in order to generate a base config.
-            GraphQLTypesGenerator::new(sample, type_name_gen)
+            let operation_name = match &sample.operation_type {
+                OperationType::Query => self.query_name.clone().unwrap_or("Query".to_owned()),
+                OperationType::Mutation { .. } => {
+                    self.mutation_name.clone().unwrap_or("Mutation".to_owned())
+                }
+            };
+
+            GraphQLTypesGenerator::new(sample, type_name_gen, operation_name)
                 .pipe(json::SchemaGenerator::new(
                     self.query_name,
                     self.mutation_name,

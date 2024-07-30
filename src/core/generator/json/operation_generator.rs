@@ -16,6 +16,7 @@ impl OperationTypeGenerator {
         request_sample: &RequestSample,
         root_type: &str,
         name_generator: &NameGenerator,
+        operation_name: &str,
         mut config: Config,
     ) -> Valid<Config, String> {
         let mut field = Field {
@@ -28,25 +29,19 @@ impl OperationTypeGenerator {
         let http_directive_gen = HttpDirectiveGenerator::new(request_sample.url());
         field.http = Some(http_directive_gen.generate_http_directive(&mut field));
 
-        // we provide default names for operation name, then we change it in subsequent
-        // steps.
-        let operation_name = match &request_sample.operation_type() {
-            OperationType::Query => "Query",
-            OperationType::Mutation { body } => {
-                // generate the input type.
-                let root_ty = TypeGenerator::new(name_generator).generate_types(body, &mut config);
-                // add input type to field.
-                let arg_name = root_ty.to_case(Case::Camel);
-                if let Some(http_) = &mut field.http {
-                    http_.body = Some(format!("{{{{.args.{}}}}}", arg_name.clone()));
-                    http_.method = Method::POST;
-                }
-                field
-                    .args
-                    .insert(arg_name, Arg { type_of: root_ty, ..Default::default() });
-                "Mutation"
+        if let OperationType::Mutation { body } = request_sample.operation_type() {
+            // generate the input type.
+            let root_ty = TypeGenerator::new(name_generator).generate_types(body, &mut config);
+            // add input type to field.
+            let arg_name = root_ty.to_case(Case::Camel);
+            if let Some(http_) = &mut field.http {
+                http_.body = Some(format!("{{{{.args.{}}}}}", arg_name.clone()));
+                http_.method = Method::POST;
             }
-        };
+            field
+                .args
+                .insert(arg_name, Arg { type_of: root_ty, ..Default::default() });
+        }
 
         // if type is already present, then append the new field to it else create one.
         if let Some(type_) = config.types.get_mut(operation_name) {
@@ -85,7 +80,13 @@ mod test {
         );
         let config = Config::default();
         let config = OperationTypeGenerator
-            .generate(&sample, "T44", &NameGenerator::new("Input"), config)
+            .generate(
+                &sample,
+                "T44",
+                &NameGenerator::new("Input"),
+                "Query",
+                config,
+            )
             .to_result()
             .unwrap();
 
@@ -113,7 +114,13 @@ mod test {
         config.types.insert("Query".to_owned(), type_);
 
         let config = OperationTypeGenerator
-            .generate(&sample, "T44", &NameGenerator::new("Input"), config)
+            .generate(
+                &sample,
+                "T44",
+                &NameGenerator::new("Input"),
+                "Query",
+                config,
+            )
             .to_result()
             .unwrap();
 
@@ -141,7 +148,13 @@ mod test {
         );
         let config = Config::default();
         let config = OperationTypeGenerator
-            .generate(&sample, "T44", &NameGenerator::new("Input"), config)
+            .generate(
+                &sample,
+                "T44",
+                &NameGenerator::new("Input"),
+                "Mutation",
+                config,
+            )
             .to_result()
             .unwrap();
 
