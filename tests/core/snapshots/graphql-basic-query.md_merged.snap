@@ -1,0 +1,26 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server(port: 8000) @upstream(baseURL: "http://upstream/graphql") {
+  query: Query
+}
+
+interface Node {
+  id: ID!
+}
+
+type Post implements Node {
+  body: String!
+  id: ID!
+  title: String!
+}
+
+type PostsConnection {
+  posts: [Post]
+  totalCount: Int
+}
+
+type Query {
+  posts: PostsConnection @graphQL(name: "allPosts")
+}
