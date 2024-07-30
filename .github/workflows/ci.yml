@@ -381,18 +381,21 @@ jobs:
         with:
           node-version: 20.11.0
           registry-url: https://registry.npmjs.org
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: wasm32-unknown-unknown
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       - name: Install dependencies
         run: |
-          cd tailcall-wasm
+          cd npm
           npm install
-      - name: Run publish script
+      - name: Run generate-root.js script
         env:
-          APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          APP_VERSION: ${{needs.draft_release.outputs.create_release_name }}
         run: |
-          cd tailcall-wasm
+          cd npm
           npm run gen-root -- --version ${{ env.APP_VERSION }} --name @tailcallhq/tailcall
       - name: Setup .npmrc file to publish to npm
         run: echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" > ~/.npmrc
