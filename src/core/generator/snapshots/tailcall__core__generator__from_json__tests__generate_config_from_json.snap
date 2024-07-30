@@ -6,7 +6,7 @@ schema @server @upstream(baseURL: "https://example.com") {
   query: Query
 }
 
-type Children {
+type Child {
   age: Int
   name: String
 }
@@ -21,16 +21,16 @@ type F1 {
 }
 
 type F3 {
-  people: [People]
+  people: [Person]
 }
 
 type F4 {
   container: T7
 }
 
-type People {
+type Person {
   age: Int
-  children: [Children]
+  children: [Child]
   name: String
 }
 
