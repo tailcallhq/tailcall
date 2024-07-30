@@ -172,7 +172,7 @@ mod test {
     #[derive(Deserialize)]
     struct JsonFixture {
         url: String,
-        body: serde_json::Value,
+        response: serde_json::Value,
     }
 
     fn parse_json(path: &str) -> JsonFixture {
@@ -218,7 +218,7 @@ mod test {
             .query(Some("Query".into()))
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
-                response: parsed_content.body,
+                response: parsed_content.response,
                 field_name: "f1".to_string(),
                 operation_type: OperationType::Query,
             }])
@@ -249,7 +249,7 @@ mod test {
             parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
         let json_input = Input::Json {
             url: parsed_content.url.parse()?,
-            response: parsed_content.body,
+            response: parsed_content.response,
             field_name: "f1".to_string(),
             operation_type: OperationType::Query,
         };
@@ -279,7 +279,7 @@ mod test {
             let parsed_content = parse_json(json_path);
             inputs.push(Input::Json {
                 url: parsed_content.url.parse()?,
-                response: parsed_content.body,
+                response: parsed_content.response,
                 field_name: field_name_generator.next(),
                 operation_type: OperationType::Query,
             });

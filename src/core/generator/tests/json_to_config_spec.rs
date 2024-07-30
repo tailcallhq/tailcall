@@ -9,7 +9,7 @@ use url::Url;
 #[derive(Serialize, Deserialize)]
 struct JsonFixture {
     url: String,
-    body: Value,
+    response: Value,
 }
 
 datatest_stable::harness!(
@@ -33,7 +33,7 @@ pub fn run_json_to_config_spec(path: &Path) -> datatest_stable::Result<()> {
 fn load_json(path: &Path) -> anyhow::Result<(String, Value)> {
     let contents = fs::read_to_string(path)?;
     let json_data: JsonFixture = serde_json::from_str(&contents).unwrap();
-    Ok((json_data.url, json_data.body))
+    Ok((json_data.url, json_data.response))
 }
 
 fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {

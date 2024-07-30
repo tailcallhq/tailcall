@@ -92,7 +92,7 @@ mod tests {
     #[derive(Deserialize)]
     struct JsonFixture {
         url: String,
-        body: serde_json::Value,
+        response: serde_json::Value,
     }
 
     fn parse_json(path: &str) -> JsonFixture {
@@ -115,7 +115,7 @@ mod tests {
             let parsed_content = parse_json(fixture);
             request_samples.push(RequestSample::new(
                 parsed_content.url.parse()?,
-                parsed_content.body,
+                parsed_content.response,
                 &field_name_generator.next(),
                 OperationType::Query,
             ));
