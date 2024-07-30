@@ -122,7 +122,7 @@ impl Scalar {
                 async_graphql::validators::email(&s.to_string()).is_ok()
             }),
             Scalar::PhoneNumber => eval_str(value, |s| phonenumber::parse(None, s).is_ok()),
-            Scalar::Date => eval_str(value, |s| chrono::Date::parse_from_rfc3339(s).is_ok()),
+            Scalar::Date => eval_str(value, |s| chrono::DateTime::parse_from_rfc3339(s).is_ok()),
             Scalar::DateTime => eval_str(value, |s| chrono::DateTime::parse_from_rfc3339(s).is_ok()),
             Scalar::Url => eval_str(value, |s| url::Url::parse(s).is_ok()),
             Scalar::Bytes => value.as_str().is_some(),

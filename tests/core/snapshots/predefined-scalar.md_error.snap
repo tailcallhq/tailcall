@@ -25,6 +25,13 @@ expression: errors
     "description": null
   },
   {
+    "message": "Scalar type DateTime is predefined",
+    "trace": [
+      "DateTime"
+    ],
+    "description": null
+  },
+  {
     "message": "Scalar type Email is predefined",
     "trace": [
       "Email"
