@@ -96,9 +96,9 @@ async-std = { version = "1.12.0", features = [
 ] }
 ttl_cache = "0.5.1"
 protox = "0.7.0"
-protox-parse = "0.6.0"
-prost-reflect = { version = "0.13.1", features = ["serde"] }
-prost = "0.12.4"
+protox-parse = "0.7.0"
+prost-reflect = { version = "0.14.0", features = ["serde"] }
+prost = "0.13.1"
 update-informer = { version = "1.1.0", default-features = false, features = [
     "github",
     "reqwest",
@@ -154,7 +154,7 @@ rand = "0.8.5"
 tailcall-macros = { path = "tailcall-macros" }
 tailcall-tracker = { path = "tailcall-tracker", optional = true }
 tailcall-typedefs-common = { path = "./tailcall-typedefs-common" }
-tonic-types = "0.11.0"
+tonic-types = "0.12.1"
 datatest-stable = "0.2.9"
 tokio-test = "0.4.4"
 base64 = "0.22.1"
@@ -181,7 +181,7 @@ tempfile = "3.10.1"
 temp-env = "0.3.6"
 maplit = "1.0.2"
 tailcall-fixtures = { path = "./tailcall-fixtures" }
-http-cache-semantics = { version = "1.0.1", default-features = false, features = ["with_serde", "reqwest"]}
+http-cache-semantics = { version = "1.0.1", default-features = false, features = ["with_serde", "reqwest"] }
 cacache = { version = "13.0.0", default-features = false, features = ["tokio-runtime", "mmap"] }
 test-log = { version = "0.2.16", default-features = false, features = ["color", "trace"] }
 flate2 = "1.0.30"
@@ -239,7 +239,7 @@ members = [
     "tailcall-tracker",
     "tailcall-wasm",
     "tailcall-hasher"
-,
+    ,
     "tailcall-http-cache",
     "tailcall-version",
 ]
