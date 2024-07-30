@@ -1,26 +1,5 @@
 ---
 source: src/core/config/transformer/improve_type_names/improve_type_names_llm.rs
-expression: transformed_config.to_sdl()
+expression: "format!(\"{:?}\", llm_response)"
 ---
-schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "http://example.typicode.com", httpCache: 42) {
-  query: Query
-}
-
-type Color {
-  hexCode: String
-  name: String
-}
-
-type Item {
-  color: Palette
-}
-
-type Palette {
-  colors: [Color]
-  isColorPageExists: Boolean
-  isColorsImageAvailable: Boolean
-}
-
-type Query {
-  f1: Item @http(path: "/colors")
-}
+{"T3": ["Color", "Entry", "Palette", "Shade", "Hue"], "T1": ["ColorItem", "Hue", "Palette", "Tint", "Shade"], "T2": ["Palette", "Theme", "Scheme", "Design", "Style"]}

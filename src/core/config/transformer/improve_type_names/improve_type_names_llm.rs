@@ -114,4 +114,51 @@ impl ImproveTypeNamesLLM {
     }
 }
 
-//TODO: Add tests
+#[cfg(test)]
+mod test {
+    use crate::core::config::Config;
+    use crate::core::valid::Validator;
+    use std::fs;
+    use tailcall_fixtures::configs;
+
+    fn read_fixture(path: &str) -> String {
+        fs::read_to_string(path).unwrap()
+    }
+
+    #[test]
+    fn test_llm_type_name_generator_transform() {
+        let config = Config::from_sdl(read_fixture(configs::AUTO_GENERATE_CONFIG).as_str())
+            .to_result()
+            .unwrap();
+
+        let llm_response =
+            super::ImproveTypeNamesLLM::generate_llm_type_names(config.clone()).unwrap();
+        insta::assert_snapshot!(format!("{:?}", llm_response));
+    }
+
+    #[test]
+    fn test_llm_type_name_generator_with_cyclic_types() -> anyhow::Result<()> {
+        let config = Config::from_sdl(read_fixture(configs::CYCLIC_CONFIG).as_str())
+            .to_result()
+            .unwrap();
+
+        let llm_response =
+            super::ImproveTypeNamesLLM::generate_llm_type_names(config.clone()).unwrap();
+        insta::assert_snapshot!(format!("{:?}", llm_response));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_llm_type_name_generator() -> anyhow::Result<()> {
+        let config = Config::from_sdl(read_fixture(configs::NAME_GENERATION).as_str())
+            .to_result()
+            .unwrap();
+
+        let llm_response =
+            super::ImproveTypeNamesLLM::generate_llm_type_names(config.clone()).unwrap();
+        insta::assert_snapshot!(format!("{:?}", llm_response));
+
+        Ok(())
+    }
+}
