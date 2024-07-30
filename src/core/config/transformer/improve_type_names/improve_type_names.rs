@@ -117,28 +117,31 @@ pub struct ImproveTypeNames;
 
 impl ImproveTypeNames {
     fn generate_type_names(&self, mut config: Config) -> Config {
-        //TODO: avoid type name duplication
         let ai_generated_type_names = ImproveTypeNamesLLM::generate_llm_type_names(config.clone());
         let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
         let mut llm_worked = false;
 
         for (old_type_name, new_type_name) in finalized_candidates {
+            // Try to use the llm generated type names first
             if let Some(type_) = config.types.remove(old_type_name.as_str()) {
                 if let Ok(ai_generated_types) = &ai_generated_type_names {
                     if let Some(ai_generated_types) = ai_generated_types.get(&old_type_name) {
-                        llm_worked = true;
-                        // Add newly generated type.
-                        config
-                            .types
-                            .insert(ai_generated_types[0].to_owned(), type_.clone());
-
-                        // Replace all the instances of old name in config.
-                        for actual_type in config.types.values_mut() {
-                            for actual_field in actual_type.fields.values_mut() {
-                                if actual_field.type_of == old_type_name {
-                                    // Update the field's type with the new name
-                                    actual_field.type_of.clone_from(&ai_generated_types[0]);
+                        // ensure the type name is not already present in the config, else try
+                        // the next llm generated type name
+                        for type_name in ai_generated_types.iter() {
+                            if !config.types.contains_key(type_name) {
+                                llm_worked = true;
+                                config.types.insert(type_name.to_owned(), type_.clone());
+                                // Replace all the instances of old name in config.
+                                for actual_type in config.types.values_mut() {
+                                    for actual_field in actual_type.fields.values_mut() {
+                                        if actual_field.type_of == old_type_name {
+                                            // Update the field's type with the new name
+                                            actual_field.type_of.clone_from(type_name);
+                                        }
+                                    }
                                 }
+                                break;
                             }
                         }
                     }
