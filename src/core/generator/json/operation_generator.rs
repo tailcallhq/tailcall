@@ -63,3 +63,88 @@ impl OperationTypeGenerator {
         Valid::succeed(config)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::collections::BTreeMap;
+
+    use super::OperationTypeGenerator;
+    use crate::core::config::{Config, Field, Type};
+    use crate::core::generator::{NameGenerator, OperationType, RequestSample};
+    use crate::core::valid::Validator;
+
+    #[test]
+    fn test_query() {
+        let sample = RequestSample::new(
+            "https://jsonplaceholder.typicode.com/comments?postId=1"
+                .parse()
+                .unwrap(),
+            serde_json::Value::Null,
+            "postComments",
+            OperationType::Query,
+        );
+        let config = Config::default();
+        let config = OperationTypeGenerator
+            .generate(&sample, "T44", &NameGenerator::new("Input"), config)
+            .to_result()
+            .unwrap();
+
+        insta::assert_snapshot!(config.to_sdl());
+    }
+
+    #[test]
+    fn test_append_field_if_operation_type_exists() {
+        let sample = RequestSample::new(
+            "https://jsonplaceholder.typicode.com/comments?postId=1"
+                .parse()
+                .unwrap(),
+            serde_json::Value::Null,
+            "postComments",
+            OperationType::Query,
+        );
+        let mut config = Config::default();
+        let mut fields = BTreeMap::default();
+        fields.insert(
+            "post".to_owned(),
+            Field { type_of: "Int".to_owned(), ..Default::default() },
+        );
+
+        let type_ = Type { fields, ..Default::default() };
+        config.types.insert("Query".to_owned(), type_);
+
+        let config = OperationTypeGenerator
+            .generate(&sample, "T44", &NameGenerator::new("Input"), config)
+            .to_result()
+            .unwrap();
+
+        insta::assert_snapshot!(config.to_sdl());
+    }
+
+    #[test]
+    fn test_mutation() {
+        let body = r#"
+            {
+            "id": 1,
+            "title": "tailcall: modern graphQL runtime",
+            "body": "modern graphQL runtime",
+            "userId": 1
+            }
+        "#;
+
+        let sample = RequestSample::new(
+            "https://jsonplaceholder.typicode.com/posts"
+                .parse()
+                .unwrap(),
+            serde_json::Value::Null,
+            "postComments",
+            OperationType::Mutation { body: serde_json::from_str(body).unwrap() },
+        );
+        let config = Config::default();
+        let config = OperationTypeGenerator
+            .generate(&sample, "T44", &NameGenerator::new("Input"), config)
+            .to_result()
+            .unwrap();
+
+        insta::assert_snapshot!(config.to_sdl());
+    }
+}
