@@ -150,7 +150,7 @@ impl GrpcReflection {
 
         let req = req_template.render(&ctx)?.to_request()?;
 
-        let resp = self.target_runtime.http.execute(req).await?;
+        let resp = self.target_runtime.http2_only.execute(req).await?;
         let body = resp.body.as_bytes();
 
         let response: ReflectionResponse = operation.convert_output(body)?;
