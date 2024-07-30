@@ -8,7 +8,7 @@ use tailcall_macros::{gen_doc, Doc};
 
 use crate::core::json::JsonLike;
 
-const PREDEFINED_SCALARS: &[&str] = &["Boolean", "Float", "ID", "Int", "String", "DateTime"];
+const PREDEFINED_SCALARS: &[&str] = &["Boolean", "Float", "ID", "Int", "String"];
 
 lazy_static! {
     static ref CUSTOM_SCALARS: HashMap<String, Scalar> =
