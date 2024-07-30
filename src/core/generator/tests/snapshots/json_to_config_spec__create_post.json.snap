@@ -1,0 +1,25 @@
+---
+source: src/core/generator/tests/json_to_config_spec.rs
+expression: cfg.to_sdl()
+---
+schema @server @upstream {
+  mutation: Mutation
+}
+
+input T2 {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
+
+type Mutation {
+  f1(t2: T2): T1 @http(baseURL: "https://jsonplaceholder.typicode.com", body: "{{.args.t2}}", method: "POST", path: "/posts")
+}
+
+type T1 {
+  body: String
+  id: Int
+  title: String
+  userId: Int
+}
