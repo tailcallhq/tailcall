@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
-use crate::core::config::Config;
 use reqwest;
 use reqwest::Error;
 use tokio::task::JoinSet;
+
+use crate::core::config::Config;
 
 pub struct ImproveTypeNamesLLM;
 
@@ -97,7 +98,7 @@ impl ImproveTypeNamesLLM {
         llm_request: LLMRequest,
     ) -> Result<LLMResponse, Error> {
         let response = client
-            .post("https://175c-2405-201-101e-60f3-25f1-8468-2e1e-8100.ngrok-free.app/type_name")
+            .post("https://e8b2-2405-201-101e-60f3-e984-6b14-8703-e5ed.ngrok-free.app/type_name")
             .header("Content-Type", "application/json")
             .header(reqwest::header::TRANSFER_ENCODING, "chunked")
             .body(llm_request.prompt)
@@ -116,10 +117,12 @@ impl ImproveTypeNamesLLM {
 
 #[cfg(test)]
 mod test {
+    use std::fs;
+
+    use tailcall_fixtures::configs;
+
     use crate::core::config::Config;
     use crate::core::valid::Validator;
-    use std::fs;
-    use tailcall_fixtures::configs;
 
     fn read_fixture(path: &str) -> String {
         fs::read_to_string(path).unwrap()

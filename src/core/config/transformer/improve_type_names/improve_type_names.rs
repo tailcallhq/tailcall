@@ -2,11 +2,10 @@ use std::collections::{BTreeMap, HashSet};
 
 use convert_case::{Case, Casing};
 
+use super::improve_type_names_llm::ImproveTypeNamesLLM;
 use crate::core::config::Config;
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
-
-use super::improve_type_names_llm::ImproveTypeNamesLLM;
 
 #[derive(Debug, Default)]
 struct CandidateStats {
