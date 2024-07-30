@@ -85,7 +85,7 @@ type Creator {
   type: String
 }
 
-type Daum {
+type Datum {
   id: Int
   name: String
   picture: String
@@ -97,7 +97,7 @@ type Daum {
 }
 
 type Editorial {
-  data: [Daum]
+  data: [Datum]
   total: Int
 }
 

@@ -57,7 +57,7 @@ type LifetimeSaving {
   totalSavingsAmount: Int
 }
 
-type Meum {
+type Meta {
   tags: [Tag]
   tagsV2: TagsV2
 }
@@ -124,7 +124,7 @@ type ProfileInfo {
 
 type Query {
   overview: Overview @http(path: "/api/v1/pass/overview")
-  storeProducts(page_number: Int, store_id: String, subcategory_id: String, user_session_id: String): StoreProduct @http(baseURL: "https://api.zepto.co.in", path: "/api/v3/inventory/catalogue/store-products/", query: [{key: "store_id", value: "{{.args.store_id}}"}, {key: "subcategory_id", value: "{{.args.subcategory_id}}"}, {key: "page_number", value: "{{.args.page_number}}"}, {key: "user_session_id", value: "{{.args.user_session_id}}"}])
+  storeProducts(pageNumber: Int, storeId: String, subcategoryId: String, userSessionId: String): StoreProduct @http(baseURL: "https://api.zepto.co.in", path: "/api/v3/inventory/catalogue/store-products/", query: [{key: "store_id", value: "{{.args.storeId}}"}, {key: "subcategory_id", value: "{{.args.subcategoryId}}"}, {key: "page_number", value: "{{.args.pageNumber}}"}, {key: "user_session_id", value: "{{.args.userSessionId}}"}])
 }
 
 type StoreProduct {
@@ -179,7 +179,7 @@ type T431 {
   isPrimary: Boolean
   isSponsored: Boolean
   itemVariant: Empty
-  meta: Meum
+  meta: Meta
   mrp: Int
   objectId: String
   outOfStock: Boolean
