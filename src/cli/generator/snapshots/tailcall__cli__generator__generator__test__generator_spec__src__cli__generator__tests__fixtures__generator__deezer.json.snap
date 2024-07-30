@@ -57,7 +57,7 @@ type Contributor {
   type: String
 }
 
-type Daum {
+type Datum {
   album: Album
   artist: T42
   duration: Int
@@ -408,7 +408,7 @@ type T8 {
 
 type Track {
   checksum: String
-  data: [Daum]
+  data: [Datum]
 }
 
 type User {
