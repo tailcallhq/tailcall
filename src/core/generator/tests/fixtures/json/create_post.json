@@ -1,15 +1,15 @@
 {
-    "url": "https://jsonplaceholder.typicode.com/posts",
-    "response": {
-        "userId": 1,
-        "id": 1,
-        "title": "Tailcall: modern graphQL runtime.",
-        "body": " modern graphQL runtime"
-    },
-    "body": {
-        "userId": 1,
-        "id": 1,
-        "title": "Tailcall: modern graphQL runtime.",
-        "body": " modern graphQL runtime"
-    }
+  "url": "https://jsonplaceholder.typicode.com/posts",
+  "response": {
+    "userId": 1,
+    "id": 1,
+    "title": "Tailcall: modern graphQL runtime.",
+    "body": " modern graphQL runtime"
+  },
+  "body": {
+    "userId": 1,
+    "id": 1,
+    "title": "Tailcall: modern graphQL runtime.",
+    "body": " modern graphQL runtime"
+  }
 }
