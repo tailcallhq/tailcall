@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use inflector::Inflector;
+use convert_case::{Case, Casing};
 
 use crate::core::config::Config;
 use crate::core::valid::Valid;
@@ -29,7 +29,8 @@ impl PreferredNameSetter {
         for type_name in _ty_names {
             if let Some(type_1) = config.types.get(type_name) {
                 for (field_name, field_1) in type_1.fields.iter() {
-                    let singularized_name = field_name.to_singular().to_pascal_case();
+                    let singularized_name =
+                        pluralizer::pluralize(field_name, 1, false).to_case(Case::Pascal);
                     if config.types.contains_key(&singularized_name)
                         || finalized_candidates.contains_key(&field_1.type_of)
                         || config.is_scalar(&field_1.type_of)
