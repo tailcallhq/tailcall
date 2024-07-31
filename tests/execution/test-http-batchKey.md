@@ -19,7 +19,16 @@ type Foo {
   id: ID!
   fooName: String!
   barId: String!
-  bars: [Bar!]! @http(path: "/bar", query: [{key: "barId[]", value: "{{.value.barId}}"}], batchKey: ["bars", "id"])
+  bars: [Bar!]!
+    @http(
+      path: "/bar"
+      query: [
+        #
+        {key: "baz", value: "static_value"}
+        {key: "barId[]", value: "{{.value.barId}}"}
+      ]
+      batchKey: ["bars", "id"]
+    )
 }
 
 type Bar {
@@ -47,7 +56,7 @@ type Bar {
       }
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/bar?barId[]=bar_1&barId%5B%5D=bar_2
+    url: http://jsonplaceholder.typicode.com/bar?baz=static_value&barId[]=bar_1&barId%5B%5D=bar_2
   response:
     status: 200
     body:
