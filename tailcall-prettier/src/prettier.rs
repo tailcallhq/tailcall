@@ -71,7 +71,11 @@ impl Prettier {
                     child = child.arg("--config").arg(config);
                 }
 
-                let mut child = child.stdin(Stdio::piped()).stdout(Stdio::piped()).spawn()?;
+                let mut child = child
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .spawn()
+                    .map_err(|_| Error::PrettierNotFound)?;
 
                 if let Some(ref mut stdin) = child.stdin {
                     stdin.write_all(source.as_bytes())?;

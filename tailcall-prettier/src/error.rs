@@ -19,6 +19,11 @@ pub enum Error {
     #[debug(fmt = "Prettier formatting failed: {}", _0)]
     PrettierFormattingFailed(String),
 
+    #[debug(
+        fmt = "Prettier command not found. Do you have it installed and available in the PATH?"
+    )]
+    PrettierNotFound,
+
     #[debug(fmt = "No file extension found")]
     FileExtensionNotFound,
 
@@ -43,6 +48,10 @@ impl Display for Error {
             Error::Context { source, context } => {
                 write!(f, "{}\n\nCaused by:\n    {}", context, source)
             }
+            Error::PrettierNotFound => write!(
+                f,
+                "Prettier command not found. Do you have it installed and available in the PATH?"
+            ),
         }
     }
 }
