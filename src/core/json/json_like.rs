@@ -16,7 +16,7 @@ pub trait JsonLike<'json>: Sized {
 
     // Operators
     fn as_array(&self) -> Option<&Vec<Self>>;
-    fn as_object(&'json self) -> Option<&Self::JsonObject<'json>>;
+    fn as_object(&self) -> Option<&Self::JsonObject<'_>>;
     fn as_str(&self) -> Option<&str>;
     fn as_i64(&self) -> Option<i64>;
     fn as_u64(&self) -> Option<u64>;
@@ -38,12 +38,49 @@ pub trait JsonObjectLike<'obj>: Sized {
 
 #[cfg(test)]
 mod tests {
-
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    use super::super::gather_path_matches;
+    use super::{super::gather_path_matches, JsonLike, JsonObjectLike};
     use crate::core::json::group_by_key;
+
+    // for lifetime testing purposes
+    #[allow(dead_code)]
+    fn create_json_like<'a, Value: JsonLike<'a>>() -> Value {
+        unimplemented!("fake test fn")
+    }
+
+    // for lifetime testing purposes
+    #[allow(dead_code)]
+    fn test_json_like_lifetime<'a, Value: JsonLike<'a> + Clone>() -> Value {
+        let value: Value = create_json_like();
+
+        if value.is_null() {
+            return Value::null();
+        }
+
+        if value.as_bool().is_some() {
+            println!("bool");
+        }
+
+        if value.as_f64().is_some() {
+            println!("f64");
+        }
+
+        if let Some(s) = value.as_str() {
+            return Value::string(s.to_string().into());
+        }
+
+        if let Some(arr) = value.as_array() {
+            return Value::array(arr.clone());
+        }
+
+        if value.as_object().is_some() {
+            return Value::object(Value::JsonObject::new());
+        }
+
+        value
+    }
 
     #[test]
     fn test_gather_path_matches() {
