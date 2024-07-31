@@ -23,7 +23,67 @@ type User {
     method: POST
     url: http://upstream/graphql
     textBody: '{ "query": "query { user(id: 4) { friends(first: 10) { id name profilePic(size: 50) } mutualFriends(first: 10) { id name profilePic(size: 50) } } }" }'
-  expectedHits: 3
+  expectedHits: 1
+  response:
+    status: 200
+    body:
+      data:
+        user:
+          friends:
+            - id: 1
+              name: friend_1
+              profilePic: friend_1_pic
+            - id: 2
+              name: friend_2
+              profilePic: friend_2_pic
+            - id: 3
+              name: friend_3
+              profilePic: friend_3_pic
+          mutualFriends:
+            - id: 1
+              name: mutual_friend_1
+              profilePic: mutual_friend_1_pic
+            - id: 2
+              name: mutual_friend_2
+              profilePic: mutual_friend_2_pic
+            - id: 3
+              name: mutual_friend_3
+              profilePic: mutual_friend_3_pic
+- request:
+    method: POST
+    url: http://upstream/graphql
+    textBody: '{ "query": "query { user(id: 4) { friends(first: 10) { ...friendFields } mutualFriends(first: 10) { ...friendFields } } } fragment friendFields on User { id name profilePic(size: 50) }'
+  expectedHits: 1
+  response:
+    status: 200
+    body:
+      data:
+        user:
+          friends:
+            - id: 1
+              name: friend_1
+              profilePic: friend_1_pic
+            - id: 2
+              name: friend_2
+              profilePic: friend_2_pic
+            - id: 3
+              name: friend_3
+              profilePic: friend_3_pic
+          mutualFriends:
+            - id: 1
+              name: mutual_friend_1
+              profilePic: mutual_friend_1_pic
+            - id: 2
+              name: mutual_friend_2
+              profilePic: mutual_friend_2_pic
+            - id: 3
+              name: mutual_friend_3
+              profilePic: mutual_friend_3_pic
+- request:
+    method: POST
+    url: http://upstream/graphql
+    textBody: '{ "query": "query { user(id: 4) { friends(first: 10) { ...friendFields } mutualFriends(first: 10) { ...friendFields } } } fragment friendFields on User { id name ...standardProfilePic } fragment standardProfilePic on User { profilePic(size: 50) }'
+  expectedHits: 1
   response:
     status: 200
     body:
