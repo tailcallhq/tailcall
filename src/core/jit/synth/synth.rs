@@ -1,6 +1,6 @@
 use async_graphql::Positioned;
 
-use crate::core::{jit::model::{Field, Nested, OperationPlan, Variable, Variables}, json::JsonLikeOwned};
+use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
@@ -14,11 +14,8 @@ pub struct Synth<Value> {
 
 impl<Extensions, Input> Field<Extensions, Input> {
     #[inline(always)]
-    pub fn skip<'json, Value: JsonLike<'json>>(
-        &'json self,
-        variables: &'json Variables<Value>,
-    ) -> bool {
-        let eval = |variable_option: Option<&'json Variable>,
+    pub fn skip<'json, Value: JsonLike<'json>>(&self, variables: &'json Variables<Value>) -> bool {
+        let eval = |variable_option: Option<&Variable>,
                     variables: &'json Variables<Value>,
                     default: bool| {
             variable_option
@@ -34,7 +31,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
     }
 }
 
-impl<'a, Value: JsonLikeOwned + Clone> Synth<Value> {
+impl<'a, Value: JsonLike<'a> + Clone> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: OperationPlan<Value>,
@@ -45,7 +42,7 @@ impl<'a, Value: JsonLikeOwned + Clone> Synth<Value> {
     }
 
     #[inline(always)]
-    fn include<T>(&'a self, field: &'a Field<T, Value>) -> bool {
+    fn include<T>(&'a self, field: &Field<T, Value>) -> bool {
         !field.skip(&self.variables)
     }
 
@@ -217,7 +214,7 @@ mod tests {
     use async_graphql_value::ConstValue;
     use serde::{Deserialize, Serialize};
 
-    use crate::core::{blueprint::Blueprint, json::JsonLikeOwned};
+    use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JP;
@@ -299,7 +296,7 @@ mod tests {
 
     fn make_store<
         'a,
-        Value: JsonLikeOwned + Deserialize<'a> + Serialize + Clone + 'a + std::fmt::Debug,
+        Value: JsonLike<'a> + Deserialize<'a> + Serialize + Clone + std::fmt::Debug,
     >(
         query: &str,
         store: Vec<(FieldId, TestData)>,
