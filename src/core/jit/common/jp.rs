@@ -83,7 +83,14 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
     }
 }
 
-impl<'a, Value: Deserialize<'a> + Clone + 'a  + JsonLike<'a, JsonObject<'a>: JsonObjectLike<'a, Value=Value>>> JP<Value> {
+impl<
+        'a,
+        Value: Deserialize<'a>
+            + Clone
+            + 'a
+            + JsonLike<'a, JsonObject<'a>: JsonObjectLike<'a, Value = Value>>,
+    > JP<Value>
+{
     const CONFIG: &'static str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
     fn plan(query: &str, variables: &Variables<async_graphql::Value>) -> OperationPlan<Value> {

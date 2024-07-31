@@ -18,8 +18,8 @@ pub trait JsonLike<'json>: Sized {
         // use `&'json self` in the fn (that leads to error "variable does not live long enough")
         // or generic like this.
         // TODO: perhaps it could be fixed on `serde_json_borrow` side if we return `Value<'ctx>`
-        // instead of `Value<'_>` in its functions like `as_object`. In that case we can specify `Self`
-        // here and simplify usages of this trait
+        // instead of `Value<'_>` in its functions like `as_object`. In that case we can specify
+        // `Self` here and simplify usages of this trait
         Value: JsonLike<'obj>,
     >;
 
@@ -56,7 +56,8 @@ mod tests {
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    use super::{super::gather_path_matches, JsonLike, JsonObjectLike};
+    use super::super::gather_path_matches;
+    use super::{JsonLike, JsonObjectLike};
     use crate::core::json::group_by_key;
 
     // for lifetime testing purposes
