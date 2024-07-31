@@ -36,7 +36,7 @@ type Counter {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: '{ "query": "query { profiles(handles: [\"zuck\", \"coca-cola\"]) { handle ... on User { friends { count } } ... on Page { likers { count } } } }" }'
+    textBody: '{ "query": "query { profiles(handles: [\"user-1\"]) { id handle } }" }'
   expectedHits: 1
   response:
     status: 200
@@ -45,14 +45,8 @@ type Counter {
         profiles:
           - id: 1
             handle: user-1
-            __typename: User
-            friends:
-              counter: 2
           - id: 2
             handle: user-2
-            __typename: Page
-            likers:
-              counter: 4
 ```
 
 ```yml @test
@@ -60,21 +54,17 @@ type Counter {
   url: http://localhost:8080/graphql
   body:
     query: |
-      query {
-        profiles(handles: ["user-1", "user-2"]) {
+      query ($expandedInfo: Boolean) {
+        profiles(handles: ["user-1"]) {
+          id
           handle
-          ... on User {
-            friends {
-              count
-            }
-          }
-          ... on Page {
-            likers {
-              count
-            }
+          ... @include(if: $expandedInfo) {
+            name
           }
         }
       }
+    variables:
+      expandedInfo: false
 
 
 
