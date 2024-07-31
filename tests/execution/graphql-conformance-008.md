@@ -60,7 +60,7 @@ type Counter {
   url: http://localhost:8080/graphql
   body:
     query: |
-      query inlineFragmentTyping {
+      query {
         profiles(handles: ["user-1", "user-2"]) {
           handle
           ... on User {

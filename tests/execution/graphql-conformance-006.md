@@ -116,7 +116,7 @@ type User {
   url: http://localhost:8080/graphql
   body:
     query: |
-      query noFragments {
+      query {
         user(id: 4) {
           friends(first: 10) {
             id
@@ -134,7 +134,7 @@ type User {
   url: http://localhost:8080/graphql
   body:
     query: |
-      query withFragments {
+      query {
         user(id: 4) {
           friends(first: 10) {
             ...friendFields
@@ -154,7 +154,7 @@ type User {
   url: http://localhost:8080/graphql
   body:
     query: |
-      query withNestedFragments {
+      query {
         user(id: 4) {
           friends(first: 10) {
             ...friendFields
