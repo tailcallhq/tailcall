@@ -185,9 +185,9 @@ directive @http(
   """
   This represents the query parameters of your API call. You can pass it as a static 
   object or use Mustache template for dynamic parameters. These parameters will be 
-  added to the URL. When `batchKey` is present Tailcall uses the last query parameter 
-  as the key for the groupBy operator. You can overwrite this behavior by specifying 
-  the `key` property.
+  added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. 
+  The first parameter referencing a field in the current value using mustache syntax 
+  is automatically selected as the batching parameter.
   """
   query: [KeyValue]
 ) on FIELD_DEFINITION
@@ -827,9 +827,9 @@ input Http {
   """
   This represents the query parameters of your API call. You can pass it as a static 
   object or use Mustache template for dynamic parameters. These parameters will be 
-  added to the URL. When `batchKey` is present Tailcall uses the last query parameter 
-  as the key for the groupBy operator. You can overwrite this behavior by specifying 
-  the `key` property.
+  added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. 
+  The first parameter referencing a field in the current value using mustache syntax 
+  is automatically selected as the batching parameter.
   """
   query: [KeyValue]
 }
