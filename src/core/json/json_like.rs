@@ -6,7 +6,22 @@ impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}
 
 /// A trait for objects that can be used as JSON values
 pub trait JsonLike<'json>: Sized {
-    type JsonObject<'obj>: JsonObjectLike<'obj, Value: JsonLike<'obj>>;
+    type JsonObject<'obj>: JsonObjectLike<
+        'obj,
+        // generally we want to specify `Self` instead of generic here
+        // and `Self` is used anyway through JsonObjectLike for
+        // current implementations.
+        // But `Self` means the very specific type with some specific lifetime
+        // which doesn't work in case we want to return self type but with different
+        // lifetime. Currently, it affects only `as_object` fn because `serde_json_borrow`
+        // returns smaller lifetime for Value in its `as_object` fn that either forces to
+        // use `&'json self` in the fn (that leads to error "variable does not live long enough")
+        // or generic like this.
+        // TODO: perhaps it could be fixed on `serde_json_borrow` side if we return `Value<'ctx>`
+        // instead of `Value<'_>` in its functions like `as_object`. In that case we can specify `Self`
+        // here and simplify usages of this trait
+        Value: JsonLike<'obj>,
+    >;
 
     // Constructors
     fn null() -> Self;
