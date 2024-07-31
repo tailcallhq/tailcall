@@ -1,0 +1,39 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "user": {
+        "id": 4,
+        "name": "Tailcall",
+        "city": "Globe",
+        "birthday": {
+          "day": 15,
+          "month": "06"
+        },
+        "friends": [
+          {
+            "id": 1,
+            "name": "Person 1",
+            "birthday": {
+              "year": null
+            }
+          },
+          {
+            "id": 2,
+            "name": "Person 2",
+            "birthday": {
+              "year": 2000
+            }
+          }
+        ]
+      }
+    }
+  }
+}
