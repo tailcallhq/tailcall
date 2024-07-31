@@ -8,7 +8,7 @@ use tailcall_macros::{gen_doc, Doc};
 
 use crate::core::json::JsonLike;
 
-const PREDEFINED_SCALARS: &[&str] = &["Boolean", "Float", "ID", "Int", "String", "DateTime"];
+const PREDEFINED_SCALARS: &[&str] = &["Boolean", "Float", "ID", "Int", "String"];
 
 lazy_static! {
     static ref CUSTOM_SCALARS: HashMap<String, Scalar> =
@@ -31,6 +31,9 @@ pub enum Scalar {
     /// Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339).
     #[gen_doc(ty = "String")]
     Date,
+    /// Field whose value conforms to the standard datetime format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339").
+    #[gen_doc(ty = "String")]
+    DateTime,
     /// Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986).
     #[gen_doc(ty = "String")]
     Url,
@@ -120,6 +123,9 @@ impl Scalar {
             }),
             Scalar::PhoneNumber => eval_str(value, |s| phonenumber::parse(None, s).is_ok()),
             Scalar::Date => eval_str(value, |s| chrono::DateTime::parse_from_rfc3339(s).is_ok()),
+            Scalar::DateTime => {
+                eval_str(value, |s| chrono::DateTime::parse_from_rfc3339(s).is_ok())
+            }
             Scalar::Url => eval_str(value, |s| url::Url::parse(s).is_ok()),
             Scalar::Bytes => value.as_str().is_some(),
 
