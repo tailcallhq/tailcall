@@ -741,6 +741,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bstr"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40723b8fb387abc38f4f4a37c09073622e41dd12327033091ef8950659e6dc0c"
+dependencies = [
+ "memchr",
+ "regex-automata 0.4.7",
+ "serde",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5194,17 +5205,17 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.30.13"
+version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a5b4ddaee55fb2bea2bf0e5000747e5f5c0de765e5a5ff87f4cd106439f4bb3"
+checksum = "29a6b037e3af4ae9a9d6214198e4df53091363b2c96c88fc416a6c1bd92a2799"
 dependencies = [
- "cfg-if",
+ "bstr",
  "core-foundation-sys",
  "libc",
+ "memchr",
  "ntapi",
- "once_cell",
  "rayon",
- "windows 0.52.0",
+ "windows 0.57.0",
 ]
 
 [[package]]
@@ -5455,7 +5466,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "sysinfo 0.30.13",
+ "sysinfo 0.31.0",
  "tailcall-version",
  "tokio",
  "tracing",
@@ -6509,16 +6520,6 @@ dependencies = [
  "windows-implement 0.48.0",
  "windows-interface 0.48.0",
  "windows-targets 0.48.5",
-]
-
-[[package]]
-name = "windows"
-version = "0.52.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e48a53791691ab099e5e2ad123536d0fff50652600abaf43bbf952894110d0be"
-dependencies = [
- "windows-core 0.52.0",
- "windows-targets 0.52.5",
 ]
 
 [[package]]
