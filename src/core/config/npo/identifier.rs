@@ -28,8 +28,8 @@ impl Hash for TypeName<'_> {
 }
 
 impl<'a> TypeName<'a> {
-    pub fn new(name: &'a str, leaf: bool) -> Self {
-        Self { val: name, leaf }
+    pub fn new(name: &'a str) -> Self {
+        Self { val: name, leaf: false }
     }
     pub fn as_str(self) -> &'a str {
         self.val
@@ -72,21 +72,21 @@ impl<'a> Identifier<'a> {
 
     pub fn identify(mut self) -> Queries<'a> {
         if let Some(query) = &self.config.schema.query {
-            self.find_fan_out(query, false, false)
+            self.find_fan_out(query, false)
         } else {
             Default::default()
         }
     }
     #[inline(always)]
-    fn find_fan_out(&mut self, type_name: &'a str, is_list: bool, leaf: bool) -> Queries<'a> {
+    fn find_fan_out(&mut self, type_name: &'a str, is_list: bool) -> Queries<'a> {
         let config = self.config;
-        let type_name: TypeName = TypeName::new(type_name, leaf);
+        let type_name: TypeName = TypeName::new(type_name);
         let mut ans: HashMap<TypeName, HashSet<(FieldName, TypeName)>> = HashMap::new();
 
         if let Some(type_) = config.find_type(type_name.as_str()) {
             for (field_name, field) in type_.fields.iter() {
                 let cur: FieldName = FieldName(field_name.as_str());
-                let ty_of = TypeName::new(field.type_of.as_str(), leaf);
+                let ty_of = TypeName::new(field.type_of.as_str());
                 let mut tuple: (FieldName, TypeName) = (cur, ty_of);
                 let field_conditions =
                     field.has_resolver() && !field.has_batched_resolver() && is_list;
@@ -99,9 +99,7 @@ impl<'a> Identifier<'a> {
 
                 let hash = hasher.finish();
 
-                let condition = self.visited.contains(&hash);
-
-                if condition {
+                if self.visited.contains(&hash) {
                     continue;
                 } else {
                     self.visited.insert(hash);
@@ -111,7 +109,7 @@ impl<'a> Identifier<'a> {
                     tuple.1.leaf = true;
                     ans.entry(type_name).or_default().insert(tuple);
                 } else {
-                    let next = self.find_fan_out(&field.type_of, field.list || is_list, false);
+                    let next = self.find_fan_out(&field.type_of, field.list || is_list);
                     for (k, v) in next.map() {
                         ans.entry(*k).or_default().extend(v);
                         ans.entry(type_name).or_default().insert(tuple);
@@ -138,8 +136,8 @@ mod tests {
             for vec in $expected_vec {
                 for value in vec {
                     let (key, (value, ty_of)) = value;
-                    let key = TypeName::new(key, false);
-                    let value = (FieldName(value), TypeName::new(ty_of, true));
+                    let key = TypeName::new(key);
+                    let value = (FieldName(value), TypeName::new(ty_of));
                     expected.entry(key).or_default().insert(value);
                 }
             }

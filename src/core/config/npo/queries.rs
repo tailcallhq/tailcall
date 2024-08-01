@@ -48,15 +48,7 @@ impl<'a> Queries<'a> {
                     new_path.push((ty.as_str(), (field_name.as_str(), ty_of.as_str())));
                     if !visited.contains(&(ty, *field_name)) {
                         visited.insert((ty, *field_name));
-                        dfs(
-                            map,
-                            *ty_of,
-                            new_path,
-                            result,
-                            visited,
-                            ty.leaf(),
-                            // ty.depth().next().unwrap().get(),
-                        );
+                        dfs(map, *ty_of, new_path, result, visited, ty.leaf());
                         visited.remove(&(ty, *field_name));
                     }
                 }
@@ -65,18 +57,9 @@ impl<'a> Queries<'a> {
             }
         }
 
-        let (ty, _) = self
-            .map()
-            .get_key_value(&TypeName::new(self.root, false))
-            .unwrap();
-        dfs(
-            &self.map,
-            *ty,
-            Vec::new(),
-            &mut result,
-            &mut visited,
-            ty.leaf(),
-        );
+        let root = TypeName::new(self.root);
+        let leaf = root.leaf();
+        dfs(&self.map, root, Vec::new(), &mut result, &mut visited, leaf);
 
         result
             .into_iter()
