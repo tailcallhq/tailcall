@@ -34,14 +34,21 @@ impl<'a> Queries<'a> {
             path: Vec<(&'a str, (&'a str, &'a str))>,
             result: &mut Vec<Vec<(&'a str, (&'a str, &'a str))>>,
             visited: &mut HashSet<(TypeName<'a>, FieldName<'a>)>,
+            current_depth: usize,
+            max_depth: usize,
         ) {
+            if current_depth > max_depth {
+                result.push(path);
+                return;
+            }
+
             if let Some(fields) = map.get(&ty) {
                 for (field_name, ty_of) in fields {
                     let mut new_path = path.clone();
-                    new_path.push((ty.0, (field_name.as_str(), ty_of.0)));
+                    new_path.push((ty.as_str(), (field_name.as_str(), ty_of.as_str())));
                     if !visited.contains(&(ty, *field_name)) {
                         visited.insert((ty, *field_name));
-                        dfs(map, *ty_of, new_path, result, visited);
+                        dfs(map, *ty_of, new_path, result, visited, current_depth + 1, ty.depth() + 1);
                         visited.remove(&(ty, *field_name));
                     }
                 }
@@ -50,12 +57,15 @@ impl<'a> Queries<'a> {
             }
         }
 
+        let (ty,_) = self.map().get_key_value(&TypeName::new(self.root, 0)).unwrap();
         dfs(
             &self.map,
-            TypeName(self.root),
+            *ty,
             Vec::new(),
             &mut result,
             &mut visited,
+            0,
+            ty.depth() + 1,
         );
 
         result
