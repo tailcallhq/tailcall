@@ -9,7 +9,6 @@ use crate::core::valid::{Valid, Validator};
 pub struct Similarity<'a> {
     config: &'a Config,
     type_similarity_cache: PairMap<String, bool>,
-    merge_unknown_types: bool,
 }
 
 /// holds the necessary information for comparing the similarity between two
@@ -22,12 +21,8 @@ struct SimilarityTypeInfo<'a> {
 }
 
 impl<'a> Similarity<'a> {
-    pub fn new(config: &'a Config, merge_unknown_types: bool) -> Similarity {
-        Similarity {
-            config,
-            type_similarity_cache: PairMap::default(),
-            merge_unknown_types,
-        }
+    pub fn new(config: &'a Config) -> Similarity {
+        Similarity { config, type_similarity_cache: PairMap::default() }
     }
 
     pub fn similarity(
@@ -73,9 +68,8 @@ impl<'a> Similarity<'a> {
                         let unknown_scalar_types =
                             [Scalar::JSON.to_string(), Scalar::Empty.to_string()];
                         if field_1_type_of == field_2_type_of
-                            || self.merge_unknown_types
-                                && (unknown_scalar_types.contains(&field_1_type_of)
-                                    || unknown_scalar_types.contains(&field_2_type_of))
+                            || unknown_scalar_types.contains(&field_1_type_of)
+                            || unknown_scalar_types.contains(&field_2_type_of)
                         {
                             if field_1.list == field_2.list {
                                 same_field_count += 1;
@@ -205,7 +199,7 @@ mod test {
         cfg.types.insert("Bar1".to_owned(), bar1);
         cfg.types.insert("Bar2".to_owned(), bar2);
 
-        let mut gen = Similarity::new(&cfg, false);
+        let mut gen = Similarity::new(&cfg);
         let is_similar = gen
             .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.5)
             .to_result();
@@ -245,7 +239,7 @@ mod test {
         cfg.types.insert("Bar1".to_owned(), bar1);
         cfg.types.insert("Bar2".to_owned(), bar2);
 
-        let mut gen = Similarity::new(&cfg, false);
+        let mut gen = Similarity::new(&cfg);
         let is_similar = gen
             .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8)
             .to_result()
@@ -299,7 +293,7 @@ mod test {
         cfg.types.insert("Far1".to_owned(), far1);
         cfg.types.insert("Far2".to_owned(), far2);
 
-        let mut gen = Similarity::new(&cfg, false);
+        let mut gen = Similarity::new(&cfg);
         let is_similar = gen
             .similarity(("Foo1", &foo1), ("Foo2", &foo2), 0.8)
             .to_result()
@@ -338,7 +332,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config, false)
+        let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -369,7 +363,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config, false)
+        let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -404,7 +398,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config, false)
+        let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -432,7 +426,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config, false)
+        let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -460,7 +454,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config, false)
+        let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -489,7 +483,7 @@ mod test {
         config.types.insert("Foo".to_string(), ty1.clone());
         config.types.insert("Bar".to_string(), ty2.clone());
 
-        let types_equal = Similarity::new(&config, false)
+        let types_equal = Similarity::new(&config)
             .similarity(("Foo", &ty1), ("Bar", &ty2), 1.0)
             .to_result()
             .unwrap();
@@ -519,7 +513,7 @@ mod test {
         config.types.insert("Bar".to_owned(), bar.clone());
 
         // Calculate similarity between Foo and Bar
-        let result = Similarity::new(&config, false)
+        let result = Similarity::new(&config)
             .similarity(("Foo", &foo), ("Bar", &bar), 0.5)
             .to_result();
 
@@ -528,7 +522,7 @@ mod test {
     }
 
     #[test]
-    fn test_unknown_scalar_types_treated_as_same_when_flag_set_to_true() {
+    fn test_unknown_types_similarity() {
         let sdl = r#"
             type A {
                 primarySubcategoryId: String
@@ -536,10 +530,13 @@ mod test {
             type B {
                 primarySubcategoryId: Empty
             }
+            type C {
+                primarySubcategoryId: JSON
+            }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let mut similarity = Similarity::new(&config, true);
+        let mut similarity = Similarity::new(&config);
 
         let result = similarity
             .similarity(
@@ -549,32 +546,26 @@ mod test {
             )
             .to_result()
             .unwrap();
-
-        assert!(result)
-    }
-
-    #[test]
-    fn test_unknown_scalar_types_treated_different_when_flag_set_to_false() {
-        let sdl = r#"
-            type A {
-                primarySubcategoryId: String
-            }
-            type B {
-                primarySubcategoryId: Empty
-            }
-        "#;
-        let config = Config::from_sdl(sdl).to_result().unwrap();
-
-        let mut similarity = Similarity::new(&config, false);
+        assert!(result);
 
         let result = similarity
             .similarity(
-                ("B", config.types.get("B").unwrap()),
+                ("C", config.types.get("C").unwrap()),
                 ("A", config.types.get("A").unwrap()),
                 0.9,
             )
-            .to_result();
+            .to_result()
+            .unwrap();
+        assert!(result);
 
-        assert!(result.is_err())
+        let result = similarity
+            .similarity(
+                ("C", config.types.get("C").unwrap()),
+                ("B", config.types.get("B").unwrap()),
+                0.9,
+            )
+            .to_result()
+            .unwrap();
+        assert!(result);
     }
 }

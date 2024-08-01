@@ -10,12 +10,11 @@ use crate::core::valid::{Valid, Validator};
 pub struct TypeMerger {
     /// threshold required for the merging process.
     threshold: f32,
-    merge_unknown_types: bool,
 }
 
 impl TypeMerger {
-    pub fn new(threshold: f32, merge_unknown_types: bool) -> Self {
-        Self { threshold, merge_unknown_types }
+    pub fn new(threshold: f32) -> Self {
+        Self { threshold }
     }
 
     pub fn is_enabled(threshold: f32) -> bool {
@@ -25,7 +24,7 @@ impl TypeMerger {
 
 impl Default for TypeMerger {
     fn default() -> Self {
-        Self { threshold: 1.0, merge_unknown_types: false }
+        Self { threshold: 1.0 }
     }
 }
 
@@ -35,7 +34,7 @@ impl TypeMerger {
         let mut similar_type_group_list: Vec<BTreeSet<String>> = vec![];
         let mut visited_types = HashSet::new();
         let mut i = 0;
-        let mut stat_gen = Similarity::new(&config, self.merge_unknown_types);
+        let mut stat_gen = Similarity::new(&config);
         let mergeable_types = MergeableTypes::new(&config, self.threshold);
 
         // step 1: identify all the types that satisfies the thresh criteria and group
@@ -58,7 +57,6 @@ impl TypeMerger {
 
                     if let Some(type_info_2) = config.types.get(type_name_2) {
                         let threshold = mergeable_types.get_threshold(type_name_1, type_name_2);
-
                         visited_types.insert(type_name_1.clone());
                         let is_similar = stat_gen
                             .similarity(
@@ -67,6 +65,7 @@ impl TypeMerger {
                                 threshold,
                             )
                             .to_result();
+
                         if let Ok(similar) = is_similar {
                             if similar {
                                 visited_types.insert(type_name_2.clone());
@@ -251,7 +250,7 @@ mod test {
         config.types.insert("Query".to_owned(), q_type);
         config = config.query("Query");
 
-        config = TypeMerger::new(0.5, false).transform(config).to_result()?;
+        config = TypeMerger::new(0.5).transform(config).to_result()?;
 
         insta::assert_snapshot!(config.to_sdl());
 
@@ -302,7 +301,7 @@ mod test {
 
         assert_eq!(config.types.len(), 5);
 
-        config = TypeMerger::new(1.0, false).transform(config).to_result()?;
+        config = TypeMerger::new(1.0).transform(config).to_result()?;
 
         assert_eq!(config.types.len(), 2);
         insta::assert_snapshot!(config.to_sdl());
@@ -352,10 +351,7 @@ mod test {
         config.types.insert("T1".to_string(), ty1);
         config.types.insert("T2".to_string(), ty2);
 
-        let config = TypeMerger::new(0.5, false)
-            .transform(config)
-            .to_result()
-            .unwrap();
+        let config = TypeMerger::new(0.5).transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
 
