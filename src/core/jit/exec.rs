@@ -17,19 +17,19 @@ type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Error>>>>;
 #[derive(Debug, Clone, Getters)]
 pub struct ExecutionEnv<Input> {
     plan: OperationPlan<Input>,
-    err: Arc<Mutex<Vec<LocationError<jit::error::Error>>>>,
+    errors: Arc<Mutex<Vec<LocationError<jit::error::Error>>>>,
 }
 
 impl<Input> ExecutionEnv<Input> {
     pub fn new(plan: OperationPlan<Input>) -> Self {
-        Self { plan, err: Arc::new(Mutex::new(vec![])) }
+        Self { plan, errors: Arc::new(Mutex::new(vec![])) }
     }
     pub fn add_error(&self, new_error: LocationError<jit::error::Error>) {
-        self.err.lock().unwrap().push(new_error);
+        self.errors.lock().unwrap().push(new_error);
     }
 
     pub fn get_errors(&self) -> Vec<LocationError<jit::error::Error>> {
-        self.err.lock().unwrap().clone()
+        self.errors.lock().unwrap().clone()
     }
 }
 
