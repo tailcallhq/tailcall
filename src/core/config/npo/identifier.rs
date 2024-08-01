@@ -8,7 +8,7 @@ use crate::core::config::Config;
 #[derive(Clone, Copy, Debug)]
 pub struct TypeName<'a> {
     val:  &'a str,
-    depth: usize,
+    depth: Depth,
 }
 
 impl Eq for TypeName<'_> {}
@@ -26,7 +26,7 @@ impl Hash for TypeName<'_> {
 }
 
 impl<'a> TypeName<'a> {
-    pub fn new(name: &'a str, depth: usize) -> Self {
+    pub fn new(name: &'a str, depth: Depth) -> Self {
         Self {
             val: name,
             depth,
@@ -35,7 +35,7 @@ impl<'a> TypeName<'a> {
     pub fn as_str(self) -> &'a str {
         self.val
     }
-    pub fn depth(&self) -> usize {
+    pub fn depth(&self) -> Depth {
         self.depth
     }
 }
@@ -60,25 +60,25 @@ impl Display for FieldName<'_> {
         write!(f, "{}", self.0)
     }
 }
-
-struct Depth(usize);
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Depth(usize);
 
 impl Depth {
-    fn new() -> Self {
+    pub fn zero() -> Self {
         Self(0)
     }
-    fn get(&self) -> usize {
+    pub fn get(&self) -> usize {
         self.0
     }
 }
 
 impl Iterator for Depth {
-    type Item = usize;
+    type Item = Depth;
 
     fn next(&mut self) -> Option<Self::Item> {
         let Depth(ref mut depth) = *self;
         *depth += 1;
-        Some(*depth)
+        Some(*self)
     }
 }
 
@@ -94,13 +94,13 @@ impl<'a> Identifier<'a> {
 
     pub fn identify(mut self) -> Queries<'a> {
         if let Some(query) = &self.config.schema.query {
-            self.find_fan_out(query, false, 0)
+            self.find_fan_out(query, false, Depth::zero())
         } else {
             Default::default()
         }
     }
     #[inline(always)]
-    fn find_fan_out(&mut self, type_name: &'a str, is_list: bool, depth: usize) -> Queries<'a> {
+    fn find_fan_out(&mut self, type_name: &'a str, is_list: bool, mut depth: Depth) -> Queries<'a> {
         let config = self.config;
         let type_name: TypeName = TypeName::new(type_name, depth);
         let mut ans: HashMap<TypeName, HashSet<(FieldName, TypeName)>> = HashMap::new();
@@ -108,7 +108,7 @@ impl<'a> Identifier<'a> {
         if let Some(type_) = config.find_type(type_name.as_str()) {
             for (field_name, field) in type_.fields.iter() {
                 let cur: FieldName = FieldName(field_name.as_str());
-                let ty_of = TypeName::new(field.type_of.as_str(), 0);
+                let ty_of = TypeName::new(field.type_of.as_str(), Depth::zero());
                 let tuple: (FieldName, TypeName) = (cur, ty_of);
                 let field_conditions = field.has_resolver() && !field.has_batched_resolver() && is_list;
 
@@ -131,7 +131,7 @@ impl<'a> Identifier<'a> {
                 if field_conditions {
                     ans.entry(type_name).or_default().insert(tuple);
                 } else {
-                    let next = self.find_fan_out(&field.type_of, field.list || is_list, depth + 1);
+                    let next = self.find_fan_out(&field.type_of, field.list || is_list, depth.next().unwrap());
                     for (k, v) in next.map() {
                         ans.entry(*k).or_default().extend(v);
                         ans.entry(type_name).or_default().insert(tuple);
@@ -159,8 +159,8 @@ mod tests {
             for vec in $expected_vec {
                 for value in vec {
                     let (key, (value, ty_of)) = value;
-                    let key = TypeName::new(key, 0);
-                    let value = (FieldName(value), TypeName::new(ty_of, 0));
+                    let key = TypeName::new(key, Depth::zero());
+                    let value = (FieldName(value), TypeName::new(ty_of, Depth::zero()));
                     expected
                         .entry(key)
                         .or_default()

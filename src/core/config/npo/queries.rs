@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 use derive_getters::Getters;
 
-use crate::core::config::npo::{FieldName, TypeName};
+use crate::core::config::npo::{Depth, FieldName, TypeName};
 
 ///
 /// Represents a list of query paths that can issue a N + 1 query
@@ -48,7 +48,7 @@ impl<'a> Queries<'a> {
                     new_path.push((ty.as_str(), (field_name.as_str(), ty_of.as_str())));
                     if !visited.contains(&(ty, *field_name)) {
                         visited.insert((ty, *field_name));
-                        dfs(map, *ty_of, new_path, result, visited, current_depth + 1, ty.depth() + 1);
+                        dfs(map, *ty_of, new_path, result, visited, current_depth + 1, ty.depth().next().unwrap().get());
                         visited.remove(&(ty, *field_name));
                     }
                 }
@@ -57,7 +57,7 @@ impl<'a> Queries<'a> {
             }
         }
 
-        let (ty,_) = self.map().get_key_value(&TypeName::new(self.root, 0)).unwrap();
+        let (ty,_) = self.map().get_key_value(&TypeName::new(self.root, Depth::zero())).unwrap();
         dfs(
             &self.map,
             *ty,
@@ -65,7 +65,7 @@ impl<'a> Queries<'a> {
             &mut result,
             &mut visited,
             0,
-            ty.depth() + 1,
+            ty.depth().next().unwrap().get(),
         );
 
         result
