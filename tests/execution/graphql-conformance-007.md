@@ -1,6 +1,7 @@
 ---
 skip: true
 ---
+
 # Test named fragments
 
 ```graphql @config

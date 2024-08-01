@@ -1,6 +1,7 @@
 ---
 skip: true
 ---
+
 # Test complex nested query
 
 ```graphql @config

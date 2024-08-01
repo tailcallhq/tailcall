@@ -1,6 +1,7 @@
 ---
 skip: true
 ---
+
 # Test inline fragments
 
 ```graphql @config

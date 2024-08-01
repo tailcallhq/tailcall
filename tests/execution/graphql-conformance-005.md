@@ -1,6 +1,7 @@
 ---
 skip: true
 ---
+
 # Test field aliasing
 
 ```graphql @config

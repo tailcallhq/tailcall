@@ -1,6 +1,7 @@
 ---
 skip: true
 ---
+
 # Test scalars and remote directives
 
 ```graphql @config
