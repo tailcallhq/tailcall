@@ -1,14 +1,16 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::hash::{Hash, Hasher};
+
 use tailcall_hasher::TailcallHasher;
+
 use super::Queries;
 use crate::core::config::Config;
 
 #[derive(Clone, Copy, Debug)]
 pub struct TypeName<'a> {
-    val:  &'a str,
-    depth: Depth,
+    val: &'a str,
+    leaf: bool,
 }
 
 impl Eq for TypeName<'_> {}
@@ -26,17 +28,14 @@ impl Hash for TypeName<'_> {
 }
 
 impl<'a> TypeName<'a> {
-    pub fn new(name: &'a str, depth: Depth) -> Self {
-        Self {
-            val: name,
-            depth,
-        }
+    pub fn new(name: &'a str, leaf: bool) -> Self {
+        Self { val: name, leaf }
     }
     pub fn as_str(self) -> &'a str {
         self.val
     }
-    pub fn depth(&self) -> Depth {
-        self.depth
+    pub fn leaf(&self) -> bool {
+        self.leaf
     }
 }
 impl Display for TypeName<'_> {
@@ -60,27 +59,6 @@ impl Display for FieldName<'_> {
         write!(f, "{}", self.0)
     }
 }
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Depth(usize);
-
-impl Depth {
-    pub fn zero() -> Self {
-        Self(0)
-    }
-    pub fn get(&self) -> usize {
-        self.0
-    }
-}
-
-impl Iterator for Depth {
-    type Item = Depth;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let Depth(ref mut depth) = *self;
-        *depth += 1;
-        Some(*self)
-    }
-}
 
 pub struct Identifier<'a> {
     config: &'a Config,
@@ -94,23 +72,24 @@ impl<'a> Identifier<'a> {
 
     pub fn identify(mut self) -> Queries<'a> {
         if let Some(query) = &self.config.schema.query {
-            self.find_fan_out(query, false, Depth::zero())
+            self.find_fan_out(query, false, false)
         } else {
             Default::default()
         }
     }
     #[inline(always)]
-    fn find_fan_out(&mut self, type_name: &'a str, is_list: bool, mut depth: Depth) -> Queries<'a> {
+    fn find_fan_out(&mut self, type_name: &'a str, is_list: bool, leaf: bool) -> Queries<'a> {
         let config = self.config;
-        let type_name: TypeName = TypeName::new(type_name, depth);
+        let type_name: TypeName = TypeName::new(type_name, leaf);
         let mut ans: HashMap<TypeName, HashSet<(FieldName, TypeName)>> = HashMap::new();
 
         if let Some(type_) = config.find_type(type_name.as_str()) {
             for (field_name, field) in type_.fields.iter() {
                 let cur: FieldName = FieldName(field_name.as_str());
-                let ty_of = TypeName::new(field.type_of.as_str(), Depth::zero());
-                let tuple: (FieldName, TypeName) = (cur, ty_of);
-                let field_conditions = field.has_resolver() && !field.has_batched_resolver() && is_list;
+                let ty_of = TypeName::new(field.type_of.as_str(), leaf);
+                let mut tuple: (FieldName, TypeName) = (cur, ty_of);
+                let field_conditions =
+                    field.has_resolver() && !field.has_batched_resolver() && is_list;
 
                 let mut hasher = TailcallHasher::default();
                 type_name.hash(&mut hasher);
@@ -129,9 +108,10 @@ impl<'a> Identifier<'a> {
                 }
 
                 if field_conditions {
+                    tuple.1.leaf = true;
                     ans.entry(type_name).or_default().insert(tuple);
                 } else {
-                    let next = self.find_fan_out(&field.type_of, field.list || is_list, depth.next().unwrap());
+                    let next = self.find_fan_out(&field.type_of, field.list || is_list, false);
                     for (k, v) in next.map() {
                         ans.entry(*k).or_default().extend(v);
                         ans.entry(type_name).or_default().insert(tuple);
@@ -151,7 +131,6 @@ mod tests {
     use super::*;
     use crate::core::config::npo::Queries;
     use crate::core::config::{Config, Field, Http, Type};
-    use crate::core::valid::Validator;
 
     macro_rules! assert_eq_map {
         ($actual:expr, $expected_vec:expr) => {{
@@ -159,12 +138,9 @@ mod tests {
             for vec in $expected_vec {
                 for value in vec {
                     let (key, (value, ty_of)) = value;
-                    let key = TypeName::new(key, Depth::zero());
-                    let value = (FieldName(value), TypeName::new(ty_of, Depth::zero()));
-                    expected
-                        .entry(key)
-                        .or_default()
-                        .insert(value);
+                    let key = TypeName::new(key, false);
+                    let value = (FieldName(value), TypeName::new(ty_of, true));
+                    expected.entry(key).or_default().insert(value);
                 }
             }
 
@@ -478,95 +454,4 @@ mod tests {
 
         assert_eq_map!(actual, expected);
     }
-    #[test]
-    fn test_jp_config() {
-        let config = r#"
-        schema
-  @server(port: 8000, headers: {cors: {allowOrigins: ["*"], allowHeaders: ["*"], allowMethods: [POST, GET, OPTIONS]}})
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
-  query: Query
-  mutation: Mutation
 }
-
-type Query {
-  posts: [Post] @http(path: "/posts")
-  users: [User] @http(path: "/users")
-  user(id: ID!): User @http(path: "/users/{{.args.id}}")
-  post(id: ID!): Post @http(path: "/posts/{{.args.id}}")
-  getUserIdOrEmail(id: ID!): UserIdOrEmail @http(path: "/users/{{.args.id}}")
-}
-
-type UserId {
-  id: ID!
-}
-
-type UserEmail {
-  email: String!
-}
-
-union UserIdOrEmail = UserId | UserEmail
-
-type Mutation {
-  createUser(user: InputUser!): User @http(method: POST, path: "/users", body: "{{args.user}}")
-  createPost(post: InputPost!): Post @http(method: POST, path: "/posts", body: "{{args.post}}")
-}
-
-input InputPost {
-  id: ID = 101
-  userId: ID!
-  title: String!
-  body: String!
-}
-
-input InputUser {
-  id: ID!
-  name: String!
-  username: String!
-  email: String!
-  phone: String
-  website: String
-}
-
-type User {
-  id: ID!
-  name: String!
-  username: String!
-  email: String!
-  phone: String
-  website: String
-  address: Address
-  todo: Todo @http(path: "/todos/{{.value.id}}")
-}
-
-type Todo {
-  id: ID!
-  userId: ID!
-  title: String
-  completed: Boolean
-}
-
-type Address {
-  street: String
-  suite: String
-  city: String
-  zipcode: String
-}
-
-type Post {
-  id: ID!
-  userId: ID!
-  title: String!
-  body: String!
-  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
-}
-
-        "#;
-        let config = Config::from_sdl(config).to_result().unwrap();
-        let actual = config.n_plus_one();
-        let formatted = actual.to_string();
-        println!("{}", formatted);
-    }
-}
-
-// query { posts { user } }
-// query { users { todo } }

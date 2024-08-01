@@ -1,0 +1,6 @@
+---
+source: src/core/config/npo/queries.rs
+expression: "formatted.join(\"\\n\")"
+---
+query { posts { user } }
+query { users { todo } }

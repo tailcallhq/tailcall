@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 use derive_getters::Getters;
 
-use crate::core::config::npo::{Depth, FieldName, TypeName};
+use crate::core::config::npo::{FieldName, TypeName};
 
 ///
 /// Represents a list of query paths that can issue a N + 1 query
@@ -31,13 +31,13 @@ impl<'a> Queries<'a> {
         fn dfs<'a>(
             map: &HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
             ty: TypeName<'a>,
-            path: Vec<(&'a str, (&'a str, &'a str))>,
+            mut path: Vec<(&'a str, (&'a str, &'a str))>,
             result: &mut Vec<Vec<(&'a str, (&'a str, &'a str))>>,
             visited: &mut HashSet<(TypeName<'a>, FieldName<'a>)>,
-            current_depth: usize,
-            max_depth: usize,
+            leaf: bool,
         ) {
-            if current_depth > max_depth {
+            if leaf {
+                path.pop();
                 result.push(path);
                 return;
             }
@@ -48,7 +48,15 @@ impl<'a> Queries<'a> {
                     new_path.push((ty.as_str(), (field_name.as_str(), ty_of.as_str())));
                     if !visited.contains(&(ty, *field_name)) {
                         visited.insert((ty, *field_name));
-                        dfs(map, *ty_of, new_path, result, visited, current_depth + 1, ty.depth().next().unwrap().get());
+                        dfs(
+                            map,
+                            *ty_of,
+                            new_path,
+                            result,
+                            visited,
+                            ty.leaf(),
+                            // ty.depth().next().unwrap().get(),
+                        );
                         visited.remove(&(ty, *field_name));
                     }
                 }
@@ -57,15 +65,17 @@ impl<'a> Queries<'a> {
             }
         }
 
-        let (ty,_) = self.map().get_key_value(&TypeName::new(self.root, Depth::zero())).unwrap();
+        let (ty, _) = self
+            .map()
+            .get_key_value(&TypeName::new(self.root, false))
+            .unwrap();
         dfs(
             &self.map,
             *ty,
             Vec::new(),
             &mut result,
             &mut visited,
-            0,
-            ty.depth().next().unwrap().get(),
+            ty.leaf(),
         );
 
         result
@@ -115,6 +125,8 @@ impl<'a> Display for Queries<'a> {
 #[cfg(test)]
 mod tests {
     use crate::core::config::{Config, Field, Http, Type};
+    use crate::core::valid::Validator;
+
     #[test]
     fn test_npo_resolvers() {
         let config = Config::default().query("Query").types(vec![
@@ -274,6 +286,21 @@ mod tests {
 
         let actual = config.n_plus_one();
 
+        let formatted = actual.to_string();
+        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
+        formatted.sort();
+        insta::assert_snapshot!(formatted.join("\n"));
+    }
+    #[test]
+    fn test_jp_config() {
+        let config = Config::from_sdl(
+            std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER_MUTATION)
+                .unwrap()
+                .as_str(),
+        )
+        .to_result()
+        .unwrap();
+        let actual = config.n_plus_one();
         let formatted = actual.to_string();
         let mut formatted = formatted.split('\n').collect::<Vec<_>>();
         formatted.sort();
