@@ -9,10 +9,10 @@ expression: response
   },
   "body": {
     "data": {
-      "user": {
-        "city": "Globe",
+      "customer": {
+        "id": 4,
         "name": "Tailcall",
-        "id": 4
+        "date_of_birth": "2000-01-01"
       }
     }
   }

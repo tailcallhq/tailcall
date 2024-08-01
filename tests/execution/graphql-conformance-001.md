@@ -22,15 +22,14 @@ type User {
     method: POST
     url: http://upstream/graphql
     textBody: '{ "query": "query { user(id: 4) { city name } }" }'
-  expectedHits: 2
+  expectedHits: 1
   response:
     status: 200
     body:
       data:
         user:
-          id: 4
-          name: Tailcall
           city: Globe
+          name: Tailcall
 - request:
     method: POST
     url: http://upstream/graphql
@@ -41,14 +40,14 @@ type User {
     body:
       data:
         user:
-          id: 4
-          name: Tailcall
           city: Globe
+          name: Tailcall
+          id: 4
 - request:
     method: POST
     url: http://upstream/graphql
     textBody: '{ "query": "query { user(id: 4) { id name city } }" }'
-  expectedHits: 2
+  expectedHits: 1
   response:
     status: 200
     body:
@@ -65,16 +64,6 @@ type User {
   body:
     query: |
       {
-        user(id: 4) {
-          city
-          name
-        }
-      }
-- method: POST
-  url: http://localhost:8080/graphql
-  body:
-    query: |
-      query {
         user(id: 4) {
           city
           name

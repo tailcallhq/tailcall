@@ -10,9 +10,9 @@ expression: response
   "body": {
     "data": {
       "user": {
-        "city": "Globe",
+        "id": 4,
         "name": "Tailcall",
-        "id": 4
+        "profilePic": "profile_pic_200_100"
       }
     }
   }
