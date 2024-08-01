@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use derive_setters::Setters;
 
 use crate::core::config::Config;
@@ -14,7 +12,6 @@ pub struct Preset {
     pub tree_shake: bool,
     pub use_better_names: bool,
     unwrap_single_field_types: bool,
-    suggested_names: HashSet<String>,
 }
 
 impl Preset {
@@ -25,7 +22,6 @@ impl Preset {
             tree_shake: false,
             use_better_names: false,
             unwrap_single_field_types: true,
-            suggested_names: HashSet::new(),
         }
     }
 }
@@ -46,14 +42,7 @@ impl Transform for Preset {
                     .when(super::TypeMerger::is_enabled(self.merge_type)),
             )
             .pipe(super::FlattenSingleField.when(self.unwrap_single_field_types))
-            .pipe(
-                super::PreferredNameSetter::new(self.suggested_names.clone())
-                    .when(!self.suggested_names.is_empty()),
-            )
-            .pipe(
-                super::ImproveTypeNames::new(self.suggested_names.clone())
-                    .when(self.use_better_names),
-            )
+            .pipe(super::ImproveTypeNames.when(self.use_better_names))
             .pipe(
                 super::ConsolidateURL::new(self.consolidate_url)
                     .when(super::ConsolidateURL::is_enabled(self.consolidate_url)),
@@ -70,7 +59,6 @@ impl Default for Preset {
             use_better_names: true,
             tree_shake: true,
             unwrap_single_field_types: false,
-            suggested_names: HashSet::new(),
         }
     }
 }

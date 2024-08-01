@@ -12,12 +12,12 @@ type Color {
   isColorsImageAvailable: Boolean
 }
 
-type Query {
-  f1: T1 @http(path: "/colors")
+type F1 {
+  color: Color
 }
 
-type T1 {
-  color: Color
+type Query {
+  f1: F1 @http(path: "/colors")
 }
 
 type T3 {

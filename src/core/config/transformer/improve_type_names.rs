@@ -7,14 +7,42 @@ use crate::core::config::Config;
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct CandidateStats {
     frequency: u32,
+    priority: Priority,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Priority {
+    High,
+    Medium,
+}
+
+impl Priority {
+    fn as_u8(&self) -> u8 {
+        match self {
+            Priority::High => 3,
+            Priority::Medium => 2,
+        }
+    }
+}
+
+impl std::cmp::Ord for Priority {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.as_u8().cmp(&other.as_u8())
+    }
+}
+
+impl std::cmp::PartialOrd for Priority {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 struct CandidateConvergence<'a> {
     /// maintains the generated candidates in the form of
-    /// {TypeName: {{candidate_name: {frequency: 1}}}}
+    /// {TypeName: {{candidate_name: {frequency: 1, priority: 2}}}}
     candidates: IndexMap<String, IndexMap<String, CandidateStats>>,
     config: &'a Config,
 }
@@ -44,8 +72,8 @@ impl<'a> CandidateConvergence<'a> {
             });
 
             // Find the candidate with the highest frequency and priority
-            if let Some((candidate_name, _)) =
-                candidates_to_consider.max_by_key(|(key, value)| (value.frequency, *key))
+            if let Some((candidate_name, _)) = candidates_to_consider
+                .max_by_key(|(key, value)| (value.priority, value.frequency, *key))
             {
                 let singularized_candidate_name = candidate_name.to_case(Case::Pascal);
                 finalized_candidates
@@ -60,7 +88,7 @@ impl<'a> CandidateConvergence<'a> {
 
 struct CandidateGeneration<'a> {
     /// maintains the generated candidates in the form of
-    /// {TypeName: {{candidate_name: {frequency: 1}}}}
+    /// {TypeName: {{candidate_name: {frequency: 1, priority: 2}}}}
     candidates: IndexMap<String, IndexMap<String, CandidateStats>>,
     config: &'a Config,
 }
@@ -73,17 +101,27 @@ impl<'a> CandidateGeneration<'a> {
     /// Generates candidate type names based on the provided configuration.
     /// This method iterates over the configuration and collects candidate type
     /// names for each type.
-    fn generate(mut self, exclude_types: &HashSet<String>) -> CandidateConvergence<'a> {
-        let exclude_types = exclude_types
-            .iter()
-            .map(|s| s.to_lowercase())
-            .collect::<HashSet<_>>();
+    fn generate(mut self) -> CandidateConvergence<'a> {
+        let mut types_processing_order = [
+            &self.config.schema.query,
+            &self.config.schema.mutation,
+            &self.config.schema.subscription,
+        ]
+        .iter()
+        .flat_map(|t| t.as_ref())
+        .chain(self.config.types.keys())
+        .collect::<Vec<_>>();
+
+        // we want to process the operation types first so we add it manually and then
+        // use the all types in config, so inorder to process each type only once we
+        // remove the duplicate operation types which got added via
+        // `self.config.types.keys()`.
+        types_processing_order.dedup();
+
         for type_name in self.config.types.keys() {
             if let Some(type_info) = self.config.types.get(type_name) {
                 for (field_name, field_info) in type_info.fields.iter() {
-                    if self.config.is_scalar(&field_info.type_of)
-                        || exclude_types.contains(&field_info.type_of.to_lowercase())
-                    {
+                    if self.config.is_scalar(&field_info.type_of) {
                         // if output type is scalar or present in exclude list then skip it.
                         continue;
                     }
@@ -94,11 +132,23 @@ impl<'a> CandidateGeneration<'a> {
                         .or_default();
 
                     let singularized_candidate = pluralizer::pluralize(field_name, 1, false);
+                    let priority = if self.config.is_root_operation_type(type_name) {
+                        Priority::High // user suggested name has the highest
+                                       // priority over
+                                       // auto inferred names.
+                    } else {
+                        Priority::Medium
+                    };
 
-                    if let Some(key_val) = inner_map.get_mut(&singularized_candidate) {
-                        key_val.frequency += 1
-                    } else if !self.config.is_root_operation_type(type_name) {
-                        inner_map.insert(singularized_candidate, CandidateStats { frequency: 1 });
+                    if let Some(val) = inner_map.get_mut(&singularized_candidate) {
+                        val.frequency += 1;
+                        val.priority = std::cmp::max(val.priority, priority);
+                    } else {
+                        // generate the backup name:
+                        inner_map.insert(
+                            singularized_candidate,
+                            CandidateStats { frequency: 1, priority },
+                        );
                     }
                 }
             }
@@ -108,21 +158,13 @@ impl<'a> CandidateGeneration<'a> {
 }
 
 #[derive(Default)]
-pub struct ImproveTypeNames {
-    exclude_types: HashSet<String>,
-}
+pub struct ImproveTypeNames;
 
 impl ImproveTypeNames {
-    pub fn new(exclude_types: HashSet<String>) -> Self {
-        Self { exclude_types }
-    }
-
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
     fn generate_type_names(&self, mut config: Config) -> Config {
-        let finalized_candidates = CandidateGeneration::new(&config)
-            .generate(&self.exclude_types)
-            .converge();
+        let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
 
         for (old_type_name, new_type_name) in finalized_candidates {
             if let Some(type_) = config.types.remove(old_type_name.as_str()) {
@@ -177,10 +219,7 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames::default()
-            .transform(config)
-            .to_result()
-            .unwrap();
+        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
     }
 
@@ -190,10 +229,7 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames::default()
-            .transform(config)
-            .to_result()
-            .unwrap();
+        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
@@ -205,10 +241,7 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames::default()
-            .transform(config)
-            .to_result()
-            .unwrap();
+        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
@@ -232,10 +265,7 @@ mod test {
         let mut ignore_types = HashSet::new();
         ignore_types.insert("userPosts".to_owned());
 
-        let config = ImproveTypeNames::default()
-            .transform(config)
-            .to_result()
-            .unwrap();
+        let config = ImproveTypeNames.transform(config).to_result().unwrap();
 
         insta::assert_snapshot!(config.to_sdl());
     }

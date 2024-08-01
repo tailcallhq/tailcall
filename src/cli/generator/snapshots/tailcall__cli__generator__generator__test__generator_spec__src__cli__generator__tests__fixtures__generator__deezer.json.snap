@@ -86,18 +86,27 @@ type Creator {
 }
 
 type Datum {
+  album: M2
+  artist: T42
+  duration: Int
+  explicit_content_cover: Int
+  explicit_content_lyrics: Int
+  explicit_lyrics: Boolean
   id: Int
-  name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
+  link: String
+  md5_image: String
+  preview: String
+  rank: Int
+  readable: Boolean
+  time_add: Int
+  title: String
+  title_short: String
+  title_version: String
   type: String
 }
 
 type Editorial {
-  data: [Datum]
+  data: [T185]
   total: Int
 }
 
@@ -167,29 +176,9 @@ type Search {
   total: Int
 }
 
-type T142 {
-  album: M2
-  artist: T42
-  duration: Int
-  explicit_content_cover: Int
-  explicit_content_lyrics: Int
-  explicit_lyrics: Boolean
-  id: Int
-  link: String
-  md5_image: String
-  preview: String
-  rank: Int
-  readable: Boolean
-  time_add: Int
-  title: String
-  title_short: String
-  title_version: String
-  type: String
-}
-
 type T143 {
   checksum: String
-  data: [T142]
+  data: [Datum]
 }
 
 type T145 {
@@ -293,6 +282,17 @@ type T182 {
   picture_xl: String
   share: String
   title: String
+  type: String
+}
+
+type T185 {
+  id: Int
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
   type: String
 }
 
