@@ -1,4 +1,4 @@
-# Test field inputs query
+# Test ordering of input fields
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
@@ -7,13 +7,18 @@ schema
 }
 
 type Query {
-  user(id: ID!): User! @graphQL(name: "user", args: [{key: "id", value: "{{.args.id}}"}])
+  nearby(location: Location): Point @graphQL(name: "nearby", args: [{key: "location", value: "{{.args.location}}"}])
 }
 
-type User {
+type Location {
+  lon: Int!
+  lat: Int!
+}
+
+type Point {
   id: ID!
   name: String!
-  profilePic(size: Int, width: Int, height: Int): String!
+  location: Location
 }
 ```
 
@@ -21,29 +26,27 @@ type User {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: '{ "query": "query { user(id: 4) { id name profilePic(size: 100) } }" }'
+    textBody: '{ "query": "query { nearby(location: {lon: 12.43, lat: -53.211}) { id name } }" }'
   expectedHits: 1
   response:
     status: 200
     body:
       data:
-        user:
-          id: 4
-          name: Tailcall
-          profilePic: pic_100
+        nearby:
+          id: 12
+          name: Location 12
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: '{ "query": "query { user(id: 4) { id name profilePic(width: 200,height: 100) } }" }'
+    textBody: '{ "query": "query { nearby(location: {lat: -53.211, lon: 12.43}) { id name } }" }'
   expectedHits: 1
   response:
     status: 200
     body:
       data:
-        user:
-          id: 4
-          name: Tailcall
-          profilePic: pic_100_200
+        nearby:
+          id: 12
+          name: Location 12
 ```
 
 ```yml @test
@@ -52,10 +55,9 @@ type User {
   body:
     query: |
       {
-        user(id: 4) {
+        nearby(location: { lat: -53.211, lon: 12.43 }) {
           id
           name
-          profilePic(size: 100)
         }
       }
 - method: POST
@@ -63,9 +65,11 @@ type User {
   body:
     query: |
       {
-        user(id: 4) {
+        nearby(location: { lon: 12.43, lat: -53.211 }) {
           id
           name
-          profilePic(width: 200, height: 100)
         }
       }
+
+
+
