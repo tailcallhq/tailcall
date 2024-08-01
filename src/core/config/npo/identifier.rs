@@ -91,13 +91,18 @@ impl<'a> Identifier<'a> {
                 let field_conditions =
                     field.has_resolver() && !field.has_batched_resolver() && is_list;
 
-                let mut hasher = TailcallHasher::default();
-                type_name.hash(&mut hasher);
-                cur.as_str().hash(&mut hasher);
-                ty_of.as_str().hash(&mut hasher);
-                field_conditions.hash(&mut hasher);
+                let hash = {
+                    let mut hasher = TailcallHasher::default();
+                    type_name.hash(&mut hasher);
+                    cur.as_str().hash(&mut hasher);
+                    ty_of.as_str().hash(&mut hasher);
 
-                let hash = hasher.finish();
+                    // fields can be of the same type,
+                    // so it is necessary to hash
+                    // field conditions as well
+                    field_conditions.hash(&mut hasher);
+                    hasher.finish()
+                };
 
                 if self.visited.contains(&hash) {
                     continue;
@@ -106,7 +111,13 @@ impl<'a> Identifier<'a> {
                 }
 
                 if field_conditions {
+                    // We do not recurse further if we found a field where
+                    // `field_conditions` is true.
+                    // However, there could be a case where
+                    // the field is already present in the hashmap.
+                    // So we mark the end point as leaf node to set a termination point.
                     tuple.1.leaf = true;
+
                     ans.entry(type_name).or_default().insert(tuple);
                 } else {
                     let next = self.find_fan_out(&field.type_of, field.list || is_list);

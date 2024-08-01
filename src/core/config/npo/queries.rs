@@ -37,6 +37,9 @@ impl<'a> Queries<'a> {
             leaf: bool,
         ) {
             if leaf {
+                // if we hit this condition then it means
+                // there is an extra node in the path.
+                // we can safely pop it out and add the path to the result
                 path.pop();
                 result.push(path);
                 return;
