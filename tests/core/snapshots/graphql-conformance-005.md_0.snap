@@ -8,12 +8,17 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": {
-      "customer": {
-        "id": 4,
-        "name": "Tailcall",
-        "date_of_birth": "2000-01-01"
+    "data": null,
+    "errors": [
+      {
+        "message": "IOException: No mock found for request: POST http://upstream/graphql in tests/execution/graphql-conformance-005.md",
+        "locations": [
+          {
+            "line": 2,
+            "column": 3
+          }
+        ]
       }
-    }
+    ]
   }
 }

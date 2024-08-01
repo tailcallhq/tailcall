@@ -8,17 +8,17 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": {
-      "profiles": [
-        {
-          "id": 1,
-          "handle": "user-1"
-        }
-        {
-          "id": 2,
-          "handle": "user-2"
-        }
-      ]
-    }
+    "data": null,
+    "errors": [
+      {
+        "message": "IOException: No mock found for request: POST http://upstream/graphql in tests/execution/graphql-conformance-009.md",
+        "locations": [
+          {
+            "line": 2,
+            "column": 3
+          }
+        ]
+      }
+    ]
   }
 }

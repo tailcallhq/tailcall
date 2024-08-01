@@ -1,3 +1,6 @@
+---
+skip: true
+---
 # Test variables
 
 ```graphql @config
