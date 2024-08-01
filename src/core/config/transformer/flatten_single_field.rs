@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-
+use tonic::codegen::tokio_stream::StreamExt;
 use crate::core::config::{AddField, Config, Omit};
 use crate::core::transform::Transform;
 use crate::core::valid::{Valid, Validator};
@@ -56,11 +56,10 @@ impl Transform for FlattenSingleField {
     type Error = String;
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let origin_config = config.clone();
-        if let Some(root) = &config.schema.query {
-            let root_query = config.types.get_mut(root);
-            if let Some(root_query) = root_query {
+        if config.schema.query.is_some() {
+            Valid::from_iter(config.types.values_mut(), |ty| {
                 let field_trans =
-                    Valid::from_iter(root_query.fields.iter_mut(), |(name, field)| {
+                    Valid::from_iter(ty.fields.iter_mut(), |(name, field)| {
                         let mut visited_types = HashSet::<String>::new();
                         if let Some(path) = get_single_field_path(
                             &origin_config,
@@ -70,17 +69,15 @@ impl Transform for FlattenSingleField {
                         ) {
                             if path.len() > 1 {
                                 field.omit = Some(Omit {});
-                                root_query
+                                ty
                                     .added_fields
                                     .push(AddField { name: name.to_owned(), path });
                             }
                         }
                         Valid::succeed(())
                     });
-                field_trans.map(|_| config)
-            } else {
-                Valid::fail("Query type is not existed.".to_owned())
-            }
+                field_trans
+            }).map(|_| config)
         } else {
             Valid::succeed(config)
         }
