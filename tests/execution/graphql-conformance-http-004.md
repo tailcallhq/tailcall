@@ -1,4 +1,5 @@
 # Test complex aliasing
+
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
@@ -17,9 +18,9 @@ type User {
     @http(
       path: "/pic"
       query: [
-        {key: "id", value: "{{.value.id}}"},
-        {key: "size", value: "{{.args.size}}"},
-        {key: "width", value: "{{.args.width}}"},
+        {key: "id", value: "{{.value.id}}"}
+        {key: "size", value: "{{.args.size}}"}
+        {key: "width", value: "{{.args.width}}"}
         {key: "height", value: "{{.args.height}}"}
       ]
     )
@@ -65,3 +66,4 @@ type User {
           bigPic: profilePic(size: 1024)
         }
       }
+```

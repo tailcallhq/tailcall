@@ -1,4 +1,5 @@
 # Test scalars and remote directives
+
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
@@ -54,6 +55,4 @@ directive @log on FIELD
           createdAt @log
         }
       }
-
-
-
+```

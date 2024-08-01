@@ -1,4 +1,5 @@
 # Test unions
+
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
@@ -57,6 +58,4 @@ type Photo {
           }
         }
       }
-
-
-
+```

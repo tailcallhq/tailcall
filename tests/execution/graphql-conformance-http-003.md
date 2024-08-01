@@ -18,9 +18,9 @@ type User {
     @http(
       path: "/pic"
       query: [
-        {key: "id", value: "{{.value.id}}"},
-        {key: "size", value: "{{.args.size}}"},
-        {key: "width", value: "{{.args.width}}"},
+        {key: "id", value: "{{.value.id}}"}
+        {key: "size", value: "{{.args.size}}"}
+        {key: "width", value: "{{.args.width}}"}
         {key: "height", value: "{{.args.height}}"}
       ]
     )

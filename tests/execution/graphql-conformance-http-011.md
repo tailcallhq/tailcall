@@ -1,4 +1,5 @@
 # Test scalars and remote directives
+
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
@@ -7,7 +8,11 @@ schema
 }
 
 type Query {
-  nearby(location: Location): Point @http(path: "/nearby", query: [{key: "lon", value: "{{.args.location.lon}}"}, {key: "lat", value: "{{.args.location.lat}}"}])
+  nearby(location: Location): Point
+    @http(
+      path: "/nearby"
+      query: [{key: "lon", value: "{{.args.location.lon}}"}, {key: "lat", value: "{{.args.location.lat}}"}]
+    )
 }
 
 type Location {
@@ -51,6 +56,4 @@ directive @log on FIELD
           createdAt @log
         }
       }
-
-
-
+```

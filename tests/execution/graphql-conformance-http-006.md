@@ -1,4 +1,5 @@
 # Test complex nested query
+
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
@@ -13,20 +14,14 @@ type Query {
 type User {
   id: ID!
   name: String!
-  profilePic(size: Int, width: Int, height: Int): String! @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
-  friends(first: Int): [User!]! @http(
-      path: "/friends"
-      query: [
-        {key: "id", value: "{{.value.id}}"},
-        {key: "first", value: "{{.args.first}}"}
-      ]
-    )
-  mutualFriends(first: Int): [User!]! @http(
+  profilePic(size: Int, width: Int, height: Int): String!
+    @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
+  friends(first: Int): [User!]!
+    @http(path: "/friends", query: [{key: "id", value: "{{.value.id}}"}, {key: "first", value: "{{.args.first}}"}])
+  mutualFriends(first: Int): [User!]!
+    @http(
       path: "/mutual-friends"
-      query: [
-        {key: "id", value: "{{.value.id}}"},
-        {key: "first", value: "{{.args.first}}"}
-      ]
+      query: [{key: "id", value: "{{.value.id}}"}, {key: "first", value: "{{.args.first}}"}]
     )
 }
 ```
@@ -138,4 +133,4 @@ type User {
       fragment standardProfilePic on User {
         profilePic(size: 50)
       }
-
+```

@@ -1,4 +1,5 @@
 # Test inline fragments
+
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
@@ -14,7 +15,6 @@ interface Profile {
   id: ID!
   handle: String!
 }
-
 
 type User implements Profile {
   id: ID!
@@ -73,6 +73,4 @@ type Counter {
           }
         }
       }
-
-
-
+```

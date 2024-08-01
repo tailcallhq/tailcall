@@ -1,4 +1,5 @@
 # Test complex aliasing
+
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
@@ -48,3 +49,4 @@ type User {
           bigPic: profilePic(size: 1024)
         }
       }
+```
