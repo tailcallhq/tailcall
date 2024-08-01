@@ -37,7 +37,7 @@ type Counter {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: '{ "query": "query { profiles(handles: [\"zuck\", \"coca-cola\"]) { handle ... on User { friends { count } } ... on Page { likers { count } } } }" }'
+    textBody: '{ "query": "query { profiles(handles: [\"user-1\", \"user-2\"]) { handle ... on User { friends { count } } ... on Page { likers { count } } } }" }'
   expectedHits: 1
   response:
     status: 200

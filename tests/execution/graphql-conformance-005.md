@@ -27,7 +27,7 @@ type User {
     status: 200
     body:
       data:
-        user:
+        user: # TODO should we alias it ????
           id: 4
           name: Tailcall
           dob: "2000-01-01"
