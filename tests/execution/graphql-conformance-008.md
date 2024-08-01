@@ -1,4 +1,4 @@
-Test inline fragments
+# Test inline fragments
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
