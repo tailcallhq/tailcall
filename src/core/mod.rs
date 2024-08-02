@@ -81,8 +81,8 @@ pub trait Cache: Send + Sync {
         key: Self::Key,
         value: Self::Value,
         ttl: NonZeroU64,
-    ) -> error::cache::Result<()>;
-    async fn get<'a>(&'a self, key: &'a Self::Key) -> error::cache::Result<Option<Self::Value>>;
+    ) -> Result<(), cache::Error>;
+    async fn get<'a>(&'a self, key: &'a Self::Key) -> Result<Option<Self::Value>, cache::Error>;
 
     fn hit_rate(&self) -> Option<f64>;
 }
@@ -92,7 +92,7 @@ pub type EntityCache = dyn Cache<Key = IoId, Value = ConstValue>;
 #[async_trait::async_trait]
 pub trait WorkerIO<In, Out>: Send + Sync + 'static {
     /// Calls a global JS function
-    async fn call(&self, name: &str, input: In) -> error::worker::Result<Option<Out>>;
+    async fn call(&self, name: &str, input: In) -> Result<Option<Out>, worker::Error>;
 }
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
