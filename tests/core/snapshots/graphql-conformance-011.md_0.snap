@@ -12,7 +12,7 @@ expression: response
       "nearby": {
         "id": 12,
         "name": "Location 12",
-        "createdAt": {}
+        "createdAt": "2000-01-01"
       }
     }
   }

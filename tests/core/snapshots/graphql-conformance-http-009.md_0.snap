@@ -8,21 +8,13 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": null,
-    "errors": [
-      {
-        "message": "internal: invalid value for interface \"Profile\", expected \"FieldValue::WithType\"",
-        "locations": [
-          {
-            "line": 2,
-            "column": 3
-          }
-        ],
-        "path": [
-          "profiles",
-          0
-        ]
-      }
-    ]
+    "data": {
+      "profiles": [
+        {
+          "id": 1,
+          "handle": "user-1"
+        }
+      ]
+    }
   }
 }
