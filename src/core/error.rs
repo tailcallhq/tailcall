@@ -4,9 +4,8 @@ use std::sync::Arc;
 
 use derive_more::From;
 
-use super::worker;
-
 use super::config::UnsupportedConfigFormat;
+use super::worker;
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
@@ -116,8 +115,6 @@ pub mod file {
         #[debug(fmt = "Error : {}", _0)]
         Anyhow(anyhow::Error),
     }
-
-    pub type Result<A> = std::result::Result<A, Error>;
 }
 
 impl Display for file::Error {

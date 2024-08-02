@@ -12,11 +12,11 @@ impl WasmFile {
 
 #[async_trait::async_trait]
 impl FileIO for WasmFile {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> file::Result<()> {
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<(), file::Error> {
         Err(file::Error::FileIONotSupported)
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> file::Result<String> {
+    async fn read<'a>(&'a self, path: &'a str) -> Result<String, file::Error> {
         Err(file::Error::FileIONotSupported)
     }
 }

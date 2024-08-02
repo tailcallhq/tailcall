@@ -19,11 +19,11 @@ impl File {
 
 #[async_trait::async_trait]
 impl FileIO for File {
-    async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> file::Result<()> {
+    async fn write<'a>(&'a self, _path: &'a str, _content: &'a [u8]) -> Result<(), file::Error> {
         Err(file::Error::ExecutionSpecFileWriteFailed)
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> file::Result<String> {
+    async fn read<'a>(&'a self, path: &'a str) -> Result<String, file::Error> {
         let base = PathBuf::from(path);
         let path = base
             .file_name()
@@ -49,13 +49,13 @@ impl TestFileIO {
 
 #[async_trait::async_trait]
 impl FileIO for TestFileIO {
-    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> file::Result<()> {
+    async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<(), file::Error> {
         let mut file = tokio::fs::File::create(path).await?;
         file.write_all(content).await?;
         Ok(())
     }
 
-    async fn read<'a>(&'a self, path: &'a str) -> file::Result<String> {
+    async fn read<'a>(&'a self, path: &'a str) -> Result<String, file::Error> {
         let mut file = tokio::fs::File::open(path).await?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).await?;

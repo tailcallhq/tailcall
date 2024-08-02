@@ -40,11 +40,11 @@ struct File;
 
 #[async_trait::async_trait]
 impl FileIO for File {
-    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> file::Result<()> {
+    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> Result<(), file::Error> {
         unimplemented!("Not needed for this bench")
     }
 
-    async fn read<'a>(&'a self, _: &'a str) -> file::Result<String> {
+    async fn read<'a>(&'a self, _: &'a str) -> Result<String, file::Error> {
         unimplemented!("Not needed for this bench")
     }
 }
