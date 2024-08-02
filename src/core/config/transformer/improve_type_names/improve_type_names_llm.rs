@@ -2,8 +2,6 @@ use std::collections::HashMap;
 
 use reqwest;
 use reqwest::Error;
-use tokio::runtime::Runtime;
-use tokio::task::JoinSet;
 
 use crate::core::config::Config;
 
@@ -43,6 +41,9 @@ impl ImproveTypeNamesLLM {
             llm_requests.push(prompt);
         }
 
+        #[cfg(not(target_arch = "wasm32"))]
+        return tokio::task::block_in_place(move || Self::make_llm_requests(llm_requests));
+        #[cfg(target_arch = "wasm32")]
         Self::make_llm_requests(llm_requests)
     }
 
@@ -63,34 +64,26 @@ impl ImproveTypeNamesLLM {
     fn make_llm_requests(
         llm_requests: Vec<LLMRequest>,
     ) -> Result<HashMap<OriginalTypeName, Vec<AIGeneratedTypeName>>, String> {
-        tokio::task::block_in_place(move || {
-            let runtime = Runtime::new().unwrap();
-            runtime.block_on(async {
-                let client = reqwest::Client::new();
-                let mut tasks_set: JoinSet<Result<LLMResponse, Error>> = JoinSet::new();
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        runtime.block_on(async {
+            let client = reqwest::Client::new();
 
-                for llm_request in llm_requests.into_iter() {
-                    let client = client.clone();
-                    tasks_set
-                        .spawn(async move { Self::get_llm_response(client, llm_request).await });
-                }
+            let mut results: HashMap<OriginalTypeName, Vec<AIGeneratedTypeName>> = HashMap::new();
+            for llm_request in llm_requests.into_iter() {
+                let client = client.clone();
+                let response = Self::get_llm_response(client, llm_request).await;
+                match response {
+                    Ok(result) => {
+                        results.insert(result.original_type_name, result.suggested_type_names);
+                    }
+                    Err(e) => return Err(e.to_string()),
+                };
+            }
 
-                let mut results: HashMap<OriginalTypeName, Vec<AIGeneratedTypeName>> =
-                    HashMap::new();
-                while let Some(task) = tasks_set.join_next().await {
-                    match task {
-                        Ok(response) => match response {
-                            Ok(result) => {
-                                results
-                                    .insert(result.original_type_name, result.suggested_type_names);
-                            }
-                            Err(e) => return Err(e.to_string()),
-                        },
-                        Err(err) => return Err(err.to_string()),
-                    };
-                }
-                Ok(results)
-            })
+            Ok(results)
         })
     }
 
@@ -99,7 +92,7 @@ impl ImproveTypeNamesLLM {
         llm_request: LLMRequest,
     ) -> Result<LLMResponse, Error> {
         let response = client
-            .post(" https://b117-2405-201-101e-60f3-fc34-439-491b-fe01.ngrok-free.app/type_name") 
+            .post(" https://95b8-2405-201-101e-60f3-fc34-439-491b-fe01.ngrok-free.app/type_name")
             .header("Content-Type", "application/json")
             .header(reqwest::header::TRANSFER_ENCODING, "chunked")
             .body(llm_request.prompt)
