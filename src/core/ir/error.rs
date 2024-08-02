@@ -93,3 +93,15 @@ impl From<anyhow::Error> for Error {
         }
     }
 }
+
+impl From<http::Error> for Arc<Error> {
+    fn from(value: http::Error) -> Self {
+        Arc::new(Error::HttpError(value))
+    }
+}
+
+impl From<Arc<Error>> for Error {
+    fn from(arc_error: Arc<Error>) -> Self {
+        (*arc_error).clone()
+    }
+}
