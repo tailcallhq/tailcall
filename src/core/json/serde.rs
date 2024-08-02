@@ -3,27 +3,26 @@ use std::collections::HashMap;
 
 use super::{JsonLike, JsonObjectLike};
 
-impl<'a> JsonObjectLike<'a> for serde_json::Map<String, serde_json::Value> {
+impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, serde_json::Value> {
     type Value = serde_json::Value;
 
     fn new() -> Self {
         serde_json::Map::new()
     }
 
-    fn get_key(&'a self, key: &str) -> Option<&serde_json::Value> {
+    fn get_key(&'obj self, key: &str) -> Option<&serde_json::Value> {
         self.get(key)
     }
 
-    fn insert_key(mut self, key: &'a str, value: Self::Value) -> Self {
+    fn insert_key(&mut self, key: &'obj str, value: Self::Value) {
         self.insert(key.to_owned(), value);
-        self
     }
 }
 
-impl<'a> JsonLike<'a> for serde_json::Value {
-    type JsonObject = serde_json::Map<String, serde_json::Value>;
+impl<'json> JsonLike<'json> for serde_json::Value {
+    type JsonObject<'obj> = serde_json::Map<String, serde_json::Value>;
 
-    fn as_array(&'a self) -> Option<&'a Vec<Self>> {
+    fn as_array(&self) -> Option<&Vec<Self>> {
         self.as_array()
     }
 
@@ -73,7 +72,7 @@ impl<'a> JsonLike<'a> for serde_json::Value {
         }
     }
 
-    fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&Self>> {
+    fn group_by(&self, path: &[String]) -> HashMap<String, Vec<&Self>> {
         let src = super::gather_path_matches(self, path, vec![]);
         super::group_by_key(src)
     }
@@ -82,11 +81,11 @@ impl<'a> JsonLike<'a> for serde_json::Value {
         Self::Null
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject> {
+    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         self.as_object()
     }
 
-    fn object(obj: Self::JsonObject) -> Self {
+    fn object(obj: Self::JsonObject<'json>) -> Self {
         serde_json::Value::Object(obj)
     }
 
@@ -94,7 +93,7 @@ impl<'a> JsonLike<'a> for serde_json::Value {
         serde_json::Value::Array(arr)
     }
 
-    fn string(s: Cow<'a, str>) -> Self {
+    fn string(s: Cow<'json, str>) -> Self {
         serde_json::Value::String(s.to_string())
     }
 }
