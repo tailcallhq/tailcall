@@ -1,0 +1,36 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
+  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+  query: Query
+}
+
+scalar DateISO
+
+input LocationInput {
+  lat: Int!
+  lon: Int!
+}
+
+type Location {
+  lat: Int!
+  lon: Int!
+}
+
+type Point {
+  createdAt: DateISO
+  id: ID!
+  location: Location
+  name: String!
+}
+
+type Query {
+  nearby(location: LocationInput): Point
+    @http(
+      path: "/nearby"
+      query: [{key: "lon", value: "{{.args.location.lon}}"}, {key: "lat", value: "{{.args.location.lat}}"}]
+    )
+}

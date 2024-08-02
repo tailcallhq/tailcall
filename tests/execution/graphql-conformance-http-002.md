@@ -38,7 +38,7 @@ type BirthDay {
       city: Globe
       birthday:
         day: 15
-        month: 06
+        month: 6
       friends:
         - id: 1
           name: Person 1
