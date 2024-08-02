@@ -3,19 +3,19 @@ use std::fmt::{Display, Formatter};
 
 use derive_getters::Getters;
 
-use crate::core::config::npo::{FieldName, TypeName};
+use crate::core::config::npo::{FieldName, IsBatch, IsList, TypeName};
 
 ///
 /// Represents a list of query paths that can issue a N + 1 query
 #[derive(Default, Debug, PartialEq, Getters)]
 pub struct Queries<'a> {
-    map: HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
+    map: HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>, IsList, IsBatch)>>,
     root: &'a str,
 }
 
 impl<'a> Queries<'a> {
     pub fn new(
-        map: HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
+        map: HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>, IsList, IsBatch)>>,
         root: &'a str,
     ) -> Self {
         Self { map, root }
@@ -29,25 +29,22 @@ impl<'a> Queries<'a> {
 
         #[allow(clippy::too_many_arguments)]
         fn dfs<'a>(
-            map: &HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
+            map: &HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>, IsList, IsBatch)>>,
             ty: TypeName<'a>,
             path: Vec<(&'a str, (&'a str, &'a str))>,
             result: &mut Vec<Vec<(&'a str, (&'a str, &'a str))>>,
             visited: &mut HashSet<(TypeName<'a>, FieldName<'a>)>,
         ) {
             if let Some(fields) = map.get(&ty) {
-                for (field_name, ty_of) in fields {
-                    if ty.leaf() {
-                        result.push(path.clone());
-                        continue;
-                    }
-
-                    let mut new_path = path.clone();
-                    new_path.push((ty.as_str(), (field_name.as_str(), ty_of.as_str())));
-                    if !visited.contains(&(ty, *field_name)) {
-                        visited.insert((ty, *field_name));
-                        dfs(map, *ty_of, new_path, result, visited);
-                        visited.remove(&(ty, *field_name));
+                for (field_name, ty_of, is_list, is_batch) in fields {
+                    if is_list.as_bool() && !is_batch.as_bool() {
+                        let mut new_path = path.clone();
+                        new_path.push((ty.as_str(), (field_name.as_str(), ty_of.as_str())));
+                        if !visited.contains(&(ty, *field_name)) {
+                            visited.insert((ty, *field_name));
+                            dfs(map, *ty_of, new_path, result, visited);
+                            visited.remove(&(ty, *field_name));
+                        }
                     }
                 }
             } else {
