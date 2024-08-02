@@ -8,13 +8,21 @@ schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
 
 type Address {
   city: String
-  geo: Geo
+  geo: GeoLocation
   street: String
   suite: String
   zipcode: String
 }
 
-type Comment {
+type Album {
+  albumId: Int
+  id: Int
+  thumbnailUrl: String
+  title: String
+  url: String
+}
+
+type Article {
   body: String
   email: String
   id: Int
@@ -28,17 +36,9 @@ type Company {
   name: String
 }
 
-type Geo {
+type GeoLocation {
   lat: String
   lng: String
-}
-
-type Photo {
-  albumId: Int
-  id: Int
-  thumbnailUrl: String
-  title: String
-  url: String
 }
 
 type Post {
@@ -49,20 +49,20 @@ type Post {
 }
 
 type Query {
-  comment(p1: Int!): Comment @http(path: "/comments/{{.args.p1}}")
-  comments: [Comment] @http(path: "/comments")
-  photo(p1: Int!): Photo @http(path: "/photos/{{.args.p1}}")
-  photos: [Photo] @http(path: "/photos")
+  comment(p1: Int!): Article @http(path: "/comments/{{.args.p1}}")
+  comments: [Article] @http(path: "/comments")
+  photo(p1: Int!): Album @http(path: "/photos/{{.args.p1}}")
+  photos: [Album] @http(path: "/photos")
   post(p1: Int!): Post @http(path: "/posts/{{.args.p1}}")
-  postComments(postId: Int): [Comment] @http(path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
+  postComments(postId: Int): [Article] @http(path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
   posts: [Post] @http(path: "/posts")
-  todo(p1: Int!): Todo @http(path: "/todos/{{.args.p1}}")
-  todos: [Todo] @http(path: "/todos")
+  todo(p1: Int!): Task @http(path: "/todos/{{.args.p1}}")
+  todos: [Task] @http(path: "/todos")
   user(p1: Int!): User @http(path: "/users/{{.args.p1}}")
   users: [User] @http(path: "/users")
 }
 
-type Todo {
+type Task {
   completed: Boolean
   id: Int
   title: String

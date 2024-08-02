@@ -7,58 +7,7 @@ schema @server @upstream(baseURL: "https://api.deezer.com") {
 }
 
 type Album {
-  cover: String
-  cover_big: String
-  cover_medium: String
-  cover_small: String
-  cover_xl: String
-  id: Int
-  md5_image: String
-  title: String
-  tracklist: String
-  type: String
-}
-
-type Artist {
-  id: Int
-  link: String
-  name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  radio: Boolean
-  tracklist: String
-  type: String
-}
-
-type Chart {
-  albums: T167
-  artists: T169
-  playlists: T181
-  podcasts: Podcast
-  tracks: T166
-}
-
-type Contributor {
-  id: Int
-  link: String
-  name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  radio: Boolean
-  role: String
-  share: String
-  tracklist: String
-  type: String
-}
-
-type Datum {
-  album: Album
+  album: Music
   artist: T42
   duration: Int
   explicit_content_cover: Int
@@ -77,20 +26,11 @@ type Datum {
   type: String
 }
 
-type Editorial {
-  data: [T185]
-  total: Int
-}
-
-type Genre {
-  data: [T5]
-}
-
-type Playlist {
+type Chart {
   checksum: String
   collaborative: Boolean
   creation_date: String
-  creator: User
+  creator: Media
   description: String
   duration: Int
   fans: Int
@@ -109,35 +49,71 @@ type Playlist {
   share: String
   title: String
   tracklist: String
-  tracks: Track
+  tracks: Data
   type: String
 }
 
-type Podcast {
-  data: [T182]
+type Data {
+  checksum: String
+  data: [Album]
+}
+
+type Media {
+  id: Int
+  name: String
+  tracklist: String
+  type: String
+}
+
+type Music {
+  cover: String
+  cover_big: String
+  cover_medium: String
+  cover_small: String
+  cover_xl: String
+  id: Int
+  md5_image: String
+  title: String
+  tracklist: String
+  type: String
+}
+
+type Next {
+  data: [JSON]
+  next: String
   total: Int
 }
 
 type Query {
   album(p1: Int!): T39 @http(path: "/album/{{.args.p1}}")
   artist(p1: Int!): T40 @http(path: "/artist/{{.args.p1}}")
-  chart: Chart @http(path: "/chart")
-  editorial: Editorial @http(path: "/editorial")
-  playlist(p1: Int!): Playlist @http(path: "/playlist/{{.args.p1}}")
-  search(q: String): Search @http(path: "/search", query: [{key: "q", value: "{{.args.q}}"}])
+  chart: T184 @http(path: "/chart")
+  editorial: T186 @http(path: "/editorial")
+  playlist(p1: Int!): Chart @http(path: "/playlist/{{.args.p1}}")
+  search(q: String): Next @http(path: "/search", query: [{key: "q", value: "{{.args.q}}"}])
   track(p1: Int!): T4 @http(path: "/track/{{.args.p1}}")
   user(p1: Int!): T187 @http(path: "/user/{{.args.p1}}")
 }
 
-type Search {
-  data: [JSON]
-  next: String
-  total: Int
+type Song {
+  id: Int
+  link: String
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  radio: Boolean
+  role: String
+  share: String
+  tracklist: String
+  type: String
 }
 
 type T165 {
-  album: Album
-  artist: Artist
+  album: Music
+  artist: T145
   duration: Int
   explicit_content_cover: Int
   explicit_content_lyrics: Int
@@ -201,7 +177,7 @@ type T180 {
   title: String
   tracklist: String
   type: String
-  user: User
+  user: Media
 }
 
 type T181 {
@@ -281,8 +257,8 @@ type T3 {
 }
 
 type T37 {
-  album: Album
-  artist: User
+  album: Music
+  artist: Media
   duration: Int
   explicit_content_cover: Int
   explicit_content_lyrics: Int
@@ -306,7 +282,7 @@ type T38 {
 type T39 {
   artist: T8
   available: Boolean
-  contributors: [Contributor]
+  contributors: [Song]
   cover: String
   cover_big: String
   cover_medium: String
@@ -318,7 +294,7 @@ type T39 {
   explicit_lyrics: Boolean
   fans: Int
   genre_id: Int
-  genres: Genre
+  genres: T6
   id: Int
   label: String
   link: String
@@ -339,7 +315,7 @@ type T4 {
   artist: T2
   available_countries: [String]
   bpm: Int
-  contributors: [Contributor]
+  contributors: [Song]
   disk_number: Int
   duration: Int
   explicit_content_cover: Int
@@ -406,14 +382,7 @@ type T8 {
   type: String
 }
 
-type Track {
-  checksum: String
-  data: [Datum]
-}
-
-type User {
-  id: Int
-  name: String
-  tracklist: String
-  type: String
+type Total {
+  data: [T182]
+  total: Int
 }

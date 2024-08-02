@@ -6,11 +6,7 @@ schema @server @upstream(baseURL: "https://example.com") {
   query: Query
 }
 
-type Age {
-  age: Int
-}
-
-type CampaignSchema {
+type Campaign {
   campaignTemplates: JSON
   colors: [JSON]
 }
@@ -19,26 +15,26 @@ type Container {
   container: T7
 }
 
-type Network {
-  people: [Parent]
-}
-
-type Parent {
+type Person {
   age: Int
   children: [User]
   name: String
 }
 
+type Profile {
+  age: Int
+}
+
 type Query {
-  f1: CampaignSchema @http(path: "/")
+  f1: Campaign @http(path: "/")
   f2: [JSON] @http(path: "/api/v2/users")
-  f3(children: Boolean): Network @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
+  f3(children: Boolean): T4 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
   f4: Container @http(path: "/")
   f5: JSON @http(path: "/")
 }
 
 type T6 {
-  container: Age
+  container: Profile
   name: String
 }
 

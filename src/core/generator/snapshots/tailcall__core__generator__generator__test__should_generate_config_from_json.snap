@@ -6,11 +6,11 @@ schema @server @upstream(baseURL: "https://example.com") {
   query: Query
 }
 
-type Query {
-  f1: Template @http(path: "/")
-}
-
-type Template {
+type Campaign {
   campaignTemplates: JSON
   colors: [JSON]
+}
+
+type Query {
+  f1: Campaign @http(path: "/")
 }

@@ -6,18 +6,23 @@ schema @server @upstream {
   query: Query
 }
 
+type Address {
+  city: String
+  geo: GeoLocation
+  street: String
+  suite: String
+  zipcode: String
+}
+
 type Company {
   bs: String
   catchPhrase: String
   name: String
 }
 
-type Location {
-  city: String
-  geo: Location
-  street: String
-  suite: String
-  zipcode: String
+type GeoLocation {
+  lat: String
+  lng: String
 }
 
 type Query {
@@ -25,7 +30,7 @@ type Query {
 }
 
 type User {
-  address: Location
+  address: Address
   company: Company
   email: String
   id: Int

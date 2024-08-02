@@ -1,5 +1,0 @@
----
-source: src/core/config/transformer/improve_type_names/improve_type_names_llm.rs
-expression: "format!(\"{:?}\", llm_response)"
----
-{"T1": ["Location", "Coordinates", "Point", "Geo", "Position"], "T2": ["Address", "Location", "Residence", "PostOffice", "Premise"], "T3": ["Quote", "Sayer", "Catch", "Statement", "Slogan"], "RootType1": ["User", "Profile", "Contact", "Member", "Entity"]}

@@ -1,5 +1,0 @@
----
-source: src/core/config/transformer/improve_type_names/improve_type_names_llm.rs
-expression: "format!(\"{:?}\", llm_response)"
----
-{"T33": ["CycleNode", "Iteration", "Loop", "Repeat", "Sequence"], "T32": ["Post", "Article", "Entry", "Publication", "Blog"], "RootType1": ["User", "Entity", "Record", "Profile", "Author"]}

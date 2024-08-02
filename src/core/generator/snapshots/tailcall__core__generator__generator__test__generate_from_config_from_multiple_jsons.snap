@@ -6,13 +6,13 @@ schema @server @upstream(baseURL: "https://example.com") {
   query: Query
 }
 
-type CampaignData {
+type Campaign {
   campaignTemplates: JSON
   colors: [JSON]
 }
 
 type Query {
-  f1: CampaignData @http(path: "/")
+  f1: Campaign @http(path: "/")
   f2: [JSON] @http(path: "/api/v2/users")
   f3: [User] @http(path: "/users")
 }

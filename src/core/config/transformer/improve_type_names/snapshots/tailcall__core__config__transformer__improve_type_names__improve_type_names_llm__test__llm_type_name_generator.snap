@@ -1,5 +1,0 @@
----
-source: src/core/config/transformer/improve_type_names/improve_type_names_llm.rs
-expression: "format!(\"{:?}\", llm_response)"
----
-{"T3": ["Color", "Entry", "Palette", "Shade", "Hue"], "T1": ["ColorItem", "Hue", "Palette", "Tint", "Shade"], "T2": ["Palette", "Theme", "Scheme", "Design", "Style"]}
