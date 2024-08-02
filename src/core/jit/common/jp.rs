@@ -7,7 +7,7 @@ use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
 use crate::core::jit;
 use crate::core::jit::builder::Builder;
-use crate::core::jit::exec::ExecResult;
+use crate::core::jit::exec::TypedValue;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
 use crate::core::jit::{OperationPlan, Variables};
@@ -28,7 +28,7 @@ struct TestData<Value> {
     users: Vec<Value>,
 }
 
-type Entry<Value> = Data<Result<ExecResult<Value>, Positioned<jit::Error>>>;
+type Entry<Value> = Data<Result<TypedValue<Value>, Positioned<jit::Error>>>;
 
 struct ProcessedTestData<Value> {
     posts: Value,
@@ -77,7 +77,7 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
                     Value::null()
                 }
             })
-            .map(ExecResult::new)
+            .map(TypedValue::new)
             .map(Ok)
             .map(Data::Single)
             .enumerate()
@@ -132,7 +132,7 @@ impl<
             .to_owned();
 
         let store = [
-            (posts_id, Data::Single(Ok(ExecResult::new(posts)))),
+            (posts_id, Data::Single(Ok(TypedValue::new(posts)))),
             (users_id, Data::Multiple(users)),
         ]
         .into_iter()

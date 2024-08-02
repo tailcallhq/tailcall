@@ -1,14 +1,14 @@
 use async_graphql::Positioned;
 
 use crate::core::ir::TypeName;
-use crate::core::jit::exec::ExecResult;
+use crate::core::jit::exec::TypedValue;
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar;
 
-type ValueStore<Value> = Store<Result<ExecResult<Value>, Positioned<Error>>>;
+type ValueStore<Value> = Store<Result<TypedValue<Value>, Positioned<Error>>>;
 
 pub struct Synth<Value> {
     selection: Vec<Field<Nested<Value>, Value>>,
@@ -106,7 +106,7 @@ where
                             Ok(result) => result,
                             Err(err) => return Err(err.clone()),
                         };
-                        let ExecResult { value, type_name } = result;
+                        let TypedValue { value, type_name } = result;
 
                         if !Self::is_array(&node.type_of, value) {
                             return Ok(Value::null());
@@ -222,7 +222,7 @@ mod tests {
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JP;
-    use crate::core::jit::exec::ExecResult;
+    use crate::core::jit::exec::TypedValue;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::synth::Synth;
@@ -278,21 +278,21 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value<'a, Value: Deserialize<'a>>(self) -> Data<ExecResult<Value>> {
+        fn into_value<'a, Value: Deserialize<'a>>(self) -> Data<TypedValue<Value>> {
             match self {
-                Self::Posts => Data::Single(ExecResult::new(serde_json::from_str(POSTS).unwrap())),
-                Self::User1 => Data::Single(ExecResult::new(serde_json::from_str(USER1).unwrap())),
+                Self::Posts => Data::Single(TypedValue::new(serde_json::from_str(POSTS).unwrap())),
+                Self::User1 => Data::Single(TypedValue::new(serde_json::from_str(USER1).unwrap())),
                 TestData::UsersData => Data::Multiple(
                     vec![
-                        Data::Single(ExecResult::new(serde_json::from_str(USER1).unwrap())),
-                        Data::Single(ExecResult::new(serde_json::from_str(USER2).unwrap())),
+                        Data::Single(TypedValue::new(serde_json::from_str(USER1).unwrap())),
+                        Data::Single(TypedValue::new(serde_json::from_str(USER2).unwrap())),
                     ]
                     .into_iter()
                     .enumerate()
                     .collect(),
                 ),
                 TestData::Users => {
-                    Data::Single(ExecResult::new(serde_json::from_str(USERS).unwrap()))
+                    Data::Single(TypedValue::new(serde_json::from_str(USERS).unwrap()))
                 }
             }
         }

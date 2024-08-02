@@ -14,7 +14,7 @@ use crate::core::jit;
 use crate::core::jit::synth::Synth;
 use crate::core::json::{JsonLike, JsonObjectLike};
 
-type SharedStore<Output, Error> = Arc<Mutex<Store<Result<ExecResult<Output>, Positioned<Error>>>>>;
+type SharedStore<Output, Error> = Arc<Mutex<Store<Result<TypedValue<Output>, Positioned<Error>>>>>;
 
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
@@ -38,7 +38,7 @@ where
     pub async fn store(
         &self,
         request: Request<Input>,
-    ) -> Store<Result<ExecResult<Output>, Positioned<jit::Error>>> {
+    ) -> Store<Result<TypedValue<Output>, Positioned<jit::Error>>> {
         let store = Arc::new(Mutex::new(Store::new()));
         let mut ctx = ExecutorInner::new(request, store.clone(), self.plan.to_owned(), &self.exec);
         ctx.init().await;
@@ -105,10 +105,10 @@ where
         &'b self,
         ctx: &'b Context<'b, Input, Output>,
         data_path: &DataPath,
-        result: ExecResultRef<'b, Output>,
+        result: TypedValueRef<'b, Output>,
     ) -> Result<(), Error> {
         let field = ctx.field();
-        let ExecResultRef { value, type_name } = result;
+        let TypedValueRef { value, type_name } = result;
         // Array
         // Check if the field expects a list
         if field.type_of.is_list() {
@@ -188,7 +188,7 @@ where
                 // here without doing the "fix"
                 .unwrap_or(&default_obj);
 
-            let result = ExecResultRef {
+            let result = TypedValueRef {
                 value,
                 type_name: None,
             };
@@ -201,36 +201,36 @@ where
 }
 
 #[derive(Clone)]
-pub struct ExecResult<V> {
+pub struct TypedValue<V> {
     pub value: V,
     pub type_name: Option<TypeName>,
 }
 
-pub struct ExecResultRef<'a, V> {
+pub struct TypedValueRef<'a, V> {
     pub value: &'a V,
     pub type_name: Option<&'a TypeName>,
 }
 
-impl<V> ExecResult<V> {
+impl<V> TypedValue<V> {
     pub fn new(value: V) -> Self {
         Self { value, type_name: None }
     }
 
-    pub fn as_ref(&self) -> ExecResultRef<'_, V> {
-        ExecResultRef { value: &self.value, type_name: self.type_name.as_ref() }
+    pub fn as_ref(&self) -> TypedValueRef<'_, V> {
+        TypedValueRef { value: &self.value, type_name: self.type_name.as_ref() }
     }
 }
 
-impl<'a, V> ExecResultRef<'a, V> {
+impl<'a, V> TypedValueRef<'a, V> {
     pub fn new(value: &'a V) -> Self {
         Self { value, type_name: None }
     }
 
-    pub fn map<'out, U>(&'a self, map: impl FnOnce(&V) -> &'out U) -> ExecResultRef<'out, U>
+    pub fn map<'out, U>(&'a self, map: impl FnOnce(&V) -> &'out U) -> TypedValueRef<'out, U>
     where
         'a: 'out,
     {
-        ExecResultRef { value: map(self.value), type_name: self.type_name }
+        TypedValueRef { value: map(self.value), type_name: self.type_name }
     }
 }
 
@@ -243,5 +243,5 @@ pub trait IRExecutor {
         &'a self,
         ir: &'a IR,
         ctx: &'a Context<'a, Self::Input, Self::Output>,
-    ) -> Result<ExecResult<Self::Output>, Self::Error>;
+    ) -> Result<TypedValue<Self::Output>, Self::Error>;
 }
