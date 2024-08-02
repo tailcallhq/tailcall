@@ -11,14 +11,14 @@ type Campaign {
   colors: [JSON]
 }
 
-type Query {
-  f1: Campaign @http(path: "/")
-  f2: [JSON] @http(path: "/api/v2/users")
-  f3: [User] @http(path: "/users")
-}
-
-type User {
+type Person {
   adult: Boolean
   age: Int
   name: String
+}
+
+type Query {
+  f1: Campaign @http(path: "/")
+  f2: [JSON] @http(path: "/api/v2/users")
+  f3: [Person] @http(path: "/users")
 }

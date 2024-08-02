@@ -24,10 +24,9 @@ type Album {
 
 type Article {
   body: String
-  email: String
   id: Int
-  name: String
-  postId: Int
+  title: String
+  userId: Int
 }
 
 type Company {
@@ -43,19 +42,20 @@ type GeoLocation {
 
 type Post {
   body: String
+  email: String
   id: Int
-  title: String
-  userId: Int
+  name: String
+  postId: Int
 }
 
 type Query {
-  comment(p1: Int!): Article @http(path: "/comments/{{.args.p1}}")
-  comments: [Article] @http(path: "/comments")
+  comment(p1: Int!): Post @http(path: "/comments/{{.args.p1}}")
+  comments: [Post] @http(path: "/comments")
   photo(p1: Int!): Album @http(path: "/photos/{{.args.p1}}")
   photos: [Album] @http(path: "/photos")
-  post(p1: Int!): Post @http(path: "/posts/{{.args.p1}}")
-  postComments(postId: Int): [Article] @http(path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
-  posts: [Post] @http(path: "/posts")
+  post(p1: Int!): Article @http(path: "/posts/{{.args.p1}}")
+  postComments(postId: Int): [Post] @http(path: "/comments", query: [{key: "postId", value: "{{.args.postId}}"}])
+  posts: [Article] @http(path: "/posts")
   todo(p1: Int!): Task @http(path: "/todos/{{.args.p1}}")
   todos: [Task] @http(path: "/todos")
   user(p1: Int!): User @http(path: "/users/{{.args.p1}}")

@@ -15,14 +15,13 @@ type Container {
   container: T7
 }
 
-type Person {
+type Entity {
   age: Int
-  children: [User]
-  name: String
 }
 
-type Profile {
+type Person {
   age: Int
+  name: String
 }
 
 type Query {
@@ -34,16 +33,11 @@ type Query {
 }
 
 type T6 {
-  container: Profile
+  container: Entity
   name: String
 }
 
 type T7 {
   container: T6
-  name: String
-}
-
-type User {
-  age: Int
   name: String
 }

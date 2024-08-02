@@ -26,6 +26,22 @@ type Album {
   type: String
 }
 
+type Artist {
+  id: Int
+  link: String
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  radio: Boolean
+  role: String
+  share: String
+  tracklist: String
+  type: String
+}
+
 type Chart {
   checksum: String
   collaborative: Boolean
@@ -93,22 +109,6 @@ type Query {
   search(q: String): Next @http(path: "/search", query: [{key: "q", value: "{{.args.q}}"}])
   track(p1: Int!): T4 @http(path: "/track/{{.args.p1}}")
   user(p1: Int!): T187 @http(path: "/user/{{.args.p1}}")
-}
-
-type Song {
-  id: Int
-  link: String
-  name: String
-  picture: String
-  picture_big: String
-  picture_medium: String
-  picture_small: String
-  picture_xl: String
-  radio: Boolean
-  role: String
-  share: String
-  tracklist: String
-  type: String
 }
 
 type T165 {
@@ -282,7 +282,7 @@ type T38 {
 type T39 {
   artist: T8
   available: Boolean
-  contributors: [Song]
+  contributors: [Artist]
   cover: String
   cover_big: String
   cover_medium: String
@@ -315,7 +315,7 @@ type T4 {
   artist: T2
   available_countries: [String]
   bpm: Int
-  contributors: [Song]
+  contributors: [Artist]
   disk_number: Int
   duration: Int
   explicit_content_cover: Int

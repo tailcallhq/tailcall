@@ -12,19 +12,19 @@ type Cycle {
 }
 
 type Post {
-  author: User!
+  author: Profile!
   content: String!
   cycle: Cycle
   id: ID!
   title: String!
 }
 
-type Query {
-  f1: [User] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
-}
-
-type User {
+type Profile {
   id: ID!
   name: String!
   posts: [Post]!
+}
+
+type Query {
+  f1: [Profile] @http(baseURL: "https://jsonplaceholder.typicode.com", path: "/users")
 }
