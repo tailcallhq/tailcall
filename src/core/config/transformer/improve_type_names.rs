@@ -122,7 +122,7 @@ impl<'a> CandidateGeneration<'a> {
             if let Some(type_info) = self.config.types.get(type_name) {
                 for (field_name, field_info) in type_info.fields.iter() {
                     if self.config.is_scalar(&field_info.type_of) {
-                        // if output type is scalar or present in exclude list then skip it.
+                        // if output type is scalar then skip it.
                         continue;
                     }
 
@@ -198,7 +198,6 @@ impl Transform for ImproveTypeNames {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
     use std::fs;
 
     use anyhow::Ok;
@@ -248,8 +247,9 @@ mod test {
     }
 
     #[test]
-    fn test_exclude_provided_types() {
+    fn test_prioritize_user_given_names() {
         let sdl = r#"
+            schema { query: Query }
             type Post {
                 id: Int
             }
@@ -262,8 +262,6 @@ mod test {
         "#;
 
         let config = Config::from_sdl(sdl).to_result().unwrap();
-        let mut ignore_types = HashSet::new();
-        ignore_types.insert("userPosts".to_owned());
 
         let config = ImproveTypeNames.transform(config).to_result().unwrap();
 
