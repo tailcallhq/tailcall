@@ -226,7 +226,7 @@ impl<'a, V> TypedValueRef<'a, V> {
         Self { value, type_name: None }
     }
 
-    pub fn map<'out, U>(&'a self, map: impl FnOnce(&V) -> &'out U) -> TypedValueRef<'out, U>
+    pub fn map<'out, U>(&self, map: impl FnOnce(&V) -> &'out U) -> TypedValueRef<'out, U>
     where
         'a: 'out,
     {

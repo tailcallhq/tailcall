@@ -1,6 +1,6 @@
 use async_graphql::Positioned;
 
-use crate::core::ir::TypeName;
+use crate::core::{ir::TypeName, jit::exec::TypedValueRef};
 use crate::core::jit::exec::TypedValue;
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
@@ -63,7 +63,7 @@ where
             if !self.include(child) {
                 continue;
             }
-            let val = self.iter(child, None, &None, &DataPath::new())?;
+            let val = self.iter(child, None, &DataPath::new())?;
             data.insert_key(child.name.as_str(), val);
         }
 
@@ -76,15 +76,11 @@ where
         type_of.is_list() == value.as_array().is_some()
     }
 
-    #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        // TODO: replace value and type_name with single `result: Option<ExecResultRef<'a, Value>>`
-        // to simplify usage and passing arguments around iter and iter_inner
-        value: Option<&'a Value>,
-        type_name: &'a Option<TypeName>,
+        result: Option<TypedValueRef<'a, Value>>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         match self.store.get(&node.id) {
@@ -106,12 +102,11 @@ where
                             Ok(result) => result,
                             Err(err) => return Err(err.clone()),
                         };
-                        let TypedValue { value, type_name } = result;
 
-                        if !Self::is_array(&node.type_of, value) {
+                        if !Self::is_array(&node.type_of, &result.value) {
                             return Ok(Value::null());
                         }
-                        self.iter_inner(node, value, type_name, data_path)
+                        self.iter_inner(node, result.as_ref(), data_path)
                     }
                     _ => {
                         // TODO: should bailout instead of returning Null
@@ -119,25 +114,25 @@ where
                     }
                 }
             }
-            None => match value {
-                Some(value) => self.iter_inner(node, value, type_name, data_path),
+            None => match result {
+                Some(result) => self.iter_inner(node, result, data_path),
                 None => Ok(Value::null()),
             },
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    fn iter_inner(
+    fn iter_inner<'b>(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        value: &'a Value,
-        type_name: &'a Option<TypeName>,
+        result: TypedValueRef<'a, Value>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         if !self.include(node) {
             return Ok(Value::null());
         }
+
+        let TypedValueRef {type_name, value} = result;
 
         if node.is_scalar {
             let scalar =
@@ -187,7 +182,7 @@ where
 
                             ans.insert_key(
                                 child.name.as_str(),
-                                self.iter(child, val, &None, data_path)?,
+                                self.iter(child, val.map(TypedValueRef::new), data_path)?,
                             );
                         }
                     }
@@ -199,8 +194,7 @@ where
                     for (i, val) in arr.iter().enumerate() {
                         let val = self.iter_inner(
                             node,
-                            val,
-                            type_name,
+                            result.map(|_| val),
                             &data_path.clone().with_index(i),
                         )?;
                         ans.push(val)
