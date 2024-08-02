@@ -63,17 +63,17 @@ async fn confirm_and_write_yml(
             let graphqlrc: serde_yaml::Value = serde_yaml::from_str(&yml_content)?;
             final_graphqlrc = graphqlrc.merge_right(final_graphqlrc);
             let content = serde_yaml::to_string(&final_graphqlrc)?;
-            confirm_and_write(runtime.clone(), &yml_file_path, content.as_bytes()).await
+            confirm_and_write(runtime.clone(), &yml_file_path, content.as_bytes()).await?;
         }
         Err(_) => {
             let content = serde_yaml::to_string(&final_graphqlrc)?;
             runtime
                 .file
                 .write(&yml_file_path, content.as_bytes())
-                .await
-                .map_err(Error::from)
+                .await?;
         }
     }
+    Ok(())
 }
 
 fn main_config() -> Config {
