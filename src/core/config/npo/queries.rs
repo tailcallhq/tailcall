@@ -31,27 +31,22 @@ impl<'a> Queries<'a> {
         fn dfs<'a>(
             map: &HashMap<TypeName<'a>, HashSet<(FieldName<'a>, TypeName<'a>)>>,
             ty: TypeName<'a>,
-            mut path: Vec<(&'a str, (&'a str, &'a str))>,
+            path: Vec<(&'a str, (&'a str, &'a str))>,
             result: &mut Vec<Vec<(&'a str, (&'a str, &'a str))>>,
             visited: &mut HashSet<(TypeName<'a>, FieldName<'a>)>,
-            leaf: bool,
         ) {
-            if leaf {
-                // if we hit this condition then it means
-                // there is an extra node in the path.
-                // we can safely pop it out and add the path to the result
-                path.pop();
-                result.push(path);
-                return;
-            }
-
             if let Some(fields) = map.get(&ty) {
                 for (field_name, ty_of) in fields {
+                    if ty.leaf() {
+                        result.push(path.clone());
+                        continue;
+                    }
+
                     let mut new_path = path.clone();
                     new_path.push((ty.as_str(), (field_name.as_str(), ty_of.as_str())));
                     if !visited.contains(&(ty, *field_name)) {
                         visited.insert((ty, *field_name));
-                        dfs(map, *ty_of, new_path, result, visited, ty.leaf());
+                        dfs(map, *ty_of, new_path, result, visited);
                         visited.remove(&(ty, *field_name));
                     }
                 }
@@ -61,8 +56,7 @@ impl<'a> Queries<'a> {
         }
 
         let root = TypeName::new(self.root);
-        let leaf = root.leaf();
-        dfs(&self.map, root, Vec::new(), &mut result, &mut visited, leaf);
+        dfs(&self.map, root, Vec::new(), &mut result, &mut visited);
 
         result
             .into_iter()
