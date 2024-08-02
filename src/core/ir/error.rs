@@ -4,7 +4,7 @@ use async_graphql::{ErrorExtensions, Value as ConstValue};
 use derive_more::From;
 use thiserror::Error;
 
-use crate::core::{auth, cache, worker};
+use crate::core::{auth, cache, worker, http};
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     #[error("IOException: {0}")]
@@ -37,6 +37,9 @@ pub enum Error {
 
     #[error("Cache Error: {0}")]
     CacheError(cache::Error),
+
+    #[error("Http Error: {0}")]
+    HttpError(http::Error),
 }
 
 impl ErrorExtensions for Error {

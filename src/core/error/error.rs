@@ -5,7 +5,7 @@ use derive_more::From;
 
 use super::file;
 use crate::core::config::UnsupportedConfigFormat;
-use crate::core::worker;
+use crate::core::{worker, http};
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
@@ -14,6 +14,9 @@ pub enum Error {
 
     #[error("File Error: {}", _0)]
     File(file::Error),
+
+    #[error("Http Error: {}", _0)]
+    Http(http::Error),
 
     #[error("Inquire Error: {}", _0)]
     Inquire(String),
