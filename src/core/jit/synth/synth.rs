@@ -84,7 +84,7 @@ where
         // TODO: replace value and type_name with single `result: Option<ExecResultRef<'a, Value>>`
         // to simplify usage and passing arguments around iter and iter_inner
         value: Option<&'a Value>,
-        type_name: &Option<TypeName>,
+        type_name: &'a Option<TypeName>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         match self.store.get(&node.id) {
@@ -132,7 +132,7 @@ where
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
         value: &'a Value,
-        type_name: &Option<TypeName>,
+        type_name: &'a Option<TypeName>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         if !self.include(node) {
