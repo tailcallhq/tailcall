@@ -46,6 +46,7 @@ pub mod test {
     use std::collections::HashMap;
     use std::sync::Arc;
     use std::time::Duration;
+
     use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;

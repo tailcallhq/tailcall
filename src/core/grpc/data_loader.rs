@@ -15,9 +15,9 @@ use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::request::create_grpc_request;
 use crate::core::http::Response;
+use crate::core::ir::Error;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
-use crate::core::ir::Error;
 
 #[derive(Clone)]
 pub struct GrpcDataLoader {

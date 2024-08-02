@@ -14,8 +14,7 @@ use tailcall::core::error::file;
 use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
 use tailcall::core::ir::model::IoId;
 use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::{cache, EnvIO, FileIO, HttpIO};
-use tailcall::core::http;
+use tailcall::core::{cache, http, EnvIO, FileIO, HttpIO};
 
 #[derive(Clone)]
 struct MockHttpClient {

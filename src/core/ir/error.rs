@@ -4,7 +4,7 @@ use async_graphql::{ErrorExtensions, Value as ConstValue};
 use derive_more::From;
 use thiserror::Error;
 
-use crate::core::{auth, cache, worker, http};
+use crate::core::{auth, cache, http, worker};
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     #[error("IOException: {0}")]

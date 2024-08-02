@@ -9,8 +9,8 @@ use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
 use crate::core::grpc::protobuf::ProtobufOperation;
-use crate::core::ir::Error;
 use crate::core::http;
+use crate::core::ir::Error;
 
 #[derive(Clone, Debug, Default, Setters)]
 pub struct Response<Body> {

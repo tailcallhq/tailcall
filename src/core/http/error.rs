@@ -1,4 +1,5 @@
-use std::{string::FromUtf8Error, sync::Arc};
+use std::string::FromUtf8Error;
+use std::sync::Arc;
 
 use derive_more::From;
 
@@ -113,4 +114,3 @@ impl From<hyper::http::Error> for Error {
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
-

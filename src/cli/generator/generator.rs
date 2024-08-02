@@ -288,7 +288,10 @@ mod test {
         #[async_trait::async_trait]
         impl HttpIO for NativeHttpTest {
             #[allow(clippy::blocks_in_conditions)]
-            async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, http::Error> {
+            async fn execute(
+                &self,
+                request: reqwest::Request,
+            ) -> Result<Response<Bytes>, http::Error> {
                 let response = self.client.execute(request).await;
                 Ok(Response::from_reqwest(
                     response?

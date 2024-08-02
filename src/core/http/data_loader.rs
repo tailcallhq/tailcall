@@ -9,11 +9,11 @@ use async_graphql_value::ConstValue;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
+use crate::core::http;
 use crate::core::http::{DataLoaderRequest, Response};
+use crate::core::ir::Error;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
-use crate::core::ir::Error;
-use crate::core::http;
 
 fn get_body_value_single(body_value: &HashMap<String, Vec<&ConstValue>>, id: &str) -> ConstValue {
     body_value

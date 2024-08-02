@@ -12,6 +12,7 @@ pub use response::*;
 mod cache;
 mod data_loader;
 mod data_loader_request;
+pub mod error;
 mod method;
 mod query_encoder;
 mod request_context;
@@ -20,7 +21,6 @@ mod request_template;
 mod response;
 pub mod showcase;
 mod telemetry;
-pub mod error;
 pub use error::Error;
 
 pub static TAILCALL_HTTPS_ORIGIN: HeaderValue = HeaderValue::from_static("https://tailcall.run");

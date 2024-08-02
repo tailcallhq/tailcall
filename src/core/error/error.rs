@@ -5,7 +5,7 @@ use derive_more::From;
 
 use super::file;
 use crate::core::config::UnsupportedConfigFormat;
-use crate::core::{worker, http};
+use crate::core::{http, worker};
 
 #[derive(From, thiserror::Error, Debug)]
 pub enum Error {
