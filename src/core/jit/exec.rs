@@ -116,7 +116,8 @@ where
             if let Some(array) = value.as_array() {
                 join_all(array.iter().enumerate().map(|(index, value)| {
                     let type_name = match &type_name {
-                        Some(TypeName::Single(type_name)) => type_name, // TODO: should throw ValidationError
+                        Some(TypeName::Single(type_name)) => type_name, /* TODO: should throw */
+                        // ValidationError
                         Some(TypeName::Vec(v)) => &v[index],
                         None => field.type_of.name(),
                     };
@@ -188,10 +189,7 @@ where
                 // here without doing the "fix"
                 .unwrap_or(&default_obj);
 
-            let result = TypedValueRef {
-                value,
-                type_name: None,
-            };
+            let result = TypedValueRef { value, type_name: None };
 
             self.iter_field(ctx, &data_path, result).await?;
         }

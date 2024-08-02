@@ -1,7 +1,7 @@
 use async_graphql::Positioned;
 
-use crate::core::{ir::TypeName, jit::exec::TypedValueRef};
-use crate::core::jit::exec::TypedValue;
+use crate::core::ir::TypeName;
+use crate::core::jit::exec::{TypedValue, TypedValueRef};
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, ValidationError};
@@ -122,7 +122,7 @@ where
     }
 
     #[inline(always)]
-    fn iter_inner<'b>(
+    fn iter_inner(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
         result: TypedValueRef<'a, Value>,
@@ -132,7 +132,7 @@ where
             return Ok(Value::null());
         }
 
-        let TypedValueRef {type_name, value} = result;
+        let TypedValueRef { type_name, value } = result;
 
         if node.is_scalar {
             let scalar =

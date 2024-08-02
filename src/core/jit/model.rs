@@ -227,7 +227,7 @@ impl<Input> Field<Nested<Input>, Input> {
                     // but with Interfaces/Unions we need to check if that specific type
                     // is member of some Interface/Union and if so call the fragments for
                     // the related Interfaces/Unions
-                    .filter(move |field| &field.parent_type == type_name)
+                    .filter(move |field| field.parent_type == type_name)
             })
             .into_iter()
             .flatten()
