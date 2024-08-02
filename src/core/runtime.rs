@@ -46,8 +46,6 @@ pub mod test {
     use std::collections::HashMap;
     use std::sync::Arc;
     use std::time::Duration;
-
-    use anyhow::Result;
     use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
@@ -62,7 +60,7 @@ pub mod test {
     use crate::core::http::Response;
     use crate::core::runtime::TargetRuntime;
     use crate::core::worker::{Command, Event};
-    use crate::core::{blueprint, error, EnvIO, FileIO, HttpIO};
+    use crate::core::{blueprint, error, http, EnvIO, FileIO, HttpIO};
 
     #[derive(Clone)]
     struct TestHttp {
@@ -116,7 +114,7 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, http::Error> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?

@@ -259,14 +259,13 @@ mod test {
     }
 
     mod http {
-        use anyhow::Result;
         use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
         use hyper::body::Bytes;
         use reqwest::Client;
         use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
         use super::cacache_manager::CaCacheManager;
-        use crate::core::http::Response;
+        use crate::core::http::{self, Response};
         use crate::core::HttpIO;
 
         #[derive(Clone)]
@@ -289,7 +288,7 @@ mod test {
         #[async_trait::async_trait]
         impl HttpIO for NativeHttpTest {
             #[allow(clippy::blocks_in_conditions)]
-            async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+            async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, http::Error> {
                 let response = self.client.execute(request).await;
                 Ok(Response::from_reqwest(
                     response?

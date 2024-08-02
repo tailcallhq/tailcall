@@ -5,7 +5,6 @@ pub mod test {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use anyhow::Result;
     use async_graphql::Value;
     use http_cache_reqwest::{Cache, CacheMode, HttpCache, HttpCacheOptions};
     use hyper::body::Bytes;
@@ -15,7 +14,7 @@ pub mod test {
     use tailcall::core::blueprint::{Script, Upstream};
     use tailcall::core::cache::InMemoryCache;
     use tailcall::core::error::file;
-    use tailcall::core::http::Response;
+    use tailcall::core::http::{self, Response};
     use tailcall::core::runtime::TargetRuntime;
     use tailcall::core::worker::{Command, Event};
     use tailcall::core::{EnvIO, FileIO, HttpIO};
@@ -74,7 +73,7 @@ pub mod test {
 
     #[async_trait::async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+        async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, http::Error> {
             let response = self.client.execute(request).await;
             Response::from_reqwest(
                 response?
