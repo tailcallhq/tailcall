@@ -1,9 +1,8 @@
-use std::collections::{HashMap, HashSet};
-use std::fmt::Display;
-use std::time::Instant;
 use super::chunk::Chunk;
 use super::Queries;
 use crate::core::config::Config;
+use std::collections::{HashMap, HashSet};
+use std::fmt::Display;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct TypeName<'a>(pub &'a str);
@@ -101,10 +100,7 @@ impl<'a> Identifier<'a> {
     }
 
     pub fn identify(&self) -> Queries<'a> {
-        let inst = Instant::now();
-        let val = Queries::from_chunk(self.find_chunks());
-        println!("identify in: {}", inst.elapsed().as_secs());
-        val
+        Queries::from_chunk(self.find_chunks())
     }
 }
 
