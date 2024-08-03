@@ -223,6 +223,15 @@ mod tests {
         let config = include_config!("fixtures/cyclic-resolvers.graphql").unwrap();
         assert_n_plus_one!(config);
     }
+
+    #[test]
+    fn test_cycles_with_resolver() {
+        let config = include_config!("fixtures/cyclic-resolver.graphql").unwrap();
+        let actual = config.n_plus_one();
+
+        insta::assert_snapshot!(actual);
+    }
+
     #[test]
     fn test_nested_non_list() {
         let config = include_config!("fixtures/nested-non-list.graphql").unwrap();
