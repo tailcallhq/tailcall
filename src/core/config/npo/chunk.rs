@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 ///
 /// A special data structure with a O(1) complexity for append and concat operations
-#[derive(Clone)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone)]
 pub enum Chunk<A> {
     Nil,
     Cons(A, Rc<Chunk<A>>),
@@ -32,12 +32,12 @@ impl<A> Chunk<A> {
         match self {
             Chunk::Nil => {}
             Chunk::Cons(a, rest) => {
-                buf.push(a);
                 rest.as_vec_mut(buf);
+                buf.push(a);
             }
             Chunk::Concat(a, b) => {
-                a.as_vec_mut(buf);
                 b.as_vec_mut(buf);
+                a.as_vec_mut(buf);
             }
         }
     }

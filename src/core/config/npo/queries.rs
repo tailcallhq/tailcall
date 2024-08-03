@@ -231,4 +231,43 @@ mod tests {
         formatted.sort();
         insta::assert_snapshot!(formatted.join("\n"));
     }
+
+    #[test]
+    fn test_npo_cycles_with_resolver() {
+        let config = Config::default().query("Query").types(vec![
+            (
+                "Query",
+                Type::default().fields(vec![(
+                    "f1",
+                    Field::default()
+                        .type_of("F1".to_string())
+                        .http(Http::default()),
+                )]),
+            ),
+            (
+                "F1",
+                Type::default().fields(vec![
+                    ("f1", Field::default().type_of("F1".to_string()).into_list()),
+                    (
+                        "f2",
+                        Field::default()
+                            .type_of("String".to_string())
+                            .http(Http::default()),
+                    ),
+                ]),
+            ),
+            (
+                "F2",
+                Type::default()
+                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
+            ),
+        ]);
+
+        let actual = config.n_plus_one();
+
+        let formatted = actual.to_string();
+        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
+        formatted.sort();
+        insta::assert_snapshot!(formatted.join("\n"));
+    }
 }

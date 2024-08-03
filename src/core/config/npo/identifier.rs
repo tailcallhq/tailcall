@@ -51,33 +51,30 @@ impl<'a> Identifier<'a> {
         path: Chunk<FieldName<'a>>,
         type_name: TypeName<'a>,
         is_list: bool,
-        visited: &mut HashSet<TypeName<'a>>,
+        visited: HashSet<(TypeName<'a>, FieldName<'a>)>,
     ) -> Chunk<Chunk<FieldName<'a>>> {
-        if visited.contains(&type_name) {
-            return Chunk::new();
-        } else {
-            visited.insert(type_name);
-        }
         let mut chunks = Chunk::new();
         if let Some(type_of) = self.config.find_type(&type_name.as_str()) {
             for (name, field) in type_of.fields.iter() {
-                let path = path.clone().append(FieldName::new(name));
-                let is_batch = field.has_batched_resolver();
-
-                if field.has_resolver() {
-                    if !is_batch && is_list {
+                let field_name = FieldName::new(name);
+                let path = path.clone().append(field_name);
+                if !visited.contains(&(type_name, field_name)) {
+                    let is_batch = field.has_batched_resolver();
+                    if field.has_resolver() && !is_batch && is_list {
                         chunks = chunks.append(path.clone());
+                    } else {
+                        let mut visited = visited.clone();
+                        visited.insert((type_name, field_name));
+
+                        let is_list = is_list | field.list;
+                        chunks = chunks.concat(self.iter(
+                            path,
+                            TypeName::new(field.type_of.as_str()),
+                            is_list,
+                            visited,
+                        ))
                     }
-                }
-
-                let is_list = is_list | field.list;
-
-                chunks = chunks.concat(self.iter(
-                    path,
-                    TypeName::new(field.type_of.as_str()),
-                    is_list,
-                    visited,
-                ))
+                } 
             }
         }
 
@@ -91,7 +88,7 @@ impl<'a> Identifier<'a> {
                 Chunk::new(),
                 TypeName::new(query.as_str()),
                 false,
-                &mut HashSet::new(),
+                HashSet::new(),
             ),
         }
     }
