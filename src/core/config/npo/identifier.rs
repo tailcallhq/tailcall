@@ -109,81 +109,65 @@ mod tests {
     use crate::include_config;
 
     #[test]
-    fn test_nplusone_resolvers() {
+    fn test_resolvers() {
         let config = include_config!("fixtures/simple-resolvers.graphql").unwrap();
         let actual = config.n_plus_one();
-        let formatted = actual.to_string();
-        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
-        insta::assert_snapshot!(formatted.join("\n"));
+        insta::assert_snapshot!(actual);
     }
 
     #[test]
-    fn test_nplusone_batched_resolvers() {
+    fn test_batched_resolvers() {
         let config = include_config!("fixtures/simple-batch-resolver.graphql").unwrap();
         let actual = config.n_plus_one();
-        let formatted = actual.to_string();
-        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
-        insta::assert_snapshot!(formatted.join("\n"));
+        insta::assert_snapshot!(actual);
     }
 
     #[test]
-    fn test_nplusone_nested_resolvers() {
+    fn test_nested_resolvers() {
         let config = include_config!("fixtures/nested-resolvers.graphql").unwrap();
         let actual = config.n_plus_one();
-        let formatted = actual.to_string();
-        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
-        insta::assert_snapshot!(formatted.join("\n"));
+        insta::assert_snapshot!(actual);
     }
 
     #[test]
-    fn test_nplusone_nested_resolvers_non_list_resolvers() {
+    fn test_nested_resolvers_non_list_resolvers() {
         let config = include_config!("fixtures/non-list-resolvers.graphql").unwrap();
         let actual = config.n_plus_one();
-        let formatted = actual.to_string();
-        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
-        insta::assert_snapshot!(formatted.join("\n"));
+        insta::assert_snapshot!(actual);
     }
 
     #[test]
-    fn test_nplusone_nested_resolvers_without_resolvers() {
+    fn test_nested_resolvers_without_resolvers() {
         let config = include_config!("fixtures/nested-without-resolvers.graphql").unwrap();
         let actual = config.n_plus_one();
-        let formatted = actual.to_string();
-        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
-        insta::assert_snapshot!(formatted.join("\n"));
+        insta::assert_snapshot!(actual);
     }
 
     #[test]
-    fn test_nplusone_cycles() {
+    fn test_cycles() {
         let config = include_config!("fixtures/cycles.graphql").unwrap();
         let actual = config.n_plus_one();
-        let formatted = actual.to_string();
-        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
-        insta::assert_snapshot!(formatted.join("\n"));
+        insta::assert_snapshot!(actual);
     }
 
     #[test]
-    fn test_nplusone_cycles_with_resolvers() {
+    fn test_cycles_with_resolvers() {
         let config = include_config!("fixtures/cyclic-resolvers.graphql").unwrap();
         let actual = config.n_plus_one();
-        let formatted = actual.to_string();
-        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
-        insta::assert_snapshot!(formatted.join("\n"));
+        insta::assert_snapshot!(actual);
     }
     #[test]
-    fn test_nplusone_nested_non_list() {
+    fn test_nested_non_list() {
         let config = include_config!("fixtures/nested-non-list.graphql").unwrap();
         let actual = config.n_plus_one();
-        let formatted = actual.to_string();
-        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
-        insta::assert_snapshot!(formatted.join("\n"));
+        insta::assert_snapshot!(actual);
     }
 }
