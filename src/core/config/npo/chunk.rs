@@ -14,11 +14,21 @@ impl<A> Chunk<A> {
         Self::Nil
     }
 
+    pub fn is_null(&self) -> bool {
+        matches!(self, Chunk::Nil)
+    }
+
     pub fn append(self, a: A) -> Self {
         Chunk::Cons(a, Rc::new(self))
     }
 
     pub fn concat(self, other: Chunk<A>) -> Self {
+        if self.is_null() {
+            return other;
+        }
+        if other.is_null() {
+            return self;
+        }
         Self::Concat(Rc::new(self), Rc::new(other))
     }
 
