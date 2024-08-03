@@ -87,7 +87,7 @@ pub trait Cache: Send + Sync {
     fn hit_rate(&self) -> Option<f64>;
 }
 
-pub type EntityCache = dyn Cache<Key=IoId, Value=ConstValue>;
+pub type EntityCache = dyn Cache<Key = IoId, Value = ConstValue>;
 
 #[async_trait::async_trait]
 pub trait WorkerIO<In, Out>: Send + Sync + 'static {
@@ -107,17 +107,15 @@ pub mod tests {
 
     #[macro_export]
     macro_rules! include_config {
-    ($file:literal) => {
-        {
+        ($file:literal) => {{
             let config_str = include_str!($file);
             let result = {
                 let source = Source::detect($file)?;
-            Config::from_source(source, config_str)
+                Config::from_source(source, config_str)
             };
             result.map_err(|e| e.to_string())
-        }
-    };
-}
+        }};
+    }
 
     #[derive(Clone, Default)]
     pub struct TestEnvIO(HashMap<String, String>);
@@ -135,7 +133,7 @@ pub mod tests {
     }
 
     impl FromIterator<(String, String)> for TestEnvIO {
-        fn from_iter<T: IntoIterator<Item=(String, String)>>(iter: T) -> Self {
+        fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
             Self(HashMap::from_iter(iter))
         }
     }
