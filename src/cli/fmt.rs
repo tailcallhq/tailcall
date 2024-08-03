@@ -23,7 +23,7 @@ impl Fmt {
 
     pub fn log_n_plus_one(show_npo: bool, config: &Config) {
         let n_plus_one_info = config.n_plus_one();
-        let mut message = format!("N + 1 detected: {}", n_plus_one_info.map().len());
+        let mut message = format!("N + 1 detected: {}", n_plus_one_info.size());
 
         if show_npo {
             message.push('\n');
