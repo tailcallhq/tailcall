@@ -140,7 +140,9 @@ pub mod tests {
     }
     #[test]
     fn test_include_config() {
-        let cfg = include_config!("fixtures/helloworld.graphql").unwrap().to_sdl();
+        let cfg = include_config!("fixtures/helloworld.graphql")
+            .unwrap()
+            .to_sdl();
         insta::assert_snapshot!(cfg);
     }
 }
