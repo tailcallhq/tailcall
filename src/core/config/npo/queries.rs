@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn test_npo_resolvers() {
-        let config = !("fixtures/simple-resolvers.graphql").unwrap();
+        let config = include_config!("fixtures/simple-resolvers.graphql").unwrap();
 
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
