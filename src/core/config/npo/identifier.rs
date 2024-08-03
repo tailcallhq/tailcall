@@ -384,7 +384,7 @@ impl<'a> Identifier<'a> {
 //                 "F1",
 //                 Type::default().fields(vec![
 //                     ("f1",
-// Field::default().type_of("F1".to_string()).into_list()),                     
+// Field::default().type_of("F1".to_string()).into_list()),
 // (                         "f2",
 //                         Field::default()
 //                             .type_of("String".to_string())
