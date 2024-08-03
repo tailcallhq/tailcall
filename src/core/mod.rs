@@ -114,7 +114,7 @@ pub mod tests {
                 let source = Source::detect($file)?;
                 Config::from_source(source, config_str)
             };
-            result().map_err(|e| e.to_string())
+            result()
         }};
     }
 
@@ -140,7 +140,7 @@ pub mod tests {
     }
     #[test]
     fn test_include_config() {
-        let cfg = include_config!("fixtures/helloworld.graphql");
-        assert!(cfg.is_ok());
+        let cfg = include_config!("fixtures/helloworld.graphql").unwrap().to_sdl();
+        insta::assert_snapshot!(cfg);
     }
 }
