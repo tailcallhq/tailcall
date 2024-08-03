@@ -1,15 +1,15 @@
 schema @server @upstream {
-    query: Query
+  query: Query
 }
 
 type F {
-    g: [G] @http(path: "")
+  g: [G] @http(path: "")
 }
 
 type G {
-    e: String
+  e: String
 }
 
 type Query {
-    f: F @http(path: "")
+  f: F @http(path: "")
 }

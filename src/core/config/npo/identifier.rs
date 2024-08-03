@@ -113,8 +113,7 @@ mod tests {
         let config = include_config!("fixtures/simple-resolvers.graphql").unwrap();
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
-        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
-        formatted.sort();
+        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
         insta::assert_snapshot!(formatted.join("\n"));
     }
@@ -124,8 +123,7 @@ mod tests {
         let config = include_config!("fixtures/simple-batch-resolver.graphql").unwrap();
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
-        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
-        formatted.sort();
+        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
         insta::assert_snapshot!(formatted.join("\n"));
     }
@@ -135,8 +133,7 @@ mod tests {
         let config = include_config!("fixtures/nested-resolvers.graphql").unwrap();
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
-        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
-        formatted.sort();
+        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
         insta::assert_snapshot!(formatted.join("\n"));
     }
@@ -146,8 +143,7 @@ mod tests {
         let config = include_config!("fixtures/non-list-resolvers.graphql").unwrap();
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
-        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
-        formatted.sort();
+        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
         insta::assert_snapshot!(formatted.join("\n"));
     }
@@ -157,8 +153,7 @@ mod tests {
         let config = include_config!("fixtures/nested-without-resolvers.graphql").unwrap();
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
-        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
-        formatted.sort();
+        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
         insta::assert_snapshot!(formatted.join("\n"));
     }
@@ -168,8 +163,7 @@ mod tests {
         let config = include_config!("fixtures/cycles.graphql").unwrap();
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
-        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
-        formatted.sort();
+        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
         insta::assert_snapshot!(formatted.join("\n"));
     }
@@ -179,8 +173,7 @@ mod tests {
         let config = include_config!("fixtures/cyclic-resolvers.graphql").unwrap();
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
-        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
-        formatted.sort();
+        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
         insta::assert_snapshot!(formatted.join("\n"));
     }
@@ -189,8 +182,7 @@ mod tests {
         let config = include_config!("fixtures/nested-non-list.graphql").unwrap();
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
-        let mut formatted = formatted.split('\n').collect::<Vec<_>>();
-        formatted.sort();
+        let formatted = formatted.split('\n').collect::<Vec<_>>();
 
         insta::assert_snapshot!(formatted.join("\n"));
     }
