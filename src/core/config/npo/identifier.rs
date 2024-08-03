@@ -1,6 +1,6 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
-
+use std::time::Instant;
 use super::chunk::Chunk;
 use super::Queries;
 use crate::core::config::Config;
@@ -52,7 +52,12 @@ impl<'a> Identifier<'a> {
         type_name: TypeName<'a>,
         is_list: bool,
         visited: HashSet<(TypeName<'a>, FieldName<'a>)>,
+        dp: &mut HashMap<TypeName<'a>, Chunk<Chunk<FieldName<'a>>>>,
     ) -> Chunk<Chunk<FieldName<'a>>> {
+        if let Some(chunks) = dp.get(&type_name) {
+            return chunks.clone();
+        }
+
         let mut chunks = Chunk::new();
         if let Some(type_of) = self.config.find_type(&type_name.as_str()) {
             for (name, field) in type_of.fields.iter() {
@@ -65,19 +70,20 @@ impl<'a> Identifier<'a> {
                     } else {
                         let mut visited = visited.clone();
                         visited.insert((type_name, field_name));
-
                         let is_list = is_list | field.list;
                         chunks = chunks.concat(self.iter(
                             path,
                             TypeName::new(field.type_of.as_str()),
                             is_list,
                             visited,
+                            dp,
                         ))
                     }
-                } 
+                }
             }
         }
 
+        dp.insert(type_name, chunks.clone());
         chunks
     }
 
@@ -89,12 +95,16 @@ impl<'a> Identifier<'a> {
                 TypeName::new(query.as_str()),
                 false,
                 HashSet::new(),
+                &mut Default::default(),
             ),
         }
     }
 
     pub fn identify(&self) -> Queries<'a> {
-        Queries::from_chunk(self.find_chunks())
+        let inst = Instant::now();
+        let val = Queries::from_chunk(self.find_chunks());
+        println!("identify in: {}", inst.elapsed().as_secs());
+        val
     }
 }
 
