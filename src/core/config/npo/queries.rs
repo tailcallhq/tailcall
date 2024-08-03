@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
-use super::{chunk::Chunk, FieldName};
+use super::chunk::Chunk;
+use super::FieldName;
 
 ///
 /// Represents a list of query paths that can issue a N + 1 query
@@ -11,7 +12,7 @@ impl Queries<'_> {
     pub fn size(&self) -> usize {
         self.0.len()
     }
-    pub fn from_chunk<'a>(chunk: Chunk<Chunk<FieldName<'a>>>) -> Queries<'a> {
+    pub fn from_chunk(chunk: Chunk<Chunk<FieldName<'_>>>) -> Queries<'_> {
         Queries(
             chunk
                 .as_vec()

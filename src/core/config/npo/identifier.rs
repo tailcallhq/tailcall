@@ -1,8 +1,9 @@
+use std::collections::{HashMap, HashSet};
+use std::fmt::Display;
+
 use super::chunk::Chunk;
 use super::Queries;
 use crate::core::config::Config;
-use std::collections::{HashMap, HashSet};
-use std::fmt::Display;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct TypeName<'a>(&'a str);
@@ -58,7 +59,7 @@ impl<'a> Identifier<'a> {
         }
 
         let mut chunks = Chunk::new();
-        if let Some(type_of) = self.config.find_type(&type_name.as_str()) {
+        if let Some(type_of) = self.config.find_type(type_name.as_str()) {
             for (name, field) in type_of.fields.iter() {
                 let field_name = FieldName::new(name);
                 let path = path.clone().append(field_name);
@@ -112,7 +113,8 @@ impl<'a> Identifier<'a> {
 
 //     // macro_rules! assert_eq_map {
 //     //     ($actual:expr, $expected_vec:expr) => {{
-//     //         let mut expected: HashMap<TypeName, HashSet<(FieldName, TypeName)>> = HashMap::new();
+//     //         let mut expected: HashMap<TypeName, HashSet<(FieldName,
+// TypeName)>> = HashMap::new();
 
 //     //         for vec in $expected_vec {
 //     //             for value in vec {
@@ -157,11 +159,12 @@ impl<'a> Identifier<'a> {
 //             (
 //                 "F2",
 //                 Type::default()
-//                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
-//             ),
+//                     .fields(vec![("f3",
+// Field::default().type_of("String".to_string()))]),             ),
 //         ]);
 //         let actual = config.n_plus_one();
-//         let expected = vec![vec![("Query", ("f1", "F1")), ("F1", ("f2", "F2"))]];
+//         let expected = vec![vec![("Query", ("f1", "F1")), ("F1", ("f2",
+// "F2"))]];
 
 //         assert_eq_map!(actual, expected);
 //     }
@@ -186,14 +189,14 @@ impl<'a> Identifier<'a> {
 //                     Field::default()
 //                         .type_of("F2".to_string())
 //                         .into_list()
-//                         .http(Http { batch_key: vec!["id".into()], ..Default::default() }),
-//                 )]),
+//                         .http(Http { batch_key: vec!["id".into()],
+// ..Default::default() }),                 )]),
 //             ),
 //             (
 //                 "F2",
 //                 Type::default()
-//                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
-//             ),
+//                     .fields(vec![("f3",
+// Field::default().type_of("String".to_string()))]),             ),
 //         ]);
 
 //         let actual = config.n_plus_one();
@@ -321,8 +324,8 @@ impl<'a> Identifier<'a> {
 //             (
 //                 "F2",
 //                 Type::default()
-//                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
-//             ),
+//                     .fields(vec![("f3",
+// Field::default().type_of("String".to_string()))]),             ),
 //         ]);
 
 //         let expected: Vec<Vec<_>> = vec![];
@@ -348,14 +351,14 @@ impl<'a> Identifier<'a> {
 //                 "F1",
 //                 Type::default().fields(vec![
 //                     ("f1", Field::default().type_of("F1".to_string())),
-//                     ("f2", Field::default().type_of("F2".to_string()).into_list()),
-//                 ]),
+//                     ("f2",
+// Field::default().type_of("F2".to_string()).into_list()),                 ]),
 //             ),
 //             (
 //                 "F2",
 //                 Type::default()
-//                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
-//             ),
+//                     .fields(vec![("f3",
+// Field::default().type_of("String".to_string()))]),             ),
 //         ]);
 
 //         let actual = config.n_plus_one();
@@ -380,9 +383,9 @@ impl<'a> Identifier<'a> {
 //             (
 //                 "F1",
 //                 Type::default().fields(vec![
-//                     ("f1", Field::default().type_of("F1".to_string()).into_list()),
-//                     (
-//                         "f2",
+//                     ("f1",
+// Field::default().type_of("F1".to_string()).into_list()),                     
+// (                         "f2",
 //                         Field::default()
 //                             .type_of("String".to_string())
 //                             .http(Http::default()),
@@ -392,8 +395,8 @@ impl<'a> Identifier<'a> {
 //             (
 //                 "F2",
 //                 Type::default()
-//                     .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
-//             ),
+//                     .fields(vec![("f3",
+// Field::default().type_of("String".to_string()))]),             ),
 //         ]);
 
 //         let actual = config.n_plus_one();
@@ -428,8 +431,8 @@ impl<'a> Identifier<'a> {
 //             ),
 //             (
 //                 "G",
-//                 Type::default().fields(vec![("e", Field::default().type_of("String".to_string()))]),
-//             ),
+//                 Type::default().fields(vec![("e",
+// Field::default().type_of("String".to_string()))]),             ),
 //         ]);
 
 //         let actual = config.n_plus_one();

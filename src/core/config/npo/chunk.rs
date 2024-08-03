@@ -1,12 +1,19 @@
 use std::rc::Rc;
 
 ///
-/// A special data structure with a O(1) complexity for append and concat operations
+/// A special data structure with a O(1) complexity for append and concat
+/// operations
 #[derive(Hash, Eq, PartialEq, Debug, Clone)]
 pub enum Chunk<A> {
     Nil,
     Cons(A, Rc<Chunk<A>>),
     Concat(Rc<Chunk<A>>, Rc<Chunk<A>>),
+}
+
+impl<A> Default for Chunk<A> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<A> Chunk<A> {
