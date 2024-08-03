@@ -67,36 +67,12 @@ impl<'a> Display for Queries<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::config::{Config, Field, Http, Type};
+    use crate::include_config;
+
     #[test]
     fn test_npo_resolvers() {
-        let config = Config::default().query("Query").types(vec![
-            (
-                "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
-            ),
-            (
-                "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default()
-                        .type_of("F2".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
-            ),
-            (
-                "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
-            ),
-        ]);
+        let config = !("fixtures/simple-resolvers.graphql").unwrap();
+
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
         let mut formatted = formatted.split('\n').collect::<Vec<_>>();
@@ -106,41 +82,7 @@ mod tests {
 
     #[test]
     fn test_npo_nested_resolvers() {
-        let config = Config::default().query("Query").types(vec![
-            (
-                "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
-            ),
-            (
-                "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default().type_of("F2".to_string()).into_list(),
-                )]),
-            ),
-            (
-                "F2",
-                Type::default().fields(vec![(
-                    "f3",
-                    Field::default().type_of("F3".to_string()).into_list(),
-                )]),
-            ),
-            (
-                "F3",
-                Type::default().fields(vec![(
-                    "f4",
-                    Field::default()
-                        .type_of("String".to_string())
-                        .http(Http::default()),
-                )]),
-            ),
-        ]);
+        let config = include_config!("fixtures/nested-resolvers.graphql").unwrap();
 
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
@@ -151,40 +93,7 @@ mod tests {
 
     #[test]
     fn test_npo_nested_resolvers_non_list_resolvers() {
-        let config = Config::default().query("Query").types(vec![
-            (
-                "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .http(Http::default()),
-                )]),
-            ),
-            (
-                "F1",
-                Type::default().fields(vec![(
-                    "f2",
-                    Field::default().type_of("F2".to_string()).into_list(),
-                )]),
-            ),
-            (
-                "F2",
-                Type::default().fields(vec![(
-                    "f3",
-                    Field::default().type_of("F3".to_string()).into_list(),
-                )]),
-            ),
-            (
-                "F3",
-                Type::default().fields(vec![(
-                    "f4",
-                    Field::default()
-                        .type_of("String".to_string())
-                        .http(Http::default()),
-                )]),
-            ),
-        ]);
+        let config = include_config!("fixtures/non-list-resolvers.graphql").unwrap();
 
         let actual = config.n_plus_one();
         let formatted = actual.to_string();
@@ -195,35 +104,7 @@ mod tests {
 
     #[test]
     fn test_npo_cycles_with_resolvers() {
-        let config = Config::default().query("Query").types(vec![
-            (
-                "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .into_list()
-                        .http(Http::default()),
-                )]),
-            ),
-            (
-                "F1",
-                Type::default().fields(vec![
-                    ("f1", Field::default().type_of("F1".to_string()).into_list()),
-                    (
-                        "f2",
-                        Field::default()
-                            .type_of("String".to_string())
-                            .http(Http::default()),
-                    ),
-                ]),
-            ),
-            (
-                "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
-            ),
-        ]);
+        let config = include_config!("fixtures/cyclic-resolvers.graphql").unwrap();
 
         let actual = config.n_plus_one();
 
@@ -235,34 +116,7 @@ mod tests {
 
     #[test]
     fn test_npo_cycles_with_resolver() {
-        let config = Config::default().query("Query").types(vec![
-            (
-                "Query",
-                Type::default().fields(vec![(
-                    "f1",
-                    Field::default()
-                        .type_of("F1".to_string())
-                        .http(Http::default()),
-                )]),
-            ),
-            (
-                "F1",
-                Type::default().fields(vec![
-                    ("f1", Field::default().type_of("F1".to_string()).into_list()),
-                    (
-                        "f2",
-                        Field::default()
-                            .type_of("String".to_string())
-                            .http(Http::default()),
-                    ),
-                ]),
-            ),
-            (
-                "F2",
-                Type::default()
-                    .fields(vec![("f3", Field::default().type_of("String".to_string()))]),
-            ),
-        ]);
+        let config = include_config!("fixtures/cyclic-resolver.graphql").unwrap();
 
         let actual = config.n_plus_one();
 

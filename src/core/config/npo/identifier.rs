@@ -47,6 +47,7 @@ impl<'a> Identifier<'a> {
         Identifier { config, cache: Default::default() }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn iter(
         &mut self,
         path: Chunk<FieldName<'a>>,
