@@ -1,6 +1,4 @@
 mod chunk;
-mod identifier;
-mod queries;
+mod tracker;
 
-pub use identifier::*;
-pub use queries::*;
+pub use tracker::{PathTracker, QueryPath};

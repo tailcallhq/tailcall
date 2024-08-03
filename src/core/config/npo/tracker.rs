@@ -1,17 +1,81 @@
 use std::collections::{HashMap, HashSet};
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 use super::chunk::Chunk;
-use super::Queries;
 use crate::core::config::Config;
 
+///
+/// Represents a list of query paths that can issue a N + 1 query
+#[derive(Default, Debug, PartialEq)]
+pub struct QueryPath<'a>(Vec<Vec<&'a str>>);
+
+impl QueryPath<'_> {
+    pub fn size(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<'a> From<Chunk<Chunk<FieldName<'a>>>> for QueryPath<'a> {
+    fn from(chunk: Chunk<Chunk<FieldName<'a>>>) -> Self {
+        QueryPath(
+            chunk
+                .as_vec()
+                .iter()
+                .map(|chunk| {
+                    chunk
+                        .as_vec()
+                        .iter()
+                        .map(|field_name| field_name.as_str())
+                        .collect()
+                })
+                .collect(),
+        )
+    }
+}
+
+impl<'a> Display for QueryPath<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let query_data: Vec<String> = self
+            .0
+            .iter()
+            .map(|query_path| {
+                let mut path = "query { ".to_string();
+                path.push_str(
+                    query_path
+                        .iter()
+                        .rfold("".to_string(), |s, field_name| {
+                            if s.is_empty() {
+                                field_name.to_string()
+                            } else {
+                                format!("{} {{ {} }}", field_name, s)
+                            }
+                        })
+                        .as_str(),
+                );
+                path.push_str(" }");
+                path
+            })
+            .collect();
+
+        let val = query_data.iter().rfold("".to_string(), |s, query| {
+            if s.is_empty() {
+                query.to_string()
+            } else {
+                format!("{}\n{}", query, s)
+            }
+        });
+
+        f.write_str(&val)
+    }
+}
+
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-pub struct TypeName<'a>(&'a str);
+struct TypeName<'a>(&'a str);
 impl<'a> TypeName<'a> {
-    pub fn new(name: &'a str) -> Self {
+    fn new(name: &'a str) -> Self {
         Self(name)
     }
-    pub fn as_str(self) -> &'a str {
+    fn as_str(self) -> &'a str {
         self.0
     }
 }
@@ -22,12 +86,12 @@ impl Display for TypeName<'_> {
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-pub struct FieldName<'a>(&'a str);
+struct FieldName<'a>(&'a str);
 impl<'a> FieldName<'a> {
-    pub fn new(name: &'a str) -> Self {
+    fn new(name: &'a str) -> Self {
         Self(name)
     }
-    pub fn as_str(self) -> &'a str {
+    fn as_str(self) -> &'a str {
         self.0
     }
 }
@@ -37,14 +101,16 @@ impl Display for FieldName<'_> {
     }
 }
 
-pub struct Identifier<'a> {
+/// A module that tracks the query paths that can issue a N + 1 calls to
+/// upstream.
+pub struct PathTracker<'a> {
     config: &'a Config,
     cache: HashMap<(TypeName<'a>, bool), Chunk<Chunk<FieldName<'a>>>>,
 }
 
-impl<'a> Identifier<'a> {
-    pub fn new(config: &'a Config) -> Identifier {
-        Identifier { config, cache: Default::default() }
+impl<'a> PathTracker<'a> {
+    pub fn new(config: &'a Config) -> PathTracker {
+        PathTracker { config, cache: Default::default() }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -99,8 +165,8 @@ impl<'a> Identifier<'a> {
         }
     }
 
-    pub fn identify(mut self) -> Queries<'a> {
-        Queries::from_chunk(self.find_chunks())
+    pub fn find(mut self) -> QueryPath<'a> {
+        QueryPath::from(self.find_chunks())
     }
 }
 
