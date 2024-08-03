@@ -177,14 +177,14 @@ mod tests {
     #[macro_export]
     macro_rules! assert_n_plus_one {
         ($cfg:expr) => {{
-        let actual = $cfg.n_plus_one();
-        insta::assert_snapshot!(actual);
+            let actual = $cfg.n_plus_one();
+            insta::assert_snapshot!(actual);
         }};
     }
 
     #[test]
     fn test_resolvers() {
-        let config = include_config!("fixtures/simple-batch-resolver.graphql").unwrap();
+        let config = include_config!("fixtures/simple-resolvers.graphql").unwrap();
         assert_n_plus_one!(config);
     }
 
