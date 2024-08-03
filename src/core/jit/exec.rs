@@ -7,7 +7,7 @@ use derive_getters::Getters;
 use futures_util::future::join_all;
 
 use super::context::Context;
-use super::{DataPath, Field, Nested, OperationPlan, Request, Response, Store};
+use super::{DataPath, OperationPlan, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::jit;
 use crate::core::jit::synth::Synth;
@@ -25,7 +25,8 @@ pub struct Executor<IRExec, Input> {
 
 impl<Input, Output, Exec> Executor<Exec, Input>
 where
-    Output: for<'a> JsonLike<'a> + Debug + Clone,
+    Output:
+        for<'b> JsonLike<'b, JsonObject<'b>: JsonObjectLike<'b, Value = Output>> + Debug + Clone,
     Input: Clone + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
@@ -91,50 +92,65 @@ where
                     todo!()
                 }
             }
+            // TODO: with_args should be called on inside iter_field on any level, not only
+            // for root fields
             let ctx = Context::new(&self.request, self.plan.is_query(), field).with_args(arg_map);
-            self.execute(field, &ctx, DataPath::new()).await
+            self.execute(&ctx, DataPath::new()).await
         }))
         .await;
     }
 
+    async fn iter_field<'b>(
+        &'b self,
+        ctx: &'b Context<'b, Input, Output>,
+        data_path: &DataPath,
+        value: &'b Output,
+    ) -> Result<(), Error> {
+        let field = ctx.field();
+        // Array
+        // Check if the field expects a list
+        if field.type_of.is_list() {
+            // Check if the value is an array
+            if let Some(array) = value.as_array() {
+                join_all(field.nested_iter().map(|field| {
+                    join_all(array.iter().enumerate().map(|(index, value)| {
+                        let ctx = ctx.with_value_and_field(value, field);
+                        let data_path = data_path.clone().with_index(index);
+                        async move { self.execute(&ctx, data_path).await }
+                    }))
+                }))
+                .await;
+            }
+            // TODO:  We should throw an error stating that we expected
+            // a list type here but because the `Error` is a
+            // type-parameter, its not possible
+        }
+        // TODO: Validate if the value is an Object
+        // Has to be an Object, we don't do anything while executing if its a Scalar
+        else {
+            join_all(field.nested_iter().map(|child| {
+                let ctx = ctx.with_value_and_field(value, child);
+                let data_path = data_path.clone();
+                async move { self.execute(&ctx, data_path).await }
+            }))
+            .await;
+        }
+
+        Ok(())
+    }
+
     async fn execute<'b>(
         &'b self,
-        field: &'b Field<Nested<Input>, Input>,
         ctx: &'b Context<'b, Input, Output>,
         data_path: DataPath,
     ) -> Result<(), Error> {
+        let field = ctx.field();
+
         if let Some(ir) = &field.ir {
             let result = self.ir_exec.execute(ir, ctx).await;
 
             if let Ok(ref value) = result {
-                // Array
-                // Check if the field expects a list
-                if field.type_of.is_list() {
-                    // Check if the value is an array
-                    if let Some(array) = value.as_array() {
-                        join_all(field.nested_iter().map(|field| {
-                            join_all(array.iter().enumerate().map(|(index, value)| {
-                                let ctx = ctx.with_value_and_field(value, field);
-                                let data_path = data_path.clone().with_index(index);
-                                async move { self.execute(field, &ctx, data_path).await }
-                            }))
-                        }))
-                        .await;
-                    }
-                    // TODO:  We should throw an error stating that we expected
-                    // a list type here but because the `Error` is a
-                    // type-parameter, its not possible
-                }
-                // TODO: Validate if the value is an Object
-                // Has to be an Object, we don't do anything while executing if its a Scalar
-                else {
-                    join_all(field.nested_iter().map(|child| {
-                        let ctx = ctx.with_value_and_field(value, child);
-                        let data_path = data_path.clone();
-                        async move { self.execute(child, &ctx, data_path).await }
-                    }))
-                    .await;
-                }
+                self.iter_field(ctx, &data_path, value).await?;
             }
 
             let mut store = self.store.lock().unwrap();
@@ -145,6 +161,8 @@ where
                 result.map_err(|e| Positioned::new(e, field.pos)),
             );
         } else {
+            // if the present field doesn't have IR, still go through it's extensions to see
+            // if they've IR.
             let default_obj = Output::object(Output::JsonObject::new());
             let value = ctx
                 .value()
@@ -157,14 +175,7 @@ where
                 // here without doing the "fix"
                 .unwrap_or(&default_obj);
 
-            // if the present field doesn't have IR, still go through it's extensions to see
-            // if they've IR.
-            join_all(field.nested_iter().map(|child| {
-                let ctx = ctx.with_value_and_field(value, child);
-                let data_path = data_path.clone();
-                async move { self.execute(child, &ctx, data_path).await }
-            }))
-            .await;
+            self.iter_field(ctx, &data_path, value).await?;
         }
 
         Ok(())
