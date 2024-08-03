@@ -1,14 +1,5 @@
 ---
 source: src/core/config/npo/identifier.rs
-expression: actual
+expression: "formatted.join(\"\\n\")"
 ---
-Queries(
-    [
-        [
-            "f1",
-            "f2",
-            "f3",
-            "f4",
-        ],
-    ],
-)
+query { f1 { f2 { f3 { f4 } } } }
