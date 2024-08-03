@@ -92,7 +92,7 @@ impl ImproveTypeNamesLLM {
         llm_request: LLMRequest,
     ) -> Result<LLMResponse, Error> {
         let response = client
-            .post(" https://95b8-2405-201-101e-60f3-fc34-439-491b-fe01.ngrok-free.app/type_name")
+            .post("https://ec56-2405-201-101e-60f3-fc34-439-491b-fe01.ngrok-free.app/type_name")
             .header("Content-Type", "application/json")
             .header(reqwest::header::TRANSFER_ENCODING, "chunked")
             .body(llm_request.prompt)
