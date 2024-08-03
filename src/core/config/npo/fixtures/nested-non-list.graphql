@@ -1,0 +1,15 @@
+schema @server @upstream {
+    query: Query
+}
+
+type F {
+    g: [G] @http(path: "")
+}
+
+type G {
+    e: String
+}
+
+type Query {
+    f: F @http(path: "")
+}

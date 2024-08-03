@@ -104,341 +104,70 @@ impl<'a> Identifier<'a> {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use std::collections::{HashMap, HashSet};
+#[cfg(test)]
+mod tests {
+    use crate::include_config;
 
-//     use super::*;
-//     use crate::core::config::npo::Queries;
-//     use crate::core::config::{Config, Field, Http, Type};
+    #[test]
+    fn test_nplusone_resolvers() {
+        let config = include_config!("fixtures/simple-resolvers.graphql").unwrap();
+        let actual = config.n_plus_one();
 
-//     // macro_rules! assert_eq_map {
-//     //     ($actual:expr, $expected_vec:expr) => {{
-//     //         let mut expected: HashMap<TypeName, HashSet<(FieldName,
-// TypeName)>> = HashMap::new();
+        insta::assert_debug_snapshot!(actual);
+    }
 
-//     //         for vec in $expected_vec {
-//     //             for value in vec {
-//     //                 let (key, (value, ty_of)) = value;
-//     //                 let key = TypeName(key);
-//     //                 let value = (FieldName(value), TypeName(ty_of));
+    #[test]
+    fn test_nplusone_batched_resolvers() {
+        let config = include_config!("fixtures/simple-batch-resolver.graphql").unwrap();
+        let actual = config.n_plus_one();
 
-//     //                 expected
-//     //                     .entry(key)
-//     //                     .or_insert_with(HashSet::new)
-//     //                     .insert(value);
-//     //             }
-//     //         }
+        insta::assert_debug_snapshot!(actual);
+    }
 
-//     //         assert_eq!($actual, Queries::new(expected, ($actual).root()));
-//     //     }};
-//     // }
+    #[test]
+    fn test_nplusone_nested_resolvers() {
+        let config = include_config!("fixtures/nested-resolvers.graphql").unwrap();
+        let actual = config.n_plus_one();
 
-//     #[test]
-//     fn test_nplusone_resolvers() {
-//         let config = Config::default().query("Query").types(vec![
-//             (
-//                 "Query",
-//                 Type::default().fields(vec![(
-//                     "f1",
-//                     Field::default()
-//                         .type_of("F1".to_string())
-//                         .into_list()
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//             (
-//                 "F1",
-//                 Type::default().fields(vec![(
-//                     "f2",
-//                     Field::default()
-//                         .type_of("F2".to_string())
-//                         .into_list()
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//             (
-//                 "F2",
-//                 Type::default()
-//                     .fields(vec![("f3",
-// Field::default().type_of("String".to_string()))]),             ),
-//         ]);
-//         let actual = config.n_plus_one();
-//         let expected = vec![vec![("Query", ("f1", "F1")), ("F1", ("f2",
-// "F2"))]];
+        insta::assert_debug_snapshot!(actual);
+    }
 
-//         assert_eq_map!(actual, expected);
-//     }
+    #[test]
+    fn test_nplusone_nested_resolvers_non_list_resolvers() {
+        let config = include_config!("fixtures/non-list-resolvers.graphql").unwrap();
+        let actual = config.n_plus_one();
 
-//     #[test]
-//     fn test_nplusone_batched_resolvers() {
-//         let config = Config::default().query("Query").types(vec![
-//             (
-//                 "Query",
-//                 Type::default().fields(vec![(
-//                     "f1",
-//                     Field::default()
-//                         .type_of("F1".to_string())
-//                         .into_list()
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//             (
-//                 "F1",
-//                 Type::default().fields(vec![(
-//                     "f2",
-//                     Field::default()
-//                         .type_of("F2".to_string())
-//                         .into_list()
-//                         .http(Http { batch_key: vec!["id".into()],
-// ..Default::default() }),                 )]),
-//             ),
-//             (
-//                 "F2",
-//                 Type::default()
-//                     .fields(vec![("f3",
-// Field::default().type_of("String".to_string()))]),             ),
-//         ]);
+        insta::assert_debug_snapshot!(actual);
+    }
 
-//         let actual = config.n_plus_one();
-//         let expected: Vec<Vec<_>> = vec![];
-//         assert_eq_map!(actual, expected);
-//     }
+    #[test]
+    fn test_nplusone_nested_resolvers_without_resolvers() {
+        let config = include_config!("fixtures/nested-without-resolvers.graphql").unwrap();
+        let actual = config.n_plus_one();
 
-//     #[test]
-//     fn test_nplusone_nested_resolvers() {
-//         let config = Config::default().query("Query").types(vec![
-//             (
-//                 "Query",
-//                 Type::default().fields(vec![(
-//                     "f1",
-//                     Field::default()
-//                         .type_of("F1".to_string())
-//                         .into_list()
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//             (
-//                 "F1",
-//                 Type::default().fields(vec![(
-//                     "f2",
-//                     Field::default().type_of("F2".to_string()).into_list(),
-//                 )]),
-//             ),
-//             (
-//                 "F2",
-//                 Type::default().fields(vec![(
-//                     "f3",
-//                     Field::default().type_of("F3".to_string()).into_list(),
-//                 )]),
-//             ),
-//             (
-//                 "F3",
-//                 Type::default().fields(vec![(
-//                     "f4",
-//                     Field::default()
-//                         .type_of("String".to_string())
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//         ]);
+        insta::assert_debug_snapshot!(actual);
+    }
 
-//         let actual = config.n_plus_one();
-//         let expected = vec![vec![
-//             ("Query", ("f1", "F1")),
-//             ("F1", ("f2", "F2")),
-//             ("F2", ("f3", "F3")),
-//             ("F3", ("f4", "String")),
-//         ]];
+    #[test]
+    fn test_nplusone_cycles() {
+        let config = include_config!("fixtures/cycles.graphql").unwrap();
+        let actual = config.n_plus_one();
 
-//         assert_eq_map!(actual, expected);
-//     }
+        insta::assert_debug_snapshot!(actual);
+    }
 
-//     #[test]
-//     fn test_nplusone_nested_resolvers_non_list_resolvers() {
-//         let config = Config::default().query("Query").types(vec![
-//             (
-//                 "Query",
-//                 Type::default().fields(vec![(
-//                     "f1",
-//                     Field::default()
-//                         .type_of("F1".to_string())
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//             (
-//                 "F1",
-//                 Type::default().fields(vec![(
-//                     "f2",
-//                     Field::default().type_of("F2".to_string()).into_list(),
-//                 )]),
-//             ),
-//             (
-//                 "F2",
-//                 Type::default().fields(vec![(
-//                     "f3",
-//                     Field::default().type_of("F3".to_string()).into_list(),
-//                 )]),
-//             ),
-//             (
-//                 "F3",
-//                 Type::default().fields(vec![(
-//                     "f4",
-//                     Field::default()
-//                         .type_of("String".to_string())
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//         ]);
+    #[test]
+    fn test_nplusone_cycles_with_resolvers() {
+        let config = include_config!("fixtures/cyclic-resolvers.graphql").unwrap();
+        let actual = config.n_plus_one();
 
-//         let expected = vec![vec![
-//             ("Query", ("f1", "F1")),
-//             ("F1", ("f2", "F2")),
-//             ("F2", ("f3", "F3")),
-//             ("F3", ("f4", "String")),
-//         ]];
-//         let actual = config.n_plus_one();
+        insta::assert_debug_snapshot!(actual);
+    }
+    #[test]
+    fn test_nplusone_nested_non_list() {
+        let config = include_config!("fixtures/nested-non-list.graphql").unwrap();
+        let actual = config.n_plus_one();
 
-//         assert_eq_map!(actual, expected);
-//     }
-
-//     #[test]
-//     fn test_nplusone_nested_resolvers_without_resolvers() {
-//         let config = Config::default().query("Query").types(vec![
-//             (
-//                 "Query",
-//                 Type::default().fields(vec![(
-//                     "f1",
-//                     Field::default()
-//                         .type_of("F1".to_string())
-//                         .into_list()
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//             (
-//                 "F1",
-//                 Type::default().fields(vec![(
-//                     "f2",
-//                     Field::default().type_of("F2".to_string()).into_list(),
-//                 )]),
-//             ),
-//             (
-//                 "F2",
-//                 Type::default()
-//                     .fields(vec![("f3",
-// Field::default().type_of("String".to_string()))]),             ),
-//         ]);
-
-//         let expected: Vec<Vec<_>> = vec![];
-//         let actual = config.n_plus_one();
-
-//         assert_eq_map!(actual, expected);
-//     }
-
-//     #[test]
-//     fn test_nplusone_cycles() {
-//         let config = Config::default().query("Query").types(vec![
-//             (
-//                 "Query",
-//                 Type::default().fields(vec![(
-//                     "f1",
-//                     Field::default()
-//                         .type_of("F1".to_string())
-//                         .into_list()
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//             (
-//                 "F1",
-//                 Type::default().fields(vec![
-//                     ("f1", Field::default().type_of("F1".to_string())),
-//                     ("f2",
-// Field::default().type_of("F2".to_string()).into_list()),                 ]),
-//             ),
-//             (
-//                 "F2",
-//                 Type::default()
-//                     .fields(vec![("f3",
-// Field::default().type_of("String".to_string()))]),             ),
-//         ]);
-
-//         let actual = config.n_plus_one();
-//         let expected: Vec<Vec<_>> = vec![];
-
-//         assert_eq_map!(actual, expected);
-//     }
-
-//     #[test]
-//     fn test_nplusone_cycles_with_resolvers() {
-//         let config = Config::default().query("Query").types(vec![
-//             (
-//                 "Query",
-//                 Type::default().fields(vec![(
-//                     "f1",
-//                     Field::default()
-//                         .type_of("F1".to_string())
-//                         .into_list()
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//             (
-//                 "F1",
-//                 Type::default().fields(vec![
-//                     ("f1",
-// Field::default().type_of("F1".to_string()).into_list()),
-// (                         "f2",
-//                         Field::default()
-//                             .type_of("String".to_string())
-//                             .http(Http::default()),
-//                     ),
-//                 ]),
-//             ),
-//             (
-//                 "F2",
-//                 Type::default()
-//                     .fields(vec![("f3",
-// Field::default().type_of("String".to_string()))]),             ),
-//         ]);
-
-//         let actual = config.n_plus_one();
-//         let expected = vec![
-//             vec![
-//                 ("Query", ("f1", "F1")),
-//                 ("F1", ("f1", "F1")),
-//                 ("F1", ("f2", "String")),
-//             ],
-//             vec![("Query", ("f1", "F1")), ("F1", ("f2", "String"))],
-//         ];
-
-//         assert_eq_map!(actual, expected);
-//     }
-//     #[test]
-//     fn test_nplusone_nested_non_list() {
-//         let f_field = Field::default()
-//             .type_of("F".to_string())
-//             .http(Http::default());
-
-//         let config = Config::default().query("Query").types(vec![
-//             ("Query", Type::default().fields(vec![("f", f_field)])),
-//             (
-//                 "F",
-//                 Type::default().fields(vec![(
-//                     "g",
-//                     Field::default()
-//                         .type_of("G".to_string())
-//                         .into_list()
-//                         .http(Http::default()),
-//                 )]),
-//             ),
-//             (
-//                 "G",
-//                 Type::default().fields(vec![("e",
-// Field::default().type_of("String".to_string()))]),             ),
-//         ]);
-
-//         let actual = config.n_plus_one();
-//         let expected = Vec::<Vec<_>>::new();
-
-//         assert_eq_map!(actual, expected);
-//     }
-// }
+        insta::assert_debug_snapshot!(actual);
+    }
+}
