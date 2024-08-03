@@ -237,4 +237,12 @@ mod tests {
         let config = include_config!("fixtures/nested-non-list.graphql").unwrap();
         assert_n_plus_one!(config);
     }
+
+    #[test]
+    fn test_multiple_keys() {
+        let config = include_config!("fixtures/multiple-keys.graphql").unwrap();
+        let actual = config.n_plus_one();
+
+        insta::assert_snapshot!(actual);
+    }
 }
