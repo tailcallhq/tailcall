@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
-pub struct TypeName<'a>(pub &'a str);
+pub struct TypeName<'a>(&'a str);
 impl<'a> TypeName<'a> {
     pub fn new(name: &'a str) -> Self {
         Self(name)
@@ -38,22 +38,22 @@ impl Display for FieldName<'_> {
 
 pub struct Identifier<'a> {
     config: &'a Config,
+    cache: HashMap<(TypeName<'a>, bool), Chunk<Chunk<FieldName<'a>>>>,
 }
 
 impl<'a> Identifier<'a> {
     pub fn new(config: &'a Config) -> Identifier {
-        Identifier { config }
+        Identifier { config, cache: Default::default() }
     }
 
     fn iter(
-        &self,
+        &mut self,
         path: Chunk<FieldName<'a>>,
         type_name: TypeName<'a>,
         is_list: bool,
         visited: HashSet<(TypeName<'a>, FieldName<'a>)>,
-        dp: &mut HashMap<TypeName<'a>, Chunk<Chunk<FieldName<'a>>>>,
     ) -> Chunk<Chunk<FieldName<'a>>> {
-        if let Some(chunks) = dp.get(&type_name) {
+        if let Some(chunks) = self.cache.get(&(type_name, is_list)) {
             return chunks.clone();
         }
 
@@ -75,18 +75,17 @@ impl<'a> Identifier<'a> {
                             TypeName::new(field.type_of.as_str()),
                             is_list,
                             visited,
-                            dp,
                         ))
                     }
                 }
             }
         }
 
-        dp.insert(type_name, chunks.clone());
+        self.cache.insert((type_name, is_list), chunks.clone());
         chunks
     }
 
-    fn find_chunks(&self) -> Chunk<Chunk<FieldName<'a>>> {
+    fn find_chunks(&mut self) -> Chunk<Chunk<FieldName<'a>>> {
         match &self.config.schema.query {
             None => Chunk::new(),
             Some(query) => self.iter(
@@ -94,12 +93,11 @@ impl<'a> Identifier<'a> {
                 TypeName::new(query.as_str()),
                 false,
                 HashSet::new(),
-                &mut Default::default(),
             ),
         }
     }
 
-    pub fn identify(&self) -> Queries<'a> {
+    pub fn identify(mut self) -> Queries<'a> {
         Queries::from_chunk(self.find_chunks())
     }
 }
