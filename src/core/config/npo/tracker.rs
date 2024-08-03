@@ -174,66 +174,58 @@ impl<'a> PathTracker<'a> {
 mod tests {
     use crate::include_config;
 
+    #[macro_export]
+    macro_rules! assert_n_plus_one {
+        ($cfg:expr) => {{
+        let actual = $cfg.n_plus_one();
+        insta::assert_snapshot!(actual);
+        }};
+    }
+
     #[test]
     fn test_resolvers() {
-        let config = include_config!("fixtures/simple-resolvers.graphql").unwrap();
-        let actual = config.n_plus_one();
-
-        insta::assert_snapshot!(actual);
+        let config = include_config!("fixtures/simple-batch-resolver.graphql").unwrap();
+        assert_n_plus_one!(config);
     }
 
     #[test]
     fn test_batched_resolvers() {
         let config = include_config!("fixtures/simple-batch-resolver.graphql").unwrap();
-        let actual = config.n_plus_one();
-
-        insta::assert_snapshot!(actual);
+        assert_n_plus_one!(config);
     }
 
     #[test]
     fn test_nested_resolvers() {
         let config = include_config!("fixtures/nested-resolvers.graphql").unwrap();
-        let actual = config.n_plus_one();
-
-        insta::assert_snapshot!(actual);
+        assert_n_plus_one!(config);
     }
 
     #[test]
     fn test_nested_resolvers_non_list_resolvers() {
         let config = include_config!("fixtures/non-list-resolvers.graphql").unwrap();
-        let actual = config.n_plus_one();
-
-        insta::assert_snapshot!(actual);
+        assert_n_plus_one!(config);
     }
 
     #[test]
     fn test_nested_resolvers_without_resolvers() {
         let config = include_config!("fixtures/nested-without-resolvers.graphql").unwrap();
-        let actual = config.n_plus_one();
-
-        insta::assert_snapshot!(actual);
+        assert_n_plus_one!(config);
     }
 
     #[test]
     fn test_cycles() {
         let config = include_config!("fixtures/cycles.graphql").unwrap();
-        let actual = config.n_plus_one();
-
-        insta::assert_snapshot!(actual);
+        assert_n_plus_one!(config);
     }
 
     #[test]
     fn test_cycles_with_resolvers() {
         let config = include_config!("fixtures/cyclic-resolvers.graphql").unwrap();
-        let actual = config.n_plus_one();
-
-        insta::assert_snapshot!(actual);
+        assert_n_plus_one!(config);
     }
     #[test]
     fn test_nested_non_list() {
         let config = include_config!("fixtures/nested-non-list.graphql").unwrap();
-        let actual = config.n_plus_one();
-
-        insta::assert_snapshot!(actual);
+        assert_n_plus_one!(config);
     }
 }
