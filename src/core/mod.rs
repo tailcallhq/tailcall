@@ -108,7 +108,7 @@ pub mod tests {
     #[macro_export]
     macro_rules! include_config {
         ($file:literal) => {{
-            use crate::core::config::{Config, Source};
+            use $crate::core::config::{Config, Source};
             let config_str = include_str!($file);
             let result = || {
                 let source = Source::detect($file)?;
@@ -140,7 +140,7 @@ pub mod tests {
     }
     #[test]
     fn test_include_config() {
-        let cfg = include_config!("../../examples/jsonplaceholder.graphql");
+        let cfg = include_config!("fixtures/helloworld.graphql");
         assert!(cfg.is_ok());
     }
 }
