@@ -106,7 +106,7 @@ pub mod tests {
     use super::*;
 
     #[macro_export]
-    pub macro_rules! include_config {
+    macro_rules! include_config {
     ($file:literal) => {
         {
             let config_str = include_str!($file);
