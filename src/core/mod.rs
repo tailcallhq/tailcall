@@ -108,12 +108,13 @@ pub mod tests {
     #[macro_export]
     macro_rules! include_config {
         ($file:literal) => {{
+            use crate::core::config::{Config, Source};
             let config_str = include_str!($file);
-            let result = {
+            let result = || {
                 let source = Source::detect($file)?;
                 Config::from_source(source, config_str)
             };
-            result.map_err(|e| e.to_string())
+            result().map_err(|e| e.to_string())
         }};
     }
 
@@ -136,5 +137,10 @@ pub mod tests {
         fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
             Self(HashMap::from_iter(iter))
         }
+    }
+    #[test]
+    fn test_include_config() {
+        let cfg = include_config!("../../examples/jsonplaceholder.graphql");
+        assert!(cfg.is_ok());
     }
 }
