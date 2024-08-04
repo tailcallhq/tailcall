@@ -4,10 +4,10 @@ use std::sync::Arc;
 use thiserror::Error;
 use tokio::task::JoinError;
 
-#[derive(Error, Debug)]
+#[derive(Error)]
 pub enum Error {
     #[error("Std IO Error: {0}")]
-    IO(#[from] std::io::Error),
+    IO(#[source] std::io::Error),
 
     #[error("Join Error: {0}")]
     Join(#[from] JoinError),
@@ -33,6 +33,21 @@ pub enum Error {
         source: Arc<Error>,
         context: String,
     },
+}
+
+impl From<std::io::Error> for Error {
+    fn from(error: std::io::Error) -> Self {
+        match error.kind() {
+            std::io::ErrorKind::NotFound => Error::PrettierNotFound,
+            _ => Error::IO(error),
+        }
+    }
+}
+
+impl std::fmt::Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self, f)
+    }
 }
 
 impl Error {
