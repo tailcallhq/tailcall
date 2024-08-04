@@ -8,6 +8,7 @@ expression: plan.into_nested()
         name: "createPost",
         ir: "Some(..)",
         type_of: Post,
+        parent_type: "Mutation",
         args: [
             Arg {
                 id: 0,
@@ -38,12 +39,13 @@ expression: plan.into_nested()
             },
         ],
         extensions: Some(
-            Nested {
-                fields: [
+            Nested(
+                [
                     Field {
                         id: 1,
                         name: "id",
                         type_of: ID!,
+                        parent_type: "Post",
                         is_scalar: true,
                         directives: [],
                     },
@@ -51,6 +53,7 @@ expression: plan.into_nested()
                         id: 2,
                         name: "userId",
                         type_of: ID!,
+                        parent_type: "Post",
                         is_scalar: true,
                         directives: [],
                     },
@@ -58,6 +61,7 @@ expression: plan.into_nested()
                         id: 3,
                         name: "title",
                         type_of: String!,
+                        parent_type: "Post",
                         is_scalar: true,
                         directives: [],
                     },
@@ -65,12 +69,12 @@ expression: plan.into_nested()
                         id: 4,
                         name: "body",
                         type_of: String!,
+                        parent_type: "Post",
                         is_scalar: true,
                         directives: [],
                     },
                 ],
-                by_type: {},
-            },
+            ),
         ),
         is_scalar: false,
         directives: [],

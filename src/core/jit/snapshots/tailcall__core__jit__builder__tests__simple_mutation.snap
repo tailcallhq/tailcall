@@ -8,6 +8,7 @@ expression: plan.into_nested()
         name: "createUser",
         ir: "Some(..)",
         type_of: User,
+        parent_type: "Mutation",
         args: [
             Arg {
                 id: 0,
@@ -53,12 +54,13 @@ expression: plan.into_nested()
             },
         ],
         extensions: Some(
-            Nested {
-                fields: [
+            Nested(
+                [
                     Field {
                         id: 1,
                         name: "id",
                         type_of: ID!,
+                        parent_type: "User",
                         is_scalar: true,
                         directives: [],
                     },
@@ -66,6 +68,7 @@ expression: plan.into_nested()
                         id: 2,
                         name: "name",
                         type_of: String!,
+                        parent_type: "User",
                         is_scalar: true,
                         directives: [],
                     },
@@ -73,6 +76,7 @@ expression: plan.into_nested()
                         id: 3,
                         name: "email",
                         type_of: String!,
+                        parent_type: "User",
                         is_scalar: true,
                         directives: [],
                     },
@@ -80,6 +84,7 @@ expression: plan.into_nested()
                         id: 4,
                         name: "phone",
                         type_of: String,
+                        parent_type: "User",
                         is_scalar: true,
                         directives: [],
                     },
@@ -87,6 +92,7 @@ expression: plan.into_nested()
                         id: 5,
                         name: "website",
                         type_of: String,
+                        parent_type: "User",
                         is_scalar: true,
                         directives: [],
                     },
@@ -94,12 +100,12 @@ expression: plan.into_nested()
                         id: 6,
                         name: "username",
                         type_of: String!,
+                        parent_type: "User",
                         is_scalar: true,
                         directives: [],
                     },
                 ],
-                by_type: {},
-            },
+            ),
         ),
         is_scalar: false,
         directives: [],

@@ -6,73 +6,73 @@ expression: data
   "users": [
     {
       "id": 1,
-      "username": "Bret",
       "name": "Leanne Graham",
       "email": "Sincere@april.biz",
-      "phone": "1-770-736-8031 x56442"
+      "phone": "1-770-736-8031 x56442",
+      "username": "Bret"
     },
     {
       "id": 2,
-      "username": "Antonette",
       "name": "Ervin Howell",
       "email": "Shanna@melissa.tv",
-      "phone": "010-692-6593 x09125"
+      "phone": "010-692-6593 x09125",
+      "username": "Antonette"
     },
     {
       "id": 3,
-      "username": "Samantha",
       "name": "Clementine Bauch",
       "email": "Nathan@yesenia.net",
-      "phone": "1-463-123-4447"
+      "phone": "1-463-123-4447",
+      "username": "Samantha"
     },
     {
       "id": 4,
-      "username": "Karianne",
       "name": "Patricia Lebsack",
       "email": "Julianne.OConner@kory.org",
-      "phone": "493-170-9623 x156"
+      "phone": "493-170-9623 x156",
+      "username": "Karianne"
     },
     {
       "id": 5,
-      "username": "Kamren",
       "name": "Chelsey Dietrich",
       "email": "Lucio_Hettinger@annie.ca",
-      "phone": "(254)954-1289"
+      "phone": "(254)954-1289",
+      "username": "Kamren"
     },
     {
       "id": 6,
-      "username": "Leopoldo_Corkery",
       "name": "Mrs. Dennis Schulist",
       "email": "Karley_Dach@jasper.info",
-      "phone": "1-477-935-8478 x6430"
+      "phone": "1-477-935-8478 x6430",
+      "username": "Leopoldo_Corkery"
     },
     {
       "id": 7,
-      "username": "Elwyn.Skiles",
       "name": "Kurtis Weissnat",
       "email": "Telly.Hoeger@billy.biz",
-      "phone": "210.067.6132"
+      "phone": "210.067.6132",
+      "username": "Elwyn.Skiles"
     },
     {
       "id": 8,
-      "username": "Maxime_Nienow",
       "name": "Nicholas Runolfsdottir V",
       "email": "Sherwood@rosamond.me",
-      "phone": "586.493.6943 x140"
+      "phone": "586.493.6943 x140",
+      "username": "Maxime_Nienow"
     },
     {
       "id": 9,
-      "username": "Delphine",
       "name": "Glenna Reichert",
       "email": "Chaim_McDermott@dana.io",
-      "phone": "(775)976-6794 x41206"
+      "phone": "(775)976-6794 x41206",
+      "username": "Delphine"
     },
     {
       "id": 10,
-      "username": "Moriah.Stanton",
       "name": "Clementina DuBuque",
       "email": "Rey.Padberg@karina.biz",
-      "phone": "024-648-3804"
+      "phone": "024-648-3804",
+      "username": "Moriah.Stanton"
     }
   ]
 }

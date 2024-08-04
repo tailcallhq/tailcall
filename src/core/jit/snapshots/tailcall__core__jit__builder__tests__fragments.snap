@@ -8,6 +8,7 @@ expression: plan.into_nested()
         name: "user",
         ir: "Some(..)",
         type_of: User,
+        parent_type: "Query",
         args: [
             Arg {
                 id: 0,
@@ -22,50 +23,50 @@ expression: plan.into_nested()
             },
         ],
         extensions: Some(
-            Nested {
-                fields: [],
-                by_type: {
-                    "User": [
-                        Field {
-                            id: 1,
-                            name: "name",
-                            type_of: String!,
-                            is_scalar: true,
-                            directives: [],
-                        },
-                        Field {
-                            id: 2,
-                            name: "email",
-                            type_of: String!,
-                            is_scalar: true,
-                            directives: [],
-                        },
-                        Field {
-                            id: 3,
-                            name: "phone",
-                            type_of: String,
-                            is_scalar: true,
-                            directives: [],
-                        },
-                    ],
-                    "Post": [
-                        Field {
-                            id: 4,
-                            name: "title",
-                            type_of: String!,
-                            is_scalar: true,
-                            directives: [],
-                        },
-                        Field {
-                            id: 5,
-                            name: "body",
-                            type_of: String!,
-                            is_scalar: true,
-                            directives: [],
-                        },
-                    ],
-                },
-            },
+            Nested(
+                [
+                    Field {
+                        id: 1,
+                        name: "name",
+                        type_of: String!,
+                        parent_type: "User",
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 2,
+                        name: "email",
+                        type_of: String!,
+                        parent_type: "User",
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 3,
+                        name: "phone",
+                        type_of: String,
+                        parent_type: "User",
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 4,
+                        name: "title",
+                        type_of: String!,
+                        parent_type: "Post",
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 5,
+                        name: "body",
+                        type_of: String!,
+                        parent_type: "Post",
+                        is_scalar: true,
+                        directives: [],
+                    },
+                ],
+            ),
         ),
         is_scalar: false,
         directives: [],
