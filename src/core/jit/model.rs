@@ -108,10 +108,11 @@ pub struct Field<Extensions, Input> {
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
-    /// Specifies the name of type that contains that field
+    /// Specifies the name of type used in condition to fetch that field
     /// The type could be anything from graphql type system:
-    /// interface, type, union, input type
-    pub parent_type: String,
+    /// interface, type, union, input type.
+    /// See [spec](https://spec.graphql.org/October2021/#sec-Type-Conditions)
+    pub type_condition: String,
     pub skip: Option<Variable>,
     pub include: Option<Variable>,
     pub args: Vec<Arg<Input>>,
@@ -157,7 +158,7 @@ impl<Input> Field<Nested<Input>, Input> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
-            parent_type: self.parent_type,
+            type_condition: self.type_condition,
             extensions,
             pos: self.pos,
             skip: self.skip,
@@ -187,7 +188,7 @@ impl<Input> Field<Flat, Input> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
-            parent_type: self.parent_type,
+            type_condition: self.type_condition,
             extensions: self.extensions,
             skip: self.skip,
             include: self.include,
@@ -227,7 +228,7 @@ impl<Input> Field<Nested<Input>, Input> {
                     // but with Interfaces/Unions we need to check if that specific type
                     // is member of some Interface/Union and if so call the fragments for
                     // the related Interfaces/Unions
-                    .filter(move |field| field.parent_type == type_name)
+                    .filter(move |field| field.type_condition == type_name)
             })
             .into_iter()
             .flatten()
@@ -263,7 +264,7 @@ impl<Input> Field<Flat, Input> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
-            parent_type: self.parent_type,
+            type_condition: self.type_condition,
             skip: self.skip,
             include: self.include,
             args: self.args,
@@ -284,7 +285,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("ir", &"Some(..)");
         }
         debug_struct.field("type_of", &self.type_of);
-        debug_struct.field("parent_type", &self.parent_type);
+        debug_struct.field("type_condition", &self.type_condition);
         if !self.args.is_empty() {
             debug_struct.field("args", &self.args);
         }

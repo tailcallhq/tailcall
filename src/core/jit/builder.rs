@@ -129,7 +129,7 @@ impl Builder {
     fn iter(
         &self,
         selection: &SelectionSet,
-        parent_type: &str,
+        type_condition: &str,
         exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
     ) -> Vec<Field<Flat, Value>> {
@@ -170,7 +170,7 @@ impl Builder {
                         .map(|(k, v)| (k.node.as_str().to_string(), v.node.to_owned()))
                         .collect::<HashMap<_, _>>();
 
-                    if let Some(field_def) = self.index.get_field(parent_type, field_name) {
+                    if let Some(field_def) = self.index.get_field(type_condition, field_name) {
                         let mut args = Vec::with_capacity(request_args.len());
                         if let QueryField::Field((_, schema_args)) = field_def {
                             for (arg_name, arg_value) in schema_args {
@@ -220,7 +220,7 @@ impl Builder {
                             ir,
                             is_scalar: self.index.type_is_scalar(type_of.name()),
                             type_of,
-                            parent_type: parent_type.to_string(),
+                            type_condition: type_condition.to_string(),
                             skip,
                             include,
                             args,
@@ -252,7 +252,7 @@ impl Builder {
                         .type_condition
                         .as_ref()
                         .map(|cond| cond.node.on.node.as_str())
-                        .unwrap_or(parent_type);
+                        .unwrap_or(type_condition);
 
                     fields.extend(self.iter(
                         &fragment.selection_set.node,
