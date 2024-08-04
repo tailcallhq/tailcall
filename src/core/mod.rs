@@ -105,6 +105,19 @@ pub mod tests {
 
     use super::*;
 
+    #[macro_export]
+    macro_rules! include_config {
+        ($file:literal) => {{
+            use $crate::core::config::{Config, Source};
+            let config_str = include_str!($file);
+            let result = || {
+                let source = Source::detect($file)?;
+                Config::from_source(source, config_str)
+            };
+            result()
+        }};
+    }
+
     #[derive(Clone, Default)]
     pub struct TestEnvIO(HashMap<String, String>);
 
@@ -124,5 +137,12 @@ pub mod tests {
         fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
             Self(HashMap::from_iter(iter))
         }
+    }
+    #[test]
+    fn test_include_config() {
+        let cfg = include_config!("fixtures/helloworld.graphql")
+            .unwrap()
+            .to_sdl();
+        insta::assert_snapshot!(cfg);
     }
 }
