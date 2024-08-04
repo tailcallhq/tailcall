@@ -5,7 +5,7 @@ use hyper::body::Bytes;
 use reqwest::Request;
 use serde::{Deserialize, Serialize};
 
-use super::error::worker;
+use super::error::{Error, Result};
 use crate::core::{is_default, Response};
 
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
@@ -65,9 +65,9 @@ impl WorkerResponse {
 }
 
 impl TryFrom<WorkerResponse> for Response<Bytes> {
-    type Error = worker::Error;
+    type Error = Error;
 
-    fn try_from(res: WorkerResponse) -> Result<Self, Self::Error> {
+    fn try_from(res: WorkerResponse) -> Result<Self> {
         let res = res.0;
         Ok(Response {
             status: res.status,
@@ -78,9 +78,9 @@ impl TryFrom<WorkerResponse> for Response<Bytes> {
 }
 
 impl TryFrom<WorkerResponse> for Response<async_graphql::Value> {
-    type Error = worker::Error;
+    type Error = Error;
 
-    fn try_from(res: WorkerResponse) -> Result<Self, Self::Error> {
+    fn try_from(res: WorkerResponse) -> Result<Self> {
         let body: async_graphql::Value = match res.body() {
             Some(body) => serde_json::from_str(&body)?,
             None => async_graphql::Value::Null,
@@ -91,9 +91,9 @@ impl TryFrom<WorkerResponse> for Response<async_graphql::Value> {
 }
 
 impl TryFrom<Response<Bytes>> for WorkerResponse {
-    type Error = worker::Error;
+    type Error = Error;
 
-    fn try_from(res: Response<Bytes>) -> Result<Self, Self::Error> {
+    fn try_from(res: Response<Bytes>) -> Result<Self> {
         let body = String::from_utf8_lossy(res.body.as_ref()).to_string();
         Ok(WorkerResponse(Response {
             status: res.status,
@@ -104,9 +104,9 @@ impl TryFrom<Response<Bytes>> for WorkerResponse {
 }
 
 impl TryFrom<Response<async_graphql::Value>> for WorkerResponse {
-    type Error = worker::Error;
+    type Error = Error;
 
-    fn try_from(res: Response<async_graphql::Value>) -> Result<Self, Self::Error> {
+    fn try_from(res: Response<async_graphql::Value>) -> Result<Self> {
         let body = serde_json::to_string(&res.body)?;
         Ok(WorkerResponse(Response {
             status: res.status,
@@ -151,7 +151,7 @@ impl WorkerRequest {
         self.0.method().to_string()
     }
 
-    pub fn headers(&self) -> worker::Result<BTreeMap<String, String>> {
+    pub fn headers(&self) -> Result<BTreeMap<String, String>> {
         let headers = self.0.headers();
         let mut map = BTreeMap::new();
         for (k, v) in headers.iter() {
@@ -171,10 +171,10 @@ impl WorkerRequest {
 }
 
 impl TryFrom<&reqwest::Request> for WorkerRequest {
-    type Error = worker::Error;
+    type Error = Error;
 
-    fn try_from(value: &Request) -> Result<Self, Self::Error> {
-        let request = value.try_clone().ok_or(worker::Error::RequestCloneFailed)?;
+    fn try_from(value: &Request) -> Result<Self> {
+        let request = value.try_clone().ok_or(Error::RequestCloneFailed)?;
         Ok(WorkerRequest(request))
     }
 }
