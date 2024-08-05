@@ -97,6 +97,7 @@ type Page {
           iso
         }
       }
+
 # Negative: missing fragment
 # - method: POST
 #   url: http://localhost:8080/graphql

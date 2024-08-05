@@ -74,6 +74,7 @@ type BirthDay {
           }
         }
       }
+
 # Negative: invalid selection at nested
 # - method: POST
 #   url: http://localhost:8080/graphql

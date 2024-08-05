@@ -103,6 +103,7 @@ type Counter {
           }
         }
       }
+
 # Negative: not expected return type
 # - method: POST
 #   url: http://localhost:8080/graphql

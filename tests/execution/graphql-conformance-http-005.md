@@ -44,6 +44,7 @@ type User {
           date_of_birth: dob
         }
       }
+
 # Negative: non existent field alias
 # - method: POST
 #   url: http://localhost:8080/graphql

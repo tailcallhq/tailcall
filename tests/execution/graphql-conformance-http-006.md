@@ -136,6 +136,7 @@ type User {
       fragment standardProfilePic on User {
         profilePic(size: 50)
       }
+
 # Negative: missing fragment
 # - method: POST
 #   url: http://localhost:8080/graphql

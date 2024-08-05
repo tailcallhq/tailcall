@@ -63,7 +63,7 @@ type Page {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: '{ search { ...personFragment ...photoFragment } } fragment personFragment on Person { name } fragment photoFragment on Photo { height ...metaFragment } fragment metaFragment on photo { meta { iso } }'
+    textBody: "{ search { ...personFragment ...photoFragment } } fragment personFragment on Person { name } fragment photoFragment on Photo { height ...metaFragment } fragment metaFragment on photo { meta { iso } }"
   expectedHits: 1
   response:
     status: 200
@@ -124,6 +124,7 @@ type Page {
           iso
         }
       }
+
 # Negative: missing fragment
 # - method: POST
 #   url: http://localhost:8080/graphql
