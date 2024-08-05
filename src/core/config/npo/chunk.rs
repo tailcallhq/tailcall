@@ -5,8 +5,8 @@ use std::rc::Rc;
 /// operations
 #[derive(Hash, Eq, PartialEq, Debug, Clone)]
 pub enum Chunk<A> {
-    Nil,
-    Cons(A, Rc<Chunk<A>>),
+    Empty,
+    Append(A, Rc<Chunk<A>>),
     Concat(Rc<Chunk<A>>, Rc<Chunk<A>>),
 }
 
@@ -18,15 +18,15 @@ impl<A> Default for Chunk<A> {
 
 impl<A> Chunk<A> {
     pub fn new() -> Self {
-        Self::Nil
+        Self::Empty
     }
 
     pub fn is_null(&self) -> bool {
-        matches!(self, Chunk::Nil)
+        matches!(self, Chunk::Empty)
     }
 
     pub fn append(self, a: A) -> Self {
-        Chunk::Cons(a, Rc::new(self))
+        Chunk::Append(a, Rc::new(self))
     }
 
     pub fn concat(self, other: Chunk<A>) -> Self {
@@ -47,8 +47,8 @@ impl<A> Chunk<A> {
 
     pub fn as_vec_mut<'a>(&'a self, buf: &mut Vec<&'a A>) {
         match self {
-            Chunk::Nil => {}
-            Chunk::Cons(a, rest) => {
+            Chunk::Empty => {}
+            Chunk::Append(a, rest) => {
                 rest.as_vec_mut(buf);
                 buf.push(a);
             }
