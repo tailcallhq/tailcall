@@ -3,9 +3,7 @@ use derive_getters::Getters;
 use serde_json::Value;
 use url::Url;
 
-use super::json::{
-    self, ExistingTypeName, GraphQLTypesGenerator, SuggestedName, SuggestedTypeName,
-};
+use super::json::{self, ExistingType, GraphQLTypesGenerator, SuggestedName, SuggestedType};
 use super::NameGenerator;
 use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::http::Method;
@@ -97,9 +95,9 @@ impl Transform for FromJsonGenerator<'_> {
                     sample.url(),
                     sample.operation_type(),
                 ))
-                .pipe(json::UserSuggestedTypeNames::new(vec![SuggestedName::new(
-                    ExistingTypeName(existing_name),
-                    SuggestedTypeName(suggested_name),
+                .pipe(json::UserSuggestedTypes::new(vec![SuggestedName::new(
+                    ExistingType(existing_name),
+                    SuggestedType(suggested_name),
                 )]))
                 .transform(config.clone())
         })

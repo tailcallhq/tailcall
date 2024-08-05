@@ -6,23 +6,23 @@ use crate::core::Transform;
 
 /// Transformer that replaces existing type name
 /// with user-suggested names.
-pub struct UserSuggestedTypeNames(Vec<SuggestedName>);
+pub struct UserSuggestedTypes(Vec<SuggestedName>);
 
-pub struct ExistingTypeName(pub String);
-pub struct SuggestedTypeName(pub String);
+pub struct ExistingType(pub String);
+pub struct SuggestedType(pub String);
 
 pub struct SuggestedName {
-    existing_name: ExistingTypeName,
-    suggested_name: SuggestedTypeName,
+    existing_name: ExistingType,
+    suggested_name: SuggestedType,
 }
 
 impl SuggestedName {
-    pub fn new(existing_name: ExistingTypeName, suggested_name: SuggestedTypeName) -> Self {
+    pub fn new(existing_name: ExistingType, suggested_name: SuggestedType) -> Self {
         Self { existing_name, suggested_name }
     }
 }
 
-impl UserSuggestedTypeNames {
+impl UserSuggestedTypes {
     pub fn new(suggested_names: Vec<SuggestedName>) -> Self {
         Self(suggested_names)
     }
@@ -71,7 +71,7 @@ impl UserSuggestedTypeNames {
     }
 }
 
-impl Transform for UserSuggestedTypeNames {
+impl Transform for UserSuggestedTypes {
     type Value = Config;
     type Error = String;
 
@@ -82,7 +82,7 @@ impl Transform for UserSuggestedTypeNames {
 
 #[cfg(test)]
 mod test {
-    use super::{ExistingTypeName, SuggestedName, SuggestedTypeName, UserSuggestedTypeNames};
+    use super::{ExistingType, SuggestedName, SuggestedType, UserSuggestedTypes};
     use crate::core::config::Config;
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
@@ -107,15 +107,12 @@ mod test {
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
-        let cfg = UserSuggestedTypeNames::new(vec![
+        let cfg = UserSuggestedTypes::new(vec![
             SuggestedName::new(
-                ExistingTypeName("Query".into()),
-                SuggestedTypeName("PostQuery".into()),
+                ExistingType("Query".into()),
+                SuggestedType("PostQuery".into()),
             ),
-            SuggestedName::new(
-                ExistingTypeName("A".into()),
-                SuggestedTypeName("User".into()),
-            ),
+            SuggestedName::new(ExistingType("A".into()), SuggestedType("User".into())),
         ])
         .transform(config)
         .to_result()
@@ -135,9 +132,9 @@ mod test {
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
-        let result = UserSuggestedTypeNames::new(vec![SuggestedName::new(
-            ExistingTypeName("Query".into()),
-            SuggestedTypeName("PostQuery".into()),
+        let result = UserSuggestedTypes::new(vec![SuggestedName::new(
+            ExistingType("Query".into()),
+            SuggestedType("PostQuery".into()),
         )])
         .transform(config)
         .to_result();
