@@ -43,7 +43,7 @@ impl OperationTypeGenerator {
         }
 
         // if type is already present, then append the new field to it else create one.
-        let req_op = request_sample.operation_type().to_string();
+        let req_op = request_sample.operation_type().to_string().to_case(Case::Pascal);
         if let Some(type_) = config.types.get_mut(req_op.as_str()) {
             type_
                 .fields

@@ -252,9 +252,11 @@ mod test {
             parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
         let json_input = Input::Json {
             url: parsed_content.url.parse()?,
+            method: Method::GET,
+            body: serde_json::Value::Null,
             response: parsed_content.response,
             field_name: "f1".to_string(),
-            operation_type: OperationType::Query,
+            operation_type: GraphQLOperationType::Query,
         };
 
         // Combine inputs
@@ -282,9 +284,11 @@ mod test {
             let parsed_content = parse_json(json_path);
             inputs.push(Input::Json {
                 url: parsed_content.url.parse()?,
+                method: Method::GET,
+                body: serde_json::Value::Null,
                 response: parsed_content.response,
                 field_name: field_name_generator.next(),
-                operation_type: OperationType::Query,
+                operation_type: GraphQLOperationType::Query,
             });
         }
 

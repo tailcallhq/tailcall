@@ -106,7 +106,9 @@ mod tests {
     use serde::Deserialize;
 
     use crate::core::config::transformer::Preset;
-    use crate::core::generator::{FromJsonGenerator, NameGenerator, OperationType, RequestSample};
+    use crate::core::config::GraphQLOperationType;
+    use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
+    use crate::core::http::Method;
     use crate::core::transform::TransformerOps;
     use crate::core::valid::Validator;
 
@@ -136,9 +138,11 @@ mod tests {
             let parsed_content = parse_json(fixture);
             request_samples.push(RequestSample::new(
                 parsed_content.url.parse()?,
+                Method::GET,
+                serde_json::Value::Null,
                 parsed_content.response,
                 &field_name_generator.next(),
-                OperationType::Query,
+                GraphQLOperationType::Query,
             ));
         }
 

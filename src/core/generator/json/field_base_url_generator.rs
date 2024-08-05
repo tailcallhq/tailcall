@@ -1,3 +1,4 @@
+use convert_case::{Case, Casing};
 use url::Url;
 
 use super::url_utils::extract_base_url;
@@ -42,11 +43,8 @@ impl Transform for FieldBaseUrlGenerator<'_> {
                 return Valid::fail(format!("failed to extract the host url from {} ", self.url))
             }
         };
-        self.update_base_urls(
-            &mut config,
-            self.operation_type.to_string().as_str(),
-            &base_url,
-        );
+        let op_name = self.operation_type.to_string().to_case(Case::Pascal);
+        self.update_base_urls(&mut config, &op_name, &base_url);
 
         Valid::succeed(config)
     }
@@ -57,15 +55,14 @@ mod test {
     use url::Url;
 
     use super::FieldBaseUrlGenerator;
-    use crate::core::config::{Config, Field, Http, Type};
+    use crate::core::config::{Config, Field, GraphQLOperationType, Http, Type};
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     #[test]
     fn should_add_base_url_for_http_fields() {
         let url = Url::parse("https://example.com").unwrap();
-        let query = Some("Query".to_owned());
-        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &query, &None);
+        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &GraphQLOperationType::Query);
 
         let mut config = Config::default();
         let mut query_type = Type::default();
@@ -103,8 +100,7 @@ mod test {
     #[test]
     fn should_add_base_url_if_not_present() {
         let url = Url::parse("http://localhost:8080").unwrap();
-        let query = Some("Query".to_owned());
-        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &query, &None);
+        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &GraphQLOperationType::Query);
 
         let mut config = Config::default();
         let mut query_type = Type::default();
@@ -146,8 +142,7 @@ mod test {
     #[test]
     fn should_not_add_base_url_when_query_not_present() {
         let url = Url::parse("https://example.com").unwrap();
-        let query = Some("Query".to_owned());
-        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &query, &None);
+        let field_base_url_gen = FieldBaseUrlGenerator::new(&url, &GraphQLOperationType::Query);
         assert!(field_base_url_gen
             .transform(Default::default())
             .to_result()

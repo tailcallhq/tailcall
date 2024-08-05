@@ -1,3 +1,5 @@
+use convert_case::{Casing, Case};
+
 use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
@@ -18,7 +20,7 @@ impl Transform for SchemaGenerator<'_> {
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         match self.operation_type {
             GraphQLOperationType::Query => {
-                config.schema.query = Some(GraphQLOperationType::Query.to_string());
+                config.schema.query = Some(GraphQLOperationType::Query.to_string().to_case(Case::Pascal));
             }
             GraphQLOperationType::Mutation => {
                 config.schema.mutation = Some(GraphQLOperationType::Mutation.to_string());

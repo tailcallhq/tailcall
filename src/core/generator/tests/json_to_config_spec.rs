@@ -3,7 +3,11 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::core::generator::{Generator, Input, OperationType};
+use tailcall::core::{
+    config::GraphQLOperationType,
+    generator::{Generator, Input},
+    http::Method,
+};
 use url::Url;
 
 #[derive(Serialize, Deserialize)]
@@ -43,9 +47,11 @@ fn test_spec(path: &Path, url: Url, json_data: JsonFixture) -> anyhow::Result<()
             .mutation(Some("Mutation".into()))
             .inputs(vec![Input::Json {
                 url,
+                method: Method::POST,
                 response: json_data.response,
                 field_name: "f1".to_string(),
-                operation_type: OperationType::Mutation { body },
+                body,
+                operation_type: GraphQLOperationType::Mutation,
             }])
             .generate(true)?
     } else {
@@ -53,9 +59,11 @@ fn test_spec(path: &Path, url: Url, json_data: JsonFixture) -> anyhow::Result<()
             .query(Some("Query".into()))
             .inputs(vec![Input::Json {
                 url,
+                method: Method::GET,
+                body: serde_json::Value::Null,
                 response: json_data.response,
                 field_name: "f1".to_string(),
-                operation_type: OperationType::Query,
+                operation_type: GraphQLOperationType::Query,
             }])
             .generate(true)?
     };
