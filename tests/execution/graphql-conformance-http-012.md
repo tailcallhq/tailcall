@@ -21,6 +21,17 @@ type Person {
 type Photo {
   height: Int
   width: Int
+  meta: PhotoMeta
+}
+
+type PhotoMeta {
+  iso: Int
+  aparture: Int
+  shutter: Int
+}
+
+type Page {
+  title: String
 }
 ```
 
@@ -28,7 +39,7 @@ type Photo {
 - request:
     method: GET
     url: http://upstream/search
-  expectedHits: 1
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -38,9 +49,14 @@ type Photo {
       - __typename: Photo
         height: 100
         width: 200
+        meta:
+          iso: 200
+          aparture: 3
+          shutter: 250
 ```
 
 ```yml @test
+# Positive: query
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -52,7 +68,69 @@ type Photo {
           }
           ... on Photo {
             height
+            meta {
+              iso
+            }
           }
         }
       }
+# Positive: fragments
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      {
+        search {
+          ...personFragment
+          ...photoFragment
+        }
+      }
+      fragment personFragment on Person {
+        name
+      }
+      fragment photoFragment on Photo {
+        height
+        ...metaFragment
+      }
+      fragment metaFragment on Photo {
+        meta {
+          iso
+        }
+      }
+# Negative: missing fragment
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   body:
+#     query: |
+#       {
+#         search {
+#           ...personFragment
+#           ...photoFragment
+#         }
+#       }
+#       fragment personFragment on Person {
+#         name
+#       }
+#       fragment photoFragment on Photo {
+#         height
+#         ...metaFragment
+#       }
+# # Negative: unexpected type
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   body:
+#     query: |
+#       {
+#         search {
+#           ... on Person {
+#             name
+#           }
+#           ... on Page {
+#             title
+#           }
+#           ... on Photo {
+#             height
+#           }
+#         }
+#       }
 ```

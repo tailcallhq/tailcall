@@ -10,6 +10,10 @@ schema
 
 union SearchResult = Person | Photo
 
+type Page {
+  title: String
+}
+
 type Person {
   age: Int
   name: String
@@ -17,7 +21,14 @@ type Person {
 
 type Photo {
   height: Int
+  meta: PhotoMeta
   width: Int
+}
+
+type PhotoMeta {
+  aparture: Int
+  iso: Int
+  shutter: Int
 }
 
 type Query {

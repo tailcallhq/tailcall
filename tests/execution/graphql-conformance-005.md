@@ -39,6 +39,7 @@ type User {
 ```
 
 ```yml @test
+# Positive
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -50,4 +51,16 @@ type User {
           date_of_birth: dob
         }
       }
+# Negative: non existent field alias
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   body:
+#     query: |
+#       {
+#         customer: user(id: 4) {
+#           id
+#           name
+#           dob: missing_field
+#         }
+#       }
 ```

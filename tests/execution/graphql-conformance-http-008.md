@@ -32,6 +32,11 @@ type Page implements Profile {
   likers: Counter!
 }
 
+type Event {
+  id: ID!
+  handle: String!
+}
+
 type Counter {
   count: Int!
 }
@@ -55,9 +60,30 @@ type Counter {
         __typename: Page
         likers:
           counter: 4
+- request:
+    method: GET
+    url: http://upstream/profiles?handles=user-3&handles=user-4&handles=event-1
+  expectedHits: 1
+  response:
+    status: 200
+    body:
+      - id: 1
+        handle: user-3
+        __typename: User
+        friends:
+          counter: 2
+      - id: 2
+        handle: user-4
+        __typename: Page
+        likers:
+          counter: 4
+      - id: 3
+        handle: event-1
+        __typename: Event
 ```
 
 ```yml @test
+# Positive
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -77,4 +103,49 @@ type Counter {
           }
         }
       }
+# Negative: not expected return type
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   body:
+#     query: |
+#       query {
+#         profiles(handles: ["user-3", "user-4", "event-1"]) {
+#           handle
+#           ... on User {
+#             friends {
+#               count
+#             }
+#           }
+#           ... on Page {
+#             likers {
+#               count
+#             }
+#           }
+#         }
+#       }
+# Negative: not expected fragment type
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   body:
+#     query: |
+#       query {
+#         profiles(handles: ["user-1", "user-2"]) {
+#           handle
+#           ... on User {
+#             friends {
+#               count
+#             }
+#           }
+#           ... on Page {
+#             likers {
+#               count
+#             }
+#           }
+#           ... on Event {
+#             likers {
+#               count
+#             }
+#           }
+#         }
+#       }
 ```

@@ -67,18 +67,6 @@ type User {
           city
         }
       }
-# Negative: missing input
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       query {
-#         user {
-#           id
-#           name
-#           city
-#         }
-#       }
 # Negative: missing fields
 - method: POST
   url: http://localhost:8080/graphql
@@ -96,4 +84,16 @@ type User {
           id
           email_address
         }
+# Negative: missing input
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   body:
+#     query: |
+#       query {
+#         user {
+#           id
+#           name
+#           city
+#         }
+#       }
 ```

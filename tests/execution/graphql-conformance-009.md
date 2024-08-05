@@ -54,6 +54,7 @@ type Counter {
 ```
 
 ```yml @test
+# Positive
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -69,4 +70,18 @@ type Counter {
       }
     variables:
       expandedInfo: false
+# Negative: missing
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query ($expandedInfo: Boolean) {
+        profiles(handles: ["user-1"]) {
+          id
+          handle
+          ... @include(if: $expandedInfo) {
+            name
+          }
+        }
+      }
 ```

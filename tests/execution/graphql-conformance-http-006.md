@@ -71,6 +71,7 @@ type User {
 ```
 
 ```yml @test
+# Positve: query
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -89,6 +90,7 @@ type User {
           }
         }
       }
+# Positve: fragment simple
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -109,6 +111,7 @@ type User {
         name
         profilePic(size: 50)
       }
+# Positve: fragment nested
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -133,4 +136,25 @@ type User {
       fragment standardProfilePic on User {
         profilePic(size: 50)
       }
+# Negative: missing fragment
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   body:
+#     query: |
+#       query {
+#         user(id: 4) {
+#           friends(first: 10) {
+#             ...friendFields
+#           }
+#           mutualFriends(first: 10) {
+#             ...friendFields
+#           }
+#         }
+#       }
+
+#       fragment friendFields on User {
+#         id
+#         name
+#         ...standardProfilePic
+#       }
 ```

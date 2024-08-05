@@ -33,7 +33,14 @@ scalar PhoneNumber
 
 type Photo {
   height: Int
+  meta: PhotoMeta
   width: Int
+}
+
+type PhotoMeta {
+  aparture: Int
+  iso: Int
+  shutter: Int
 }
 
 type Query {
