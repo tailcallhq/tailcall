@@ -24,7 +24,7 @@ type User {
     method: POST
     url: http://upstream/graphql
     textBody: '{ "query": "query { user(id: 4) { id name } }" }'
-  expectedHits: 3
+  expectedHits: 5
   response:
     status: 200
     body:

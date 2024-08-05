@@ -23,7 +23,7 @@ type User {
 - request:
     method: GET
     url: http://upstream/user?id=4
-  expectedHits: 3
+  expectedHits: 5
   response:
     status: 200
     body:
