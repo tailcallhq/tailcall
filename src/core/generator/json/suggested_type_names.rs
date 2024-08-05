@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::core::config::Config;
 use crate::core::valid::Valid;
 use crate::core::Transform;
@@ -26,34 +28,20 @@ impl UserSuggestedTypeNames {
     }
 
     pub fn replace_type(&self, mut config: Config) -> Valid<Config, String> {
+        let mut lookup = HashMap::new();
+
         for suggest_name in self.0.iter() {
             let suggested_name = suggest_name.suggested_name.clone();
             let existing_name = suggest_name.existing_name.clone();
 
             if let Some(type_info) = config.types.remove(&existing_name) {
                 config.types.insert(suggested_name.to_string(), type_info);
-
-                for type_ in config.types.values_mut() {
-                    for field_ in type_.fields.values_mut() {
-                        // replace type of field.
-                        if field_.type_of == existing_name {
-                            field_.type_of = suggested_name.clone();
-                        }
-
-                        // replace type of argument.
-                        for arg_ in field_.args.values_mut() {
-                            if arg_.type_of == existing_name {
-                                arg_.type_of = suggested_name.clone();
-                            }
-                        }
-                    }
-                }
+                lookup.insert(existing_name.clone(), suggested_name.clone());
 
                 // edge case where type is of operation type.
                 if config.schema.query == Some(existing_name.clone()) {
                     config.schema.query = Some(suggested_name.clone());
-                }
-                if config.schema.mutation == Some(existing_name.clone()) {
+                } else if config.schema.mutation == Some(existing_name.clone()) {
                     config.schema.mutation = Some(suggested_name.clone());
                 }
             } else {
@@ -61,6 +49,21 @@ impl UserSuggestedTypeNames {
                     "TypeReplacementError: Type '{}' not found in configuration.",
                     existing_name
                 ));
+            }
+        }
+
+        for type_ in config.types.values_mut() {
+            for field_ in type_.fields.values_mut() {
+                // replace type of field.
+                if let Some(suggested_name) = lookup.get(&field_.type_of) {
+                    field_.type_of = suggested_name.to_owned();
+                }
+                // replace type of argument.
+                for arg_ in field_.args.values_mut() {
+                    if let Some(suggested_name) = lookup.get(&arg_.type_of) {
+                        arg_.type_of = suggested_name.clone();
+                    }
+                }
             }
         }
 
