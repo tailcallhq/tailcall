@@ -10,7 +10,7 @@ use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
-use crate::core::generator::{Generator as ConfigGenerator, Input, OperationType};
+use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Direct, Reader, Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
@@ -104,17 +104,13 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src, field_name, headers, body } => {
+                Source::Curl { src, field_name, headers, body, method, operation_type } => {
                     let url = src.0;
                     let body = body.unwrap_or_default();
+                    let method = method.unwrap_or_default();
+                    let operation_type = operation_type.unwrap_or_default();
 
-                    let (request_method, operation_type) = match body {
-                        serde_json::Value::Null => (reqwest::Method::GET, OperationType::Query),
-                        _ => (
-                            reqwest::Method::POST,
-                            OperationType::Mutation { body: body.clone() },
-                        ),
-                    };
+                    let request_method = method.clone().to_hyper();
                     let mut request = reqwest::Request::new(request_method, url.parse()?);
                     if !body.is_null() {
                         request.body_mut().replace(body.to_string().into());
@@ -133,6 +129,8 @@ impl Generator {
                     let response = direct.read(resource).await?;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
+                        method,
+                        body,
                         response: serde_json::from_str(&response.content)?,
                         field_name,
                         operation_type,

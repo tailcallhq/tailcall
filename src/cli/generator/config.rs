@@ -10,7 +10,8 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::core::config::transformer::Preset;
-use crate::core::config::{self, ConfigReaderContext};
+use crate::core::config::{self, ConfigReaderContext, GraphQLOperationType};
+use crate::core::http::Method;
 use crate::core::mustache::Mustache;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
 
@@ -65,7 +66,11 @@ pub enum Source<Status = UnResolved> {
         src: Location<Status>,
         headers: Headers<Status>,
         #[serde(skip_serializing_if = "Option::is_none")]
+        method: Option<Method>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         body: Option<serde_json::Value>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        operation_type: Option<GraphQLOperationType>,
         field_name: String,
     },
     Proto {
@@ -218,17 +223,20 @@ impl Source<UnResolved> {
         reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, field_name, headers, body } => {
+            Source::Curl { src, field_name, headers, body, method, operation_type } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 let resolved_headers = headers.resolve(reader_context)?;
                 // TODO: make body mustache template compatible.
                 // let resolved_body = body.resolve(reader_context)?;
 
+                //TODO: if method is of [POST,PUT,PATCH], we should check if valid body is present or not.
                 Ok(Source::Curl {
                     src: resolved_path,
                     field_name,
                     headers: resolved_headers,
                     body,
+                    method,
+                    operation_type,
                 })
             }
             Source::Proto { src } => {
@@ -343,6 +351,8 @@ mod tests {
                 headers: to_headers(headers),
                 body: None,
                 field_name: "test".to_string(),
+                method: Some(Method::GET),
+                operation_type: Some(GraphQLOperationType::Mutation),
             },
         }]);
         let actual = serde_json::to_string_pretty(&config).unwrap();

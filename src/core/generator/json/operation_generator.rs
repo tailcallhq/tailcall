@@ -1,10 +1,9 @@
 use convert_case::{Case, Casing};
 
 use super::http_directive_generator::HttpDirectiveGenerator;
-use crate::core::config::{Arg, Config, Field, Type};
+use crate::core::config::{Arg, Config, Field, GraphQLOperationType, Type};
 use crate::core::generator::json::types_generator::TypeGenerator;
-use crate::core::generator::{NameGenerator, OperationType, RequestSample};
-use crate::core::http::Method;
+use crate::core::generator::{NameGenerator, RequestSample};
 use crate::core::valid::Valid;
 
 pub struct OperationTypeGenerator;
@@ -16,7 +15,6 @@ impl OperationTypeGenerator {
         request_sample: &RequestSample,
         root_type: &str,
         name_generator: &NameGenerator,
-        operation_name: &str,
         mut config: Config,
     ) -> Valid<Config, String> {
         let mut field = Field {
@@ -29,14 +27,15 @@ impl OperationTypeGenerator {
         let http_directive_gen = HttpDirectiveGenerator::new(request_sample.url());
         field.http = Some(http_directive_gen.generate_http_directive(&mut field));
 
-        if let OperationType::Mutation { body } = request_sample.operation_type() {
+        if let GraphQLOperationType::Mutation = request_sample.operation_type() {
             // generate the input type.
-            let root_ty = TypeGenerator::new(name_generator).generate_types(body, &mut config);
+            let root_ty = TypeGenerator::new(name_generator)
+                .generate_types(request_sample.body(), &mut config);
             // add input type to field.
             let arg_name = root_ty.to_case(Case::Camel);
             if let Some(http_) = &mut field.http {
                 http_.body = Some(format!("{{{{.args.{}}}}}", arg_name.clone()));
-                http_.method = Method::POST;
+                http_.method = request_sample.method().to_owned();
             }
             field
                 .args
@@ -44,7 +43,8 @@ impl OperationTypeGenerator {
         }
 
         // if type is already present, then append the new field to it else create one.
-        if let Some(type_) = config.types.get_mut(operation_name) {
+        let req_op = request_sample.operation_type().to_string();
+        if let Some(type_) = config.types.get_mut(req_op.as_str()) {
             type_
                 .fields
                 .insert(request_sample.field_name().to_owned(), field);
@@ -52,7 +52,7 @@ impl OperationTypeGenerator {
             let mut ty = Type::default();
             ty.fields
                 .insert(request_sample.field_name().to_owned(), field);
-            config.types.insert(operation_name.to_owned(), ty);
+            config.types.insert(req_op.to_owned(), ty);
         }
 
         Valid::succeed(config)
@@ -64,8 +64,9 @@ mod test {
     use std::collections::BTreeMap;
 
     use super::OperationTypeGenerator;
-    use crate::core::config::{Config, Field, Type};
-    use crate::core::generator::{NameGenerator, OperationType, RequestSample};
+    use crate::core::config::{Config, Field, GraphQLOperationType, Type};
+    use crate::core::generator::{NameGenerator, RequestSample};
+    use crate::core::http::Method;
     use crate::core::valid::Validator;
 
     #[test]
@@ -74,19 +75,15 @@ mod test {
             "https://jsonplaceholder.typicode.com/comments?postId=1"
                 .parse()
                 .unwrap(),
+            Method::GET,
+            serde_json::Value::Null,
             serde_json::Value::Null,
             "postComments",
-            OperationType::Query,
+            GraphQLOperationType::Query,
         );
         let config = Config::default();
         let config = OperationTypeGenerator
-            .generate(
-                &sample,
-                "T44",
-                &NameGenerator::new("Input"),
-                "Query",
-                config,
-            )
+            .generate(&sample, "T44", &NameGenerator::new("Input"), config)
             .to_result()
             .unwrap();
 
@@ -99,9 +96,11 @@ mod test {
             "https://jsonplaceholder.typicode.com/comments?postId=1"
                 .parse()
                 .unwrap(),
+            Method::GET,
+            serde_json::Value::Null,
             serde_json::Value::Null,
             "postComments",
-            OperationType::Query,
+            GraphQLOperationType::Query,
         );
         let mut config = Config::default();
         let mut fields = BTreeMap::default();
@@ -114,13 +113,7 @@ mod test {
         config.types.insert("Query".to_owned(), type_);
 
         let config = OperationTypeGenerator
-            .generate(
-                &sample,
-                "T44",
-                &NameGenerator::new("Input"),
-                "Query",
-                config,
-            )
+            .generate(&sample, "T44", &NameGenerator::new("Input"), config)
             .to_result()
             .unwrap();
 
@@ -142,19 +135,15 @@ mod test {
             "https://jsonplaceholder.typicode.com/posts"
                 .parse()
                 .unwrap(),
+            Method::POST,
+            serde_json::from_str(body).unwrap(),
             serde_json::Value::Null,
             "postComments",
-            OperationType::Mutation { body: serde_json::from_str(body).unwrap() },
+            GraphQLOperationType::Mutation,
         );
         let config = Config::default();
         let config = OperationTypeGenerator
-            .generate(
-                &sample,
-                "T44",
-                &NameGenerator::new("Input"),
-                "Mutation",
-                config,
-            )
+            .generate(&sample, "T44", &NameGenerator::new("Input"), config)
             .to_result()
             .unwrap();
 

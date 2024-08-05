@@ -6,7 +6,8 @@ use url::Url;
 
 use super::from_proto::from_proto;
 use super::{FromJsonGenerator, NameGenerator, RequestSample};
-use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
+use crate::core::config::{self, Config, ConfigModule, GraphQLOperationType, Link, LinkType};
+use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::transform::{Transform, TransformerOps};
@@ -25,18 +26,14 @@ pub struct Generator {
 }
 
 #[derive(Clone)]
-pub enum OperationType {
-    Query,
-    Mutation { body: serde_json::Value },
-}
-
-#[derive(Clone)]
 pub enum Input {
     Json {
         url: Url,
+        method: Method,
+        body: serde_json::Value,
         response: Value,
         field_name: String,
-        operation_type: OperationType,
+        operation_type: GraphQLOperationType,
     },
     Proto(ProtoMetadata),
     Config {
@@ -104,9 +101,11 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                Input::Json { url, response, field_name, operation_type } => {
+                Input::Json { url, response, field_name, operation_type, method, body } => {
                     let request_sample = RequestSample::new(
                         url.to_owned(),
+                        method.to_owned(),
+                        body.to_owned(),
                         response.to_owned(),
                         field_name,
                         operation_type.to_owned(),
@@ -161,8 +160,10 @@ mod test {
 
     use super::Generator;
     use crate::core::config::transformer::Preset;
+    use crate::core::config::GraphQLOperationType;
     use crate::core::generator::generator::Input;
-    use crate::core::generator::{NameGenerator, OperationType};
+    use crate::core::generator::NameGenerator;
+    use crate::core::http::Method;
     use crate::core::proto_reader::ProtoMetadata;
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
@@ -218,9 +219,11 @@ mod test {
             .query(Some("Query".into()))
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
+                method: Method::GET,
+                body: serde_json::Value::Null,
                 response: parsed_content.response,
                 field_name: "f1".to_string(),
-                operation_type: OperationType::Query,
+                operation_type: GraphQLOperationType::Query,
             }])
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;

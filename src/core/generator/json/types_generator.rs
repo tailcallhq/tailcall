@@ -152,16 +152,11 @@ impl<'a> TypeGenerator<'a> {
 pub struct GraphQLTypesGenerator<'a> {
     request_sample: &'a RequestSample,
     type_name_generator: &'a NameGenerator,
-    operation_name: String,
 }
 
 impl<'a> GraphQLTypesGenerator<'a> {
-    pub fn new(
-        request_sample: &'a RequestSample,
-        type_name_generator: &'a NameGenerator,
-        operation_name: String,
-    ) -> Self {
-        Self { request_sample, type_name_generator, operation_name }
+    pub fn new(request_sample: &'a RequestSample, type_name_generator: &'a NameGenerator) -> Self {
+        Self { request_sample, type_name_generator }
     }
 }
 
@@ -179,7 +174,6 @@ impl Transform for GraphQLTypesGenerator<'_> {
             self.request_sample,
             &root_type,
             self.type_name_generator,
-            &self.operation_name,
             config,
         )
     }

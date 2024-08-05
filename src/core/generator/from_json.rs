@@ -3,8 +3,9 @@ use serde_json::Value;
 use url::Url;
 
 use super::json::{self, GraphQLTypesGenerator};
-use super::{NameGenerator, OperationType};
-use crate::core::config::Config;
+use super::NameGenerator;
+use crate::core::config::{Config, GraphQLOperationType};
+use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::{Valid, Validator};
@@ -12,15 +13,26 @@ use crate::core::valid::{Valid, Validator};
 #[derive(Getters)]
 pub struct RequestSample {
     url: Url,
+    method: Method,
+    body: serde_json::Value,
     response: Value,
     field_name: String,
-    operation_type: OperationType,
+    operation_type: GraphQLOperationType,
 }
 
 impl RequestSample {
-    pub fn new<T: Into<String>>(url: Url, resp: Value, field_name: T, operation_type: OperationType) -> Self {
+    pub fn new<T: Into<String>>(
+        url: Url,
+        method: Method,
+        body: serde_json::Value,
+        resp: Value,
+        field_name: T,
+        operation_type: GraphQLOperationType,
+    ) -> Self {
         Self {
             url,
+            method,
+            body,
             response: resp,
             field_name: field_name.into(),
             operation_type,
@@ -60,14 +72,8 @@ impl Transform for FromJsonGenerator<'_> {
 
         Valid::from_iter(config_gen_req, |sample| {
             // these transformations are required in order to generate a base config.
-            let operation_name = match &sample.operation_type {
-                OperationType::Query => self.query_name.clone().unwrap_or("Query".to_owned()),
-                OperationType::Mutation { .. } => {
-                    self.mutation_name.clone().unwrap_or("Mutation".to_owned())
-                }
-            };
 
-            GraphQLTypesGenerator::new(sample, type_name_gen, operation_name)
+            GraphQLTypesGenerator::new(sample, type_name_gen)
                 .pipe(json::SchemaGenerator::new(
                     self.query_name,
                     self.mutation_name,
