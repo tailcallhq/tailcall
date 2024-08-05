@@ -27,7 +27,11 @@ impl Transform for SchemaGenerator<'_> {
                 );
             }
             GraphQLOperationType::Mutation => {
-                config.schema.mutation = Some(GraphQLOperationType::Mutation.to_string());
+                config.schema.mutation = Some(
+                    GraphQLOperationType::Mutation
+                        .to_string()
+                        .to_case(Case::Pascal),
+                );
             }
         }
         Valid::succeed(config)
@@ -49,6 +53,8 @@ mod test {
             .to_result()
             .unwrap();
         assert!(config.schema.mutation.is_some());
+        assert_eq!(config.schema.mutation, Some("Mutation".to_owned()));
+
         assert!(config.schema.query.is_none());
     }
 
@@ -59,7 +65,9 @@ mod test {
             .transform(Default::default())
             .to_result()
             .unwrap();
-        assert!(config.schema.mutation.is_none());
         assert!(config.schema.query.is_some());
+        assert_eq!(config.schema.query, Some("Query".to_owned()));
+
+        assert!(config.schema.mutation.is_none());
     }
 }
