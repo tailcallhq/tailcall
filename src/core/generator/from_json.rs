@@ -18,11 +18,11 @@ pub struct RequestSample {
 }
 
 impl RequestSample {
-    pub fn new(url: Url, resp: Value, field_name: &str, operation_type: OperationType) -> Self {
+    pub fn new<T: Into<String>>(url: Url, resp: Value, field_name: T, operation_type: OperationType) -> Self {
         Self {
             url,
             response: resp,
-            field_name: field_name.to_string(),
+            field_name: field_name.into(),
             operation_type,
         }
     }

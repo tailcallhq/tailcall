@@ -64,6 +64,7 @@ pub enum Source<Status = UnResolved> {
     Curl {
         src: Location<Status>,
         headers: Headers<Status>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         body: Option<serde_json::Value>,
         field_name: String,
     },
