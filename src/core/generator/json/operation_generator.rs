@@ -32,7 +32,7 @@ impl OperationTypeGenerator {
             let root_ty = TypeGenerator::new(name_generator)
                 .generate_types(request_sample.body(), &mut config);
             // add input type to field.
-            let arg_name = root_ty.to_case(Case::Camel);
+            let arg_name = format!("{}Input", request_sample.field_name()).to_case(Case::Camel);
             if let Some(http_) = &mut field.http {
                 http_.body = Some(format!("{{{{.args.{}}}}}", arg_name.clone()));
                 http_.method = request_sample.method().to_owned();
