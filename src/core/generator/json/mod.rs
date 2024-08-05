@@ -9,5 +9,5 @@ mod url_utils;
 pub use field_base_url_generator::FieldBaseUrlGenerator;
 pub use operation_generator::OperationTypeGenerator;
 pub use schema_generator::SchemaGenerator;
-pub use suggested_operation_names::UserSuggestsOperationNames;
+pub use suggested_operation_names::UserSuggestedOperationNames;
 pub use types_generator::GraphQLTypesGenerator;

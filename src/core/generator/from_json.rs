@@ -87,7 +87,7 @@ impl Transform for FromJsonGenerator<'_> {
                     sample.url(),
                     sample.operation_type(),
                 ))
-                .pipe(json::UserSuggestsOperationNames::new(
+                .pipe(json::UserSuggestedOperationNames::new(
                     &operation_name,
                     sample.operation_type(),
                 ))
