@@ -10,7 +10,8 @@ expression: actual
         "headers": {
           "user-agent": "tailcall-v1"
         },
-        "body": null,
+        "method": "GET",
+        "operationType": "mutation",
         "fieldName": "test"
       }
     }
