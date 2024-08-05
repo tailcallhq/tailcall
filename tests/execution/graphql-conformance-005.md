@@ -53,15 +53,15 @@ type User {
       }
 
 # Negative: non existent field alias
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       {
-#         customer: user(id: 4) {
-#           id
-#           name
-#           dob: missing_field
-#         }
-#       }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      {
+        customer: user(id: 4) {
+          id
+          name
+          dob: missing_field
+        }
+      }
 ```

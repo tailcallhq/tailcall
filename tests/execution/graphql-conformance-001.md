@@ -95,6 +95,7 @@ type User {
           city
         }
       }
+# Negative: without selection
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -124,5 +125,4 @@ type User {
 #           city
 #         }
 #       }
-# Negative: missing fields
 ```

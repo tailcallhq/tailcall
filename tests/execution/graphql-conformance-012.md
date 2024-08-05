@@ -119,46 +119,46 @@ type Page {
         height
         ...metaFragment
       }
-      fragment metaFragment on photo {
+      fragment metaFragment on Photo {
         meta {
           iso
         }
       }
 
 # Negative: missing fragment
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       {
-#         search {
-#           ...personFragment
-#           ...photoFragment
-#         }
-#       }
-#       fragment personFragment on Person {
-#         name
-#       }
-#       fragment photoFragment on Photo {
-#         height
-#         ...metaFragment
-#       }
-# # Negative: unexpected type
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       {
-#         search {
-#           ... on Person {
-#             name
-#           }
-#           ... on Page {
-#             title
-#           }
-#           ... on Photo {
-#             height
-#           }
-#         }
-#       }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      {
+        search {
+          ...personFragment
+          ...photoFragment
+        }
+      }
+      fragment personFragment on Person {
+        name
+      }
+      fragment photoFragment on Photo {
+        height
+        ...metaFragment
+      }
+# Negative: unexpected type
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      {
+        search {
+          ... on Person {
+            name
+          }
+          ... on Page {
+            title
+          }
+          ... on Photo {
+            height
+          }
+        }
+      }
 ```

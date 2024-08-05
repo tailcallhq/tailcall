@@ -105,48 +105,48 @@ type Counter {
       }
 
 # Negative: not expected return type
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       query {
-#         profiles(handles: ["user-3", "user-4", "event-1"]) {
-#           handle
-#           ... on User {
-#             friends {
-#               count
-#             }
-#           }
-#           ... on Page {
-#             likers {
-#               count
-#             }
-#           }
-#         }
-#       }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        profiles(handles: ["user-3", "user-4", "event-1"]) {
+          handle
+          ... on User {
+            friends {
+              count
+            }
+          }
+          ... on Page {
+            likers {
+              count
+            }
+          }
+        }
+      }
 # Negative: not expected fragment type
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       query {
-#         profiles(handles: ["user-1", "user-2"]) {
-#           handle
-#           ... on User {
-#             friends {
-#               count
-#             }
-#           }
-#           ... on Page {
-#             likers {
-#               count
-#             }
-#           }
-#           ... on Event {
-#             likers {
-#               count
-#             }
-#           }
-#         }
-#       }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        profiles(handles: ["user-1", "user-2"]) {
+          handle
+          ... on User {
+            friends {
+              count
+            }
+          }
+          ... on Page {
+            likers {
+              count
+            }
+          }
+          ... on Event {
+            likers {
+              count
+            }
+          }
+        }
+      }
 ```

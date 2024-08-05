@@ -83,27 +83,27 @@ type BirthDay {
       }
 
 # Negative: invalid selection at nested
-# - method: POST
-#   url: http://localhost:8080/graphql
-#   body:
-#     query: |
-#       {
-#         user(id: 4) {
-#           id
-#           name
-#           city
-#           birthday {
-#             day
-#             month
-#           }
-#           friends {
-#             id
-#             name
-#             birthday {
-#               year
-#               missing_field
-#             }
-#           }
-#         }
-#       }
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      {
+        user(id: 4) {
+          id
+          name
+          city
+          birthday {
+            day
+            month
+          }
+          friends {
+            id
+            name
+            birthday {
+              year
+              missing_field
+            }
+          }
+        }
+      }
 ```
