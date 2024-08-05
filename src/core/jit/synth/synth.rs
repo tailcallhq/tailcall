@@ -14,19 +14,15 @@ pub struct Synth<Value> {
 
 impl<Extensions, Input> Field<Extensions, Input> {
     #[inline(always)]
-    pub fn skip<'json, Value: JsonLike<'json>>(
-        &'json self,
-        variables: &'json Variables<Value>,
-    ) -> bool {
-        let eval = |variable_option: Option<&'json Variable>,
-                    variables: &'json Variables<Value>,
-                    default: bool| {
-            variable_option
-                .map(|a| a.as_str())
-                .and_then(|name| variables.get(name))
-                .and_then(|value| value.as_bool())
-                .unwrap_or(default)
-        };
+    pub fn skip<'json, Value: JsonLike<'json>>(&self, variables: &Variables<Value>) -> bool {
+        let eval =
+            |variable_option: Option<&Variable>, variables: &Variables<Value>, default: bool| {
+                variable_option
+                    .map(|a| a.as_str())
+                    .and_then(|name| variables.get(name))
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(default)
+            };
         let skip = eval(self.skip.as_ref(), variables, false);
         let include = eval(self.include.as_ref(), variables, true);
 
@@ -34,7 +30,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
     }
 }
 
-impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
+impl<Value> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: OperationPlan<Value>,
@@ -43,9 +39,15 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     ) -> Self {
         Self { selection: plan.into_nested(), store, variables }
     }
+}
 
+impl<'a, Value> Synth<Value>
+where
+    Value: JsonLike<'a> + Clone,
+    Value::JsonObject<'a>: JsonObjectLike<'a, Value = Value>,
+{
     #[inline(always)]
-    fn include<T>(&'a self, field: &'a Field<T, Value>) -> bool {
+    fn include<T>(&self, field: &Field<T, Value>) -> bool {
         !field.skip(&self.variables)
     }
 
@@ -58,7 +60,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                 continue;
             }
             let val = self.iter(child, None, &DataPath::new())?;
-            data = data.insert_key(child.name.as_str(), val);
+            data.insert_key(child.name.as_str(), val);
         }
 
         Ok(Value::object(data))
@@ -66,7 +68,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
 
     /// checks if type_of is an array and value is an array
     #[inline(always)]
-    fn is_array(type_of: &crate::core::blueprint::Type, value: &'a Value) -> bool {
+    fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
         type_of.is_list() == value.as_array().is_some()
     }
 
@@ -163,12 +165,12 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                                 if include {
                                     let val = obj.get_key(child.name.as_str());
                                     if let Some(val) = val {
-                                        ans = ans.insert_key(
+                                        ans.insert_key(
                                             child.name.as_str(),
                                             self.iter_inner(child, val, data_path)?,
                                         );
                                     } else {
-                                        ans = ans.insert_key(
+                                        ans.insert_key(
                                             child.name.as_str(),
                                             self.iter(child, None, data_path)?,
                                         );
@@ -179,7 +181,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                             let val = obj.get_key(node.name.as_str());
                             // if it's a leaf node, then push the value
                             if let Some(val) = val {
-                                ans = ans.insert_key(node.name.as_str(), val.to_owned());
+                                ans.insert_key(node.name.as_str(), val.to_owned());
                             } else {
                                 return Ok(Value::null());
                             }
@@ -188,7 +190,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                         let val = obj.get_key(node.name.as_str());
                         // if it's a leaf node, then push the value
                         if let Some(val) = val {
-                            ans = ans.insert_key(node.name.as_str(), val.to_owned());
+                            ans.insert_key(node.name.as_str(), val.to_owned());
                         } else {
                             return Ok(Value::null());
                         }
@@ -224,7 +226,6 @@ mod tests {
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::synth::Synth;
-    use crate::core::json::JsonLike;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -277,7 +278,7 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value<'a, Value: JsonLike<'a> + Deserialize<'a>>(self) -> Data<Value> {
+        fn into_value<'a, Value: Deserialize<'a>>(self) -> Data<Value> {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
@@ -297,13 +298,10 @@ mod tests {
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn make_store<
-        'a,
-        Value: JsonLike<'a> + Deserialize<'a> + Serialize + Clone + 'a + std::fmt::Debug,
-    >(
-        query: &str,
-        store: Vec<(FieldId, TestData)>,
-    ) -> Synth<Value> {
+    fn make_store<'a, Value>(query: &str, store: Vec<(FieldId, TestData)>) -> Synth<Value>
+    where
+        Value: Deserialize<'a> + Serialize + Clone + std::fmt::Debug,
+    {
         let store = store
             .into_iter()
             .map(|(id, data)| (id, data.into_value()))
