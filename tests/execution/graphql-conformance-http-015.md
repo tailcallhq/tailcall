@@ -14,7 +14,7 @@ type Query {
 type User {
   id: ID!
   name: String!
-  profilePic(size: Int! = 100, width: Int, height: Int=100): String!
+  profilePic(size: Int! = 100, width: Int, height: Int = 100): String!
     @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
 }
 ```
@@ -105,5 +105,4 @@ type User {
 #           profilePic(size: null)
 #         }
 #       }
-
 ```
