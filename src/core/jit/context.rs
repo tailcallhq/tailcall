@@ -55,6 +55,10 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     pub fn value(&self) -> Option<&Output> {
         self.value
     }
+
+    pub fn field(&self) -> &Field<Nested<Input>, Input> {
+        self.field
+    }
 }
 
 impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
@@ -82,6 +86,8 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
 
 #[cfg(test)]
 mod test {
+    use async_graphql_value::ConstValue;
+
     use super::Context;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
@@ -107,8 +113,7 @@ mod test {
     fn test_field() {
         let (plan, req) = setup("query {posts {id title}}");
         let field = plan.as_nested();
-        let ctx: Context<async_graphql::Value, async_graphql::Value> =
-            Context::new(&req, false, &field[0]);
-        insta::assert_debug_snapshot!(ctx.field().unwrap());
+        let ctx: Context<ConstValue, ConstValue> = Context::new(&req, false, &field[0]);
+        insta::assert_debug_snapshot!(<Context<_, _> as ResolverContextLike>::field(&ctx).unwrap());
     }
 }
