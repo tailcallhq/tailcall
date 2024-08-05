@@ -5,9 +5,8 @@ use std::thread;
 use async_graphql_value::ConstValue;
 use rquickjs::{Context, Ctx, FromJs, Function, IntoJs, Value};
 
-use crate::core::error::worker;
 use crate::core::worker::{Command, Event, WorkerRequest};
-use crate::core::{blueprint, WorkerIO};
+use crate::core::{blueprint, worker, WorkerIO};
 
 struct LocalRuntime(Context);
 
@@ -83,7 +82,7 @@ impl Drop for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<Event, Command> for Runtime {
-    async fn call(&self, name: &str, event: Event) -> worker::Result<Option<Command>> {
+    async fn call(&self, name: &str, event: Event) -> Result<Option<Command>, worker::Error> {
         let script = self.script.clone();
         let name = name.to_string(); // TODO
         if let Some(runtime) = &self.tokio_runtime {
@@ -101,7 +100,11 @@ impl WorkerIO<Event, Command> for Runtime {
 
 #[async_trait::async_trait]
 impl WorkerIO<ConstValue, ConstValue> for Runtime {
-    async fn call(&self, name: &str, input: ConstValue) -> worker::Result<Option<ConstValue>> {
+    async fn call(
+        &self,
+        name: &str,
+        input: ConstValue,
+    ) -> Result<Option<ConstValue>, worker::Error> {
         let script = self.script.clone();
         let name = name.to_string();
         let value = serde_json::to_string(&input)?;
@@ -140,7 +143,7 @@ fn prepare_args<'js>(ctx: &Ctx<'js>, req: WorkerRequest) -> rquickjs::Result<(Va
     Ok((object.into_value(),))
 }
 
-fn call(name: String, event: Event) -> worker::Result<Option<Command>> {
+fn call(name: String, event: Event) -> Result<Option<Command>, worker::Error> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
         let runtime = cell.get_mut().ok_or(worker::Error::RuntimeNotInitialized)?;
         runtime.0.with(|ctx| match event {
@@ -166,7 +169,7 @@ fn call(name: String, event: Event) -> worker::Result<Option<Command>> {
     })
 }
 
-fn execute_inner(name: String, value: String) -> worker::Result<ConstValue> {
+fn execute_inner(name: String, value: String) -> Result<ConstValue, worker::Error> {
     LOCAL_RUNTIME.with_borrow_mut(|cell| {
         let runtime = cell.get_mut().ok_or(worker::Error::RuntimeNotInitialized)?;
         runtime.0.with(|ctx| {
