@@ -1,19 +1,18 @@
 use url::Url;
 
 use super::url_utils::extract_base_url;
-use crate::core::config::Config;
+use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
 pub struct FieldBaseUrlGenerator<'a> {
     url: &'a Url,
-    query: &'a Option<String>,
-    mutation: &'a Option<String>,
+    operation_type: &'a GraphQLOperationType,
 }
 
 impl<'a> FieldBaseUrlGenerator<'a> {
-    pub fn new(url: &'a Url, query: &'a Option<String>, mutation: &'a Option<String>) -> Self {
-        Self { url, query, mutation }
+    pub fn new(url: &'a Url, operation_type: &'a GraphQLOperationType) -> Self {
+        Self { url, operation_type }
     }
 
     fn update_base_urls(&self, config: &mut Config, operation_name: &str, base_url: &str) {
@@ -43,14 +42,11 @@ impl Transform for FieldBaseUrlGenerator<'_> {
                 return Valid::fail(format!("failed to extract the host url from {} ", self.url))
             }
         };
-
-        if let Some(operation_name) = self.query {
-            self.update_base_urls(&mut config, operation_name, &base_url);
-        }
-
-        if let Some(operation_name) = self.mutation {
-            self.update_base_urls(&mut config, operation_name, &base_url);
-        }
+        self.update_base_urls(
+            &mut config,
+            self.operation_type.to_string().as_str(),
+            &base_url,
+        );
 
         Valid::succeed(config)
     }
