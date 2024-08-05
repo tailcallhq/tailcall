@@ -1,33 +1,34 @@
+use std::borrow::Cow;
+
 use serde_json_borrow::{ObjectAsVec, Value};
 
 use super::{gather_path_matches, group_by_key, JsonLike, JsonObjectLike};
 
 // BorrowedValue
-impl<'a> JsonObjectLike<'a> for ObjectAsVec<'a> {
-    type Value = Value<'a>;
+impl<'ctx> JsonObjectLike<'ctx> for ObjectAsVec<'ctx> {
+    type Value = Value<'ctx>;
 
     fn new() -> Self {
         ObjectAsVec::default()
     }
 
-    fn get_key(&'a self, key: &str) -> Option<&Value> {
+    fn get_key(&'ctx self, key: &str) -> Option<&Value> {
         self.get(key)
     }
 
-    fn insert_key(mut self, key: &'a str, value: Self::Value) -> Self {
+    fn insert_key(&mut self, key: &'ctx str, value: Self::Value) {
         self.insert(key, value);
-        self
     }
 }
 
-impl<'a> JsonLike<'a> for Value<'a> {
-    type JsonObject = ObjectAsVec<'a>;
+impl<'ctx> JsonLike<'ctx> for Value<'ctx> {
+    type JsonObject<'obj> = ObjectAsVec<'obj>;
 
     fn null() -> Self {
         Value::Null
     }
 
-    fn object(obj: Self::JsonObject) -> Self {
+    fn object(obj: Self::JsonObject<'ctx>) -> Self {
         Value::Object(obj)
     }
 
@@ -35,42 +36,46 @@ impl<'a> JsonLike<'a> for Value<'a> {
         Value::Array(arr)
     }
 
-    fn as_array(&self) -> Option<&Vec<Value>> {
+    fn string(s: Cow<'ctx, str>) -> Self {
+        Value::Str(s)
+    }
+
+    fn as_array(&self) -> Option<&Vec<Self>> {
         match self {
             Value::Array(array) => Some(array),
             _ => None,
         }
     }
 
-    fn as_object(&'a self) -> Option<&Self::JsonObject> {
+    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         self.as_object()
     }
 
-    fn as_str(&'a self) -> Option<&str> {
+    fn as_str(&self) -> Option<&str> {
         self.as_str()
     }
 
-    fn as_i64(&'a self) -> Option<i64> {
+    fn as_i64(&self) -> Option<i64> {
         self.as_i64()
     }
 
-    fn as_u64(&'a self) -> Option<u64> {
+    fn as_u64(&self) -> Option<u64> {
         self.as_u64()
     }
 
-    fn as_f64(&'a self) -> Option<f64> {
+    fn as_f64(&self) -> Option<f64> {
         self.as_f64()
     }
 
-    fn as_bool(&'a self) -> Option<bool> {
+    fn as_bool(&self) -> Option<bool> {
         self.as_bool()
     }
 
-    fn is_null(&'a self) -> bool {
+    fn is_null(&self) -> bool {
         self.is_null()
     }
 
-    fn get_path<T: AsRef<str>>(&'a self, path: &'a [T]) -> Option<&Self> {
+    fn get_path<T: AsRef<str>>(&'ctx self, path: &[T]) -> Option<&Self> {
         let mut val = self;
         for token in path {
             val = match val {
@@ -85,14 +90,14 @@ impl<'a> JsonLike<'a> for Value<'a> {
         Some(val)
     }
 
-    fn get_key(&'a self, _path: &'a str) -> Option<&Self> {
+    fn get_key(&'ctx self, path: &str) -> Option<&Self> {
         match self {
-            Value::Object(map) => map.get(_path),
+            Value::Object(map) => map.get(path),
             _ => None,
         }
     }
 
-    fn group_by(&'a self, path: &'a [String]) -> std::collections::HashMap<String, Vec<&Self>> {
+    fn group_by(&'ctx self, path: &[String]) -> std::collections::HashMap<String, Vec<&Self>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }

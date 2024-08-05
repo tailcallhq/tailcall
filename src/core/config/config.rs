@@ -15,6 +15,7 @@ use tailcall_typedefs_common::ServiceDocumentBuilder;
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
+use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
 use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
@@ -589,8 +590,9 @@ pub struct Http {
     /// This represents the query parameters of your API call. You can pass it
     /// as a static object or use Mustache template for dynamic parameters.
     /// These parameters will be added to the URL.
-    /// When `batchKey` is present Tailcall uses the first query parameter as
-    /// the key for the groupBy operator.
+    /// NOTE: Query parameter order is critical for batching in Tailcall. The
+    /// first parameter referencing a field in the current value using mustache
+    /// syntax is automatically selected as the batching parameter.
     pub query: Vec<KeyValue>,
 }
 
@@ -871,8 +873,8 @@ impl Config {
         }
     }
 
-    pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
-        super::n_plus_one::n_plus_one(self)
+    pub fn n_plus_one(&self) -> QueryPath {
+        super::npo::PathTracker::new(self).find()
     }
 
     ///
