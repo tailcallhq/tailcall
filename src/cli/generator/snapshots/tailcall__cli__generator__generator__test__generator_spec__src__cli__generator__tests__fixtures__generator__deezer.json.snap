@@ -6,8 +6,6 @@ schema @server @upstream(baseURL: "https://api.deezer.com") {
   query: Query
 }
 
-scalar Any
-
 type Album {
   cover: String
   cover_big: String
@@ -59,7 +57,7 @@ type Contributor {
   type: String
 }
 
-type Daum {
+type Datum {
   album: Album
   artist: T42
   duration: Int
@@ -132,7 +130,7 @@ type Query {
 }
 
 type Search {
-  data: [Any]
+  data: [JSON]
   next: String
   total: Int
 }
@@ -162,7 +160,7 @@ type T166 {
 }
 
 type T167 {
-  data: [Any]
+  data: [JSON]
   total: Int
 }
 
@@ -410,7 +408,7 @@ type T8 {
 
 type Track {
   checksum: String
-  data: [Daum]
+  data: [Datum]
 }
 
 type User {

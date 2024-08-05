@@ -4,7 +4,7 @@ use crate::core::config::Config;
 use crate::core::transform::{self, Transform, TransformerOps};
 
 /// Defines a set of default transformers that can be applied to any
-/// configuration to make it more maintainable.
+/// configuration to make it more maintainable and readable.
 #[derive(Setters, Debug, PartialEq)]
 pub struct Preset {
     pub merge_type: f32,
@@ -58,7 +58,7 @@ impl Default for Preset {
             consolidate_url: 0.5,
             use_better_names: true,
             tree_shake: true,
-            unwrap_single_field_types: true,
+            unwrap_single_field_types: false,
         }
     }
 }
