@@ -1,8 +1,9 @@
+use convert_case::{Case, Casing};
 use derive_getters::Getters;
 use serde_json::Value;
 use url::Url;
 
-use super::json::{self, GraphQLTypesGenerator};
+use super::json::{self, GraphQLTypesGenerator, SuggestedName};
 use super::NameGenerator;
 use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::http::Method;
@@ -71,13 +72,19 @@ impl Transform for FromJsonGenerator<'_> {
         let type_name_gen = self.type_name_generator;
 
         Valid::from_iter(config_gen_req, |sample| {
-            let operation_name = match sample.operation_type() {
-                GraphQLOperationType::Query => {
-                    self.query_name.clone().unwrap_or("Query".to_owned())
-                }
-                GraphQLOperationType::Mutation => {
-                    self.mutation_name.clone().unwrap_or("Mutation".to_owned())
-                }
+            let (existing_name, suggested_name) = match sample.operation_type() {
+                GraphQLOperationType::Query => (
+                    GraphQLOperationType::Query
+                        .to_string()
+                        .to_case(Case::Pascal),
+                    self.query_name.clone().unwrap_or("Query".to_owned()),
+                ),
+                GraphQLOperationType::Mutation => (
+                    GraphQLOperationType::Mutation
+                        .to_string()
+                        .to_case(Case::Pascal),
+                    self.mutation_name.clone().unwrap_or("Mutation".to_owned()),
+                ),
             };
 
             // these transformations are required in order to generate a base config.
@@ -87,10 +94,10 @@ impl Transform for FromJsonGenerator<'_> {
                     sample.url(),
                     sample.operation_type(),
                 ))
-                .pipe(json::UserSuggestedOperationNames::new(
-                    &operation_name,
-                    sample.operation_type(),
-                ))
+                .pipe(json::UserSuggestedTypeNames::new(vec![SuggestedName::new(
+                    existing_name,
+                    suggested_name,
+                )]))
                 .transform(config.clone())
         })
         .map(|configs| {
