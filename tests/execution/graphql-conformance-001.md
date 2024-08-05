@@ -121,6 +121,7 @@ type User {
     query: |
       query {
         user(id: 4) {
+          id
           email_address
         }
 ```

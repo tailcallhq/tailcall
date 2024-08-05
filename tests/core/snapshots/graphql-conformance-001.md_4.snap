@@ -11,10 +11,10 @@ expression: response
     "data": null,
     "errors": [
       {
-        "message": " --> 4:4\n  |\n4 |   }\n  |    ^---\n  |\n  = expected selection",
+        "message": " --> 5:4\n  |\n5 |   }\n  |    ^---\n  |\n  = expected selection",
         "locations": [
           {
-            "line": 4,
+            "line": 5,
             "column": 4
           }
         ]
