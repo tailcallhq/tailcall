@@ -58,7 +58,7 @@ impl UserSuggestedTypeNames {
                 }
             } else {
                 return Valid::fail(format!(
-                    "Failed to replace type '{}', it was not found in the configuration.",
+                    "TypeReplacementError: Type '{}' not found in configuration.",
                     existing_name
                 ));
             }

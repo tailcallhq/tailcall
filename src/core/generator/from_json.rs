@@ -22,6 +22,7 @@ pub struct RequestSample {
 }
 
 impl RequestSample {
+    #[allow(clippy::too_many_arguments)]
     pub fn new<T: Into<String>>(
         url: Url,
         method: Method,
