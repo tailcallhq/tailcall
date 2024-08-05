@@ -60,6 +60,7 @@ type User {
 ```
 
 ```yml @test
+# Positive: basic 1
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -70,6 +71,7 @@ type User {
           name
         }
       }
+# Positive: basic 2
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -81,6 +83,7 @@ type User {
           id
         }
       }
+# Positive: basic 2 re ordered
 - method: POST
   url: http://localhost:8080/graphql
   body:
@@ -92,4 +95,32 @@ type User {
           city
         }
       }
+# Negative: missing input
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   body:
+#     query: |
+#       query {
+#         user {
+#           id
+#           name
+#           city
+#         }
+#       }
+# Negative: missing fields
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        user(id: 4)
+# Negative: non existent fields
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        user(id: 4) {
+          email_address
+        }
 ```
