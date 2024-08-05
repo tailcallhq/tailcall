@@ -3,11 +3,9 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::core::{
-    config::GraphQLOperationType,
-    generator::{Generator, Input},
-    http::Method,
-};
+use tailcall::core::config::GraphQLOperationType;
+use tailcall::core::generator::{Generator, Input};
+use tailcall::core::http::Method;
 use url::Url;
 
 #[derive(Serialize, Deserialize)]

@@ -1,8 +1,6 @@
-use crate::core::{
-    config::{Config, GraphQLOperationType},
-    valid::Valid,
-    Transform,
-};
+use crate::core::config::{Config, GraphQLOperationType};
+use crate::core::valid::Valid;
+use crate::core::Transform;
 
 pub struct UserSuggestsOperationNames<'a> {
     suggest_op_name: &'a str,

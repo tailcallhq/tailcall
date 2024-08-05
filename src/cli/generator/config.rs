@@ -229,7 +229,8 @@ impl Source<UnResolved> {
                 // TODO: make body mustache template compatible.
                 // let resolved_body = body.resolve(reader_context)?;
 
-                //TODO: if method is of [POST,PUT,PATCH], we should check if valid body is present or not.
+                //TODO: if method is of [POST,PUT,PATCH], we should check if valid body is
+                // present or not.
                 Ok(Source::Curl {
                     src: resolved_path,
                     field_name,

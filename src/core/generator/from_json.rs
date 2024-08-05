@@ -84,8 +84,8 @@ impl Transform for FromJsonGenerator<'_> {
             GraphQLTypesGenerator::new(sample, type_name_gen)
                 .pipe(json::SchemaGenerator::new(sample.operation_type()))
                 .pipe(json::FieldBaseUrlGenerator::new(
-                    &sample.url(),
-                    &sample.operation_type(),
+                    sample.url(),
+                    sample.operation_type(),
                 ))
                 .pipe(json::UserSuggestsOperationNames::new(
                     &operation_name,
@@ -141,7 +141,7 @@ mod tests {
                 Method::GET,
                 serde_json::Value::Null,
                 parsed_content.response,
-                &field_name_generator.next(),
+                field_name_generator.next(),
                 GraphQLOperationType::Query,
             ));
         }
