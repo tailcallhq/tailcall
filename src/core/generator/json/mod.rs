@@ -9,5 +9,7 @@ mod url_utils;
 pub use field_base_url_generator::FieldBaseUrlGenerator;
 pub use operation_generator::OperationTypeGenerator;
 pub use schema_generator::SchemaGenerator;
-pub use suggested_type_names::{SuggestedName, UserSuggestedTypeNames};
+pub use suggested_type_names::{
+    ExistingTypeName, SuggestedName, SuggestedTypeName, UserSuggestedTypeNames,
+};
 pub use types_generator::GraphQLTypesGenerator;
