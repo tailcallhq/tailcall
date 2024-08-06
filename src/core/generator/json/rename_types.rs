@@ -65,13 +65,15 @@ impl Transform for RenameTypes {
 
 #[cfg(test)]
 mod test {
-    use super::{ExistingType, RenameTypes, SuggestedName, SuggestedType};
+    use std::collections::HashMap;
+
+    use super::RenameTypes;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     #[test]
-    fn test_replace_query_type_with_suggested() {
+    fn test_rename_type() {
         let sdl = r#"
             schema {
                 query: Query
@@ -90,16 +92,14 @@ mod test {
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
-        let cfg = RenameTypes::new(vec![
-            SuggestedName::new(
-                ExistingType("Query".into()),
-                SuggestedType("PostQuery".into()),
-            ),
-            SuggestedName::new(ExistingType("A".into()), SuggestedType("User".into())),
-        ])
-        .transform(config)
-        .to_result()
-        .unwrap();
+        let mut rename_types = HashMap::new();
+        rename_types.insert("Query".into(), "PostQuery".into());
+        rename_types.insert("A".into(), "User".into());
+
+        let cfg = RenameTypes::new(rename_types)
+            .transform(config)
+            .to_result()
+            .unwrap();
 
         insta::assert_snapshot!(cfg.to_sdl())
     }
@@ -110,17 +110,19 @@ mod test {
             schema {
                 query: PostQuery
             }
+            type Post {
+                id: ID
+                title: String
+            }
             type PostQuery {
                 posts: [Post] @http(path: "/posts")
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
-        let result = RenameTypes::new(vec![SuggestedName::new(
-            ExistingType("Query".into()),
-            SuggestedType("PostQuery".into()),
-        )])
-        .transform(config)
-        .to_result();
+        let mut rename_types = HashMap::new();
+        rename_types.insert("Query".into(), "PostQuery".into());
+
+        let result = RenameTypes::new(rename_types).transform(config).to_result();
         assert!(result.is_err());
     }
 }
