@@ -156,15 +156,11 @@ mod tests {
             ));
         }
 
-        let config = FromJsonGenerator::new(
-            &request_samples,
-            &NameGenerator::new("T"),
-            "Query",
-            &None,
-        )
-        .pipe(Preset::default())
-        .generate()
-        .to_result()?;
+        let config =
+            FromJsonGenerator::new(&request_samples, &NameGenerator::new("T"), "Query", &None)
+                .pipe(Preset::default())
+                .generate()
+                .to_result()?;
 
         insta::assert_snapshot!(config.to_sdl());
         Ok(())
