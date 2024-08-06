@@ -33,8 +33,13 @@ impl ImproveTypeNamesLLM {
 
             let mut fields: Vec<String> = Vec::new();
             for (field_name, field_info) in type_info.fields.iter() {
-                fields.push(format!("{}: {}", field_name, field_info.type_of));
-                //ex: T2: {name: String, age: Int}
+                if field_info.list {
+                    //ex: T1: {books: [String]}
+                    fields.push(format!("{}: [{}]", field_name, field_info.type_of));
+                } else {
+                    //ex: T2: {name: String, age: Int}
+                    fields.push(format!("{}: {}", field_name, field_info.type_of));
+                }
             }
 
             let prompt = Self::generate_llm_request(type_name, fields);
