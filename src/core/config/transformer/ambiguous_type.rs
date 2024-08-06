@@ -234,7 +234,6 @@ mod tests {
         let set = compile_protobuf(&[protobuf::NEWS])?;
 
         let cfg_module = Generator::default()
-            .query(Some("Query".into()))
             .inputs(vec![Input::Proto(ProtoMetadata {
                 descriptor_set: set,
                 path: news_proto.to_string(),

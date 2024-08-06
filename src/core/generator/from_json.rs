@@ -47,7 +47,7 @@ impl RequestSample {
 pub struct FromJsonGenerator<'a> {
     request_samples: &'a [RequestSample],
     type_name_generator: &'a NameGenerator,
-    query_name: &'a Option<String>,
+    query_name: &'a str,
     mutation_name: &'a Option<String>,
 }
 
@@ -55,7 +55,7 @@ impl<'a> FromJsonGenerator<'a> {
     pub fn new(
         request_samples: &'a [RequestSample],
         type_name_generator: &'a NameGenerator,
-        query_name: &'a Option<String>,
+        query_name: &'a str,
         mutation_name: &'a Option<String>,
     ) -> Self {
         Self {
@@ -80,7 +80,7 @@ impl Transform for FromJsonGenerator<'_> {
                     GraphQLOperationType::Query
                         .to_string()
                         .to_case(Case::Pascal),
-                    self.query_name.clone().unwrap_or("Query".to_owned()),
+                    self.query_name.to_owned(),
                 ),
                 GraphQLOperationType::Mutation => (
                     GraphQLOperationType::Mutation
@@ -159,7 +159,7 @@ mod tests {
         let config = FromJsonGenerator::new(
             &request_samples,
             &NameGenerator::new("T"),
-            &Some("Query".into()),
+            "Query".into(),
             &None,
         )
         .pipe(Preset::default())

@@ -18,7 +18,7 @@ use crate::core::valid::Validator;
 
 #[derive(Setters)]
 pub struct Generator {
-    query: Option<String>,
+    query: String,
     mutation: Option<String>,
     inputs: Vec<Input>,
     type_name_prefix: String,
@@ -51,10 +51,10 @@ impl Default for Generator {
 impl Generator {
     pub fn new() -> Generator {
         Generator {
-            query: None,
+            query: "Query".into(),
             mutation: None,
             inputs: Vec::new(),
-            type_name_prefix: "T".to_string(),
+            type_name_prefix: "T".into(),
             transformers: Default::default(),
         }
     }
@@ -115,12 +115,7 @@ impl Generator {
                     );
                 }
                 Input::Proto(proto_input) => {
-                    if let Some(ref query_name) = self.query {
-                        config =
-                            config.merge_right(self.generate_from_proto(proto_input, query_name)?);
-                    } else {
-                        anyhow::bail!("Unsupported operation: Only `Query` operation can be generated for gRPC files. Please revise the operation type.")
-                    }
+                    config = config.merge_right(self.generate_from_proto(proto_input, &self.query)?);
                 }
             }
         }
@@ -187,7 +182,6 @@ mod test {
         let set = compile_protobuf(&[news_proto])?;
 
         let cfg_module = Generator::default()
-            .query(Some("Query".into()))
             .inputs(vec![Input::Proto(ProtoMetadata {
                 descriptor_set: set,
                 path: "../../../tailcall-fixtures/fixtures/protobuf/news.proto".to_string(),
@@ -216,7 +210,6 @@ mod test {
         let parsed_content =
             parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
         let cfg_module = Generator::default()
-            .query(Some("Query".into()))
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
                 method: Method::GET,
@@ -262,7 +255,6 @@ mod test {
         // Combine inputs
         let cfg_module = Generator::default()
             .inputs(vec![proto_input, json_input, config_input])
-            .query(Some("Query".into()))
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
 
@@ -294,7 +286,6 @@ mod test {
 
         let cfg_module = Generator::default()
             .inputs(inputs)
-            .query(Some("Query".into()))
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
         insta::assert_snapshot!(cfg_module.config().to_sdl());

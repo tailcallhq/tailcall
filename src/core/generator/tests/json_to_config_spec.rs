@@ -54,7 +54,6 @@ fn test_spec(path: &Path, url: Url, json_data: JsonFixture) -> anyhow::Result<()
             .generate(true)?
     } else {
         Generator::default()
-            .query(Some("Query".into()))
             .inputs(vec![Input::Json {
                 url,
                 method: Method::GET,

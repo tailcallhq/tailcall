@@ -175,9 +175,11 @@ impl Generator {
             .inputs(input_samples)
             .transformers(vec![Box::new(preset)]);
 
-        config_gen = config_gen.query(query_type).mutation(mutation_type_name);
+        if let Some(query_name) = query_type {
+            config_gen = config_gen.query(query_name);
+        }
 
-        let config = config_gen.generate(true)?;
+        let config = config_gen.mutation(mutation_type_name).generate(true)?;
 
         self.write(&config, &path).await?;
         Ok(config)
@@ -340,7 +342,7 @@ mod test {
 
             let generator = Generator::new(path, runtime);
             let config = generator.read().await?;
-            let query_type = config.schema.query.clone();
+            let query_type = config.schema.query.clone().unwrap_or("Query".into());
             let mutation_type_name = config.schema.mutation.clone();
             let preset: config::transformer::Preset = config
                 .preset
