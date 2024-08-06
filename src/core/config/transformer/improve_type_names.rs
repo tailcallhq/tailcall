@@ -250,21 +250,26 @@ mod test {
     fn test_prioritize_user_given_names() {
         let sdl = r#"
             schema { query: Query }
-            type Post {
-                id: Int
+            type T1 {
+                id: ID
+                name: String
             }
             type T2 {
-                userPosts: [Posts]
+                userProfile: T1
+            }
+            type T3 {
+                title: String
+                userInfo: T1
             }
             type Query {
-                userInfo: T2
+                user: T1
+                profile: T2
+                post: T3
             }
         "#;
 
         let config = Config::from_sdl(sdl).to_result().unwrap();
-
         let config = ImproveTypeNames.transform(config).to_result().unwrap();
-
         insta::assert_snapshot!(config.to_sdl());
     }
 }

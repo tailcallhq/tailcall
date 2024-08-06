@@ -7,13 +7,21 @@ schema @server @upstream {
 }
 
 type Post {
-  id: Int
+  title: String
+  userInfo: User
+}
+
+type Profile {
+  userProfile: User
 }
 
 type Query {
-  userInfo: UserInfo
+  post: Post
+  profile: Profile
+  user: User
 }
 
-type UserInfo {
-  userPosts: [Posts]
+type User {
+  id: ID
+  name: String
 }
