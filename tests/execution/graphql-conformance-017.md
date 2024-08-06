@@ -35,7 +35,6 @@ interface DomesticAnimal {
 }
 
 interface Pet {
-
   owner: String!
 }
 
@@ -110,9 +109,12 @@ type Cat implements Animal & DomesticAnimal & Pet {
 
 ```yml @mock
 - request:
-    method: post
+    method: POST
     url: http://upstream/graphql
-    textBody: {"query": "query { allAnimals { ...animalsFragment } } fragment animalsFragment on Animal { id sound ...domesticFragment ...petFragment ... on Cat { legs } } fragment domesticFragment on DomesticAnimal { weight } fragment petFragment on Pet { owner }"}
+    textBody:
+      {
+        "query": "query { allAnimals { ...animalsFragment } } fragment animalsFragment on Animal { id sound ...domesticFragment ...petFragment ... on Cat { legs } } fragment domesticFragment on DomesticAnimal { weight } fragment petFragment on Pet { owner }",
+      }
   expectedHits: 1
   response:
     status: 200
@@ -131,10 +133,33 @@ type Cat implements Animal & DomesticAnimal & Pet {
             weight: 2
             owner: Steve
             __typename: Dog
+          - id: salmon-1
+            legs: 0
+            sound: ...
+            length: 2
+            __typename: Salmon
+          - id: salmon-2
+            legs: 0
+            sound: ...
+            length: 1
+            __typename: Salmon
+          - id: pig-1
+            legs: 4
+            sound: oik
+            weight: 24
+            __typename: Pig
+          - id: pig-2
+            legs: 4
+            sound: oik
+            weight: 41
+            __typename: Pig
 - request:
-    method: post
+    method: POST
     url: http://upstream/graphql
-    textBody: {"query": "query { edibleAnimals { ...edibleFragment } } fragment edibleFragment on EdibleAnimals { ... on Animal { id } ...domesticFragment ...boarFragment } fragment boarFragment on Boar { sound dangerous }"}
+    textBody:
+      {
+        "query": "query { edibleAnimals { ...edibleFragment } } fragment edibleFragment on EdibleAnimals { ... on Animal { id } ...domesticFragment ...boarFragment } fragment boarFragment on Boar { sound dangerous }",
+      }
   expectedHits: 1
   response:
     status: 200

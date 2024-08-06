@@ -23,7 +23,7 @@ type User {
 
 ```yml @mock
 - request:
-    method: post
+    method: POST
     url: http://upstream/graphql
     textBody: {"query": "query { users { id name } }"}
   expectedHits: 1

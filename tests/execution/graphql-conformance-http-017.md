@@ -7,13 +7,13 @@ skip: true
 ```graphql @config
 schema
   @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
-  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+  @upstream(baseURL: "http://upstream/", httpCache: 42) {
   query: Query
 }
 
 type Query {
-  edibleAnimals: EdibleAnimals @graphQL(name: "edibleAnimals")
-  allAnimals: Animal @graphQL(name: "allAnimals")
+  edibleAnimals: EdibleAnimals @http(path: "/edible-animals")
+  allAnimals: Animal @http(path: "/all-animals")
 }
 
 interface Animal {
@@ -35,7 +35,6 @@ interface DomesticAnimal {
 }
 
 interface Pet {
-
   owner: String!
 }
 
@@ -110,57 +109,71 @@ type Cat implements Animal & DomesticAnimal & Pet {
 
 ```yml @mock
 - request:
-    method: post
-    url: http://upstream/graphql
-    textBody: {"query": "query { allAnimals { ...animalsFragment } } fragment animalsFragment on Animal { id sound ...domesticFragment ...petFragment ... on Cat { legs } } fragment domesticFragment on DomesticAnimal { weight } fragment petFragment on Pet { owner }"}
+    method: GET
+    url: http://upstream/all-animals
   expectedHits: 1
   response:
     status: 200
     body:
-      data:
-        allAnimals:
-          - id: cat-1
-            legs: 4
-            sound: meow
-            weight: 2
-            owner: John
-            __typename: Cat
-          - id: dog-2
-            legs: 4
-            sound: woof
-            weight: 2
-            owner: Steve
-            __typename: Dog
+      - id: cat-1
+        legs: 4
+        sound: meow
+        weight: 2
+        owner: John
+        __typename: Cat
+      - id: dog-2
+        legs: 4
+        sound: woof
+        weight: 2
+        owner: Steve
+        __typename: Dog
+      - id: salmon-1
+        legs: 0
+        sound: ...
+        length: 2
+        __typename: Salmon
+      - id: salmon-2
+        legs: 0
+        sound: ...
+        length: 1
+        __typename: Salmon
+      - id: pig-1
+        legs: 4
+        sound: oik
+        weight: 24
+        __typename: Pig
+      - id: pig-2
+        legs: 4
+        sound: oik
+        weight: 41
+        __typename: Pig
 - request:
-    method: post
-    url: http://upstream/graphql
-    textBody: {"query": "query { edibleAnimals { ...edibleFragment } } fragment edibleFragment on EdibleAnimals { ... on Animal { id } ...domesticFragment ...boarFragment } fragment boarFragment on Boar { sound dangerous }"}
+    method: GET
+    url: http://upstream/edible-animals
   expectedHits: 1
   response:
     status: 200
     body:
-      data:
-        edibleAnimals:
-          - id: salmon-1
-            legs: 0
-            sound: ...
-            length: 2
-            __typename: Salmon
-          - id: salmon-2
-            legs: 0
-            sound: ...
-            length: 1
-            __typename: Salmon
-          - id: pig-1
-            legs: 4
-            sound: oik
-            weight: 24
-            __typename: Pig
-          - id: pig-2
-            legs: 4
-            sound: oik
-            weight: 41
-            __typename: Pig
+      - id: salmon-1
+        legs: 0
+        sound: ...
+        length: 2
+        __typename: Salmon
+      - id: salmon-2
+        legs: 0
+        sound: ...
+        length: 1
+        __typename: Salmon
+      - id: pig-1
+        legs: 4
+        sound: oik
+        weight: 24
+        __typename: Pig
+      - id: pig-2
+        legs: 4
+        sound: oik
+        weight: 41
+        __typename: Pig
 ```
 
 ```yml @test
