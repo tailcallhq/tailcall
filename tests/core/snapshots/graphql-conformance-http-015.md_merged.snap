@@ -8,11 +8,19 @@ schema
   query: Query
 }
 
+input VideoSize {
+  hdr: Boolean
+  height: Int!
+  width: Int!
+}
+
 type Query {
   user(id: ID!): User! @http(path: "/user", query: [{key: "id", value: "{{.args.id}}"}])
 }
 
 type User {
+  featuredVideo(video: VideoSize! = {width: 1600, height: 900}): String!
+    @expr(body: "video_{{.value.id}}_{{.args.video.width}}_{{.args.video.height}}_{{.args.video.hdr}}")
   id: ID!
   name: String!
   profilePic(height: Int = 100, size: Int! = 100, width: Int): String!

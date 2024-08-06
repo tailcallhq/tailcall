@@ -16,6 +16,14 @@ type User {
   name: String!
   profilePic(size: Int! = 100, width: Int, height: Int = 100): String!
     @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
+  featuredVideo(video: VideoSize! = {width: 1600, height: 900}): String!
+    @expr(body: "video_{{.value.id}}_{{.args.video.width}}_{{.args.video.height}}_{{.args.video.hdr}}")
+}
+
+input VideoSize {
+  width: Int!
+  height: Int!
+  hdr: Boolean
 }
 ```
 
@@ -23,7 +31,7 @@ type User {
 - request:
     method: GET
     url: http://upstream/user?id=4
-  expectedHits: 5
+  expectedHits: 7
   response:
     status: 200
     body:
@@ -90,6 +98,30 @@ type User {
           id
           name
           profilePic(width: 200, height: 50)
+        }
+      }
+# Positve: video default
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        user(id: 4) {
+          id
+          name
+          featuredVideo
+        }
+      }
+# Positve: video overwrite
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        user(id: 4) {
+          id
+          name
+          featuredVideo(video: {width: 1920, height: 1080, hdr: true})
         }
       }
 

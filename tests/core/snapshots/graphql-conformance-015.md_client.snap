@@ -43,9 +43,16 @@ scalar UInt8
 scalar Url
 
 type User {
+  featuredVideo(video: VideoSize! = {width: 1600, height: 900}): String!
   id: ID!
   name: String!
   profilePic(height: Int = 100, size: Int! = 100, width: Int): String!
+}
+
+input VideoSize {
+  hdr: Boolean
+  height: Int!
+  width: Int!
 }
 
 schema {
