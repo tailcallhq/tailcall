@@ -115,7 +115,7 @@ impl Generator {
                     if !body.is_null() {
                         request.body_mut().replace(body.to_string().into());
                     }
-                    if let Some(headers_inner) = headers.get() {
+                    if let Some(headers_inner) = headers.as_btree_map() {
                         let mut header_map = HeaderMap::new();
                         for (key, value) in headers_inner {
                             let header_name = HeaderName::try_from(key)?;

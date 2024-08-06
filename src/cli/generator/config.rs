@@ -47,7 +47,7 @@ pub struct Location<A>(
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(transparent)]
 pub struct Headers<A>(
-    #[serde(skip_serializing_if = "is_default")] pub Option<BTreeMap<String, String>>,
+    #[serde(skip_serializing_if = "is_default")] Option<BTreeMap<String, String>>,
     #[serde(skip)] PhantomData<A>,
 );
 
@@ -180,7 +180,7 @@ impl Location<UnResolved> {
 }
 
 impl<A> Headers<A> {
-    pub fn get(&self) -> &Option<BTreeMap<String, String>> {
+    pub fn as_btree_map(&self) -> &Option<BTreeMap<String, String>> {
         &self.0
     }
 }
@@ -330,7 +330,7 @@ mod tests {
 
         let expected = format!("Bearer {token}");
         let result = resolved_headers
-            .get()
+            .as_btree_map()
             .to_owned()
             .unwrap()
             .get("Authorization")
