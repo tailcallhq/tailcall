@@ -12,7 +12,7 @@ use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
-use crate::core::resource_reader::{Direct, Reader, Resource, ResourceReader};
+use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
 use crate::core::valid::{ValidateInto, Validator};
 
