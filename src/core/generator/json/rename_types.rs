@@ -6,35 +6,18 @@ use crate::core::Transform;
 
 /// Transformer that replaces existing type name
 /// with user-suggested names.
-pub struct UserSuggestedTypes(Vec<SuggestedName>);
+pub struct RenameTypes(HashMap<String, String>);
 
-pub struct ExistingType(pub String);
-pub struct SuggestedType(pub String);
-
-pub struct SuggestedName {
-    existing_name: ExistingType,
-    suggested_name: SuggestedType,
-}
-
-impl SuggestedName {
-    pub fn new(existing_name: ExistingType, suggested_name: SuggestedType) -> Self {
-        Self { existing_name, suggested_name }
-    }
-}
-
-impl UserSuggestedTypes {
-    pub fn new(suggested_names: Vec<SuggestedName>) -> Self {
+impl RenameTypes {
+    pub fn new(suggested_names: HashMap<String, String>) -> Self {
         Self(suggested_names)
     }
 
     pub fn replace_type(&self, mut config: Config) -> Valid<Config, String> {
         let mut lookup = HashMap::new();
 
-        for suggest_name in self.0.iter() {
-            let suggested_name = suggest_name.suggested_name.0.clone();
-            let existing_name = suggest_name.existing_name.0.clone();
-
-            if let Some(type_info) = config.types.remove(&existing_name) {
+        for (existing_name, suggested_name) in self.0.iter() {
+            if let Some(type_info) = config.types.remove(existing_name) {
                 config.types.insert(suggested_name.to_string(), type_info);
                 lookup.insert(existing_name.clone(), suggested_name.clone());
 
@@ -71,7 +54,7 @@ impl UserSuggestedTypes {
     }
 }
 
-impl Transform for UserSuggestedTypes {
+impl Transform for RenameTypes {
     type Value = Config;
     type Error = String;
 
@@ -82,7 +65,7 @@ impl Transform for UserSuggestedTypes {
 
 #[cfg(test)]
 mod test {
-    use super::{ExistingType, SuggestedName, SuggestedType, UserSuggestedTypes};
+    use super::{ExistingType, RenameTypes, SuggestedName, SuggestedType};
     use crate::core::config::Config;
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
@@ -107,7 +90,7 @@ mod test {
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
-        let cfg = UserSuggestedTypes::new(vec![
+        let cfg = RenameTypes::new(vec![
             SuggestedName::new(
                 ExistingType("Query".into()),
                 SuggestedType("PostQuery".into()),
@@ -132,7 +115,7 @@ mod test {
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
-        let result = UserSuggestedTypes::new(vec![SuggestedName::new(
+        let result = RenameTypes::new(vec![SuggestedName::new(
             ExistingType("Query".into()),
             SuggestedType("PostQuery".into()),
         )])

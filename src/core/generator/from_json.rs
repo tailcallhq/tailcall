@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use convert_case::{Case, Casing};
 use derive_getters::Getters;
 use serde_json::Value;
 use url::Url;
 
-use super::json::{self, ExistingType, GraphQLTypesGenerator, SuggestedName, SuggestedType};
+use super::json::{self, GraphQLTypesGenerator};
 use super::NameGenerator;
 use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::http::Method;
@@ -88,6 +90,9 @@ impl Transform for FromJsonGenerator<'_> {
                 ),
             };
 
+            let mut rename_types = HashMap::new();
+            rename_types.insert(existing_name, suggested_name);
+
             // these transformations are required in order to generate a base config.
             GraphQLTypesGenerator::new(sample, type_name_gen)
                 .pipe(json::SchemaGenerator::new(sample.operation_type()))
@@ -95,10 +100,7 @@ impl Transform for FromJsonGenerator<'_> {
                     sample.url(),
                     sample.operation_type(),
                 ))
-                .pipe(json::UserSuggestedTypes::new(vec![SuggestedName::new(
-                    ExistingType(existing_name),
-                    SuggestedType(suggested_name),
-                )]))
+                .pipe(json::RenameTypes::new(rename_types))
                 .transform(config.clone())
         })
         .map(|configs| {
