@@ -27,7 +27,7 @@ impl ImproveTypeNamesLLM {
         let mut llm_requests: Vec<LLMRequest> = Vec::new();
 
         for (type_name, type_info) in config.types.iter() {
-            if type_name == "Query" || type_name == "Mutation" || type_name == "Subscription" {
+            if config.is_root_operation_type(type_name) {
                 continue;
             }
 
