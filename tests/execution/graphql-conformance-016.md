@@ -25,7 +25,7 @@ type User {
 - request:
     method: post
     url: http://upstream/graphql
-    textBody: { "query": "query { users { id name } }" }
+    textBody: {"query": "query { users { id name } }"}
   expectedHits: 1
   response:
     status: 200
@@ -44,7 +44,6 @@ type User {
               name: user-5
             - id: 6
               name: user-6
-
 ```
 
 ```yml @test

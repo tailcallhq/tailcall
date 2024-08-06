@@ -41,7 +41,6 @@ type User {
           name: user-5
         - id: 6
           name: user-6
-
 ```
 
 ```yml @test
