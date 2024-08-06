@@ -115,7 +115,8 @@ impl Generator {
                     );
                 }
                 Input::Proto(proto_input) => {
-                    config = config.merge_right(self.generate_from_proto(proto_input, &self.query)?);
+                    config =
+                        config.merge_right(self.generate_from_proto(proto_input, &self.query)?);
                 }
             }
         }

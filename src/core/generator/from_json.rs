@@ -159,7 +159,7 @@ mod tests {
         let config = FromJsonGenerator::new(
             &request_samples,
             &NameGenerator::new("T"),
-            "Query".into(),
+            "Query",
             &None,
         )
         .pipe(Preset::default())
