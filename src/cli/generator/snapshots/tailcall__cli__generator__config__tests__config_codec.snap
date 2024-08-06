@@ -11,7 +11,6 @@ expression: actual
           "user-agent": "tailcall-v1"
         },
         "method": "GET",
-        "operationType": "mutation",
         "fieldName": "test"
       }
     }

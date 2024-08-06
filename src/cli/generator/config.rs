@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::core::config::transformer::Preset;
-use crate::core::config::{self, ConfigReaderContext, GraphQLOperationType};
+use crate::core::config::{self, ConfigReaderContext};
 use crate::core::http::Method;
 use crate::core::mustache::Mustache;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
@@ -70,7 +70,7 @@ pub enum Source<Status = UnResolved> {
         #[serde(skip_serializing_if = "Option::is_none")]
         body: Option<serde_json::Value>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        operation_type: Option<GraphQLOperationType>,
+        is_mutation: Option<bool>,
         field_name: String,
     },
     Proto {
@@ -223,7 +223,7 @@ impl Source<UnResolved> {
         reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, field_name, headers, body, method, operation_type } => {
+            Source::Curl { src, field_name, headers, body, method, is_mutation } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 let resolved_headers = headers.resolve(reader_context)?;
                 // TODO: make body mustache template compatible.
@@ -237,7 +237,7 @@ impl Source<UnResolved> {
                     headers: resolved_headers,
                     body,
                     method,
-                    operation_type,
+                    is_mutation,
                 })
             }
             Source::Proto { src } => {
@@ -353,7 +353,7 @@ mod tests {
                 body: None,
                 field_name: "test".to_string(),
                 method: Some(Method::GET),
-                operation_type: Some(GraphQLOperationType::Mutation),
+                is_mutation: None,
             },
         }]);
         let actual = serde_json::to_string_pretty(&config).unwrap();
