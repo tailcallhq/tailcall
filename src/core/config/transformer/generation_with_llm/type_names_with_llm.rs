@@ -130,7 +130,7 @@ impl LLMTypeName {
             // Retry logic to handle network or other errors
             for _ in 0..=self.retry_count {
                 match self
-                    .generate_type_name(&config, type_name, type_, &new_name_mappings)
+                    .generate_type_name(config, type_name, type_, &new_name_mappings)
                     .await
                 {
                     Ok(Some(unique_ty_name)) => {
