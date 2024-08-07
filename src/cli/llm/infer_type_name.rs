@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 
-use super::Wizard;
-use super::{Error, Result};
+use super::{Error, Result, Wizard};
 use crate::core::config::Config;
 
 const MODEL: &str = "gemini-1.5-flash-latest";
