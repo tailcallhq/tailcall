@@ -61,20 +61,25 @@ fn get_formatted_docs(docs: Option<String>, indent: usize) -> String {
     formatted_docs
 }
 
-fn print_directives(directives: &[Positioned<ConstDirective>]) -> String {
-    if directives.is_empty() {
-        return String::new();
-    }
+pub fn print_directives<'a>(directives: impl Iterator<Item = &'a ConstDirective>) -> String {
     directives
-        .iter()
-        .map(|d| print_directive(&const_directive_to_sdl(&d.node)))
+        .map(|d| print_directive(&const_directive_to_sdl(d)))
         .collect::<Vec<String>>()
         .join(" ")
-        + " "
+}
+
+fn print_pos_directives(directives: &[Positioned<ConstDirective>]) -> String {
+    let mut output = print_directives(directives.iter().map(|directive| &directive.node));
+
+    if !output.is_empty() {
+        output.push(' ');
+    }
+
+    output
 }
 
 fn print_schema(schema: &SchemaDefinition) -> String {
-    let directives = print_directives(&schema.directives);
+    let directives = print_pos_directives(&schema.directives);
 
     let query = schema
         .query
@@ -96,27 +101,26 @@ fn print_schema(schema: &SchemaDefinition) -> String {
         directives, query, mutation, subscription
     )
 }
+
 fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
     DirectiveDefinition {
         description: None,
-        name: pos(Name::new(directive.name.node.clone())),
+        name: pos(Name::new(directive.name.node.as_str())),
         arguments: directive
             .arguments
             .iter()
-            .filter_map(|(name, value)| {
-                if value.node.clone() != ConstValue::Null {
+            .filter_map(|(k, v)| {
+                if v.node != ConstValue::Null {
                     Some(pos(InputValueDefinition {
                         description: None,
-                        name: pos(Name::new(name.node.clone())),
+                        name: pos(Name::new(k.node.clone())),
                         ty: pos(Type {
                             nullable: true,
                             base: async_graphql::parser::types::BaseType::Named(Name::new(
-                                value.node.clone().to_string(),
+                                v.to_string(),
                             )),
                         }),
-                        default_value: Some(pos(ConstValue::String(
-                            value.node.clone().to_string(),
-                        ))),
+                        default_value: Some(pos(ConstValue::String(v.to_string()))),
                         directives: Vec::new(),
                     }))
                 } else {
@@ -128,6 +132,7 @@ fn const_directive_to_sdl(directive: &ConstDirective) -> DirectiveDefinition {
         locations: vec![],
     }
 }
+
 fn print_type_def(type_def: &TypeDefinition) -> String {
     match &type_def.kind {
         TypeKind::Scalar => {
@@ -147,7 +152,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             )
         }
         TypeKind::InputObject(input) => {
-            let directives = print_directives(&type_def.directives);
+            let directives = print_pos_directives(&type_def.directives);
             let doc = get_formatted_docs(type_def.description.as_ref().map(|d| d.node.clone()), 0);
             format!(
                 "{}input {} {}{{\n{}\n}}\n",
@@ -202,7 +207,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             } else {
                 String::new()
             };
-            let directives = print_directives(&type_def.directives);
+            let directives = print_pos_directives(&type_def.directives);
             let doc = type_def.description.as_ref().map_or(String::new(), |d| {
                 format!(r#"  """{}  {}{}  """{}"#, "\n", d.node, "\n", "\n")
             });
@@ -221,7 +226,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
             )
         }
         TypeKind::Enum(en) => {
-            let directives = print_directives(&type_def.directives);
+            let directives = print_pos_directives(&type_def.directives);
             let enum_def = format!(
                 "enum {} {}{{\n{}\n}}\n",
                 type_def.name.node,
@@ -244,7 +249,7 @@ fn print_type_def(type_def: &TypeDefinition) -> String {
 }
 
 fn print_enum_value(value: &async_graphql::parser::types::EnumValueDefinition) -> String {
-    let directives_str = print_directives(&value.directives);
+    let directives_str = print_pos_directives(&value.directives);
     if directives_str.is_empty() {
         format!("  {}", value.value)
     } else {
@@ -253,7 +258,7 @@ fn print_enum_value(value: &async_graphql::parser::types::EnumValueDefinition) -
 }
 
 fn print_field(field: &async_graphql::parser::types::FieldDefinition) -> String {
-    let directives = print_directives(&field.directives);
+    let directives = print_pos_directives(&field.directives);
     let args_str = if !field.arguments.is_empty() {
         let args = field
             .arguments
@@ -292,7 +297,7 @@ fn print_default_value(value: Option<&Positioned<ConstValue>>) -> String {
 }
 
 fn print_input_value(field: &async_graphql::parser::types::InputValueDefinition) -> String {
-    let directives_str = print_directives(&field.directives);
+    let directives_str = print_pos_directives(&field.directives);
     let doc = get_formatted_docs(field.description.as_ref().map(|d| d.node.clone()), 2);
     format!(
         "{}  {}: {}{}{}",

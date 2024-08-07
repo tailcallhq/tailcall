@@ -16,6 +16,8 @@ input ConnectionInput {
 
 scalar Date
 
+scalar DateTime
+
 scalar Email
 
 scalar Empty
@@ -39,7 +41,7 @@ type Mutation {
 scalar PhoneNumber
 
 type Query {
-  user(id: Int!): User
+  user: User
 }
 
 scalar UInt128

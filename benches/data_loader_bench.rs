@@ -13,7 +13,7 @@ use tailcall::core::config::Batch;
 use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
 use tailcall::core::ir::model::IoId;
 use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::{EnvIO, FileIO, HttpIO};
+use tailcall::core::{cache, EnvIO, FileIO, HttpIO};
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -54,11 +54,16 @@ impl tailcall::core::Cache for Cache {
     type Key = IoId;
     type Value = ConstValue;
 
-    async fn set<'a>(&'a self, _: Self::Key, _: Self::Value, _: NonZeroU64) -> anyhow::Result<()> {
+    async fn set<'a>(
+        &'a self,
+        _: Self::Key,
+        _: Self::Value,
+        _: NonZeroU64,
+    ) -> Result<(), cache::Error> {
         unimplemented!("Not needed for this bench")
     }
 
-    async fn get<'a>(&'a self, _: &'a Self::Key) -> anyhow::Result<Option<Self::Value>> {
+    async fn get<'a>(&'a self, _: &'a Self::Key) -> Result<Option<Self::Value>, cache::Error> {
         unimplemented!("Not needed for this bench")
     }
 

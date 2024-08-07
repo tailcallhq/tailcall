@@ -5,7 +5,6 @@ use std::sync::Arc;
 use async_graphql::dynamic::{Schema, SchemaBuilder};
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::ValidationMode;
-use async_graphql_value::ConstValue;
 use derive_setters::Setters;
 use serde_json::Value;
 
@@ -13,6 +12,7 @@ use super::telemetry::Telemetry;
 use super::{GlobalTimeout, Index};
 use crate::core::blueprint::{Server, Upstream};
 use crate::core::ir::model::IR;
+use crate::core::scalar;
 use crate::core::schema_extension::SchemaExtension;
 
 /// Blueprint is an intermediary representation that allows us to generate
@@ -191,7 +191,7 @@ pub struct ScalarTypeDefinition {
     pub name: String,
     pub directive: Vec<Directive>,
     pub description: Option<String>,
-    pub validator: fn(&ConstValue) -> bool,
+    pub scalar: scalar::Scalar,
 }
 
 #[derive(Clone, Debug)]

@@ -28,7 +28,7 @@ type Mutation {
 }
 
 type Query {
-  user(id: Int!): User @http(path: "/users/1")
+  user: User @http(path: "/users/1")
 }
 
 type User {

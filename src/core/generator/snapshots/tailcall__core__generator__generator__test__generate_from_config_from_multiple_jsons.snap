@@ -1,16 +1,14 @@
 ---
 source: src/core/generator/generator.rs
-expression: cfg_module.config.to_sdl()
+expression: cfg_module.config().to_sdl()
 ---
 schema @server @upstream(baseURL: "https://example.com") {
   query: Query
 }
 
-scalar Any
-
 type F1 {
-  campaignTemplates: Any
-  colors: [Any]
+  campaignTemplates: JSON
+  colors: [JSON]
 }
 
 type F3 {
@@ -21,6 +19,6 @@ type F3 {
 
 type Query {
   f1: F1 @http(path: "/")
-  f2: [Any] @http(path: "/api/v2/users")
+  f2: [JSON] @http(path: "/api/v2/users")
   f3: [F3] @http(path: "/users")
 }

@@ -14,10 +14,8 @@ expression: plan.into_nested()
                 name: "id",
                 type_of: ID!,
                 value: Some(
-                    Variable(
-                        Name(
-                            "id",
-                        ),
+                    Number(
+                        Number(1),
                     ),
                 ),
                 default_value: None,
@@ -30,14 +28,20 @@ expression: plan.into_nested()
                         id: 1,
                         name: "id",
                         type_of: ID!,
+                        is_scalar: true,
+                        directives: [],
                     },
                     Field {
                         id: 2,
                         name: "name",
                         type_of: String!,
+                        is_scalar: true,
+                        directives: [],
                     },
                 ],
             ),
         ),
+        is_scalar: false,
+        directives: [],
     },
 ]

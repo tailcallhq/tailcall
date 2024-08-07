@@ -6,22 +6,22 @@ use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
-use crate::core::{config, helpers};
+use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &config::Http,
 ) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
-        .when(|| !http.group_by.is_empty() && http.method != Method::GET)
+        .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
             Valid::<(), String>::fail(
-                "GroupBy can only be applied if batching is enabled".to_string(),
+                "Batching capability was used without enabling it in upstream".to_string(),
             )
             .when(|| {
                 (config_module.upstream.get_delay() < 1
                     || config_module.upstream.get_max_size() < 1)
-                    && !http.group_by.is_empty()
+                    && !http.batch_key.is_empty()
             }),
         )
         .and(Valid::from_option(
@@ -61,10 +61,18 @@ pub fn compile_http(
                 .or(config_module.upstream.on_request.clone())
                 .map(|on_request| HttpFilter { on_request });
 
-            if !http.group_by.is_empty() && http.method == Method::GET {
+            if !http.batch_key.is_empty() && http.method == Method::GET {
+                // Find a query parameter that contains a reference to the {{.value}} key
+                let key = http
+                    .query
+                    .iter()
+                    .find_map(|q| match Mustache::parse(&q.value) {
+                        Ok(tmpl) => tmpl.expression_contains("value").then(|| q.key.clone()),
+                        Err(_) => None,
+                    });
                 IR::IO(IO::Http {
                     req_template,
-                    group_by: Some(GroupBy::new(http.group_by.clone())),
+                    group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
                     http_filter,
                 })

@@ -1,0 +1,41 @@
+---
+source: src/core/jit/builder.rs
+expression: plan.into_nested()
+---
+[
+    Field {
+        id: 0,
+        name: "posts",
+        ir: "Some(..)",
+        type_of: [Post],
+        extensions: Some(
+            Nested(
+                [
+                    Field {
+                        id: 1,
+                        name: "id",
+                        type_of: ID!,
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 2,
+                        name: "userId",
+                        type_of: ID!,
+                        is_scalar: true,
+                        directives: [],
+                    },
+                    Field {
+                        id: 3,
+                        name: "title",
+                        type_of: String!,
+                        is_scalar: true,
+                        directives: [],
+                    },
+                ],
+            ),
+        ),
+        is_scalar: false,
+        directives: [],
+    },
+]

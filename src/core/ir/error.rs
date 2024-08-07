@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use async_graphql::{ErrorExtensions, Value as ConstValue};
+use derive_more::From;
 use thiserror::Error;
 
-use crate::core::auth;
-#[derive(Debug, Error, Clone)]
+use crate::core::{auth, cache, worker};
+#[derive(From, Debug, Error, Clone)]
 pub enum Error {
     #[error("IOException: {0}")]
     IOException(String),
@@ -21,13 +22,21 @@ pub enum Error {
     APIValidationError(Vec<String>),
 
     #[error("ExprEvalError: {0}")]
+    #[from(ignore)]
     ExprEvalError(String),
 
     #[error("DeserializeError: {0}")]
+    #[from(ignore)]
     DeserializeError(String),
 
     #[error("Authentication Failure: {0}")]
     AuthError(auth::error::Error),
+
+    #[error("Worker Error: {0}")]
+    WorkerError(worker::Error),
+
+    #[error("Cache Error: {0}")]
+    CacheError(cache::Error),
 }
 
 impl ErrorExtensions for Error {
@@ -46,12 +55,6 @@ impl ErrorExtensions for Error {
                 e.set("grpcStatusDetails", grpc_status_details.clone());
             }
         })
-    }
-}
-
-impl From<auth::error::Error> for Error {
-    fn from(value: auth::error::Error) -> Self {
-        Error::AuthError(value)
     }
 }
 

@@ -9,8 +9,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
 use crate::core::mustache::Mustache;
+use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -19,15 +21,19 @@ pub struct Config<Status = UnResolved> {
     pub inputs: Vec<Input<Status>>,
     pub output: Output<Status>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub preset: Option<Preset>,
+    pub preset: Option<PresetConfig>,
     pub schema: Schema,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct Preset {
+pub struct PresetConfig {
     merge_type: Option<f32>,
+    #[serde(rename = "consolidateURL")]
     consolidate_url: Option<f32>,
+    use_better_names: Option<bool>,
+    tree_shake: Option<bool>,
+    unwrap_single_field_types: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -90,18 +96,49 @@ pub struct Schema {
     pub query: Option<String>,
 }
 
-impl From<Preset> for config::transformer::Preset {
-    fn from(val: Preset) -> Self {
-        let mut preset = config::transformer::Preset::default();
-        if let Some(merge_type) = val.merge_type {
+fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
+    Valid::<(), String>::fail(format!(
+        "Invalid threshold value ({:.2}). Allowed range is [{:.2} - {:.2}] inclusive.",
+        threshold, min, max
+    ))
+    .when(|| !(min..=max).contains(&threshold))
+}
+
+impl ValidateFrom<PresetConfig> for Preset {
+    type Error = String;
+    fn validate_from(config: PresetConfig) -> Valid<Self, Self::Error> {
+        let mut preset = Preset::new();
+
+        if let Some(merge_type) = config.merge_type {
             preset = preset.merge_type(merge_type);
         }
 
-        if let Some(consolidate_url) = val.consolidate_url {
+        if let Some(consolidate_url) = config.consolidate_url {
             preset = preset.consolidate_url(consolidate_url);
         }
 
-        preset
+        if let Some(use_better_names) = config.use_better_names {
+            preset = preset.use_better_names(use_better_names);
+        }
+
+        if let Some(unwrap_single_field_types) = config.unwrap_single_field_types {
+            preset = preset.unwrap_single_field_types(unwrap_single_field_types);
+        }
+
+        if let Some(tree_shake) = config.tree_shake {
+            preset = preset.tree_shake(tree_shake);
+        }
+
+        // TODO: The field names in trace should be inserted at compile time.
+        Valid::succeed(preset)
+            .and_then(|preset| {
+                let merge_types_th = between(preset.merge_type, 0.0, 1.0).trace("mergeType");
+                let consolidate_url_th =
+                    between(preset.consolidate_url, 0.0, 1.0).trace("consolidateURL");
+
+                merge_types_th.and(consolidate_url_th).map_to(preset)
+            })
+            .trace("preset")
     }
 }
 
@@ -231,8 +268,11 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Arc;
 
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::core::tests::TestEnvIO;
+    use crate::core::valid::{ValidateInto, ValidationError, Validator};
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
         Location(s.as_ref().to_string(), PhantomData)
@@ -297,17 +337,33 @@ mod tests {
     }
 
     #[test]
-    fn should_use_default_presets_when_none_provided() {
-        let config_preset = Preset { merge_type: None, consolidate_url: None };
-        let transform_preset: config::transformer::Preset = config_preset.into();
-        assert_eq!(transform_preset, config::transformer::Preset::default());
+    fn should_fail_when_invalid_merge_type_threshold() {
+        let config_preset = PresetConfig {
+            tree_shake: None,
+            use_better_names: None,
+            merge_type: Some(2.0),
+            consolidate_url: None,
+            unwrap_single_field_types: None,
+        };
+
+        let transform_preset: Result<Preset, ValidationError<String>> =
+            config_preset.validate_into().to_result();
+        assert!(transform_preset.is_err());
     }
 
     #[test]
     fn should_use_user_provided_presets_when_provided() {
-        let config_preset = Preset { merge_type: Some(0.5), consolidate_url: Some(1.0) };
-        let transform_preset: config::transformer::Preset = config_preset.into();
-        let expected_preset = config::transformer::Preset::default()
+        let config_preset = PresetConfig {
+            tree_shake: Some(true),
+            use_better_names: Some(true),
+            merge_type: Some(0.5),
+            consolidate_url: Some(1.0),
+            unwrap_single_field_types: None,
+        };
+        let transform_preset: Preset = config_preset.validate_into().to_result().unwrap();
+        let expected_preset = Preset::new()
+            .use_better_names(true)
+            .tree_shake(true)
             .consolidate_url(1.0)
             .merge_type(0.5);
         assert_eq!(transform_preset, expected_preset);

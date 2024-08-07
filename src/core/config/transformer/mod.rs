@@ -1,6 +1,7 @@
 mod ambiguous_type;
 mod consolidate_url;
 mod generation_with_llm;
+mod flatten_single_field;
 mod improve_type_names;
 mod merge_types;
 mod nested_unions;
@@ -12,6 +13,7 @@ mod union_input_type;
 pub use ambiguous_type::{AmbiguousType, Resolution};
 pub use consolidate_url::ConsolidateURL;
 pub use generation_with_llm::LLMTypeName;
+pub use flatten_single_field::FlattenSingleField;
 pub use improve_type_names::ImproveTypeNames;
 pub use merge_types::TypeMerger;
 pub use nested_unions::NestedUnions;

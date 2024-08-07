@@ -100,8 +100,8 @@ directive @grpc(
   """
   baseURL: String
   """
-  The key path in the response which should be used to group multiple requests. For 
-  instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  The `batchKey` dictates the path Tailcall will follow to group the returned items 
+  from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
   batchKey: [String!]
   """
@@ -137,8 +137,8 @@ directive @http(
   """
   baseURL: String
   """
-  The `batchKey` parameter groups multiple data requests into a single call. For more 
-  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  The `batchKey` dictates the path Tailcall will follow to group the returned items 
+  from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
   batchKey: [String!]
   """
@@ -185,7 +185,9 @@ directive @http(
   """
   This represents the query parameters of your API call. You can pass it as a static 
   object or use Mustache template for dynamic parameters. These parameters will be 
-  added to the URL.
+  added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. 
+  The first parameter referencing a field in the current value using mustache syntax 
+  is automatically selected as the batching parameter.
   """
   query: [KeyValue]
 ) on FIELD_DEFINITION
@@ -429,20 +431,17 @@ directive @upstream(
 ) on SCHEMA
 
 """
-Represents list of bytes
+Field whose value is a sequence of bytes.
 """
 scalar Bytes
 
 """
-A date string, such as 2007-12-03, is compliant with the full-date format outlined 
-in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile 
-of the ISO 8601 standard for the representation of dates and times using the Gregorian 
-calendar.
+Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339).
 """
 scalar Date
 
 """
-field whose value conforms to the standard internet email address format as specified 
+Field whose value conforms to the standard internet email address format as specified 
 in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.
 """
 scalar Email
@@ -453,70 +452,68 @@ Empty scalar type represents an empty value.
 scalar Empty
 
 """
-Represents signed integer type 128 bit size as string
+Field whose value is a 128-bit signed integer.
 """
 scalar Int128
 
 """
-Represents signed integer type 16bit size
+Field whose value is a 16-bit signed integer.
 """
 scalar Int16
 
 """
-Represents signed integer type 32bit size
+Field whose value is a 32-bit signed integer.
 """
 scalar Int32
 
 """
-Represents signed integer type 64bit size as string
+Field whose value is a 64-bit signed integer.
 """
 scalar Int64
 
 """
-Represents signed integer type 8bit size
+Field whose value is an 8-bit signed integer.
 """
 scalar Int8
 
 """
-The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ 
-ECMA-404.pdf).
+Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259).
 """
 scalar JSON
 
 """
-A field whose value conforms to the standard E.164 format as specified in E.164 specification 
+Field whose value conforms to the standard E.164 format as specified in E.164 specification 
 (https://en.wikipedia.org/wiki/E.164).
 """
 scalar PhoneNumber
 
 """
-Represents unsigned integer type 128bit size as string
+Field whose value is a 128-bit unsigned integer.
 """
 scalar UInt128
 
 """
-Represents unsigned integer type 16bit size
+Field whose value is a 16-bit unsigned integer.
 """
 scalar UInt16
 
 """
-Represents unsigned integer type 32bit size
+Field whose value is a 32-bit unsigned integer.
 """
 scalar UInt32
 
 """
-Represents unsigned integer type 64bit size as string
+Field whose value is a 64-bit unsigned integer.
 """
 scalar UInt64
 
 """
-Represents unsigned integer type 8bit size
+Field whose value is an 8-bit unsigned integer.
 """
 scalar UInt8
 
 """
-A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), 
-and it uses real JavaScript URL objects.
+Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986).
 """
 scalar Url
 
@@ -745,8 +742,8 @@ input Grpc {
   """
   baseURL: String
   """
-  The key path in the response which should be used to group multiple requests. For 
-  instance `["news","id"]`. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  The `batchKey` dictates the path Tailcall will follow to group the returned items 
+  from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
   batchKey: [String!]
   """
@@ -782,8 +779,8 @@ input Http {
   """
   baseURL: String
   """
-  The `batchKey` parameter groups multiple data requests into a single call. For more 
-  details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
+  The `batchKey` dictates the path Tailcall will follow to group the returned items 
+  from the batch request. For more details please refer out [n + 1 guide](https://tailcall.run/docs/guides/n+1#solving-using-batching).
   """
   batchKey: [String!]
   """
@@ -830,7 +827,9 @@ input Http {
   """
   This represents the query parameters of your API call. You can pass it as a static 
   object or use Mustache template for dynamic parameters. These parameters will be 
-  added to the URL.
+  added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. 
+  The first parameter referencing a field in the current value using mustache syntax 
+  is automatically selected as the batching parameter.
   """
   query: [KeyValue]
 }
