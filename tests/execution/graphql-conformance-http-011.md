@@ -2,9 +2,7 @@
 skip: true
 ---
 
-Skipped because Tailcall does not parse the scalar type correctly into a string.
-
-# Test scalars and remote directives
+# Test scalars and remote directives. Skipped because Tailcall does not parse the scalar type correctly into a string.
 
 ```graphql @config
 schema

@@ -2,9 +2,7 @@
 skip: true
 ---
 
-Skipped because Tailcall cannot extract a list of lists.
-
-# List of lists
+# List of lists. Skipped because Tailcall cannot extract a list of lists.
 
 ```graphql @config
 schema

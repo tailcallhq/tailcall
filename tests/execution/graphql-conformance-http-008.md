@@ -2,9 +2,7 @@
 skip: true
 ---
 
-Skipped because Tailcall does not construct correctly the interface types based on \_\_typename field.
-
-# Test inline fragments
+# Test inline fragments. Skipped because Tailcall does not construct correctly the interface types based on \_\_typename field.
 
 ```graphql @config
 schema
