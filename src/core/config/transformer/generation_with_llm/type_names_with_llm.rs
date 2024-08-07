@@ -101,7 +101,7 @@ impl LLMTypeName {
         Ok(unique_type_name)
     }
 
-    pub async fn generate(&mut self, config: Config) -> anyhow::Result<Config> {
+    pub async fn generate(&mut self, config: &Config) -> anyhow::Result<HashMap<String, String>> {
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
         for (type_name, type_) in config.types.iter() {
             if config.is_root_operation_type(type_name) {
@@ -122,6 +122,6 @@ impl LLMTypeName {
             }
         }
 
-        Ok(config)
+        Ok(new_name_mappings.into_iter().map(|(k, v)| (v, k)).collect())
     }
 }

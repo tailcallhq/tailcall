@@ -8,6 +8,7 @@ use pathdiff::diff_paths;
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
+use crate::core::config::transformer::LLMTypeName;
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
@@ -158,6 +159,11 @@ impl Generator {
         }
 
         let config = config_gen.generate(true)?;
+
+        let mut llm_gen = LLMTypeName::default();
+        if let Ok(suggested_names) = llm_gen.generate(config.config()).await {
+            println!("{:#?}", suggested_names);
+        }
 
         self.write(&config, &path).await?;
         Ok(config)
