@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "GroupBy can only be applied if batching is enabled",
+    "message": "Batching capability was used without enabling it in upstream",
     "trace": [
       "Query",
       "user",
