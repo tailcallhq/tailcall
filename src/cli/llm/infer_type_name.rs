@@ -107,13 +107,19 @@ impl InferTypeName {
                             new_name_mappings.insert(name, type_name.to_owned());
                             break;
                         }
-                        tracing::info!("Suggestions for {}: [{}] - {}/{}", type_name, name, i, total);
+                        tracing::info!(
+                            "Suggestions for {}: [{}] - {}/{}",
+                            type_name,
+                            name,
+                            i,
+                            total
+                        );
                         break;
                     }
                     Err(e) => {
                         // TODO: log errors after certain number of retries.
                         if let Error::GenAI(_) = e {
-                            tracing::info!("Retrying after {} second", delay);
+                            tracing::warn!("Unable to retrieve a name for the type '{}'. Retrying in {}s", type_name, delay);
                             tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;
                             delay *= std::cmp::min(delay * 2, 60);
                         }
