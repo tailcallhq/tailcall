@@ -7,7 +7,7 @@ use serde::Deserialize;
 use crate::core::config::{Config, Type};
 
 const MODEL: &str = "gemini-1.5-flash-latest";
-const PROMPT: &str = "Given the GraphQL type definition below, provide a response in the form of a JSONP callback. The function should be named \"callback\" and should return JSON suggesting at least ten suitable alternative names for the type. Each suggested name should be concise, preferably a single word, and capture the essence of the data it represents based on the roles and relationships implied by the field names. \n\n```graphql\ntype T {\n  name: String,\n  age: Int,\n  website: String\n}\n```\n\n**Expected JSONP Format:**\n\n```javascript\ncallback({\n  \"originalTypeName\": \"T\",\n  \"suggestedTypeNames\": [\"Person\",\"Profile\",\"Member\",\"Individual\",\"Contact\"\n  ]\n});\n```";
+const PROMPT: &str = include_str!("prompt.md");
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
