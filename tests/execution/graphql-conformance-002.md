@@ -2,6 +2,9 @@
 skip: true
 ---
 
+Skipped because Tailcall does not send the whole query to the remote server.
+It sends a shallow version of the query.
+
 # Test complex nested query
 
 ```graphql @config

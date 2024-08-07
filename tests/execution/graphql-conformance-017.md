@@ -2,6 +2,9 @@
 skip: true
 ---
 
+Skipped because Tailcall does not send the whole query with the **fragments**
+to the remote server.
+
 # Complex fragments
 
 ```graphql @config

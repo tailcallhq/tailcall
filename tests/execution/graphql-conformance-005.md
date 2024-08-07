@@ -2,6 +2,8 @@
 skip: true
 ---
 
+Skipped because Tailcall does not send the alias to the remote server.
+
 # Test field aliasing
 
 ```graphql @config

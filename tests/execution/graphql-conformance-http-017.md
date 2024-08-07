@@ -2,6 +2,8 @@
 skip: true
 ---
 
+Skipped because Tailcall does not construct correctly the interface types based on \_\_typename field.
+
 # Complex fragments
 
 ```graphql @config

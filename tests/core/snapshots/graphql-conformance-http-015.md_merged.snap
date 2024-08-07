@@ -21,8 +21,11 @@ type Query {
 type User {
   featuredVideo(video: VideoSize! = {width: 1600, height: 900}): String!
     @expr(body: "video_{{.value.id}}_{{.args.video.width}}_{{.args.video.height}}_{{.args.video.hdr}}")
+  featuredVideoPreview(video: VideoSize!): String!
+    @expr(body: "video_{{.value.id}}_{{.args.video.width}}_{{.args.video.height}}_{{.args.video.hdr}}")
   id: ID!
   name: String!
   profilePic(height: Int = 100, size: Int! = 100, width: Int): String!
     @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
+  searchComments(query: [String]! = [["today"]]): String! @expr(body: "video_{{.value.id}}_{{.args.query}}")
 }

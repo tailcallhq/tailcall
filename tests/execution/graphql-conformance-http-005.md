@@ -46,6 +46,7 @@ type User {
       }
 
 # Negative: non existent field alias
+# Disabled because async_graphql::dynamic does not perform validation
 # - method: POST
 #   url: http://localhost:8080/graphql
 #   body:

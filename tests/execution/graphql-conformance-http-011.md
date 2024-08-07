@@ -2,6 +2,8 @@
 skip: true
 ---
 
+Skipped because Tailcall does not parse the scalar type correctly into a string.
+
 # Test scalars and remote directives
 
 ```graphql @config
