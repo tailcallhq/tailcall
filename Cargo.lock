@@ -304,7 +304,7 @@ dependencies = [
  "protobuf 3.4.0",
  "protobuf-codegen",
  "protox 0.6.1",
- "reqwest",
+ "reqwest 0.11.27",
  "serde",
  "serde-json-wasm",
  "serde_json",
@@ -1354,7 +1354,7 @@ checksum = "2bba3e9872d7c58ce7ef0fcf1844fcc3e23ef2a58377b50df35dd98e42a5726e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.71",
+ "syn 2.0.72",
  "unicode-xid",
 ]
 
@@ -2089,7 +2089,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "http 1.1.0",
- "indexmap 2.2.6",
+ "indexmap 2.3.0",
  "slab",
  "tokio",
  "tokio-util",
@@ -2473,7 +2473,7 @@ dependencies = [
  "http 1.1.0",
  "hyper 1.4.0",
  "hyper-util",
- "rustls 0.23.10",
+ "rustls 0.23.12",
  "rustls-pki-types",
  "tokio",
  "tokio-rustls 0.26.0",
@@ -3484,7 +3484,7 @@ checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.71",
+ "syn 2.0.72",
 ]
 
 [[package]]
@@ -5630,7 +5630,7 @@ dependencies = [
  "hyper 0.14.30",
  "lazy_static",
  "protox 0.7.0",
- "reqwest",
+ "reqwest 0.11.27",
  "serde_json",
  "serde_qs",
  "tailcall",
@@ -5645,7 +5645,7 @@ name = "tailcall-fixtures"
 version = "0.1.0"
 dependencies = [
  "convert_case 0.6.0",
- "derive_more",
+ "derive_more 0.99.18",
  "indenter",
 ]
 
@@ -5685,7 +5685,7 @@ dependencies = [
 name = "tailcall-prettier"
 version = "0.1.0"
 dependencies = [
- "derive_more",
+ "derive_more 0.99.18",
  "lazy_static",
  "strum_macros",
  "tokio",
@@ -5695,7 +5695,7 @@ dependencies = [
 name = "tailcall-tracker"
 version = "0.1.0"
 dependencies = [
- "derive_more",
+ "derive_more 0.99.18",
  "lazy_static",
  "machineid-rs",
  "reqwest 0.11.27",
@@ -5737,7 +5737,7 @@ dependencies = [
 name = "tailcall-upstream-grpc"
 version = "0.1.0"
 dependencies = [
- "derive_more",
+ "derive_more 0.99.18",
  "http-body-util",
  "hyper 0.14.30",
  "hyper-util",
@@ -5778,7 +5778,7 @@ dependencies = [
  "console_error_panic_hook",
  "dashmap",
  "hyper 0.14.30",
- "reqwest",
+ "reqwest 0.11.27",
  "serde_json",
  "tailcall",
  "tracing",
@@ -6043,7 +6043,7 @@ version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c7bc40d0e5a97695bb96e27995cd3a08538541b0a846f65bba7a359f36700d4"
 dependencies = [
- "rustls 0.23.10",
+ "rustls 0.23.12",
  "rustls-pki-types",
  "tokio",
 ]
