@@ -23,6 +23,7 @@ pub mod ir;
 pub mod jit;
 pub mod json;
 mod lift;
+pub mod llm;
 pub mod merge_right;
 pub mod mustache;
 pub mod path;
