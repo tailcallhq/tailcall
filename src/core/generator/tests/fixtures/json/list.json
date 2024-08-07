@@ -1,9 +1,28 @@
 {
-  "url": "https://example.com/users",
-  "response": [
-    {"name": "test", "age": 12},
-    {"name": "test-1", "age": 19},
-    {"name": "test-3", "age": 21, "adult": true},
-    {"name": "test-3", "age": 21}
-  ]
+  "request": {
+    "url": "https://example.com/users"
+  },
+  "fieldName": "users",
+  "response": {
+    "status": 200,
+    "body": [
+      {
+        "name": "test",
+        "age": 12
+      },
+      {
+        "name": "test-1",
+        "age": 19
+      },
+      {
+        "name": "test-3",
+        "age": 21,
+        "adult": true
+      },
+      {
+        "name": "test-3",
+        "age": 21
+      }
+    ]
+  }
 }
