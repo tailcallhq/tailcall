@@ -72,6 +72,7 @@ impl Transform for RenameTypes {
 
 #[cfg(test)]
 mod test {
+    use indexmap::IndexMap;
     use maplit::hashmap;
 
     use super::RenameTypes;
@@ -157,17 +158,15 @@ mod test {
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let actual = RenameTypes::new(
-            hashmap! {
-                "Query" => "PostQuery",
-                "A" => "User",
-                "B" => "User",
-                "C" => "User",
-            }
-            .iter(),
-        )
-        .transform(config)
-        .to_result();
+        let mut suggested_names = IndexMap::new();
+        suggested_names.insert("Query", "PostQuery");
+        suggested_names.insert("A", "User");
+        suggested_names.insert("B", "User");
+        suggested_names.insert("C", "User");
+
+        let actual = RenameTypes::new(suggested_names.iter())
+            .transform(config)
+            .to_result();
 
         let b_err = ValidationError::new("Type 'B' not found in configuration.".to_string());
         let c_err = ValidationError::new("Type 'C' not found in configuration.".to_string());
