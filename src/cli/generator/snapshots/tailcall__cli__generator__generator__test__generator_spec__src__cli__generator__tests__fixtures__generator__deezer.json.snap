@@ -42,6 +42,14 @@ type Artist {
   type: String
 }
 
+type Band {
+  albums: T167
+  artists: T169
+  playlists: T181
+  podcasts: Total
+  tracks: T166
+}
+
 type Chart {
   checksum: String
   collaborative: Boolean
@@ -74,6 +82,11 @@ type Data {
   data: [Album]
 }
 
+type Information {
+  data: [T185]
+  total: Int
+}
+
 type Media {
   id: Int
   name: String
@@ -103,17 +116,35 @@ type Next {
 type Query {
   album(p1: Int!): T39 @http(path: "/album/{{.args.p1}}")
   artist(p1: Int!): T40 @http(path: "/artist/{{.args.p1}}")
-  chart: T184 @http(path: "/chart")
-  editorial: T186 @http(path: "/editorial")
+  chart: Band @http(path: "/chart")
+  editorial: Information @http(path: "/editorial")
   playlist(p1: Int!): Chart @http(path: "/playlist/{{.args.p1}}")
   search(q: String): Next @http(path: "/search", query: [{key: "q", value: "{{.args.q}}"}])
   track(p1: Int!): T4 @http(path: "/track/{{.args.p1}}")
   user(p1: Int!): T187 @http(path: "/user/{{.args.p1}}")
 }
 
+type Song {
+  id: Int
+  link: String
+  name: String
+  picture: String
+  picture_big: String
+  picture_medium: String
+  picture_small: String
+  picture_xl: String
+  radio: Boolean
+  tracklist: String
+  type: String
+}
+
+type Statistics {
+  data: [T5]
+}
+
 type T165 {
   album: Music
-  artist: T145
+  artist: Song
   duration: Int
   explicit_content_cover: Int
   explicit_content_lyrics: Int
@@ -294,7 +325,7 @@ type T39 {
   explicit_lyrics: Boolean
   fans: Int
   genre_id: Int
-  genres: T6
+  genres: Statistics
   id: Int
   label: String
   link: String

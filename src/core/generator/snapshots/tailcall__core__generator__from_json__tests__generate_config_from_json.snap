@@ -6,6 +6,10 @@ schema @server @upstream(baseURL: "https://example.com") {
   query: Query
 }
 
+type Age {
+  age: Int
+}
+
 type Campaign {
   campaignTemplates: JSON
   colors: [JSON]
@@ -15,8 +19,14 @@ type Container {
   container: T7
 }
 
+type Employee {
+  people: [Entity]
+}
+
 type Entity {
   age: Int
+  children: [Person]
+  name: String
 }
 
 type Person {
@@ -27,13 +37,13 @@ type Person {
 type Query {
   f1: Campaign @http(path: "/")
   f2: [JSON] @http(path: "/api/v2/users")
-  f3(children: Boolean): T4 @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
+  f3(children: Boolean): Employee @http(path: "/users", query: [{key: "children", value: "{{.args.children}}"}])
   f4: Container @http(path: "/")
   f5: JSON @http(path: "/")
 }
 
 type T6 {
-  container: Entity
+  container: Age
   name: String
 }
 
