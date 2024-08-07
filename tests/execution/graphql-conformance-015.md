@@ -23,7 +23,7 @@ type User {
 input VideoSize {
   width: Int!
   height: Int!
-  hdr: Boolean
+  hdr: Boolean = true
 }
 ```
 
