@@ -96,7 +96,7 @@ impl InferTypeName {
                 let answer = engine.ask(question.clone()).await;
                 match answer {
                     Ok(answer) => {
-                        let len = &answer.suggestions.len();
+                        let name = &answer.suggestions.join(", ");
                         for name in answer.suggestions {
                             if config.types.contains_key(&name)
                                 || new_name_mappings.contains_key(&name)
@@ -106,11 +106,11 @@ impl InferTypeName {
                             new_name_mappings.insert(name, type_name.to_owned());
                             break;
                         }
-                        tracing::info!("Found {} names for {}", len, type_name);
+                        tracing::info!("Suggestions for {}: [{}]", type_name, name);
                         break;
                     }
                     Err(e) => {
-                        tracing::error!("{:?}", e);
+                        // TODO: log errors after certain number of retries.
                         if let Error::GenAI(_) = e {
                             tracing::info!("Retrying after {} second", delay);
                             tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;

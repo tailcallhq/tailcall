@@ -170,6 +170,7 @@ impl Generator {
 
         let mut llm_gen = InferTypeName::default();
         // FIXME: drop the unwrap
+        
         let suggested_names = llm_gen.generate(config.config()).await.unwrap();
         let cfg = config.config().to_owned();
         let cfg = RenameTypes::new(suggested_names.iter())
