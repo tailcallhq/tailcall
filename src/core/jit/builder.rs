@@ -231,8 +231,26 @@ impl Builder {
 
                         fields.push(flat_field);
                         fields = fields.merge_right(child_fields);
-                    } else {
-                        // TODO: error if the field is not found in the schema
+                    } else if field_name == "__typename" {
+                        let flat_field = Field {
+                            id: FieldId::new(self.field_id.next()),
+                            name: field_name.to_string(),
+                            ir: None,
+                            is_scalar: true,
+                            type_of: crate::core::blueprint::Type::NamedType {
+                                name: "String".to_owned(),
+                                non_null: true,
+                            },
+                            type_condition: type_condition.to_string(),
+                            skip,
+                            include,
+                            args: Vec::new(),
+                            pos: selection.pos,
+                            extensions: exts.clone(),
+                            directives,
+                        };
+
+                        fields.push(flat_field);
                     }
                 }
                 Selection::FragmentSpread(Positioned { node: fragment_spread, .. }) => {
