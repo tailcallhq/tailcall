@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashSet};
 use convert_case::{Case, Casing};
 
 use super::improve_type_names_llm::ImproveTypeNamesLLM;
-use crate::core::config::Config;
+use crate::core::config::{Config, Type};
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
@@ -121,47 +121,51 @@ impl ImproveTypeNames {
 
         for (old_type_name, new_type_name) in finalized_candidates {
             let mut llm_worked = false;
-            // Try to use the llm generated type names first
+            // Try to use the llm generated type names first, if not worked then use inferred type name
             if let Some(type_) = config.types.remove(old_type_name.as_str()) {
                 if let Ok(ai_generated_types) = &ai_generated_type_names {
                     if let Some(ai_generated_types) = ai_generated_types.get(&old_type_name) {
                         // ensure the type name is not already present in the config, else try
                         // the next llm generated type name
-                        for type_name in ai_generated_types.iter() {
-                            if !config.types.contains_key(type_name) {
+                        for ai_type_name in ai_generated_types.iter() {
+                            if !config.types.contains_key(ai_type_name) {
                                 llm_worked = true;
-                                config.types.insert(type_name.to_owned(), type_.clone());
-                                // Replace all the instances of old name in config.
-                                for actual_type in config.types.values_mut() {
-                                    for actual_field in actual_type.fields.values_mut() {
-                                        if actual_field.type_of == old_type_name {
-                                            // Update the field's type with the new name
-                                            actual_field.type_of.clone_from(type_name);
-                                        }
-                                    }
-                                }
+                                Self::update_type_names(
+                                    &old_type_name,
+                                    ai_type_name,
+                                    &type_,
+                                    &mut config,
+                                );
                                 break;
                             }
                         }
                     }
                 }
                 if !llm_worked {
-                    // Add newly generated type.
-                    config.types.insert(new_type_name.to_owned(), type_);
-
-                    // Replace all the instances of old name in config.
-                    for actual_type in config.types.values_mut() {
-                        for actual_field in actual_type.fields.values_mut() {
-                            if actual_field.type_of == old_type_name {
-                                // Update the field's type with the new name
-                                actual_field.type_of.clone_from(&new_type_name);
-                            }
-                        }
-                    }
+                    // Add inferred type name
+                    Self::update_type_names(&old_type_name, &new_type_name, &type_, &mut config);
                 }
             }
         }
         config
+    }
+
+    fn update_type_names(
+        old_type_name: &str,
+        new_type_name: &str,
+        type_: &Type,
+        config: &mut Config,
+    ) {
+        config.types.insert(new_type_name.to_owned(), type_.clone());
+        // Replace all the instances of old name in config.
+        for actual_type in config.types.values_mut() {
+            for actual_field in actual_type.fields.values_mut() {
+                if actual_field.type_of == old_type_name {
+                    // Update the field's type with the new name
+                    actual_field.type_of.clone_from(&new_type_name.to_owned());
+                }
+            }
+        }
     }
 }
 
