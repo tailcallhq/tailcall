@@ -16,7 +16,7 @@ pub fn compile_http(
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
             Valid::<(), String>::fail(
-                "GroupBy can only be applied if batching is enabled".to_string(),
+                "Batching capability was used without enabling it in upstream".to_string(),
             )
             .when(|| {
                 (config_module.upstream.get_delay() < 1

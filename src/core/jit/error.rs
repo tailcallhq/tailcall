@@ -30,6 +30,8 @@ pub enum ValidationError {
     // with async_graphql error message for this case
     #[error(r#"internal: invalid value for scalar "{type_of}", expected "FieldValue::Value""#)]
     ScalarInvalid { type_of: String, path: String },
+    #[error("TypeName shape doesn't satisfy the processed object")]
+    TypeNameMismatch,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -58,11 +60,9 @@ impl ErrorExtensions for Error {
 impl Error {
     pub fn path(&self) -> Vec<PathSegment> {
         match self {
-            Error::Validation(error) => match error {
-                ValidationError::ScalarInvalid { type_of: _, path } => {
-                    vec![PathSegment::Field(path.clone())]
-                }
-            },
+            Error::Validation(ValidationError::ScalarInvalid { type_of: _, path }) => {
+                vec![PathSegment::Field(path.clone())]
+            }
             _ => Vec::new(),
         }
     }
