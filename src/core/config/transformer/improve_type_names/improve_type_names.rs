@@ -121,7 +121,8 @@ impl ImproveTypeNames {
 
         for (old_type_name, new_type_name) in finalized_candidates {
             let mut llm_worked = false;
-            // Try to use the llm generated type names first, if not worked then use inferred type name
+            // Try to use the llm generated type names first, if not worked then use
+            // inferred type name
             if let Some(type_) = config.types.remove(old_type_name.as_str()) {
                 if let Ok(ai_generated_types) = &ai_generated_type_names {
                     if let Some(ai_generated_types) = ai_generated_types.get(&old_type_name) {
