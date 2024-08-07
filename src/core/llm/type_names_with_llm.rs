@@ -29,7 +29,7 @@ impl Default for LLMTypeName {
 
 impl LLMTypeName {
     pub async fn generate(&mut self, config: &Config) -> anyhow::Result<HashMap<String, String>> {
-        let engine = Engine::<serde_json::Value>::new("$$START$$".into(), "$$END$$".into())
+        let engine = Engine::<serde_json::Value>::new("$$JSON_START$$".into(), "$$JSON_END$$".into())
             .system_prompt(Some(PROMPT.into()));
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
