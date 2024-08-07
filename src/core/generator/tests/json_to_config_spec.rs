@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
@@ -8,11 +9,42 @@ use tailcall::core::generator::{Generator, Input};
 use tailcall::core::http::Method;
 use url::Url;
 
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+pub struct APIRequest {
+    #[serde(default)]
+    pub method: Method,
+    pub url: Url,
+    #[serde(default)]
+    pub headers: BTreeMap<String, String>,
+    #[serde(default, rename = "body")]
+    pub body: Option<Value>,
+}
+
+mod default {
+    pub fn status() -> u16 {
+        200
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct APIResponse {
+    #[serde(default = "default::status")]
+    pub status: u16,
+    #[serde(default)]
+    pub headers: BTreeMap<String, String>,
+    #[serde(default, rename = "body")]
+    pub body: Option<Value>,
+}
+
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct JsonFixture {
-    url: String,
-    response: Value,
-    body: Option<Value>,
+    request: APIRequest,
+    response: APIResponse,
+    #[serde(default)]
+    is_mutation: Option<bool>,
+    field_name: String,
 }
 
 datatest_stable::harness!(
@@ -23,13 +55,7 @@ datatest_stable::harness!(
 
 pub fn run_json_to_config_spec(path: &Path) -> datatest_stable::Result<()> {
     let json_data = load_json(path)?;
-    let parsed_url = Url::parse(json_data.url.as_str()).unwrap_or_else(|_| {
-        panic!(
-            "Failed to parse the url. url: {}, test file: {:?}",
-            json_data.url, path
-        )
-    });
-    test_spec(path, parsed_url, json_data)?;
+    test_spec(path, json_data)?;
     Ok(())
 }
 
@@ -39,33 +65,38 @@ fn load_json(path: &Path) -> anyhow::Result<JsonFixture> {
     Ok(json_data)
 }
 
-fn test_spec(path: &Path, url: Url, json_data: JsonFixture) -> anyhow::Result<()> {
-    let cfg = if let Some(body) = json_data.body {
-        Generator::default()
-            .mutation(Some("Mutation".into()))
-            .inputs(vec![Input::Json {
-                url,
-                method: Method::POST,
-                response: json_data.response,
-                field_name: "f1".to_string(),
-                body,
-                operation_type: GraphQLOperationType::Mutation,
-            }])
-            .generate(true)?
+fn test_spec(path: &Path, json_data: JsonFixture) -> anyhow::Result<()> {
+    let JsonFixture { request, response, is_mutation, field_name } = json_data;
+    let operation_ty = if is_mutation.unwrap_or_default() {
+        GraphQLOperationType::Mutation
     } else {
-        Generator::default()
-            .inputs(vec![Input::Json {
-                url,
-                method: Method::GET,
-                body: serde_json::Value::Null,
-                response: json_data.response,
-                field_name: "f1".to_string(),
-                operation_type: GraphQLOperationType::Query,
-            }])
-            .generate(true)?
+        GraphQLOperationType::Query
     };
 
-    let snapshot_name = path.file_name().unwrap().to_str().unwrap();
+    let body = request.body.unwrap_or_default();
+    let respo_body = response.body.unwrap_or_default();
+
+    let generator = Generator::default().inputs(vec![Input::Json {
+        url: request.url,
+        method: request.method,
+        body,
+        response: respo_body,
+        field_name,
+        operation_type: operation_ty.clone(),
+    }]);
+
+    let cfg = if operation_ty == GraphQLOperationType::Mutation {
+        generator.mutation(Some("Mutation".into()))
+    } else {
+        generator
+    }
+    .generate(true)?;
+
+    let snapshot_name = path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .ok_or_else(|| anyhow::anyhow!("Invalid snapshot name"))?;
+
     insta::assert_snapshot!(snapshot_name, cfg.to_sdl());
     Ok(())
 }
