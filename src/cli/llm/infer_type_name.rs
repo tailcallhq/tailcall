@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 
-use super::wizard::Wizard;
+use super::Wizard;
 use super::{Error, Result};
 use crate::core::config::Config;
 
@@ -12,7 +12,7 @@ const START_MARKER: &str = "$$$__START__$$$";
 const END_MARKER: &str = "$$$__END__$$$";
 
 #[derive(Default)]
-pub struct LLMTypeName {}
+pub struct InferTypeName {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Answer {
@@ -87,7 +87,7 @@ impl TryInto<ChatRequest> for Question {
     }
 }
 
-impl LLMTypeName {
+impl InferTypeName {
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let engine: Wizard<Question, Answer> = Wizard::new(MODEL.to_string());
 

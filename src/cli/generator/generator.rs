@@ -8,10 +8,10 @@ use pathdiff::diff_paths;
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
+use crate::cli::llm::InferTypeName;
 use crate::core::config::transformer::{Preset, RenameTypes};
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
-use crate::core::llm::type_names_with_llm::LLMTypeName;
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
@@ -168,7 +168,7 @@ impl Generator {
 
         let mut config = config_gen.generate(true)?;
 
-        let mut llm_gen = LLMTypeName::default();
+        let mut llm_gen = InferTypeName::default();
         // FIXME: drop the unwrap
         let suggested_names = llm_gen.generate(config.config()).await.unwrap();
         let cfg = config.config().to_owned();
