@@ -169,14 +169,14 @@ impl Generator {
         let mut config = config_gen.generate(true)?;
 
         let mut llm_gen = LLMTypeName::default();
-        if let Ok(suggested_names) = llm_gen.generate(config.config()).await {
-            let cfg = config.config().to_owned();
-            let cfg = RenameTypes::new(suggested_names.iter())
-                .transform(cfg)
-                .to_result()?;
+        // FIXME: drop the unwrap
+        let suggested_names = llm_gen.generate(config.config()).await.unwrap();
+        let cfg = config.config().to_owned();
+        let cfg = RenameTypes::new(suggested_names.iter())
+            .transform(cfg)
+            .to_result()?;
 
-            config = ConfigModule::from(cfg);
-        }
+        config = ConfigModule::from(cfg);
 
         self.write(&config, &path).await?;
         Ok(config)
