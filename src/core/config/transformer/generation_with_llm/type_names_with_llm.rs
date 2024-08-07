@@ -52,25 +52,43 @@ impl LLMTypeName {
             ChatMessage::user(prompt),
         ]);
 
-        let chat_res = self.client.exec_chat(MODEL, chat_req, None).await?;
+        for attempt in 0..=self.retry_count {
+            match self.client.exec_chat(MODEL, chat_req.clone(), None).await {
+                Ok(chat_res) => {
+                    let response_text = chat_res.content.unwrap_or_else(|| "NO ANSWER".to_string());
 
-        let response_text = chat_res.content.unwrap_or("NO ANSWER".to_string());
+                    // Extract the JSON from the JavaScript callback
+                    let start = response_text
+                        .find('{')
+                        .ok_or_else(|| anyhow::anyhow!("No JSON callback found."))?;
+                    let end = response_text
+                        .rfind('}')
+                        .ok_or_else(|| anyhow::anyhow!("No JSON callback found."))?;
+                    let json_str = &response_text[start..=end];
 
-        // Extract the JSON from the JavaScript callback
-        let start = response_text
-            .find('{')
-            .ok_or_else(|| anyhow::anyhow!("No JSON callback found."))?;
-        let end = response_text
-            .rfind('}')
-            .ok_or_else(|| anyhow::anyhow!("No JSON callback found."))?;
-        let json_str = &response_text[start..=end];
+                    let response: LLMResponse = serde_json::from_str(json_str)?;
 
-        let response: LLMResponse = serde_json::from_str(json_str)?;
+                    return Ok(response);
+                }
+                Err(e) if attempt < self.retry_count => {
+                    println!(
+                        "Request failed (attempt {} of {}): {:?}",
+                        attempt + 1,
+                        self.retry_count,
+                        e
+                    );
+                }
+                Err(e) => return Err(e.into()),
+            }
+        }
 
-        Ok(response)
+        Err(anyhow::anyhow!(
+            "Failed to get a valid response after {} attempts.",
+            self.retry_count
+        ))
     }
 
-    // given type name and type, generated the 5 type names.
+    // Given type name and type, generate the 5 type names.
     #[allow(clippy::too_many_arguments)]
     async fn generate_type_name(
         &self,
@@ -105,19 +123,31 @@ impl LLMTypeName {
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
         for (type_name, type_) in config.types.iter() {
             if config.is_root_operation_type(type_name) {
-                // ignore the root types as it's names are already given by user.
+                // Ignore the root types as their names are already given by the user.
                 continue;
             }
 
-            // retries, if we find the type name is aleady used.
+            // Retry logic to handle network or other errors
             for _ in 0..=self.retry_count {
-                if let Ok(Some(unique_ty_name)) = self
+                match self
                     .generate_type_name(&config, type_name, type_, &new_name_mappings)
                     .await
                 {
-                    new_name_mappings.insert(unique_ty_name.to_owned(), type_name.to_owned());
-                    self.used_type_names.push(unique_ty_name);
-                    break;
+                    Ok(Some(unique_ty_name)) => {
+                        new_name_mappings.insert(unique_ty_name.to_owned(), type_name.to_owned());
+                        self.used_type_names.push(unique_ty_name);
+                        break;
+                    }
+                    Ok(None) => {
+                        eprintln!("No unique type name found for type '{}'", type_name);
+                        continue;
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "Error generating type name for type '{}': {:?}",
+                            type_name, e
+                        );
+                    }
                 }
             }
         }
