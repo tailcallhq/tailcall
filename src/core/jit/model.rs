@@ -108,6 +108,11 @@ pub struct Field<Extensions, Input> {
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
+    /// Specifies the name of type used in condition to fetch that field
+    /// The type could be anything from graphql type system:
+    /// interface, type, union, input type.
+    /// See [spec](https://spec.graphql.org/October2021/#sec-Type-Conditions)
+    pub type_condition: String,
     pub skip: Option<Variable>,
     pub include: Option<Variable>,
     pub args: Vec<Arg<Input>>,
@@ -140,11 +145,12 @@ impl<Input> Field<Nested<Input>, Input> {
         let mut extensions = None;
 
         if let Some(nested) = self.extensions {
-            let mut exts = vec![];
-            for v in nested.0 {
-                exts.push(v.try_map(map)?);
-            }
-            extensions = Some(Nested(exts));
+            let nested = nested
+                .0
+                .into_iter()
+                .map(|v| v.try_map(map))
+                .collect::<Result<_, _>>()?;
+            extensions = Some(Nested(nested));
         }
 
         Ok(Field {
@@ -152,6 +158,7 @@ impl<Input> Field<Nested<Input>, Input> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
+            type_condition: self.type_condition,
             extensions,
             pos: self.pos,
             skip: self.skip,
@@ -181,6 +188,7 @@ impl<Input> Field<Flat, Input> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
+            type_condition: self.type_condition,
             extensions: self.extensions,
             skip: self.skip,
             include: self.include,
@@ -201,13 +209,27 @@ impl<Input> Field<Flat, Input> {
 }
 
 impl<Input> Field<Nested<Input>, Input> {
-    pub fn nested(&self) -> Option<&Vec<Field<Nested<Input>, Input>>> {
-        self.extensions.as_ref().map(|Nested(nested)| nested)
-    }
-
-    pub fn nested_iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
-        self.nested()
-            .map(|nested| nested.iter())
+    /// iters over children fields that are
+    /// related to passed `type_name` either
+    /// as direct field of the queried type or
+    /// field from fragment on type `type_name`
+    pub fn nested_iter<'a>(
+        &'a self,
+        type_name: &'a str,
+    ) -> impl Iterator<Item = &Field<Nested<Input>, Input>> + 'a {
+        self.extensions
+            .as_ref()
+            .map(move |nested| {
+                nested
+                    .0
+                    .iter()
+                    // TODO: handle Interface and Union types here
+                    // Right now only exact type name is used to check the set of fields
+                    // but with Interfaces/Unions we need to check if that specific type
+                    // is member of some Interface/Union and if so call the fragments for
+                    // the related Interfaces/Unions
+                    .filter(move |field| field.type_condition == type_name)
+            })
             .into_iter()
             .flatten()
     }
@@ -215,7 +237,7 @@ impl<Input> Field<Nested<Input>, Input> {
 
 impl<Input> Field<Flat, Input> {
     fn parent(&self) -> Option<&FieldId> {
-        self.extensions.as_ref().map(|Flat(id)| id)
+        self.extensions.as_ref().map(|flat| &flat.0)
     }
 
     fn into_nested(self, fields: &[Field<Flat, Input>]) -> Field<Nested<Input>, Input>
@@ -242,6 +264,7 @@ impl<Input> Field<Flat, Input> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
+            type_condition: self.type_condition,
             skip: self.skip,
             include: self.include,
             args: self.args,
@@ -262,6 +285,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("ir", &"Some(..)");
         }
         debug_struct.field("type_of", &self.type_of);
+        debug_struct.field("type_condition", &self.type_condition);
         if !self.args.is_empty() {
             debug_struct.field("args", &self.args);
         }
@@ -282,20 +306,12 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
 
 /// Stores field relationships in a flat structure where each field links to its
 /// parent.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Flat(FieldId);
 
 impl Flat {
-    pub fn new(id: FieldId) -> Self {
-        Flat(id)
-    }
-    pub fn as_id(&self) -> &FieldId {
-        &self.0
-    }
-}
-impl Debug for Flat {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Flat({:?})", self.0)
+    pub fn new(parent_id: FieldId) -> Self {
+        Flat(parent_id)
     }
 }
 
