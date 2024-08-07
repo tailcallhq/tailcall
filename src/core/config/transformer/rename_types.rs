@@ -77,7 +77,7 @@ mod test {
     use super::RenameTypes;
     use crate::core::config::Config;
     use crate::core::transform::Transform;
-    use crate::core::valid::Validator;
+    use crate::core::valid::{ValidationError, Validator};
 
     #[test]
     fn test_rename_type() {
@@ -157,16 +157,21 @@ mod test {
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let result = RenameTypes::new(
+        let actual = RenameTypes::new(
             hashmap! {
                 "Query" => "PostQuery",
                 "A" => "User",
                 "B" => "User",
+                "C" => "User",
             }
             .iter(),
         )
         .transform(config)
         .to_result();
-        assert!(result.is_err());
+
+        let b_err = ValidationError::new("Type 'B' not found in configuration.".to_string());
+        let c_err = ValidationError::new("Type 'C' not found in configuration.".to_string());
+        let expected = Err(b_err.combine(c_err));
+        assert_eq!(actual, expected);
     }
 }
