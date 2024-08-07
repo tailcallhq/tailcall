@@ -119,6 +119,7 @@ impl InferTypeName {
                     Err(e) => {
                         // TODO: log errors after certain number of retries.
                         if let Error::GenAI(_) = e {
+                            // TODO: retry only when it's required.
                             tracing::warn!(
                                 "Unable to retrieve a name for the type '{}'. Retrying in {}s",
                                 type_name,
