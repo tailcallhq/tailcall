@@ -76,7 +76,8 @@ impl InferTypeName {
         let engine: Wizard<Question, Answer> = Wizard::new(MODEL.to_string());
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
-        for (type_name, type_) in config.types.iter() {
+        let total = config.types.len();
+        for (i, (type_name, type_)) in config.types.iter().enumerate() {
             if config.is_root_operation_type(type_name) {
                 // Ignore the root types as their names are already given by the user.
                 continue;
@@ -106,7 +107,7 @@ impl InferTypeName {
                             new_name_mappings.insert(name, type_name.to_owned());
                             break;
                         }
-                        tracing::info!("Suggestions for {}: [{}]", type_name, name);
+                        tracing::info!("Suggestions for {}: [{}] - {}/{}", type_name, name, i, total);
                         break;
                     }
                     Err(e) => {
