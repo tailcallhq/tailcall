@@ -119,7 +119,11 @@ impl InferTypeName {
                     Err(e) => {
                         // TODO: log errors after certain number of retries.
                         if let Error::GenAI(_) = e {
-                            tracing::warn!("Unable to retrieve a name for the type '{}'. Retrying in {}s", type_name, delay);
+                            tracing::warn!(
+                                "Unable to retrieve a name for the type '{}'. Retrying in {}s",
+                                type_name,
+                                delay
+                            );
                             tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;
                             delay *= std::cmp::min(delay * 2, 60);
                         }
