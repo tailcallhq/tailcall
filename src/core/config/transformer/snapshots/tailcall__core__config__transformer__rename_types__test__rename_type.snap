@@ -1,0 +1,22 @@
+---
+source: src/core/config/transformer/rename_types.rs
+expression: cfg.to_sdl()
+---
+schema @server @upstream {
+  query: PostQuery
+}
+
+type Post {
+  body: String
+  id: ID!
+  title: String
+}
+
+type PostQuery {
+  posts: [Post] @http(path: "/posts")
+}
+
+type User {
+  id: ID!
+  name: String
+}

@@ -1,12 +1,12 @@
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use crate::core::config::Config;
 use crate::core::valid::{Valid, Validator};
 use crate::core::Transform;
 
-/// Transformer that replaces existing type name
-/// with user-suggested names.
-pub struct RenameTypes(HashMap<String, String>);
+/// A transformer that renames existing types by replacing them with suggested
+/// names.
+pub struct RenameTypes(IndexMap<String, String>);
 
 impl RenameTypes {
     pub fn new<I: Iterator<Item = (S, S)>, S: ToString>(suggested_names: I) -> Self {
@@ -24,7 +24,7 @@ impl Transform for RenameTypes {
 
     fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let mut config = config;
-        let mut lookup = HashMap::new();
+        let mut lookup = IndexMap::new();
 
         // Ensure all types exist in the configuration
         Valid::from_iter(self.0.iter(), |(existing_name, suggested_name)| {
