@@ -11,8 +11,10 @@ type T {
 **Expected JSONP Format:**
 
 ```javascript
-callback({
-  originalTypeName: "T",
-  suggestedTypeNames: ["Person", "Profile", "Member", "Individual", "Contact"],
-})
+$$$JSON_START$$$
+{
+  "originalTypeName": "T",
+  "suggestedTypeNames": ["Person", "Profile", "Member", "Individual", "Contact"],
+}
+$$$JSON_END$$$
 ```
