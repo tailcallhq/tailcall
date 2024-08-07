@@ -6,9 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
 
-const MODEL: &str = "gemini-1.5-flash-latest";
-const START_MARKER: &str = "$$$__START__$$$";
-const END_MARKER: &str = "$$$__END__$$$";
+const MODEL: &str = "llama3-8b-8192";
 
 #[derive(Default)]
 pub struct InferTypeName {}
@@ -22,16 +20,8 @@ impl TryFrom<ChatResponse> for Answer {
     type Error = Error;
 
     fn try_from(response: ChatResponse) -> Result<Self> {
-        let content = response.content.ok_or(Error::EmptyResponse)?;
-        let start = content
-            .find(START_MARKER)
-            .ok_or(Error::MissingMarker(START_MARKER.to_string()))?
-            + START_MARKER.len();
-        let end = content
-            .rfind(&END_MARKER)
-            .ok_or(Error::MissingMarker(END_MARKER.to_string()))?;
-        let json = &content[start..end];
-        Ok(serde_json::from_str(json)?)
+        let json = response.content.ok_or(Error::EmptyResponse)?;
+        Ok(serde_json::from_str(json.as_str())?)
     }
 }
 
@@ -73,14 +63,9 @@ impl TryInto<ChatRequest> for Question {
             ChatMessage::system("Example Output:"),
             ChatMessage::system(output),
             ChatMessage::system("Ensure the output is in valid JSON format".to_string()),
-            ChatMessage::system(format!(
-                "Ensure output json starts with the marker {}",
-                START_MARKER
-            )),
-            ChatMessage::system(format!(
-                "Ensure output json ends with the marker {}",
-                END_MARKER
-            )),
+            ChatMessage::system(
+                "Do not add any additional text before or after the json".to_string(),
+            ),
             ChatMessage::user(content),
         ]))
     }
@@ -106,13 +91,33 @@ impl InferTypeName {
                     .collect(),
             };
 
-            let answer = engine.ask(question).await?;
-            for name in answer.suggestions {
-                if config.types.contains_key(&name) || new_name_mappings.contains_key(&name) {
-                    continue;
+            let mut delay = 3;
+            loop {
+                let answer = engine.ask(question.clone()).await;
+                match answer {
+                    Ok(answer) => {
+                        let len = &answer.suggestions.len();
+                        for name in answer.suggestions {
+                            if config.types.contains_key(&name)
+                                || new_name_mappings.contains_key(&name)
+                            {
+                                continue;
+                            }
+                            new_name_mappings.insert(name, type_name.to_owned());
+                            break;
+                        }
+                        tracing::info!("Found {} names for {}", len, type_name);
+                        break;
+                    }
+                    Err(e) => {
+                        tracing::error!("{:?}", e);
+                        if let Error::GenAI(_) = e {
+                            tracing::info!("Retrying after {} second", delay);
+                            tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;
+                            delay *= std::cmp::min(delay * 2, 60);
+                        }
+                    }
                 }
-                new_name_mappings.insert(name, type_name.to_owned());
-                break;
             }
         }
 
