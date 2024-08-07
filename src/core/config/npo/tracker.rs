@@ -131,8 +131,7 @@ impl<'a> PathTracker<'a> {
                 let field_name = FieldName::new(name);
                 let path = path.clone().append(field_name);
                 if !visited.contains(&(type_name, field_name)) {
-                    let is_batch = field.has_batched_resolver();
-                    if field.has_resolver() && !is_batch && is_list {
+                    if is_list && field.has_resolver() && !field.has_batched_resolver() {
                         chunks = chunks.append(path.clone());
                     } else {
                         let mut visited = visited.clone();

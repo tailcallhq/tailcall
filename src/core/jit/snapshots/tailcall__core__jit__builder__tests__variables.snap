@@ -8,6 +8,7 @@ expression: plan.into_nested()
         name: "user",
         ir: "Some(..)",
         type_of: User,
+        type_condition: "Query",
         args: [
             Arg {
                 id: 0,
@@ -28,6 +29,7 @@ expression: plan.into_nested()
                         id: 1,
                         name: "id",
                         type_of: ID!,
+                        type_condition: "User",
                         is_scalar: true,
                         directives: [],
                     },
@@ -35,6 +37,7 @@ expression: plan.into_nested()
                         id: 2,
                         name: "name",
                         type_of: String!,
+                        type_condition: "User",
                         is_scalar: true,
                         directives: [],
                     },
