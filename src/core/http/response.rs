@@ -9,6 +9,7 @@ use tonic::Status;
 use tonic_types::Status as GrpcStatus;
 
 use crate::core::grpc::protobuf::ProtobufOperation;
+use crate::core::http;
 use crate::core::ir::Error;
 
 #[derive(Clone, Debug, Default, Setters)]
@@ -49,14 +50,14 @@ impl FromValue for ConstValue {
 }
 
 impl Response<Bytes> {
-    pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self> {
+    pub async fn from_reqwest(resp: reqwest::Response) -> Result<Self, http::Error> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
         let body = resp.bytes().await?;
         Ok(Response { status, headers, body })
     }
 
-    pub async fn from_hyper(resp: hyper::Response<hyper::Body>) -> Result<Self> {
+    pub async fn from_hyper(resp: hyper::Response<hyper::Body>) -> Result<Self, http::Error> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
         let body = hyper::body::to_bytes(resp.into_body()).await?;
@@ -71,7 +72,7 @@ impl Response<Bytes> {
         }
     }
 
-    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>> {
+    pub fn to_json<T: Default + FromValue>(self) -> Result<Response<T>, http::Error> {
         if self.body.is_empty() {
             return Ok(Response {
                 status: self.status,
@@ -149,7 +150,7 @@ impl Response<Bytes> {
         anyhow::Error::new(error)
     }
 
-    pub fn to_resp_string(self) -> Result<Response<String>> {
+    pub fn to_resp_string(self) -> Result<Response<String>, http::Error> {
         Ok(Response::<String> {
             body: String::from_utf8(self.body.to_vec())?,
             status: self.status,

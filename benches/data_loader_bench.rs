@@ -14,7 +14,7 @@ use tailcall::core::error::file;
 use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
 use tailcall::core::ir::model::IoId;
 use tailcall::core::runtime::TargetRuntime;
-use tailcall::core::{cache, EnvIO, FileIO, HttpIO};
+use tailcall::core::{cache, http, EnvIO, FileIO, HttpIO};
 
 #[derive(Clone)]
 struct MockHttpClient {
@@ -24,7 +24,7 @@ struct MockHttpClient {
 
 #[async_trait::async_trait]
 impl HttpIO for MockHttpClient {
-    async fn execute(&self, _req: Request) -> anyhow::Result<Response<Bytes>> {
+    async fn execute(&self, _req: Request) -> Result<Response<Bytes>, http::Error> {
         Ok(Response::empty())
     }
 }

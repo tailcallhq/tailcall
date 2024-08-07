@@ -15,6 +15,7 @@ use crate::core::config::Batch;
 use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::request::create_grpc_request;
 use crate::core::http::Response;
+use crate::core::ir::Error;
 use crate::core::json::JsonLike;
 use crate::core::runtime::TargetRuntime;
 
@@ -35,7 +36,7 @@ impl GrpcDataLoader {
     async fn load_dedupe_only(
         &self,
         keys: &[DataLoaderRequest],
-    ) -> anyhow::Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
+    ) -> Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>, Error> {
         let results = keys.iter().map(|key| async {
             let result = match key.to_request() {
                 Ok(req) => execute_grpc_request(&self.runtime, &self.operation, req).await,
@@ -62,7 +63,7 @@ impl GrpcDataLoader {
         &self,
         group_by: &GroupBy,
         keys: &[DataLoaderRequest],
-    ) -> Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>> {
+    ) -> Result<HashMap<DataLoaderRequest, Response<async_graphql::Value>>, Error> {
         let inputs = keys.iter().map(|key| key.template.body.as_str());
         let (multiple_body, grouped_keys) = self
             .operation
@@ -101,7 +102,7 @@ impl GrpcDataLoader {
 #[async_trait::async_trait]
 impl Loader<DataLoaderRequest> for GrpcDataLoader {
     type Value = Response<async_graphql::Value>;
-    type Error = Arc<anyhow::Error>;
+    type Error = Arc<Error>;
 
     async fn load(
         &self,

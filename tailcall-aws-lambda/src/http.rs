@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
-use anyhow::Result;
 use hyper::body::Bytes;
 use lambda_http::RequestExt;
 use reqwest::Client;
-use tailcall::core::http::Response;
+use tailcall::core::http::{self, Response};
 use tailcall::core::HttpIO;
 
 #[derive(Clone)]
@@ -26,7 +25,7 @@ impl LambdaHttp {
 
 #[async_trait::async_trait]
 impl HttpIO for LambdaHttp {
-    async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>> {
+    async fn execute(&self, request: reqwest::Request) -> Result<Response<Bytes>, http::Error> {
         let req_str = format!("{} {}", request.method(), request.url());
         let response = self
             .client
@@ -40,7 +39,7 @@ impl HttpIO for LambdaHttp {
     }
 }
 
-pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hyper::Body>> {
+pub fn to_request(req: lambda_http::Request) -> Result<hyper::Request<hyper::Body>, http::Error> {
     // TODO: Update hyper to 1.0 to make conversions easier
     let method: hyper::Method = match req.method().to_owned() {
         lambda_http::http::Method::CONNECT => hyper::Method::CONNECT,
@@ -61,7 +60,7 @@ pub fn to_request(req: lambda_http::Request) -> anyhow::Result<hyper::Request<hy
         req.uri().scheme_str().unwrap_or("http"),
         req.uri()
             .host()
-            .ok_or(anyhow::anyhow!("Invalid request host"))?,
+            .ok_or_else(|| http::Error::InvalidRequestHost)?,
         req.path_parameters()
             .all("proxy")
             .unwrap_or(Vec::with_capacity(0))

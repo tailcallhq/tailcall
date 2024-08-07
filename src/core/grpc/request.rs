@@ -58,7 +58,7 @@ mod tests {
     use crate::core::http::Response;
     use crate::core::ir::Error;
     use crate::core::runtime::TargetRuntime;
-    use crate::core::HttpIO;
+    use crate::core::{http, HttpIO};
 
     enum TestScenario {
         SuccessWithoutGrpcStatus,
@@ -73,7 +73,7 @@ mod tests {
 
     #[async_trait]
     impl HttpIO for TestHttp {
-        async fn execute(&self, _request: Request) -> Result<Response<Bytes>> {
+        async fn execute(&self, _request: Request) -> Result<Response<Bytes>, http::Error> {
             let mut headers = HeaderMap::new();
             let message = Bytes::from_static(b"\0\0\0\0\x0e\n\x0ctest message");
             let error = Bytes::from_static(b"\x08\x03\x12\x0Derror message\x1A\x3E\x0A+type.googleapis.com/greetings.ErrValidation\x12\x0F\x0A\x0Derror details");

@@ -69,11 +69,10 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Arc;
 
-    use anyhow::anyhow;
     use hyper::body::Bytes;
     use reqwest::Request;
     use serde_json::{json, Value};
-    use tailcall::core::http::Response;
+    use tailcall::core::http::{self, Response};
     use tailcall::core::HttpIO;
     use wasm_bindgen_test::wasm_bindgen_test;
 
@@ -93,7 +92,7 @@ mod tests {
 
     #[async_trait::async_trait]
     impl HttpIO for MockHttp {
-        async fn execute(&self, request: Request) -> anyhow::Result<Response<Bytes>> {
+        async fn execute(&self, request: Request) -> Result<Response<Bytes>, http::Error> {
             let resp = tailcall::core::http::Response::empty();
             match request.url().path() {
                 "/hello.graphql" => Ok(resp.body(Bytes::from(CONFIG))),
