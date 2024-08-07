@@ -169,9 +169,11 @@ impl Generator {
         let mut config = config_gen.generate(true)?;
 
         let mut llm_gen = InferTypeName::default();
-        // FIXME: drop the unwrap
-        
-        let suggested_names = llm_gen.generate(config.config()).await.unwrap();
+
+        let suggested_names = llm_gen
+            .generate(config.config())
+            .await
+            .map_err(|e| anyhow::anyhow!(e))?;
         let cfg = config.config().to_owned();
         let cfg = RenameTypes::new(suggested_names.iter())
             .transform(cfg)
