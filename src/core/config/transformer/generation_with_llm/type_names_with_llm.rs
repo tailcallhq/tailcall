@@ -19,17 +19,12 @@ struct LLMResponse {
 
 pub struct LLMTypeName {
     client: Client,
-    used_type_names: Vec<String>,
     retry_count: u8,
 }
 
 impl Default for LLMTypeName {
     fn default() -> Self {
-        Self {
-            client: Default::default(),
-            used_type_names: Default::default(),
-            retry_count: 5,
-        }
+        Self { client: Default::default(), retry_count: 5 }
     }
 }
 
@@ -101,7 +96,11 @@ impl LLMTypeName {
         t_config.types.insert(type_name.to_string(), type_.clone());
         let type_sdl = t_config.to_sdl();
 
-        let used_types: String = self.used_type_names.join(", ");
+        let used_types: String = new_name_mappings
+            .keys()
+            .cloned()
+            .collect::<Vec<_>>()
+            .join(", ");
 
         let llm_response = self
             .generate_type_names_inner(&type_sdl, &used_types)
@@ -135,7 +134,6 @@ impl LLMTypeName {
                 {
                     Ok(Some(unique_ty_name)) => {
                         new_name_mappings.insert(unique_ty_name.to_owned(), type_name.to_owned());
-                        self.used_type_names.push(unique_ty_name);
                         break;
                     }
                     Ok(None) => {
