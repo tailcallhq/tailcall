@@ -3,6 +3,8 @@ use derive_setters::Setters;
 use crate::core::config::Config;
 use crate::core::transform::{self, Transform, TransformerOps};
 
+use super::LLMTypeName;
+
 /// Defines a set of default transformers that can be applied to any
 /// configuration to make it more maintainable.
 #[derive(Setters, Debug, PartialEq)]
@@ -25,8 +27,8 @@ impl Transform for Preset {
             .pipe(super::Required)
             .pipe(super::TreeShake.when(self.tree_shake))
             .pipe(super::TypeMerger::new(self.merge_type))
-            .pipe(super::ImproveTypeNames.when(self.use_better_names))
             .pipe(super::ConsolidateURL::new(self.consolidate_url))
+            .pipe(LLMTypeName::default())
             .transform(config)
     }
 }

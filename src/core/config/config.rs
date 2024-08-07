@@ -118,6 +118,17 @@ pub struct Type {
     pub tag: Option<Tag>,
 }
 
+impl Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{{")?;
+
+        for (field_name, field) in &self.fields {
+            writeln!(f, "  {}: {},", field_name, field.type_of)?;
+        }
+        writeln!(f, "}}")
+    }
+}
+
 impl Type {
     pub fn fields(mut self, fields: Vec<(&str, Field)>) -> Self {
         let mut graphql_fields = BTreeMap::new();

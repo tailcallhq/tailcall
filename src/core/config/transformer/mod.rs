@@ -6,6 +6,7 @@ mod nested_unions;
 mod preset;
 mod required;
 mod tree_shake;
+mod generation_with_llm;
 mod union_input_type;
 
 pub use ambiguous_type::{AmbiguousType, Resolution};
@@ -16,4 +17,5 @@ pub use nested_unions::NestedUnions;
 pub use preset::Preset;
 pub use required::Required;
 pub use tree_shake::TreeShake;
+pub use generation_with_llm::LLMTypeName;
 pub use union_input_type::UnionInputType;
