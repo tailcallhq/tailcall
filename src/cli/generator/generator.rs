@@ -169,9 +169,8 @@ impl Generator {
 
         let mut llm_gen = LLMTypeName::default();
         if let Ok(suggested_names) = llm_gen.generate(config.config()).await {
-            println!("{:#?}", suggested_names);
             let cfg = config.config().to_owned();
-            let cfg = RenameTypes::new(suggested_names)
+            let cfg = RenameTypes::new(suggested_names.iter())
                 .transform(cfg)
                 .to_result()?;
 
