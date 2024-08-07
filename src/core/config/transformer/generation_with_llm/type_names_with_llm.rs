@@ -3,13 +3,11 @@ use std::collections::HashMap;
 use genai::chat::{ChatMessage, ChatRequest};
 use genai::client::Client;
 use serde::Deserialize;
-use tokio::runtime::Runtime;
 
 use crate::core::config::{Config, Type};
-use crate::core::valid::Valid;
-use crate::core::Transform;
 
 const MODEL: &str = "gemini-1.5-flash-latest";
+const PROMPT: &str = "Given the GraphQL type definition below, provide a response in the form of a JSONP callback. The function should be named \"callback\" and should return JSON suggesting at least ten suitable alternative names for the type. Each suggested name should be concise, preferably a single word, and capture the essence of the data it represents based on the roles and relationships implied by the field names. \n\n```graphql\ntype T {\n  name: String,\n  age: Int,\n  website: String\n}\n```\n\n**Expected JSONP Format:**\n\n```javascript\ncallback({\n  \"originalTypeName\": \"T\",\n  \"suggestedTypeNames\": [\"Person\",\"Profile\",\"Member\",\"Individual\",\"Contact\"\n  ]\n});\n```";
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -42,7 +40,7 @@ impl LLMTypeName {
         prompt: &str,
         used_type_names: &str,
     ) -> Result<LLMResponse, anyhow::Error> {
-        let base_system_message = ChatMessage::system("Given the GraphQL type definition below, provide a response in the form of a JSONP callback. The function should be named \"callback\" and should return JSON suggesting at least five suitable alternative names for the type. Each suggested name should be concise, preferably a single word, and capture the essence of the data it represents based on the roles and relationships implied by the field names. \n\n```graphql\ntype T {\n  name: String,\n  age: Int,\n  website: String\n}\n```\n\n**Expected JSONP Format:**\n\n```javascript\ncallback({\n  \"originalTypeName\": \"T\",\n  \"suggestedTypeNames\": [\"Person\",\"Profile\",\"Member\",\"Individual\",\"Contact\"\n  ]\n});\n```");
+        let base_system_message = ChatMessage::system(PROMPT);
         let already_used_types = ChatMessage::system(format!(
             "We've already used following type names: {}",
             used_type_names
@@ -73,6 +71,7 @@ impl LLMTypeName {
     }
 
     // given type name and type, generated the 5 type names.
+    #[allow(clippy::too_many_arguments)]
     async fn generate_type_name(
         &self,
         config: &Config,
@@ -102,18 +101,19 @@ impl LLMTypeName {
         Ok(unique_type_name)
     }
 
-    pub async fn generate(&mut self, mut config: Config) -> anyhow::Result<Config> {
+    pub async fn generate(&mut self, config: Config) -> anyhow::Result<Config> {
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
         for (type_name, type_) in config.types.iter() {
             if config.is_root_operation_type(type_name) {
+                // ignore the root types as it's names are already given by user.
                 continue;
             }
 
             // retries, if we find the type name is aleady used.
             for _ in 0..=self.retry_count {
-                if let Some(unique_ty_name) = self
+                if let Ok(Some(unique_ty_name)) = self
                     .generate_type_name(&config, type_name, type_, &new_name_mappings)
-                    .await?
+                    .await
                 {
                     new_name_mappings.insert(unique_ty_name.to_owned(), type_name.to_owned());
                     self.used_type_names.push(unique_ty_name);
@@ -122,43 +122,6 @@ impl LLMTypeName {
             }
         }
 
-        for (new_name, old_name) in new_name_mappings {
-            if let Some(actual_ty) = config.types.get(&old_name) {
-                config.types.insert(new_name.clone(), actual_ty.clone());
-                config.types.remove(&old_name);
-
-                // Replace all the instances of old name in config.
-                for actual_type in config.types.values_mut() {
-                    for actual_field in actual_type.fields.values_mut() {
-                        if actual_field.type_of == old_name {
-                            actual_field.type_of.clone_from(&new_name);
-                        }
-                    }
-                }
-            }
-        }
-
         Ok(config)
-    }
-}
-
-impl Transform for LLMTypeName {
-    type Value = Config;
-    type Error = String;
-
-    fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
-        let a = std::thread::spawn(|| {
-            Runtime::new().unwrap().block_on(async {
-                let mut llm = LLMTypeName::default();
-                llm.generate(value).await
-            })
-        })
-        .join()
-        .expect("Thread panicked");
-
-        match a {
-            Ok(b) => Valid::succeed(b),
-            Err(e) => Valid::fail(e.to_string()),
-        }
     }
 }
