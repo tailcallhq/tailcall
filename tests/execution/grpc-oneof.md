@@ -169,6 +169,8 @@ type oneof__Response__Var2 @tag(id: "oneof.Response") {
     query: >
       query {
         oneof__OneOfService__GetOneOfVar1(request: { command: { command: "start" } }) {
+          # TODO: check that it's possible to get shared field from Union like that
+          # outside of the fragment
           usual
           ... on oneof__Response__Var1 {
             command {
