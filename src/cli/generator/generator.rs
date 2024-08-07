@@ -8,14 +8,15 @@ use pathdiff::diff_paths;
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
-use crate::core::config::transformer::Preset;
 use crate::core::config::transformer::LLMTypeName;
+use crate::core::config::transformer::{Preset, RenameTypes};
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
 use crate::core::valid::{ValidateInto, Validator};
+use crate::core::Transform;
 
 /// CLI that reads the the config file and generates the required tailcall
 /// configuration.
@@ -165,11 +166,17 @@ impl Generator {
             config_gen = config_gen.operation_name(query_type_name);
         }
 
-        let config = config_gen.generate(true)?;
+        let mut config = config_gen.generate(true)?;
 
         let mut llm_gen = LLMTypeName::default();
         if let Ok(suggested_names) = llm_gen.generate(config.config()).await {
             println!("{:#?}", suggested_names);
+            let cfg = config.config().to_owned();
+            let cfg = RenameTypes::new(suggested_names)
+                .transform(cfg)
+                .to_result()?;
+
+            config = ConfigModule::from(cfg);
         }
 
         self.write(&config, &path).await?;
