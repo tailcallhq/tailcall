@@ -39,10 +39,9 @@ impl<Q, A> Wizard<Q, A> {
         Q: TryInto<ChatRequest, Error = super::Error>,
         A: TryFrom<ChatResponse, Error = super::Error>,
     {
-        let chat_opts = ChatOptions::default().with_json_mode(true);
         let response = self
             .client
-            .exec_chat(self.model.as_str(), q.try_into()?, Some(&chat_opts))
+            .exec_chat(self.model.as_str(), q.try_into()?, None)
             .await?;
         A::try_from(response)
     }
