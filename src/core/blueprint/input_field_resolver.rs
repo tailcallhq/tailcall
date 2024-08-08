@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
 use crate::core::config::{ConfigModule, Field};
-use crate::core::ir::model::{InputTransforms, IR};
+use crate::core::ir::model::{InputTransforms, TransformKey, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
 
@@ -23,7 +23,7 @@ pub fn update_input_field_resolver<'a>(
                     .args
                     .iter()
                     .filter_map(|arg| {
-                        type InputFieldHashMap = HashMap<(String, String), String>;
+                        type InputFieldHashMap = HashMap<TransformKey, String>;
                         let of_type = &arg.of_type;
                         let mut subfield_renames: InputFieldHashMap = HashMap::new();
                         let mut subfield_types: InputFieldHashMap = HashMap::new();
@@ -48,7 +48,7 @@ pub fn update_input_field_resolver<'a>(
                                     for (field_name, field) in &metadata.fields {
                                         let key = if let Some(modify) = &field.modify {
                                             if let Some(modified_name) = &modify.name {
-                                                let key = (
+                                                let key = TransformKey::from_str(
                                                     target_type.to_string(),
                                                     modified_name.to_string(),
                                                 );
@@ -56,10 +56,16 @@ pub fn update_input_field_resolver<'a>(
                                                     .insert(key.clone(), field_name.to_string());
                                                 key
                                             } else {
-                                                (target_type.to_string(), field_name.to_string())
+                                                TransformKey::from_str(
+                                                    target_type.to_string(),
+                                                    field_name.to_string(),
+                                                )
                                             }
                                         } else {
-                                            (target_type.to_string(), field_name.to_string())
+                                            TransformKey::from_str(
+                                                target_type.to_string(),
+                                                field_name.to_string(),
+                                            )
                                         };
                                         subfield_types.insert(key, field.type_of.clone());
                                         extract_rename_paths(

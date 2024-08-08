@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
 use super::{Error, EvalContext, ResolverContextLike};
-use crate::core::ir::model::InputTransforms;
+use crate::core::ir::model::{InputTransforms, TransformKey};
 use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
 
@@ -151,7 +151,10 @@ impl IR {
                                     let mut new_map = IndexMap::new();
 
                                     for (name, item) in obj {
-                                        let key = (type_of.to_string(), name.to_string());
+                                        let key = TransformKey::from_str(
+                                            type_of.to_string(),
+                                            name.to_string(),
+                                        );
                                         let type_new = input_transforms.subfield_types.get(&key);
                                         let name_new = input_transforms.subfield_renames.get(&key);
 

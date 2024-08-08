@@ -2,12 +2,13 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::num::NonZeroU64;
 
-use async_graphql::Value;
+use async_graphql::{Name, Value};
+use derive_getters::Getters;
 use strum_macros::Display;
 
 use super::discriminator::Discriminator;
 use super::{EvalContext, ResolverContextLike};
-use crate::core::blueprint::DynamicValue;
+use crate::core::blueprint::{DynamicValue, Type};
 use crate::core::config::group_by::GroupBy;
 use crate::core::graphql::{self};
 use crate::core::http::HttpFilter;
@@ -111,10 +112,28 @@ impl Cache {
 
 #[derive(Clone, Debug)]
 pub struct InputTransforms {
-    pub subfield_types: HashMap<(String, String), String>,
-    pub subfield_renames: HashMap<(String, String), String>,
+    pub subfield_types: HashMap<TransformKey, String>,
+    pub subfield_renames: HashMap<TransformKey, String>,
     pub arg_name: String,
     pub arg_type: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Getters)]
+pub struct TransformKey {
+    type_of: String,
+    field_name: String,
+}
+
+impl TransformKey {
+    pub fn from_type(type_of: Type, field_name: String) -> Self {
+        Self { type_of: type_of.name().to_string(), field_name }
+    }
+    pub fn from_name(type_of: String, field_name: Name) -> Self {
+        Self { type_of, field_name: field_name.to_string() }
+    }
+    pub fn from_str(type_of: String, field_name: String) -> Self {
+        Self { type_of, field_name }
+    }
 }
 
 impl IR {
