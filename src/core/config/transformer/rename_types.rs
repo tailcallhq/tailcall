@@ -95,8 +95,15 @@ mod test {
                 title: String
                 body: String
             }
+            type B {
+                name: String
+                username: String
+            }
             type Query {
                 posts: [Post] @http(path: "/posts")
+            }
+            type Mutation {
+              createUser(user: B!): A @http(method: POST, path: "/users", body: "{{args.user}}")
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
@@ -105,6 +112,7 @@ mod test {
             hashmap! {
                 "Query" => "PostQuery",
                 "A" => "User",
+                "B" => "InputUser"
             }
             .iter(),
         )

@@ -6,6 +6,15 @@ schema @server @upstream {
   query: PostQuery
 }
 
+input InputUser {
+  name: String
+  username: String
+}
+
+type Mutation {
+  createUser(user: InputUser!): User @http(body: "{{args.user}}", method: "POST", path: "/users")
+}
+
 type Post {
   body: String
   id: ID!
