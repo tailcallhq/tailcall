@@ -84,7 +84,7 @@ impl IR {
                     }
                 }
                 IR::Pipe(first, second) => {
-                    let args = first.eval(&mut ctx.clone()).await?;
+                    let args = first.eval(ctx).await?;
                     let ctx = &mut ctx.with_args(args);
                     second.eval(ctx).await
                 }

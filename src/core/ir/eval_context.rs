@@ -20,16 +20,16 @@ pub struct EvalContext<'a, Ctx: ResolverContextLike> {
     graphql_ctx: &'a Ctx,
 
     // Overridden Value for Async GraphQL Context
-    graphql_ctx_value: Option<Arc<Value>>,
+    graphql_ctx_value: Option<&'a Value>,
 
     // Overridden Arguments for Async GraphQL Context
     graphql_ctx_args: Option<Arc<Value>>,
 }
 
 impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
-    pub fn with_value(&mut self, value: Value) -> EvalContext<'a, Ctx> {
+    pub fn with_value(&self, value: &'a Value) -> EvalContext<'a, Ctx> {
         let mut ctx = self.clone();
-        ctx.graphql_ctx_value = Some(Arc::new(value));
+        ctx.graphql_ctx_value = Some(value);
         ctx
     }
 
@@ -72,8 +72,8 @@ impl<'a, Ctx: ResolverContextLike> EvalContext<'a, Ctx> {
 
     pub fn path_value<T: AsRef<str>>(&self, path: &[T]) -> Option<Cow<'a, Value>> {
         // TODO: add unit tests for this
-        if let Some(value) = self.graphql_ctx_value.as_ref() {
-            get_path_value(value.as_ref(), path).map(|a| Cow::Owned(a.clone()))
+        if let Some(value) = self.graphql_ctx_value {
+            get_path_value(value, path).map(|a| Cow::Owned(a.clone()))
         } else {
             get_path_value(self.graphql_ctx.value()?, path).map(Cow::Borrowed)
         }
