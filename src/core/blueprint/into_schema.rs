@@ -60,9 +60,7 @@ fn set_default_value(
 
 fn to_field_value(value: async_graphql::Value) -> FieldValue<'static> {
     match value {
-        ConstValue::List(vec) => {
-            FieldValue::list(vec.into_iter().map(to_field_value))
-        }
+        ConstValue::List(vec) => FieldValue::list(vec.into_iter().map(to_field_value)),
         value => {
             let type_name = value.get_type_name().map(|s| s.to_string());
 
