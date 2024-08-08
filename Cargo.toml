@@ -167,7 +167,7 @@ num = "0.4.3"
 indenter = "0.3.3"
 derive_more = { workspace = true }
 enum_dispatch = "0.3.13"
-genai = "0.1.2"
+genai = "0.1.3"
 strum = "0.26.2"
 
 [dev-dependencies]

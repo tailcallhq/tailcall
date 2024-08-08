@@ -1,6 +1,6 @@
 use derive_setters::Setters;
 use genai::chat::{ChatRequest, ChatResponse};
-use genai::client::Client;
+use genai::Client;
 
 use super::Result;
 

@@ -20,8 +20,9 @@ impl TryFrom<ChatResponse> for Answer {
     type Error = Error;
 
     fn try_from(response: ChatResponse) -> Result<Self> {
-        let json = response.content.ok_or(Error::EmptyResponse)?;
-        Ok(serde_json::from_str(json.as_str())?)
+        let message_content = response.content.ok_or(Error::EmptyResponse)?;
+        let text_content = message_content.text_as_str().ok_or(Error::EmptyResponse)?;
+        Ok(serde_json::from_str(text_content)?)
     }
 }
 
