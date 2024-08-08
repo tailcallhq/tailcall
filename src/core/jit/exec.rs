@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use std::mem;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use derive_getters::Getters;
 use futures_util::future::join_all;
@@ -14,7 +14,7 @@ use crate::core::json::JsonLike;
 
 type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Error>>>>;
 
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone)]
 pub struct ExecutionEnv<Input> {
     plan: OperationPlan<Input>,
     errors: Arc<Mutex<Vec<LocationError<jit::error::Error>>>>,
@@ -25,11 +25,13 @@ impl<Input> ExecutionEnv<Input> {
         Self { plan, errors: Arc::new(Mutex::new(vec![])) }
     }
     pub fn add_error(&self, new_error: LocationError<jit::error::Error>) {
-        self.errors.lock().unwrap().push(new_error);
+        self.errors().push(new_error);
     }
-
-    pub fn get_errors(&self) -> Vec<LocationError<jit::error::Error>> {
-        self.errors.lock().unwrap().clone()
+    pub fn plan(&self) -> &OperationPlan<Input> {
+        &self.plan
+    }
+    pub fn errors(&self) -> MutexGuard<Vec<LocationError<jit::Error>>> {
+        self.errors.lock().unwrap()
     }
 }
 
@@ -62,8 +64,7 @@ where
 
     pub async fn execute(self, synth: Synth<Output>) -> Response<Output, jit::Error> {
         let mut response = Response::new(synth.synthesize());
-        response.add_errors(self.env.get_errors());
-
+        response.add_errors(self.env.errors().clone());
         response
     }
 }
