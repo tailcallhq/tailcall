@@ -110,17 +110,31 @@ impl Cache {
     }
 }
 
+///
+/// Used to hold input field renames.
 #[derive(Clone, Debug)]
 pub struct InputTransforms {
+    /// For a given (type name, field name) combination get back the type of the
+    /// field. This is used to resolve recursive and nested cases like the
+    /// following. (type A -> type A) or (type A -> type B -> type C -> type
+    /// B -> ...)
     pub subfield_types: HashMap<TransformKey, String>,
+    /// For a given (type name, field name) combination get back the applied
+    /// rename This is used to check if a field of a type has a `@modify`
+    /// directive applied to it.
     pub subfield_renames: HashMap<TransformKey, String>,
     pub arg_name: String,
     pub arg_type: String,
 }
 
+///
+/// Utility struct that is used to represent type of object/input and field name
+/// pairs.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Getters)]
 pub struct TransformKey {
+    /// The type of the object/input.
     type_of: String,
+    /// The field name.
     field_name: String,
 }
 
