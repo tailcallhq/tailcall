@@ -74,7 +74,7 @@ impl TryInto<ChatRequest> for Question {
 
 impl InferTypeName {
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let engine: Wizard<Question, Answer> = Wizard::new(MODEL.to_string()).with_json_mode(true);
+        let wizard: Wizard<Question, Answer> = Wizard::new(MODEL.to_string()).with_json_mode(true);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
         let total = config.types.len();
@@ -95,7 +95,7 @@ impl InferTypeName {
 
             let mut delay = 3;
             loop {
-                let answer = engine.ask(question.clone()).await;
+                let answer = wizard.ask(question.clone()).await;
                 match answer {
                     Ok(answer) => {
                         let name = &answer.suggestions.join(", ");
