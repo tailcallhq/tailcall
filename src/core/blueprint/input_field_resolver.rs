@@ -65,7 +65,8 @@ pub fn update_input_field_resolver<'a>(
                             if let Some((_, metadata)) = config
                                 .types
                                 .iter()
-                                .find(|(type_name, _)| type_name.as_str().eq(target_type)) {
+                                .find(|(type_name, _)| type_name.as_str().eq(target_type))
+                            {
                                 // iter: for every field in the type
                                 for (field_name, field) in &metadata.fields {
                                     let key = if let Some(modify) = &field.modify {
