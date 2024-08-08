@@ -16,10 +16,10 @@ pub struct PartialRequest<'a> {
 }
 
 impl<'a> PartialRequest<'a> {
-    pub async fn into_request(self, request: Request) -> Result<GraphQLRequest> {
+    pub async fn into_request(self, request: &mut Request) -> Result<GraphQLRequest> {
         let mut variables = self.variables;
         if let Some(key) = self.body {
-            let bytes = hyper::body::to_bytes(request.into_body()).await?;
+            let bytes = hyper::body::to_bytes(request.body_mut()).await?;
             let body: ConstValue = serde_json::from_slice(&bytes)?;
             variables.insert(Name::new(key), body);
         }
