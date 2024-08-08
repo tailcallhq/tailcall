@@ -4,7 +4,6 @@ use derive_more::From;
 pub enum Error {
     GenAI(genai::Error),
     EmptyResponse,
-    MissingMarker(String),
     Serde(serde_json::Error),
 }
 
@@ -13,9 +12,6 @@ impl From<Error> for anyhow::Error {
         match error {
             Error::GenAI(err) => anyhow::Error::new(err),
             Error::EmptyResponse => anyhow::Error::msg("No response received from the server."),
-            Error::MissingMarker(marker) => {
-                anyhow::Error::msg(format!("Missing marker: {}", marker))
-            }
             Error::Serde(err) => anyhow::Error::new(err),
         }
     }
