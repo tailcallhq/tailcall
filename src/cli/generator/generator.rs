@@ -150,12 +150,9 @@ impl Generator {
         let config = self.read().await?;
         let path = config.output.path.0.to_owned();
         let query_type = config.schema.query.clone();
-        let preset: Preset = config
-            .preset
-            .clone()
-            .unwrap_or_default()
-            .validate_into()
-            .to_result()?;
+        let preset = config.preset.clone().unwrap_or_default();
+        let use_ai_powered_names = (*preset.ai_powered_names()).unwrap_or_default();
+        let preset: Preset = preset.validate_into().to_result()?;
         let input_samples = self.resolve_io(config).await?;
 
         let mut config_gen = ConfigGenerator::default()
@@ -168,18 +165,18 @@ impl Generator {
 
         let mut config = config_gen.generate(true)?;
 
-        let mut llm_gen = InferTypeName::default();
+        if use_ai_powered_names {
+            let mut llm_gen = InferTypeName::default();
+            let suggested_names = llm_gen
+                .generate(config.config())
+                .await
+                .map_err(|e| anyhow::anyhow!(e))?;
+            let cfg = RenameTypes::new(suggested_names.iter())
+                .transform(config.config().to_owned())
+                .to_result()?;
 
-        let suggested_names = llm_gen
-            .generate(config.config())
-            .await
-            .map_err(|e| anyhow::anyhow!(e))?;
-        let cfg = config.config().to_owned();
-        let cfg = RenameTypes::new(suggested_names.iter())
-            .transform(cfg)
-            .to_result()?;
-
-        config = ConfigModule::from(cfg);
+            config = ConfigModule::from(cfg);
+        }
 
         self.write(&config, &path).await?;
         Ok(config)
