@@ -112,7 +112,8 @@ mod test {
             hashmap! {
                 "Query" => "PostQuery",
                 "A" => "User",
-                "B" => "InputUser"
+                "B" => "InputUser",
+                "Mutation" => "UserMutation",
             }
             .iter(),
         )

@@ -11,10 +11,6 @@ input InputUser {
   username: String
 }
 
-type Mutation {
-  createUser(user: InputUser!): User @http(body: "{{args.user}}", method: "POST", path: "/users")
-}
-
 type Post {
   body: String
   id: ID!
@@ -28,4 +24,8 @@ type PostQuery {
 type User {
   id: ID!
   name: String
+}
+
+type UserMutation {
+  createUser(user: InputUser!): User @http(body: "{{args.user}}", method: "POST", path: "/users")
 }
