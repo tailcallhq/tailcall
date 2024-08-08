@@ -112,7 +112,7 @@ impl InferTypeName {
                             "Suggestions for {}: [{}] - {}/{}",
                             type_name,
                             name,
-                            i,
+                            i + 1,
                             total
                         );
                         break;
