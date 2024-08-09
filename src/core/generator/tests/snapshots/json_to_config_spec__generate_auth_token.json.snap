@@ -3,11 +3,17 @@ source: src/core/generator/tests/json_to_config_spec.rs
 expression: cfg.to_sdl()
 ---
 schema @server @upstream {
-  query: Query
+  mutation: Mutation
 }
 
-type Query {
-  login: T1 @http(baseURL: "https://dummyjson.com", path: "/auth/login")
+input T2 {
+  expiresInMins: Int
+  password: String
+  username: String
+}
+
+type Mutation {
+  login(loginInput: T2): T1 @http(baseURL: "https://dummyjson.com", body: "{{.args.loginInput}}", method: "POST", path: "/auth/login")
 }
 
 type T1 {
