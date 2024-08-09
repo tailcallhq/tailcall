@@ -175,6 +175,7 @@ mod grpc_fetch {
     use anyhow::Result;
 
     use super::*;
+    use crate::core::Error;
 
     fn get_fake_descriptor() -> Vec<u8> {
         let mut path = PathBuf::from(file!());
@@ -201,7 +202,7 @@ mod grpc_fetch {
     }
 
     #[tokio::test]
-    async fn test_resp_service() -> Result<()> {
+    async fn test_resp_service() -> Result<(), Error> {
         let server = start_mock_server();
 
         let http_reflection_file_mock = server.mock(|when, then| {

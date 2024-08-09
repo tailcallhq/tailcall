@@ -10,6 +10,7 @@ use criterion::Criterion;
 use hyper::body::Bytes;
 use reqwest::Request;
 use tailcall::core::config::Batch;
+use tailcall::core::error::file;
 use tailcall::core::http::{DataLoaderRequest, HttpDataLoader, Response};
 use tailcall::core::ir::model::IoId;
 use tailcall::core::runtime::TargetRuntime;
@@ -39,11 +40,11 @@ struct File;
 
 #[async_trait::async_trait]
 impl FileIO for File {
-    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> anyhow::Result<()> {
+    async fn write<'a>(&'a self, _: &'a str, _: &'a [u8]) -> Result<(), file::Error> {
         unimplemented!("Not needed for this bench")
     }
 
-    async fn read<'a>(&'a self, _: &'a str) -> anyhow::Result<String> {
+    async fn read<'a>(&'a self, _: &'a str) -> Result<String, file::Error> {
         unimplemented!("Not needed for this bench")
     }
 }

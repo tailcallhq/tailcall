@@ -13,6 +13,7 @@ use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
 use crate::core::mustache::Mustache;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
+use crate::core::Error;
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -248,7 +249,7 @@ impl Config {
         self,
         config_path: &str,
         reader_context: ConfigReaderContext,
-    ) -> anyhow::Result<Config<Resolved>> {
+    ) -> Result<Config<Resolved>, Error> {
         let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
 
         let inputs = self

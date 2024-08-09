@@ -15,6 +15,7 @@ use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
 use crate::core::valid::{ValidateInto, Validator};
+use crate::core::Error;
 
 /// CLI that reads the the config file and generates the required tailcall
 /// configuration.
@@ -30,7 +31,7 @@ impl Generator {
     }
 
     /// Writes the configuration to the output file if allowed.
-    async fn write(self, graphql_config: &ConfigModule, output_path: &str) -> anyhow::Result<()> {
+    async fn write(self, graphql_config: &ConfigModule, output_path: &str) -> Result<(), Error> {
         let output_source = config::Source::detect(output_path)?;
         let config = match output_source {
             config::Source::Json => graphql_config.to_json(true)?,
@@ -70,9 +71,10 @@ impl Generator {
         Ok(true)
     }
 
-    async fn read(&self) -> anyhow::Result<Config<Resolved>> {
+    async fn read(&self) -> Result<Config<Resolved>, Error> {
         let config_path = &self.config_path;
-        let source = ConfigSource::detect(config_path)?;
+        let source = ConfigSource::detect(config_path)
+            .map_err(|e| Error::UnsupportedFileFormat(e.to_string()))?;
         let config_content = self.runtime.file.read(config_path).await?;
 
         let config: Config = match source {
