@@ -378,12 +378,7 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        Self {
-            flat: fields,
-            nested,
-            operation_type,
-            index,
-        }
+        Self { flat: fields, nested, operation_type, index }
     }
 
     pub fn operation_type(&self) -> OperationType {
