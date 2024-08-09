@@ -180,11 +180,10 @@ where
                             if let Some(index) = data_path.as_slice().last() {
                                 &v[*index]
                             } else {
-                                return Err(Positioned {
-                                    value: ValidationError::TypeNameMismatch.into(),
-                                    pos: node.pos,
-                                    path: vec![],
-                                });
+                                return Err(Positioned::new(
+                                    ValidationError::TypeNameMismatch.into(),
+                                    node.pos,
+                                ));
                             }
                         }
                         None => node.type_of.name(),
@@ -247,7 +246,7 @@ where
             path
         };
 
-        Positioned { value: error, pos: node.pos, path }
+        Positioned::new(error, node.pos).with_path(path)
     }
 }
 

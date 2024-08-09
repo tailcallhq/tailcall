@@ -171,11 +171,11 @@ where
 
             let mut store = self.store.lock().unwrap();
 
-            store.set(&field.id, &data_path, result.map_err(|e| Positioned {
-                value: e,
-                pos: field.pos,
-                path: vec![],
-            }));
+            store.set(
+                &field.id,
+                &data_path,
+                result.map_err(|e| Positioned::new(e, field.pos)),
+            );
         } else {
             // if the present field doesn't have IR, still go through it's extensions to see
             // if they've IR.

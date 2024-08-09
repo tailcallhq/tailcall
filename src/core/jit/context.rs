@@ -1,7 +1,7 @@
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
 
-use super::{Field, Nested,Request};
+use super::{Field, Nested, Request};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
 /// Rust representation of the GraphQL context available in the DSL
@@ -29,7 +29,13 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         value: &'a Output,
         field: &'a Field<Nested<Input>, Input>,
     ) -> Self {
-        Self { request: self.request, is_query: self.is_query, args: None, value: Some(value), field }
+        Self {
+            request: self.request,
+            is_query: self.is_query,
+            args: None,
+            value: Some(value),
+            field,
+        }
     }
 
     pub fn with_args(&self, args: indexmap::IndexMap<&str, Input>) -> Self {
@@ -70,7 +76,7 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
     }
 
     fn is_query(&self) -> bool {
-       self.is_query
+        self.is_query
     }
 
     fn add_error(&self, _error: ServerError) {

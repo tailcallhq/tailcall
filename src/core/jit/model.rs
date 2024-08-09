@@ -531,6 +531,21 @@ pub struct Positioned<Value> {
     pub path: Vec<PathSegment>,
 }
 
+impl<Value> Positioned<Value> {
+    pub fn new(value: Value, pos: Pos) -> Self {
+        Positioned { value, pos, path: vec![] }
+    }
+}
+
+impl<Value> Positioned<Value>
+where
+    Value: Clone,
+{
+    pub fn with_path(&mut self, path: Vec<PathSegment>) -> Self {
+        Self { value: self.value.clone(), pos: self.pos, path }
+    }
+}
+
 // TODO: Improve conversion logic to avoid unnecessary round-trip conversions
 //       between ServerError and Positioned<Error>.
 impl From<ServerError> for Positioned<Error> {
