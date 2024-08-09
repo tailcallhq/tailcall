@@ -1,9 +1,8 @@
-use async_graphql::{Positioned, ServerError};
 use derive_setters::Setters;
 use serde::Serialize;
 
+use super::Positioned;
 use crate::core::jit;
-use crate::core::lift::Lift;
 
 #[derive(Setters, Serialize)]
 pub struct Response<Value, Error> {
@@ -26,6 +25,10 @@ impl<Value, Error> Response<Value, Error> {
             Err(error) => Response { data: None, errors: vec![error], extensions: Vec::new() },
         }
     }
+
+    pub fn add_errors(&mut self, new_errors: Vec<Positioned<Error>>) {
+        self.errors.extend(new_errors);
+    }
 }
 
 impl Response<async_graphql::Value, jit::Error> {
@@ -35,7 +38,7 @@ impl Response<async_graphql::Value, jit::Error> {
             resp = resp.extension(name, value);
         }
         for error in self.errors {
-            resp.errors.push(Lift::<ServerError>::from(error).take());
+            resp.errors.push(error.into());
         }
         resp
     }

@@ -21,7 +21,7 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         is_query: bool,
         field: &'a Field<Nested<Input>, Input>,
     ) -> Self {
-        Self { request, value: None, args: None, is_query, field }
+        Self { request, is_query, value: None, args: None, field }
     }
 
     pub fn with_value_and_field(
@@ -31,8 +31,8 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     ) -> Self {
         Self {
             request: self.request,
-            args: None,
             is_query: self.is_query,
+            args: None,
             value: Some(value),
             field,
         }
@@ -47,8 +47,8 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             request: self.request,
             value: self.value,
             args: Some(map),
-            is_query: self.is_query,
             field: self.field,
+            is_query: self.is_query,
         }
     }
 

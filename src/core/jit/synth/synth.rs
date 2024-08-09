@@ -1,17 +1,15 @@
-use async_graphql::Positioned;
-
 use crate::core::ir::TypeName;
 use crate::core::jit::exec::{TypedValue, TypedValueRef};
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
-use crate::core::jit::{Error, ValidationError};
+use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar;
 
 type ValueStore<Value> = Store<Result<TypedValue<Value>, Positioned<Error>>>;
 
 pub struct Synth<Value> {
-    selection: Vec<Field<Nested<Value>, Value>>,
+    plan: OperationPlan<Value>,
     store: ValueStore<Value>,
     variables: Variables<Value>,
 }
@@ -41,7 +39,7 @@ impl<Value> Synth<Value> {
         store: ValueStore<Value>,
         variables: Variables<Value>,
     ) -> Self {
-        Self { selection: plan.into_nested(), store, variables }
+        Self { plan, store, variables }
     }
 }
 
@@ -59,7 +57,7 @@ where
     pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
         let mut data = Value::JsonObject::new();
 
-        for child in self.selection.iter() {
+        for child in self.plan.as_nested().iter() {
             if !self.include(child) {
                 continue;
             }
@@ -134,7 +132,13 @@ where
 
         let TypedValueRef { type_name, value } = result;
 
-        if node.is_scalar {
+        let eval_result = if value.is_null() {
+            if node.type_of.is_nullable() {
+                Ok(Value::null())
+            } else {
+                Err(ValidationError::ValueRequired.into())
+            }
+        } else if self.plan.field_is_scalar(node) {
             let scalar =
                 scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
 
@@ -144,14 +148,24 @@ where
             if scalar.validate(value) {
                 Ok(value.clone())
             } else {
-                Err(Positioned {
-                    pos: node.pos,
-                    node: ValidationError::ScalarInvalid {
-                        type_of: node.type_of.name().to_string(),
-                        path: node.name.clone(),
-                    }
-                    .into(),
-                })
+                Err(ValidationError::ScalarInvalid {
+                    type_of: node.type_of.name().to_string(),
+                    path: node.name.to_string(),
+                }
+                .into())
+            }
+        } else if self.plan.field_is_enum(node) {
+            if value
+                .as_str()
+                .map(|v| self.plan.field_validate_enum_value(node, v))
+                .unwrap_or(false)
+            {
+                Ok(value.clone())
+            } else {
+                Err(
+                    ValidationError::EnumInvalid { type_of: node.type_of.name().to_string() }
+                        .into(),
+                )
             }
         } else {
             match (value.as_array(), value.as_object()) {
@@ -203,7 +217,34 @@ where
                 }
                 _ => Ok(value.clone()),
             }
-        }
+        };
+
+        eval_result.map_err(|e| self.to_location_error(e, node))
+    }
+
+    fn to_location_error(
+        &'a self,
+        error: Error,
+        node: &'a Field<Nested<Value>, Value>,
+    ) -> Positioned<Error> {
+        // create path from the root to the current node in the fields tree
+        let path = {
+            let mut path = Vec::new();
+
+            let mut parent = self.plan.find_field(node.id.clone());
+
+            while let Some(field) = parent {
+                path.push(PathSegment::Field(field.name.to_string()));
+                parent = field
+                    .parent()
+                    .and_then(|id| self.plan.find_field(id.clone()));
+            }
+
+            path.reverse();
+            path
+        };
+
+        Positioned::new(error, node.pos).with_path(path)
     }
 }
 

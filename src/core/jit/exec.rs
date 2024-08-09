@@ -2,12 +2,11 @@ use std::fmt::Debug;
 use std::mem;
 use std::sync::{Arc, Mutex};
 
-use async_graphql::Positioned;
 use derive_getters::Getters;
 use futures_util::future::join_all;
 
 use super::context::Context;
-use super::{DataPath, OperationPlan, Request, Response, Store};
+use super::{DataPath, OperationPlan, Positioned, Request, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::ir::TypeName;
 use crate::core::jit;
