@@ -87,19 +87,17 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
 
 #[cfg(test)]
 mod test {
+    use async_graphql_value::ConstValue;
+
     use super::Context;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
+    use crate::core::ir::ResolverContextLike;
     use crate::core::jit::exec::ExecutionEnv;
     use crate::core::jit::{OperationPlan, Request};
     use crate::core::valid::Validator;
 
-    fn setup(
-        query: &str,
-    ) -> (
-        OperationPlan<async_graphql::Value>,
-        Request<async_graphql::Value>,
-    ) {
+    fn setup(query: &str) -> (OperationPlan<ConstValue>, Request<ConstValue>) {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).unwrap();
         let config = Config::from_sdl(&sdl).to_result().unwrap();
         let blueprint = Blueprint::try_from(&ConfigModule::from(config)).unwrap();
@@ -113,8 +111,7 @@ mod test {
         let (plan, req) = setup("query {posts {id title}}");
         let field = plan.as_nested();
         let env = ExecutionEnv::new(plan.clone());
-        let ctx: Context<async_graphql::Value, async_graphql::Value> =
-            Context::new(&req, &field[0], &env);
-        insta::assert_debug_snapshot!(ctx.field());
+        let ctx = Context::<ConstValue, ConstValue>::new(&req, &field[0], &env);
+        insta::assert_debug_snapshot!(<Context<_, _> as ResolverContextLike>::field(&ctx).unwrap());
     }
 }

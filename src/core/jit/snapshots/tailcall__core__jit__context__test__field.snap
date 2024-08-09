@@ -1,32 +1,23 @@
 ---
 source: src/core/jit/context.rs
-expression: ctx.field()
+expression: "<Context<_, _> as ResolverContextLike>::field(&ctx).unwrap()"
 ---
-Field {
-    id: 0,
+SelectionField {
     name: "posts",
-    ir: "Some(..)",
-    type_of: [Post],
-    type_condition: "Query",
-    extensions: Some(
-        Nested(
-            [
-                Field {
-                    id: 1,
-                    name: "id",
-                    type_of: Int!,
-                    type_condition: "Post",
-                    directives: [],
-                },
-                Field {
-                    id: 2,
-                    name: "title",
-                    type_of: String!,
-                    type_condition: "Post",
-                    directives: [],
-                },
-            ],
-        ),
-    ),
-    directives: [],
+    args: [],
+    directives: None,
+    selection_set: [
+        SelectionField {
+            name: "id",
+            args: [],
+            directives: None,
+            selection_set: [],
+        },
+        SelectionField {
+            name: "title",
+            args: [],
+            directives: None,
+            selection_set: [],
+        },
+    ],
 }
