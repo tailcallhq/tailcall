@@ -21,6 +21,11 @@ impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name
     fn insert_key(&mut self, key: &'obj str, value: Self::Value) {
         self.insert(Name::new(key), value);
     }
+
+    fn get_iterator(&'obj self) -> impl Iterator<Item = (&'obj str, &'obj Self::Value)> {
+        let iter = self.iter().map(|(name, value)| (name.as_str(), value));
+        iter
+    }
 }
 
 impl<'json> JsonLike<'json> for ConstValue {

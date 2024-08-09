@@ -1,7 +1,9 @@
 use std::future::Future;
 use std::ops::Deref;
 
+use async_graphql::Name;
 use async_graphql_value::ConstValue;
+use indexmap::IndexMap;
 
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
@@ -95,6 +97,35 @@ impl IR {
 
                     Ok(value)
                 }),
+                IR::ModifyInput(input_transforms) => {
+                    if let Some(args) = ctx.path_arg::<&str>(&[]) {
+                        // iter: we iterate the input arguments
+                        let args: IndexMap<Name, ConstValue> = args
+                            .as_object()
+                            .unwrap()
+                            .iter()
+                            .map(|(name, value)| {
+                                if name.to_string().eq(&input_transforms.arg_name) {
+                                    // if: input argument is the targeted one, we apply the
+                                    // `input_transforms`
+                                    (
+                                        name.clone(),
+                                        value.handle_input_transforms(
+                                            input_transforms,
+                                            &input_transforms.arg_type,
+                                        ),
+                                    )
+                                } else {
+                                    (name.clone(), value.clone())
+                                }
+                            })
+                            .collect();
+
+                        Ok(ConstValue::Object(args))
+                    } else {
+                        Ok(ConstValue::Null)
+                    }
+                }
             }
         })
     }
