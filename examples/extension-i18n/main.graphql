@@ -16,6 +16,6 @@ type User {
 
 type Company {
   name: String
-  catchPhrase: String @extension(name: "translate", params: ["catchPharse", "{{.value.catchPhrase}}"])
+  catchPhrase: String @extension(name: "translate", params: ["catchPhrase", "{{.value.catchPhrase}}"])
   bs: String
 }
