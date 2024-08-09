@@ -2,7 +2,7 @@ use async_graphql::Positioned;
 
 use crate::core::ir::TypedValue;
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
-use crate::core::jit::store::{Data, DataPath, Store};
+use crate::core::jit::store::{DataPath, Store};
 use crate::core::jit::{Error, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar;
@@ -83,32 +83,22 @@ where
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         match self.store.get(&node.id) {
-            Some(val) => {
-                let mut data = val;
+            Some(value) => {
+                let mut value = value.as_ref().map_err(Clone::clone)?;
 
                 for index in data_path.as_slice() {
-                    match data {
-                        Data::Multiple(v) => {
-                            data = &v[index];
-                        }
-                        _ => return Ok(Value::null()),
+                    if let Some(arr) = value.as_array() {
+                        value = &arr[*index];
+                    } else {
+                        return Ok(Value::null());
                     }
                 }
 
-                match data {
-                    Data::Single(result) => {
-                        let value = result.as_ref().map_err(Clone::clone)?;
-
-                        if !Self::is_array(&node.type_of, value) {
-                            return Ok(Value::null());
-                        }
-                        self.iter_inner(node, value, data_path)
-                    }
-                    _ => {
-                        // TODO: should bailout instead of returning Null
-                        Ok(Value::null())
-                    }
+                if !Self::is_array(&node.type_of, value) {
+                    return Ok(Value::null());
                 }
+
+                self.iter_inner(node, value, data_path)
             }
             None => match value {
                 Some(value) => self.iter_inner(node, value, data_path),
@@ -187,13 +177,16 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     use crate::core::blueprint::Blueprint;
-    use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JP;
     use crate::core::jit::model::{FieldId, Variables};
-    use crate::core::jit::store::{Data, Store};
+    use crate::core::jit::store::Store;
     use crate::core::jit::synth::Synth;
     use crate::core::valid::Validator;
+    use crate::core::{
+        config::{Config, ConfigModule},
+        json::JsonLike,
+    };
 
     const POSTS: &str = r#"
         [
@@ -245,20 +238,15 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value<'a, Value: Deserialize<'a>>(self) -> Data<Value> {
+        fn into_value<'a, Value: Deserialize<'a> + JsonLike<'a>>(self) -> Value {
             match self {
-                Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
-                Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
-                TestData::UsersData => Data::Multiple(
-                    vec![
-                        Data::Single(serde_json::from_str(USER1).unwrap()),
-                        Data::Single(serde_json::from_str(USER2).unwrap()),
-                    ]
-                    .into_iter()
-                    .enumerate()
-                    .collect(),
-                ),
-                TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
+                Self::Posts => serde_json::from_str(POSTS).unwrap(),
+                Self::User1 => serde_json::from_str(USER1).unwrap(),
+                TestData::UsersData => Value::array(vec![
+                    (serde_json::from_str(USER1).unwrap()),
+                    (serde_json::from_str(USER2).unwrap()),
+                ]),
+                TestData::Users => serde_json::from_str(USERS).unwrap(),
             }
         }
     }
@@ -267,7 +255,7 @@ mod tests {
 
     fn make_store<'a, Value>(query: &str, store: Vec<(FieldId, TestData)>) -> Synth<Value>
     where
-        Value: Deserialize<'a> + Serialize + Clone + std::fmt::Debug,
+        Value: Deserialize<'a> + JsonLike<'a> + Serialize + Clone + std::fmt::Debug,
     {
         let store = store
             .into_iter()
@@ -285,7 +273,7 @@ mod tests {
         let store = store
             .into_iter()
             .fold(Store::new(), |mut store, (id, data)| {
-                store.set_data(id, data.map(Ok));
+                store.set_data(id, Ok(data));
                 store
             });
         let vars = Variables::new();

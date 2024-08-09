@@ -113,12 +113,13 @@ where
         if field.type_of.is_list() {
             // Check if the value is an array
             if let Some(array) = value.as_array() {
-                join_all(array.iter().enumerate().map(|(index, value)| {
+                join_all(array.iter().enumerate().map(|(index, arr_value)| {
                     let type_name = value.get_type_name().unwrap_or(field.type_of.name());
 
                     join_all(field.nested_iter(type_name).map(|field| {
                         let ctx = ctx.with_value_and_field(value, field);
-                        let data_path = data_path.clone().with_index(index);
+                        // let data_path = data_path.clone().with_index(index);
+                        let data_path = data_path.clone();
                         async move { self.execute(&ctx, data_path).await }
                     }))
                 }))
@@ -133,8 +134,8 @@ where
         else {
             let type_name = value.get_type_name().unwrap_or(field.type_of.name());
 
-            join_all(field.nested_iter(type_name).map(|child| {
-                let ctx = ctx.with_value_and_field(value, child);
+            join_all(field.nested_iter(type_name).map(|field| {
+                let ctx = ctx.with_value_and_field(value, field);
                 let data_path = data_path.clone();
                 async move { self.execute(&ctx, data_path).await }
             }))
@@ -160,11 +161,7 @@ where
 
             let mut store = self.store.lock().unwrap();
 
-            store.set(
-                &field.id,
-                &data_path,
-                result.map_err(|e| Positioned::new(e, field.pos)),
-            );
+            store.set(&field.id, result.map_err(|e| Positioned::new(e, field.pos)));
         } else {
             // if the present field doesn't have IR, still go through it's extensions to see
             // if they've IR.
