@@ -3,9 +3,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
-use async_graphql::{
-    ErrorExtensions, Name, PathSegment, Positioned as AsyncPositioned, ServerError,
-};
+use async_graphql::{ErrorExtensions, Name, Positioned as AsyncPositioned, ServerError};
 use async_graphql_value::ConstValue;
 use serde::{Deserialize, Serialize};
 
@@ -508,6 +506,32 @@ impl From<Pos> for async_graphql::Pos {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PathSegment {
+    /// A field in an object.
+    Field(String),
+    /// An index in a list.
+    Index(usize),
+}
+
+impl From<async_graphql::PathSegment> for PathSegment {
+    fn from(value: async_graphql::PathSegment) -> Self {
+        match value {
+            async_graphql::PathSegment::Field(field) => PathSegment::Field(field),
+            async_graphql::PathSegment::Index(index) => PathSegment::Index(index),
+        }
+    }
+}
+
+impl From<PathSegment> for async_graphql::PathSegment {
+    fn from(val: PathSegment) -> Self {
+        match val {
+            PathSegment::Field(field) => async_graphql::PathSegment::Field(field),
+            PathSegment::Index(index) => async_graphql::PathSegment::Index(index),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 pub struct Positioned<Value> {
     pub value: Value,
@@ -537,7 +561,11 @@ impl From<ServerError> for Positioned<Error> {
         Self {
             value: Error::ServerError(val.clone()),
             pos: val.locations.first().cloned().unwrap_or_default().into(),
-            path: val.path.clone(),
+            path: val
+                .path
+                .into_iter()
+                .map(PathSegment::from)
+                .collect::<Vec<_>>(),
         }
     }
 }
@@ -557,7 +585,11 @@ impl From<Positioned<Error>> for ServerError {
                 // validation errors here but in general we might consider setting it
                 // for every error
                 if let Error::Validation(_) = val.value {
-                    server_error.path = val.path;
+                    server_error.path = val
+                        .path
+                        .into_iter()
+                        .map(|path| path.into())
+                        .collect::<Vec<_>>();
                 }
 
                 server_error

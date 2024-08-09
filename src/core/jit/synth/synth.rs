@@ -1,10 +1,8 @@
-use async_graphql::PathSegment;
-
 use crate::core::ir::TypeName;
 use crate::core::jit::exec::{TypedValue, TypedValueRef};
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
-use crate::core::jit::{Error, Positioned, ValidationError};
+use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar;
 
