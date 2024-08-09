@@ -77,13 +77,16 @@ impl InferTypeName {
         let wizard: Wizard<Question, Answer> = Wizard::new(MODEL.to_string()).with_json_mode(true);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
-        let total = config.types.len();
-        for (i, (type_name, type_)) in config.types.iter().enumerate() {
-            if config.is_root_operation_type(type_name) {
-                // Ignore the root types as their names are already given by the user.
-                continue;
-            }
 
+        // removed root type from types.
+        let types_to_be_processed = config
+            .types
+            .iter()
+            .filter(|(type_name, _)| !config.is_root_operation_type(type_name))
+            .collect::<Vec<_>>();
+
+        let total = types_to_be_processed.len();
+        for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
             // convert type to sdl format.
             let question = Question {
                 fields: type_
