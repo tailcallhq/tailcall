@@ -23,10 +23,7 @@
     }
   ],
   "preset": {
-    "mergeType": {
-      "threshold": 1.0,
-      "mergeUnknownTypes": true
-    },
+    "mergeType": 1.0,
     "consolidateURL": 0.5
   },
   "output": {
