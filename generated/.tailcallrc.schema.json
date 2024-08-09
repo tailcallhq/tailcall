@@ -369,6 +369,23 @@
       },
       "additionalProperties": false
     },
+    "Extension": {
+      "description": "Provides the ability to load custom extensions that are executed before the execution of the IR for the field and after the field value is resolved.",
+      "type": "object",
+      "required": [
+        "name",
+        "params"
+      ],
+      "properties": {
+        "name": {
+          "description": "Used to define where the extension is located so tailcall can load it.",
+          "type": "string"
+        },
+        "params": {
+          "description": "Used to define parameters that are calculated and injected into the IR. Mustache syntax can be used on the parameters field."
+        }
+      }
+    },
     "Field": {
       "description": "A field definition containing all the metadata information about resolving a field.",
       "type": "object",
@@ -417,6 +434,17 @@
           "anyOf": [
             {
               "$ref": "#/definitions/Expr"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extension": {
+          "description": "Inserts an Extension for the field.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Extension"
             },
             {
               "type": "null"

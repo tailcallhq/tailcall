@@ -1,0 +1,21 @@
+schema @server(port: 8000) @upstream(baseURL: "http://127.0.0.1:3000/", batch: {maxSize: 10, delay: 10}) {
+  query: Query
+}
+
+type Query {
+  users: [User] @http(path: "/users")
+  user(id: String): User @http(path: "/users") @extension(name: "modify_ir", params: ["{{.args.id}}"])
+}
+
+type User {
+  id: ID
+  name: String @extension(name: "translate", params: ["userName", "{{.value.name}}"])
+  username: String
+  company: Company
+}
+
+type Company {
+  name: String
+  catchPhrase: String @extension(name: "translate", params: ["catchPharse", "{{.value.catchPhrase}}"])
+  bs: String
+}

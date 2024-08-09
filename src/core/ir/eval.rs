@@ -95,6 +95,23 @@ impl IR {
 
                     Ok(value)
                 }),
+                IR::Extension { plugin, params, ir } => {
+                    // TODO: maybe modify IR before execution
+                    // Problem: lifetime issues
+                    // TODO: extract path properly
+                    let value = match ir {
+                        Some(ir) => ir.eval(ctx).await?,
+                        None => ctx
+                            .path_value::<&String>(&[])
+                            .map(|cow| {
+
+                                cow.into_owned()
+                            })
+                            .unwrap_or_else(|| ConstValue::Null),
+                    };
+                    let params = params.render_value(ctx);
+                    plugin.process(params, value)
+                }
             }
         })
     }

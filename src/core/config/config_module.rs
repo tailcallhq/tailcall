@@ -6,6 +6,7 @@ use jsonwebtoken::jwk::JwkSet;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 
+use crate::core::blueprint::ExtensionLoader;
 use crate::core::config::Config;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
@@ -131,6 +132,8 @@ pub struct Extensions {
     pub htpasswd: Vec<Content<String>>,
 
     pub jwks: Vec<Content<JwkSet>>,
+
+    pub plugin_extensions: HashMap<String, Arc<dyn ExtensionLoader>>,
 }
 
 impl Extensions {

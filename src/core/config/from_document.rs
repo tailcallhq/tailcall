@@ -10,7 +10,7 @@ use async_graphql::Name;
 use async_graphql_value::ConstValue;
 
 use super::telemetry::Telemetry;
-use super::{Alias, Tag, JS};
+use super::{Alias, Extension, Tag, JS};
 use crate::core::config::{
     self, Cache, Call, Config, Enum, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
     Server, Union, Upstream, Variant,
@@ -324,6 +324,7 @@ where
     let list_type_required = matches!(&base, BaseType::List(type_of) if !type_of.nullable);
     let doc = description.to_owned().map(|pos| pos.node);
     config::Http::from_directives(directives.iter())
+        .fuse(Extension::from_directives(directives.iter()))
         .fuse(GraphQL::from_directives(directives.iter()))
         .fuse(Cache::from_directives(directives.iter()))
         .fuse(Grpc::from_directives(directives.iter()))
@@ -334,7 +335,19 @@ where
         .fuse(Protected::from_directives(directives.iter()))
         .fuse(default_value)
         .map(
-            |(http, graphql, cache, grpc, omit, modify, script, call, protected, default_value)| {
+            |(
+                http,
+                extension,
+                graphql,
+                cache,
+                grpc,
+                omit,
+                modify,
+                script,
+                call,
+                protected,
+                default_value,
+            )| {
                 let const_field = to_const_field(directives);
                 config::Field {
                     type_of,
@@ -347,6 +360,7 @@ where
                     omit,
                     http,
                     grpc,
+                    extension,
                     script,
                     const_field,
                     graphql,

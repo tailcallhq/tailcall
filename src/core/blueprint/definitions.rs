@@ -519,6 +519,7 @@ pub fn to_field_definition(
         .and(update_protected(object_name).trace(Protected::trace_name().as_str()))
         .and(update_enum_alias())
         .and(update_union_resolver())
+        .and(update_extension())
         .try_fold(
             &(config_module, field, type_of, name),
             FieldDefinition::default(),

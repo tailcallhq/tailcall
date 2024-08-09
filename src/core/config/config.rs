@@ -276,6 +276,10 @@ pub struct Field {
     pub http: Option<Http>,
 
     ///
+    /// Inserts an Extension for the field.
+    pub extension: Option<Extension>,
+
+    ///
     /// Inserts a call resolver for the field.
     #[serde(default, skip_serializing_if = "is_default")]
     pub call: Option<Call>,
@@ -616,6 +620,30 @@ pub struct Call {
     /// If you have multiple steps, the output of the previous step is passed as
     /// input to the next step.
     pub steps: Vec<Step>,
+}
+
+///
+/// Provides the ability to load custom extensions that are executed before the
+/// execution of the IR for the field and after the field value is resolved.
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+)]
+#[directive_definition(locations = "FieldDefinition")]
+pub struct Extension {
+    /// Used to define where the extension is located so tailcall can load it.
+    pub name: String,
+
+    /// Used to define parameters that are calculated and injected into the IR.
+    /// Mustache syntax can be used on the parameters field.
+    pub params: Value,
 }
 
 ///

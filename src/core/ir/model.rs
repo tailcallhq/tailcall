@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::num::NonZeroU64;
+use std::sync::Arc;
 
 use async_graphql::Value;
 use strum_macros::Display;
 
 use super::discriminator::Discriminator;
 use super::{EvalContext, ResolverContextLike};
-use crate::core::blueprint::DynamicValue;
+use crate::core::blueprint::{DynamicValue, ExtensionLoader};
 use crate::core::config::group_by::GroupBy;
 use crate::core::graphql::{self};
 use crate::core::http::HttpFilter;
@@ -26,6 +27,12 @@ pub enum IR {
     Map(Map),
     Pipe(Box<IR>, Box<IR>),
     Discriminate(Discriminator, Box<IR>),
+    Extension {
+        // path: Vec<String>,
+        plugin: Arc<dyn ExtensionLoader>,
+        params: DynamicValue<Value>,
+        ir: Option<Box<IR>>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -148,6 +155,19 @@ impl IR {
                     }
                     IR::Discriminate(discriminator, expr) => {
                         IR::Discriminate(discriminator, expr.modify_box(modifier))
+                    }
+                    IR::Extension { plugin, params, ir } => {
+                        // step: we allow the extension to modify the IR before execution
+                        // TODO: maybe this place is not correct
+                        let ir = match ir {
+                            Some(ir) => {
+                                // TODO: fix params
+                                let params = async_graphql_value::ConstValue::Null;
+                                Some(plugin.prepare(ir, params))
+                            }
+                            None => None,
+                        };
+                        IR::Extension { plugin, params, ir }
                     }
                 }
             }
