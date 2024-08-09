@@ -57,7 +57,6 @@ impl TypeMerger {
 
                     if let Some(type_info_2) = config.types.get(type_name_2) {
                         let threshold = mergeable_types.get_threshold(type_name_1, type_name_2);
-
                         visited_types.insert(type_name_1.clone());
                         let is_similar = stat_gen
                             .similarity(
@@ -66,6 +65,7 @@ impl TypeMerger {
                                 threshold,
                             )
                             .to_result();
+
                         if let Ok(similar) = is_similar {
                             if similar {
                                 visited_types.insert(type_name_2.clone());
