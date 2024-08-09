@@ -171,9 +171,21 @@ fn format_selection_field(field: &SelectionField, related_fields: &RelatedFields
         }
     }
 
-    if let Some(selection_set) = selection_set {
-        output.push(' ');
-        output.push_str(&selection_set);
+    match selection_set {
+        Some(selection_set) => {
+            output.push(' ');
+            output.push_str(&selection_set);
+        }
+        None => {
+            let selections = field
+                .selection_set()
+                .map(|select| select.name())
+                .collect::<Vec<_>>();
+            if !selections.is_empty() {
+                output.push(' ');
+                output.push_str(&format!("{{ {} }}", selections.join(" ")));
+            }
+        }
     }
 
     output
