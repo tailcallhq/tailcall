@@ -1,0 +1,21 @@
+schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {maxSize: 10, delay: 10}) {
+  query: Query
+}
+
+type Query {
+  users: [User] @http(path: "/users")
+  user(id: ID!): User @http(path: "/users/{{.args.id}}") @extension(name: "modify_ir", params: ["{{.args.id}}"])
+}
+
+type User {
+  id: ID
+  name: String @extension(name: "translate", params: ["userName", "{{.value.name}}"])
+  username: String
+  company: Company
+}
+
+type Company {
+  name: String
+  catchPhrase: String @extension(name: "translate", params: ["catchPhrase", "{{.value.catchPhrase}}"])
+  bs: String
+}

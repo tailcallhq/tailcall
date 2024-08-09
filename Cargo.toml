@@ -242,6 +242,7 @@ members = [
     ,
     "tailcall-http-cache",
     "tailcall-version",
+    "examples/extension-i18n",
 ]
 
 # Boost execution_spec snapshot diffing performance

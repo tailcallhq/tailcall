@@ -1,0 +1,12 @@
+[package]
+name = "extension-i18n"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tailcall = { path = "../.." }
+tracing = { workspace = true }
+dotenvy = "0.15.7"
+anyhow = { workspace = true }
+tokio = { workspace = true }
+async-graphql-value = "7.0.3"
