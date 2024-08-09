@@ -1,11 +1,14 @@
-use std::sync::Arc;
+use std::{
+    collections::{BTreeSet, HashSet},
+    sync::Arc,
+};
 
 use async_graphql::from_value;
+use async_graphql_value::ConstValue;
 use reqwest::Request;
 
 use super::model::DataLoaderId;
 use super::{EvalContext, ResolverContextLike};
-use crate::core::data_loader::{DataLoader, Loader};
 use crate::core::grpc::protobuf::ProtobufOperation;
 use crate::core::grpc::request::execute_grpc_request;
 use crate::core::grpc::request_template::RenderedRequestTemplate;
@@ -15,6 +18,10 @@ use crate::core::http::{
 use crate::core::ir::Error;
 use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
+use crate::core::{
+    config::group_by::GroupBy,
+    data_loader::{DataLoader, Loader},
+};
 use crate::core::{grpc, http, worker, WorkerIO};
 
 ///
@@ -26,6 +33,7 @@ pub struct EvalHttp<'a, 'ctx, Context: ResolverContextLike + Sync> {
     evaluation_ctx: &'ctx EvalContext<'a, Context>,
     data_loader: Option<&'a DataLoader<DataLoaderRequest, HttpDataLoader>>,
     request_template: &'a http::RequestTemplate,
+    group_by: Option<GroupBy>,
 }
 
 impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> {
@@ -33,6 +41,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         evaluation_ctx: &'ctx EvalContext<'a, Context>,
         request_template: &'a RequestTemplate,
         id: &Option<DataLoaderId>,
+        group_by: Option<GroupBy>,
     ) -> Self {
         let data_loader = if evaluation_ctx.request_ctx.is_batching_enabled() {
             id.and_then(|id| {
@@ -45,15 +54,52 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
             None
         };
 
-        Self { evaluation_ctx, data_loader, request_template }
+        Self { evaluation_ctx, data_loader, request_template, group_by }
     }
 
     pub fn init_request(&self) -> Result<Request, Error> {
         Ok(self.request_template.to_request(self.evaluation_ctx)?)
     }
 
-    pub async fn execute(&self, req: Request) -> Result<Response<async_graphql::Value>, Error> {
+    pub async fn execute(&self, req: Request) -> Result<ConstValue, Error> {
         let ctx = &self.evaluation_ctx;
+
+        let value = ctx.value();
+
+        if let Some(value) = value {
+            if value.as_array().is_some() {
+                let req_template = &self.request_template;
+                let loader = HttpDataLoader::new(ctx.request_ctx.runtime.clone(), self.group_by.clone(), false);
+                let mut requests_keys = Vec::new();
+                let mut requests = HashSet::new();
+
+                value.try_for_each(|value| {
+                    let ctx = ctx.with_value(value);
+                    let req = req_template.to_request(&ctx)?;
+
+                    let dl_req = DataLoaderRequest::new(req, BTreeSet::default());
+                    requests.insert(dl_req.clone());
+                    requests_keys.push(dl_req);
+
+                    anyhow::Ok(())
+                })?;
+
+                let requests: Vec<_> = requests.into_iter().collect();
+                let results = loader.load(&requests).await?;
+
+                let values: Vec<_> = requests_keys
+                    .iter()
+                    .map(|key| {
+                        let res = results.get(key).cloned().unwrap_or_default();
+
+                        res.body
+                    })
+                    .collect();
+
+                return Ok(ConstValue::List(values));
+            }
+        }
+
         let is_get = req.method() == reqwest::Method::GET;
         let dl = &self.data_loader;
         let response = if is_get && dl.is_some() {
@@ -73,7 +119,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
 
         set_headers(ctx, &response);
 
-        Ok(response)
+        Ok(response.body)
     }
 
     #[async_recursion::async_recursion]
@@ -82,7 +128,7 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
         mut request: reqwest::Request,
         worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
         http_filter: &HttpFilter,
-    ) -> Result<Response<async_graphql::Value>, Error> {
+    ) -> Result<ConstValue, Error> {
         let js_request = worker::WorkerRequest::try_from(&request)?;
         let event = worker::Event::Request(js_request);
 
@@ -104,7 +150,8 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
                             .set_path(w_response.headers()["location"].as_str());
                         self.execute_with_worker(request, worker, http_filter).await
                     } else {
-                        Ok(w_response.try_into()?)
+                        let response: Response<_> = w_response.try_into()?;
+                        Ok(response.body)
                     }
                 }
             },
