@@ -8,6 +8,7 @@
       "expiresInMins": 30
     }
   },
+  "isMutation": true,
   "fieldName": "login",
   "response": {
     "status": 201,
