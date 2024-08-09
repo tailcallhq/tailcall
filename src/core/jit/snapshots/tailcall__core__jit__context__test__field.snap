@@ -1,23 +1,32 @@
 ---
 source: src/core/jit/context.rs
-expression: ctx.field().unwrap()
+expression: ctx.field()
 ---
-SelectionField {
+Field {
+    id: 0,
     name: "posts",
-    args: [],
-    directives: None,
-    selection_set: [
-        SelectionField {
-            name: "id",
-            args: [],
-            directives: None,
-            selection_set: [],
-        },
-        SelectionField {
-            name: "title",
-            args: [],
-            directives: None,
-            selection_set: [],
-        },
-    ],
+    ir: "Some(..)",
+    type_of: [Post],
+    type_condition: "Query",
+    extensions: Some(
+        Nested(
+            [
+                Field {
+                    id: 1,
+                    name: "id",
+                    type_of: Int!,
+                    type_condition: "Post",
+                    directives: [],
+                },
+                Field {
+                    id: 2,
+                    name: "title",
+                    type_of: String!,
+                    type_condition: "Post",
+                    directives: [],
+                },
+            ],
+        ),
+    ),
+    directives: [],
 }
