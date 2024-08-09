@@ -9,10 +9,9 @@ use async_graphql::{
 use async_graphql_value::ConstValue;
 use serde::{Deserialize, Serialize};
 
+use super::Error;
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
-
-use super::Error;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);

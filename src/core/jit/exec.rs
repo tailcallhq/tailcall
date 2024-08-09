@@ -117,7 +117,7 @@ where
             }
             // TODO: with_args should be called on inside iter_field on any level, not only
             // for root fields
-            let ctx = Context::new(&self.request, field, &self.env).with_args(arg_map);
+            let ctx = Context::new(&self.request, field, self.env).with_args(arg_map);
             self.execute(&ctx, DataPath::new()).await
         }))
         .await;
