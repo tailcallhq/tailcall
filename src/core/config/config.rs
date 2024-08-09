@@ -10,20 +10,21 @@ use serde_json::Value;
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
-use tailcall_typedefs_common::scalar_definition::ScalarDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
+use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
 use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
+use crate::core::is_default;
 use crate::core::json::JsonSchema;
 use crate::core::macros::MergeRight;
 use crate::core::merge_right::MergeRight;
+use crate::core::scalar::Scalar;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{is_default, scalar};
 
 #[derive(
     Serialize,
@@ -589,8 +590,9 @@ pub struct Http {
     /// This represents the query parameters of your API call. You can pass it
     /// as a static object or use Mustache template for dynamic parameters.
     /// These parameters will be added to the URL.
-    /// When `batchKey` is present Tailcall uses the first query parameter as
-    /// the key for the groupBy operator.
+    /// NOTE: Query parameter order is critical for batching in Tailcall. The
+    /// first parameter referencing a field in the current value using mustache
+    /// syntax is automatically selected as the batching parameter.
     pub query: Vec<KeyValue>,
 }
 
@@ -871,8 +873,8 @@ impl Config {
         }
     }
 
-    pub fn n_plus_one(&self) -> Vec<Vec<(String, String)>> {
-        super::n_plus_one::n_plus_one(self)
+    pub fn n_plus_one(&self) -> QueryPath {
+        super::npo::PathTracker::new(self).find()
     }
 
     ///
@@ -901,7 +903,7 @@ impl Config {
     pub fn is_scalar(&self, type_name: &str) -> bool {
         self.types
             .get(type_name)
-            .map_or(scalar::is_predefined_scalar(type_name), |ty| ty.scalar())
+            .map_or(Scalar::is_predefined(type_name), |ty| ty.scalar())
     }
 
     ///
@@ -1048,23 +1050,23 @@ impl Config {
             .add_input(Modify::input_definition())
             .add_input(Cache::input_definition())
             .add_input(Telemetry::input_definition())
-            .add_scalar(scalar::Bytes::scalar_definition())
-            .add_scalar(scalar::Date::scalar_definition())
-            .add_scalar(scalar::Email::scalar_definition())
-            .add_scalar(scalar::Empty::scalar_definition())
-            .add_scalar(scalar::Int128::scalar_definition())
-            .add_scalar(scalar::Int16::scalar_definition())
-            .add_scalar(scalar::Int32::scalar_definition())
-            .add_scalar(scalar::Int64::scalar_definition())
-            .add_scalar(scalar::Int8::scalar_definition())
-            .add_scalar(scalar::JSON::scalar_definition())
-            .add_scalar(scalar::PhoneNumber::scalar_definition())
-            .add_scalar(scalar::UInt128::scalar_definition())
-            .add_scalar(scalar::UInt16::scalar_definition())
-            .add_scalar(scalar::UInt32::scalar_definition())
-            .add_scalar(scalar::UInt64::scalar_definition())
-            .add_scalar(scalar::UInt8::scalar_definition())
-            .add_scalar(scalar::Url::scalar_definition())
+            .add_scalar(Scalar::Bytes.scalar_definition())
+            .add_scalar(Scalar::Date.scalar_definition())
+            .add_scalar(Scalar::Email.scalar_definition())
+            .add_scalar(Scalar::Empty.scalar_definition())
+            .add_scalar(Scalar::Int128.scalar_definition())
+            .add_scalar(Scalar::Int16.scalar_definition())
+            .add_scalar(Scalar::Int32.scalar_definition())
+            .add_scalar(Scalar::Int64.scalar_definition())
+            .add_scalar(Scalar::Int8.scalar_definition())
+            .add_scalar(Scalar::JSON.scalar_definition())
+            .add_scalar(Scalar::PhoneNumber.scalar_definition())
+            .add_scalar(Scalar::UInt128.scalar_definition())
+            .add_scalar(Scalar::UInt16.scalar_definition())
+            .add_scalar(Scalar::UInt32.scalar_definition())
+            .add_scalar(Scalar::UInt64.scalar_definition())
+            .add_scalar(Scalar::UInt8.scalar_definition())
+            .add_scalar(Scalar::Url.scalar_definition())
             .build()
     }
 }

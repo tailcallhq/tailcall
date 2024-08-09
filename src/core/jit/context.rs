@@ -1,7 +1,7 @@
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
 
-use super::{Field, Nested, OperationPlan, Request};
+use super::{Field, Nested,Request};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
 /// Rust representation of the GraphQL context available in the DSL
@@ -13,15 +13,15 @@ pub struct Context<'a, Input, Output> {
     // TODO: remove the args, since they're already present inside the fields and add support for
     // default values.
     field: &'a Field<Nested<Input>, Input>,
-    plan: &'a OperationPlan<Input>,
+    is_query: bool,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     pub fn new(
         request: &'a Request<Input>,
+        is_query: bool,
         field: &'a Field<Nested<Input>, Input>,
-        plan: &'a OperationPlan<Input>,
     ) -> Self {
-        Self { request, value: None, args: None, field, plan }
+        Self { request, is_query, value: None, args: None, field }
     }
 
     pub fn with_value_and_field(
@@ -29,25 +29,7 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         value: &'a Output,
         field: &'a Field<Nested<Input>, Input>,
     ) -> Self {
-        Self {
-            request: self.request,
-            args: None,
-            value: Some(value),
-            field,
-            plan: self.plan,
-        }
-    }
-
-    pub fn with_field(&self, field: &'a Field<Nested<Input>, Input>) -> Self {
-        let args = self.args.clone();
-
-        Self {
-            request: self.request,
-            value: self.value,
-            field,
-            args,
-            plan: self.plan,
-        }
+        Self { request: self.request, is_query: self.is_query, args: None, value: Some(value), field }
     }
 
     pub fn with_args(&self, args: indexmap::IndexMap<&str, Input>) -> Self {
@@ -60,12 +42,16 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             value: self.value,
             args: Some(map),
             field: self.field,
-            plan: self.plan,
+            is_query: self.is_query,
         }
     }
 
     pub fn value(&self) -> Option<&Output> {
         self.value
+    }
+
+    pub fn field(&self) -> &Field<Nested<Input>, Input> {
+        self.field
     }
 }
 
@@ -84,16 +70,18 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
     }
 
     fn is_query(&self) -> bool {
-        self.plan.is_query()
+       self.is_query
     }
 
-    fn add_error(&self, error: ServerError) {
-        self.plan.add_error(error.into())
+    fn add_error(&self, _error: ServerError) {
+        todo!()
     }
 }
 
 #[cfg(test)]
 mod test {
+    use async_graphql_value::ConstValue;
+
     use super::Context;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
@@ -119,8 +107,7 @@ mod test {
     fn test_field() {
         let (plan, req) = setup("query {posts {id title}}");
         let field = plan.as_nested();
-        let ctx: Context<async_graphql::Value, async_graphql::Value> =
-            Context::new(&req, &field[0], &plan);
-        insta::assert_debug_snapshot!(ctx.field().unwrap());
+        let ctx: Context<ConstValue, ConstValue> = Context::new(&req, false, &field[0]);
+        insta::assert_debug_snapshot!(<Context<_, _> as ResolverContextLike>::field(&ctx).unwrap());
     }
 }
