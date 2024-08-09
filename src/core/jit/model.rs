@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
 use async_graphql::{
@@ -325,7 +325,6 @@ pub struct OperationPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
-    errors: Arc<Mutex<Vec<Positioned<Error>>>>,
     pub index: Arc<Index>,
 }
 
@@ -359,7 +358,6 @@ impl<Input> OperationPlan<Input> {
             operation_type: self.operation_type,
             nested,
             index: self.index,
-            errors: self.errors,
         })
     }
 }
@@ -385,20 +383,11 @@ impl<Input> OperationPlan<Input> {
             nested,
             operation_type,
             index,
-            errors: Arc::new(Mutex::new(vec![])),
         }
     }
 
     pub fn operation_type(&self) -> OperationType {
         self.operation_type
-    }
-
-    pub fn errors(&self) -> Vec<Positioned<Error>> {
-        self.errors.lock().unwrap().clone()
-    }
-
-    pub fn add_error(&self, error: Positioned<Error>) {
-        self.errors.lock().unwrap().push(error)
     }
 
     pub fn is_query(&self) -> bool {
