@@ -32,6 +32,8 @@ pub enum ValidationError {
     TypeNameMismatch,
     #[error(r#"internal: invalid item for enum "{type_of}""#)]
     EnumInvalid { type_of: String },
+    #[error("internal: non-null types require a return value")]
+    ValueRequired,
 }
 
 #[derive(Debug, Clone, Error)]

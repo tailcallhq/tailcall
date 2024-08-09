@@ -134,7 +134,13 @@ where
 
         let TypedValueRef { type_name, value } = result;
 
-        let ans = if self.plan.field_is_scalar(node) {
+        let eval_result = if value.is_null() {
+            if node.type_of.is_nullable() {
+                Ok(Value::null())
+            } else {
+                Err(ValidationError::ValueRequired.into())
+            }
+        } else if self.plan.field_is_scalar(node) {
             let scalar =
                 scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
 
@@ -174,15 +180,8 @@ where
                             if let Some(index) = data_path.as_slice().last() {
                                 &v[*index]
                             } else {
-                                // return Err(Positioned::new(
-                                //     ValidationError::TypeNameMismatch.into(),
-                                //     node.pos,
-                                // ));
-
                                 return Err(Positioned {
-                                    value: ValidationError::EnumInvalid {
-                                        type_of: node.type_of.name().to_string(),
-                                    }.into(),
+                                    value: ValidationError::TypeNameMismatch.into(),
                                     pos: node.pos,
                                     path: vec![],
                                 });
@@ -223,7 +222,7 @@ where
             }
         };
 
-        ans.map_err(|e| self.to_location_error(e, node))
+        eval_result.map_err(|e| self.to_location_error(e, node))
     }
 
     fn to_location_error(
