@@ -1,8 +1,7 @@
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
 
-use super::exec::ExecutionEnv;
-use super::{Field, Nested, Request};
+use super::{exec::ExecutionEnv, Field, Nested, Request};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
 /// Rust representation of the GraphQL context available in the DSL
@@ -68,6 +67,10 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     pub fn value(&self) -> Option<&Output> {
         self.value
     }
+
+    pub fn field(&self) -> &Field<Nested<Input>, Input> {
+        self.field
+    }
 }
 
 impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
@@ -95,6 +98,8 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
 
 #[cfg(test)]
 mod test {
+    use async_graphql_value::ConstValue;
+
     use super::Context;
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
@@ -124,6 +129,6 @@ mod test {
         let env = ExecutionEnv::new(plan.clone());
         let ctx: Context<async_graphql::Value, async_graphql::Value> =
             Context::new(&req, &field[0], &env);
-        insta::assert_debug_snapshot!(ctx.field().unwrap());
+        insta::assert_debug_snapshot!(ctx.field());
     }
 }

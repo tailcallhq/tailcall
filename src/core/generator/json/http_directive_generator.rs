@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use convert_case::{Case, Casing};
 use regex::Regex;
 use url::Url;
 
@@ -59,25 +60,37 @@ impl<'a> HttpDirectiveGenerator<'a> {
     }
 
     fn add_path_variables(&mut self, field: &mut Field) {
-        let re = Regex::new(r"/(\d+)").unwrap();
+        let int_regex = Regex::new(r"/\b\d+\b").unwrap();
+        let uuid_regex =
+            Regex::new(r"/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").unwrap();
+
         let mut arg_index = 1;
         let path_url = self.url.path();
 
-        let mustache_compatible_url = re.replace_all(path_url, |_: &regex::Captures| {
-            let arg_key = format!("p{}", arg_index);
-            let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
+        let regex_map = vec![(int_regex, "Int"), (uuid_regex, "String")];
 
-            let arg = Arg {
-                type_of: "Int".to_string(),
-                required: true,
-                ..Default::default()
-            };
+        let mustache_compatible_url =
+            regex_map
+                .into_iter()
+                .fold(path_url.to_string(), |acc, (regex, type_of)| {
+                    regex
+                        .replace_all(&acc.to_string(), |_: &regex::Captures| {
+                            let arg_key = format!("p{}", arg_index);
+                            let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
 
-            field.args.insert(arg_key, arg);
+                            let arg = Arg {
+                                type_of: type_of.to_string(),
+                                required: true,
+                                ..Default::default()
+                            };
 
-            arg_index += 1;
-            placeholder
-        });
+                            field.args.insert(arg_key, arg);
+
+                            arg_index += 1;
+                            placeholder
+                        })
+                        .to_string()
+                });
 
         // add path in http directive.
         self.http.path = mustache_compatible_url.to_string();
@@ -94,11 +107,14 @@ impl<'a> HttpDirectiveGenerator<'a> {
                 ..Default::default()
             };
 
-            let value: String = format!("{{{{.args.{}}}}}", query.key);
+            // Convert query key to camel case for better readability.
+            let query_key = query.key.to_case(Case::Camel);
+            let value: String = format!("{{{{.args.{}}}}}", query_key);
+
             self.http
                 .query
                 .push(KeyValue { key: query.key.clone(), value });
-            field.args.insert(query.key, arg);
+            field.args.insert(query_key, arg);
         }
     }
 
@@ -112,8 +128,12 @@ impl<'a> HttpDirectiveGenerator<'a> {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+
     use url::Url;
 
+    use super::HttpDirectiveGenerator;
+    use crate::core::config::Field;
     use crate::core::generator::json::http_directive_generator::UrlUtility;
 
     #[test]
@@ -168,5 +188,27 @@ mod test {
         let url = Url::parse("http://example.com/path").unwrap();
         let parser = UrlUtility::new(&url);
         assert_eq!(parser.get_query_params().len(), 0);
+    }
+
+    #[test]
+    fn test_http_directive_path_args_uuid_int() {
+        let url = Url::parse("http://example.com/foo/70b0be87-d339-4395-8559-204fd368604a/bar/123")
+            .unwrap();
+        let http_directive = HttpDirectiveGenerator::new(&url);
+        let field = &mut Field { ..Default::default() };
+        let http = http_directive.generate_http_directive(field);
+        let args: HashMap<String, String> = field
+            .args
+            .iter()
+            .map(|(name, arg)| (name.to_string(), arg.type_of.clone()))
+            .collect::<HashMap<_, _>>();
+        let test_args = vec![
+            ("p1".to_string(), "Int".to_string()),
+            ("p2".to_string(), "String".to_string()),
+        ]
+        .into_iter()
+        .collect::<HashMap<_, _>>();
+        assert_eq!("/foo/{{.args.p2}}/bar/{{.args.p1}}", http.path);
+        assert_eq!(test_args, args);
     }
 }

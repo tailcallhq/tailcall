@@ -3,12 +3,16 @@ use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
-use async_graphql::{Name, Pos, Positioned};
+use async_graphql::{
+    ErrorExtensions, Name, PathSegment, Positioned as AsyncPositioned, ServerError,
+};
 use async_graphql_value::ConstValue;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
+
+use super::Error;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
@@ -110,6 +114,11 @@ pub struct Field<Extensions, Input> {
     pub name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
+    /// Specifies the name of type used in condition to fetch that field
+    /// The type could be anything from graphql type system:
+    /// interface, type, union, input type.
+    /// See [spec](https://spec.graphql.org/October2021/#sec-Type-Conditions)
+    pub type_condition: String,
     pub skip: Option<Variable>,
     pub include: Option<Variable>,
     pub args: Vec<Arg<Input>>,
@@ -141,11 +150,12 @@ impl<Input> Field<Nested<Input>, Input> {
         let mut extensions = None;
 
         if let Some(nested) = self.extensions {
-            let mut exts = vec![];
-            for v in nested.0 {
-                exts.push(v.try_map(map)?);
-            }
-            extensions = Some(Nested(exts));
+            let nested = nested
+                .0
+                .into_iter()
+                .map(|v| v.try_map(map))
+                .collect::<Result<_, _>>()?;
+            extensions = Some(Nested(nested));
         }
 
         Ok(Field {
@@ -153,6 +163,7 @@ impl<Input> Field<Nested<Input>, Input> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
+            type_condition: self.type_condition,
             extensions,
             pos: self.pos,
             skip: self.skip,
@@ -181,6 +192,7 @@ impl<Input> Field<Flat, Input> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
+            type_condition: self.type_condition,
             extensions: self.extensions,
             skip: self.skip,
             include: self.include,
@@ -200,13 +212,27 @@ impl<Input> Field<Flat, Input> {
 }
 
 impl<Input> Field<Nested<Input>, Input> {
-    pub fn nested(&self) -> Option<&Vec<Field<Nested<Input>, Input>>> {
-        self.extensions.as_ref().map(|Nested(nested)| nested)
-    }
-
-    pub fn nested_iter(&self) -> impl Iterator<Item = &Field<Nested<Input>, Input>> {
-        self.nested()
-            .map(|nested| nested.iter())
+    /// iters over children fields that are
+    /// related to passed `type_name` either
+    /// as direct field of the queried type or
+    /// field from fragment on type `type_name`
+    pub fn nested_iter<'a>(
+        &'a self,
+        type_name: &'a str,
+    ) -> impl Iterator<Item = &Field<Nested<Input>, Input>> + 'a {
+        self.extensions
+            .as_ref()
+            .map(move |nested| {
+                nested
+                    .0
+                    .iter()
+                    // TODO: handle Interface and Union types here
+                    // Right now only exact type name is used to check the set of fields
+                    // but with Interfaces/Unions we need to check if that specific type
+                    // is member of some Interface/Union and if so call the fragments for
+                    // the related Interfaces/Unions
+                    .filter(move |field| field.type_condition == type_name)
+            })
             .into_iter()
             .flatten()
     }
@@ -214,7 +240,7 @@ impl<Input> Field<Nested<Input>, Input> {
 
 impl<Input> Field<Flat, Input> {
     pub fn parent(&self) -> Option<&FieldId> {
-        self.extensions.as_ref().map(|Flat(id)| id)
+        self.extensions.as_ref().map(|flat| &flat.0)
     }
 
     fn into_nested(self, fields: &[Field<Flat, Input>]) -> Field<Nested<Input>, Input>
@@ -241,6 +267,7 @@ impl<Input> Field<Flat, Input> {
             name: self.name,
             ir: self.ir,
             type_of: self.type_of,
+            type_condition: self.type_condition,
             skip: self.skip,
             include: self.include,
             args: self.args,
@@ -260,6 +287,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("ir", &"Some(..)");
         }
         debug_struct.field("type_of", &self.type_of);
+        debug_struct.field("type_condition", &self.type_condition);
         if !self.args.is_empty() {
             debug_struct.field("args", &self.args);
         }
@@ -279,20 +307,12 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
 
 /// Stores field relationships in a flat structure where each field links to its
 /// parent.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Flat(FieldId);
 
 impl Flat {
-    pub fn new(id: FieldId) -> Self {
-        Flat(id)
-    }
-    pub fn as_id(&self) -> &FieldId {
-        &self.0
-    }
-}
-impl Debug for Flat {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Flat({:?})", self.0)
+    pub fn new(parent_id: FieldId) -> Self {
+        Flat(parent_id)
     }
 }
 
@@ -447,17 +467,102 @@ impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
     fn from(value: &'a Directive<ConstValue>) -> Self {
         // we don't use pos required in Positioned struct, hence using defaults.
         ConstDirective {
-            name: Positioned::new(Name::new(&value.name), Default::default()),
+            name: AsyncPositioned::new(Name::new(&value.name), Default::default()),
             arguments: value
                 .arguments
                 .iter()
                 .map(|a| {
                     (
-                        Positioned::new(Name::new(a.0.clone()), Default::default()),
-                        Positioned::new(a.1.clone(), Default::default()),
+                        AsyncPositioned::new(Name::new(a.0.clone()), Default::default()),
+                        AsyncPositioned::new(a.1.clone(), Default::default()),
                     )
                 })
                 .collect::<Vec<_>>(),
+        }
+    }
+}
+
+/// Original position of an element in source code.
+///
+/// You can serialize and deserialize it to the GraphQL `locations` format
+/// ([reference](https://spec.graphql.org/October2021/#sec-Errors)).
+#[derive(
+    Debug, PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Default, Hash, Serialize, Deserialize,
+)]
+pub struct Pos {
+    /// One-based line number.
+    pub line: usize,
+
+    /// One-based column number.
+    pub column: usize,
+}
+
+impl From<async_graphql::Pos> for Pos {
+    fn from(pos: async_graphql::Pos) -> Self {
+        Self { line: pos.line, column: pos.column }
+    }
+}
+
+impl From<Pos> for async_graphql::Pos {
+    fn from(value: Pos) -> Self {
+        async_graphql::Pos { line: value.line, column: value.column }
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct Positioned<Value> {
+    pub value: Value,
+    pub pos: Pos,
+    pub path: Vec<PathSegment>,
+}
+
+impl<Value> Positioned<Value> {
+    pub fn new(value: Value, pos: Pos) -> Self {
+        Positioned { value, pos, path: vec![] }
+    }
+}
+
+impl<Value> Positioned<Value>
+where
+    Value: Clone,
+{
+    pub fn with_path(&mut self, path: Vec<PathSegment>) -> Self {
+        Self { value: self.value.clone(), pos: self.pos, path }
+    }
+}
+
+// TODO: Improve conversion logic to avoid unnecessary round-trip conversions
+//       between ServerError and Positioned<Error>.
+impl From<ServerError> for Positioned<Error> {
+    fn from(val: ServerError) -> Self {
+        Self {
+            value: Error::ServerError(val.clone()),
+            pos: val.locations.first().cloned().unwrap_or_default().into(),
+            path: val.path.clone(),
+        }
+    }
+}
+
+impl From<Positioned<Error>> for ServerError {
+    fn from(val: Positioned<Error>) -> Self {
+        match val.value {
+            Error::ServerError(e) => e,
+            _ => {
+                let extensions = val.value.extend().extensions;
+                let mut server_error =
+                    ServerError::new(val.value.to_string(), Some(val.pos.into()));
+
+                server_error.extensions = extensions;
+
+                // TODO: in order to be compatible with async_graphql path is only set for
+                // validation errors here but in general we might consider setting it
+                // for every error
+                if let Error::Validation(_) = val.value {
+                    server_error.path = val.path;
+                }
+
+                server_error
+            }
         }
     }
 }

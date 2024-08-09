@@ -210,8 +210,7 @@
     },
     "Bytes": {
       "title": "Bytes",
-      "description": "Represents list of bytes",
-      "type": "string"
+      "description": "Field whose value is a sequence of bytes."
     },
     "Cache": {
       "description": "The @cache operator enables caching for the query, field or type it is applied to.",
@@ -316,43 +315,19 @@
     },
     "Date": {
       "title": "Date",
-      "description": "A date string, such as 2007-12-03, is compliant with the full-date format outlined in section 5.6 of the RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339) profile of the ISO 8601 standard for the representation of dates and times using the Gregorian calendar.",
-      "type": "object",
-      "required": [
-        "Date"
-      ],
-      "properties": {
-        "Date": {
-          "type": "string"
-        }
-      }
+      "description": "Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339)."
+    },
+    "DateTime": {
+      "title": "DateTime",
+      "description": "Field whose value conforms to the standard datetime format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339\")."
     },
     "Email": {
       "title": "Email",
-      "description": "field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address.",
-      "type": "object",
-      "required": [
-        "Email"
-      ],
-      "properties": {
-        "Email": {
-          "type": "string",
-          "pattern": "/^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/"
-        }
-      }
+      "description": "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
     },
     "Empty": {
       "title": "Empty",
-      "description": "Empty scalar type represents an empty value.",
-      "type": "object",
-      "required": [
-        "Empty"
-      ],
-      "properties": {
-        "Empty": {
-          "type": "null"
-        }
-      }
+      "description": "Empty scalar type represents an empty value."
     },
     "Encoding": {
       "type": "string",
@@ -757,7 +732,7 @@
           "type": "string"
         },
         "query": {
-          "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. When `batchKey` is present Tailcall uses the first query parameter as the key for the groupBy operator.",
+          "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. The first parameter referencing a field in the current value using mustache syntax is automatically selected as the batching parameter.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/KeyValue"
@@ -775,33 +750,23 @@
     },
     "Int128": {
       "title": "Int128",
-      "description": "Represents signed integer type 128 bit size as string",
-      "type": "integer",
-      "format": "int128"
+      "description": "Field whose value is a 128-bit signed integer."
     },
     "Int16": {
       "title": "Int16",
-      "description": "Represents signed integer type 16bit size",
-      "type": "integer",
-      "format": "int16"
+      "description": "Field whose value is a 16-bit signed integer."
     },
     "Int32": {
       "title": "Int32",
-      "description": "Represents signed integer type 32bit size",
-      "type": "integer",
-      "format": "int32"
+      "description": "Field whose value is a 32-bit signed integer."
     },
     "Int64": {
       "title": "Int64",
-      "description": "Represents signed integer type 64bit size as string",
-      "type": "integer",
-      "format": "int64"
+      "description": "Field whose value is a 64-bit signed integer."
     },
     "Int8": {
       "title": "Int8",
-      "description": "Represents signed integer type 8bit size",
-      "type": "integer",
-      "format": "int8"
+      "description": "Field whose value is an 8-bit signed integer."
     },
     "JS": {
       "type": "object",
@@ -816,16 +781,7 @@
     },
     "JSON": {
       "title": "JSON",
-      "description": "The JSON scalar type represents JSON values as specified by [ECMA-404](www.ecma-international.org/publications/files/ECMA-ST/ ECMA-404.pdf).",
-      "type": "object",
-      "required": [
-        "JSON"
-      ],
-      "properties": {
-        "JSON": {
-          "type": "string"
-        }
-      }
+      "description": "Field whose value conforms to the standard JSON format as specified in RFC 8259 (https://datatracker.ietf.org/doc/html/rfc8259)."
     },
     "KeyValue": {
       "type": "object",
@@ -939,16 +895,7 @@
     },
     "PhoneNumber": {
       "title": "PhoneNumber",
-      "description": "A field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164).",
-      "type": "object",
-      "required": [
-        "PhoneNumber"
-      ],
-      "properties": {
-        "PhoneNumber": {
-          "type": "string"
-        }
-      }
+      "description": "Field whose value conforms to the standard E.164 format as specified in E.164 specification (https://en.wikipedia.org/wiki/E.164)."
     },
     "PrometheusExporter": {
       "description": "Output the telemetry metrics data to prometheus server",
@@ -1362,38 +1309,23 @@
     },
     "UInt128": {
       "title": "UInt128",
-      "description": "Represents unsigned integer type 128bit size as string",
-      "type": "integer",
-      "format": "uint128",
-      "minimum": 0.0
+      "description": "Field whose value is a 128-bit unsigned integer."
     },
     "UInt16": {
       "title": "UInt16",
-      "description": "Represents unsigned integer type 16bit size",
-      "type": "integer",
-      "format": "uint16",
-      "minimum": 0.0
+      "description": "Field whose value is a 16-bit unsigned integer."
     },
     "UInt32": {
       "title": "UInt32",
-      "description": "Represents unsigned integer type 32bit size",
-      "type": "integer",
-      "format": "uint32",
-      "minimum": 0.0
+      "description": "Field whose value is a 32-bit unsigned integer."
     },
     "UInt64": {
       "title": "UInt64",
-      "description": "Represents unsigned integer type 64bit size as string",
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
+      "description": "Field whose value is a 64-bit unsigned integer."
     },
     "UInt8": {
       "title": "UInt8",
-      "description": "Represents unsigned integer type 8bit size",
-      "type": "integer",
-      "format": "uint8",
-      "minimum": 0.0
+      "description": "Field whose value is an 8-bit unsigned integer."
     },
     "Union": {
       "type": "object",
@@ -1565,16 +1497,7 @@
     },
     "Url": {
       "title": "Url",
-      "description": "A field whose value conforms to the standard URL format as specified in RFC3986 (https://www.ietf.org/rfc/rfc3986.txt), and it uses real JavaScript URL objects.",
-      "type": "object",
-      "required": [
-        "Url"
-      ],
-      "properties": {
-        "Url": {
-          "type": "string"
-        }
-      }
+      "description": "Field whose value conforms to the standard URL format as specified in RFC 3986 (https://datatracker.ietf.org/doc/html/rfc3986)."
     },
     "Variant": {
       "description": "Definition of GraphQL value",

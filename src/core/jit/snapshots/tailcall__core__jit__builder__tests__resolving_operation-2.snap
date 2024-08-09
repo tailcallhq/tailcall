@@ -8,6 +8,7 @@ expression: plan.into_nested()
         name: "createPost",
         ir: "Some(..)",
         type_of: Post,
+        type_condition: "Mutation",
         args: [
             Arg {
                 id: 0,
@@ -44,24 +45,28 @@ expression: plan.into_nested()
                         id: 1,
                         name: "id",
                         type_of: ID!,
+                        type_condition: "Post",
                         directives: [],
                     },
                     Field {
                         id: 2,
                         name: "userId",
                         type_of: ID!,
+                        type_condition: "Post",
                         directives: [],
                     },
                     Field {
                         id: 3,
                         name: "title",
                         type_of: String!,
+                        type_condition: "Post",
                         directives: [],
                     },
                     Field {
                         id: 4,
                         name: "body",
                         type_of: String!,
+                        type_condition: "Post",
                         directives: [],
                     },
                 ],

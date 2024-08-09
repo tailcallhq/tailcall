@@ -3,7 +3,7 @@ use indexmap::IndexMap;
 use crate::core::blueprint::{
     Blueprint, Definition, FieldDefinition, InputFieldDefinition, SchemaDefinition,
 };
-use crate::core::scalar::is_predefined_scalar;
+use crate::core::scalar;
 
 ///
 /// A read optimized index of all the types in the Blueprint. Provide O(1)
@@ -33,7 +33,7 @@ impl Index {
     pub fn type_is_scalar(&self, type_name: &str) -> bool {
         let def = self.map.get(type_name).map(|(def, _)| def);
 
-        matches!(def, Some(Definition::Scalar(_))) || is_predefined_scalar(type_name)
+        matches!(def, Some(Definition::Scalar(_))) || scalar::Scalar::is_predefined(type_name)
     }
 
     pub fn type_is_enum(&self, type_name: &str) -> bool {

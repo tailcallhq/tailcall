@@ -1,7 +1,7 @@
 use derive_setters::Setters;
 use serde::Serialize;
 
-use super::LocationError;
+use super::Positioned;
 use crate::core::jit;
 
 #[derive(Setters, Serialize)]
@@ -9,13 +9,13 @@ pub struct Response<Value, Error> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub errors: Vec<LocationError<Error>>,
+    pub errors: Vec<Positioned<Error>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub extensions: Vec<(String, Value)>,
 }
 
 impl<Value, Error> Response<Value, Error> {
-    pub fn new(result: Result<Value, LocationError<Error>>) -> Self {
+    pub fn new(result: Result<Value, Positioned<Error>>) -> Self {
         match result {
             Ok(value) => Response {
                 data: Some(value),
@@ -26,7 +26,7 @@ impl<Value, Error> Response<Value, Error> {
         }
     }
 
-    pub fn add_errors(&mut self, new_errors: Vec<LocationError<Error>>) {
+    pub fn add_errors(&mut self, new_errors: Vec<Positioned<Error>>) {
         self.errors.extend(new_errors);
     }
 }

@@ -1,6 +1,5 @@
 use async_graphql::parser::types::OperationType;
-use async_graphql::{ErrorExtensions, PathSegment, Pos, ServerError};
-use serde::Serialize;
+use async_graphql::{ErrorExtensions, ServerError};
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
@@ -28,7 +27,9 @@ pub enum ValidationError {
     // TODO: replace with sane error message. Right now, it's defined as is only for compatibility
     // with async_graphql error message for this case
     #[error(r#"internal: invalid value for scalar "{type_of}", expected "FieldValue::Value""#)]
-    ScalarInvalid { type_of: String },
+    ScalarInvalid { type_of: String, path: String },
+    #[error("TypeName shape doesn't satisfy the processed object")]
+    TypeNameMismatch,
     #[error(r#"internal: invalid item for enum "{type_of}""#)]
     EnumInvalid { type_of: String },
     #[error("internal: non-null types require a return value")]
@@ -76,47 +77,5 @@ impl From<Error> for ServerError {
         server_error.extensions = extensions;
 
         server_error
-    }
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct LocationError<Err> {
-    pub error: Err,
-    pub pos: Pos,
-    pub path: Vec<PathSegment>,
-}
-
-// TODO: Improve conversion logic to avoid unnecessary round-trip conversions
-//       between ServerError and LocationError<Error>.
-impl From<ServerError> for LocationError<Error> {
-    fn from(val: ServerError) -> Self {
-        Self {
-            error: Error::ServerError(val.clone()),
-            pos: val.locations.first().cloned().unwrap_or_default(),
-            path: val.path.clone(),
-        }
-    }
-}
-
-impl From<LocationError<Error>> for ServerError {
-    fn from(val: LocationError<Error>) -> Self {
-        match val.error {
-            Error::ServerError(e) => e,
-            _ => {
-                let extensions = val.error.extend().extensions;
-                let mut server_error = ServerError::new(val.error.to_string(), Some(val.pos));
-
-                server_error.extensions = extensions;
-
-                // TODO: in order to be compatible with async_graphql path is only set for
-                // validation errors here but in general we might consider setting it
-                // for every error
-                if let Error::Validation(_) = val.error {
-                    server_error.path = val.path;
-                }
-
-                server_error
-            }
-        }
     }
 }

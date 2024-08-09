@@ -6,8 +6,6 @@ schema @server @upstream {
   query: Query
 }
 
-scalar Any
-
 type Query {
-  f1: [Any] @http(baseURL: "https://example.com", path: "/api/v2/users")
+  f1: [JSON] @http(baseURL: "https://example.com", path: "/api/v2/users")
 }

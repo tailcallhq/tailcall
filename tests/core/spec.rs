@@ -131,12 +131,12 @@ async fn check_server_config(spec: ExecutionSpec) -> Vec<Config> {
 
                 let actual = tailcall_prettier::format(actual, &tailcall_prettier::Parser::Gql)
                     .await
-                    .context(context.clone())
+                    .map_err(|e| e.with_context(context.clone()))
                     .unwrap();
 
                 let expected = tailcall_prettier::format(content, &tailcall_prettier::Parser::Gql)
                     .await
-                    .context(context)
+                    .map_err(|e| e.with_context(context.clone()))
                     .unwrap();
 
                 pretty_assertions::assert_eq!(

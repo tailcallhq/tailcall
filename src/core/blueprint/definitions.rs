@@ -14,12 +14,18 @@ use crate::core::valid::{Valid, Validator};
 use crate::core::{config, scalar};
 
 pub fn to_scalar_type_definition(name: &str) -> Valid<Definition, String> {
-    Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
-        name: name.to_string(),
-        directive: Vec::new(),
-        description: None,
-        validator: scalar::get_scalar(name),
-    }))
+    if scalar::Scalar::is_predefined(name) {
+        Valid::fail(format!("Scalar type {} is predefined", name))
+    } else {
+        Valid::succeed(Definition::Scalar(ScalarTypeDefinition {
+            name: name.to_string(),
+            directive: Vec::new(),
+            description: None,
+            scalar: scalar::Scalar::find(name)
+                .unwrap_or(&scalar::Scalar::Empty)
+                .clone(),
+        }))
+    }
 }
 
 pub fn to_union_type_definition((name, u): (&String, &Union)) -> Definition {
@@ -127,7 +133,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
         }
 
         let next_is_required = is_required && next_field.required;
-        if scalar::is_predefined_scalar(&next_field.type_of) {
+        if scalar::Scalar::is_predefined(&next_field.type_of) {
             return process_path(ProcessPathContext {
                 type_info,
                 config_module,
@@ -358,7 +364,7 @@ pub fn update_cache_resolvers<'a>(
 
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
     let field_type = &field.type_of;
-    if !scalar::is_predefined_scalar(field_type) && !config.contains(field_type) {
+    if !scalar::Scalar::is_predefined(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
     } else {
         Valid::succeed(())
