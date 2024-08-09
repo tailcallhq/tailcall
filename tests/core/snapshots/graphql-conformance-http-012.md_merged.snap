@@ -1,0 +1,36 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
+  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+  query: Query
+}
+
+union SearchResult = Person | Photo
+
+type Page {
+  title: String
+}
+
+type Person {
+  age: Int
+  name: String
+}
+
+type Photo {
+  height: Int
+  meta: PhotoMeta
+  width: Int
+}
+
+type PhotoMeta {
+  aparture: Int
+  iso: Int
+  shutter: Int
+}
+
+type Query {
+  search: [SearchResult!]! @http(path: "/search")
+}
