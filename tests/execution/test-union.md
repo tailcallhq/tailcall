@@ -37,6 +37,7 @@ type Query {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/foo
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -45,6 +46,7 @@ type Query {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/bar
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -53,6 +55,7 @@ type Query {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/nested
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -64,6 +67,7 @@ type Query {
 - request:
     method: GET
     url: http://jsonplaceholder.typicode.com/arr
+  expectedHits: 2
   response:
     status: 200
     body:
@@ -152,6 +156,30 @@ type Query {
           }
           ... on Bar {
             bar
+          }
+        }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: >
+      query {
+        foo {
+          __typename
+        }
+        bar {
+          __typename
+        }
+        arr {
+          __typename
+        }
+        nested {
+          foo {
+            __typename
+          }
+          bar {
+            __typename
           }
         }
       }

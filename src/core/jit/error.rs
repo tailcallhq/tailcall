@@ -30,8 +30,6 @@ pub enum ValidationError {
     // with async_graphql error message for this case
     #[error(r#"internal: invalid value for scalar "{type_of}", expected "FieldValue::Value""#)]
     ScalarInvalid { type_of: String, path: String },
-    #[error("TypeName shape doesn't satisfy the processed object")]
-    TypeNameMismatch,
 }
 
 #[derive(Debug, Clone, Error)]

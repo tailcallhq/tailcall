@@ -47,8 +47,29 @@ impl<'ctx> JsonLike<'ctx> for Value<'ctx> {
         }
     }
 
+    fn into_array(self) -> Option<Vec<Self>> {
+        match self {
+            Value::Array(array) => Some(array),
+            _ => None,
+        }
+    }
+
     fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         self.as_object()
+    }
+
+    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject<'ctx>> {
+        match self {
+            Value::Object(obj) => Some(obj),
+            _ => None,
+        }
+    }
+
+    fn into_object(self) -> Option<Self::JsonObject<'ctx>> {
+        match self {
+            Value::Object(obj) => Some(obj),
+            _ => None,
+        }
     }
 
     fn as_str(&self) -> Option<&str> {

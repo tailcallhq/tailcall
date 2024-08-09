@@ -31,7 +31,10 @@ pub trait JsonLike<'json>: Sized {
 
     // Operators
     fn as_array(&self) -> Option<&Vec<Self>>;
+    fn into_array(self) -> Option<Vec<Self>>;
     fn as_object(&self) -> Option<&Self::JsonObject<'_>>;
+    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject<'json>>;
+    fn into_object(self) -> Option<Self::JsonObject<'json>>;
     fn as_str(&self) -> Option<&str>;
     fn as_i64(&self) -> Option<i64>;
     fn as_u64(&self) -> Option<u64>;
@@ -41,6 +44,29 @@ pub trait JsonLike<'json>: Sized {
     fn get_path<T: AsRef<str>>(&'json self, path: &[T]) -> Option<&Self>;
     fn get_key(&'json self, path: &str) -> Option<&Self>;
     fn group_by(&'json self, path: &[String]) -> HashMap<String, Vec<&Self>>;
+
+    fn map<Err>(self, mut mapper: impl FnMut(Self) -> Result<Self, Err>) -> Result<Self, Err> {
+        if self.as_array().is_some() {
+            let new = self
+                .into_array()
+                .unwrap()
+                .into_iter()
+                .map(mapper)
+                .collect::<Result<_, _>>()?;
+
+            Ok(Self::array(new))
+        } else {
+            mapper(self)
+        }
+    }
+
+    fn try_for_each<Err>(&self, mut f: impl FnMut(&Self) -> Result<(), Err>) -> Result<(), Err> {
+        if let Some(arr) = self.as_array() {
+            arr.iter().try_for_each(f)
+        } else {
+            f(self)
+        }
+    }
 }
 
 /// A trait for objects that can be used as JSON objects
