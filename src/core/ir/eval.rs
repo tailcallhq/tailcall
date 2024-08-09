@@ -103,10 +103,7 @@ impl IR {
                         Some(ir) => ir.eval(ctx).await?,
                         None => ctx
                             .path_value::<&String>(&[])
-                            .map(|cow| {
-
-                                cow.into_owned()
-                            })
+                            .map(|cow| cow.into_owned())
                             .unwrap_or_else(|| ConstValue::Null),
                     };
                     let params = params.render_value(ctx);
