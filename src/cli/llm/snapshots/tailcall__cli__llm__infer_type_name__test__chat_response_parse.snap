@@ -1,0 +1,13 @@
+---
+source: src/cli/llm/infer_type_name.rs
+expression: answer
+---
+Answer {
+    suggestions: [
+        "Post",
+        "Story",
+        "Article",
+        "Event",
+        "Brief",
+    ],
+}

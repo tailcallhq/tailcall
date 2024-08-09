@@ -3,6 +3,7 @@ use std::env;
 use std::marker::PhantomData;
 use std::path::Path;
 
+use derive_getters::Getters;
 use derive_setters::Setters;
 use path_clean::PathClean;
 use schemars::JsonSchema;
@@ -25,13 +26,14 @@ pub struct Config<Status = UnResolved> {
     pub schema: Schema,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug, Default)]
+#[derive(Clone, Deserialize, Serialize, Debug, Default, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct PresetConfig {
     merge_type: Option<f32>,
     #[serde(rename = "consolidateURL")]
     consolidate_url: Option<f32>,
     use_better_names: Option<bool>,
+    ai_powered_names: Option<bool>,
     tree_shake: Option<bool>,
     unwrap_single_field_types: Option<bool>,
 }
@@ -344,6 +346,7 @@ mod tests {
             merge_type: Some(2.0),
             consolidate_url: None,
             unwrap_single_field_types: None,
+            ai_powered_names: None,
         };
 
         let transform_preset: Result<Preset, ValidationError<String>> =
@@ -359,6 +362,7 @@ mod tests {
             merge_type: Some(0.5),
             consolidate_url: Some(1.0),
             unwrap_single_field_types: None,
+            ai_powered_names: None,
         };
         let transform_preset: Preset = config_preset.validate_into().to_result().unwrap();
         let expected_preset = Preset::new()
