@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
 use futures_util::TryFutureExt;
+use tailcall_hasher::TailcallHasher;
 use url::Url;
 
 use crate::core::runtime::TargetRuntime;
@@ -18,6 +20,33 @@ pub struct FileRead {
 pub enum Resource {
     RawPath(String),
     Request(reqwest::Request),
+}
+
+impl Resource {
+    pub fn calculate_hash(&self) -> u64 {
+        let mut hasher = TailcallHasher::default();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
+}
+
+impl Hash for Resource {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Resource::RawPath(path) => path.hash(state),
+            Resource::Request(request) => {
+                request.method().hash(state);
+                request.url().hash(state);
+                for (key, value) in request.headers().iter() {
+                    key.hash(state);
+                    value.hash(state);
+                }
+                if let Some(body) = request.body() {
+                    body.as_bytes().hash(state);
+                }
+            }
+        }
+    }
 }
 
 impl From<reqwest::Request> for Resource {
@@ -163,7 +192,7 @@ impl Reader for Cached {
             .as_ref()
             .lock()
             .unwrap()
-            .get(&file_path)
+            .get(&resource.calculate_hash().to_string())
             .map(|v| v.to_owned());
         let content = if let Some(content) = content {
             content.to_owned()

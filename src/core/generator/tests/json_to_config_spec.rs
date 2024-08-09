@@ -3,13 +3,16 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tailcall::core::config::GraphQLOperationType;
 use tailcall::core::generator::{Generator, Input};
+use tailcall::core::http::Method;
 use url::Url;
 
 #[derive(Serialize, Deserialize)]
 struct JsonFixture {
     url: String,
-    body: Value,
+    response: Value,
+    body: Option<Value>,
 }
 
 datatest_stable::harness!(
@@ -19,33 +22,50 @@ datatest_stable::harness!(
 );
 
 pub fn run_json_to_config_spec(path: &Path) -> datatest_stable::Result<()> {
-    let (url, body) = load_json(path)?;
-    let parsed_url = Url::parse(url.as_str()).unwrap_or_else(|_| {
+    let json_data = load_json(path)?;
+    let parsed_url = Url::parse(json_data.url.as_str()).unwrap_or_else(|_| {
         panic!(
             "Failed to parse the url. url: {}, test file: {:?}",
-            url, path
+            json_data.url, path
         )
     });
-    test_spec(path, parsed_url, body)?;
+    test_spec(path, parsed_url, json_data)?;
     Ok(())
 }
 
-fn load_json(path: &Path) -> anyhow::Result<(String, Value)> {
+fn load_json(path: &Path) -> anyhow::Result<JsonFixture> {
     let contents = fs::read_to_string(path)?;
     let json_data: JsonFixture = serde_json::from_str(&contents).unwrap();
-    Ok((json_data.url, json_data.body))
+    Ok(json_data)
 }
 
-fn test_spec(path: &Path, url: Url, body: Value) -> anyhow::Result<()> {
-    let config = Generator::default()
-        .inputs(vec![Input::Json {
-            url,
-            response: body,
-            field_name: "f1".to_string(),
-        }])
-        .generate(true)?;
+fn test_spec(path: &Path, url: Url, json_data: JsonFixture) -> anyhow::Result<()> {
+    let cfg = if let Some(body) = json_data.body {
+        Generator::default()
+            .mutation(Some("Mutation".into()))
+            .inputs(vec![Input::Json {
+                url,
+                method: Method::POST,
+                response: json_data.response,
+                field_name: "f1".to_string(),
+                body,
+                operation_type: GraphQLOperationType::Mutation,
+            }])
+            .generate(true)?
+    } else {
+        Generator::default()
+            .inputs(vec![Input::Json {
+                url,
+                method: Method::GET,
+                body: serde_json::Value::Null,
+                response: json_data.response,
+                field_name: "f1".to_string(),
+                operation_type: GraphQLOperationType::Query,
+            }])
+            .generate(true)?
+    };
 
     let snapshot_name = path.file_name().unwrap().to_str().unwrap();
-    insta::assert_snapshot!(snapshot_name, config.to_sdl());
+    insta::assert_snapshot!(snapshot_name, cfg.to_sdl());
     Ok(())
 }

@@ -1,6 +1,6 @@
 {
   "url": "https://example.com/",
-  "body": {
+  "response": {
     "color_names": ["red", "blue"],
     "10": ["a", "b", "c"],
     "content_type": "application/json",

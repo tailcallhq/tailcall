@@ -10,6 +10,7 @@ expression: actual
         "headers": {
           "user-agent": "tailcall-v1"
         },
+        "method": "GET",
         "fieldName": "test"
       }
     }

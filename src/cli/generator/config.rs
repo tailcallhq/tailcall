@@ -11,6 +11,7 @@ use url::Url;
 
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
+use crate::core::http::Method;
 use crate::core::mustache::Mustache;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
 
@@ -46,7 +47,7 @@ pub struct Location<A>(
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(transparent)]
 pub struct Headers<A>(
-    #[serde(skip_serializing_if = "is_default")] pub Option<BTreeMap<String, String>>,
+    #[serde(skip_serializing_if = "is_default")] Option<BTreeMap<String, String>>,
     #[serde(skip)] PhantomData<A>,
 );
 
@@ -64,6 +65,12 @@ pub enum Source<Status = UnResolved> {
     Curl {
         src: Location<Status>,
         headers: Headers<Status>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        method: Option<Method>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        body: Option<serde_json::Value>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        is_mutation: Option<bool>,
         field_name: String,
     },
     Proto {
@@ -94,6 +101,8 @@ pub struct UnResolved {}
 pub struct Schema {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mutation: Option<String>,
 }
 
 fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
@@ -171,7 +180,7 @@ impl Location<UnResolved> {
 }
 
 impl<A> Headers<A> {
-    pub fn headers(&self) -> &Option<BTreeMap<String, String>> {
+    pub fn as_btree_map(&self) -> &Option<BTreeMap<String, String>> {
         &self.0
     }
 }
@@ -214,10 +223,22 @@ impl Source<UnResolved> {
         reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, field_name, headers } => {
+            Source::Curl { src, field_name, headers, body, method, is_mutation } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 let resolved_headers = headers.resolve(reader_context)?;
-                Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
+                // TODO: make body mustache template compatible.
+                // let resolved_body = body.resolve(reader_context)?;
+
+                //TODO: if method is of [POST,PUT,PATCH], we should check if valid body is
+                // present or not.
+                Ok(Source::Curl {
+                    src: resolved_path,
+                    field_name,
+                    headers: resolved_headers,
+                    body,
+                    method,
+                    is_mutation,
+                })
             }
             Source::Proto { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -309,7 +330,7 @@ mod tests {
 
         let expected = format!("Bearer {token}");
         let result = resolved_headers
-            .headers()
+            .as_btree_map()
             .to_owned()
             .unwrap()
             .get("Authorization")
@@ -329,7 +350,10 @@ mod tests {
             source: Source::Curl {
                 src: location("https://example.com"),
                 headers: to_headers(headers),
+                body: None,
                 field_name: "test".to_string(),
+                method: Some(Method::GET),
+                is_mutation: None,
             },
         }]);
         let actual = serde_json::to_string_pretty(&config).unwrap();
