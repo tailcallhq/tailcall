@@ -1,18 +1,26 @@
 {
-  "url": "https://fakestoreapi.com/products",
-  "body": {
-    "title": "Tailcall",
-    "price": 200,
-    "description": "a modern graphQL runtime",
-    "image": "https://tailcall.run/icons/companies/taicall.svg",
-    "category": "graphQL"
+  "request": {
+    "url": "https://fakestoreapi.com/products",
+    "method": "POST",
+    "body": {
+      "title": "Tailcall",
+      "price": 200,
+      "description": "a modern graphQL runtime",
+      "image": "https://tailcall.run/icons/companies/taicall.svg",
+      "category": "graphQL"
+    }
   },
+  "isMutation": true,
+  "fieldName": "createProduct",
   "response": {
-    "id": 21,
-    "title": "Tailcall",
-    "price": 200,
-    "description": "a modern graphQL runtime",
-    "image": "https://tailcall.run/icons/companies/taicall.svg",
-    "category": "graphQL"
+    "status": 201,
+    "body": {
+      "id": 21,
+      "title": "Tailcall",
+      "price": 200,
+      "description": "a modern graphQL runtime",
+      "image": "https://tailcall.run/icons/companies/taicall.svg",
+      "category": "graphQL"
+    }
   }
 }

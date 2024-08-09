@@ -174,7 +174,12 @@ mod test {
 
     fn parse_json(path: &str) -> JsonFixture {
         let content = std::fs::read_to_string(path).unwrap();
-        serde_json::from_str(&content).unwrap()
+        let json_content: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+        JsonFixture {
+            url: json_content["request"]["url"].as_str().unwrap().to_string(),
+            response: json_content["response"]["body"].clone(),
+        }
     }
 
     #[test]

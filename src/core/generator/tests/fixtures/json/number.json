@@ -1,4 +1,10 @@
 {
-  "url": "https://example.com/users?verified_user=true",
-  "response": 12
+  "request": {
+    "url": "https://example.com/users?verified_user=true"
+  },
+  "fieldName": "verifiedUsers",
+  "response": {
+    "status": 200,
+    "body": 12
+  }
 }

@@ -15,7 +15,7 @@ input T2 {
 }
 
 type Mutation {
-  f1(f1Input: T2): T1 @http(baseURL: "https://fakestoreapi.com", body: "{{.args.f1Input}}", method: "POST", path: "/products")
+  createProduct(createProductInput: T2): T1 @http(baseURL: "https://fakestoreapi.com", body: "{{.args.createProductInput}}", method: "POST", path: "/products")
 }
 
 type T1 {

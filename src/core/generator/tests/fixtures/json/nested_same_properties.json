@@ -1,12 +1,18 @@
 {
-  "url": "https://example.com",
+  "request": {
+    "url": "https://example.com"
+  },
+  "fieldName": "test",
   "response": {
-    "container": {
-      "name": "Testing",
+    "status": 200,
+    "body": {
       "container": {
         "name": "Testing",
         "container": {
-          "age": 16
+          "name": "Testing",
+          "container": {
+            "age": 16
+          }
         }
       }
     }

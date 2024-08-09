@@ -1,13 +1,19 @@
 {
-  "url": "https://example.com",
+  "request": {
+    "url": "https://example.com"
+  },
+  "fieldName": "test",
   "response": {
-    "colors": [],
-    "campaignTemplates": {
-      "10": {
-        "name": "test"
-      },
-      "15": {
-        "name": "test"
+    "status": 200,
+    "body": {
+      "colors": [],
+      "campaignTemplates": {
+        "10": {
+          "name": "test"
+        },
+        "15": {
+          "name": "test"
+        }
       }
     }
   }
