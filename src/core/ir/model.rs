@@ -31,7 +31,7 @@ pub enum IR {
         // path: Vec<String>,
         plugin: Arc<dyn ExtensionLoader>,
         params: DynamicValue<Value>,
-        ir: Option<Box<IR>>,
+        ir: Box<IR>,
     },
 }
 
@@ -157,16 +157,7 @@ impl IR {
                         IR::Discriminate(discriminator, expr.modify_box(modifier))
                     }
                     IR::Extension { plugin, params, ir } => {
-                        // step: we allow the extension to modify the IR before execution
-                        // TODO: maybe this place is not correct
-                        let ir = match ir {
-                            Some(ir) => {
-                                // TODO: fix params
-                                let params = async_graphql_value::ConstValue::Null;
-                                Some(plugin.prepare(ir, params))
-                            }
-                            None => None,
-                        };
+                        let ir = plugin.modify_inner(ir);
                         IR::Extension { plugin, params, ir }
                     }
                 }

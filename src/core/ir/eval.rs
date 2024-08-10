@@ -96,18 +96,14 @@ impl IR {
                     Ok(value)
                 }),
                 IR::Extension { plugin, params, ir } => {
-                    // TODO: maybe modify IR before execution
-                    // Problem: lifetime issues
-                    // TODO: extract path properly
-                    let value = match ir {
-                        Some(ir) => ir.eval(ctx).await?,
-                        None => ctx
-                            .path_value::<&String>(&[])
-                            .map(|cow| cow.into_owned())
-                            .unwrap_or_else(|| ConstValue::Null),
+                    let ir = plugin.prepare(ir.clone(), params.render_value(ctx));
+
+                    let value = {
+                        let mut ctx = ctx.clone();
+                        ir.eval(&mut ctx).await?
                     };
-                    let params = params.render_value(ctx);
-                    plugin.process(params, value)
+
+                    plugin.process(params.render_value(ctx), value)
                 }
             }
         })
