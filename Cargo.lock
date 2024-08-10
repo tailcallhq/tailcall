@@ -1565,6 +1565,7 @@ dependencies = [
  "anyhow",
  "async-graphql-value",
  "dotenvy",
+ "futures",
  "tailcall",
  "tokio",
  "tracing",
