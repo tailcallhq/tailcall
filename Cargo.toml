@@ -63,7 +63,7 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 reqwest = { workspace = true }
 derive_setters = "0.1.6"
-derive-getters = "0.4.0"
+derive-getters = "0.5.0"
 thiserror = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
