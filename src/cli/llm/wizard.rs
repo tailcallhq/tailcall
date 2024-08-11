@@ -1,20 +1,21 @@
 use derive_setters::Setters;
+use genai::adapter::AdapterConfig;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
 use genai::Client;
 
 use super::Result;
-use crate::cli::llm::adapter::Adapter;
+use crate::cli::llm::model::Model;
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
     client: Client,
-    model: Adapter,
+    model: Model,
     _q: std::marker::PhantomData<Q>,
     _a: std::marker::PhantomData<A>,
 }
 
 impl<Q, A> Wizard<Q, A> {
-    pub fn new(model: Adapter) -> Self {
+    pub fn new(model: Model, adapter_config: AdapterConfig) -> Self {
         Self {
             client: Client::builder()
                 .with_chat_options(
@@ -22,6 +23,7 @@ impl<Q, A> Wizard<Q, A> {
                         .with_json_mode(true)
                         .with_temperature(0.0),
                 )
+                .insert_adapter_config(model.to_adapter_kind(), adapter_config)
                 .build(),
             model,
             _q: Default::default(),
@@ -36,7 +38,7 @@ impl<Q, A> Wizard<Q, A> {
     {
         let response = self
             .client
-            .exec_chat(self.model.to_string().as_str(), q.try_into()?, None)
+            .exec_chat(self.model.inner(), q.try_into()?, None)
             .await?;
         A::try_from(response)
     }
