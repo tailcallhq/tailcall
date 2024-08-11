@@ -30,7 +30,7 @@ pub struct Config<Status = UnResolved> {
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(transparent)]
 pub struct Secret<Status = UnResolved>(
-    #[serde(skip_serializing_if = "String::is_empty")] pub String,
+    pub String,
     #[serde(skip)] PhantomData<Status>,
 );
 
