@@ -5,15 +5,6 @@ pub mod test {
     use tailcall::core::blueprint::Blueprint;
     use tokio::runtime::Runtime;
 
-    pub fn run_check_command_spec(path: &std::path::Path) -> datatest_stable::Result<()> {
-        let path = path.to_path_buf();
-        let runtime = Runtime::new().unwrap();
-        runtime.block_on(async move {
-            run_test(&path.to_string_lossy()).await?;
-            Ok(())
-        })
-    }
-
     async fn run_test(path: &str) -> anyhow::Result<()> {
         let runtime = tailcall::cli::runtime::init(&Blueprint::default());
         let config_reader = tailcall::core::config::reader::ConfigReader::init(runtime.clone());
