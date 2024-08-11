@@ -105,7 +105,7 @@ impl Generator {
             match input.source {
                 Source::Curl { src, field_name, headers, body, method, is_mutation } => {
                     let url = src.0;
-                    let body = body.unwrap_or_default();
+                    let req_body = body.unwrap_or_default();
                     let method = method.unwrap_or_default();
                     let operation_type = match is_mutation.unwrap_or_default() {
                         true => GraphQLOperationType::Mutation,
@@ -114,8 +114,8 @@ impl Generator {
 
                     let request_method = method.clone().to_hyper();
                     let mut request = reqwest::Request::new(request_method, url.parse()?);
-                    if !body.is_null() {
-                        request.body_mut().replace(body.to_string().into());
+                    if !req_body.is_null() {
+                        request.body_mut().replace(req_body.to_string().into());
                     }
                     if let Some(headers_inner) = headers.as_btree_map() {
                         let mut header_map = HeaderMap::new();
@@ -132,7 +132,7 @@ impl Generator {
                     input_samples.push(Input::Json {
                         url: url.parse()?,
                         method,
-                        body,
+                        req_body,
                         response: serde_json::from_str(&response.content)?,
                         field_name,
                         operation_type,

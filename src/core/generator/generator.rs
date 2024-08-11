@@ -30,7 +30,7 @@ pub enum Input {
     Json {
         url: Url,
         method: Method,
-        body: serde_json::Value,
+        req_body: Value,
         response: Value,
         field_name: String,
         operation_type: GraphQLOperationType,
@@ -101,11 +101,11 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                Input::Json { url, response, field_name, operation_type, method, body } => {
+                Input::Json { url, response, field_name, operation_type, method, req_body } => {
                     let request_sample = RequestSample::new(
                         url.to_owned(),
                         method.to_owned(),
-                        body.to_owned(),
+                        req_body.to_owned(),
                         response.to_owned(),
                         field_name,
                         operation_type.to_owned(),
