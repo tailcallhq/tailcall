@@ -1,5 +1,4 @@
-#[cfg(test)]
-mod test {
+pub mod test {
     use std::path::PathBuf;
 
     macro_rules! include_config {
@@ -172,20 +171,25 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_generator() {
-        let path = PathBuf::from("tests/fixtures/gen");
+    pub fn test_generator(path: &std::path::Path) -> datatest_stable::Result<()> {
         if let Ok(entries) = std::fs::read_dir(path) {
             for entry in entries.flatten() {
-                let path = entry.path();
-                if let Some(extension) = path.extension() {
+                let entry_path = entry.path();
+                if let Some(extension) = entry_path.extension() {
                     if extension == "json" {
                         let config_path =
-                            include_config!(path.file_name().unwrap().to_str().unwrap());
+                            include_config!(entry_path.file_name().unwrap().to_str().unwrap());
                         let _ = generator_spec::run_config_generator_spec(&config_path);
                     }
                 }
             }
         }
+        Ok(())
     }
 }
+
+datatest_stable::harness!(
+    test::generator_test,
+    "tests/fixtures/gen",
+    r"^.*\.json"
+);
