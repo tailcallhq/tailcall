@@ -23,7 +23,7 @@ impl Default for TemplateString {
     }
 }
 
-impl TemplateString { 
+impl TemplateString {
     pub fn is_empty(&self) -> bool {
         self.0.to_string().is_empty()
     }
