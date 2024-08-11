@@ -141,7 +141,7 @@ pub mod test {
         }
 
         async fn run_test(path: &str) -> anyhow::Result<()> {
-            let mut runtime = crate::tailcall::cli::runtime::init(&Blueprint::default());
+            let mut runtime = tailcall::cli::runtime::init(&Blueprint::default());
             runtime.http = Arc::new(NativeHttpTest::default());
             let generator = Generator::new(path, runtime);
             let config = generator.read().await?;
@@ -188,8 +188,4 @@ pub mod test {
     }
 }
 
-datatest_stable::harness!(
-    test::generator_test,
-    "tests/fixtures/gen",
-    r"^.*\.json"
-);
+datatest_stable::harness!(test::test_generator, "tests/fixtures/gen", r"^.*\.json");
