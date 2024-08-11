@@ -20,16 +20,16 @@ pub enum GroqModel {
 
 impl Display for Adapter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
+        let provider_name = match self {
             Adapter::Groq(provider) => provider.to_string(),
         };
-        write!(f, "{}", str)
+        write!(f, "{}", provider_name)
     }
 }
 
 impl Display for GroqModel {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
+        let model_name = match self {
             GroqModel::Llama31_405bReasoning => "llama-3.1-405b-reasoning",
             GroqModel::Llama31_70bVersatile => "llama-3.1-70b-versatile",
             GroqModel::Llama31_8bInstant => "llama-3.1-8b-instant",
@@ -41,6 +41,6 @@ impl Display for GroqModel {
             GroqModel::Llama38b8192 => "llama3-8b-8192",
             GroqModel::Llama370b8192 => "llama3-70b-8192",
         };
-        write!(f, "{}", str)
+        write!(f, "{}", model_name)
     }
 }
