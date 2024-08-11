@@ -113,10 +113,6 @@ pub struct Type {
     /// Marks field as protected by auth providers
     #[serde(default)]
     pub protected: Option<Protected>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    ///
-    /// Contains source information for the type.
-    pub tag: Option<Tag>,
 }
 
 impl Display for Type {
@@ -143,27 +139,6 @@ impl Type {
     pub fn scalar(&self) -> bool {
         self.fields.is_empty()
     }
-}
-
-#[derive(
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Deserialize,
-    Serialize,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-    DirectiveDefinition,
-)]
-#[directive_definition(locations = "Object")]
-#[serde(deny_unknown_fields)]
-/// Used to represent an identifier for a type. Typically used via only by the
-/// configuration generators to provide additional information about the type.
-pub struct Tag {
-    /// A unique identifier for the type.
-    pub id: String,
 }
 
 #[derive(
@@ -1050,7 +1025,6 @@ impl Config {
             .add_directive(Omit::directive_definition(generated_types))
             .add_directive(Protected::directive_definition(generated_types))
             .add_directive(Server::directive_definition(generated_types))
-            .add_directive(Tag::directive_definition(generated_types))
             .add_directive(Telemetry::directive_definition(generated_types))
             .add_directive(Upstream::directive_definition(generated_types))
             .add_input(GraphQL::input_definition())

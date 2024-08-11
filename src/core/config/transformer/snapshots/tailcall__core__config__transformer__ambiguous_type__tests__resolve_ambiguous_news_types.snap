@@ -6,15 +6,15 @@ schema @server @upstream {
   query: Query
 }
 
-input news__MultipleNewsId @tag(id: "news.MultipleNewsId") {
+input news__MultipleNewsId {
   ids: [news__NewsId]
 }
 
-input news__NewsId @tag(id: "news.NewsId") {
+input news__NewsId {
   id: Int
 }
 
-input news__NewsInput @tag(id: "news.News") {
+input news__NewsInput {
   body: String
   id: Int
   postImage: String
@@ -37,7 +37,7 @@ type Query {
   news__NewsService__GetNews(newsId: news__NewsId!): news__News! @grpc(body: "{{.args.newsId}}", method: "news.NewsService.GetNews")
 }
 
-type news__News @tag(id: "news.News") {
+type news__News {
   body: String
   id: Int
   postImage: String
@@ -45,6 +45,6 @@ type news__News @tag(id: "news.News") {
   title: String
 }
 
-type news__NewsList @tag(id: "news.NewsList") {
+type news__NewsList {
   news: [news__News]
 }
