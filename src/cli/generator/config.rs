@@ -23,6 +23,8 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub secret: Option<String>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
@@ -259,7 +261,7 @@ impl Config {
 
         let output = self.output.resolve(parent_dir)?;
 
-        Ok(Config { inputs, output, schema: self.schema, preset: self.preset })
+        Ok(Config { inputs, output, schema: self.schema, preset: self.preset, secret: self.secret })
     }
 }
 
