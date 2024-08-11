@@ -185,4 +185,3 @@ fn to_relative_path(from: &Path, to: &str) -> Option<String> {
     // Calculate the relative path from `from_path` to `to_path`
     diff_paths(to_path, from_path).map(|p| p.to_string_lossy().to_string())
 }
-

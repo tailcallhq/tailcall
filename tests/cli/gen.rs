@@ -76,6 +76,7 @@ pub mod test {
         use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
         use tailcall::core::http::Response;
         use tailcall::core::HttpIO;
+
         use super::cacache_manager::CaCacheManager;
 
         #[derive(Clone)]
@@ -105,7 +106,7 @@ pub mod test {
                         .error_for_status()
                         .map_err(|err| err.without_url())?,
                 )
-                    .await?)
+                .await?)
             }
         }
     }
@@ -114,14 +115,15 @@ pub mod test {
         use std::path::Path;
         use std::sync::Arc;
 
-        use tokio::runtime::Runtime;
         use tailcall::cli;
-        use tailcall::core::blueprint::Blueprint;
-        use super::http::NativeHttpTest;
         use tailcall::cli::generator::Generator;
+        use tailcall::core::blueprint::Blueprint;
         use tailcall::core::config::{self, ConfigModule};
         use tailcall::core::generator::Generator as ConfigGenerator;
         use tailcall::core::valid::{ValidateInto, Validator};
+        use tokio::runtime::Runtime;
+
+        use super::http::NativeHttpTest;
 
         pub fn run_config_generator_spec(path: &Path) -> datatest_stable::Result<()> {
             let path = path.to_path_buf();
@@ -174,9 +176,8 @@ pub mod test {
     }
 }
 
-
 datatest_stable::harness!(
-     test::test_generator,
+    test::test_generator,
     "tests/cli/fixtures/generator",
     r"^.*\.json"
 );
