@@ -24,6 +24,13 @@ impl Default for TemplateString {
 }
 
 impl TemplateString {
+    pub fn resolve(&self, ctx: ConfigReaderContext) -> Self {
+        let resolved_secret = Mustache::from(vec![Segment::Literal(self.0.render(&ctx))]);
+        Self(resolved_secret)
+    }
+}
+
+impl TemplateString {
     pub fn is_empty(&self) -> bool {
         self.0.to_string().is_empty()
     }
@@ -297,16 +304,12 @@ impl Config {
 
         let output = self.output.resolve(parent_dir)?;
 
-        let resolved_secret = Mustache::from(vec![Segment::Literal(
-            self.secret.0.render(&reader_context),
-        )]);
-
         Ok(Config {
             inputs,
             output,
             schema: self.schema,
             preset: self.preset,
-            secret: TemplateString(resolved_secret),
+            secret: self.secret.resolve(reader_context),
         })
     }
 }
