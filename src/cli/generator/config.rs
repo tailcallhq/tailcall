@@ -6,13 +6,56 @@ use std::path::Path;
 use derive_setters::Setters;
 use path_clean::PathClean;
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use url::Url;
 
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
-use crate::core::mustache::Mustache;
+use crate::core::mustache::{Mustache, Segment};
 use crate::core::valid::{Valid, ValidateFrom, Validator};
+
+#[derive(Debug)]
+pub struct TemplateString(Mustache);
+
+impl Default for TemplateString {
+    fn default() -> Self {
+        Self(Mustache::parse("").unwrap())
+    }
+}
+
+impl TemplateString {
+    pub fn resolve(&self, ctx: ConfigReaderContext) -> Self {
+        let resolved_secret = Mustache::from(vec![Segment::Literal(self.0.render(&ctx))]);
+        Self(resolved_secret)
+    }
+}
+
+impl TemplateString {
+    pub fn is_empty(&self) -> bool {
+        self.0.to_string().is_empty()
+    }
+}
+
+impl Serialize for TemplateString {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.0.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for TemplateString {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let template_string = String::deserialize(deserializer)?;
+        let mustache = Mustache::parse(&template_string).map_err(serde::de::Error::custom)?;
+
+        Ok(TemplateString(mustache))
+    }
+}
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
@@ -23,6 +66,8 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
+    #[serde(skip_serializing_if = "TemplateString::is_empty")]
+    pub secret: TemplateString,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
@@ -259,7 +304,13 @@ impl Config {
 
         let output = self.output.resolve(parent_dir)?;
 
-        Ok(Config { inputs, output, schema: self.schema, preset: self.preset })
+        Ok(Config {
+            inputs,
+            output,
+            schema: self.schema,
+            preset: self.preset,
+            secret: self.secret.resolve(reader_context),
+        })
     }
 }
 
@@ -385,5 +436,33 @@ mod tests {
             serde_json::from_str(r#""https://dummyjson.com/products""#).unwrap();
         assert!(location_empty.is_empty());
         assert!(!location_non_empty.is_empty());
+    }
+
+    #[test]
+    fn test_secret() {
+        let mut env_vars = HashMap::new();
+        let token = "eyJhbGciOiJIUzI1NiIsInR5";
+        env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
+
+        let mut runtime = crate::core::runtime::test::init(None);
+        runtime.env = Arc::new(TestEnvIO::init(env_vars));
+
+        let reader_ctx = ConfigReaderContext {
+            runtime: &runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
+
+        let config = Config::default().secret(TemplateString(
+            Mustache::parse("{{.env.TAILCALL_SECRET}}").unwrap(),
+        ));
+        let resolved_config = config.into_resolved("", reader_ctx).unwrap();
+
+        let actual = resolved_config.secret;
+        let expected = TemplateString(Mustache::from(vec![Segment::Literal(
+            "eyJhbGciOiJIUzI1NiIsInR5".to_owned(),
+        )]));
+
+        assert_eq!(actual.0.to_string(), expected.0.to_string());
     }
 }
