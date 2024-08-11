@@ -263,11 +263,17 @@ impl Config {
         let secret = if let Some(k) = self.secret {
             let template = Mustache::parse(&k)?;
             Some(template.render(&reader_context))
-        }else{
+        } else {
             None
         };
 
-        Ok(Config { inputs, output, schema: self.schema, preset: self.preset, secret })
+        Ok(Config {
+            inputs,
+            output,
+            schema: self.schema,
+            preset: self.preset,
+            secret,
+        })
     }
 }
 
@@ -393,5 +399,38 @@ mod tests {
             serde_json::from_str(r#""https://dummyjson.com/products""#).unwrap();
         assert!(location_empty.is_empty());
         assert!(!location_non_empty.is_empty());
+    }
+
+    #[test]
+    fn test_secret() {
+        let mut env_vars = HashMap::new();
+        let token = "eyJhbGciOiJIUzI1NiIsInR5";
+        env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
+
+        let mut runtime = crate::core::runtime::test::init(None);
+        runtime.env = Arc::new(TestEnvIO::init(env_vars));
+
+        let reader_ctx = ConfigReaderContext {
+            runtime: &runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
+
+        let config = Config::default()
+            .inputs(vec![Input {
+                source: Source::Curl {
+                    src: location("https://example.com"),
+                    headers: to_headers(BTreeMap::new()),
+                    field_name: "test".to_string(),
+                },
+            }])
+            .secret(Some("{{.env.TAILCALL_SECRET}}".to_string()));
+
+        let resolved_config = config.into_resolved("", reader_ctx).unwrap();
+
+        assert_eq!(
+            resolved_config.secret,
+            Some("eyJhbGciOiJIUzI1NiIsInR5".to_string()),
+        );
     }
 }
