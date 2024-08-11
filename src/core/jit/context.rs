@@ -1,6 +1,7 @@
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
 
+use super::exec::ExecutionEnv;
 use super::{Field, Nested, Request};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
@@ -13,15 +14,15 @@ pub struct Context<'a, Input, Output> {
     // TODO: remove the args, since they're already present inside the fields and add support for
     // default values.
     field: &'a Field<Nested<Input>, Input>,
-    is_query: bool,
+    env: &'a ExecutionEnv<Input>,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     pub fn new(
         request: &'a Request<Input>,
-        is_query: bool,
         field: &'a Field<Nested<Input>, Input>,
+        env: &'a ExecutionEnv<Input>,
     ) -> Self {
-        Self { request, is_query, value: None, args: None, field }
+        Self { request, value: None, args: None, field, env }
     }
 
     pub fn with_value_and_field(
@@ -31,10 +32,10 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     ) -> Self {
         Self {
             request: self.request,
-            is_query: self.is_query,
             args: None,
             value: Some(value),
             field,
+            env: self.env,
         }
     }
 
@@ -48,7 +49,7 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             value: self.value,
             args: Some(map),
             field: self.field,
-            is_query: self.is_query,
+            env: self.env,
         }
     }
 
@@ -76,11 +77,11 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
     }
 
     fn is_query(&self) -> bool {
-        self.is_query
+        self.env.plan().is_query()
     }
 
-    fn add_error(&self, _error: ServerError) {
-        todo!()
+    fn add_error(&self, error: ServerError) {
+        self.env.add_error(error.into())
     }
 }
 
@@ -92,15 +93,11 @@ mod test {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::ResolverContextLike;
+    use crate::core::jit::exec::ExecutionEnv;
     use crate::core::jit::{OperationPlan, Request};
     use crate::core::valid::Validator;
 
-    fn setup(
-        query: &str,
-    ) -> (
-        OperationPlan<async_graphql::Value>,
-        Request<async_graphql::Value>,
-    ) {
+    fn setup(query: &str) -> (OperationPlan<ConstValue>, Request<ConstValue>) {
         let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).unwrap();
         let config = Config::from_sdl(&sdl).to_result().unwrap();
         let blueprint = Blueprint::try_from(&ConfigModule::from(config)).unwrap();
@@ -113,7 +110,9 @@ mod test {
     fn test_field() {
         let (plan, req) = setup("query {posts {id title}}");
         let field = plan.as_nested();
-        let ctx: Context<ConstValue, ConstValue> = Context::new(&req, false, &field[0]);
-        insta::assert_debug_snapshot!(<Context<_, _> as ResolverContextLike>::field(&ctx).unwrap());
+        let env = ExecutionEnv::new(plan.clone());
+        let ctx = Context::<ConstValue, ConstValue>::new(&req, &field[0], &env);
+        let expected = <Context<_, _> as ResolverContextLike>::field(&ctx).unwrap();
+        insta::assert_debug_snapshot!(expected);
     }
 }
