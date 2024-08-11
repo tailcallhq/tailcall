@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
@@ -77,10 +78,10 @@ impl InferTypeName {
     pub async fn generate(
         &mut self,
         config: &Config,
-        runtime: &TargetRuntime,
+        auth_key: Option<Cow<str>>,
     ) -> Result<HashMap<String, String>> {
         let wizard: Wizard<Question, Answer> =
-            Wizard::new(Model::GROQ.llama38192(), Adapter::config(runtime));
+            Wizard::new(Model::GROQ.llama38192(), Adapter::config(auth_key));
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
