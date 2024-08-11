@@ -112,6 +112,7 @@ mod test {
         let field = plan.as_nested();
         let env = ExecutionEnv::new(plan.clone());
         let ctx = Context::<ConstValue, ConstValue>::new(&req, &field[0], &env);
-        insta::assert_debug_snapshot!(<Context<_, _> as ResolverContextLike>::field(&ctx).unwrap());
+        let expected = <Context<_, _> as ResolverContextLike>::field(&ctx).unwrap();
+        insta::assert_debug_snapshot!(expected);
     }
 }
