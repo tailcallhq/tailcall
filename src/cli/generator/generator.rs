@@ -165,7 +165,8 @@ impl Generator {
         let mut config = config_gen.generate(true)?;
 
         if infer_type_names {
-            let mut llm_gen = InferTypeName::default();
+            // TODO: replace XXXX with secret from config.
+            let mut llm_gen = InferTypeName::new("XXXX-XXXX-XXXX-XXXX-XXXX");
             let suggested_names = llm_gen.generate(config.config()).await?;
             let cfg = RenameTypes::new(suggested_names.iter())
                 .transform(config.config().to_owned())

@@ -7,8 +7,9 @@ use super::adapter::{Adapter, GroqModel};
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
 
-#[derive(Default)]
-pub struct InferTypeName {}
+pub struct InferTypeName {
+    key: String,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Answer {
@@ -72,10 +73,13 @@ impl TryInto<ChatRequest> for Question {
 }
 
 impl InferTypeName {
+    pub fn new<K: Into<String>>(key: K) -> InferTypeName {
+        InferTypeName { key: key.into() }
+    }
+
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let key = "XXX".to_string(); // TODO: take key from config.
         let wizard: Wizard<Question, Answer> =
-            Wizard::new(Adapter::Groq(GroqModel::Llama38b192), key);
+            Wizard::new(Adapter::Groq(GroqModel::Llama38b192), &self.key);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 

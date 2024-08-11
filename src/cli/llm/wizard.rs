@@ -17,8 +17,8 @@ pub struct Wizard<Q, A> {
 }
 
 impl<Q, A> Wizard<Q, A> {
-    pub fn new(model: Adapter, key: String) -> Self {
-        let auth_res = AuthResolver::from_key_value(key);
+    pub fn new<K: Into<String>>(model: Adapter, key: K) -> Self {
+        let auth_res = AuthResolver::from_key_value(key.into());
         let adapter_config = AdapterConfig::default().with_auth_resolver(auth_res);
 
         Self {
