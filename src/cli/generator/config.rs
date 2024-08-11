@@ -261,7 +261,13 @@ impl Config {
 
         let output = self.output.resolve(parent_dir)?;
 
-        Ok(Config { inputs, output, schema: self.schema, preset: self.preset, secret: self.secret })
+        Ok(Config {
+            inputs,
+            output,
+            schema: self.schema,
+            preset: self.preset,
+            secret: self.secret,
+        })
     }
 }
 
