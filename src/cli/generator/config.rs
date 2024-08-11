@@ -456,8 +456,13 @@ mod tests {
         let config = Config::default().secret(TemplateString(
             Mustache::parse("{{.env.TAILCALL_SECRET}}").unwrap(),
         ));
-
         let resolved_config = config.into_resolved("", reader_ctx).unwrap();
-        insta::assert_debug_snapshot!(resolved_config);
+
+        let actual = resolved_config.secret;
+        let expected = TemplateString(Mustache::from(vec![Segment::Literal(
+            "eyJhbGciOiJIUzI1NiIsInR5".to_owned(),
+        )]));
+
+        assert_eq!(actual.0.to_string(), expected.0.to_string());
     }
 }
