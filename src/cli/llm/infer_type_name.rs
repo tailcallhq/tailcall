@@ -74,7 +74,7 @@ impl TryInto<ChatRequest> for Question {
 
 impl InferTypeName {
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let wizard: Wizard<Question, Answer> = Wizard::new(MODEL.to_string()).with_json_mode(true);
+        let wizard: Wizard<Question, Answer> = Wizard::new(MODEL.to_string());
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 

@@ -9,7 +9,6 @@ pub struct Wizard<Q, A> {
     client: Client,
     // TODO: change model to enum
     model: String,
-    json_mode: bool,
     _q: std::marker::PhantomData<Q>,
     _a: std::marker::PhantomData<A>,
 }
@@ -23,7 +22,6 @@ impl<Q, A> Wizard<Q, A> {
             model,
             _q: Default::default(),
             _a: Default::default(),
-            json_mode: true,
         }
     }
 
