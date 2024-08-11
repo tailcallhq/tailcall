@@ -181,16 +181,12 @@ impl<A> Headers<A> {
 impl Headers<UnResolved> {
     pub fn resolve(self, reader_context: &ConfigReaderContext) -> Headers<Resolved> {
         // Resolve the header values with mustache template.
-        let resolved_headers = if let Some(headers_inner) = self.0 {
-            let mut resolved_headers = BTreeMap::new();
-            for (key, mustache_template) in headers_inner.into_iter() {
-                let resolved_value = mustache_template.resolve(reader_context);
-                resolved_headers.insert(key, resolved_value);
-            }
-            Some(resolved_headers)
-        } else {
-            None
-        };
+        let resolved_headers = self.0.map(|headers_inner| {
+            headers_inner
+                .into_iter()
+                .map(|(k, v)| (k, v.resolve(reader_context)))
+                .collect::<BTreeMap<_, _>>()
+        });
 
         Headers(resolved_headers, PhantomData)
     }
