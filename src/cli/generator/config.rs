@@ -23,6 +23,7 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
+    #[serde(skip_serializing_if = "Secret::is_empty")]
     pub secret: Secret<Status>,
 }
 
@@ -32,6 +33,12 @@ pub struct Secret<Status = UnResolved>(
     #[serde(skip_serializing_if = "String::is_empty")] pub String,
     #[serde(skip)] PhantomData<Status>,
 );
+
+impl<A> Secret<A> {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
 
 impl Secret<UnResolved> {
     pub fn into_resolved(
