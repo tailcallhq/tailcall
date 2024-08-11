@@ -62,7 +62,7 @@ pub enum CohereModel {
 
 #[derive(Clone)]
 pub enum OllamaModel {
-    Gemma2b
+    Gemma2b,
 }
 
 impl Display for Adapter {
