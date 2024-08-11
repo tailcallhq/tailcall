@@ -158,7 +158,8 @@ fn resolve_file_descriptor_set(
 #[cfg(test)]
 mod test {
     use prost_reflect::prost_types::FileDescriptorSet;
-    use serde::Deserialize;
+    use serde::{Deserialize, Deserializer};
+    use serde_json::Value;
 
     use super::Generator;
     use crate::core::config::transformer::Preset;
@@ -171,20 +172,39 @@ mod test {
         Ok(protox::compile(files, [tailcall_fixtures::protobuf::SELF])?)
     }
 
-    #[derive(Deserialize)]
     struct JsonFixture {
         url: String,
         response: serde_json::Value,
     }
 
-    fn parse_json(path: &str) -> JsonFixture {
-        let content = std::fs::read_to_string(path).unwrap();
-        let json_content: serde_json::Value = serde_json::from_str(&content).unwrap();
+    impl<'de> Deserialize<'de> for JsonFixture {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let json_content: Value = Value::deserialize(deserializer)?;
 
-        JsonFixture {
-            url: json_content["request"]["url"].as_str().unwrap().to_string(),
-            response: json_content["response"]["body"].clone(),
+            let url = json_content
+                .get("request")
+                .and_then(|req| req.get("url"))
+                .and_then(|url| url.as_str())
+                .ok_or_else(|| serde::de::Error::missing_field("request.url"))?
+                .to_string();
+
+            let response = json_content
+                .get("response")
+                .and_then(|resp| resp.get("body"))
+                .cloned()
+                .ok_or_else(|| serde::de::Error::missing_field("response.body"))?;
+
+            Ok(JsonFixture { url, response })
         }
+    }
+
+    async fn parse_json(path: &str) -> anyhow::Result<JsonFixture> {
+        let content = tokio::fs::read_to_string(path).await?;
+        let result: JsonFixture = serde_json::from_str(&content)?;
+        Ok(result)
     }
 
     #[test]
@@ -216,10 +236,10 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn should_generate_config_from_json() -> anyhow::Result<()> {
+    #[tokio::test]
+    async fn should_generate_config_from_json() -> anyhow::Result<()> {
         let parsed_content =
-            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
+            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json").await?;
         let cfg_module = Generator::default()
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
@@ -235,8 +255,8 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn should_generate_combined_config() -> anyhow::Result<()> {
+    #[tokio::test]
+    async fn should_generate_combined_config() -> anyhow::Result<()> {
         // Proto input
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let proto_set = compile_protobuf(&[news_proto])?;
@@ -253,7 +273,7 @@ mod test {
 
         // Json Input
         let parsed_content =
-            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
+            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json").await?;
         let json_input = Input::Json {
             url: parsed_content.url.parse()?,
             method: Method::GET,
@@ -274,8 +294,8 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn generate_from_config_from_multiple_jsons() -> anyhow::Result<()> {
+    #[tokio::test]
+    async fn generate_from_config_from_multiple_jsons() -> anyhow::Result<()> {
         let mut inputs = vec![];
         let json_fixtures = [
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",
@@ -284,7 +304,7 @@ mod test {
         ];
         let field_name_generator = NameGenerator::new("f");
         for json_path in json_fixtures {
-            let parsed_content = parse_json(json_path);
+            let parsed_content = parse_json(json_path).await?;
             inputs.push(Input::Json {
                 url: parsed_content.url.parse()?,
                 method: Method::GET,
