@@ -1,7 +1,5 @@
 use std::borrow::Cow;
 
-use crate::core::runtime::TargetRuntime;
-
 pub struct Adapter {}
 
 impl Adapter {

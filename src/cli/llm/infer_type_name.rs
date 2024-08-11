@@ -8,7 +8,6 @@ use super::{Error, Result, Wizard};
 use crate::cli::llm::adapter::Adapter;
 use crate::cli::llm::model::Model;
 use crate::core::config::Config;
-use crate::core::runtime::TargetRuntime;
 
 #[derive(Default)]
 pub struct InferTypeName {}
@@ -78,7 +77,7 @@ impl InferTypeName {
     pub async fn generate(
         &mut self,
         config: &Config,
-        auth_key: Option<Cow<str>>,
+        auth_key: Option<Cow<'_, str>>,
     ) -> Result<HashMap<String, String>> {
         let wizard: Wizard<Question, Answer> =
             Wizard::new(Model::GROQ.llama38192(), Adapter::config(auth_key));
