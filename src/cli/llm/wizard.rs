@@ -9,6 +9,7 @@ pub struct Wizard<Q, A> {
     client: Client,
     // TODO: change model to enum
     model: String,
+    json_mode: bool,
     _q: std::marker::PhantomData<Q>,
     _a: std::marker::PhantomData<A>,
 }
@@ -16,21 +17,13 @@ pub struct Wizard<Q, A> {
 impl<Q, A> Wizard<Q, A> {
     pub fn new(model: String) -> Self {
         Self {
-            client: Default::default(),
+            client: Client::builder()
+                .with_chat_options(ChatOptions::default().with_json_mode(true))
+                .build(),
             model,
             _q: Default::default(),
             _a: Default::default(),
-        }
-    }
-
-    pub fn with_json_mode(self, json_mode: bool) -> Self {
-        Self {
-            client: Client::builder()
-                .with_chat_options(ChatOptions::default().with_json_mode(json_mode))
-                .build(),
-            model: self.model,
-            _q: self._q,
-            _a: self._a,
+            json_mode: true,
         }
     }
 
