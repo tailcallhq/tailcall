@@ -106,7 +106,7 @@ pub mod test {
                         .error_for_status()
                         .map_err(|err| err.without_url())?,
                 )
-                .await?)
+                    .await?)
             }
         }
     }
@@ -168,7 +168,7 @@ pub mod test {
 
     pub fn test_generator(path: &Path) -> datatest_stable::Result<()> {
         if let Some(extension) = path.extension() {
-            if extension == "json" {
+            if extension == "json" && path.file_name().and_then(|v| v.to_str()).map(|v| v.starts_with("gen")).unwrap_or_default() {
                 let _ = generator_spec::run_config_generator_spec(path);
             }
         }
