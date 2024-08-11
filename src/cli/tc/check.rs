@@ -27,8 +27,7 @@ pub async fn check_command(params: CheckParams, config_reader: &ConfigReader) ->
     log_endpoint_set(&config_module.extensions().endpoint_set);
     if let Some(format) = format {
         fmt_std.append(&format.encode(&config_module)?)?;
-        let lock = fmt_std.display()?;
-        drop(lock);
+        fmt_std.display_and_drop()?;
     }
     let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
 

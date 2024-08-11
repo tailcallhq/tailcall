@@ -44,7 +44,6 @@ pub(super) fn display_schema(blueprint: &Blueprint) -> std::io::Result<()> {
 
     let sdl = blueprint.to_schema();
     fmt.append(&format!("{}\n", print_schema::print_schema(sdl)))?;
-    let lock = fmt.display()?;
-    drop(lock);
+    fmt.display_and_drop()?;
     Ok(())
 }

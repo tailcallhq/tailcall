@@ -24,9 +24,18 @@ impl<Out: std::io::Write> Fmt<Out> {
         writeln!(self.out, "{}\n", s)
     }
 
+    /// This function is usually used with BufWriter
+    /// It flushes the output and returns the lock
     pub fn display(mut self) -> std::io::Result<Out> {
         self.out.flush()?;
         Ok(self.out)
+    }
+
+    /// This function is usually used in replacement of println!()
+    /// It flushes the output and drops the lock
+    pub fn display_and_drop(mut self) -> std::io::Result<()> {
+        self.out.flush()?;
+        Ok(())
     }
 
     fn format_n_plus_one_queries(&mut self, n_plus_one_info: QueryPath) -> std::io::Result<()> {
