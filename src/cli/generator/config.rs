@@ -29,10 +29,7 @@ pub struct Config<Status = UnResolved> {
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(transparent)]
-pub struct Secret<Status = UnResolved>(
-    pub String,
-    #[serde(skip)] PhantomData<Status>,
-);
+pub struct Secret<Status = UnResolved>(pub String, #[serde(skip)] PhantomData<Status>);
 
 impl<A> Secret<A> {
     pub fn is_empty(&self) -> bool {
