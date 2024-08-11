@@ -17,7 +17,11 @@ impl<Q, A> Wizard<Q, A> {
     pub fn new(model: String) -> Self {
         Self {
             client: Client::builder()
-                .with_chat_options(ChatOptions::default().with_json_mode(true))
+                .with_chat_options(
+                    ChatOptions::default()
+                        .with_json_mode(true)
+                        .with_temperature(0.0),
+                )
                 .build(),
             model,
             _q: Default::default(),
