@@ -1,7 +1,7 @@
 #![allow(unused)]
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Result};
 
-#[derive(Clone)]
+#[derive(Clone, derive_more::Display)]
 pub enum Adapter {
     Groq(GroqModel),
     OpenAI(OpenAIModel),
@@ -65,14 +65,8 @@ pub enum OllamaModel {
     Gemma2b,
 }
 
-impl Display for Adapter {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
 impl Display for GroqModel {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let model_name = match self {
             GroqModel::Llama3405bReasoning => "llama-3.1-405b-reasoning",
             GroqModel::Llama370bVersatile => "llama-3.1-70b-versatile",
@@ -90,7 +84,7 @@ impl Display for GroqModel {
 }
 
 impl Display for GeminiModel {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let model_name = match self {
             GeminiModel::Gemini15Pro => "gemini-1.5-pro",
             GeminiModel::Gemini15Flash => "gemini-1.5-flash",
@@ -102,7 +96,7 @@ impl Display for GeminiModel {
 }
 
 impl Display for OpenAIModel {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let model_name = match self {
             OpenAIModel::Gpt4o => "gpt-4o",
             OpenAIModel::Gpt4oMini => "gpt-4o-mini",
@@ -115,7 +109,7 @@ impl Display for OpenAIModel {
 }
 
 impl Display for OllamaModel {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let model_name = match self {
             OllamaModel::Gemma2b => "gemma:2b",
         };
@@ -124,7 +118,7 @@ impl Display for OllamaModel {
 }
 
 impl Display for AnthropicModel {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let model_name = match self {
             AnthropicModel::Claude35Sonnet20240620 => "claude-3-5-sonnet-20240620",
             AnthropicModel::Claude3Opus20240229 => "claude-3-opus-20240229",
@@ -136,7 +130,7 @@ impl Display for AnthropicModel {
 }
 
 impl Display for CohereModel {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let model_name = match self {
             CohereModel::CommandRPlus => "command-r-plus",
             CohereModel::CommandR => "command-r",
