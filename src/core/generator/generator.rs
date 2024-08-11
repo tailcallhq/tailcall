@@ -33,7 +33,7 @@ pub enum Input {
         req_body: Value,
         response: Value,
         field_name: String,
-        operation_type: GraphQLOperationType,
+        is_mutation: bool,
     },
     Proto(ProtoMetadata),
     Config {
@@ -101,7 +101,13 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                Input::Json { url, response, field_name, operation_type, method, req_body } => {
+                Input::Json { url, response, field_name, is_mutation, method, req_body } => {
+                    let operation_type = if *is_mutation {
+                        GraphQLOperationType::Mutation
+                    } else {
+                        GraphQLOperationType::Query
+                    };
+
                     let request_sample = RequestSample::new(
                         url.to_owned(),
                         method.to_owned(),
@@ -156,7 +162,6 @@ mod test {
 
     use super::Generator;
     use crate::core::config::transformer::Preset;
-    use crate::core::config::GraphQLOperationType;
     use crate::core::generator::generator::Input;
     use crate::core::generator::NameGenerator;
     use crate::core::http::Method;
@@ -219,10 +224,10 @@ mod test {
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
                 method: Method::GET,
-                body: serde_json::Value::Null,
+                req_body: serde_json::Value::Null,
                 response: parsed_content.response,
                 field_name: "f1".to_string(),
-                operation_type: GraphQLOperationType::Query,
+                is_mutation: false,
             }])
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
@@ -252,10 +257,10 @@ mod test {
         let json_input = Input::Json {
             url: parsed_content.url.parse()?,
             method: Method::GET,
-            body: serde_json::Value::Null,
+            req_body: serde_json::Value::Null,
             response: parsed_content.response,
             field_name: "f1".to_string(),
-            operation_type: GraphQLOperationType::Query,
+            is_mutation: false,
         };
 
         // Combine inputs
@@ -283,10 +288,10 @@ mod test {
             inputs.push(Input::Json {
                 url: parsed_content.url.parse()?,
                 method: Method::GET,
-                body: serde_json::Value::Null,
+                req_body: serde_json::Value::Null,
                 response: parsed_content.response,
                 field_name: field_name_generator.next(),
-                operation_type: GraphQLOperationType::Query,
+                is_mutation: false,
             });
         }
 

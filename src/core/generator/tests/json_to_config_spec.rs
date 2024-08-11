@@ -4,7 +4,6 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall::core::config::GraphQLOperationType;
 use tailcall::core::generator::{Generator, Input};
 use tailcall::core::http::Method;
 use url::Url;
@@ -67,25 +66,20 @@ fn load_json(path: &Path) -> anyhow::Result<JsonFixture> {
 
 fn test_spec(path: &Path, json_data: JsonFixture) -> anyhow::Result<()> {
     let JsonFixture { request, response, is_mutation, field_name } = json_data;
-    let operation_ty = if is_mutation.unwrap_or_default() {
-        GraphQLOperationType::Mutation
-    } else {
-        GraphQLOperationType::Query
-    };
 
-    let body = request.body.unwrap_or_default();
-    let respo_body = response.body.unwrap_or_default();
+    let req_body = request.body.unwrap_or_default();
+    let resp_body = response.body.unwrap_or_default();
 
     let generator = Generator::default().inputs(vec![Input::Json {
         url: request.url,
         method: request.method,
-        body,
-        response: respo_body,
+        req_body,
+        response: resp_body,
         field_name,
-        operation_type: operation_ty.clone(),
+        is_mutation: is_mutation.unwrap_or_default(),
     }]);
 
-    let cfg = if operation_ty == GraphQLOperationType::Mutation {
+    let cfg = if is_mutation.unwrap_or_default() {
         generator.mutation(Some("Mutation".into()))
     } else {
         generator

@@ -9,7 +9,7 @@ use pathdiff::diff_paths;
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
 use crate::core::config::transformer::Preset;
-use crate::core::config::{self, ConfigModule, ConfigReaderContext, GraphQLOperationType};
+use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
@@ -107,10 +107,7 @@ impl Generator {
                     let url = src.0;
                     let req_body = body.unwrap_or_default();
                     let method = method.unwrap_or_default();
-                    let operation_type = match is_mutation.unwrap_or_default() {
-                        true => GraphQLOperationType::Mutation,
-                        false => GraphQLOperationType::Query,
-                    };
+                    let is_mutation = is_mutation.unwrap_or_default();
 
                     let request_method = method.clone().to_hyper();
                     let mut request = reqwest::Request::new(request_method, url.parse()?);
@@ -135,7 +132,7 @@ impl Generator {
                         req_body,
                         response: serde_json::from_str(&response.content)?,
                         field_name,
-                        operation_type,
+                        is_mutation,
                     });
                 }
                 Source::Proto { src } => {
