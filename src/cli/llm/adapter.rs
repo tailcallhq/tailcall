@@ -67,15 +67,7 @@ pub enum OllamaModel {
 
 impl Display for Adapter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let provider = match self {
-            Adapter::Groq(g) => g.to_string(),
-            Adapter::OpenAI(o) => o.to_string(),
-            Adapter::Ollama(o) => o.to_string(),
-            Adapter::Anthropic(a) => a.to_string(),
-            Adapter::Cohere(c) => c.to_string(),
-            Adapter::Gemini(g) => g.to_string(),
-        };
-        write!(f, "{}", provider)
+        write!(f, "{}", self.to_string())
     }
 }
 
