@@ -21,7 +21,7 @@ impl Fmt {
         Fmt::meta(&n_plus_one_info.to_string())
     }
 
-    pub fn log_n_plus_one(show_npo: bool, config: &Config) {
+    pub fn format_n_plus_one_message(show_npo: bool, config: &Config) -> String {
         let n_plus_one_info = config.n_plus_one();
         let mut message = format!("N + 1 detected: {}", n_plus_one_info.size());
 
@@ -30,6 +30,10 @@ impl Fmt {
             message.push_str(&Fmt::format_n_plus_one_queries(n_plus_one_info));
         }
 
-        tracing::info!("{}", message);
+        message
+    }
+
+    pub fn log_n_plus_one(show_npo: bool, config: &Config) {
+        tracing::info!("{}", Fmt::format_n_plus_one_message(show_npo, config));
     }
 }

@@ -1,0 +1,6 @@
+---
+source: tests/cli/check.rs
+expression: output_string
+---
+Config tests/cli/fixtures/check/call.graphql ... ok
+N + 1 detected: 0

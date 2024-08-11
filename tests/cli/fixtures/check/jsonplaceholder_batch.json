@@ -1,0 +1,89 @@
+{
+  "server": {
+    "port": 8000
+  },
+  "upstream": {
+    "baseURL": "http://jsonplaceholder.typicode.com",
+    "httpCache": 42,
+    "batch": {
+      "maxSize": 1000,
+      "delay": 1,
+      "headers": []
+    }
+  },
+  "schema": {
+    "query": "Query"
+  },
+  "types": {
+    "Post": {
+      "fields": {
+        "body": {
+          "type": "String",
+          "required": true
+        },
+        "id": {
+          "type": "Int",
+          "required": true
+        },
+        "title": {
+          "type": "String",
+          "required": true
+        },
+        "user": {
+          "type": "User",
+          "http": {
+            "path": "/users",
+            "query": [
+              {
+                "key": "id",
+                "value": "{{value.userId}}"
+              }
+            ],
+            "batchKey": ["id"]
+          }
+        },
+        "userId": {
+          "type": "Int",
+          "required": true
+        }
+      }
+    },
+    "Query": {
+      "fields": {
+        "posts": {
+          "type": "Post",
+          "list": true,
+          "http": {
+            "path": "/posts"
+          }
+        }
+      }
+    },
+    "User": {
+      "fields": {
+        "email": {
+          "type": "String",
+          "required": true
+        },
+        "id": {
+          "type": "Int",
+          "required": true
+        },
+        "name": {
+          "type": "String",
+          "required": true
+        },
+        "phone": {
+          "type": "String"
+        },
+        "username": {
+          "type": "String",
+          "required": true
+        },
+        "website": {
+          "type": "String"
+        }
+      }
+    }
+  }
+}

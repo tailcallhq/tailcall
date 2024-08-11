@@ -1,3 +1,5 @@
+use std::io::{self, Write};
+
 use anyhow::Result;
 
 use super::helpers::{display_schema, log_endpoint_set};
@@ -8,28 +10,45 @@ use crate::core::config::reader::ConfigReader;
 use crate::core::config::Source;
 use crate::core::runtime::TargetRuntime;
 
-pub(super) struct CheckParams {
-    pub(super) file_paths: Vec<String>,
-    pub(super) n_plus_one_queries: bool,
-    pub(super) schema: bool,
-    pub(super) format: Option<Source>,
-    pub(super) runtime: TargetRuntime,
+pub struct CheckParams {
+    pub file_paths: Vec<String>,
+    pub n_plus_one_queries: bool,
+    pub schema: bool,
+    pub format: Option<Source>,
+    pub runtime: TargetRuntime,
 }
 
-pub(super) async fn check_command(params: CheckParams, config_reader: &ConfigReader) -> Result<()> {
+pub async fn check_command(
+    params: CheckParams,
+    config_reader: &ConfigReader,
+    mut write_buf: Option<&mut dyn Write>,
+) -> Result<()> {
     let CheckParams { file_paths, n_plus_one_queries, schema, format, runtime } = params;
 
     let config_module = (config_reader.read_all(&file_paths)).await?;
     log_endpoint_set(&config_module.extensions().endpoint_set);
     if let Some(format) = format {
-        Fmt::display(format.encode(&config_module)?);
+        let format_msg = format.encode(&config_module)?;
+        if let Some(write_buf) = &mut write_buf {
+            writeln!(write_buf, "{}", format_msg)?;
+        }
+        Fmt::display(format_msg);
     }
     let blueprint = Blueprint::try_from(&config_module).map_err(CLIError::from);
 
     match blueprint {
         Ok(blueprint) => {
-            tracing::info!("Config {} ... ok", file_paths.join(", "));
-            Fmt::log_n_plus_one(n_plus_one_queries, config_module.config());
+            let config_msg = format!("Config {} ... ok", file_paths.join(", "));
+            let n_plus_message =
+                Fmt::format_n_plus_one_message(n_plus_one_queries, config_module.config());
+
+            if let Some(write_buf) = write_buf {
+                writeln!(write_buf, "{}", config_msg)?;
+                writeln!(write_buf, "{}", n_plus_message)?;
+            }
+
+            tracing::info!("{}", config_msg);
+            tracing::info!("{}", n_plus_message);
             // Check the endpoints' schema
             let _ = config_module
                 .extensions()

@@ -5,7 +5,7 @@ mod fmt;
 pub mod javascript;
 pub mod metrics;
 pub mod server;
-mod tc;
+pub mod tc;
 pub mod telemetry;
 
 pub mod generator;

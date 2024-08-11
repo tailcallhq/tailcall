@@ -1,4 +1,4 @@
-mod check;
+pub mod check;
 mod gen;
 mod helpers;
 mod init;

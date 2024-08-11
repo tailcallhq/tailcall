@@ -42,6 +42,7 @@ async fn run_command(cli: Cli, config_reader: ConfigReader, runtime: TargetRunti
             check::check_command(
                 check::CheckParams { file_paths, n_plus_one_queries, schema, format, runtime },
                 &config_reader,
+                None,
             )
             .await?;
         }

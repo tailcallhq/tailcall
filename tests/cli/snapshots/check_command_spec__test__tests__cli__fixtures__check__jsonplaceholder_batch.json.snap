@@ -1,0 +1,6 @@
+---
+source: tests/cli/check.rs
+expression: output_string
+---
+Config tests/cli/fixtures/check/jsonplaceholder_batch.json ... ok
+N + 1 detected: 0
