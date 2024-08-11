@@ -18,24 +18,24 @@ impl OperationTypeGenerator {
         mut config: Config,
     ) -> Valid<Config, String> {
         let mut field = Field {
-            list: request_sample.response().is_array(),
+            list: request_sample.response.is_array(),
             type_of: root_type.to_owned(),
             ..Default::default()
         };
 
         // generate required http directive.
-        let http_directive_gen = HttpDirectiveGenerator::new(request_sample.url());
+        let http_directive_gen = HttpDirectiveGenerator::new(&request_sample.url);
         field.http = Some(http_directive_gen.generate_http_directive(&mut field));
 
-        if let GraphQLOperationType::Mutation = request_sample.operation_type() {
+        if let GraphQLOperationType::Mutation = request_sample.operation_type {
             // generate the input type.
             let root_ty = TypeGenerator::new(name_generator)
-                .generate_types(request_sample.body(), &mut config);
+                .generate_types(&request_sample.body, &mut config);
             // add input type to field.
-            let arg_name = format!("{}Input", request_sample.field_name()).to_case(Case::Camel);
+            let arg_name = format!("{}Input", request_sample.field_name).to_case(Case::Camel);
             if let Some(http_) = &mut field.http {
                 http_.body = Some(format!("{{{{.args.{}}}}}", arg_name.clone()));
-                http_.method = request_sample.method().to_owned();
+                http_.method = request_sample.method.to_owned();
             }
             field
                 .args
@@ -44,17 +44,17 @@ impl OperationTypeGenerator {
 
         // if type is already present, then append the new field to it else create one.
         let req_op = request_sample
-            .operation_type()
+            .operation_type
             .to_string()
             .to_case(Case::Pascal);
         if let Some(type_) = config.types.get_mut(req_op.as_str()) {
             type_
                 .fields
-                .insert(request_sample.field_name().to_owned(), field);
+                .insert(request_sample.field_name.to_owned(), field);
         } else {
             let mut ty = Type::default();
             ty.fields
-                .insert(request_sample.field_name().to_owned(), field);
+                .insert(request_sample.field_name.to_owned(), field);
             config.types.insert(req_op.to_owned(), ty);
         }
 

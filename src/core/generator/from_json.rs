@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use convert_case::{Case, Casing};
-use derive_getters::Getters;
 use serde_json::Value;
 use url::Url;
 
@@ -13,14 +12,13 @@ use crate::core::merge_right::MergeRight;
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::{Valid, Validator};
 
-#[derive(Getters)]
 pub struct RequestSample {
-    url: Url,
-    method: Method,
-    body: serde_json::Value,
-    response: Value,
-    field_name: String,
-    operation_type: GraphQLOperationType,
+    pub url: Url,
+    pub method: Method,
+    pub body: serde_json::Value,
+    pub response: Value,
+    pub field_name: String,
+    pub operation_type: GraphQLOperationType,
 }
 
 impl RequestSample {
@@ -75,7 +73,7 @@ impl Transform for FromJsonGenerator<'_> {
         let type_name_gen = self.type_name_generator;
 
         Valid::from_iter(config_gen_req, |sample| {
-            let (existing_name, suggested_name) = match sample.operation_type() {
+            let (existing_name, suggested_name) = match sample.operation_type {
                 GraphQLOperationType::Query => (
                     GraphQLOperationType::Query
                         .to_string()
@@ -95,10 +93,10 @@ impl Transform for FromJsonGenerator<'_> {
 
             // these transformations are required in order to generate a base config.
             GraphQLTypesGenerator::new(sample, type_name_gen)
-                .pipe(json::SchemaGenerator::new(sample.operation_type()))
+                .pipe(json::SchemaGenerator::new(&sample.operation_type))
                 .pipe(json::FieldBaseUrlGenerator::new(
-                    sample.url(),
-                    sample.operation_type(),
+                    &sample.url,
+                    &sample.operation_type,
                 ))
                 .pipe(json::RenameTypes::new(rename_types))
                 .transform(config.clone())
