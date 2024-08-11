@@ -260,8 +260,8 @@ impl Config {
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;
-        let secret = if let Some(k) = self.secret {
-            let template = Mustache::parse(&k)?;
+        let secret = if let Some(secret) = self.secret {
+            let template = Mustache::parse(&secret)?;
             Some(template.render(&reader_context))
         } else {
             None
