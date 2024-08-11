@@ -13,16 +13,16 @@ pub enum Adapter {
 
 #[derive(Clone)]
 pub enum GroqModel {
-    Llama405bReasoning,
-    Llama70bVersatile,
-    Llama8bInstant,
+    Llama3405bReasoning,
+    Llama370bVersatile,
+    Llama38bInstant,
     Mixtral8x7b32768,
     Gemma7bIt,
     Gemma29bIt,
-    LlamaGroq70b8192ToolUsePreview,
-    LlamaGroq8b8192ToolUsePreview,
-    Llama38192,
-    Llama708192,
+    Llama3Groq70b8192ToolUsePreview,
+    Llama3Groq8b8192ToolUsePreview,
+    Llama38b192,
+    Llama370b8192,
 }
 
 #[derive(Clone)]
@@ -82,16 +82,16 @@ impl Display for Adapter {
 impl Display for GroqModel {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let model_name = match self {
-            GroqModel::Llama405bReasoning => "llama-3.1-405b-reasoning",
-            GroqModel::Llama70bVersatile => "llama-3.1-70b-versatile",
-            GroqModel::Llama8bInstant => "llama-3.1-8b-instant",
+            GroqModel::Llama3405bReasoning => "llama-3.1-405b-reasoning",
+            GroqModel::Llama370bVersatile => "llama-3.1-70b-versatile",
+            GroqModel::Llama38bInstant => "llama-3.1-8b-instant",
             GroqModel::Mixtral8x7b32768 => "mixtral-8x7b-32768",
             GroqModel::Gemma7bIt => "gemma-7b-it",
             GroqModel::Gemma29bIt => "gemma2-9b-it",
-            GroqModel::LlamaGroq70b8192ToolUsePreview => "llama3-groq-70b-8192-tool-use-preview",
-            GroqModel::LlamaGroq8b8192ToolUsePreview => "llama3-groq-8b-8192-tool-use-preview",
-            GroqModel::Llama38192 => "llama3-8b-8192",
-            GroqModel::Llama708192 => "llama3-70b-8192",
+            GroqModel::Llama3Groq70b8192ToolUsePreview => "llama3-groq-70b-8192-tool-use-preview",
+            GroqModel::Llama3Groq8b8192ToolUsePreview => "llama3-groq-8b-8192-tool-use-preview",
+            GroqModel::Llama38b192 => "llama3-8b-8192",
+            GroqModel::Llama370b8192 => "llama3-70b-8192",
         };
         write!(f, "{}", model_name)
     }

@@ -75,7 +75,7 @@ impl InferTypeName {
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let key = "XXX".to_string(); // TODO: take key from config.
         let wizard: Wizard<Question, Answer> =
-            Wizard::new(Adapter::Groq(GroqModel::Llama70bVersatile), key);
+            Wizard::new(Adapter::Groq(GroqModel::Llama38b192), key);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
