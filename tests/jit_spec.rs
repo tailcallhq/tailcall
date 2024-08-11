@@ -1,13 +1,4 @@
 #[cfg(test)]
-use std::path::PathBuf;
-
-macro_rules! include_config {
-    ($path:expr) => {{
-        let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        base_path.join("tests/fixtures/gen").join($path)
-    }};
-}
-
 mod tests {
     use std::sync::Arc;
 
@@ -26,9 +17,7 @@ mod tests {
     }
 
     impl TestExecutor {
-        async fn try_new(config_file: &str) -> anyhow::Result<Self> {
-            // Use include_config! to load the configuration file
-            let config_path = include_config!(config_file);
+        async fn try_new() -> anyhow::Result<Self> {
             let sdl =
                 tokio::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).await?;
             let config = Config::from_sdl(&sdl).to_result()?;
@@ -65,7 +54,7 @@ mod tests {
     async fn test_executor_nested() {
         //  NOTE: This test makes a real HTTP call
         let request = Request::new("query {posts {title userId user {id name blog} }}");
-        let executor = TestExecutor::try_new("jsonplaceholder.json").await.unwrap();
+        let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
         let data = response.data;
 
@@ -105,7 +94,7 @@ mod tests {
             }
         "#,
         );
-        let executor = TestExecutor::try_new("jsonplaceholder.json").await.unwrap();
+        let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
         let data = response.data;
 
@@ -135,7 +124,7 @@ mod tests {
             }
         "#,
         );
-        let executor = TestExecutor::try_new("jsonplaceholder.json").await.unwrap();
+        let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
         let data = response.data;
 
@@ -157,7 +146,7 @@ mod tests {
     async fn test_executor_arguments_default_value() {
         //  NOTE: This test makes a real HTTP call
         let request = Request::new("query {post {id title}}");
-        let executor = TestExecutor::try_new("jsonplaceholder.json").await.unwrap();
+        let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
         let data = response.data;
 
@@ -176,7 +165,7 @@ mod tests {
             }
         "#;
         let request = Request::new(query);
-        let executor = TestExecutor::try_new("jsonplaceholder.json").await.unwrap();
+        let executor = TestExecutor::try_new().await.unwrap();
 
         match executor.run(request).await {
             Ok(_) => panic!("Should fail with unresolved variable"),
@@ -199,7 +188,7 @@ mod tests {
         //  NOTE: This test makes a real HTTP call
         let request =
             Request::new("query {user1: user(id: 1) {id name} user2: user(id: 2) {id name}}");
-        let executor = TestExecutor::try_new("jsonplaceholder.json").await.unwrap();
+        let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
         let data = response.data;
 
@@ -225,7 +214,7 @@ mod tests {
             .variables
             .insert("TRUE".to_string(), ConstValue::Boolean(true));
 
-        let executor = TestExecutor::try_new("jsonplaceholder.json").await.unwrap();
+        let executor = TestExecutor::try_new().await.unwrap();
         let response = executor.run(request).await.unwrap();
         let data = response.data;
 

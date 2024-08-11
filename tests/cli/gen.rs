@@ -1,5 +1,14 @@
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
+    macro_rules! include_config {
+        ($path:expr) => {{
+            let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            base_path.join("tests/fixtures/gen").join($path)
+        }};
+    }
+
     mod cacache_manager {
         use std::io::{Read, Write};
         use std::path::PathBuf;
@@ -166,13 +175,14 @@ mod test {
 
     #[test]
     fn test_generator() {
-        let path = "tests/fixtures/gen";
+        let path = PathBuf::from("tests/fixtures/gen");
         if let Ok(entries) = std::fs::read_dir(path) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if let Some(extension) = path.extension() {
                     if extension == "json" {
-                        let _ = generator_spec::run_config_generator_spec(path);
+                        let config_path = include_config!(path.file_name().unwrap().to_str().unwrap());
+                        let _ = generator_spec::run_config_generator_spec(&config_path);
                     }
                 }
             }
