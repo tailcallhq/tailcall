@@ -23,8 +23,25 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub secret: Option<String>,
+    pub secret: Secret<Status>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default)]
+#[serde(transparent)]
+pub struct Secret<Status = UnResolved>(
+    #[serde(skip_serializing_if = "String::is_empty")] pub String,
+    #[serde(skip)] PhantomData<Status>,
+);
+
+impl Secret<UnResolved> {
+    pub fn into_resolved(
+        &self,
+        reader_context: &ConfigReaderContext,
+    ) -> anyhow::Result<Secret<Resolved>> {
+        let template = Mustache::parse(&self.0)?;
+        let secret = template.render(reader_context);
+        Ok(Secret(secret, PhantomData))
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
@@ -260,12 +277,7 @@ impl Config {
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;
-        let secret = if let Some(secret) = self.secret {
-            let template = Mustache::parse(&secret)?;
-            Some(template.render(&reader_context))
-        } else {
-            None
-        };
+        let secret = self.secret.into_resolved(&reader_context)?;
 
         Ok(Config {
             inputs,
@@ -416,13 +428,11 @@ mod tests {
             headers: Default::default(),
         };
 
-        let config = Config::default().secret(Some("{{.env.TAILCALL_SECRET}}".to_string()));
+        let secret: Secret<UnResolved> =
+            Secret("{{.env.TAILCALL_SECRET}}".to_string(), PhantomData);
 
-        let resolved_config = config.into_resolved("", reader_ctx).unwrap();
+        let resolved_config = secret.into_resolved(&reader_ctx).unwrap();
 
-        assert_eq!(
-            resolved_config.secret,
-            Some("eyJhbGciOiJIUzI1NiIsInR5".to_string()),
-        );
+        assert_eq!(resolved_config.0, "eyJhbGciOiJIUzI1NiIsInR5".to_string(),);
     }
 }
