@@ -24,8 +24,11 @@ impl<Q, A> Wizard<Q, A> {
         Self {
             client: Client::builder()
                 .insert_adapter_config(AdapterKind::Groq, adapter_config)
-                .with_chat_options(ChatOptions::default().with_json_mode(true))
-                .with_temperature(0.0),
+                .with_chat_options(
+                    ChatOptions::default()
+                        .with_json_mode(true)
+                        .with_temperature(0.0),
+                )
                 .build(),
             model,
             _q: Default::default(),

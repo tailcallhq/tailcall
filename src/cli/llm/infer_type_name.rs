@@ -3,10 +3,8 @@ use std::collections::HashMap;
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 
-use super::{
-    adapter::{Adapter, GroqModel},
-    Error, Result, Wizard,
-};
+use super::adapter::{Adapter, GroqModel};
+use super::{Error, Result, Wizard};
 use crate::core::config::Config;
 
 #[derive(Default)]

@@ -1,5 +1,5 @@
-mod error;
 mod adapter;
+mod error;
 pub mod infer_type_name;
 pub use error::Error;
 use error::Result;
