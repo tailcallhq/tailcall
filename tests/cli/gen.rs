@@ -84,8 +84,8 @@ mod test {
         use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 
         use super::cacache_manager::CaCacheManager;
-        use crate::core::http::Response;
-        use crate::core::HttpIO;
+        use tailcall::core::http::Response;
+        use tailcall::core::HttpIO;
 
         #[derive(Clone)]
         pub struct NativeHttpTest {
@@ -126,11 +126,11 @@ mod test {
         use tokio::runtime::Runtime;
 
         use super::http::NativeHttpTest;
-        use crate::cli::generator::Generator;
-        use crate::core::blueprint::Blueprint;
-        use crate::core::config::{self, ConfigModule};
-        use crate::core::generator::Generator as ConfigGenerator;
-        use crate::core::valid::{ValidateInto, Validator};
+        use tailcall::cli::generator::Generator;
+        use tailcall::core::blueprint::Blueprint;
+        use tailcall::core::config::{self, ConfigModule};
+        use tailcall::core::generator::Generator as ConfigGenerator;
+        use tailcall::core::valid::{ValidateInto, Validator};
 
         pub fn run_config_generator_spec(path: &Path) -> datatest_stable::Result<()> {
             let path = path.to_path_buf();
@@ -142,9 +142,8 @@ mod test {
         }
 
         async fn run_test(path: &str) -> anyhow::Result<()> {
-            let mut runtime = crate::cli::runtime::init(&Blueprint::default());
+            let mut runtime = crate::tailcall::cli::runtime::init(&Blueprint::default());
             runtime.http = Arc::new(NativeHttpTest::default());
-
             let generator = Generator::new(path, runtime);
             let config = generator.read().await?;
             let preset: config::transformer::Preset = config
@@ -181,7 +180,8 @@ mod test {
                 let path = entry.path();
                 if let Some(extension) = path.extension() {
                     if extension == "json" {
-                        let config_path = include_config!(path.file_name().unwrap().to_str().unwrap());
+                        let config_path =
+                            include_config!(path.file_name().unwrap().to_str().unwrap());
                         let _ = generator_spec::run_config_generator_spec(&config_path);
                     }
                 }
