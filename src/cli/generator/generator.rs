@@ -151,7 +151,7 @@ impl Generator {
         let path = config.output.path.0.to_owned();
         let query_type = config.schema.query.clone();
         let preset = config.preset.clone().unwrap_or_default();
-        let use_ai_powered_names = (*preset.ai_powered_names()).unwrap_or_default();
+        let use_ai_powered_names = preset.infer_type_names.unwrap_or_default();
         let preset: Preset = preset.validate_into().to_result()?;
         let input_samples = self.resolve_io(config).await?;
 
@@ -159,7 +159,7 @@ impl Generator {
             .inputs(input_samples)
             .transformers(vec![Box::new(preset)]);
         if let Some(query_type_name) = query_type {
-            // presently only query opeartion is supported.
+            // presently only query operation is supported.
             config_gen = config_gen.operation_name(query_type_name);
         }
 
