@@ -149,9 +149,17 @@ impl<A> Location<A> {
 }
 
 impl Location<UnResolved> {
-    fn into_resolved(self, parent_dir: Option<&Path>) -> Location<Resolved> {
+    fn into_resolved(
+        self,
+        parent_dir: Option<&Path>,
+        reader_context: &ConfigReaderContext,
+    ) -> anyhow::Result<Location<Resolved>> {
+        let location = self.0.as_str();
+        let template = Mustache::parse(&location)?;
+        let resolved_value = template.render(reader_context);
+
         let path = {
-            let path = self.0.as_str();
+            let path = resolved_value.as_str();
             if Url::parse(path).is_ok() || Path::new(path).is_absolute() {
                 path.to_string()
             } else {
@@ -166,7 +174,7 @@ impl Location<UnResolved> {
                 }
             }
         };
-        Location(path, PhantomData)
+        Ok(Location(path, PhantomData))
     }
 }
 
@@ -199,10 +207,14 @@ impl Headers<UnResolved> {
 }
 
 impl Output<UnResolved> {
-    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Output<Resolved>> {
+    pub fn resolve(
+        self,
+        parent_dir: Option<&Path>,
+        reader_context: &ConfigReaderContext,
+    ) -> anyhow::Result<Output<Resolved>> {
         Ok(Output {
             format: self.format,
-            path: self.path.into_resolved(parent_dir),
+            path: self.path.into_resolved(parent_dir, reader_context)?,
         })
     }
 }
@@ -215,16 +227,16 @@ impl Source<UnResolved> {
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
             Source::Curl { src, field_name, headers } => {
-                let resolved_path = src.into_resolved(parent_dir);
+                let resolved_path = src.into_resolved(parent_dir, reader_context)?;
                 let resolved_headers = headers.resolve(reader_context)?;
                 Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
             }
             Source::Proto { src } => {
-                let resolved_path = src.into_resolved(parent_dir);
+                let resolved_path = src.into_resolved(parent_dir, reader_context)?;
                 Ok(Source::Proto { src: resolved_path })
             }
             Source::Config { src } => {
-                let resolved_path = src.into_resolved(parent_dir);
+                let resolved_path = src.into_resolved(parent_dir, reader_context)?;
                 Ok(Source::Config { src: resolved_path })
             }
         }
@@ -257,7 +269,7 @@ impl Config {
             .map(|input| input.resolve(parent_dir, &reader_context))
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
-        let output = self.output.resolve(parent_dir)?;
+        let output = self.output.resolve(parent_dir, &reader_context)?;
 
         Ok(Config { inputs, output, schema: self.schema, preset: self.preset })
     }
