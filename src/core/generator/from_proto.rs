@@ -13,7 +13,7 @@ use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
 use crate::core::config::transformer::{AmbiguousType, TreeShake};
-use crate::core::config::{Arg, Config, Enum, Field, Grpc, Tag, Type, Union, Variant};
+use crate::core::config::{Arg, Config, Enum, Field, Grpc, Type, Union, Variant};
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
 
@@ -307,8 +307,6 @@ impl Context {
                     ty.fields.insert(field_name.to_string(), cfg_field);
                 }
             }
-
-            ty.tag = Some(Tag { id: msg_type.id() });
 
             if message.oneof_decl.is_empty() {
                 self = self.insert_type(msg_type.to_string(), ty);
