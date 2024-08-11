@@ -169,7 +169,7 @@ pub mod test {
     pub fn test_generator(path: &Path) -> datatest_stable::Result<()> {
         if let Some(extension) = path.extension() {
             if extension == "json" {
-                let _ = generator_spec::run_config_generator_spec(&path);
+                let _ = generator_spec::run_config_generator_spec(path);
             }
         }
         Ok(())
