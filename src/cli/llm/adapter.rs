@@ -21,7 +21,7 @@ pub enum GroqModel {
 impl Display for Adapter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            Adapter::Groq(g) => g.to_string(),
+            Adapter::Groq(provider) => provider.to_string(),
         };
         write!(f, "{}", str)
     }

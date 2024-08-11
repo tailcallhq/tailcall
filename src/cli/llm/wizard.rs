@@ -1,8 +1,8 @@
 use derive_setters::Setters;
 use genai::adapter::{AdapterConfig, AdapterKind};
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
-use genai::resolver::{AuthData, AuthResolver};
-use genai::{Client, ConfigSet};
+use genai::resolver::AuthResolver;
+use genai::Client;
 
 use super::adapter::Adapter;
 use super::Result;
@@ -18,14 +18,6 @@ pub struct Wizard<Q, A> {
 
 impl<Q, A> Wizard<Q, A> {
     pub fn new(model: Adapter, key: String) -> Self {
-        // let auth_resolver = AuthResolver::from_sync_resolver(
-        //     |kind: AdapterKind,
-        //      _config_set: &ConfigSet<'_>|
-        //      -> anyhow::Result<Option<AuthData>, genai::resolver::Error> {
-        //         Ok(Some(AuthData::from_single(key.to_string())))
-        //     },
-        // );
-
         let auth_res = AuthResolver::from_key_value(key);
         let adapter_config = AdapterConfig::default().with_auth_resolver(auth_res);
 

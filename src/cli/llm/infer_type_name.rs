@@ -9,8 +9,6 @@ use super::{
 };
 use crate::core::config::Config;
 
-const MODEL: &str = "llama3-8b-8192";
-
 #[derive(Default)]
 pub struct InferTypeName {}
 
