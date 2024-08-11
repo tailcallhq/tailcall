@@ -6,15 +6,15 @@ schema @server(hostname: "0.0.0.0", port: 8000) @upstream(baseURL: "https://exam
   query: Query
 }
 
-input Id @tag(id: "news.NewsId") {
+input Id {
   id: Int
 }
 
-input news__MultipleNewsId @tag(id: "news.MultipleNewsId") {
+input news__MultipleNewsId {
   ids: [Id]
 }
 
-input news__NewsInput @tag(id: "news.News") {
+input news__NewsInput {
   body: String
   id: Int
   postImage: String
@@ -48,7 +48,7 @@ type F1 {
   colors: [JSON]
 }
 
-type News @tag(id: "news.News") {
+type News {
   body: String
   id: Int
   postImage: String
@@ -56,7 +56,7 @@ type News @tag(id: "news.News") {
   title: String
 }
 
-type NewsNewsServiceGetMultipleNew @tag(id: "news.NewsList") {
+type NewsNewsServiceGetMultipleNew {
   news: [News]
 }
 
