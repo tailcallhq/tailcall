@@ -35,8 +35,16 @@ pub(super) fn log_endpoint_set(endpoint_set: &EndpointSet<Unchecked>) {
     }
 }
 
-pub(super) fn display_schema(blueprint: &Blueprint) {
-    Fmt::display(Fmt::heading("GraphQL Schema:\n"));
+pub(super) fn display_schema(blueprint: &Blueprint) -> std::io::Result<()> {
+    let mut fmt = Fmt::new(std::io::stdout().lock());
+    fmt.heading("GraphQL Schema:")?;
+    let lock = fmt.display()?;
+
+    let mut fmt = Fmt::new(lock);
+
     let sdl = blueprint.to_schema();
-    Fmt::display(format!("{}\n", print_schema::print_schema(sdl)));
+    fmt.append(&format!("{}\n", print_schema::print_schema(sdl)))?;
+    let lock = fmt.display()?;
+    drop(lock);
+    Ok(())
 }
