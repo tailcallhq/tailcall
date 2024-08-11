@@ -362,7 +362,7 @@ mod tests {
         };
         let transform_preset: Preset = config_preset.validate_into().to_result().unwrap();
         let expected_preset = Preset::new()
-            .use_better_names(true)
+            .infer_type_names(true)
             .tree_shake(true)
             .consolidate_url(1.0)
             .merge_type(0.5);
