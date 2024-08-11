@@ -13,7 +13,7 @@ type Query {
   """
   Defines a person
   """
-type person__Person @tag(id: "person.Person") {
+type person__Person {
   email: String
   id: Int!
   name: String!
@@ -24,7 +24,7 @@ type person__Person @tag(id: "person.Person") {
   """
   Defines a phone number
   """
-type person__PhoneNumber @tag(id: "person.PhoneNumber") {
+type person__PhoneNumber {
   number: String!
   type: String
 }
