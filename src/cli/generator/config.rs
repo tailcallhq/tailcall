@@ -416,15 +416,7 @@ mod tests {
             headers: Default::default(),
         };
 
-        let config = Config::default()
-            .inputs(vec![Input {
-                source: Source::Curl {
-                    src: location("https://example.com"),
-                    headers: to_headers(BTreeMap::new()),
-                    field_name: "test".to_string(),
-                },
-            }])
-            .secret(Some("{{.env.TAILCALL_SECRET}}".to_string()));
+        let config = Config::default().secret(Some("{{.env.TAILCALL_SECRET}}".to_string()));
 
         let resolved_config = config.into_resolved("", reader_ctx).unwrap();
 
