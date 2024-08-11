@@ -8,13 +8,15 @@ use pathdiff::diff_paths;
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
-use crate::core::config::transformer::Preset;
+use crate::cli::llm::InferTypeName;
+use crate::core::config::transformer::{Preset, RenameTypes};
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
 use crate::core::valid::{ValidateInto, Validator};
+use crate::core::Transform;
 
 /// CLI that reads the the config file and generates the required tailcall
 /// configuration.
@@ -148,23 +150,29 @@ impl Generator {
         let config = self.read().await?;
         let path = config.output.path.0.to_owned();
         let query_type = config.schema.query.clone();
-        let preset: Preset = config
-            .preset
-            .clone()
-            .unwrap_or_default()
-            .validate_into()
-            .to_result()?;
+        let preset = config.preset.clone().unwrap_or_default();
+        let preset: Preset = preset.validate_into().to_result()?;
         let input_samples = self.resolve_io(config).await?;
-
+        let infer_type_names = preset.infer_type_names;
         let mut config_gen = ConfigGenerator::default()
             .inputs(input_samples)
             .transformers(vec![Box::new(preset)]);
         if let Some(query_type_name) = query_type {
-            // presently only query opeartion is supported.
+            // presently only query operation is supported.
             config_gen = config_gen.operation_name(query_type_name);
         }
 
-        let config = config_gen.generate(true)?;
+        let mut config = config_gen.generate(true)?;
+
+        if infer_type_names {
+            let mut llm_gen = InferTypeName::default();
+            let suggested_names = llm_gen.generate(config.config()).await?;
+            let cfg = RenameTypes::new(suggested_names.iter())
+                .transform(config.config().to_owned())
+                .to_result()?;
+
+            config = ConfigModule::from(cfg);
+        }
 
         self.write(&config, &path).await?;
         Ok(config)
