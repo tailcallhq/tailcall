@@ -11,7 +11,7 @@ use url::Url;
 
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
-use crate::core::mustache::Mustache;
+use crate::core::mustache::{Mustache, Segment};
 use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Debug)]
@@ -20,6 +20,12 @@ pub struct TemplateString(Mustache);
 impl Default for TemplateString {
     fn default() -> Self {
         Self(Mustache::parse("").unwrap())
+    }
+}
+
+impl TemplateString { 
+    pub fn is_empty(&self) -> bool {
+        self.0.to_string().is_empty()
     }
 }
 
@@ -53,6 +59,7 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
+    #[serde(skip_serializing_if = "TemplateString::is_empty")]
     pub secret: TemplateString,
 }
 
@@ -290,14 +297,16 @@ impl Config {
 
         let output = self.output.resolve(parent_dir)?;
 
-        let sc = self.secret.0.render(&reader_context)?;
+        let resolved_secret = Mustache::from(vec![Segment::Literal(
+            self.secret.0.render(&reader_context),
+        )]);
 
         Ok(Config {
             inputs,
             output,
             schema: self.schema,
             preset: self.preset,
-            secret: sc,
+            secret: TemplateString(resolved_secret),
         })
     }
 }
@@ -426,23 +435,26 @@ mod tests {
         assert!(!location_non_empty.is_empty());
     }
 
-    // #[test]
-    // fn test_secret() {
-    //     let mut env_vars = HashMap::new();
-    //     let token = "eyJhbGciOiJIUzI1NiIsInR5";
-    //     env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
+    #[test]
+    fn test_secret() {
+        let mut env_vars = HashMap::new();
+        let token = "eyJhbGciOiJIUzI1NiIsInR5";
+        env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
 
-    //     let mut runtime = crate::core::runtime::test::init(None);
-    //     runtime.env = Arc::new(TestEnvIO::init(env_vars));
+        let mut runtime = crate::core::runtime::test::init(None);
+        runtime.env = Arc::new(TestEnvIO::init(env_vars));
 
-        // let reader_ctx = ConfigReaderContext {
-        //     runtime: &runtime,
-        //     vars: &Default::default(),
-        //     headers: Default::default(),
-        // };
+        let reader_ctx = ConfigReaderContext {
+            runtime: &runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
 
-    //     let resolved_config = secret.into_resolved(&reader_ctx).unwrap();
+        let config = Config::default().secret(TemplateString(
+            Mustache::parse("{{.env.TAILCALL_SECRET}}").unwrap(),
+        ));
 
-    //     assert_eq!(resolved_config.0, "eyJhbGciOiJIUzI1NiIsInR5".to_string(),);
-    // }
+        let resolved_config = config.into_resolved("", reader_ctx).unwrap();
+        insta::assert_debug_snapshot!(resolved_config);
+    }
 }
