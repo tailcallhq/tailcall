@@ -435,11 +435,11 @@ mod tests {
     //     let mut runtime = crate::core::runtime::test::init(None);
     //     runtime.env = Arc::new(TestEnvIO::init(env_vars));
 
-        let reader_ctx = ConfigReaderContext {
-            runtime: &runtime,
-            vars: &Default::default(),
-            headers: Default::default(),
-        };
+        // let reader_ctx = ConfigReaderContext {
+        //     runtime: &runtime,
+        //     vars: &Default::default(),
+        //     headers: Default::default(),
+        // };
 
     //     let resolved_config = secret.into_resolved(&reader_ctx).unwrap();
 
