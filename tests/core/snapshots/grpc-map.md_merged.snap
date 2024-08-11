@@ -18,6 +18,6 @@ type Query {
     @grpc(body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
 }
 
-type map__MapResponse @tag(id: "map.MapResponse") {
+type map__MapResponse {
   map: JSON!
 }
