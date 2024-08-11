@@ -13,7 +13,7 @@ input T2 {
 }
 
 type Mutation {
-  f1(f1Input: T2): T1 @http(baseURL: "https://dummyjson.com", body: "{{.args.f1Input}}", method: "POST", path: "/auth/login")
+  login(loginInput: T2): T1 @http(baseURL: "https://dummyjson.com", body: "{{.args.loginInput}}", method: "POST", path: "/auth/login")
 }
 
 type T1 {

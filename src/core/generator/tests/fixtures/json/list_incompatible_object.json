@@ -1,7 +1,21 @@
 {
-  "url": "https://example.com/api/v2/users",
-  "response": [
-    {"name": "test-1", "age": 21, "is adult": true},
-    {"name": "test-1", "age": 17, "is adult": false}
-  ]
+  "request": {
+    "url": "https://example.com/api/v2/users"
+  },
+  "fieldName": "users",
+  "response": {
+    "status": 200,
+    "body": [
+      {
+        "name": "test-1",
+        "age": 21,
+        "is adult": true
+      },
+      {
+        "name": "test-1",
+        "age": 17,
+        "is adult": false
+      }
+    ]
+  }
 }
