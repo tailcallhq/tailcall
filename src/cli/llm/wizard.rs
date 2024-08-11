@@ -1,8 +1,9 @@
 use derive_setters::Setters;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
 use genai::Client;
-use crate::cli::llm::adapter::Adapter;
+
 use super::Result;
+use crate::cli::llm::adapter::Adapter;
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
