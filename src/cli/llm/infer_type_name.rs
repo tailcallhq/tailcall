@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 
-use super::{Error, Result, Wizard};
+use super::{
+    adapter::{Adapter, GroqModel},
+    Error, Result, Wizard,
+};
 use crate::core::config::Config;
 
 const MODEL: &str = "llama3-8b-8192";
@@ -74,7 +77,9 @@ impl TryInto<ChatRequest> for Question {
 
 impl InferTypeName {
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let wizard: Wizard<Question, Answer> = Wizard::new(MODEL.to_string());
+        let key = "XXX".to_string();
+        let wizard: Wizard<Question, Answer> =
+            Wizard::new(Adapter::Groq(GroqModel::Llama38b8192), key);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 

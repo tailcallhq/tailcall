@@ -1,22 +1,37 @@
 use derive_setters::Setters;
+use genai::adapter::{AdapterConfig, AdapterKind};
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
-use genai::Client;
+use genai::resolver::{AuthData, AuthResolver};
+use genai::{Client, ConfigSet};
 
+use super::adapter::Adapter;
 use super::Result;
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
     client: Client,
     // TODO: change model to enum
-    model: String,
+    model: Adapter,
     _q: std::marker::PhantomData<Q>,
     _a: std::marker::PhantomData<A>,
 }
 
 impl<Q, A> Wizard<Q, A> {
-    pub fn new(model: String) -> Self {
+    pub fn new(model: Adapter, key: String) -> Self {
+        // let auth_resolver = AuthResolver::from_sync_resolver(
+        //     |kind: AdapterKind,
+        //      _config_set: &ConfigSet<'_>|
+        //      -> anyhow::Result<Option<AuthData>, genai::resolver::Error> {
+        //         Ok(Some(AuthData::from_single(key.to_string())))
+        //     },
+        // );
+
+        let auth_res = AuthResolver::from_key_value(key);
+        let adapter_config = AdapterConfig::default().with_auth_resolver(auth_res);
+
         Self {
             client: Client::builder()
+                .insert_adapter_config(AdapterKind::Groq, adapter_config)
                 .with_chat_options(ChatOptions::default().with_json_mode(true))
                 .build(),
             model,
@@ -32,7 +47,7 @@ impl<Q, A> Wizard<Q, A> {
     {
         let response = self
             .client
-            .exec_chat(self.model.as_str(), q.try_into()?, None)
+            .exec_chat(&self.model.to_string(), q.try_into()?, None)
             .await?;
         A::try_from(response)
     }
