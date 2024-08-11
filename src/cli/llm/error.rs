@@ -1,6 +1,5 @@
-use strum_macros::Display;
-
 use derive_more::From;
+use strum_macros::Display;
 
 #[derive(Debug, From, Display, thiserror::Error)]
 pub enum Error {
