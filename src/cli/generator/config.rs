@@ -11,7 +11,7 @@ use url::Url;
 
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
-use crate::core::mustache::{Mustache, TemplateString};
+use crate::core::mustache::TemplateString;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
@@ -48,7 +48,7 @@ pub struct Location<A>(
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(transparent)]
 pub struct Headers<A>(
-    #[serde(skip_serializing_if = "is_default")] pub Option<BTreeMap<String, String>>,
+    #[serde(skip_serializing_if = "is_default")] pub Option<BTreeMap<String, TemplateString>>,
     #[serde(skip)] PhantomData<A>,
 );
 
@@ -173,22 +173,18 @@ impl Location<UnResolved> {
 }
 
 impl<A> Headers<A> {
-    pub fn headers(&self) -> &Option<BTreeMap<String, String>> {
+    pub fn headers(&self) -> &Option<BTreeMap<String, TemplateString>> {
         &self.0
     }
 }
 
 impl Headers<UnResolved> {
-    pub fn resolve(
-        self,
-        reader_context: &ConfigReaderContext,
-    ) -> anyhow::Result<Headers<Resolved>> {
+    pub fn resolve(self, reader_context: &ConfigReaderContext) -> Headers<Resolved> {
         // Resolve the header values with mustache template.
         let resolved_headers = if let Some(headers_inner) = self.0 {
             let mut resolved_headers = BTreeMap::new();
-            for (key, value) in headers_inner.into_iter() {
-                let template = Mustache::parse(&value)?;
-                let resolved_value = template.render(reader_context);
+            for (key, mustache_template) in headers_inner.into_iter() {
+                let resolved_value = mustache_template.resolve(reader_context);
                 resolved_headers.insert(key, resolved_value);
             }
             Some(resolved_headers)
@@ -196,7 +192,7 @@ impl Headers<UnResolved> {
             None
         };
 
-        Ok(Headers(resolved_headers, PhantomData))
+        Headers(resolved_headers, PhantomData)
     }
 }
 
@@ -218,7 +214,7 @@ impl Source<UnResolved> {
         match self {
             Source::Curl { src, field_name, headers } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                let resolved_headers = headers.resolve(reader_context)?;
+                let resolved_headers = headers.resolve(reader_context);
                 Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
             }
             Source::Proto { src } => {
@@ -286,7 +282,7 @@ mod tests {
         Location(s.as_ref().to_string(), PhantomData)
     }
 
-    fn to_headers(raw_headers: BTreeMap<String, String>) -> Headers<UnResolved> {
+    fn to_headers(raw_headers: BTreeMap<String, TemplateString>) -> Headers<UnResolved> {
         Headers(Some(raw_headers), PhantomData)
     }
 
@@ -295,7 +291,7 @@ mod tests {
         let mut headers = BTreeMap::new();
         headers.insert(
             "Authorization".to_owned(),
-            "Bearer {{.env.TOKEN}}".to_owned(),
+            "Bearer {{.env.TOKEN}}".try_into().unwrap(),
         );
 
         let mut env_vars = HashMap::new();
@@ -313,18 +309,19 @@ mod tests {
             headers: Default::default(),
         };
 
-        let resolved_headers = unresolved_headers.resolve(&reader_ctx).unwrap();
+        let resolved_headers = unresolved_headers.resolve(&reader_ctx);
 
-        let expected = format!("Bearer {token}");
-        let result = resolved_headers
+        let expected = TemplateString::try_from(format!("Bearer {token}").as_str()).unwrap();
+        let actual = resolved_headers
             .headers()
-            .to_owned()
+            .as_ref()
             .unwrap()
             .get("Authorization")
             .unwrap()
             .to_owned();
+
         assert_eq!(
-            result, expected,
+            *actual, expected,
             "Authorization header should be resolved correctly"
         );
     }
@@ -332,7 +329,7 @@ mod tests {
     #[test]
     fn test_config_codec() {
         let mut headers = BTreeMap::new();
-        headers.insert("user-agent".to_owned(), "tailcall-v1".to_owned());
+        headers.insert("user-agent".to_owned(), "tailcall-v1".try_into().unwrap());
         let config = Config::default().inputs(vec![Input {
             source: Source::Curl {
                 src: location("https://example.com"),
@@ -415,7 +412,7 @@ mod tests {
         let resolved_config = config.into_resolved("", reader_ctx).unwrap();
 
         let actual = resolved_config.secret;
-        let expected = TemplateString::from("eyJhbGciOiJIUzI1NiIsInR5");
+        let expected = TemplateString::try_from("eyJhbGciOiJIUzI1NiIsInR5").unwrap();
 
         assert_eq!(actual, expected);
     }

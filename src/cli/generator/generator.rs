@@ -112,7 +112,7 @@ impl Generator {
                         let mut header_map = HeaderMap::new();
                         for (key, value) in headers_inner {
                             let header_name = HeaderName::try_from(key)?;
-                            let header_value = HeaderValue::try_from(value)?;
+                            let header_value = HeaderValue::try_from(value.to_string())?;
                             header_map.insert(header_name, header_value);
                         }
                         *request.headers_mut() = header_map;

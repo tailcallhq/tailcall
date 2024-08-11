@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use super::{Mustache, Segment};
 use crate::core::path::PathString;
 
-#[derive(Debug)]
+#[derive(Debug, derive_more::Display, Default)]
 pub struct TemplateString(Mustache);
 
 impl PartialEq for TemplateString {
@@ -12,15 +12,11 @@ impl PartialEq for TemplateString {
     }
 }
 
-impl Default for TemplateString {
-    fn default() -> Self {
-        Self(Mustache::parse("").unwrap())
-    }
-}
 
-impl From<&str> for TemplateString {
-    fn from(value: &str) -> Self {
-        Self(Mustache::from(vec![Segment::Literal(value.to_owned())]))
+impl TryFrom<&str> for TemplateString {
+    type Error = anyhow::Error;
+    fn try_from(value: &str) -> anyhow::Result<Self> {
+        Ok(Self(Mustache::parse(value)?))
     }
 }
 
@@ -79,7 +75,7 @@ mod tests {
     #[test]
     fn test_from_str() {
         let template_str = "Hello, World!";
-        let template = TemplateString::from(template_str);
+        let template = TemplateString::try_from(template_str).unwrap();
         assert_eq!(template.0.to_string(), template_str);
     }
 
@@ -88,7 +84,7 @@ mod tests {
         let empty_template = TemplateString::default();
         assert!(empty_template.is_empty());
 
-        let non_empty_template = TemplateString::from("Hello");
+        let non_empty_template = TemplateString::try_from("Hello").unwrap();
         assert!(!non_empty_template.is_empty());
     }
 
@@ -117,16 +113,16 @@ mod tests {
         let actual = TemplateString::parse("{{.env.TAILCALL_SECRET}}")
             .unwrap()
             .resolve(&ctx);
-        let expected = TemplateString::from("eyJhbGciOiJIUzI1NiIsInR5");
+        let expected = TemplateString::try_from("eyJhbGciOiJIUzI1NiIsInR5").unwrap();
 
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_serialize() {
-        let template = TemplateString::from("{{.env.TEST}}");
+        let template = TemplateString::try_from("{{.env.TEST}}").unwrap();
         let serialized = serde_json::to_string(&template).unwrap();
-        assert_eq!(serialized, "\"{{.env.TEST}}\"");
+        assert_eq!(serialized, "\"{{env.TEST}}\"");
     }
 
     #[test]
