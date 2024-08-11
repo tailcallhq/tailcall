@@ -3,6 +3,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use super::{Mustache, Segment};
 use crate::core::path::PathString;
 
+/// TemplateString acts as wrapper over mustache but supports serialization and
+/// deserialization. It provides utilities for parsing, resolving, and comparing
+/// template strings.
 #[derive(Debug, derive_more::Display, Default)]
 pub struct TemplateString(Mustache);
 
@@ -11,7 +14,6 @@ impl PartialEq for TemplateString {
         self.0 == other.0
     }
 }
-
 
 impl TryFrom<&str> for TemplateString {
     type Error = anyhow::Error;
