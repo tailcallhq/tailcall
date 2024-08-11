@@ -151,10 +151,9 @@ impl Generator {
         let path = config.output.path.0.to_owned();
         let query_type = config.schema.query.clone();
         let preset = config.preset.clone().unwrap_or_default();
-        let use_ai_powered_names = preset.infer_type_names.unwrap_or_default();
         let preset: Preset = preset.validate_into().to_result()?;
         let input_samples = self.resolve_io(config).await?;
-
+        let infer_type_names = preset.infer_type_names;
         let mut config_gen = ConfigGenerator::default()
             .inputs(input_samples)
             .transformers(vec![Box::new(preset)]);
@@ -165,12 +164,9 @@ impl Generator {
 
         let mut config = config_gen.generate(true)?;
 
-        if use_ai_powered_names {
+        if infer_type_names {
             let mut llm_gen = InferTypeName::default();
-            let suggested_names = llm_gen
-                .generate(config.config())
-                .await
-                .map_err(|e| anyhow::anyhow!(e))?;
+            let suggested_names = llm_gen.generate(config.config()).await?;
             let cfg = RenameTypes::new(suggested_names.iter())
                 .transform(config.config().to_owned())
                 .to_result()?;

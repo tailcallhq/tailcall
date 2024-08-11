@@ -118,7 +118,7 @@ impl ValidateFrom<PresetConfig> for Preset {
         }
 
         if let Some(use_better_names) = config.infer_type_names {
-            preset = preset.use_better_names(use_better_names);
+            preset = preset.infer_type_names(use_better_names);
         }
 
         if let Some(unwrap_single_field_types) = config.unwrap_single_field_types {
