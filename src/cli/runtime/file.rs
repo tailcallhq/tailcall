@@ -30,15 +30,19 @@ impl FileIO for NativeFileIO {
     async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> Result<(), file::Error> {
         write(path, content)
             .await
-            .map_err(|_| file::Error::FileWriteFailed(path.to_string()))?;
+            .map_err(|e| file::Error::FileWriteFailed {
+                path: path.to_string(),
+                error: e.to_string(),
+            })?;
         tracing::info!("File write: {} ... ok", path);
         Ok(())
     }
 
     async fn read<'a>(&'a self, path: &'a str) -> Result<String, file::Error> {
-        let content = read(path)
-            .await
-            .map_err(|_| file::Error::FileReadFailed(path.to_string()))?;
+        let content = read(path).await.map_err(|e| file::Error::FileReadFailed {
+            path: path.to_string(),
+            error: e.to_string(),
+        })?;
         tracing::info!("File read: {} ... ok", path);
         Ok(content)
     }

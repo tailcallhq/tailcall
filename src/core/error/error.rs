@@ -1,5 +1,4 @@
 use std::string::FromUtf8Error;
-use std::sync::Arc;
 
 use derive_more::From;
 
@@ -49,17 +48,8 @@ pub enum Error {
     #[error("Schema mismatch Error")]
     SchemaMismatch,
 
-    #[error("{}\n\nCaused by:\n    {}", context, source)]
-    Context { source: Arc<Error>, context: String },
-
     #[error("Error: {}", _0)]
     Anyhow(anyhow::Error),
-}
-
-impl Error {
-    pub fn with_context(self, context: String) -> Self {
-        Error::Context { source: Arc::new(self), context }
-    }
 }
 
 pub type Result<A, E> = std::result::Result<A, E>;

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use futures_util::future::join_all;
-use futures_util::TryFutureExt;
 use url::Url;
 
 use super::Error;
@@ -54,9 +53,7 @@ impl<A: Reader + Send + Sync> ResourceReader<A> {
     {
         let files = join_all(paths.iter().cloned().map(|path| {
             let resource: Resource = path.into();
-            let resource_path = resource.to_string();
             self.read_file(resource)
-                .map_err(|e| e.with_context(resource_path))
         }))
         .await;
 

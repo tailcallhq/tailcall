@@ -23,12 +23,12 @@ pub enum Error {
     #[debug(fmt = "Invalid OS string")]
     InvalidOsString,
 
-    #[debug(fmt = "Failed to read file : {}", _0)]
-    FileReadFailed(String),
+    #[debug(fmt = "Failed to read file : {}: {}", path, error)]
+    FileReadFailed { path: String, error: String },
 
-    #[debug(fmt = "Failed to write file : {}", _0)]
+    #[debug(fmt = "Failed to write file : {}: {}", path, error)]
     #[from(ignore)]
-    FileWriteFailed(String),
+    FileWriteFailed { path: String, error: String },
 
     #[debug(fmt = "Std IO Error: {}", _0)]
     StdIO(std::io::Error),
@@ -62,8 +62,12 @@ impl Display for Error {
             Error::InvalidFormat => write!(f, "Invalid file format"),
             Error::InvalidFilePath => write!(f, "Invalid file path"),
             Error::InvalidOsString => write!(f, "Invalid OS string"),
-            Error::FileReadFailed(path) => write!(f, "Failed to read file: {}", path),
-            Error::FileWriteFailed(path) => write!(f, "Failed to write file: {}", path),
+            Error::FileReadFailed { path, error } => {
+                write!(f, "Failed to read file: {}: {}", path, error)
+            }
+            Error::FileWriteFailed { path, error } => {
+                write!(f, "Failed to write file: {}: {}", path, error)
+            }
             Error::StdIO(error) => write!(f, "Std IO Error: {}", error),
             Error::Utf8(error) => write!(f, "Utf8 Error: {}", error),
             Error::LambdaFileWriteNotSupported => {
