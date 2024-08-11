@@ -73,7 +73,7 @@ impl TryInto<ChatRequest> for Question {
 
 impl InferTypeName {
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let key = "XXX".to_string();
+        let key = "XXX".to_string();    // TODO: take key from config.
         let wizard: Wizard<Question, Answer> =
             Wizard::new(Adapter::Groq(GroqModel::Llama38b8192), key);
 
