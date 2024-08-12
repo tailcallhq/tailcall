@@ -71,7 +71,7 @@
     "mergeType": 1,
     "consolidateURL": 0.5,
     "treeShake": true,
-    "useBetterNames": true
+    "inferTypeNames": true
   },
   "output": {
     "path": "./output.graphql",

@@ -1145,20 +1145,6 @@
         }
       }
     },
-    "Tag": {
-      "description": "Used to represent an identifier for a type. Typically used via only by the configuration generators to provide additional information about the type.",
-      "type": "object",
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "id": {
-          "description": "A unique identifier for the type.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
     "Telemetry": {
       "description": "The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.",
       "type": "object",
@@ -1288,17 +1274,6 @@
           "anyOf": [
             {
               "$ref": "#/definitions/Protected"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "tag": {
-          "description": "Contains source information for the type.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Tag"
             },
             {
               "type": "null"
