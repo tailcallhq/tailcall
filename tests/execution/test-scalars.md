@@ -1,9 +1,6 @@
 # Test scalars
 
 ```graphql @config
-# these are pre-defined scalars in Tailcall
-scalar Email
-
 # this is custom scalars in config
 scalar AnyScalar
 

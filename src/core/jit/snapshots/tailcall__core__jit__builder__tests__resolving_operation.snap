@@ -8,6 +8,7 @@ expression: plan.into_nested()
         name: "posts",
         ir: "Some(..)",
         type_of: [Post],
+        type_condition: "Query",
         extensions: Some(
             Nested(
                 [
@@ -15,6 +16,7 @@ expression: plan.into_nested()
                         id: 1,
                         name: "id",
                         type_of: ID!,
+                        type_condition: "Post",
                         is_scalar: true,
                         directives: [],
                     },
@@ -22,6 +24,7 @@ expression: plan.into_nested()
                         id: 2,
                         name: "userId",
                         type_of: ID!,
+                        type_condition: "Post",
                         is_scalar: true,
                         directives: [],
                     },
@@ -29,6 +32,7 @@ expression: plan.into_nested()
                         id: 3,
                         name: "title",
                         type_of: String!,
+                        type_condition: "Post",
                         is_scalar: true,
                         directives: [],
                     },

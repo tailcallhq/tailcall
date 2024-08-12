@@ -15,5 +15,5 @@ serde_json = { workspace = true }
 machineid-rs = "1.2.4"
 tokio = { workspace = true }
 tracing = { workspace = true }
-sysinfo = "0.30.12"
+sysinfo = "0.31.0"
 tailcall-version = { path = "../tailcall-version" }

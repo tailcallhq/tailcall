@@ -1,32 +1,32 @@
 use async_graphql::Positioned;
 
+use crate::core::ir::TypeName;
+use crate::core::jit::exec::{TypedValue, TypedValueRef};
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar;
 
+type ValueStore<Value> = Store<Result<TypedValue<Value>, Positioned<Error>>>;
+
 pub struct Synth<Value> {
     selection: Vec<Field<Nested<Value>, Value>>,
-    store: Store<Result<Value, Positioned<Error>>>,
+    store: ValueStore<Value>,
     variables: Variables<Value>,
 }
 
 impl<Extensions, Input> Field<Extensions, Input> {
     #[inline(always)]
-    pub fn skip<'json, Value: JsonLike<'json>>(
-        &'json self,
-        variables: &'json Variables<Value>,
-    ) -> bool {
-        let eval = |variable_option: Option<&'json Variable>,
-                    variables: &'json Variables<Value>,
-                    default: bool| {
-            variable_option
-                .map(|a| a.as_str())
-                .and_then(|name| variables.get(name))
-                .and_then(|value| value.as_bool())
-                .unwrap_or(default)
-        };
+    pub fn skip<'json, Value: JsonLike<'json>>(&self, variables: &Variables<Value>) -> bool {
+        let eval =
+            |variable_option: Option<&Variable>, variables: &Variables<Value>, default: bool| {
+                variable_option
+                    .map(|a| a.as_str())
+                    .and_then(|name| variables.get(name))
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(default)
+            };
         let skip = eval(self.skip.as_ref(), variables, false);
         let include = eval(self.include.as_ref(), variables, true);
 
@@ -34,18 +34,24 @@ impl<Extensions, Input> Field<Extensions, Input> {
     }
 }
 
-impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
+impl<Value> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: OperationPlan<Value>,
-        store: Store<Result<Value, Positioned<Error>>>,
+        store: ValueStore<Value>,
         variables: Variables<Value>,
     ) -> Self {
         Self { selection: plan.into_nested(), store, variables }
     }
+}
 
+impl<'a, Value> Synth<Value>
+where
+    Value: JsonLike<'a> + Clone,
+    Value::JsonObject<'a>: JsonObjectLike<'a, Value = Value>,
+{
     #[inline(always)]
-    fn include<T>(&'a self, field: &'a Field<T, Value>) -> bool {
+    fn include<T>(&self, field: &Field<T, Value>) -> bool {
         !field.skip(&self.variables)
     }
 
@@ -58,7 +64,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                 continue;
             }
             let val = self.iter(child, None, &DataPath::new())?;
-            data = data.insert_key(child.name.as_str(), val);
+            data.insert_key(child.name.as_str(), val);
         }
 
         Ok(Value::object(data))
@@ -66,7 +72,7 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
 
     /// checks if type_of is an array and value is an array
     #[inline(always)]
-    fn is_array(type_of: &crate::core::blueprint::Type, value: &'a Value) -> bool {
+    fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
         type_of.is_list() == value.as_array().is_some()
     }
 
@@ -74,72 +80,69 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     fn iter(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        parent: Option<&'a Value>,
+        result: Option<TypedValueRef<'a, Value>>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
-        // TODO: this implementation prefer parent value over value in the store
-        // that's opposite to the way async_graphql engine works in tailcall
-        match parent {
-            Some(parent) => {
-                if !Self::is_array(&node.type_of, parent) {
-                    return Ok(Value::null());
-                }
-                self.iter_inner(node, parent, data_path)
-            }
-            None => {
-                // we perform this check to avoid unnecessary hashing
+        match self.store.get(&node.id) {
+            Some(val) => {
+                let mut data = val;
 
-                match self.store.get(&node.id) {
-                    Some(val) => {
-                        let mut data = val;
-
-                        for index in data_path.as_slice() {
-                            match data {
-                                Data::Multiple(v) => {
-                                    data = &v[index];
-                                }
-                                _ => return Ok(Value::null()),
-                            }
+                for index in data_path.as_slice() {
+                    match data {
+                        Data::Multiple(v) => {
+                            data = &v[index];
                         }
-
-                        match data {
-                            Data::Single(val) => self.iter(
-                                node,
-                                Some(val.as_ref().map_err(Clone::clone)?),
-                                data_path,
-                            ),
-                            _ => {
-                                // TODO: should bailout instead of returning Null
-                                Ok(Value::null())
-                            }
-                        }
+                        _ => return Ok(Value::null()),
                     }
-                    None => {
-                        // IR exists, so there must be a value.
-                        // if there is no value then we must return Null
+                }
+
+                match data {
+                    Data::Single(result) => {
+                        let result = match result {
+                            Ok(result) => result,
+                            Err(err) => return Err(err.clone()),
+                        };
+
+                        if !Self::is_array(&node.type_of, &result.value) {
+                            return Ok(Value::null());
+                        }
+                        self.iter_inner(node, result.as_ref(), data_path)
+                    }
+                    _ => {
+                        // TODO: should bailout instead of returning Null
                         Ok(Value::null())
                     }
                 }
             }
+            None => match result {
+                Some(result) => self.iter_inner(node, result, data_path),
+                None => Ok(Value::null()),
+            },
         }
     }
+
     #[inline(always)]
     fn iter_inner(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        parent: &'a Value,
+        result: TypedValueRef<'a, Value>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
-        let include = self.include(node);
-        if include && node.is_scalar {
+        if !self.include(node) {
+            return Ok(Value::null());
+        }
+
+        let TypedValueRef { type_name, value } = result;
+
+        if node.is_scalar {
             let scalar =
                 scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
 
             // TODO: add validation for input type as well. But input types are not checked
             // by async_graphql anyway so it should be done after replacing
             // default engine with JIT
-            if scalar.validate(parent) {
-                Ok(parent.clone())
+            if scalar.validate(value) {
+                Ok(value.clone())
             } else {
                 Err(Positioned {
                     pos: node.pos,
@@ -151,62 +154,54 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
                 })
             }
         } else {
-            match (parent.as_array(), parent.as_object()) {
+            match (value.as_array(), value.as_object()) {
                 (_, Some(obj)) => {
                     let mut ans = Value::JsonObject::new();
-                    if include {
-                        if let Some(children) = node.nested() {
-                            for child in children {
-                                // all checks for skip must occur in `iter_inner`
-                                // and include be checked before calling `iter` or recursing.
-                                let include = self.include(child);
-                                if include {
-                                    let val = obj.get_key(child.name.as_str());
-                                    if let Some(val) = val {
-                                        ans = ans.insert_key(
-                                            child.name.as_str(),
-                                            self.iter_inner(child, val, data_path)?,
-                                        );
-                                    } else {
-                                        ans = ans.insert_key(
-                                            child.name.as_str(),
-                                            self.iter(child, None, data_path)?,
-                                        );
-                                    }
-                                }
-                            }
-                        } else {
-                            let val = obj.get_key(node.name.as_str());
-                            // if it's a leaf node, then push the value
-                            if let Some(val) = val {
-                                ans = ans.insert_key(node.name.as_str(), val.to_owned());
+
+                    let type_name = match &type_name {
+                        Some(TypeName::Single(type_name)) => type_name,
+                        Some(TypeName::Vec(v)) => {
+                            if let Some(index) = data_path.as_slice().last() {
+                                &v[*index]
                             } else {
-                                return Ok(Value::null());
+                                return Err(Positioned::new(
+                                    ValidationError::TypeNameMismatch.into(),
+                                    node.pos,
+                                ));
                             }
                         }
-                    } else {
-                        let val = obj.get_key(node.name.as_str());
-                        // if it's a leaf node, then push the value
-                        if let Some(val) = val {
-                            ans = ans.insert_key(node.name.as_str(), val.to_owned());
-                        } else {
-                            return Ok(Value::null());
+                        None => node.type_of.name(),
+                    };
+
+                    for child in node.nested_iter(type_name) {
+                        // all checks for skip must occur in `iter_inner`
+                        // and include be checked before calling `iter` or recursing.
+                        let include = self.include(child);
+                        if include {
+                            let val = obj.get_key(child.name.as_str());
+
+                            ans.insert_key(
+                                child.name.as_str(),
+                                self.iter(child, val.map(TypedValueRef::new), data_path)?,
+                            );
                         }
                     }
+
                     Ok(Value::object(ans))
                 }
                 (Some(arr), _) => {
                     let mut ans = vec![];
-                    if include {
-                        for (i, val) in arr.iter().enumerate() {
-                            let val =
-                                self.iter_inner(node, val, &data_path.clone().with_index(i))?;
-                            ans.push(val)
-                        }
+                    for (i, val) in arr.iter().enumerate() {
+                        let val = self.iter_inner(
+                            node,
+                            result.map(|_| val),
+                            &data_path.clone().with_index(i),
+                        )?;
+                        ans.push(val)
                     }
                     Ok(Value::array(ans))
                 }
-                _ => Ok(parent.clone()),
+                _ => Ok(value.clone()),
             }
         }
     }
@@ -221,10 +216,10 @@ mod tests {
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JP;
+    use crate::core::jit::exec::TypedValue;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::synth::Synth;
-    use crate::core::json::JsonLike;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -277,33 +272,32 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value<'a, Value: JsonLike<'a> + Deserialize<'a>>(self) -> Data<Value> {
+        fn into_value<'a, Value: Deserialize<'a>>(self) -> Data<TypedValue<Value>> {
             match self {
-                Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
-                Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
+                Self::Posts => Data::Single(TypedValue::new(serde_json::from_str(POSTS).unwrap())),
+                Self::User1 => Data::Single(TypedValue::new(serde_json::from_str(USER1).unwrap())),
                 TestData::UsersData => Data::Multiple(
                     vec![
-                        Data::Single(serde_json::from_str(USER1).unwrap()),
-                        Data::Single(serde_json::from_str(USER2).unwrap()),
+                        Data::Single(TypedValue::new(serde_json::from_str(USER1).unwrap())),
+                        Data::Single(TypedValue::new(serde_json::from_str(USER2).unwrap())),
                     ]
                     .into_iter()
                     .enumerate()
                     .collect(),
                 ),
-                TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
+                TestData::Users => {
+                    Data::Single(TypedValue::new(serde_json::from_str(USERS).unwrap()))
+                }
             }
         }
     }
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn make_store<
-        'a,
-        Value: JsonLike<'a> + Deserialize<'a> + Serialize + Clone + 'a + std::fmt::Debug,
-    >(
-        query: &str,
-        store: Vec<(FieldId, TestData)>,
-    ) -> Synth<Value> {
+    fn make_store<'a, Value>(query: &str, store: Vec<(FieldId, TestData)>) -> Synth<Value>
+    where
+        Value: Deserialize<'a> + Serialize + Clone + std::fmt::Debug,
+    {
         let store = store
             .into_iter()
             .map(|(id, data)| (id, data.into_value()))

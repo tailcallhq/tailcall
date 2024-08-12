@@ -4,14 +4,14 @@ use crate::core::config::Config;
 use crate::core::transform::{self, Transform, TransformerOps};
 
 /// Defines a set of default transformers that can be applied to any
-/// configuration to make it more maintainable.
+/// configuration to make it more maintainable and readable.
 #[derive(Setters, Debug, PartialEq)]
 pub struct Preset {
     pub merge_type: f32,
     pub consolidate_url: f32,
     pub tree_shake: bool,
-    pub use_better_names: bool,
-    unwrap_single_field_types: bool,
+    pub infer_type_names: bool,
+    pub unwrap_single_field_types: bool,
 }
 
 impl Preset {
@@ -20,7 +20,7 @@ impl Preset {
             merge_type: 0.0,
             consolidate_url: 0.0,
             tree_shake: false,
-            use_better_names: false,
+            infer_type_names: false,
             unwrap_single_field_types: true,
         }
     }
@@ -42,7 +42,7 @@ impl Transform for Preset {
                     .when(super::TypeMerger::is_enabled(self.merge_type)),
             )
             .pipe(super::FlattenSingleField.when(self.unwrap_single_field_types))
-            .pipe(super::ImproveTypeNames.when(self.use_better_names))
+            .pipe(super::ImproveTypeNames.when(self.infer_type_names))
             .pipe(
                 super::ConsolidateURL::new(self.consolidate_url)
                     .when(super::ConsolidateURL::is_enabled(self.consolidate_url)),
@@ -56,9 +56,9 @@ impl Default for Preset {
         Self {
             merge_type: 1.0,
             consolidate_url: 0.5,
-            use_better_names: true,
+            infer_type_names: true,
             tree_shake: true,
-            unwrap_single_field_types: true,
+            unwrap_single_field_types: false,
         }
     }
 }

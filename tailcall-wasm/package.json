@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "build-release-node": "wasm-pack build --release --target nodejs --scope tailcallhq --out-dir ./node/pkg",
+    "build-release-browser": "wasm-pack build --release --target web --scope tailcallhq --out-dir ./browser/pkg",
+    "dev-node": "wasm-pack build --dev --target nodejs --scope tailcallhq --out-dir ./node/pkg",
+    "dev-browser": "wasm-pack build --dev --target web --scope tailcallhq --out-dir ./browser/pkg",
+    "publish": "npm run build-release-node && wasm-pack publish --target nodejs"
+  }
+}

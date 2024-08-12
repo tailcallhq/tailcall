@@ -1,12 +1,12 @@
 ---
 source: src/core/generator/from_proto.rs
-expression: config
+expression: result
 ---
 schema @server @upstream {
   query: Query
 }
 
-input scalars__ItemInput @tag(id: "scalars.Item") {
+input scalars__ItemInput {
   boolean: Boolean
   bytesType: Bytes
   doubleNum: Float
@@ -28,7 +28,7 @@ type Query {
   scalars__Example__Get(item: scalars__ItemInput!): scalars__Result! @grpc(body: "{{.args.item}}", method: "scalars.Example.Get")
 }
 
-type scalars__Item @tag(id: "scalars.Item") {
+type scalars__Item {
   boolean: Boolean
   bytesType: Bytes
   doubleNum: Float
@@ -46,6 +46,6 @@ type scalars__Item @tag(id: "scalars.Item") {
   uinteger64: UInt64
 }
 
-type scalars__Result @tag(id: "scalars.Result") {
+type scalars__Result {
   result: [scalars__Item]
 }

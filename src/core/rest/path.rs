@@ -1,6 +1,7 @@
 use async_graphql::{Name, Variables};
 
 use super::typed_variables::TypedVariable;
+use super::{Error, Result};
 use crate::core::rest::type_map::TypeMap;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -30,17 +31,16 @@ impl Path {
         self.pattern.as_str()
     }
 
-    pub fn parse(q: &TypeMap, input: &str) -> anyhow::Result<Self> {
+    pub fn parse(q: &TypeMap, input: &str) -> Result<Self> {
         let variables = q;
 
         let mut segments = Vec::new();
         for s in input.split('/').filter(|s| !s.is_empty()) {
             if let Some(key) = s.strip_prefix('$') {
-                let value = variables.get(key).ok_or(anyhow::anyhow!(
-                    "undefined param: {} in {}",
-                    s,
-                    input
-                ))?;
+                let value = variables.get(key).ok_or(Error::UndefinedParam {
+                    key: s.to_string(),
+                    input: input.to_string(),
+                })?;
                 let t = TypedVariable::try_from(value, key)?;
                 segments.push(Segment::param(t));
             } else {

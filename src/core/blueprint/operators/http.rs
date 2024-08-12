@@ -6,7 +6,7 @@ use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
-use crate::core::{config, helpers};
+use crate::core::{config, helpers, Mustache};
 
 pub fn compile_http(
     config_module: &config::ConfigModule,
@@ -16,7 +16,7 @@ pub fn compile_http(
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
         .and(
             Valid::<(), String>::fail(
-                "GroupBy can only be applied if batching is enabled".to_string(),
+                "Batching capability was used without enabling it in upstream".to_string(),
             )
             .when(|| {
                 (config_module.upstream.get_delay() < 1
@@ -68,7 +68,14 @@ pub fn compile_http(
                 .map(|on_request| HttpFilter { on_request });
 
             if !http.batch_key.is_empty() && http.method == Method::GET {
-                let key = http.query.first().map(|query| query.key.clone());
+                // Find a query parameter that contains a reference to the {{.value}} key
+                let key = http
+                    .query
+                    .iter()
+                    .find_map(|q| match Mustache::parse(&q.value) {
+                        Ok(tmpl) => tmpl.expression_contains("value").then(|| q.key.clone()),
+                        Err(_) => None,
+                    });
                 IR::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
