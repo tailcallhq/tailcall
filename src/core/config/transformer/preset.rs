@@ -42,7 +42,7 @@ impl Transform for Preset {
                     .when(super::TypeMerger::is_enabled(self.merge_type)),
             )
             .pipe(super::FlattenSingleField.when(self.unwrap_single_field_types))
-            .pipe(super::ImproveTypeNames.when(self.infer_type_names))
+            .pipe(super::ImproveTypeNames::default().when(self.infer_type_names))
             .pipe(
                 super::ConsolidateURL::new(self.consolidate_url)
                     .when(super::ConsolidateURL::is_enabled(self.consolidate_url)),
