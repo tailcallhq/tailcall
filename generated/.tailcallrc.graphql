@@ -529,14 +529,22 @@ input KeyValue {
   value: String!
 }
 
+"""
+The URLQuery input type represents a query parameter to be included in a URL.
+"""
 input URLQuery {
+  """
+  The key or name of the query parameter.
+  """
   key: String!
   """
-  Determines whether to ignore query parameters with empty values when forming URLs.When 
-  set to true, query parameters without values are completely ignored during URL formation. 
-  When false (default), parameters without values are included in the URL.
+  Determines whether to ignore query parameters with empty values.
   """
   skipEmpty: Boolean
+  """
+  The actual value or a mustache template to resolve the value dynamically for the 
+  query parameter.
+  """
   value: String!
 }
 

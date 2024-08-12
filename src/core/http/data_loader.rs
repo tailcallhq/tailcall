@@ -110,7 +110,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             // For each request and insert its corresponding value
             for dl_req in dl_requests.iter() {
                 let url = dl_req.url();
-                println!("{}", url.to_string());
+                println!("{}", url);
                 let query_set: HashMap<_, _> = url.query_pairs().collect();
                 let id = query_set.get(query_name).ok_or(anyhow::anyhow!(
                     "Unable to find key {} in query params",

@@ -1303,6 +1303,7 @@
       "description": "Field whose value is an 8-bit unsigned integer."
     },
     "URLQuery": {
+      "description": "The URLQuery input type represents a query parameter to be included in a URL.",
       "type": "object",
       "required": [
         "key",
@@ -1310,16 +1311,18 @@
       ],
       "properties": {
         "key": {
+          "description": "The key or name of the query parameter.",
           "type": "string"
         },
         "skipEmpty": {
-          "description": "Determines whether to ignore query parameters with empty values when forming URLs.\n\nWhen set to true, query parameters without values are completely ignored during URL formation. When false (default), parameters without values are included in the URL.",
+          "description": "Determines whether to ignore query parameters with empty values.",
           "type": [
             "boolean",
             "null"
           ]
         },
         "value": {
+          "description": "The actual value or a mustache template to resolve the value dynamically for the query parameter.",
           "type": "string"
         }
       }
