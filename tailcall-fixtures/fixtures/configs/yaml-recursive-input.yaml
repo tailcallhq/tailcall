@@ -21,8 +21,8 @@ types:
             type: Bar
         graphql:
           args:
-          - key: baz
-            value: '{{.args.baz}}'
+            - key: baz
+              value: "{{.args.baz}}"
           baseURL: http://localhost
           name: bars
   Foo:
