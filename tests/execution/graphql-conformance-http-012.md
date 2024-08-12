@@ -43,11 +43,9 @@ type Page {
   response:
     status: 200
     body:
-      - __typename: Person
-        name: Person
+      - name: Person
         age: 80
-      - __typename: Photo
-        height: 100
+      - height: 100
         width: 200
         meta:
           iso: 200

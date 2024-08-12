@@ -4,7 +4,7 @@ skip: true
 
 # Complex fragments.
 
-TODO: Skipped because Tailcall does not construct correctly the interface types based on \_\_typename field.
+TODO: Skipped because there is a pending case to improve the discriminator.
 
 ```graphql @config
 schema
@@ -122,33 +122,27 @@ type Cat implements Animal & DomesticAnimal & Pet {
         sound: meow
         weight: 2
         owner: John
-        __typename: Cat
       - id: dog-2
         legs: 4
         sound: woof
         weight: 2
         owner: Steve
-        __typename: Dog
       - id: salmon-1
         legs: 0
         sound: ...
         length: 2
-        __typename: Salmon
       - id: salmon-2
         legs: 0
         sound: ...
         length: 1
-        __typename: Salmon
       - id: pig-1
         legs: 4
         sound: oik
         weight: 24
-        __typename: Pig
       - id: pig-2
         legs: 4
         sound: oik
         weight: 41
-        __typename: Pig
 - request:
     method: GET
     url: http://upstream/edible-animals
@@ -160,22 +154,18 @@ type Cat implements Animal & DomesticAnimal & Pet {
         legs: 0
         sound: ...
         length: 2
-        __typename: Salmon
       - id: salmon-2
         legs: 0
         sound: ...
         length: 1
-        __typename: Salmon
       - id: pig-1
         legs: 4
         sound: oik
         weight: 24
-        __typename: Pig
       - id: pig-2
         legs: 4
         sound: oik
         weight: 41
-        __typename: Pig
 ```
 
 ```yml @test

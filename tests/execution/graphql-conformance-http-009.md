@@ -4,7 +4,7 @@ skip: true
 
 # Test variables.
 
-TODO: Skipped because Tailcall does not construct correctly the interface types based on \_\_typename field.
+TODO: Skipped because there is a pending case to improve the discriminator.
 
 ```graphql @config
 schema

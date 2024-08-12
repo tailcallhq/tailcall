@@ -4,7 +4,7 @@ skip: true
 
 # Test inline fragments.
 
-TODO: Skipped because Tailcall does not construct correctly the interface types based on \_\_typename field.
+TODO: Skipped because there is a pending case to improve the discriminator.
 
 ```graphql @config
 schema
@@ -54,12 +54,10 @@ type Counter {
     body:
       - id: 1
         handle: user-1
-        __typename: User
         friends:
           counter: 2
       - id: 2
         handle: user-2
-        __typename: Page
         likers:
           counter: 4
 - request:
@@ -71,17 +69,14 @@ type Counter {
     body:
       - id: 1
         handle: user-3
-        __typename: User
         friends:
           counter: 2
       - id: 2
         handle: user-4
-        __typename: Page
         likers:
           counter: 4
       - id: 3
         handle: event-1
-        __typename: Event
 ```
 
 ```yml @test
