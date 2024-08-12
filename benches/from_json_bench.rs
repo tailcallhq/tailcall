@@ -2,7 +2,6 @@ use criterion::Criterion;
 use hyper::Method;
 use serde_json::Value;
 use tailcall::cli::runtime::NativeHttp;
-use tailcall::core::config::GraphQLOperationType;
 use tailcall::core::generator::{Generator, Input};
 use tailcall::core::http::Method as HTTPMethod;
 use tailcall::core::HttpIO;
@@ -24,10 +23,10 @@ pub fn benchmark_from_json_method(c: &mut Criterion) {
     let cfg_gen_reqs = vec![Input::Json {
         url: request_url.parse().unwrap(),
         method: HTTPMethod::GET,
-        body: serde_json::Value::Null,
+        req_body: serde_json::Value::Null,
         response: reqs[0].clone(),
         field_name: "f1".to_string(),
-        operation_type: GraphQLOperationType::Query,
+        is_mutation: false,
     }];
 
     let config_generator = Generator::default().inputs(cfg_gen_reqs);

@@ -239,7 +239,8 @@ mod test {
     #[tokio::test]
     async fn should_generate_config_from_json() -> anyhow::Result<()> {
         let parsed_content =
-            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json").await?;
+            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json")
+                .await?;
         let cfg_module = Generator::default()
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
@@ -273,7 +274,8 @@ mod test {
 
         // Json Input
         let parsed_content =
-            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json").await?;
+            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json")
+                .await?;
         let json_input = Input::Json {
             url: parsed_content.url.parse()?,
             method: Method::GET,
