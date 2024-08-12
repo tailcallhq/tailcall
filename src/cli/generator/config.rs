@@ -17,6 +17,7 @@ use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub inputs: Vec<Input<Status>>,
@@ -28,6 +29,7 @@ pub struct Config<Status = UnResolved> {
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct PresetConfig {
     pub merge_type: Option<f32>,
     #[serde(rename = "consolidateURL")]
@@ -60,6 +62,7 @@ pub struct Input<Status = UnResolved> {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub enum Source<Status = UnResolved> {
     #[serde(rename_all = "camelCase")]
     Curl {
@@ -83,6 +86,7 @@ pub enum Source<Status = UnResolved> {
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct Output<Status = UnResolved> {
     #[serde(skip_serializing_if = "Location::is_empty")]
     pub path: Location<Status>,
@@ -98,6 +102,7 @@ pub enum Resolved {}
 pub struct UnResolved {}
 
 #[derive(Deserialize, Serialize, Debug, Default)]
+#[serde(deny_unknown_fields)]
 pub struct Schema {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
@@ -409,5 +414,86 @@ mod tests {
             serde_json::from_str(r#""https://dummyjson.com/products""#).unwrap();
         assert!(location_empty.is_empty());
         assert!(!location_non_empty.is_empty());
+    }
+
+    fn assert_deserialization_error(json: &str, expected_error: &str) {
+        let config: Result<Config<UnResolved>, serde_json::Error> = serde_json::from_str(json);
+        let actual = config.err().unwrap().to_string();
+        assert_eq!(actual, expected_error);
+    }
+
+    #[test]
+    fn test_raise_error_unknown_field_at_root_level() {
+        let json = r#"{"input": "value"}"#;
+        let expected_error =
+            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema` at line 1 column 8";
+        assert_deserialization_error(json, expected_error);
+    }
+
+    #[test]
+    fn test_raise_error_unknown_field_in_inputs() {
+        let json = r#"
+            {"inputs": [{
+                "curl": {
+                    "src": "https://tailcall.run/graphql",
+                    "headerss": {
+                        "content-type": "application/json"
+                    }
+                }
+            }]}
+        "#;
+        let expected_error =
+            "unknown field `headerss`, expected one of `src`, `headers`, `fieldName` at line 9 column 13";
+        assert_deserialization_error(json, expected_error);
+
+        let json = r#"
+            {"inputs": [{
+                "curls": {
+                    "src": "https://tailcall.run/graphql",
+                    "headerss": {
+                        "content-type": "application/json"
+                    }
+                }
+            }]}
+        "#;
+        let expected_error =
+            "no variant of enum Source found in flattened data at line 9 column 13";
+        assert_deserialization_error(json, expected_error);
+    }
+
+    #[test]
+    fn test_raise_error_unknown_field_in_preset() {
+        let json = r#"
+            {"preset": {
+                "mergeTypes": 1.0,
+                "consolidateURL": 0.5
+            }} 
+        "#;
+        let expected_error =
+            "unknown field `mergeTypes`, expected one of `mergeType`, `consolidateURL`, `inferTypeNames`, `treeShake`, `unwrapSingleFieldTypes` at line 3 column 28";
+        assert_deserialization_error(json, expected_error);
+    }
+
+    #[test]
+    fn test_raise_error_unknown_field_in_output() {
+        let json = r#"
+          {"output": {
+              "paths": "./output.graphql",
+          }} 
+        "#;
+        let expected_error =
+            "unknown field `paths`, expected `path` or `format` at line 3 column 21";
+        assert_deserialization_error(json, expected_error);
+    }
+
+    #[test]
+    fn test_raise_error_unknown_field_in_schema() {
+        let json = r#"
+          {"schema": {
+              "querys": "Query",
+          }} 
+        "#;
+        let expected_error = "unknown field `querys`, expected `query` at line 3 column 22";
+        assert_deserialization_error(json, expected_error);
     }
 }
