@@ -6,7 +6,7 @@ use crate::core::path::PathString;
 /// TemplateString acts as wrapper over mustache but supports serialization and
 /// deserialization. It provides utilities for parsing, resolving, and comparing
 /// template strings.
-#[derive(Debug, derive_more::Display, Default)]
+#[derive(Debug, derive_more::Display, Default, Clone)]
 pub struct TemplateString(Mustache);
 
 impl PartialEq for TemplateString {

@@ -322,7 +322,7 @@ mod tests {
             .to_owned();
 
         assert_eq!(
-            *actual, expected,
+            actual, expected,
             "Authorization header should be resolved correctly"
         );
     }
