@@ -443,7 +443,7 @@ mod tests {
             }]}
         "#;
         let expected_error =
-            "unknown field `headerss`, expected one of `src`, `headers`, `fieldName` at line 9 column 13";
+            "unknown field `headerss`, expected one of `src`, `headers`, `method`, `body`, `isMutation`, `fieldName` at line 9 column 13";
         assert_deserialization_error(json, expected_error);
 
         let json = r#"
@@ -493,7 +493,8 @@ mod tests {
               "querys": "Query",
           }} 
         "#;
-        let expected_error = "unknown field `querys`, expected `query` at line 3 column 22";
+        let expected_error =
+            "unknown field `querys`, expected `query` or `mutation` at line 3 column 22";
         assert_deserialization_error(json, expected_error);
     }
 }
