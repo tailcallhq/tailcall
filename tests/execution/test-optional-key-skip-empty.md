@@ -1,65 +1,52 @@
 # Batching group by
 
 ```graphql @config
-schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
-  query: Query
+schema @server(port: 8000) @upstream(baseURL: "http://example.com") {
+    query: Query
 }
 
 type Query {
-  posts: [Post] @http(path: "/posts")
+    foos: [Foo] @http(path: "/foos")
 }
 
-type Post {
-  id: Int
-  title: String
-  body: String
-  userId: Int
-  user: User
-    @http(path: "/users", query: [{key: "id", value: "{{.value.userId}}", skipEmpty: true}, {key: "foo", value: "bar"}])
+type Foo {
+    id: Int!
+    bar: Bar @http(path: "/bar", query: [{key: "id", value: "{{.value.id}}", skipEmpty: true}])
 }
 
-type User {
-  id: Int
-  name: String
+type Bar {
+    id: Int
 }
 ```
 
 ```yml @mock
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/posts
+    url: http://example.com/foos
   response:
     status: 200
     body:
-      - body: bar
-        id: 11
-        title: foo
-        userId: 1
-      - body: bar # no userId for bar
-        id: 3
-        title: foo
+      - id: 1
+      - id: 2
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/users?id=1&foo=bar
+    url: http://example.com/bar?id=1
   response:
     status: 200
     body:
       id: 1
-      name: Leanne Graham
-
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/users?foo=bar
+    url: http://example.com/bar?id=2
   response:
     status: 200
     body:
       id: 2
-      name: Ervin Howell
 ```
 
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: query { posts { user { id } userId } }
+    query: query { foos { id bar { id } } }
 ```

@@ -9,18 +9,18 @@ expression: response
   },
   "body": {
     "data": {
-      "posts": [
+      "foos": [
         {
-          "user": {
+          "id": 1,
+          "bar": {
             "id": 1
-          },
-          "userId": 1
+          }
         },
         {
-          "user": {
+          "id": 2,
+          "bar": {
             "id": 2
-          },
-          "userId": null
+          }
         }
       ]
     }
