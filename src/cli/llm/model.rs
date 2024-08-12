@@ -1,11 +1,16 @@
 #![allow(unused)]
+
+use std::borrow::Cow;
 use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
 
 use genai::adapter::AdapterKind;
 
 #[derive(Clone)]
-pub struct Model(&'static str);
+pub struct Model {
+    model: &'static str,
+    secret: Option<String>,
+}
 
 pub struct OpenAI;
 pub struct Ollama;
@@ -22,148 +27,132 @@ impl Model {
     pub const GEMINI: Gemini = Gemini;
     pub const GROQ: Groq = Groq;
 
-    pub fn inner(&self) -> &'static str {
-        self.0
+    pub fn config(&self) -> genai::adapter::AdapterConfig {
+        let mut config = genai::adapter::AdapterConfig::default();
+        if let Some(key) = self.secret.clone() {
+            config = config.with_auth_env_name(key);
+        }
+        config
+    }
+
+    pub fn with_secret<T: AsRef<str>>(self, secret: Option<T>) -> Model {
+        Model {
+            model: self.model,
+            secret: secret.map(|v| v.as_ref().to_string()),
+        }
+    }
+
+    pub fn model(&self) -> &'static str {
+        self.model
     }
     pub fn to_adapter_kind(&self) -> genai::adapter::AdapterKind {
         // should be safe to call unwrap here
-        AdapterKind::from_model(self.0).unwrap()
+        AdapterKind::from_model(self.model).unwrap()
     }
 }
 
 impl OpenAI {
-    const GPT4O: Model = Model("gpt-4o");
-    const GPT4O_MINI: Model = Model("gpt-4o-mini");
-    const GPT4_TURBO: Model = Model("gpt-4-turbo");
-    const GPT4: Model = Model("gpt-4");
-    const GPT35_TURBO: Model = Model("gpt-3.5-turbo");
     pub fn gpt3_5_turbo(&self) -> Model {
-        Self::GPT35_TURBO
+        Model { model: "gp-3.5-turbo", secret: None }
     }
     pub fn gpt4(&self) -> Model {
-        Self::GPT4
+        Model { model: "gpt-4", secret: None }
     }
     pub fn gpt4_turbo(&self) -> Model {
-        Self::GPT4_TURBO
+        Model { model: "gpt-4-turbo", secret: None }
     }
     pub fn gpt4o_mini(&self) -> Model {
-        Self::GPT4O_MINI
+        Model { model: "gpt-4o-mini", secret: None }
     }
     pub fn gpt4o(&self) -> Model {
-        Self::GPT4O
+        Model { model: "gpt-4o", secret: None }
     }
 }
 impl Ollama {
-    const GEMMA2B: Model = Model("gemma:2b");
     pub fn gemma2b(&self) -> Model {
-        Self::GEMMA2B
+        Model { model: "gemma:2b", secret: None }
     }
 }
 impl Anthropic {
-    const CLAUDE35_SONNET_20240620: Model = Model("claude-3-5-sonnet-20240620");
-    const CLAUDE3_OPUS_20240229: Model = Model("claude-3-opus-20240229");
-    const CLAUDE3_SONNET_20240229: Model = Model("claude-3-sonnet-20240229");
-    const CLAUDE3_HAIKU_20240307: Model = Model("claude-3-haiku-20240307");
     pub fn claude3_haiku_20240307(&self) -> Model {
-        Self::CLAUDE3_HAIKU_20240307
+        Model { model: "claude-3-haiku-20240307", secret: None }
     }
     pub fn claude3_sonnet_20240229(&self) -> Model {
-        Self::CLAUDE3_SONNET_20240229
+        Model { model: "claude-3-sonnet-20240229", secret: None }
     }
     pub fn claude3_opus_20240229(&self) -> Model {
-        Self::CLAUDE3_OPUS_20240229
+        Model { model: "claude-3-opus-20240229", secret: None }
     }
     pub fn claude35_sonnet_20240620(&self) -> Model {
-        Self::CLAUDE35_SONNET_20240620
+        Model { model: "claude-3-5-sonnet-20240620", secret: None }
     }
 }
 
 impl Cohere {
-    const COMMAND_R_PLUS: Model = Model("command-r-plus");
-    const COMMAND_R: Model = Model("command-r");
-    const COMMAND: Model = Model("command");
-    const COMMAND_NIGHTLY: Model = Model("command-nightly");
-    const COMMAND_LIGHT: Model = Model("command-light");
-    const COMMAND_LIGHT_NIGHTLY: Model = Model("command-light-nightly");
     pub fn command_light_nightly(&self) -> Model {
-        Self::COMMAND_LIGHT_NIGHTLY
+        Model { model: "command-light-nightly", secret: None }
     }
     pub fn command_light(&self) -> Model {
-        Self::COMMAND_LIGHT
+        Model { model: "command-light", secret: None }
     }
     pub fn command_nightly(&self) -> Model {
-        Self::COMMAND_NIGHTLY
+        Model { model: "command-nightly", secret: None }
     }
     pub fn command(&self) -> Model {
-        Self::COMMAND
+        Model { model: "command", secret: None }
     }
     pub fn command_r(&self) -> Model {
-        Self::COMMAND_R
+        Model { model: "command-r", secret: None }
     }
     pub fn command_r_plus(&self) -> Model {
-        Self::COMMAND_R_PLUS
+        Model { model: "command-r-plus", secret: None }
     }
 }
 
 impl Gemini {
-    const GEMINI15_PRO: Model = Model("gemini-1.5-pro");
-    const GEMINI15_FLASH: Model = Model("gemini-1.5-flash");
-    const GEMINI10_PRO: Model = Model("gemini-1.0-pro");
-    const GEMINI15_FLASH_LATEST: Model = Model("gemini-1.5-flash-latest");
     pub fn gemini15_flash_latest(&self) -> Model {
-        Self::GEMINI15_FLASH_LATEST
+        Model { model: "gemini-1.5-flash-latest", secret: None }
     }
     pub fn gemini10_pro(&self) -> Model {
-        Self::GEMINI10_PRO
+        Model { model: "gemini-1.0-pro", secret: None }
     }
     pub fn gemini15_flash(&self) -> Model {
-        Self::GEMINI15_FLASH
+        Model { model: "gemini-1.5-flash", secret: None }
     }
     pub fn gemini15_pro(&self) -> Model {
-        Self::GEMINI15_PRO
+        Model { model: "gemini-1.5-pro", secret: None }
     }
 }
 
 impl Groq {
-    const LLAMA405B_REASONING: Model = Model("llama-3.1-405b-reasoning");
-    const LLAMA70B_VERSATILE: Model = Model("llama-3.1-70b-versatile");
-    const LLAMA8B_INSTANT: Model = Model("llama-3.1-8b-instant");
-    const MIXTRAL_8X7B32768: Model = Model("mixtral-8x7b-32768");
-    const GEMMA7B_IT: Model = Model("gemma-7b-it");
-    const GEMMA29B_IT: Model = Model("gemma2-9b-it");
-    const LLAMA_GROQ70B8192_TOOL_USE_PREVIEW: Model =
-        Model("llama3-groq-70b-8192-tool-use-preview");
-    const LLAMA_GROQ8B8192_TOOL_USE_PREVIEW: Model = Model("llama3-groq-8b-8192-tool-use-preview");
-    const LLAMA38192: Model = Model("llama3-8b-8192");
-    const LLAMA708192: Model = Model("llama3-70b-8192");
     pub fn llama708192(&self) -> Model {
-        Self::LLAMA708192
+        Model { model: "llama3-70b-8192", secret: None }
     }
     pub fn llama38192(&self) -> Model {
-        Self::LLAMA38192
+        Model { model: "llama3-8b-8192", secret: None }
     }
     pub fn llama_groq8b8192_tool_use_preview(&self) -> Model {
-        Self::LLAMA_GROQ8B8192_TOOL_USE_PREVIEW
+        Model { model: "llama3-groq-8b-8192-tool-use-preview", secret: None }
     }
     pub fn llama_groq70b8192_tool_use_preview(&self) -> Model {
-        Self::LLAMA_GROQ70B8192_TOOL_USE_PREVIEW
+        Model { model: "llama3-groq-70b-8192-tool-use-preview", secret: None }
     }
     pub fn gemma29b_it(&self) -> Model {
-        Self::GEMMA29B_IT
+        Model { model: "gemma2-9b-it", secret: None }
     }
     pub fn gemma7b_it(&self) -> Model {
-        Self::GEMMA7B_IT
+        Model { model: "gemma-7b-it", secret: None }
     }
     pub fn mixtral_8x7b32768(&self) -> Model {
-        Self::MIXTRAL_8X7B32768
+        Model { model: "mixtral-8x7b-32768", secret: None }
     }
     pub fn llama8b_instant(&self) -> Model {
-        Self::LLAMA8B_INSTANT
+        Model { model: "llama-3.1-8b-instant", secret: None }
     }
     pub fn llama70b_versatile(&self) -> Model {
-        Self::LLAMA70B_VERSATILE
+        Model { model: "llama-3.1-70b-versatile", secret: None }
     }
     pub fn llama405b_reasoning(&self) -> Model {
-        Self::LLAMA405B_REASONING
+        Model { model: "llama-3.1-405b-reasoning", secret: None }
     }
 }

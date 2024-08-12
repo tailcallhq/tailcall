@@ -5,13 +5,13 @@ use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 
 use super::{Error, Result, Wizard};
-use crate::cli::llm::adapter::Adapter;
 use crate::cli::llm::model::Model;
 use crate::core::config::Config;
 
 #[derive(Default)]
-pub struct InferTypeName {}
-
+pub struct InferTypeName<'a> {
+    key: Option<Cow<'a, str>>,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Answer {
     suggestions: Vec<String>,
@@ -73,14 +73,15 @@ impl TryInto<ChatRequest> for Question {
     }
 }
 
-impl InferTypeName {
-    pub async fn generate(
-        &mut self,
-        config: &Config,
-        auth_key: Option<Cow<'_, str>>,
-    ) -> Result<HashMap<String, String>> {
-        let wizard: Wizard<Question, Answer> =
-            Wizard::new(Model::GROQ.llama38192(), Adapter::config(auth_key));
+impl<'a> InferTypeName<'a> {
+    pub fn new(key: Option<Cow<'a, str>>) -> InferTypeName<'a> {
+        Self { key }
+    }
+    pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
+        let auth_key = self.key.clone();
+        let model = Model::GROQ.llama38192().with_secret(auth_key);
+
+        let wizard: Wizard<Question, Answer> = Wizard::new(model);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 

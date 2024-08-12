@@ -1,5 +1,4 @@
 use derive_setters::Setters;
-use genai::adapter::AdapterConfig;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
 use genai::Client;
 
@@ -15,7 +14,8 @@ pub struct Wizard<Q, A> {
 }
 
 impl<Q, A> Wizard<Q, A> {
-    pub fn new(model: Model, adapter_config: AdapterConfig) -> Self {
+    pub fn new(model: Model) -> Self {
+        let adapter_config = model.config();
         Self {
             client: Client::builder()
                 .with_chat_options(
@@ -38,7 +38,7 @@ impl<Q, A> Wizard<Q, A> {
     {
         let response = self
             .client
-            .exec_chat(self.model.inner(), q.try_into()?, None)
+            .exec_chat(self.model.model(), q.try_into()?, None)
             .await?;
         A::try_from(response)
     }
