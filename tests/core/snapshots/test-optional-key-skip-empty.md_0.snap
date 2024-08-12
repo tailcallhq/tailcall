@@ -17,7 +17,9 @@ expression: response
           "userId": 1
         },
         {
-          "user": null,
+          "user": {
+            "id": 2
+          },
           "userId": null
         }
       ]

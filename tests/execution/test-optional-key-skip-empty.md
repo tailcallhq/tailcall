@@ -3,7 +3,7 @@
 ```graphql @config
 schema
   @server(port: 8000, queryValidation: false)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 1, maxSize: 1000}) {
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
 
@@ -20,7 +20,6 @@ type Post {
     @http(
       path: "/users"
       query: [{key: "id", value: "{{.value.userId}}", skipEmpty: true}, {key: "foo", value: "bar"}]
-      batchKey: ["id"]
     )
 }
 
@@ -46,13 +45,20 @@ type User {
         title: foo
 - request:
     method: GET
-    url: http://jsonplaceholder.typicode.com/users?foo=bar&id=1
+    url: http://jsonplaceholder.typicode.com/users?id=1&foo=bar
   response:
     status: 200
     body:
-      - id: 1
+        id: 1
         name: Leanne Graham
-      - id: 2
+
+- request:
+    method: GET
+    url: http://jsonplaceholder.typicode.com/users?foo=bar
+  response:
+    status: 200
+    body:
+        id: 2
         name: Ervin Howell
 ```
 
