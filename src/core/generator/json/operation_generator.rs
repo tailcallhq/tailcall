@@ -18,7 +18,7 @@ impl OperationTypeGenerator {
         mut config: Config,
     ) -> Valid<Config, String> {
         let mut field = Field {
-            list: request_sample.response.is_array(),
+            list: request_sample.res_body.is_array(),
             type_of: root_type.to_owned(),
             ..Default::default()
         };
@@ -30,7 +30,7 @@ impl OperationTypeGenerator {
         if let GraphQLOperationType::Mutation = request_sample.operation_type {
             // generate the input type.
             let root_ty = TypeGenerator::new(name_generator)
-                .generate_types(&request_sample.body, &mut config);
+                .generate_types(&request_sample.req_body, &mut config);
             // add input type to field.
             let arg_name = format!("{}Input", request_sample.field_name).to_case(Case::Camel);
             if let Some(http_) = &mut field.http {

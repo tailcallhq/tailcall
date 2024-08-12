@@ -16,8 +16,8 @@ use crate::core::valid::{Valid, Validator};
 pub struct RequestSample {
     pub url: Url,
     pub method: Method,
-    pub body: serde_json::Value,
-    pub response: Value,
+    pub req_body: Value,
+    pub res_body: Value,
     pub field_name: String,
     pub operation_type: GraphQLOperationType,
 }
@@ -35,8 +35,8 @@ impl RequestSample {
         Self {
             url,
             method,
-            body,
-            response: resp,
+            req_body: body,
+            res_body: resp,
             field_name: field_name.into(),
             operation_type,
         }

@@ -31,7 +31,7 @@ pub enum Input {
         url: Url,
         method: Method,
         req_body: Value,
-        response: Value,
+        res_body: Value,
         field_name: String,
         is_mutation: bool,
     },
@@ -101,7 +101,14 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                Input::Json { url, response, field_name, is_mutation, method, req_body } => {
+                Input::Json {
+                    url,
+                    res_body: response,
+                    field_name,
+                    is_mutation,
+                    method,
+                    req_body,
+                } => {
                     let operation_type = if *is_mutation {
                         GraphQLOperationType::Mutation
                     } else {
@@ -249,7 +256,7 @@ pub mod test {
                 url: parsed_content.url.parse()?,
                 method: Method::GET,
                 req_body: serde_json::Value::Null,
-                response: parsed_content.response,
+                res_body: parsed_content.response,
                 field_name: "f1".to_string(),
                 is_mutation: false,
             }])
@@ -284,7 +291,7 @@ pub mod test {
             url: parsed_content.url.parse()?,
             method: Method::GET,
             req_body: serde_json::Value::Null,
-            response: parsed_content.response,
+            res_body: parsed_content.response,
             field_name: "f1".to_string(),
             is_mutation: false,
         };
@@ -315,7 +322,7 @@ pub mod test {
                 url: parsed_content.url.parse()?,
                 method: Method::GET,
                 req_body: serde_json::Value::Null,
-                response: parsed_content.response,
+                res_body: parsed_content.response,
                 field_name: field_name_generator.next(),
                 is_mutation: false,
             });

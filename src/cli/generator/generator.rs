@@ -132,7 +132,7 @@ impl Generator {
                         url: url.parse()?,
                         method,
                         req_body,
-                        response: serde_json::from_str(&response.content)?,
+                        res_body: serde_json::from_str(&response.content)?,
                         field_name,
                         is_mutation,
                     });

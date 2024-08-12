@@ -74,7 +74,7 @@ fn test_spec(path: &Path, json_data: JsonFixture) -> anyhow::Result<()> {
         url: request.url,
         method: request.method,
         req_body,
-        response: resp_body,
+        res_body: resp_body,
         field_name,
         is_mutation: is_mutation.unwrap_or_default(),
     }]);
