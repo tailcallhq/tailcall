@@ -387,4 +387,17 @@ mod tests {
         assert!(location_empty.is_empty());
         assert!(!location_non_empty.is_empty());
     }
+
+    #[test]
+    fn test_raise_error_when_unknown_fields_present() {
+        let config: Result<Config<UnResolved>, serde_json::Error> =
+            serde_json::from_str(r#"{"input": "value"}"#);
+
+        let actual = config.err().unwrap().to_string();
+        println!("[Finder]: actual: {}", actual);
+        let expected =
+            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema` at line 1 column 8";
+
+        assert_eq!(actual, expected);
+    }
 }
