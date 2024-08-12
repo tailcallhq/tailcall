@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
-use tokio_retry::strategy::{jitter, ExponentialBackoff};
-use tokio_retry::Retry;
 
 #[derive(Default)]
 pub struct InferTypeName {
