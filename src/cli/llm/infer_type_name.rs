@@ -1,8 +1,6 @@
 use std::collections::HashMap;
-
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
-
 use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
@@ -37,37 +35,8 @@ impl TryInto<ChatRequest> for Question {
 
     fn try_into(self) -> Result<ChatRequest> {
         let content = serde_json::to_string(&self)?;
-        let input = serde_json::to_string_pretty(&Question {
-            fields: vec![
-                ("id".to_string(), "String".to_string()),
-                ("name".to_string(), "String".to_string()),
-                ("age".to_string(), "Int".to_string()),
-            ],
-        })?;
-
-        let output = serde_json::to_string_pretty(&Answer {
-            suggestions: vec![
-                "Person".into(),
-                "Profile".into(),
-                "Member".into(),
-                "Individual".into(),
-                "Contact".into(),
-            ],
-        })?;
 
         Ok(ChatRequest::new(vec![
-            ChatMessage::system(
-                "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
-            ),
-            ChatMessage::system("The name should be concise and preferably a single word"),
-            ChatMessage::system("Example Input:"),
-            ChatMessage::system(input),
-            ChatMessage::system("Example Output:"),
-            ChatMessage::system(output),
-            ChatMessage::system("Ensure the output is in valid JSON format".to_string()),
-            ChatMessage::system(
-                "Do not add any additional text before or after the json".to_string(),
-            ),
             ChatMessage::user(content),
         ]))
     }
@@ -77,14 +46,15 @@ impl InferTypeName {
     pub fn new(secret: Option<String>) -> InferTypeName {
         Self { secret }
     }
+
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let secret = self.secret.as_ref().map(|s| s.to_owned());
-
         let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
-
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
-        // removed root type from types.
+        // Send the system messages once.
+        wizard.send_system_messages().await?;
+
         let types_to_be_processed = config
             .types
             .iter()
@@ -93,7 +63,6 @@ impl InferTypeName {
 
         let total = types_to_be_processed.len();
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
-            // convert type to sdl format.
             let question = Question {
                 fields: type_
                     .fields
@@ -125,15 +94,10 @@ impl InferTypeName {
                             total
                         );
 
-                        // TODO: case where suggested names are already used, then extend the base
-                        // question with `suggest different names, we have already used following
-                        // names: [names list]`
                         break;
                     }
                     Err(e) => {
-                        // TODO: log errors after certain number of retries.
                         if let Error::GenAI(_) = e {
-                            // TODO: retry only when it's required.
                             tracing::warn!(
                                 "Unable to retrieve a name for the type '{}'. Retrying in {}s",
                                 type_name,
@@ -148,6 +112,45 @@ impl InferTypeName {
         }
 
         Ok(new_name_mappings.into_iter().map(|(k, v)| (v, k)).collect())
+    }
+}
+
+impl Wizard<Question, Answer> {
+    async fn send_system_messages(&self) -> Result<()> {
+        let input = serde_json::to_string_pretty(&Question {
+            fields: vec![
+                ("id".to_string(), "String".to_string()),
+                ("name".to_string(), "String".to_string()),
+                ("age".to_string(), "Int".to_string()),
+            ],
+        })?;
+
+        let output = serde_json::to_string_pretty(&Answer {
+            suggestions: vec![
+                "Person".into(),
+                "Profile".into(),
+                "Member".into(),
+                "Individual".into(),
+                "Contact".into(),
+            ],
+        })?;
+
+        self.send(ChatRequest::new(vec![
+            ChatMessage::system(
+                "Given the sample schema of a GraphQL type, suggest 5 meaningful names for it.",
+            ),
+            ChatMessage::system("The name should be concise and preferably a single word."),
+            ChatMessage::system("Example Input:"),
+            ChatMessage::system(input),
+            ChatMessage::system("Example Output:"),
+            ChatMessage::system(output),
+            ChatMessage::system("Ensure the output is in valid JSON format.".to_string()),
+            ChatMessage::system(
+                "Do not add any additional text before or after the JSON.".to_string(),
+            ),
+        ])).await?;
+
+        Ok(())
     }
 }
 
