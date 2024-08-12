@@ -111,12 +111,26 @@ impl<'a> CandidateGeneration<'a> {
 }
 
 #[derive(Default)]
-pub struct ImproveTypeNames;
+struct ImproveTypeNames {
+    system_message_sent: bool,
+}
+
+impl Default for ImproveTypeNames {
+    fn default() -> Self {
+        Self { system_message_sent: false }
+    }
+}
 
 impl ImproveTypeNames {
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
     fn generate_type_names(&self, mut config: Config) -> Config {
+        if !self.system_message_sent {
+            // Send the system message once
+            println!("System message: Starting type name inference process.");
+            self.system_message_sent = true;
+        }
+
         let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
 
         for (old_type_name, new_type_name) in finalized_candidates {
@@ -197,5 +211,19 @@ mod test {
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
+    }
+
+    #[test]
+    fn test_system_message_sent_once() {
+        let config = Config::from_sdl(read_fixture(configs::AUTO_GENERATE_CONFIG).as_str())
+            .to_result()
+            .unwrap();
+
+        let mut improve_type_names = ImproveTypeNames::default();
+        improve_type_names
+            .transform(config.clone())
+            .to_result()
+            .unwrap();
+        improve_type_names.transform(config).to_result().unwrap();
     }
 }

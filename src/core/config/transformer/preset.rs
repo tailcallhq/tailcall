@@ -14,24 +14,6 @@ pub struct Preset {
     pub unwrap_single_field_types: bool,
 }
 
-pub struct ImproveTypeNames {
-    message_sent: bool,
-}
-
-impl ImproveTypeNames {
-    pub fn new() -> Self {
-        Self { message_sent: false }
-    }
-
-    // Method to send the system message only once
-    pub fn send_message_once(&mut self) {
-        if !self.message_sent {
-            println!("System message: Inferring type names...");
-            self.message_sent = true;
-        }
-    }
-}
-
 impl Preset {
     pub fn new() -> Self {
         Self {
@@ -52,14 +34,6 @@ impl Transform for Preset {
         &self,
         config: Self::Value,
     ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
-        // Instantiate ImproveTypeNames with state to ensure the system message about
-        // inferring type names is sent only once during the transformation process.
-        // This prevents redundant messages from being logged multiple times.
-        let mut type_name_improver = super::ImproveTypeNames::new();
-
-        if self.infer_type_names {
-            type_name_improver.send_message_once();
-        }
         transform::default()
             .pipe(super::Required)
             .pipe(super::TreeShake.when(self.tree_shake))
@@ -68,7 +42,7 @@ impl Transform for Preset {
                     .when(super::TypeMerger::is_enabled(self.merge_type)),
             )
             .pipe(super::FlattenSingleField.when(self.unwrap_single_field_types))
-            .pipe(type_name_improver.when(self.infer_type_names))
+            .pipe(super::ImproveTypeNames.when(self.infer_type_names))
             .pipe(
                 super::ConsolidateURL::new(self.consolidate_url)
                     .when(super::ConsolidateURL::is_enabled(self.consolidate_url)),
