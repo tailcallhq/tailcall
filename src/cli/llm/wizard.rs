@@ -40,19 +40,6 @@ impl<Q, A> Wizard<Q, A> {
         }
     }
 
-    async fn ask_inner(&self, q: Q) -> Result<A>
-    where
-        Q: TryInto<ChatRequest, Error = super::Error>,
-        A: TryFrom<ChatResponse, Error = super::Error>,
-    {
-        let response = self
-            .client
-            .exec_chat(self.model.as_str(), q.try_into()?, None)
-            .await?;
-
-        A::try_from(response)
-    }
-
     pub async fn ask(&self, q: Q) -> Result<A>
     where
         Q: TryInto<ChatRequest, Error = super::Error> + Clone,
@@ -62,6 +49,14 @@ impl<Q, A> Wizard<Q, A> {
             .map(tokio_retry::strategy::jitter)
             .take(3);
 
-        tokio_retry::Retry::spawn(retry_strategy, || self.ask_inner(q.clone())).await
+        tokio_retry::Retry::spawn(retry_strategy, || async {
+            let response = self
+                .client
+                .exec_chat(self.model.as_str(), q.clone().try_into()?, None)
+                .await?;
+
+            A::try_from(response)
+        })
+        .await
     }
 }
