@@ -6,6 +6,7 @@ use url::Url;
 
 use super::json::{self, GraphQLTypesGenerator};
 use super::NameGenerator;
+use crate::core::config::transformer::RenameTypes;
 use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
@@ -98,7 +99,7 @@ impl Transform for FromJsonGenerator<'_> {
                     &sample.url,
                     &sample.operation_type,
                 ))
-                .pipe(json::RenameTypes::new(rename_types))
+                .pipe(RenameTypes::new(rename_types.into_iter()))
                 .transform(config.clone())
         })
         .map(|configs| {
