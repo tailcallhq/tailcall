@@ -432,7 +432,8 @@ mod tests {
                 }
             }]}
         "#;
-        let expected_error = "no variant of enum Source found in flattened data at line 9 column 13";
+        let expected_error =
+            "no variant of enum Source found in flattened data at line 9 column 13";
         assert_deserialization_error(json, expected_error);
     }
 
