@@ -138,7 +138,7 @@ type User {
       }
 
 # Negative: missing fragment
-# Disabled because async_graphql::dynamic does not perform validation
+# TODO: Disabled because async_graphql::dynamic does not perform validation
 # - method: POST
 #   url: http://localhost:8080/graphql
 #   body:

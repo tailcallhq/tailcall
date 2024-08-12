@@ -46,7 +46,7 @@ type User {
       }
 
 # Negative: non existent field alias
-# Disabled because async_graphql::dynamic does not perform validation
+# TODO: Tailcall should return error indicating extra field (current: skip unknown fields)
 # - method: POST
 #   url: http://localhost:8080/graphql
 #   body:

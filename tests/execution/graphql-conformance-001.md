@@ -114,7 +114,7 @@ type User {
         }
 
 # Negative: missing input
-# Disabled because async_graphql::dynamic does not perform validation
+# TODO: expect error that user.id input is missing
 # - method: POST
 #   url: http://localhost:8080/graphql
 #   body:

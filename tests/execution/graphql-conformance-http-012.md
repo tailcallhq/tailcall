@@ -97,7 +97,7 @@ type Page {
       }
 
 # Negative: missing fragment
-# Disabled because async_graphql::dynamic does not perform validation
+# TODO: should return error that fragment is missing
 # - method: POST
 #   url: http://localhost:8080/graphql
 #   body:
@@ -116,7 +116,7 @@ type Page {
 #         ...metaFragment
 #       }
 # # Negative: unexpected type
-# Disabled because async_graphql::dynamic does not perform validation
+# TODO: should return error that Page does not belong there
 # - method: POST
 #   url: http://localhost:8080/graphql
 #   body:

@@ -156,7 +156,7 @@
         }
 
   # # Positve: defaults from input
-  # Disabled because Tailcall does not uses default values from Input Object
+  # TODO: tailcall should use defaults provided from Input Object
   # - method: POST
   #   url: http://localhost:8080/graphql
   #   body:
@@ -170,7 +170,7 @@
   #       }
 
   # Negative: invalid size
-  # Disabled because async_graphql::dynamic does not perform validation
+  # TODO: tailcall should return error that size cannot be null
   # - method: POST
   #   url: http://localhost:8080/graphql
   #   body:

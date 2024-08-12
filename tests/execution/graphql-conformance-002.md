@@ -2,7 +2,7 @@
 skip: true
 ---
 
-# Test complex nested query. 
+# Test complex nested query.
 
 TODO: Skipped because Tailcall does not send the whole query to the remote server. It sends a shallow version of the query.
 
@@ -85,27 +85,28 @@ type BirthDay {
       }
 
 # Negative: invalid selection at nested
-- method: POST
-  url: http://localhost:8080/graphql
-  body:
-    query: |
-      {
-        user(id: 4) {
-          id
-          name
-          city
-          birthday {
-            day
-            month
-          }
-          friends {
-            id
-            name
-            birthday {
-              year
-              missing_field
-            }
-          }
-        }
-      }
+# TODO: Tailcall should return error indicating extra field (current: skip unknown fields)
+# - method: POST
+#   url: http://localhost:8080/graphql
+#   body:
+#     query: |
+#       {
+#         user(id: 4) {
+#           id
+#           name
+#           city
+#           birthday {
+#             day
+#             month
+#           }
+#           friends {
+#             id
+#             name
+#             birthday {
+#               year
+#               missing_field
+#             }
+#           }
+#         }
+#       }
 ```
