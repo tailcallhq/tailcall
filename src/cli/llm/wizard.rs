@@ -63,10 +63,9 @@ impl<Q, A> Wizard<Q, A> {
             .map(tokio_retry::strategy::jitter)
             .take(3);
 
-        let result =
-            tokio_retry::Retry::spawn(retry_strategy, || async { self.ask_inner(q.clone()).await })
-                .await;
+        
 
-        result
+        tokio_retry::Retry::spawn(retry_strategy, || async { self.ask_inner(q.clone()).await })
+                .await
     }
 }
