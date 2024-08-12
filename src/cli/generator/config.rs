@@ -16,6 +16,7 @@ use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub inputs: Vec<Input<Status>>,
@@ -385,5 +386,17 @@ mod tests {
             serde_json::from_str(r#""https://dummyjson.com/products""#).unwrap();
         assert!(location_empty.is_empty());
         assert!(!location_non_empty.is_empty());
+    }
+
+    #[test]
+    fn test_raise_error_when_unknown_fields_present() {
+        let config: Result<Config<UnResolved>, serde_json::Error> =
+            serde_json::from_str(r#"{"input": "value"}"#);
+
+        let actual = config.err().unwrap().to_string();
+        let expected =
+            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema` at line 1 column 8";
+
+        assert_eq!(actual, expected);
     }
 }
