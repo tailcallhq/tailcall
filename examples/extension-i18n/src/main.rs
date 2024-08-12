@@ -127,9 +127,13 @@ async fn main() -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use reqwest::Client;
+    use hyper::{Body, Request};
+    
     use serde_json::json;
-    use tailcall::core::http::Response;
+    use tailcall::core::app_context::AppContext;
+    use tailcall::core::async_graphql_hyper::GraphQLRequest;
+    use tailcall::core::http::{handle_request, Response};
+    use tailcall::core::rest::EndpointSet;
     use tailcall::core::HttpIO;
 
     use super::*;
@@ -195,41 +199,25 @@ mod tests {
             .plugin_extensions
             .insert("modify_ir".to_string(), modify_ir_ext);
         let config_module = config_module.merge_extensions(extensions);
-        let mut server = Server::new(config_module);
-        let url = "http://127.0.0.1:8800/graphql";
-        let server_up_receiver = server.server_up_receiver();
+        let blueprint = Blueprint::try_from(&config_module).unwrap();
+        let app_context = AppContext::new(blueprint, runtime, EndpointSet::default());
 
-        tokio::spawn(async move {
-            server.start().await.unwrap();
-        });
-
-        server_up_receiver
-            .await
-            .expect("Server did not start up correctly");
-
-        // required since our cert is self signed
-        let client = Client::builder()
-            .use_rustls_tls()
-            .danger_accept_invalid_certs(true)
-            .build()
-            .unwrap();
         let query = json!({
             "query": "{ user(id: 1) { id name company { catchPhrase } } }"
         });
+        let body = Body::from(query.to_string());
+        let req = Request::builder()
+            .method("POST")
+            .uri("http://127.0.0.1:8800/graphql")
+            .body(body)
+            .unwrap();
 
-        let client = client.clone();
-        let url = url.to_owned();
-        let query = query.clone();
-
-        let response = tokio::spawn(async move {
-            let response = client.post(url).json(&query).send().await;
-            let response = response.unwrap();
-            let response_body: serde_json::Value =
-                response.json().await.expect("Request should success");
-            response_body
-        })
-        .await
-        .expect("Spawned task should success");
+        let response = handle_request::<GraphQLRequest>(req, Arc::new(app_context))
+            .await
+            .unwrap();
+        let response = tailcall::core::http::Response::from_hyper(response)
+            .await
+            .unwrap();
 
         let expected_response = json!({
             "data": {
@@ -242,8 +230,10 @@ mod tests {
                 }
             }
         });
+
         assert_eq!(
-            response, expected_response,
+            response.body,
+            hyper::body::Bytes::from(expected_response.to_string()),
             "Unexpected response from server"
         );
     }

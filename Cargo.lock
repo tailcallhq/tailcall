@@ -1563,6 +1563,7 @@ name = "extension-i18n"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-graphql",
  "async-graphql-value",
  "async-trait",
  "dotenvy",
