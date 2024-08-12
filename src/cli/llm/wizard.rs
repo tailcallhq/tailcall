@@ -1,20 +1,28 @@
 use derive_setters::Setters;
+use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
 use genai::Client;
 
 use super::Result;
+use crate::cli::llm::model::Model;
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
     client: Client,
-    // TODO: change model to enum
-    model: String,
+    model: Model,
     _q: std::marker::PhantomData<Q>,
     _a: std::marker::PhantomData<A>,
 }
 
 impl<Q, A> Wizard<Q, A> {
-    pub fn new(model: String) -> Self {
+    pub fn new(model: Model, secret: Option<String>) -> Self {
+        let mut config = genai::adapter::AdapterConfig::default();
+        if let Some(key) = secret {
+            config = config.with_auth_env_name(key);
+        }
+
+        let adapter = AdapterKind::from_model(model.as_str()).unwrap_or(AdapterKind::Ollama);
+
         Self {
             client: Client::builder()
                 .with_chat_options(
@@ -22,6 +30,7 @@ impl<Q, A> Wizard<Q, A> {
                         .with_json_mode(true)
                         .with_temperature(0.0),
                 )
+                .insert_adapter_config(adapter, config)
                 .build(),
             model,
             _q: Default::default(),
