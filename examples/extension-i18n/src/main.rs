@@ -1,61 +1,100 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use async_graphql_value::ConstValue;
 use dotenvy::dotenv;
-use futures::executor::block_on;
 use tailcall::cli::runtime;
 use tailcall::cli::server::Server;
-use tailcall::core::blueprint::{Blueprint, ExtensionLoader};
+use tailcall::core::blueprint::{Blueprint, ExtensionTrait, PrepareContext, ProcessContext};
 use tailcall::core::config::reader::ConfigReader;
 use tailcall::core::config::KeyValue;
 use tailcall::core::helpers::headers::to_mustache_headers;
 use tailcall::core::valid::Validator;
 
 #[derive(Clone, Debug)]
-pub struct TranslateExtension;
+pub struct TranslateExtension {
+    pub load_counter: Arc<Mutex<i32>>,
+    pub prepare_counter: Arc<Mutex<i32>>,
+    pub process_counter: Arc<Mutex<i32>>,
+}
 
-impl ExtensionLoader for TranslateExtension {
-    fn load(&self) {}
+impl Default for TranslateExtension {
+    fn default() -> Self {
+        Self {
+            load_counter: Arc::new(Mutex::new(0)),
+            prepare_counter: Arc::new(Mutex::new(0)),
+            process_counter: Arc::new(Mutex::new(0)),
+        }
+    }
+}
 
-    fn prepare(
-        &self,
-        ir: Box<tailcall::core::ir::model::IR>,
-        _params: ConstValue,
-    ) -> Box<tailcall::core::ir::model::IR> {
-        ir
+#[async_trait::async_trait]
+impl ExtensionTrait<ConstValue> for TranslateExtension {
+    fn load(&self) {
+        *(self.load_counter.lock().unwrap()) += 1;
     }
 
-    fn process(
+    async fn prepare(
         &self,
-        _params: ConstValue,
-        value: ConstValue,
+        context: PrepareContext<ConstValue>,
+    ) -> Box<tailcall::core::ir::model::IR> {
+        *(self.prepare_counter.lock().unwrap()) += 1;
+        context.ir
+    }
+
+    async fn process(
+        &self,
+        context: ProcessContext<ConstValue>,
     ) -> Result<ConstValue, tailcall::core::ir::Error> {
-        if let ConstValue::String(value) = value {
-            let new_value = block_on(translate(&value));
+        *(self.process_counter.lock().unwrap()) += 1;
+        if let ConstValue::String(value) = context.value {
+            let new_value = match value.as_str() {
+                "Multi-layered client-server neural-net" => {
+                    "Red neuronal cliente-servidor multicapa".to_string()
+                }
+                "Leanne Graham" => "Leona Grahm".to_string(),
+                _ => value.to_string(),
+            };
             Ok(ConstValue::String(new_value))
         } else {
-            Ok(value)
+            Ok(context.value)
         }
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct ModifyIrExtension;
+pub struct ModifyIrExtension {
+    pub load_counter: Arc<Mutex<i32>>,
+    pub prepare_counter: Arc<Mutex<i32>>,
+    pub process_counter: Arc<Mutex<i32>>,
+}
 
-impl ExtensionLoader for ModifyIrExtension {
-    fn load(&self) {}
+impl Default for ModifyIrExtension {
+    fn default() -> Self {
+        Self {
+            load_counter: Arc::new(Mutex::new(0)),
+            prepare_counter: Arc::new(Mutex::new(0)),
+            process_counter: Arc::new(Mutex::new(0)),
+        }
+    }
+}
 
-    fn prepare(
+#[async_trait::async_trait]
+impl ExtensionTrait<ConstValue> for ModifyIrExtension {
+    fn load(&self) {
+        *(self.load_counter.lock().unwrap()) += 1;
+    }
+
+    async fn prepare(
         &self,
-        ir: Box<tailcall::core::ir::model::IR>,
-        _params: ConstValue,
+        context: PrepareContext<ConstValue>,
     ) -> Box<tailcall::core::ir::model::IR> {
+        *(self.prepare_counter.lock().unwrap()) += 1;
         if let tailcall::core::ir::model::IR::IO(tailcall::core::ir::model::IO::Http {
             req_template,
             group_by,
             dl_id,
             http_filter,
-        }) = *ir
+        }) = *context.ir
         {
             let mut req_template = req_template;
             let headers = to_mustache_headers(&[KeyValue {
@@ -78,33 +117,23 @@ impl ExtensionLoader for ModifyIrExtension {
             });
             Box::new(ir)
         } else {
-            ir
+            context.ir
         }
     }
 
-    fn process(
+    async fn process(
         &self,
-        _params: ConstValue,
-        value: ConstValue,
+        context: ProcessContext<ConstValue>,
     ) -> Result<ConstValue, tailcall::core::ir::Error> {
-        Ok(value)
-    }
-}
-
-async fn translate(value: &str) -> String {
-    match value {
-        "Multi-layered client-server neural-net" => {
-            "Red neuronal cliente-servidor multicapa".to_string()
-        }
-        "Leanne Graham" => "Leona Grahm".to_string(),
-        _ => value.to_string(),
+        *(self.process_counter.lock().unwrap()) += 1;
+        Ok(context.value)
     }
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let translate_ext = Arc::new(TranslateExtension {});
-    let modify_ir_ext = Arc::new(ModifyIrExtension {});
+    let translate_ext = Arc::new(TranslateExtension::default());
+    let modify_ir_ext = Arc::new(ModifyIrExtension::default());
     if let Ok(path) = dotenv() {
         tracing::info!("Env file: {:?} loaded", path);
     }
@@ -128,7 +157,6 @@ async fn main() -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use hyper::{Body, Request};
-    
     use serde_json::json;
     use tailcall::core::app_context::AppContext;
     use tailcall::core::async_graphql_hyper::GraphQLRequest;
@@ -180,8 +208,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_tailcall_extensions() {
-        let translate_ext = Arc::new(TranslateExtension {});
-        let modify_ir_ext = Arc::new(ModifyIrExtension {});
+        let translate_ext = Arc::new(TranslateExtension::default());
+        let modify_ir_ext = Arc::new(ModifyIrExtension::default());
         if let Ok(path) = dotenv() {
             tracing::info!("Env file: {:?} loaded", path);
         }
@@ -194,10 +222,10 @@ mod tests {
         let mut extensions = config_module.extensions().clone();
         extensions
             .plugin_extensions
-            .insert("translate".to_string(), translate_ext);
+            .insert("translate".to_string(), translate_ext.clone());
         extensions
             .plugin_extensions
-            .insert("modify_ir".to_string(), modify_ir_ext);
+            .insert("modify_ir".to_string(), modify_ir_ext.clone());
         let config_module = config_module.merge_extensions(extensions);
         let blueprint = Blueprint::try_from(&config_module).unwrap();
         let app_context = AppContext::new(blueprint, runtime, EndpointSet::default());
@@ -236,5 +264,13 @@ mod tests {
             hyper::body::Bytes::from(expected_response.to_string()),
             "Unexpected response from server"
         );
+
+        assert_eq!(translate_ext.load_counter.lock().unwrap().to_owned(), 2);
+        assert_eq!(translate_ext.process_counter.lock().unwrap().to_owned(), 2);
+        assert_eq!(translate_ext.prepare_counter.lock().unwrap().to_owned(), 2);
+
+        assert_eq!(modify_ir_ext.load_counter.lock().unwrap().to_owned(), 1);
+        assert_eq!(modify_ir_ext.process_counter.lock().unwrap().to_owned(), 1);
+        assert_eq!(modify_ir_ext.prepare_counter.lock().unwrap().to_owned(), 1);
     }
 }

@@ -133,7 +133,7 @@ pub struct Extensions {
 
     pub jwks: Vec<Content<JwkSet>>,
 
-    pub plugin_extensions: HashMap<String, Arc<dyn ExtensionLoader>>,
+    pub plugin_extensions: HashMap<String, Arc<ExtensionLoader>>,
 }
 
 impl Extensions {

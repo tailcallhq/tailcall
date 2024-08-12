@@ -5,6 +5,7 @@ use crate::core::config;
 use crate::core::config::Field;
 use crate::core::ir::model::IR;
 use crate::core::ir::Error;
+use crate::core::json::JsonLikeOwned;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
 
@@ -54,14 +55,35 @@ pub fn update_extension<'a>(
     )
 }
 
-pub trait ExtensionLoader: std::fmt::Debug + Send + Sync {
+pub type ExtensionLoader = dyn ExtensionTrait<ConstValue>;
+
+#[async_trait::async_trait]
+pub trait ExtensionTrait<Json: JsonLikeOwned>: std::fmt::Debug + Send + Sync {
     fn load(&self) {}
 
-    fn modify_inner(&self, ir: Box<IR>) -> Box<IR> {
-        ir
+    async fn prepare(&self, context: PrepareContext<Json>) -> Box<IR>;
+
+    async fn process(&self, context: ProcessContext<Json>) -> Result<Json, Error>;
+}
+
+pub struct PrepareContext<Json: JsonLikeOwned> {
+    pub params: Json,
+    pub ir: Box<IR>,
+}
+
+impl<Json: JsonLikeOwned> PrepareContext<Json> {
+    pub fn new(ir: Box<IR>, params: Json) -> Self {
+        Self { ir, params }
     }
+}
 
-    fn prepare(&self, ir: Box<IR>, params: ConstValue) -> Box<IR>;
+pub struct ProcessContext<Json: JsonLikeOwned> {
+    pub params: Json,
+    pub value: Json,
+}
 
-    fn process(&self, params: ConstValue, value: ConstValue) -> Result<ConstValue, Error>;
+impl<Json: JsonLikeOwned> ProcessContext<Json> {
+    pub fn new(params: Json, value: Json) -> Self {
+        Self { params, value }
+    }
 }

@@ -29,7 +29,7 @@ pub enum IR {
     Discriminate(Discriminator, Box<IR>),
     Extension {
         // path: Vec<String>,
-        plugin: Arc<dyn ExtensionLoader>,
+        plugin: Arc<ExtensionLoader>,
         params: DynamicValue<Value>,
         ir: Box<IR>,
     },
@@ -156,10 +156,7 @@ impl IR {
                     IR::Discriminate(discriminator, expr) => {
                         IR::Discriminate(discriminator, expr.modify_box(modifier))
                     }
-                    IR::Extension { plugin, params, ir } => {
-                        let ir = plugin.modify_inner(ir);
-                        IR::Extension { plugin, params, ir }
-                    }
+                    IR::Extension { ir: _, params: _, plugin: _ } => expr,
                 }
             }
         }

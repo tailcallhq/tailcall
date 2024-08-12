@@ -1599,7 +1599,6 @@ dependencies = [
  "async-graphql-value",
  "async-trait",
  "dotenvy",
- "futures",
  "hyper 0.14.30",
  "reqwest",
  "serde_json",

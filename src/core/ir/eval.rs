@@ -6,6 +6,7 @@ use async_graphql_value::ConstValue;
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
 use super::{Error, EvalContext, ResolverContextLike};
+use crate::core::blueprint::{PrepareContext, ProcessContext};
 use crate::core::json::JsonLike;
 use crate::core::serde_value_ext::ValueExt;
 
@@ -96,14 +97,17 @@ impl IR {
                     Ok(value)
                 }),
                 IR::Extension { plugin, params, ir } => {
-                    let ir = plugin.prepare(ir.clone(), params.render_value(ctx));
+                    let context = PrepareContext::new(ir.clone(), params.render_value(ctx));
+                    let ir = plugin.prepare(context).await;
 
                     let value = {
                         let mut ctx = ctx.clone();
                         ir.eval(&mut ctx).await?
                     };
 
-                    plugin.process(params.render_value(ctx), value)
+                    let context = ProcessContext::new(params.render_value(ctx), value);
+
+                    plugin.process(context).await
                 }
             }
         })
