@@ -2,7 +2,9 @@
 skip: true
 ---
 
-# Test scalars and remote directives. Skipped because tailcall does not send the `@log` directive to the remote server. Moreover it does not correctly format the scalar to string value.
+# Test scalars and remote directives.
+
+TODO: Skipped because tailcall does not send the `@log` directive to the remote server. Moreover it does not correctly format the scalar to string value.
 
 ```graphql @config
 schema

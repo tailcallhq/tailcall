@@ -2,7 +2,9 @@
 skip: true
 ---
 
-# Test named fragments. Skipped because Tailcall does not send the whole query with the **fragments** to the remote server.
+# Test named fragments.
+
+TODO: Skipped because Tailcall does not send the whole query with the **fragments** to the remote server.
 
 ```graphql @config
 schema

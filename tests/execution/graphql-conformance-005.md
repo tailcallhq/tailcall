@@ -2,7 +2,9 @@
 skip: true
 ---
 
-# Test field aliasing. Skipped because Tailcall does not send the alias to the remote server.
+# Test field aliasing.
+
+TODO: Skipped because Tailcall does not send the alias to the remote server.
 
 ```graphql @config
 schema

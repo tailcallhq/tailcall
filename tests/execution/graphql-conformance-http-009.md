@@ -2,7 +2,9 @@
 skip: true
 ---
 
-# Test variables. Skipped because Tailcall does not construct correctly the interface types based on \_\_typename field.
+# Test variables.
+
+TODO: Skipped because Tailcall does not construct correctly the interface types based on \_\_typename field.
 
 ```graphql @config
 schema
