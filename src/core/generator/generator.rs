@@ -179,8 +179,9 @@ pub mod test {
 
     impl JsonFixture {
         pub async fn read(path: &str) -> anyhow::Result<JsonFixture> {
-            let json_fixture = parse_json(path).await?;
-            Ok(json_fixture)
+            let content = tokio::fs::read_to_string(path).await?;
+            let result: JsonFixture = serde_json::from_str(&content)?;
+            Ok(result)
         }
     }
 
@@ -206,12 +207,6 @@ pub mod test {
 
             Ok(JsonFixture { url, response })
         }
-    }
-
-    async fn parse_json(path: &str) -> anyhow::Result<JsonFixture> {
-        let content = tokio::fs::read_to_string(path).await?;
-        let result: JsonFixture = serde_json::from_str(&content)?;
-        Ok(result)
     }
 
     #[test]
@@ -245,9 +240,10 @@ pub mod test {
 
     #[tokio::test]
     async fn should_generate_config_from_json() -> anyhow::Result<()> {
-        let parsed_content =
-            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json")
-                .await?;
+        let parsed_content = JsonFixture::read(
+            "src/core/generator/tests/fixtures/json/incompatible_properties.json",
+        )
+        .await?;
         let cfg_module = Generator::default()
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
@@ -280,9 +276,10 @@ pub mod test {
         };
 
         // Json Input
-        let parsed_content =
-            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json")
-                .await?;
+        let parsed_content = JsonFixture::read(
+            "src/core/generator/tests/fixtures/json/incompatible_properties.json",
+        )
+        .await?;
         let json_input = Input::Json {
             url: parsed_content.url.parse()?,
             method: Method::GET,
@@ -313,7 +310,7 @@ pub mod test {
         ];
         let field_name_generator = NameGenerator::new("f");
         for json_path in json_fixtures {
-            let parsed_content = parse_json(json_path).await?;
+            let parsed_content = JsonFixture::read(json_path).await?;
             inputs.push(Input::Json {
                 url: parsed_content.url.parse()?,
                 method: Method::GET,
