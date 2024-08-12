@@ -34,6 +34,11 @@ impl Transform for Preset {
         &self,
         config: Self::Value,
     ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
+        // Instantiate ImproveTypeNames with state to ensure the system message about
+        // inferring type names is sent only once during the transformation process.
+        // This prevents redundant messages from being logged multiple times.
+        let mut type_name_improver = super::ImproveTypeNames::new();
+
         transform::default()
             .pipe(super::Required)
             .pipe(super::TreeShake.when(self.tree_shake))
@@ -42,7 +47,7 @@ impl Transform for Preset {
                     .when(super::TypeMerger::is_enabled(self.merge_type)),
             )
             .pipe(super::FlattenSingleField.when(self.unwrap_single_field_types))
-            .pipe(super::ImproveTypeNames.when(self.infer_type_names))
+            .pipe(type_name_improver.when(self.infer_type_names))
             .pipe(
                 super::ConsolidateURL::new(self.consolidate_url)
                     .when(super::ConsolidateURL::is_enabled(self.consolidate_url)),
