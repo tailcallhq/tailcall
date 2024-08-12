@@ -112,33 +112,16 @@ impl Transform for FromJsonGenerator<'_> {
 
 #[cfg(test)]
 mod tests {
-    use serde::Deserialize;
-
     use crate::core::config::transformer::Preset;
     use crate::core::config::GraphQLOperationType;
+    use crate::core::generator::generator::test::JsonFixture;
     use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
     use crate::core::http::Method;
     use crate::core::transform::TransformerOps;
     use crate::core::valid::Validator;
 
-    #[derive(Deserialize)]
-    struct JsonFixture {
-        url: String,
-        response: serde_json::Value,
-    }
-
-    fn parse_json(path: &str) -> JsonFixture {
-        let content = std::fs::read_to_string(path).unwrap();
-        let json_content: serde_json::Value = serde_json::from_str(&content).unwrap();
-
-        JsonFixture {
-            url: json_content["request"]["url"].as_str().unwrap().to_string(),
-            response: json_content["response"]["body"].clone(),
-        }
-    }
-
-    #[test]
-    fn generate_config_from_json() -> anyhow::Result<()> {
+    #[tokio::test]
+    async fn generate_config_from_json() -> anyhow::Result<()> {
         let mut request_samples = vec![];
         let fixtures = [
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",
@@ -149,12 +132,12 @@ mod tests {
         ];
         let field_name_generator = NameGenerator::new("f");
         for fixture in fixtures {
-            let parsed_content = parse_json(fixture);
+            let JsonFixture { url, response } = JsonFixture::read(fixture).await?;
             request_samples.push(RequestSample::new(
-                parsed_content.url.parse()?,
+                url.parse()?,
                 Method::GET,
                 serde_json::Value::Null,
-                parsed_content.response,
+                response,
                 field_name_generator.next(),
                 GraphQLOperationType::Query,
             ));

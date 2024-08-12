@@ -156,7 +156,7 @@ fn resolve_file_descriptor_set(
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use prost_reflect::prost_types::FileDescriptorSet;
     use serde::{Deserialize, Deserializer};
     use serde_json::Value;
@@ -172,9 +172,16 @@ mod test {
         Ok(protox::compile(files, [tailcall_fixtures::protobuf::SELF])?)
     }
 
-    struct JsonFixture {
-        url: String,
-        response: serde_json::Value,
+    pub struct JsonFixture {
+        pub url: String,
+        pub response: serde_json::Value,
+    }
+
+    impl JsonFixture {
+        pub async fn read(path: &str) -> anyhow::Result<JsonFixture> {
+            let json_fixture = parse_json(path).await?;
+            Ok(json_fixture)
+        }
     }
 
     impl<'de> Deserialize<'de> for JsonFixture {
