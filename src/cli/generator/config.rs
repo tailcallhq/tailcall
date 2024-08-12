@@ -51,7 +51,7 @@ pub struct Location<A>(
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(transparent)]
 pub struct Headers<A>(
-    #[serde(skip_serializing_if = "is_default")] pub Option<BTreeMap<String, TemplateString>>,
+    #[serde(skip_serializing_if = "is_default")] Option<BTreeMap<String, TemplateString>>,
     #[serde(skip)] PhantomData<A>,
 );
 
@@ -225,7 +225,14 @@ impl Source<UnResolved> {
             Source::Curl { src, field_name, headers, body, method, is_mutation } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 let resolved_headers = headers.resolve(reader_context);
-                Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers, body, method, is_mutation })
+                Ok(Source::Curl {
+                    src: resolved_path,
+                    field_name,
+                    headers: resolved_headers,
+                    body,
+                    method,
+                    is_mutation,
+                })
             }
             Source::Proto { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
