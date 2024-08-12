@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
+use tokio_retry::strategy::{jitter, ExponentialBackoff};
+use tokio_retry::Retry;
 
 #[derive(Default)]
 pub struct InferTypeName {
@@ -79,9 +81,7 @@ impl InferTypeName {
     }
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let secret = self.secret.as_ref().map(|s| s.to_owned());
-
         let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
-
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
         // removed root type from types.
@@ -102,47 +102,27 @@ impl InferTypeName {
                     .collect(),
             };
 
-            let mut delay = 3;
-            loop {
-                let answer = wizard.ask(question.clone()).await;
-                match answer {
-                    Ok(answer) => {
-                        let name = &answer.suggestions.join(", ");
-                        for name in answer.suggestions {
-                            if config.types.contains_key(&name)
-                                || new_name_mappings.contains_key(&name)
-                            {
-                                continue;
-                            }
-                            new_name_mappings.insert(name, type_name.to_owned());
-                            break;
+            match wizard.ask(question).await {
+                Ok(answer) => {
+                    let name = &answer.suggestions.join(", ");
+                    for name in answer.suggestions {
+                        if config.types.contains_key(&name) || new_name_mappings.contains_key(&name)
+                        {
+                            continue;
                         }
-                        tracing::info!(
-                            "Suggestions for {}: [{}] - {}/{}",
-                            type_name,
-                            name,
-                            i + 1,
-                            total
-                        );
-
-                        // TODO: case where suggested names are already used, then extend the base
-                        // question with `suggest different names, we have already used following
-                        // names: [names list]`
+                        new_name_mappings.insert(name, type_name.to_owned());
                         break;
                     }
-                    Err(e) => {
-                        // TODO: log errors after certain number of retries.
-                        if let Error::GenAI(_) = e {
-                            // TODO: retry only when it's required.
-                            tracing::warn!(
-                                "Unable to retrieve a name for the type '{}'. Retrying in {}s",
-                                type_name,
-                                delay
-                            );
-                            tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;
-                            delay *= std::cmp::min(delay * 2, 60);
-                        }
-                    }
+                    tracing::info!(
+                        "Suggestions for {}: [{}] - {}/{}",
+                        type_name,
+                        name,
+                        i + 1,
+                        total
+                    );
+                }
+                Err(e) => {
+                    tracing::error!("Failed to generate name for {}: {:?}", type_name, e);
                 }
             }
         }
