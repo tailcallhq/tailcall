@@ -28,6 +28,7 @@ pub struct Config<Status = UnResolved> {
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct PresetConfig {
     pub merge_type: Option<f32>,
     #[serde(rename = "consolidateURL")]
@@ -60,6 +61,7 @@ pub struct Input<Status = UnResolved> {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub enum Source<Status = UnResolved> {
     #[serde(rename_all = "camelCase")]
     Curl {
@@ -77,6 +79,7 @@ pub enum Source<Status = UnResolved> {
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct Output<Status = UnResolved> {
     #[serde(skip_serializing_if = "Location::is_empty")]
     pub path: Location<Status>,
@@ -92,6 +95,7 @@ pub enum Resolved {}
 pub struct UnResolved {}
 
 #[derive(Deserialize, Serialize, Debug, Default)]
+#[serde(deny_unknown_fields)]
 pub struct Schema {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
