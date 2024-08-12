@@ -29,12 +29,12 @@ pub struct Config<Status = UnResolved> {
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PresetConfig {
-    merge_type: Option<f32>,
+    pub merge_type: Option<f32>,
     #[serde(rename = "consolidateURL")]
-    consolidate_url: Option<f32>,
-    use_better_names: Option<bool>,
-    tree_shake: Option<bool>,
-    unwrap_single_field_types: Option<bool>,
+    pub consolidate_url: Option<f32>,
+    pub infer_type_names: Option<bool>,
+    pub tree_shake: Option<bool>,
+    pub unwrap_single_field_types: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -126,8 +126,8 @@ impl ValidateFrom<PresetConfig> for Preset {
             preset = preset.consolidate_url(consolidate_url);
         }
 
-        if let Some(use_better_names) = config.use_better_names {
-            preset = preset.use_better_names(use_better_names);
+        if let Some(use_better_names) = config.infer_type_names {
+            preset = preset.infer_type_names(use_better_names);
         }
 
         if let Some(unwrap_single_field_types) = config.unwrap_single_field_types {
@@ -364,7 +364,7 @@ mod tests {
     fn should_fail_when_invalid_merge_type_threshold() {
         let config_preset = PresetConfig {
             tree_shake: None,
-            use_better_names: None,
+            infer_type_names: None,
             merge_type: Some(2.0),
             consolidate_url: None,
             unwrap_single_field_types: None,
@@ -379,14 +379,14 @@ mod tests {
     fn should_use_user_provided_presets_when_provided() {
         let config_preset = PresetConfig {
             tree_shake: Some(true),
-            use_better_names: Some(true),
+            infer_type_names: Some(true),
             merge_type: Some(0.5),
             consolidate_url: Some(1.0),
             unwrap_single_field_types: None,
         };
         let transform_preset: Preset = config_preset.validate_into().to_result().unwrap();
         let expected_preset = Preset::new()
-            .use_better_names(true)
+            .infer_type_names(true)
             .tree_shake(true)
             .consolidate_url(1.0)
             .merge_type(0.5);
