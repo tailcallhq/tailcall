@@ -17,6 +17,7 @@ use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
 use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
+use crate::core::config::url_query::URLQuery;
 use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
 use crate::core::is_default;
@@ -579,7 +580,7 @@ pub struct Http {
     /// NOTE: Query parameter order is critical for batching in Tailcall. The
     /// first parameter referencing a field in the current value using mustache
     /// syntax is automatically selected as the batching parameter.
-    pub query: Vec<KeyValue>,
+    pub query: Vec<URLQuery>,
 }
 
 ///

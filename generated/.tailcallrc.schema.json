@@ -735,7 +735,7 @@
           "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. The first parameter referencing a field in the current value using mustache syntax is automatically selected as the batching parameter.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/KeyValue"
+            "$ref": "#/definitions/URLQuery"
           }
         }
       },
@@ -1301,6 +1301,28 @@
     "UInt8": {
       "title": "UInt8",
       "description": "Field whose value is an 8-bit unsigned integer."
+    },
+    "URLQuery": {
+      "type": "object",
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "skipEmpty": {
+          "description": "Determines whether to ignore query parameters with empty values when forming URLs.\n\nWhen set to true, query parameters without values are completely ignored during URL formation. When false (default), parameters without values are included in the URL.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "value": {
+          "type": "string"
+        }
+      }
     },
     "Union": {
       "type": "object",

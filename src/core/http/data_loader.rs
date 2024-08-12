@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -111,10 +112,7 @@ impl Loader<DataLoaderRequest> for HttpDataLoader {
             for dl_req in dl_requests.iter() {
                 let url = dl_req.url();
                 let query_set: HashMap<_, _> = url.query_pairs().collect();
-                let id = query_set.get(query_name).ok_or(anyhow::anyhow!(
-                    "Unable to find key {} in query params",
-                    query_name
-                ))?;
+                let id = query_set.get(query_name).unwrap_or(&Cow::Borrowed(""));
 
                 // Clone the response and set the body
                 let body = (self.body)(&response_map, id);
