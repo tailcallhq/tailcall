@@ -3,13 +3,14 @@ use std::collections::HashMap;
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 
+use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
 
-const MODEL: &str = "llama3-8b-8192";
-
 #[derive(Default)]
-pub struct InferTypeName {}
+pub struct InferTypeName {
+    secret: Option<String>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Answer {
@@ -73,8 +74,13 @@ impl TryInto<ChatRequest> for Question {
 }
 
 impl InferTypeName {
+    pub fn new(secret: Option<String>) -> InferTypeName {
+        Self { secret }
+    }
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let wizard: Wizard<Question, Answer> = Wizard::new(MODEL.to_string());
+        let secret = self.secret.as_ref().map(|s| s.to_owned());
+
+        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
