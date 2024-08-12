@@ -112,7 +112,7 @@ impl Generator {
                         let mut header_map = HeaderMap::new();
                         for (key, value) in headers_inner {
                             let header_name = HeaderName::try_from(key)?;
-                            let header_value = HeaderValue::try_from(value)?;
+                            let header_value = HeaderValue::try_from(value.to_string())?;
                             header_map.insert(header_name, header_value);
                         }
                         *request.headers_mut() = header_map;
@@ -150,6 +150,7 @@ impl Generator {
         let config = self.read().await?;
         let path = config.output.path.0.to_owned();
         let query_type = config.schema.query.clone();
+        let secret = config.secret.clone();
         let preset = config.preset.clone().unwrap_or_default();
         let preset: Preset = preset.validate_into().to_result()?;
         let input_samples = self.resolve_io(config).await?;
@@ -165,11 +166,12 @@ impl Generator {
         let mut config = config_gen.generate(true)?;
 
         if infer_type_names {
-            let key = self
-                .runtime
-                .env
-                .get("TAILCALL_SECRET")
-                .map(|s| s.into_owned());
+            let key = if !secret.is_empty() {
+                Some(secret.to_string())
+            } else {
+                None
+            };
+
             let mut llm_gen = InferTypeName::new(key);
             let suggested_names = llm_gen.generate(config.config()).await?;
             let cfg = RenameTypes::new(suggested_names.iter())
