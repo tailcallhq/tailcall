@@ -185,7 +185,10 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames::default()
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
     }
 
@@ -195,7 +198,10 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames::default()
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
@@ -207,7 +213,10 @@ mod test {
             .to_result()
             .unwrap();
 
-        let transformed_config = ImproveTypeNames.transform(config).to_result().unwrap();
+        let transformed_config = ImproveTypeNames::default()
+            .transform(config)
+            .to_result()
+            .unwrap();
         insta::assert_snapshot!(transformed_config.to_sdl());
 
         Ok(())
@@ -219,7 +228,7 @@ mod test {
             .to_result()
             .unwrap();
 
-        let mut improve_type_names = ImproveTypeNames::default();
+        let improve_type_names = ImproveTypeNames::default();
         improve_type_names
             .transform(config.clone())
             .to_result()
