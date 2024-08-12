@@ -2,7 +2,9 @@
 skip: true
 ---
 
-# Test complex nested query. Skipped because Tailcall does not send the whole query to the remote server. It sends a shallow version of the query.
+# Test complex nested query. 
+
+TODO: Skipped because Tailcall does not send the whole query to the remote server. It sends a shallow version of the query.
 
 ```graphql @config
 schema
