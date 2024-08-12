@@ -421,8 +421,21 @@ mod tests {
         let expected_error =
             "unknown field `headerss`, expected one of `src`, `headers`, `fieldName` at line 9 column 13";
         assert_deserialization_error(json, expected_error);
+    
+        let json = r#"
+            {"inputs": [{
+                "curls": {
+                    "src": "https://tailcall.run/graphql",
+                    "headerss": {
+                        "content-type": "application/json"
+                    }
+                }
+            }]}
+        "#;
+        let expected_error = "no variant of enum Source found in flattened data at line 9 column 9";
+        assert_deserialization_error(json, expected_error);
     }
-
+    
     #[test]
     fn test_raise_error_unknown_field_in_preset() {
         let json = r#"
