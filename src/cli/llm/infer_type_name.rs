@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 
+use super::model::groq;
 use super::{Error, Result, Wizard};
-use crate::cli::llm::model::Model;
 use crate::core::config::Config;
 
 #[derive(Default)]
@@ -78,10 +78,9 @@ impl InferTypeName {
         Self { secret }
     }
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let auth_key = self.secret.as_ref().map(|s| s.to_owned());
-        let model = Model::GROQ.llama38192().secret(auth_key);
+        let secret = self.secret.as_ref().map(|s| s.to_owned());
 
-        let wizard: Wizard<Question, Answer> = Wizard::new(model);
+        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 

@@ -1,4 +1,5 @@
 use derive_setters::Setters;
+use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
 use genai::Client;
 
@@ -14,8 +15,14 @@ pub struct Wizard<Q, A> {
 }
 
 impl<Q, A> Wizard<Q, A> {
-    pub fn new(model: Model) -> Self {
-        let adapter_config = model.config();
+    pub fn new(model: Model, secret: Option<String>) -> Self {
+        let mut config = genai::adapter::AdapterConfig::default();
+        if let Some(key) = secret {
+            config = config.with_auth_env_name(key);
+        }
+
+        let adapter = AdapterKind::from_model(model.as_str()).unwrap_or(AdapterKind::Ollama);
+
         Self {
             client: Client::builder()
                 .with_chat_options(
@@ -23,7 +30,7 @@ impl<Q, A> Wizard<Q, A> {
                         .with_json_mode(true)
                         .with_temperature(0.0),
                 )
-                .insert_adapter_config(model.to_adapter_kind(), adapter_config)
+                .insert_adapter_config(adapter, config)
                 .build(),
             model,
             _q: Default::default(),
@@ -38,7 +45,7 @@ impl<Q, A> Wizard<Q, A> {
     {
         let response = self
             .client
-            .exec_chat(self.model.name, q.try_into()?, None)
+            .exec_chat(self.model.as_str(), q.try_into()?, None)
             .await?;
         A::try_from(response)
     }
