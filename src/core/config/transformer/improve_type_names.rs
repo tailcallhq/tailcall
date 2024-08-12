@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::collections::{BTreeMap, HashSet};
 
 use convert_case::{Case, Casing};
@@ -111,23 +112,23 @@ impl<'a> CandidateGeneration<'a> {
 }
 
 pub struct ImproveTypeNames {
-    system_message_sent: bool,
+    system_message_sent: Cell<bool>,
 }
 
 impl Default for ImproveTypeNames {
     fn default() -> Self {
-        Self { system_message_sent: false }
+        Self { system_message_sent: Cell::new(false) }
     }
 }
 
 impl ImproveTypeNames {
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
-    fn generate_type_names(&mut self, mut config: Config) -> Config {
-        if !self.system_message_sent {
+    fn generate_type_names(&self, mut config: Config) -> Config {
+        if !self.system_message_sent.get() {
             // Send the system message once
             println!("System message: Starting type name inference process.");
-            self.system_message_sent = true;
+            self.system_message_sent.set(true)
         }
 
         let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
@@ -155,7 +156,7 @@ impl ImproveTypeNames {
 impl Transform for ImproveTypeNames {
     type Value = Config;
     type Error = String;
-    fn transform(&mut self, config: Config) -> Valid<Self::Value, Self::Error> {
+    fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
         let config = self.generate_type_names(config);
 
         Valid::succeed(config)
