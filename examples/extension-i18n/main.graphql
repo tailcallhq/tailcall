@@ -1,4 +1,4 @@
-schema @server(port: 8000) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {maxSize: 10, delay: 10}) {
+schema @server(port: 8800) @upstream(baseURL: "http://jsonplaceholder.typicode.com", batch: {maxSize: 10, delay: 10}) {
   query: Query
 }
 
