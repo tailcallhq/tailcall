@@ -43,7 +43,7 @@ pub fn compile_http(
                     (
                         key_value.key.clone(),
                         key_value.value.clone(),
-                        key_value.skip_null.unwrap_or_default(),
+                        key_value.skip_empty.unwrap_or_default(),
                     )
                 })
                 .collect();

@@ -36,7 +36,7 @@ pub struct KeyValue {
     /// When set to true, query parameters without values are completely ignored
     /// during URL formation. When false (default), parameters without values
     /// are included in the URL.
-    pub skip_null: Option<bool>,
+    pub skip_empty: Option<bool>,
 }
 
 // When we merge values, we do a merge right, which is to say that
@@ -49,19 +49,19 @@ pub fn merge_key_value_vecs(current: &[KeyValue], other: &[KeyValue]) -> Vec<Key
     for kv in current {
         res.insert(
             kv.key.to_owned(),
-            (kv.value.to_owned(), kv.skip_null.to_owned()),
+            (kv.value.to_owned(), kv.skip_empty.to_owned()),
         );
     }
 
     for kv in other {
         res.insert(
             kv.key.to_owned(),
-            (kv.value.to_owned(), kv.skip_null.to_owned()),
+            (kv.value.to_owned(), kv.skip_empty.to_owned()),
         );
     }
 
     res.into_iter()
-        .map(|(k, (v, skip_null))| KeyValue { key: k, value: v, skip_null })
+        .map(|(k, (v, skip_null))| KeyValue { key: k, value: v, skip_empty: skip_null })
         .collect::<Vec<KeyValue>>()
 }
 
@@ -76,7 +76,7 @@ impl Serialize for KeyValues {
             .map(|(k, (v, skip_null))| KeyValue {
                 key: k.clone(),
                 value: v.clone(),
-                skip_null: skip_null.to_owned(),
+                skip_empty: skip_null.to_owned(),
             })
             .collect();
         vec.serialize(serializer)
@@ -91,7 +91,7 @@ impl<'de> Deserialize<'de> for KeyValues {
         let vec: Vec<KeyValue> = Vec::deserialize(deserializer)?;
         let btree_map = vec
             .into_iter()
-            .map(|kv| (kv.key, (kv.value, kv.skip_null)))
+            .map(|kv| (kv.key, (kv.value, kv.skip_empty)))
             .collect();
         Ok(KeyValues(btree_map))
     }
@@ -158,7 +158,7 @@ mod tests {
         let other = vec![KeyValue {
             key: "key1".to_string(),
             value: "value1".to_string(),
-            skip_null: None,
+            skip_empty: None,
         }];
         let result = merge_key_value_vecs(&current, &other);
         assert_eq!(result.len(), 1);
@@ -171,7 +171,7 @@ mod tests {
         let current = vec![KeyValue {
             key: "key1".to_string(),
             value: "value1".to_string(),
-            skip_null: None,
+            skip_empty: None,
         }];
         let other = vec![];
         let result = merge_key_value_vecs(&current, &other);
@@ -185,12 +185,12 @@ mod tests {
         let current = vec![KeyValue {
             key: "key1".to_string(),
             value: "value1".to_string(),
-            skip_null: None,
+            skip_empty: None,
         }];
         let other = vec![KeyValue {
             key: "key2".to_string(),
             value: "value2".to_string(),
-            skip_null: None,
+            skip_empty: None,
         }];
         let result = merge_key_value_vecs(&current, &other);
         assert_eq!(result.len(), 2);
@@ -205,12 +205,12 @@ mod tests {
         let current = vec![KeyValue {
             key: "key1".to_string(),
             value: "value1".to_string(),
-            skip_null: None,
+            skip_empty: None,
         }];
         let other = vec![KeyValue {
             key: "key1".to_string(),
             value: "value2".to_string(),
-            skip_null: None,
+            skip_empty: None,
         }];
         let result = merge_key_value_vecs(&current, &other);
         assert_eq!(result.len(), 1);

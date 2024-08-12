@@ -120,7 +120,7 @@ impl Telemetry {
                 otlp.headers = headers
                     .into_iter()
                     .map(|(key, tmpl)| (key.as_str().to_owned(), tmpl.render(reader_ctx)))
-                    .map(|(key, value)| KeyValue { key, value, skip_null: None })
+                    .map(|(key, value)| KeyValue { key, value, skip_empty: None })
                     .collect();
             }
             Some(TelemetryExporter::Apollo(apollo)) => apollo.render_mustache(reader_ctx)?,
@@ -148,7 +148,7 @@ mod tests {
                 headers: vec![KeyValue {
                     key: "header_a".to_owned(),
                     value: "a".to_owned(),
-                    skip_null: None,
+                    skip_empty: None,
                 }],
             })),
             request_headers: vec!["Api-Key-A".to_owned()],
@@ -159,7 +159,7 @@ mod tests {
                 headers: vec![KeyValue {
                     key: "header_b".to_owned(),
                     value: "b".to_owned(),
-                    skip_null: None,
+                    skip_empty: None,
                 }],
             })),
             request_headers: vec!["Api-Key-B".to_owned()],
@@ -212,7 +212,7 @@ mod tests {
                     headers: vec![KeyValue {
                         key: "header_b".to_owned(),
                         value: "b".to_owned(),
-                        skip_null: None
+                        skip_empty: None
                     }]
                 })),
                 request_headers: vec!["Api-Key-A".to_string(), "Api-Key-B".to_string(),]

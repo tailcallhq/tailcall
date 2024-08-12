@@ -97,7 +97,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
             let value: String = format!("{{{{.args.{}}}}}", query.key);
             self.http
                 .query
-                .push(KeyValue { key: query.key.clone(), value, skip_null: None });
+                .push(KeyValue { key: query.key.clone(), value, skip_empty: None });
             field.args.insert(query.key, arg);
         }
     }

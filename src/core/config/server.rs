@@ -292,17 +292,17 @@ mod tests {
             KeyValue {
                 key: "left".to_string(),
                 value: "From Left".to_string(),
-                skip_null: None,
+                skip_empty: None,
             },
             KeyValue {
                 key: "1".to_string(),
                 value: "1, Left".to_string(),
-                skip_null: None,
+                skip_empty: None,
             },
             KeyValue {
                 key: "2".to_string(),
                 value: "2, Left".to_string(),
-                skip_null: None,
+                skip_empty: None,
             },
         ]
         .to_vec()
@@ -313,17 +313,17 @@ mod tests {
             KeyValue {
                 key: "right".to_string(),
                 value: "From Right".to_string(),
-                skip_null: None,
+                skip_empty: None,
             },
             KeyValue {
                 key: "1".to_string(),
                 value: "1, Right".to_string(),
-                skip_null: None,
+                skip_empty: None,
             },
             KeyValue {
                 key: "2".to_string(),
                 value: "2, Right".to_string(),
-                skip_null: None,
+                skip_empty: None,
             },
         ]
         .to_vec()
@@ -334,22 +334,22 @@ mod tests {
             KeyValue {
                 key: "right".to_string(),
                 value: "From Right".to_string(),
-                skip_null: None,
+                skip_empty: None,
             },
             KeyValue {
                 key: "left".to_string(),
                 value: "From Left".to_string(),
-                skip_null: None,
+                skip_empty: None,
             },
             KeyValue {
                 key: "1".to_string(),
                 value: "1, Right".to_string(),
-                skip_null: None,
+                skip_empty: None,
             },
             KeyValue {
                 key: "2".to_string(),
                 value: "2, Right".to_string(),
-                skip_null: None,
+                skip_empty: None,
             },
         ]
         .to_vec();
