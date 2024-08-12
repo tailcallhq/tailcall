@@ -38,7 +38,7 @@ impl<Q, A> Wizard<Q, A> {
     {
         let response = self
             .client
-            .exec_chat(self.model.model(), q.try_into()?, None)
+            .exec_chat(self.model.name, q.try_into()?, None)
             .await?;
         A::try_from(response)
     }

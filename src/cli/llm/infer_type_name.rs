@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
@@ -9,9 +8,10 @@ use crate::cli::llm::model::Model;
 use crate::core::config::Config;
 
 #[derive(Default)]
-pub struct InferTypeName<'a> {
-    key: Option<Cow<'a, str>>,
+pub struct InferTypeName {
+    secret: Option<String>,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Answer {
     suggestions: Vec<String>,
@@ -73,13 +73,13 @@ impl TryInto<ChatRequest> for Question {
     }
 }
 
-impl<'a> InferTypeName<'a> {
-    pub fn new(key: Option<Cow<'a, str>>) -> InferTypeName<'a> {
-        Self { key }
+impl InferTypeName {
+    pub fn new(secret: Option<String>) -> InferTypeName {
+        Self { secret }
     }
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let auth_key = self.key.clone();
-        let model = Model::GROQ.llama38192().with_secret(auth_key);
+        let auth_key = self.secret.as_ref().map(|s| s.to_owned());
+        let model = Model::GROQ.llama38192().secret(auth_key);
 
         let wizard: Wizard<Question, Answer> = Wizard::new(model);
 

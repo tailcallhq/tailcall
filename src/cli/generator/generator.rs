@@ -165,7 +165,11 @@ impl Generator {
         let mut config = config_gen.generate(true)?;
 
         if infer_type_names {
-            let key = self.runtime.env.get("TAILCALL_SECRET");
+            let key = self
+                .runtime
+                .env
+                .get("TAILCALL_SECRET")
+                .map(|s| s.into_owned());
             let mut llm_gen = InferTypeName::new(key);
             let suggested_names = llm_gen.generate(config.config()).await?;
             let cfg = RenameTypes::new(suggested_names.iter())
