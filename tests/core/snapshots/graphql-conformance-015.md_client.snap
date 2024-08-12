@@ -53,8 +53,8 @@ type User {
 
 input VideoSize {
   hdr: Boolean = true
-  height: Int
-  width: Int
+  height: Int!
+  width: Int!
 }
 
 schema {

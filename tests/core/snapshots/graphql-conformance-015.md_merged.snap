@@ -10,8 +10,8 @@ schema
 
 input VideoSize {
   hdr: Boolean = true
-  height: Int
-  width: Int
+  height: Int!
+  width: Int!
 }
 
 type Query {
