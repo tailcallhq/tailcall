@@ -28,7 +28,6 @@ pub enum IR {
     Pipe(Box<IR>, Box<IR>),
     Discriminate(Discriminator, Box<IR>),
     Extension {
-        // path: Vec<String>,
         plugin: Arc<ExtensionLoader>,
         params: DynamicValue<Value>,
         ir: Box<IR>,

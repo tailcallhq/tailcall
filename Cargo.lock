@@ -1600,7 +1600,7 @@ dependencies = [
  "async-trait",
  "dotenvy",
  "hyper 0.14.30",
- "reqwest",
+ "reqwest 0.11.27",
  "serde_json",
  "tailcall",
  "tokio",
