@@ -394,7 +394,6 @@ mod tests {
             serde_json::from_str(r#"{"input": "value"}"#);
 
         let actual = config.err().unwrap().to_string();
-        println!("[Finder]: actual: {}", actual);
         let expected =
             "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema` at line 1 column 8";
 
