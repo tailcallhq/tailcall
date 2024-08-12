@@ -10,7 +10,7 @@ use async_graphql::Name;
 use async_graphql_value::ConstValue;
 
 use super::telemetry::Telemetry;
-use super::{Alias, JS};
+use super::{Alias, Extension, JS};
 use crate::core::config::{
     self, Cache, Call, Config, Enum, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
     Server, Union, Upstream, Variant,
