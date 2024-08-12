@@ -1,6 +1,6 @@
 # Tailcall Extension Example
 
-In this example we showcase the extension capabilities Tailcall supports. We allow the developers to extend Tailcall functionality in the form of custom extensions that enable to hook into the Tailcall runtime. You can utilize extensions using the `@extension` directive. In this project we have examples for two extension scenarios. One for modifying the IR each time, and one to modify a value before returned to the response. There is another case that is not covered that allows to modify the IR during compiling. See `ExtensionLoader` trait for more information.
+In this example we showcase the extension capabilities Tailcall supports. We allow the developers to extend Tailcall functionality in the form of custom extensions that enable to hook into the Tailcall runtime. You can utilize extensions using the `@extension` directive. In this project we have examples for two extension scenarios. One for modifying the IR each time, and one to modify a value before returned to the response. See `ExtensionLoader` trait for more information.
 
 ## Running
 
