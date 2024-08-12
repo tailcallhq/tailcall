@@ -11,7 +11,7 @@ use url::Url;
 
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
-use crate::core::mustache::Mustache;
+use crate::core::mustache::TemplateString;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
@@ -24,6 +24,8 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
+    #[serde(skip_serializing_if = "TemplateString::is_empty")]
+    pub secret: TemplateString,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
@@ -48,7 +50,7 @@ pub struct Location<A>(
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(transparent)]
 pub struct Headers<A>(
-    #[serde(skip_serializing_if = "is_default")] pub Option<BTreeMap<String, String>>,
+    #[serde(skip_serializing_if = "is_default")] pub Option<BTreeMap<String, TemplateString>>,
     #[serde(skip)] PhantomData<A>,
 );
 
@@ -176,30 +178,22 @@ impl Location<UnResolved> {
 }
 
 impl<A> Headers<A> {
-    pub fn headers(&self) -> &Option<BTreeMap<String, String>> {
+    pub fn headers(&self) -> &Option<BTreeMap<String, TemplateString>> {
         &self.0
     }
 }
 
 impl Headers<UnResolved> {
-    pub fn resolve(
-        self,
-        reader_context: &ConfigReaderContext,
-    ) -> anyhow::Result<Headers<Resolved>> {
+    pub fn resolve(self, reader_context: &ConfigReaderContext) -> Headers<Resolved> {
         // Resolve the header values with mustache template.
-        let resolved_headers = if let Some(headers_inner) = self.0 {
-            let mut resolved_headers = BTreeMap::new();
-            for (key, value) in headers_inner.into_iter() {
-                let template = Mustache::parse(&value)?;
-                let resolved_value = template.render(reader_context);
-                resolved_headers.insert(key, resolved_value);
-            }
-            Some(resolved_headers)
-        } else {
-            None
-        };
+        let resolved_headers = self.0.map(|headers_inner| {
+            headers_inner
+                .into_iter()
+                .map(|(k, v)| (k, v.resolve(reader_context)))
+                .collect::<BTreeMap<_, _>>()
+        });
 
-        Ok(Headers(resolved_headers, PhantomData))
+        Headers(resolved_headers, PhantomData)
     }
 }
 
@@ -221,7 +215,7 @@ impl Source<UnResolved> {
         match self {
             Source::Curl { src, field_name, headers } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                let resolved_headers = headers.resolve(reader_context)?;
+                let resolved_headers = headers.resolve(reader_context);
                 Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
             }
             Source::Proto { src } => {
@@ -264,7 +258,13 @@ impl Config {
 
         let output = self.output.resolve(parent_dir)?;
 
-        Ok(Config { inputs, output, schema: self.schema, preset: self.preset })
+        Ok(Config {
+            inputs,
+            output,
+            schema: self.schema,
+            preset: self.preset,
+            secret: self.secret.resolve(&reader_context),
+        })
     }
 }
 
@@ -283,7 +283,7 @@ mod tests {
         Location(s.as_ref().to_string(), PhantomData)
     }
 
-    fn to_headers(raw_headers: BTreeMap<String, String>) -> Headers<UnResolved> {
+    fn to_headers(raw_headers: BTreeMap<String, TemplateString>) -> Headers<UnResolved> {
         Headers(Some(raw_headers), PhantomData)
     }
 
@@ -292,7 +292,7 @@ mod tests {
         let mut headers = BTreeMap::new();
         headers.insert(
             "Authorization".to_owned(),
-            "Bearer {{.env.TOKEN}}".to_owned(),
+            "Bearer {{.env.TOKEN}}".try_into().unwrap(),
         );
 
         let mut env_vars = HashMap::new();
@@ -310,18 +310,19 @@ mod tests {
             headers: Default::default(),
         };
 
-        let resolved_headers = unresolved_headers.resolve(&reader_ctx).unwrap();
+        let resolved_headers = unresolved_headers.resolve(&reader_ctx);
 
-        let expected = format!("Bearer {token}");
-        let result = resolved_headers
+        let expected = TemplateString::try_from(format!("Bearer {token}").as_str()).unwrap();
+        let actual = resolved_headers
             .headers()
-            .to_owned()
+            .as_ref()
             .unwrap()
             .get("Authorization")
             .unwrap()
             .to_owned();
+
         assert_eq!(
-            result, expected,
+            actual, expected,
             "Authorization header should be resolved correctly"
         );
     }
@@ -329,7 +330,7 @@ mod tests {
     #[test]
     fn test_config_codec() {
         let mut headers = BTreeMap::new();
-        headers.insert("user-agent".to_owned(), "tailcall-v1".to_owned());
+        headers.insert("user-agent".to_owned(), "tailcall-v1".try_into().unwrap());
         let config = Config::default().inputs(vec![Input {
             source: Source::Curl {
                 src: location("https://example.com"),
@@ -402,7 +403,7 @@ mod tests {
     fn test_raise_error_unknown_field_at_root_level() {
         let json = r#"{"input": "value"}"#;
         let expected_error =
-            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema` at line 1 column 8";
+            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema`, `secret` at line 1 column 8";
         assert_deserialization_error(json, expected_error);
     }
 
@@ -471,5 +472,30 @@ mod tests {
         "#;
         let expected_error = "unknown field `querys`, expected `query` at line 3 column 22";
         assert_deserialization_error(json, expected_error);
+    }
+
+    #[test]
+    fn test_secret() {
+        let mut env_vars = HashMap::new();
+        let token = "eyJhbGciOiJIUzI1NiIsInR5";
+        env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
+
+        let mut runtime = crate::core::runtime::test::init(None);
+        runtime.env = Arc::new(TestEnvIO::init(env_vars));
+
+        let reader_ctx = ConfigReaderContext {
+            runtime: &runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
+
+        let config =
+            Config::default().secret(TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap());
+        let resolved_config = config.into_resolved("", reader_ctx).unwrap();
+
+        let actual = resolved_config.secret;
+        let expected = TemplateString::try_from("eyJhbGciOiJIUzI1NiIsInR5").unwrap();
+
+        assert_eq!(actual, expected);
     }
 }

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use derive_setters::Setters;
 use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
+use genai::resolver::AuthResolver;
 use genai::Client;
 use tokio_retry::strategy::ExponentialBackoff;
 
@@ -11,7 +12,7 @@ use crate::cli::llm::model::Model;
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
-    client: Arc<Client>,
+    client: Client,
     model: Model,
     _q: std::marker::PhantomData<Q>,
     _a: std::marker::PhantomData<A>,
@@ -21,20 +22,20 @@ impl<Q, A> Wizard<Q, A> {
     pub fn new(model: Model, secret: Option<String>) -> Self {
         let mut config = genai::adapter::AdapterConfig::default();
         if let Some(key) = secret {
-            config = config.with_auth_env_name(key);
+            config = config.with_auth_resolver(AuthResolver::from_key_value(key));
         }
 
         let adapter = AdapterKind::from_model(model.as_str()).unwrap_or(AdapterKind::Ollama);
-        let client = Client::builder()
-            .with_chat_options(
-                ChatOptions::default()
-                    .with_json_mode(true)
-                    .with_temperature(0.0),
-            )
-            .insert_adapter_config(adapter, config)
-            .build();
+
+        let chat_options = ChatOptions::default()
+            .with_json_mode(true)
+            .with_temperature(0.0);
+
         Self {
-            client: Arc::new(client),
+            client: Client::builder()
+                .with_chat_options(chat_options)
+                .insert_adapter_config(adapter, config)
+                .build(),
             model,
             _q: Default::default(),
             _a: Default::default(),
@@ -63,7 +64,7 @@ impl<Q, A> Wizard<Q, A> {
             .map(tokio_retry::strategy::jitter)
             .take(3);
 
-        
+
 
         tokio_retry::Retry::spawn(retry_strategy, || async { self.ask_inner(q.clone()).await })
                 .await
