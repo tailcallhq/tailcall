@@ -2,7 +2,7 @@
 
 ```graphql @config
 schema
-  @server(port: 8000, queryValidation: false)
+  @server(port: 8000)
   @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
   query: Query
 }
