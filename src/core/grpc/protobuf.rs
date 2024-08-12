@@ -251,7 +251,7 @@ pub mod tests {
     use super::*;
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
-    use crate::core::config::{Config, Field, Grpc, Link, LinkType, Type};
+    use crate::core::config::{Config, Field, Grpc, Link, LinkType, Resolver, Type};
 
     pub async fn get_proto_file(path: &str) -> Result<FileDescriptorSet> {
         let runtime = crate::core::runtime::test::init(None);
@@ -272,7 +272,10 @@ pub mod tests {
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
-            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+            Type::default().fields(vec![(
+                "bar",
+                Field::default().resolver(Resolver::Grpc(grpc)),
+            )]),
         );
         Ok(reader
             .resolve(config, None)

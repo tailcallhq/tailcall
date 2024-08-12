@@ -372,6 +372,80 @@
     "Field": {
       "description": "A field definition containing all the metadata information about resolving a field.",
       "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "http"
+          ],
+          "properties": {
+            "http": {
+              "$ref": "#/definitions/Http"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "grpc"
+          ],
+          "properties": {
+            "grpc": {
+              "$ref": "#/definitions/Grpc"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "graphql"
+          ],
+          "properties": {
+            "graphql": {
+              "$ref": "#/definitions/GraphQL"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "call"
+          ],
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/Call"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "js"
+          ],
+          "properties": {
+            "js": {
+              "$ref": "#/definitions/JS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "expr"
+          ],
+          "properties": {
+            "expr": {
+              "$ref": "#/definitions/Expr"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
       "properties": {
         "args": {
           "description": "Map of argument name and its definition.",
@@ -391,17 +465,6 @@
             }
           ]
         },
-        "call": {
-          "description": "Inserts a call resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Call"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "default_value": {
           "description": "Stores the default value for the field"
         },
@@ -410,50 +473,6 @@
           "type": [
             "string",
             "null"
-          ]
-        },
-        "expr": {
-          "description": "Inserts a constant resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Expr"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "graphql": {
-          "description": "Inserts a GraphQL resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/GraphQL"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "grpc": {
-          "description": "Inserts a GRPC resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Grpc"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "http": {
-          "description": "Inserts an HTTP resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Http"
-            },
-            {
-              "type": "null"
-            }
           ]
         },
         "list": {
@@ -501,17 +520,6 @@
         "required": {
           "description": "Flag to indicate the type is required.",
           "type": "boolean"
-        },
-        "script": {
-          "description": "Inserts a Javascript resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/JS"
-            },
-            {
-              "type": "null"
-            }
-          ]
         },
         "type": {
           "description": "Refers to the type of the value the field can be resolved to.",

@@ -102,20 +102,9 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
     let path_resolver_error_handler = context.path_resolver_error_handler;
 
     if let Some(next_field) = type_info.fields.get(field_name) {
-        if next_field.has_resolver() {
-            let next_dir_http = next_field
-                .http
-                .as_ref()
-                .map(|_| config::Http::directive_name());
-            let next_dir_const = next_field
-                .const_field
-                .as_ref()
-                .map(|_| config::Expr::directive_name());
+        if let Some(resolver) = &next_field.resolver {
             return path_resolver_error_handler(
-                next_dir_http
-                    .or(next_dir_const)
-                    .unwrap_or(config::JS::directive_name())
-                    .as_str(),
+                &resolver.directive_name(),
                 &field.type_of,
                 field_name,
                 context.original_path,
@@ -423,7 +412,7 @@ fn to_fields(
                 &add_field.name,
             )
             .and_then(|field_definition| {
-                let added_field_path = match source_field.http {
+                let added_field_path = match source_field.resolver {
                     Some(_) => add_field.path[1..]
                         .iter()
                         .map(|s| s.to_owned())
@@ -497,15 +486,6 @@ pub fn to_field_definition(
     type_of: &config::Type,
     name: &String,
 ) -> Valid<FieldDefinition, String> {
-    let directives = field.resolvable_directives();
-
-    if directives.len() > 1 {
-        return Valid::fail(format!(
-            "Multiple resolvers detected [{}]",
-            directives.join(", ")
-        ));
-    }
-
     update_args()
         .and(update_http().trace(config::Http::trace_name().as_str()))
         .and(update_grpc(operation_type).trace(config::Grpc::trace_name().as_str()))

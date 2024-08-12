@@ -2,7 +2,7 @@ use url::Url;
 
 use super::http_directive_generator::HttpDirectiveGenerator;
 use super::types_generator::OperationGenerator;
-use crate::core::config::{Config, Field, Type};
+use crate::core::config::{Config, Field, Resolver, Type};
 use crate::core::valid::Valid;
 
 pub struct QueryGenerator<'a> {
@@ -28,7 +28,9 @@ impl OperationGenerator for QueryGenerator<'_> {
 
         // generate required http directive.
         let http_directive_gen = HttpDirectiveGenerator::new(self.url);
-        field.http = Some(http_directive_gen.generate_http_directive(&mut field));
+        field.resolver = Some(Resolver::Http(
+            http_directive_gen.generate_http_directive(&mut field),
+        ));
 
         // if type is already present, then append the new field to it else create one.
         if let Some(type_) = config.types.get_mut(self.query) {
