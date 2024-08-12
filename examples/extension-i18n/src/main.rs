@@ -15,19 +15,19 @@ use tailcall::core::valid::Validator;
 pub struct TranslateExtension;
 
 impl ExtensionLoader for TranslateExtension {
-    }
+    fn load(&self) {}
 
     fn prepare(
         &self,
         ir: Box<tailcall::core::ir::model::IR>,
-        params: ConstValue,
+        _params: ConstValue,
     ) -> Box<tailcall::core::ir::model::IR> {
         ir
     }
 
     fn process(
         &self,
-        params: ConstValue,
+        _params: ConstValue,
         value: ConstValue,
     ) -> Result<ConstValue, tailcall::core::ir::Error> {
         if let ConstValue::String(value) = value {
@@ -43,13 +43,12 @@ impl ExtensionLoader for TranslateExtension {
 pub struct ModifyIrExtension;
 
 impl ExtensionLoader for ModifyIrExtension {
-    fn load(&self) {
-    }
+    fn load(&self) {}
 
     fn prepare(
         &self,
         ir: Box<tailcall::core::ir::model::IR>,
-        params: ConstValue,
+        _params: ConstValue,
     ) -> Box<tailcall::core::ir::model::IR> {
         if let tailcall::core::ir::model::IR::IO(tailcall::core::ir::model::IO::Http {
             req_template,
@@ -85,7 +84,7 @@ impl ExtensionLoader for ModifyIrExtension {
 
     fn process(
         &self,
-        params: ConstValue,
+        _params: ConstValue,
         value: ConstValue,
     ) -> Result<ConstValue, tailcall::core::ir::Error> {
         Ok(value)
@@ -126,12 +125,12 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-
 #[cfg(test)]
 mod tests {
     use reqwest::Client;
     use serde_json::json;
-    use tailcall::core::{http::Response, HttpIO};
+    use tailcall::core::http::Response;
+    use tailcall::core::HttpIO;
 
     use super::*;
 
@@ -139,7 +138,10 @@ mod tests {
 
     #[async_trait::async_trait]
     impl HttpIO for MockHttp {
-        async fn execute(&self, _request: reqwest::Request) -> anyhow::Result<Response<hyper::body::Bytes>> {
+        async fn execute(
+            &self,
+            _request: reqwest::Request,
+        ) -> anyhow::Result<Response<hyper::body::Bytes>> {
             let data = json!({
                 "id": 1,
                 "name": "Leanne Graham",
@@ -162,7 +164,8 @@ mod tests {
                     "catchPhrase": "Multi-layered client-server neural-net",
                     "bs": "harness real-time e-markets"
                 }
-            }).to_string();
+            })
+            .to_string();
             Ok(Response {
                 body: data.into(),
                 status: reqwest::StatusCode::OK,
@@ -221,9 +224,11 @@ mod tests {
         let response = tokio::spawn(async move {
             let response = client.post(url).json(&query).send().await;
             let response = response.unwrap();
-            let response_body: serde_json::Value = response.json().await.expect("Request should success");
+            let response_body: serde_json::Value =
+                response.json().await.expect("Request should success");
             response_body
-        }).await
+        })
+        .await
         .expect("Spawned task should success");
 
         let expected_response = json!({
