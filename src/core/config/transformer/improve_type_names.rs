@@ -110,8 +110,7 @@ impl<'a> CandidateGeneration<'a> {
     }
 }
 
-#[derive(Default)]
-struct ImproveTypeNames {
+pub struct ImproveTypeNames {
     system_message_sent: bool,
 }
 
@@ -124,7 +123,7 @@ impl Default for ImproveTypeNames {
 impl ImproveTypeNames {
     /// Generates type names based on inferred candidates from the provided
     /// configuration.
-    fn generate_type_names(&self, mut config: Config) -> Config {
+    fn generate_type_names(&mut self, mut config: Config) -> Config {
         if !self.system_message_sent {
             // Send the system message once
             println!("System message: Starting type name inference process.");
