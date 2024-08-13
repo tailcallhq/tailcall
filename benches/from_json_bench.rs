@@ -3,6 +3,7 @@ use hyper::Method;
 use serde_json::Value;
 use tailcall::cli::runtime::NativeHttp;
 use tailcall::core::generator::{Generator, Input};
+use tailcall::core::http::Method as HTTPMethod;
 use tailcall::core::HttpIO;
 
 pub fn benchmark_from_json_method(c: &mut Criterion) {
@@ -21,8 +22,11 @@ pub fn benchmark_from_json_method(c: &mut Criterion) {
 
     let cfg_gen_reqs = vec![Input::Json {
         url: request_url.parse().unwrap(),
-        response: reqs[0].clone(),
+        method: HTTPMethod::GET,
+        req_body: serde_json::Value::Null,
+        res_body: reqs[0].clone(),
         field_name: "f1".to_string(),
+        is_mutation: false,
     }];
 
     let config_generator = Generator::default().inputs(cfg_gen_reqs);

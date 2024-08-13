@@ -1,0 +1,22 @@
+{
+  "request": {
+    "url": "https://jsonplaceholder.typicode.com/posts",
+    "method": "POST",
+    "body": {
+      "userId": 1,
+      "title": "Tailcall: modern graphQL runtime.",
+      "body": " modern graphQL runtime"
+    }
+  },
+  "isMutation": true,
+  "fieldName": "createPost",
+  "response": {
+    "status": 201,
+    "body": {
+      "userId": 1,
+      "id": 1,
+      "title": "Tailcall: modern graphQL runtime.",
+      "body": " modern graphQL runtime"
+    }
+  }
+}
