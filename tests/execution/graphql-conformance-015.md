@@ -18,7 +18,7 @@
       @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
     featuredVideo(video: VideoSize! = {width: 1600, height: 900}): String!
       @expr(body: "video_{{.value.id}}_{{.args.video.width}}_{{.args.video.height}}_{{.args.video.hdr}}")
-    featuredVideoPreview(video: VideoSize!): String!
+    featuredVideoPreview(video: VideoSize! = {}): String!
       @expr(body: "video_{{.value.id}}_{{.args.video.width}}_{{.args.video.height}}_{{.args.video.hdr}}")
     searchComments(query: [[String!]!]! = [["today"]]): String! @expr(body: "video_{{.value.id}}_{{.args.query}}")
   }
@@ -156,7 +156,7 @@
         }
 
   # # Positve: defaults from input
-  # TODO: tailcall should use defaults provided from Input Object
+  # TODO: tailcall should use defaults provided from Input Object and hdr should be true
   # - method: POST
   #   url: http://localhost:8080/graphql
   #   body:

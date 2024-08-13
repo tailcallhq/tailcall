@@ -44,7 +44,7 @@ scalar Url
 
 type User {
   featuredVideo(video: VideoSize! = {width: 1600, height: 900}): String!
-  featuredVideoPreview(video: VideoSize!): String!
+  featuredVideoPreview(video: VideoSize! = {}): String!
   id: ID!
   name: String!
   profilePic(height: Int = 100, size: Int! = 100, width: Int): String!
