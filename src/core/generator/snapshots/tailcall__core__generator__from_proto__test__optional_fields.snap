@@ -6,7 +6,7 @@ schema @server @upstream {
   query: Query
 }
 
-input type__TypeInput @tag(id: "type.Type") {
+input type__TypeInput {
   id: Int
   idOpt: Int
   nested: type__Type__NestedInput
@@ -17,7 +17,7 @@ input type__TypeInput @tag(id: "type.Type") {
   strOpt: String
 }
 
-input type__Type__NestedInput @tag(id: "type.Type.Nested") {
+input type__Type__NestedInput {
   id: Int
   idOpt: Int
   num: [Float]
@@ -35,7 +35,7 @@ type Query {
   type__TypeService__Get(type: type__TypeInput!): type__Type! @grpc(body: "{{.args.type}}", method: "type.TypeService.Get")
 }
 
-type type__Type @tag(id: "type.Type") {
+type type__Type {
   id: Int
   idOpt: Int
   nested: type__Type__Nested
@@ -46,7 +46,7 @@ type type__Type @tag(id: "type.Type") {
   strOpt: String
 }
 
-type type__Type__Nested @tag(id: "type.Type.Nested") {
+type type__Type__Nested {
   id: Int
   idOpt: Int
   num: [Float]

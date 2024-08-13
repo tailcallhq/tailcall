@@ -1,55 +1,57 @@
-use std::fmt::Display;
+use std::borrow::Cow;
 use std::string::FromUtf8Error;
 use std::sync::Arc;
 
-use derive_more::{DebugCustom, From};
+use thiserror::Error;
 use tokio::task::JoinError;
 
-#[derive(From, DebugCustom)]
+#[derive(Error)]
 pub enum Error {
-    #[debug(fmt = "Std IO Error: {}", _0)]
-    IO(std::io::Error),
+    #[error("Std IO Error: {0}")]
+    IO(#[from] std::io::Error),
 
-    #[debug(fmt = "Join Error: {}", _0)]
-    Join(JoinError),
+    #[error("Join Error: {0}")]
+    Join(#[from] JoinError),
 
-    #[debug(fmt = "From Utf8 Error: {}", _0)]
-    FromUtf8(FromUtf8Error),
+    #[error("From Utf8 Error: {0}")]
+    FromUtf8(#[from] FromUtf8Error),
 
-    #[debug(fmt = "Prettier formatting failed: {}", _0)]
+    #[error("Prettier formatting failed: {0}")]
     PrettierFormattingFailed(String),
 
-    #[debug(fmt = "No file extension found")]
+    #[error("{0} command was not found. Ensure you have it installed and available in the PATH")]
+    CommandNotFound(String),
+
+    #[error("No file extension found")]
     FileExtensionNotFound,
 
-    #[debug(fmt = "Unsupported file type")]
+    #[error("Unsupported file type")]
     UnsupportedFiletype,
 
-    #[debug(fmt = "{}\n\nCaused by:\n    {}", context, source)]
-    Context { source: Arc<Error>, context: String },
+    #[error("{}\n\nCaused by:\n    {}", context, source)]
+    Context {
+        #[source]
+        source: Arc<Error>,
+        context: String,
+    },
 }
 
-impl Display for Error {
+impl std::fmt::Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::IO(error) => write!(f, "Std IO Error: {}", error),
-            Error::Join(error) => write!(f, "Join Error: {}", error),
-            Error::FromUtf8(error) => write!(f, "From Utf8 Error: {}", error),
-            Error::PrettierFormattingFailed(msg) => {
-                write!(f, "Prettier formatting failed: {}", msg)
-            }
-            Error::FileExtensionNotFound => write!(f, "No file extension found"),
-            Error::UnsupportedFiletype => write!(f, "Unsupported file type"),
-            Error::Context { source, context } => {
-                write!(f, "{}\n\nCaused by:\n    {}", context, source)
-            }
-        }
+        std::fmt::Display::fmt(self, f)
     }
 }
 
 impl Error {
     pub fn with_context(self, context: String) -> Self {
         Error::Context { source: Arc::new(self), context }
+    }
+
+    pub fn from_io_error(command: Cow<'static, str>) -> impl Fn(std::io::Error) -> Self {
+        move |error| match error.kind() {
+            std::io::ErrorKind::NotFound => Error::CommandNotFound(command.to_string()),
+            _ => Error::IO(error),
+        }
     }
 }
 

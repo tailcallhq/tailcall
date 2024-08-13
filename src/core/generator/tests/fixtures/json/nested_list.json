@@ -1,26 +1,32 @@
 {
-  "url": "https://example.com/users?children=true",
-  "body": {
-    "people": [
-      {
-        "name": "Alice",
-        "age": 30,
-        "children": null
-      },
-      {
-        "name": "Bob",
-        "age": 25,
-        "children": [
-          {
-            "name": "Charlie",
-            "age": 5
-          },
-          {
-            "name": "Diana",
-            "age": 8
-          }
-        ]
-      }
-    ]
+  "request": {
+    "url": "https://example.com/users?children=true"
+  },
+  "fieldName": "users",
+  "response": {
+    "status": 200,
+    "body": {
+      "people": [
+        {
+          "name": "Alice",
+          "age": 30,
+          "children": null
+        },
+        {
+          "name": "Bob",
+          "age": 25,
+          "children": [
+            {
+              "name": "Charlie",
+              "age": 5
+            },
+            {
+              "name": "Diana",
+              "age": 8
+            }
+          ]
+        }
+      ]
+    }
   }
 }

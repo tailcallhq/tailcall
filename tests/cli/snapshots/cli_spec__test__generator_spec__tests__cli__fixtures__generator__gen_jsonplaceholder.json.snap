@@ -1,5 +1,5 @@
 ---
-source: src/cli/generator/generator.rs
+source: tests/cli/gen.rs
 expression: config.to_sdl()
 ---
 schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {

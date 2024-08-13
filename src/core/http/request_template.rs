@@ -23,13 +23,20 @@ use crate::core::path::{PathString, PathValue, ValueString};
 #[derive(Setters, Debug, Clone)]
 pub struct RequestTemplate {
     pub root_url: Mustache,
-    pub query: Vec<(String, Mustache)>,
+    pub query: Vec<Query>,
     pub method: reqwest::Method,
     pub headers: MustacheHeaders,
     pub body_path: Option<Mustache>,
     pub endpoint: Endpoint,
     pub encoding: Encoding,
     pub query_encoder: QueryEncoder,
+}
+
+#[derive(Setters, Debug, Clone)]
+pub struct Query {
+    pub key: String,
+    pub value: Mustache,
+    pub skip_empty: bool,
 }
 
 impl RequestTemplate {
@@ -45,9 +52,16 @@ impl RequestTemplate {
         // template.
         let mustache_eval = ValueStringEval::default();
 
-        let extra_qp = self.query.iter().map(|(key, value)| {
+        let extra_qp = self.query.iter().filter_map(|query| {
+            let key = &query.key;
+            let value = &query.value;
+            let skip = query.skip_empty;
             let parsed_value = mustache_eval.eval(value, ctx);
-            self.query_encoder.encode(key, parsed_value)
+            if skip && parsed_value.is_none() {
+                None
+            } else {
+                Some(self.query_encoder.encode(key, parsed_value))
+            }
         });
 
         let base_qp = url
@@ -79,7 +93,7 @@ impl RequestTemplate {
     pub fn is_const(&self) -> bool {
         self.root_url.is_const()
             && self.body_path.as_ref().map_or(true, Mustache::is_const)
-            && self.query.iter().all(|(_, v)| v.is_const())
+            && self.query.iter().all(|query| query.value.is_const())
             && self.headers.iter().all(|(_, v)| v.is_const())
     }
 
@@ -200,7 +214,13 @@ impl TryFrom<Endpoint> for RequestTemplate {
         let query = endpoint
             .query
             .iter()
-            .map(|(k, v)| Ok((k.to_owned(), Mustache::parse(v.as_str())?)))
+            .map(|(k, v, skip)| {
+                Ok(Query {
+                    key: k.as_str().to_string(),
+                    value: Mustache::parse(v.as_str())?,
+                    skip_empty: *skip,
+                })
+            })
             .collect::<anyhow::Result<Vec<_>>>()?;
         let method = endpoint.method.clone().to_hyper();
         let headers = endpoint
@@ -295,7 +315,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    use super::RequestTemplate;
+    use super::{Query, RequestTemplate};
     use crate::core::has_headers::HasHeaders;
     use crate::core::json::JsonLike;
     use crate::core::mustache::Mustache;
@@ -357,8 +377,16 @@ mod tests {
     #[test]
     fn test_query_list_args() {
         let query = vec![
-            ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
-            ("foo".to_string(), Mustache::parse("{{foo.id}}").unwrap()),
+            Query {
+                key: "baz".to_string(),
+                value: Mustache::parse("{{baz.id}}").unwrap(),
+                skip_empty: false,
+            },
+            Query {
+                key: "foo".to_string(),
+                value: Mustache::parse("{{foo.id}}").unwrap(),
+                skip_empty: false,
+            },
         ];
 
         let tmpl = RequestTemplate::new("http://localhost:3000/")
@@ -432,9 +460,21 @@ mod tests {
     #[test]
     fn test_url_query_params() {
         let query = vec![
-            ("foo".to_string(), Mustache::parse("0").unwrap()),
-            ("bar".to_string(), Mustache::parse("1").unwrap()),
-            ("baz".to_string(), Mustache::parse("2").unwrap()),
+            Query {
+                key: "foo".to_string(),
+                value: Mustache::parse("0").unwrap(),
+                skip_empty: false,
+            },
+            Query {
+                key: "bar".to_string(),
+                value: Mustache::parse("1").unwrap(),
+                skip_empty: false,
+            },
+            Query {
+                key: "baz".to_string(),
+                value: Mustache::parse("2").unwrap(),
+                skip_empty: false,
+            },
         ];
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
@@ -450,9 +490,21 @@ mod tests {
     #[test]
     fn test_url_query_params_template() {
         let query = vec![
-            ("foo".to_string(), Mustache::parse("0").unwrap()),
-            ("bar".to_string(), Mustache::parse("{{bar.id}}").unwrap()),
-            ("baz".to_string(), Mustache::parse("{{baz.id}}").unwrap()),
+            Query {
+                key: "foo".to_string(),
+                value: Mustache::parse("0").unwrap(),
+                skip_empty: false,
+            },
+            Query {
+                key: "bar".to_string(),
+                value: Mustache::parse("{{bar.id}}").unwrap(),
+                skip_empty: false,
+            },
+            Query {
+                key: "baz".to_string(),
+                value: Mustache::parse("{{baz.id}}").unwrap(),
+                skip_empty: false,
+            },
         ];
         let tmpl = RequestTemplate::new("http://localhost:3000/")
             .unwrap()
@@ -642,7 +694,7 @@ mod tests {
                 "http://localhost:3000/{{foo.bar}}".to_string(),
             )
             .method(crate::core::http::Method::POST)
-            .query(vec![("foo".to_string(), "{{foo.bar}}".to_string())])
+            .query(vec![("foo".to_string(), "{{foo.bar}}".to_string(), false)])
             .headers(headers)
             .body(Some("{{foo.bar}}".into()));
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
@@ -677,8 +729,8 @@ mod tests {
                 "http://localhost:3000/?a={{args.a}}&q=1".to_string(),
             )
             .query(vec![
-                ("b".to_string(), "1".to_string()),
-                ("c".to_string(), "{{args.c}}".to_string()),
+                ("b".to_string(), "1".to_string(), false),
+                ("c".to_string(), "{{args.c}}".to_string(), false),
             ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default();
@@ -711,8 +763,8 @@ mod tests {
                 "http://localhost:3000/{{args.b}}?a={{args.a}}&b={{args.b}}&c={{args.c}}&d={{args.d}}".to_string(),
             )
                 .query(vec![
-                    ("f".to_string(), "{{args.f}}".to_string()),
-                    ("e".to_string(), "{{args.e}}".to_string()),
+                    ("f".to_string(), "{{args.f}}".to_string(), false),
+                    ("e".to_string(), "{{args.e}}".to_string(), false),
                 ]);
             let tmpl = RequestTemplate::try_from(endpoint).unwrap();
             let ctx = Context::default().value(json!({
