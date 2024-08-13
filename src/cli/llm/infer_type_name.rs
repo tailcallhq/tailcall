@@ -186,12 +186,8 @@ impl InferTypeName {
         system_messages: &[ChatMessage],
         question: &Question,
     ) -> Result<Answer> {
-        let content = serde_json::to_string(question)?;
-        let mut messages = system_messages.to_vec();
-        messages.push(ChatMessage::user(content));
-
-        let request = ChatRequest::new(messages);
-        self.wizard.as_ref().unwrap().ask(request).await
+        // Remove the conversion to ChatRequest
+        self.wizard.as_ref().unwrap().ask(question.clone()).await
     }
 }
 

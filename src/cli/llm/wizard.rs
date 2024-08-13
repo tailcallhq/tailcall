@@ -39,13 +39,14 @@ impl<Q, A> Wizard<Q, A> {
         }
     }
 
-    pub async fn ask(&self, request: ChatRequest) -> Result<A>
+    pub async fn ask(&self, q: Q) -> Result<A>
     where
+        Q: TryInto<ChatRequest, Error = super::Error>,
         A: TryFrom<ChatResponse, Error = super::Error>,
     {
         let response = self
             .client
-            .exec_chat(self.model.as_str(), request, None)
+            .exec_chat(self.model.as_str(), q.try_into()?, None)
             .await?;
         A::try_from(response)
     }
