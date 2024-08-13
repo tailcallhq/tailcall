@@ -2,6 +2,7 @@ use tokio_retry::strategy::{ExponentialBackoff, jitter};
 use tokio_retry::Retry;
 use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
+use genai::resolver::AuthResolver;
 use genai::Client;
 use super::Error;
 use super::Result;
@@ -20,18 +21,18 @@ impl<Q, A> Wizard<Q, A> {
     pub fn new(model: Model, secret: Option<String>) -> Self {
         let mut config = genai::adapter::AdapterConfig::default();
         if let Some(key) = secret {
-            config = config.with_auth_env_name(key);
+            config = config.with_auth_resolver(AuthResolver::from_key_value(key));
         }
 
         let adapter = AdapterKind::from_model(model.as_str()).unwrap_or(AdapterKind::Ollama);
 
+        let chat_options = ChatOptions::default()
+            .with_json_mode(true)
+            .with_temperature(0.0);
+
         Self {
             client: Client::builder()
-                .with_chat_options(
-                    ChatOptions::default()
-                        .with_json_mode(true)
-                        .with_temperature(0.0),
-                )
+                .with_chat_options(chat_options)
                 .insert_adapter_config(adapter, config)
                 .build(),
             model,

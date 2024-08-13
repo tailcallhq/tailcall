@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Hash, Default)]
 pub struct Mustache(Vec<Segment>);
 
 #[derive(Debug, Clone, PartialEq, Hash)]
