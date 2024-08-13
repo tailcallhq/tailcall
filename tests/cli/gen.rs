@@ -106,7 +106,7 @@ pub mod test {
                         .error_for_status()
                         .map_err(|err| err.without_url())?,
                 )
-                    .await?)
+                .await?)
             }
         }
     }
@@ -115,7 +115,6 @@ pub mod test {
         use std::path::Path;
         use std::sync::Arc;
 
-        use tailcall::cli;
         use tailcall::cli::generator::Generator;
         use tailcall::core::blueprint::Blueprint;
         use tailcall::core::config::{self, ConfigModule};
@@ -135,11 +134,13 @@ pub mod test {
         }
 
         async fn run_test(path: &str) -> anyhow::Result<()> {
-            let mut runtime = cli::runtime::init(&Blueprint::default());
+            let mut runtime = tailcall::cli::runtime::init(&Blueprint::default());
             runtime.http = Arc::new(NativeHttpTest::default());
 
             let generator = Generator::new(path, runtime);
             let config = generator.read().await?;
+            let query_type = config.schema.query.clone().unwrap_or("Query".into());
+            let mutation_type_name = config.schema.mutation.clone();
             let preset: config::transformer::Preset = config
                 .preset
                 .clone()
@@ -151,6 +152,8 @@ pub mod test {
             let input_samples = generator.resolve_io(config).await?;
 
             let cfg_module = ConfigGenerator::default()
+                .query(query_type)
+                .mutation(mutation_type_name)
                 .inputs(input_samples)
                 .transformers(vec![Box::new(preset)])
                 .generate(true)?;
@@ -165,10 +168,15 @@ pub mod test {
             Ok(())
         }
     }
-
     pub fn test_generator(path: &Path) -> datatest_stable::Result<()> {
         if let Some(extension) = path.extension() {
-            if extension == "json" && path.file_name().and_then(|v| v.to_str()).map(|v| v.starts_with("gen")).unwrap_or_default() {
+            if extension == "json"
+                && path
+                    .file_name()
+                    .and_then(|v| v.to_str())
+                    .map(|v| v.starts_with("gen"))
+                    .unwrap_or_default()
+            {
                 let _ = generator_spec::run_config_generator_spec(path);
             }
         }
