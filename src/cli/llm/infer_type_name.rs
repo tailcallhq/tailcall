@@ -98,7 +98,7 @@ impl InferTypeName {
                     .collect(),
             };
 
-            match wizard.ask_with_retry(question).await {
+            match wizard.ask(question).await {
                 Ok(answer) => {
                     for name in answer.suggestions {
                         if !config.types.contains_key(&name)
@@ -115,5 +115,37 @@ impl InferTypeName {
         }
 
         Ok(new_name_mappings.into_iter().map(|(k, v)| (v, k)).collect())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use genai::chat::{ChatRequest, ChatResponse, MessageContent};
+
+    use super::{Answer, Question};
+
+    #[test]
+    fn test_to_chat_request_conversion() {
+        let question = Question {
+            fields: vec![
+                ("id".to_string(), "String".to_string()),
+                ("name".to_string(), "String".to_string()),
+                ("age".to_string(), "Int".to_string()),
+            ],
+        };
+        let request: ChatRequest = question.try_into().unwrap();
+        insta::assert_debug_snapshot!(request);
+    }
+
+    #[test]
+    fn test_chat_response_parse() {
+        let resp = ChatResponse {
+            content: Some(MessageContent::Text(
+                "{\"suggestions\":[\"Post\",\"Story\",\"Article\",\"Event\",\"Brief\"]}".to_owned(),
+            )),
+            ..Default::default()
+        };
+        let answer = Answer::try_from(resp).unwrap();
+        insta::assert_debug_snapshot!(answer);
     }
 }
