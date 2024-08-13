@@ -8,7 +8,7 @@ use crate::core::json::JsonSchema;
 #[derive(Clone, Debug, Setters)]
 pub struct Endpoint {
     pub path: String,
-    pub query: Vec<(String, String)>,
+    pub query: Vec<(String, String, bool)>,
     pub method: Method,
     pub input: JsonSchema,
     pub output: JsonSchema,
