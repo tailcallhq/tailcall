@@ -1,0 +1,42 @@
+---
+source: src/core/generator/tests/json_to_config_spec.rs
+expression: cfg.to_sdl()
+---
+schema @server @upstream {
+  mutation: Mutation
+}
+
+input T3 {
+  id: Int
+  quantity: Int
+}
+
+input T4 {
+  products: [T3]
+  userId: Int
+}
+
+type Mutation {
+  addCart(addCartInput: T4, code: String): T2 @http(baseURL: "https://dummyjson.com", body: "{{.args.addCartInput}}", method: "POST", path: "/carts/add", query: [{key: "code", value: "{{.args.code}}"}])
+}
+
+type T1 {
+  discountPercentage: Int
+  discountedPrice: Int
+  id: Int
+  price: Int
+  quantity: Int
+  thumbnail: String
+  title: String
+  total: Int
+}
+
+type T2 {
+  discountedTotal: Int
+  id: Int
+  products: [T1]
+  total: Int
+  totalProducts: Int
+  totalQuantity: Int
+  userId: Int
+}
