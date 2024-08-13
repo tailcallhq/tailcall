@@ -1,21 +1,30 @@
-# Batching group by
+# Setting SkipEmpty
 
 ```graphql @config
 schema @server(port: 8000) @upstream(baseURL: "http://example.com") {
-    query: Query
+  query: Query
 }
 
 type Query {
-    foos: [Foo] @http(path: "/foos")
+  foos: [Foo] @http(path: "/foos")
 }
 
 type Foo {
-    id: Int!
-    bar: Bar @http(path: "/bar", query: [{key: "id", value: "{{.value.id}}", skipEmpty: true}])
+  id: Int!
+  tag: String
+  bar: Bar
+    @http(
+      path: "/bar"
+      query: [
+        # Ignores this query param
+        {key: "tagEmpty", value: "{{.value.tag}}", skipEmpty: true}
+        {key: "tag", value: "{{.value.tag}}"}
+      ]
+    )
 }
 
 type Bar {
-    id: Int
+  id: Int
 }
 ```
 
@@ -27,17 +36,18 @@ type Bar {
     status: 200
     body:
       - id: 1
+        tag: ABC
       - id: 2
 - request:
     method: GET
-    url: http://example.com/bar?id=1
+    url: http://example.com/bar?tagEmpty=ABC&tag=ABC
   response:
     status: 200
     body:
       id: 1
 - request:
     method: GET
-    url: http://example.com/bar?id=2
+    url: http://example.com/bar?tag
   response:
     status: 200
     body:
@@ -48,5 +58,5 @@ type Bar {
 - method: POST
   url: http://localhost:8080/graphql
   body:
-    query: query { foos { id bar { id } } }
+    query: query { foos { tag id bar { id } } }
 ```

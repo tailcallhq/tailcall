@@ -11,8 +11,13 @@ type Bar {
 }
 
 type Foo {
-  bar: Bar @http(path: "/bar", query: [{key: "id", value: "{{.value.id}}", skipEmpty: true}])
+  bar: Bar
+    @http(
+      path: "/bar"
+      query: [{key: "tagEmpty", value: "{{.value.tag}}", skipEmpty: true}, {key: "tag", value: "{{.value.tag}}"}]
+    )
   id: Int!
+  tag: String
 }
 
 type Query {

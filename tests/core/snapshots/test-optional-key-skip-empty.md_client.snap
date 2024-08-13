@@ -19,6 +19,7 @@ scalar Empty
 type Foo {
   bar: Bar
   id: Int!
+  tag: String
 }
 
 scalar Int128
