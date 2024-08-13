@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use derive_setters::Setters;
 use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
@@ -45,11 +47,12 @@ impl<Q, A> Wizard<Q, A> {
         Q: TryInto<ChatRequest, Error = super::Error> + Clone,
         A: TryFrom<ChatResponse, Error = super::Error>,
     {
-        let retry_strategy = ExponentialBackoff::from_millis(3)
+        let retry = ExponentialBackoff::from_millis(1000)
+            .max_delay(Duration::from_secs(60))
             .map(tokio_retry::strategy::jitter)
-            .take(3);
+            .take(10);
 
-        tokio_retry::Retry::spawn(retry_strategy, || async {
+        tokio_retry::Retry::spawn(retry, || async {
             let response = self
                 .client
                 .exec_chat(self.model.as_str(), q.clone().try_into()?, None)
