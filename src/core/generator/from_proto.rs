@@ -274,7 +274,8 @@ impl Context {
                 cfg_field.required = matches!(label, Label::Required);
 
                 if cfg_field.list {
-                    // if it's list mark it as required.
+                    // by default proto3 fields are optional and default values are provided.
+                    // in order to support proto2, we mark these list fields required.
                     cfg_field.required = true;
                 }
 
