@@ -50,13 +50,35 @@ impl<Q, A> Wizard<Q, A> {
 
         Retry::spawn(retry_strategy, || async {
             let request = q.clone().try_into()?;
-            let response = self
+            match self
                 .client
                 .exec_chat(self.model.as_str(), request, None)
                 .await
-                .map_err(Error::GenAI)?;
-
-            A::try_from(response)
+            {
+                Ok(response) => Ok(A::try_from(response)?),
+                Err(genai::Error::WebModelCall { webc_error, .. }) => {
+                    if webc_error.to_string().contains("429") {
+                        Err(Error::GenAI(genai::Error::WebModelCall {
+                            model_info: genai::ModelInfo::new(
+                                AdapterKind::from_model(self.model.as_str())
+                                    .unwrap_or(AdapterKind::Ollama),
+                                self.model.as_str(),
+                            ),
+                            webc_error,
+                        }))
+                    } else {
+                        Ok(Err(Error::GenAI(genai::Error::WebModelCall {
+                            model_info: genai::ModelInfo::new(
+                                AdapterKind::from_model(self.model.as_str())
+                                    .unwrap_or(AdapterKind::Ollama),
+                                self.model.as_str(),
+                            ),
+                            webc_error,
+                        }))?)
+                    }
+                }
+                Err(e) => Ok(Err(Error::GenAI(e))?),
+            }
         })
         .await
     }
