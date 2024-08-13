@@ -110,7 +110,14 @@ impl GrpcReflection {
             .execute(json!({"file_containing_symbol": service}))
             .await?;
 
-        request_proto(resp).await
+        request_proto(resp)
+    }
+
+    /// Makes `Get File` request to grpc reflection server
+    pub async fn get_file(&self, file_path: &str) -> Result<FileDescriptorProto> {
+        let resp = self.execute(json!({"file_by_filename": file_path})).await?;
+
+        request_proto(resp)
     }
 
     async fn execute(&self, body: serde_json::Value) -> Result<ReflectionResponse> {
@@ -158,7 +165,7 @@ impl GrpcReflection {
 }
 
 /// For extracting `FileDescriptorProto` from `CustomResponse`
-async fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorProto> {
+fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorProto> {
     let file_descriptor_resp = response
         .file_descriptor_response
         .context("Expected fileDescriptorResponse but found none")?;
