@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>hello-wasm example</title>
+  </head>
+  <body>
+    <div id="content">
+      <!-- Adding input field and button -->
+      <label for="queryInput"></label><input type="text" id="queryInput" placeholder="Enter your query here" />
+      <button id="btn">Run Query</button>
+      <p id="result"></p>
+    </div>
+
+    <script type="module">
+      import init, {TailcallBuilder} from "../../browser/pkg/tailcall_wasm.js"
+      await init()
+
+      let executor // Making executor accessible
+
+      async function setup() {
+        try {
+          const urlParams = new URLSearchParams(window.location.search)
+          let schemaUrl = urlParams.get("config")
+
+          let builder = new TailcallBuilder()
+          builder = await builder.with_config(schemaUrl)
+          executor = await builder.build()
+          let btn = document.getElementById("btn")
+          btn.addEventListener("click", runQuery)
+        } catch (error) {
+          alert("error: " + error)
+        }
+      }
+      async function runQuery() {
+        let query = document.getElementById("queryInput").value
+        try {
+          document.getElementById("result").textContent = await executor.execute(query)
+        } catch (error) {
+          console.error("Error executing query: " + error)
+          document.getElementById("result").textContent = "Error: " + error
+        }
+      }
+      setup()
+    </script>
+  </body>
+</html>
