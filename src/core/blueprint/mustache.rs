@@ -117,7 +117,7 @@ impl FieldDefinition {
                     parts_validator.validate(parts, false).trace("path")
                 })
                 .and(Valid::from_iter(req_template.query.clone(), |query| {
-                    let (_, mustache) = query;
+                    let mustache = &query.value;
 
                     Valid::from_iter(mustache.expression_segments(), |parts| {
                         parts_validator.validate(parts, true).trace("query")

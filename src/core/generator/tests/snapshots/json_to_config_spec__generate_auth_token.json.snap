@@ -1,0 +1,29 @@
+---
+source: src/core/generator/tests/json_to_config_spec.rs
+expression: cfg.to_sdl()
+---
+schema @server @upstream {
+  mutation: Mutation
+}
+
+input T2 {
+  expiresInMins: Int
+  password: String
+  username: String
+}
+
+type Mutation {
+  login(loginInput: T2): T1 @http(baseURL: "https://dummyjson.com", body: "{{.args.loginInput}}", method: "POST", path: "/auth/login")
+}
+
+type T1 {
+  email: String
+  firstName: String
+  gender: String
+  id: Int
+  image: String
+  lastName: String
+  refreshToken: String
+  token: String
+  username: String
+}

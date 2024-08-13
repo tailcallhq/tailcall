@@ -39,7 +39,13 @@ pub fn compile_http(
                 .query
                 .clone()
                 .iter()
-                .map(|key_value| (key_value.key.clone(), key_value.value.clone()))
+                .map(|key_value| {
+                    (
+                        key_value.key.clone(),
+                        key_value.value.clone(),
+                        key_value.skip_empty.unwrap_or_default(),
+                    )
+                })
                 .collect();
 
             RequestTemplate::try_from(
