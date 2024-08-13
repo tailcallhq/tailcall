@@ -98,7 +98,7 @@ impl InferTypeName {
                     .collect(),
             };
 
-            match wizard.ask_with_retry(question).await {
+            match wizard.ask(question).await {
                 Ok(answer) => {
                     for name in answer.suggestions {
                         if !config.types.contains_key(&name)
