@@ -105,10 +105,18 @@ impl Generator {
 
         for input in config.inputs {
             match input.source {
-                Source::Curl { src, field_name, headers: resolved_headers } => {
+                Source::Curl { src, field_name, headers, body, method, is_mutation } => {
                     let url = src.0;
-                    let mut request = reqwest::Request::new(reqwest::Method::GET, url.parse()?);
-                    if let Some(headers_inner) = resolved_headers.headers() {
+                    let req_body = body.unwrap_or_default();
+                    let method = method.unwrap_or_default();
+                    let is_mutation = is_mutation.unwrap_or_default();
+
+                    let request_method = method.clone().to_hyper();
+                    let mut request = reqwest::Request::new(request_method, url.parse()?);
+                    if !req_body.is_null() {
+                        request.body_mut().replace(req_body.to_string().into());
+                    }
+                    if let Some(headers_inner) = headers.as_btree_map() {
                         let mut header_map = HeaderMap::new();
                         for (key, value) in headers_inner {
                             let header_name = HeaderName::try_from(key)?;
@@ -117,12 +125,16 @@ impl Generator {
                         }
                         *request.headers_mut() = header_map;
                     }
+
                     let resource: Resource = request.into();
                     let response = reader.read_file(resource).await?;
                     input_samples.push(Input::Json {
                         url: url.parse()?,
-                        response: serde_json::from_str(&response.content)?,
+                        method,
+                        req_body,
+                        res_body: serde_json::from_str(&response.content)?,
                         field_name,
+                        is_mutation,
                     });
                 }
                 Source::Proto { src } => {
@@ -150,6 +162,8 @@ impl Generator {
         let config = self.read().await?;
         let path = config.output.path.0.to_owned();
         let query_type = config.schema.query.clone();
+        let mutation_type_name = config.schema.mutation.clone();
+
         let secret = config.secret.clone();
         let preset = config.preset.clone().unwrap_or_default();
         let preset: Preset = preset.validate_into().to_result()?;
@@ -158,12 +172,12 @@ impl Generator {
         let mut config_gen = ConfigGenerator::default()
             .inputs(input_samples)
             .transformers(vec![Box::new(preset)]);
-        if let Some(query_type_name) = query_type {
-            // presently only query operation is supported.
-            config_gen = config_gen.operation_name(query_type_name);
+
+        if let Some(query_name) = query_type {
+            config_gen = config_gen.query(query_name);
         }
 
-        let mut config = config_gen.generate(true)?;
+        let mut config = config_gen.mutation(mutation_type_name).generate(true)?;
 
         if infer_type_names {
             let key = if !secret.is_empty() {
@@ -342,6 +356,8 @@ mod test {
 
             let generator = Generator::new(path, runtime);
             let config = generator.read().await?;
+            let query_type = config.schema.query.clone().unwrap_or("Query".into());
+            let mutation_type_name = config.schema.mutation.clone();
             let preset: config::transformer::Preset = config
                 .preset
                 .clone()
@@ -353,6 +369,8 @@ mod test {
             let input_samples = generator.resolve_io(config).await?;
 
             let cfg_module = ConfigGenerator::default()
+                .query(query_type)
+                .mutation(mutation_type_name)
                 .inputs(input_samples)
                 .transformers(vec![Box::new(preset)])
                 .generate(true)?;
