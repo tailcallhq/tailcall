@@ -77,6 +77,7 @@ impl InferTypeName {
     pub fn new(secret: Option<String>) -> InferTypeName {
         Self { secret }
     }
+
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let secret = self.secret.as_ref().map(|s| s.to_owned());
 
@@ -91,58 +92,26 @@ impl InferTypeName {
             .filter(|(type_name, _)| !config.is_root_operation_type(type_name))
             .collect::<Vec<_>>();
 
-        let total = types_to_be_processed.len();
-        for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
-            // convert type to sdl format.
+        for (type_name, type_) in types_to_be_processed.into_iter() {
             let question = Question {
                 fields: type_
                     .fields
-                    .iter()
-                    .map(|(k, v)| (k.clone(), v.type_of.clone()))
+	@@ -102,48 +98,19 @@ impl InferTypeName {
                     .collect(),
             };
 
-            let mut delay = 3;
-            loop {
-                let answer = wizard.ask(question.clone()).await;
-                match answer {
-                    Ok(answer) => {
-                        let name = &answer.suggestions.join(", ");
-                        for name in answer.suggestions {
-                            if config.types.contains_key(&name)
-                                || new_name_mappings.contains_key(&name)
-                            {
-                                continue;
-                            }
+            match wizard.ask(question).await {
+                Ok(answer) => {
+                    for name in answer.suggestions {
+                        if !config.types.contains_key(&name)
+                            && !new_name_mappings.contains_key(&name) {
                             new_name_mappings.insert(name, type_name.to_owned());
                             break;
                         }
-                        tracing::info!(
-                            "Suggestions for {}: [{}] - {}/{}",
-                            type_name,
-                            name,
-                            i + 1,
-                            total
-                        );
-
-                        // TODO: case where suggested names are already used, then extend the base
-                        // question with `suggest different names, we have already used following
-                        // names: [names list]`
-                        break;
                     }
-                    Err(e) => {
-                        // TODO: log errors after certain number of retries.
-                        if let Error::GenAI(_) = e {
-                            // TODO: retry only when it's required.
-                            tracing::warn!(
-                                "Unable to retrieve a name for the type '{}'. Retrying in {}s",
-                                type_name,
-                                delay
-                            );
-                            tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;
-                            delay *= std::cmp::min(delay * 2, 60);
-                        }
-                    }
+                }
+                Err(e) => {
+                    tracing::error!("Failed to retrieve a name for the type '{}': {:?}", type_name, e);
                 }
             }
         }

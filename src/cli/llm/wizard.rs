@@ -1,11 +1,13 @@
-use derive_setters::Setters;
+use tokio_retry::strategy::{ExponentialBackoff, jitter};
+use tokio_retry::Retry;
 use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
 use genai::resolver::AuthResolver;
 use genai::Client;
-
+use super::Error;
 use super::Result;
 use crate::cli::llm::model::Model;
+use derive_setters::Setters;
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
@@ -39,15 +41,31 @@ impl<Q, A> Wizard<Q, A> {
         }
     }
 
-    pub async fn ask(&self, q: Q) -> Result<A>
+    pub async fn ask_with_retry(&self, q: Q) -> Result<A>
     where
-        Q: TryInto<ChatRequest, Error = super::Error>,
-        A: TryFrom<ChatResponse, Error = super::Error>,
+        Q: TryInto<ChatRequest, Error = Error>,
+        A: TryFrom<ChatResponse, Error = Error>,
     {
-        let response = self
-            .client
-            .exec_chat(self.model.as_str(), q.try_into()?, None)
-            .await?;
-        A::try_from(response)
+        let strategy = ExponentialBackoff::from_millis(100).map(jitter).take(5);
+
+        let retry_future = Retry::spawn(strategy, || async {
+            let response = self
+                .client
+                .exec_chat(self.model.as_str(), q.clone().try_into()?, None)
+                .await;
+
+            match response {
+                Ok(res) => {
+                    if res.status_code() == 429 {
+                        Err(Error::GenAI("API rate limit exceeded".into()))
+                    } else {
+                        A::try_from(res).map_err(|e| Error::GenAI(e.to_string()))
+                    }
+                },
+                Err(e) => Err(Error::GenAI(e.to_string())),
+            }
+        });
+
+        retry_future.await
     }
 }
