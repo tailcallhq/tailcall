@@ -11,8 +11,8 @@ input type__TypeInput {
   idOpt: Int
   nested: type__Type__NestedInput
   nestedOpt: type__Type__NestedInput
-  nestedRep: [type__Type__NestedInput]
-  num: [Float]
+  nestedRep: [type__Type__NestedInput]!
+  num: [Float]!
   str: String
   strOpt: String
 }
@@ -20,7 +20,7 @@ input type__TypeInput {
 input type__Type__NestedInput {
   id: Int
   idOpt: Int
-  num: [Float]
+  num: [Float]!
   str: String
   strOpt: String
 }
@@ -40,8 +40,8 @@ type type__Type {
   idOpt: Int
   nested: type__Type__Nested
   nestedOpt: type__Type__Nested
-  nestedRep: [type__Type__Nested]
-  num: [Float]
+  nestedRep: [type__Type__Nested]!
+  num: [Float]!
   str: String
   strOpt: String
 }
@@ -49,7 +49,7 @@ type type__Type {
 type type__Type__Nested {
   id: Int
   idOpt: Int
-  num: [Float]
+  num: [Float]!
   str: String
   strOpt: String
 }

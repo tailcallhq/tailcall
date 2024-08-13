@@ -18,7 +18,7 @@ input greetings_a__b__HelloRequest {
 }
 
 input news__MultipleNewsId {
-  ids: [news__NewsId]
+  ids: [news__NewsId]!
 }
 
 input news__NewsId {
@@ -76,5 +76,5 @@ type news__News {
 }
 
 type news__NewsList {
-  news: [news__News]
+  news: [news__News]!
 }

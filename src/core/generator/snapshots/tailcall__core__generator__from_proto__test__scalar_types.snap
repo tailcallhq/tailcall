@@ -47,5 +47,5 @@ type scalars__Item {
 }
 
 type scalars__Result {
-  result: [scalars__Item]
+  result: [scalars__Item]!
 }
