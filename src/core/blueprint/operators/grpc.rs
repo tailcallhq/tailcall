@@ -109,8 +109,9 @@ fn validate_group_by(
             // schema considering repeated message type
             let fields = &field_schema.field;
             let args = &field_schema.args;
-            let fields = JsonSchema::Arr(Box::new(fields.to_owned()));
-            let _args = JsonSchema::Arr(Box::new(args.to_owned()));
+            // TODO: FIXME verify the changes once all tests are fixed.
+            let fields = JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(fields.to_owned()))));
+            let _args = JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(args.to_owned()))));
             fields.compare(&output_schema, group_by[0].as_str())
         })
 }
