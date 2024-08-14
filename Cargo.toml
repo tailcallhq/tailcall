@@ -27,6 +27,10 @@ thiserror = "1.0.59"
 url = { version = "2.5.0", features = ["serde"] }
 
 [dependencies]
+
+# Added notify for file watching capability
+notify = "6.0"
+
 # dependencies specific to CLI must have optional = true and the dep should be added to default feature.
 # one needs to add default feature tag if it is something IO related or might conflict with WASM
 

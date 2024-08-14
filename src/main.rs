@@ -1,8 +1,11 @@
 // Required for the #[global_allocator] proc macro
 #![allow(clippy::too_many_arguments)]
 
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::cell::Cell;
-
+use std::path::Path;
+use std::sync::mpsc::channel;
+use std::time::Duration;
 use tailcall::cli::CLIError;
 use tailcall::core::tracing::default_tracing_tailcall;
 use tracing::subscriber::DefaultGuard;
@@ -38,15 +41,33 @@ fn main() -> anyhow::Result<()> {
     // that will show any logs from cli itself to the user
     // despite of @telemetry settings that
     let _guard = tracing::subscriber::set_default(default_tracing_tailcall());
-    let result = run_blocking();
-    match result {
-        Ok(_) => {}
-        Err(error) => {
-            // Ensure all errors are converted to CLIErrors before being printed.
-            let cli_error: CLIError = error.into();
-            tracing::error!("{}", cli_error.color(true));
-            std::process::exit(exitcode::CONFIG);
+
+    // Set up file watching
+    let (tx, rx) = channel();
+    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(2))?;
+    watcher.watch(Path::new("./jp.graphql"), RecursiveMode::Recursive)?;
+
+    loop {
+        let result = run_blocking();
+        match result {
+            Ok(_) => {}
+            Err(error) => {
+                // Ensure all errors are converted to CLIErrors before being printed.
+                let cli_error: CLIError = error.into();
+                tracing::error!("{}", cli_error.color(true));
+                std::process::exit(exitcode::CONFIG);
+            }
+        }
+
+        // Wait for file change events
+        match rx.recv() {
+            Ok(_) => {
+                // File change detected, restart the server
+                println!("File changed, restarting server...");
+            }
+            Err(e) => println!("watch error: {:?}", e),
         }
     }
+
     Ok(())
 }
