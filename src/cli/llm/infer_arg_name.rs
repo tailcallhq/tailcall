@@ -38,11 +38,6 @@ impl TryInto<ChatRequest> for Question {
     fn try_into(self) -> Result<ChatRequest> {
         let content = serde_json::to_string(&self)?;
         let input = serde_json::to_string_pretty(&Question {
-            // fields: vec![
-            //     ("id".to_string(), "String".to_string()),
-            //     ("name".to_string(), "String".to_string()),
-            //     ("age".to_string(), "Int".to_string()),
-            // ],
             fields: (
                 "user".to_string(),
                 vec![("p1".to_string(), "String".to_string())],
@@ -61,7 +56,7 @@ impl TryInto<ChatRequest> for Question {
 
         Ok(ChatRequest::new(vec![
             ChatMessage::system(
-                "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
+                "Given the sample schema of a GraphQL type suggest 5 meaningful argumnent names for it accoding to the base parent field name and each argument's type.",
             ),
             ChatMessage::system("The name should be concise and preferably a single word"),
             ChatMessage::system("Example Input:"),
