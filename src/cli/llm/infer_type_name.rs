@@ -1,6 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
+use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 
 use super::model::groq;
@@ -30,7 +31,7 @@ impl TryFrom<ChatResponse> for Answer {
 #[derive(Clone, Serialize)]
 struct Question {
     fields: Vec<(String, String)>,
-    referenced_at: HashSet<String>,
+    referenced_at: IndexSet<String>,
     reference_count: usize,
 }
 
@@ -45,7 +46,7 @@ impl TryInto<ChatRequest> for Question {
                 ("name".to_string(), "String".to_string()),
                 ("age".to_string(), "Int".to_string()),
             ],
-            referenced_at: HashSet::from(["user".into(), "users".into(), "artist".into()]),
+            referenced_at: IndexSet::from(["user".into(), "users".into(), "artist".into()]),
             reference_count: 3,
         })?;
 
@@ -100,7 +101,7 @@ impl InferTypeName {
 
         let total = types_to_be_processed.len();
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
-            let mut refs = HashSet::new();
+            let mut refs = IndexSet::new();
             for type_ in config.types.values() {
                 for (field_name, field_val) in &type_.fields {
                     if field_val.type_of == *type_name {
@@ -170,9 +171,9 @@ impl InferTypeName {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
 
     use genai::chat::{ChatRequest, ChatResponse, MessageContent};
+    use indexmap::IndexSet;
 
     use super::{Answer, Question};
 
@@ -184,7 +185,7 @@ mod test {
                 ("name".to_string(), "String".to_string()),
                 ("age".to_string(), "Int".to_string()),
             ],
-            referenced_at: HashSet::from(["user".into(), "users".into(), "artist".into()]),
+            referenced_at: IndexSet::from(["user".into(), "users".into(), "artist".into()]),
             reference_count: 3,
         };
         let request: ChatRequest = question.try_into().unwrap();

@@ -36,7 +36,7 @@ ChatRequest {
         ChatMessage {
             role: System,
             content: Text(
-                "{\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ],\n  \"referenced_at\": [\n    \"artist\",\n    \"user\",\n    \"users\"\n  ],\n  \"reference_count\": 3\n}",
+                "{\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ],\n  \"referenced_at\": [\n    \"user\",\n    \"users\",\n    \"artist\"\n  ],\n  \"reference_count\": 3\n}",
             ),
             extra: None,
         },
@@ -71,7 +71,7 @@ ChatRequest {
         ChatMessage {
             role: User,
             content: Text(
-                "{\"fields\":[[\"id\",\"String\"],[\"name\",\"String\"],[\"age\",\"Int\"]],\"referenced_at\":[\"artist\",\"user\",\"users\"],\"reference_count\":3}",
+                "{\"fields\":[[\"id\",\"String\"],[\"name\",\"String\"],[\"age\",\"Int\"]],\"referenced_at\":[\"user\",\"users\",\"artist\"],\"reference_count\":3}",
             ),
             extra: None,
         },
