@@ -108,7 +108,7 @@ where
 
     if !required {
         if list {
-            JsonSchema::Arr(Box::new(schema))
+            JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(schema))))
         } else {
             JsonSchema::Opt(Box::new(schema))
         }
