@@ -273,7 +273,6 @@ impl Context {
                 // required only applicable for proto2
                 cfg_field.required = matches!(label, Label::Required);
 
-
                 if let Some(type_name) = &field.type_name {
                     // check that current field is map.
                     // it's done by checking that we've seen this type before
