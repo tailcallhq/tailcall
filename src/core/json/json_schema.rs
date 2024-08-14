@@ -263,7 +263,8 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
             field_schema
         };
         let field_schema = if value.is_list() {
-            JsonSchema::Arr(Box::new(field_schema))
+            // if value is of type list then we treat it as optional.
+            JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(field_schema))))
         } else {
             field_schema
         };
