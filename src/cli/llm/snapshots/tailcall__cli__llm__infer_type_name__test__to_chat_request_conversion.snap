@@ -15,6 +15,13 @@ ChatRequest {
         ChatMessage {
             role: System,
             content: Text(
+                " The referenced_at contains the field names where this type is referenced, use those as context to generate the name",
+            ),
+            extra: None,
+        },
+        ChatMessage {
+            role: System,
+            content: Text(
                 "The name should be concise and preferably a single word",
             ),
             extra: None,
@@ -29,7 +36,7 @@ ChatRequest {
         ChatMessage {
             role: System,
             content: Text(
-                "{\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ]\n}",
+                "{\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ],\n  \"referenced_at\": [\n    \"user\",\n    \"users\",\n    \"artist\"\n  ]\n}",
             ),
             extra: None,
         },
@@ -64,7 +71,7 @@ ChatRequest {
         ChatMessage {
             role: User,
             content: Text(
-                "{\"fields\":[[\"id\",\"String\"],[\"name\",\"String\"],[\"age\",\"Int\"]]}",
+                "{\"fields\":[[\"id\",\"String\"],[\"name\",\"String\"],[\"age\",\"Int\"]],\"referenced_at\":[\"user\",\"users\",\"artist\"]}",
             ),
             extra: None,
         },
