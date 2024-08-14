@@ -31,6 +31,7 @@ impl TryFrom<ChatResponse> for Answer {
 struct Question {
     fields: Vec<(String, String)>,
     referenced_at: HashSet<String>,
+    reference_count: usize,
 }
 
 impl TryInto<ChatRequest> for Question {
@@ -45,6 +46,7 @@ impl TryInto<ChatRequest> for Question {
                 ("age".to_string(), "Int".to_string()),
             ],
             referenced_at: HashSet::from(["user".into(), "users".into(), "artist".into()]),
+            reference_count: 3,
         })?;
 
         let output = serde_json::to_string_pretty(&Answer {
@@ -62,7 +64,7 @@ impl TryInto<ChatRequest> for Question {
                 "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
             ),
             ChatMessage::system(
-                " The referenced_at contains the field names where this type is referenced, use those as context to generate the name",
+                " The referenced_at contains the field names where this type is referenced and the reference_count is the number of times this type is referenced, use those as a context to generate the name",
             ),
             ChatMessage::system("The name should be concise and preferably a single word"),
             ChatMessage::system("Example Input:"),
@@ -113,7 +115,8 @@ impl InferTypeName {
                     .iter()
                     .map(|(k, v)| (k.clone(), v.type_of.clone()))
                     .collect(),
-                referenced_at: refs,
+                referenced_at: refs.clone(),
+                reference_count: refs.len(),
             };
 
             let mut delay = 3;
@@ -182,6 +185,7 @@ mod test {
                 ("age".to_string(), "Int".to_string()),
             ],
             referenced_at: HashSet::from(["user".into(), "users".into(), "artist".into()]),
+            reference_count: 3,
         };
         let request: ChatRequest = question.try_into().unwrap();
         insta::assert_debug_snapshot!(request);
