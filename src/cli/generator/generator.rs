@@ -8,6 +8,7 @@ use pathdiff::diff_paths;
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
+use crate::cli::llm::InferArgName;
 use crate::cli::llm::InferTypeName;
 use crate::core::config::transformer::{Preset, RenameTypes};
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
@@ -186,11 +187,18 @@ impl Generator {
                 None
             };
 
-            let mut llm_gen = InferTypeName::new(key);
+            let mut llm_gen = InferTypeName::new(key.clone());
             let suggested_names = llm_gen.generate(config.config()).await?;
             let cfg = RenameTypes::new(suggested_names.iter())
                 .transform(config.config().to_owned())
                 .to_result()?;
+            let mut llm_args_gen = InferArgName::new(key);
+            let suggested_args = llm_args_gen.generate(config.config()).await?;
+            tracing::info!("suggested args: {:?}", suggested_args);
+            // TODO:
+            // let cfg = RenameArgs::new(suggested_args.iter())
+            //     .transform(cfg)
+            //     .to_result()?;
 
             config = ConfigModule::from(cfg);
         }
