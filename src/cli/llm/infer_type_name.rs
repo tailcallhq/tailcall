@@ -30,6 +30,7 @@ impl TryFrom<ChatResponse> for Answer {
 #[derive(Clone, Serialize)]
 struct Question {
     fields: Vec<(String, String)>,
+    referenced_at: Vec<String>,
 }
 
 impl TryInto<ChatRequest> for Question {
@@ -43,6 +44,7 @@ impl TryInto<ChatRequest> for Question {
                 ("name".to_string(), "String".to_string()),
                 ("age".to_string(), "Int".to_string()),
             ],
+            referenced_at: vec!["user".into(), "users".into(), "artist".into()],
         })?;
 
         let output = serde_json::to_string_pretty(&Answer {
@@ -58,6 +60,9 @@ impl TryInto<ChatRequest> for Question {
         Ok(ChatRequest::new(vec![
             ChatMessage::system(
                 "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
+            ),
+            ChatMessage::system(
+                " The referenced_at contains the field names where this type is referenced, use those as context to generate the name",
             ),
             ChatMessage::system("The name should be concise and preferably a single word"),
             ChatMessage::system("Example Input:"),
@@ -93,6 +98,14 @@ impl InferTypeName {
 
         let total = types_to_be_processed.len();
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
+            let mut refs = vec![];
+            for type_ in config.types.values() {
+                for (field_name, field_val) in &type_.fields {
+                    if field_val.type_of == *type_name {
+                        refs.push(field_name.clone());
+                    }
+                }
+            }
             // convert type to sdl format.
             let question = Question {
                 fields: type_
@@ -100,6 +113,7 @@ impl InferTypeName {
                     .iter()
                     .map(|(k, v)| (k.clone(), v.type_of.clone()))
                     .collect(),
+                referenced_at: refs,
             };
 
             let mut delay = 3;
@@ -165,6 +179,7 @@ mod test {
                 ("name".to_string(), "String".to_string()),
                 ("age".to_string(), "Int".to_string()),
             ],
+            referenced_at: vec!["user".into(), "users".into(), "artist".into()],
         };
         let request: ChatRequest = question.try_into().unwrap();
         insta::assert_debug_snapshot!(request);
