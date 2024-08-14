@@ -203,6 +203,16 @@ mod grpc_fetch {
         BASE64_STANDARD.decode(bytes).unwrap()
     }
 
+    fn get_dto_file_descriptor() -> Vec<u8> {
+        let mut path = PathBuf::from(file!());
+        path.pop();
+        path.push("fixtures/dto_b64.txt");
+
+        let bytes = std::fs::read(path).unwrap();
+
+        BASE64_STANDARD.decode(bytes).unwrap()
+    }
+
     fn start_mock_server() -> httpmock::MockServer {
         httpmock::MockServer::start()
     }
@@ -228,6 +238,34 @@ mod grpc_fetch {
 
         let content = runtime.file.read(tailcall_fixtures::protobuf::NEWS).await?;
         let expected = protox_parse::parse("news.proto", &content)?;
+
+        assert_eq!(expected.name(), resp.name());
+
+        http_reflection_file_mock.assert();
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_dto_file() -> Result<()> {
+        let server = start_mock_server();
+
+        let http_reflection_file_mock = server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
+                .body("\0\0\0\0\u{10}\u{1a}\u{0e}news_dto.proto");
+            then.status(200).body(get_dto_file_descriptor());
+        });
+
+        let grpc_reflection = GrpcReflection::new(
+            format!("http://localhost:{}", server.port()),
+            crate::core::runtime::test::init(None),
+        );
+
+        let runtime = crate::core::runtime::test::init(None);
+        let resp = grpc_reflection.get_file("news_dto.proto").await?;
+
+        let content = runtime.file.read(tailcall_fixtures::protobuf::NEWS_DTO).await?;
+        let expected = protox_parse::parse("news_dto.proto", &content)?;
 
         assert_eq!(expected.name(), resp.name());
 

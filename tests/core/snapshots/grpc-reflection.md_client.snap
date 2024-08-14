@@ -28,6 +28,7 @@ type News {
   body: String
   id: Int
   postImage: String
+  status: Status
   title: String
 }
 
@@ -39,6 +40,12 @@ scalar PhoneNumber
 
 type Query {
   news: NewsData!
+}
+
+enum Status {
+  DELETED
+  DRAFT
+  PUBLISHED
 }
 
 scalar UInt128

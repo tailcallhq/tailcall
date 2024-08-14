@@ -21,6 +21,13 @@ type News {
   title: String
   body: String
   postImage: String
+  status: Status
+}
+
+enum Status {
+  PUBLISHED,
+  DRAFT,
+  DELETED,
 }
 ```
 
@@ -31,7 +38,7 @@ type News {
     textBody: \0\0\0\0\x02:\0
   response:
     status: 200
-    fileBody: grpc/reflection/news-list-services.bin
+    fileBody: grpc/reflection/list-services.bin
 
 - request:
     method: POST
@@ -39,7 +46,24 @@ type News {
     textBody: \0\0\0\0\x12\"\x10news.NewsService
   response:
     status: 200
-    fileBody: grpc/reflection/news-service-descriptor.bin
+    fileBody: grpc/reflection/news-service.bin
+
+- request:
+    method: POST
+    url: http://localhost:50051/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo
+    textBody: \0\0\0\0\x1d\x1a\x1bgoogle/protobuf/empty.proto
+  expectedHits: 2
+  response:
+    status: 200
+    fileBody: grpc/reflection/protobuf_empty.bin
+
+- request:
+    method: POST
+    url: http://localhost:50051/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo
+    textBody: \0\0\0\0\x10\x1a\x0enews_dto.proto
+  response:
+    status: 200
+    fileBody: grpc/reflection/news_dto.bin
 
 - request:
     method: POST
