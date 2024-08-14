@@ -6,7 +6,6 @@ use hyper::body::Bytes;
 
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
-use crate::core::blueprint::Type::ListType;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
 use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
@@ -44,16 +43,18 @@ impl AppContext {
         for def in blueprint.definitions.iter_mut() {
             if let Definition::Object(def) = def {
                 for field in &mut def.fields {
-                    let of_type = field.of_type.clone();
                     let upstream_batch = &blueprint.upstream.batch;
                     field.map_expr(|expr| {
-                        expr.modify(|expr| match expr {
+                        expr.modify(&mut |expr| match expr {
                             IR::IO(io) => match io {
-                                IO::Http { req_template, group_by, http_filter, .. } => {
+                                IO::Http {
+                                    req_template, group_by, http_filter, is_list, ..
+                                } => {
+                                    let is_list = *is_list;
                                     let data_loader = HttpDataLoader::new(
                                         runtime.clone(),
                                         group_by.clone(),
-                                        matches!(of_type, ListType { .. }),
+                                        is_list,
                                     )
                                     .to_data_loader(upstream_batch.clone().unwrap_or_default());
 
@@ -62,6 +63,7 @@ impl AppContext {
                                         group_by: group_by.clone(),
                                         dl_id: Some(DataLoaderId::new(http_data_loaders.len())),
                                         http_filter: http_filter.clone(),
+                                        is_list,
                                     }));
 
                                     http_data_loaders.push(data_loader);

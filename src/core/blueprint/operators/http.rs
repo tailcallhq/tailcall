@@ -11,6 +11,7 @@ use crate::core::{config, helpers, Mustache};
 pub fn compile_http(
     config_module: &config::ConfigModule,
     http: &config::Http,
+    is_list: bool,
 ) -> Valid<IR, String> {
     Valid::<(), String>::fail("GroupBy is only supported for GET requests".to_string())
         .when(|| !http.batch_key.is_empty() && http.method != Method::GET)
@@ -81,9 +82,16 @@ pub fn compile_http(
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
                     dl_id: None,
                     http_filter,
+                    is_list,
                 })
             } else {
-                IR::IO(IO::Http { req_template, group_by: None, dl_id: None, http_filter })
+                IR::IO(IO::Http {
+                    req_template,
+                    group_by: None,
+                    dl_id: None,
+                    http_filter,
+                    is_list,
+                })
             }
         })
 }
@@ -97,7 +105,7 @@ pub fn update_http<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_http(config_module, http)
+            compile_http(config_module, http, field.list)
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| {
                     b_field

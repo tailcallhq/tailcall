@@ -115,6 +115,11 @@ pub struct Type {
     /// Marks field as protected by auth providers
     #[serde(default)]
     pub protected: Option<Protected>,
+
+    ///
+    /// Apollo federation entity resolver.
+    #[serde(flatten, default, skip_serializing_if = "is_default")]
+    pub resolver: Option<Resolver>,
 }
 
 impl Display for Type {
@@ -215,7 +220,7 @@ pub struct Omit {}
 // TODO: replace with derive macro
 macro_rules! create_resolver {
     ($($var:ident($ty:ty)),+$(,)?) => {
-        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
+        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
         #[serde(rename_all = "camelCase")]
         pub enum Resolver {
             // just specify the same variants
@@ -263,18 +268,20 @@ create_resolver! {
     Call(Call),
     Js(JS),
     Expr(Expr),
+    EntityResolver(EntityResolver),
 }
 
 impl Resolver {
-    pub fn to_directive(&self) -> ConstDirective {
-        match self {
+    pub fn to_directive(&self) -> Option<ConstDirective> {
+        Some(match self {
             Resolver::Http(d) => d.to_directive(),
             Resolver::Grpc(d) => d.to_directive(),
             Resolver::Graphql(d) => d.to_directive(),
             Resolver::Call(d) => d.to_directive(),
             Resolver::Js(d) => d.to_directive(),
             Resolver::Expr(d) => d.to_directive(),
-        }
+            Resolver::EntityResolver(_) => return None,
+        })
     }
 
     pub fn directive_name(&self) -> String {
@@ -285,6 +292,22 @@ impl Resolver {
             Resolver::Call(_) => Call::directive_name(),
             Resolver::Js(_) => JS::directive_name(),
             Resolver::Expr(_) => Expr::directive_name(),
+            Resolver::EntityResolver(_) => EntityResolver::directive_name(),
+        }
+    }
+
+    pub fn is_batched(&self) -> bool {
+        match self {
+            Resolver::Http(http) => !http.batch_key.is_empty(),
+            Resolver::Grpc(grpc) => !grpc.batch_key.is_empty(),
+            Resolver::Graphql(graphql) => graphql.batch,
+            Resolver::Call(_) => false,
+            Resolver::Js(_) => false,
+            Resolver::Expr(_) => false,
+            Resolver::EntityResolver(entity_resolver) => entity_resolver
+                .resolver_by_type
+                .values()
+                .any(Resolver::is_batched),
         }
     }
 }
@@ -368,19 +391,12 @@ impl Field {
     pub fn has_resolver(&self) -> bool {
         self.resolver.is_some()
     }
+
     pub fn has_batched_resolver(&self) -> bool {
-        if let Some(resolver) = &self.resolver {
-            match resolver {
-                Resolver::Http(http) => !http.batch_key.is_empty(),
-                Resolver::Grpc(grpc) => !grpc.batch_key.is_empty(),
-                Resolver::Graphql(graphql) => graphql.batch,
-                Resolver::Call(_) => false,
-                Resolver::Js(_) => false,
-                Resolver::Expr(_) => false,
-            }
-        } else {
-            false
-        }
+        self.resolver
+            .as_ref()
+            .map(Resolver::is_batched)
+            .unwrap_or(false)
     }
     pub fn into_list(mut self) -> Self {
         self.list = true;
@@ -633,6 +649,11 @@ pub struct Call {
     /// If you have multiple steps, the output of the previous step is passed as
     /// input to the next step.
     pub steps: Vec<Step>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+pub struct EntityResolver {
+    pub resolver_by_type: BTreeMap<String, Resolver>,
 }
 
 ///

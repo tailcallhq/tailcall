@@ -5,6 +5,7 @@ use derive_more::From;
 use thiserror::Error;
 
 use crate::core::{auth, cache, worker};
+
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     #[error("IOException: {0}")]
@@ -37,6 +38,10 @@ pub enum Error {
 
     #[error("Cache Error: {0}")]
     CacheError(cache::Error),
+
+    #[error("Entity Resolver Error: {0}")]
+    #[from(ignore)]
+    EntityResolverError(String),
 }
 
 impl ErrorExtensions for Error {

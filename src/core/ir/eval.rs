@@ -2,6 +2,7 @@ use std::future::Future;
 use std::ops::Deref;
 
 use async_graphql_value::ConstValue;
+use futures_util::future::join_all;
 
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
@@ -89,12 +90,52 @@ impl IR {
                     second.eval(ctx).await
                 }
                 IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
+                    // TODO: in some cases __typename could be already present or could be inferred
+                    // by some way like for EntityResolver
                     let type_name = discriminator.resolve_type(&value)?;
 
                     ctx.set_type_name(type_name);
 
                     Ok(value)
                 }),
+                IR::EntityResolver(map) => {
+                    let representations = ctx.path_arg(&["representations"]);
+
+                    let representations = representations
+                        .as_ref()
+                        .and_then(|repr| repr.as_array())
+                        .ok_or(Error::EntityResolverError(
+                            "expected `representations` arg as an array of _Any".to_string(),
+                        ))?;
+
+                    let mut tasks = Vec::with_capacity(representations.len());
+
+                    for repr in representations {
+                        // TODO: combine errors, instead of fail fast?
+                        let typename = repr.get_key("__typename").and_then(|t| t.as_str()).ok_or(
+                            Error::EntityResolverError(
+                                "expected __typename to be the part of the representation"
+                                    .to_string(),
+                            ),
+                        )?;
+
+                        let ir = map.get(typename).ok_or(Error::EntityResolverError(format!(
+                            "Cannot find a resolver for type: `{typename}`"
+                        )))?;
+
+                        // pass the input for current representation as value in context
+                        // TODO: can we drop clone?
+                        let mut ctx = ctx.with_value(repr.clone());
+
+                        tasks.push(async move { ir.eval(&mut ctx).await });
+                    }
+
+                    let result = join_all(tasks).await;
+
+                    let entities = result.into_iter().collect::<Result<_, _>>()?;
+
+                    Ok(ConstValue::List(entities))
+                }
             }
         })
     }

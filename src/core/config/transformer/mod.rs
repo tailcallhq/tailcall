@@ -1,4 +1,5 @@
 mod ambiguous_type;
+mod apollo_federation;
 mod consolidate_url;
 mod flatten_single_field;
 mod improve_type_names;
@@ -11,6 +12,7 @@ mod tree_shake;
 mod union_input_type;
 
 pub use ambiguous_type::{AmbiguousType, Resolution};
+pub use apollo_federation::entities::EntityResolver;
 pub use consolidate_url::ConsolidateURL;
 pub use flatten_single_field::FlattenSingleField;
 pub use improve_type_names::ImproveTypeNames;

@@ -10,7 +10,7 @@ use async_graphql::Name;
 use async_graphql_value::ConstValue;
 
 use super::telemetry::Telemetry;
-use super::Alias;
+use super::{Alias, Resolver};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
@@ -241,14 +241,23 @@ where
     let fields = object.fields();
     let implements = object.implements();
 
-    Cache::from_directives(directives.iter())
+    Resolver::from_directives(directives)
+        .fuse(Cache::from_directives(directives.iter()))
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
-        .map(|(cache, fields, protected)| {
+        .map(|(resolver, cache, fields, protected)| {
             let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
             let added_fields = to_add_fields_from_directives(directives);
-            config::Type { fields, added_fields, doc, implements, cache, protected }
+            config::Type {
+                fields,
+                added_fields,
+                doc,
+                implements,
+                cache,
+                protected,
+                resolver,
+            }
         })
 }
 fn to_input_object(

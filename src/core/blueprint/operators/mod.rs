@@ -1,4 +1,5 @@
 mod call;
+mod entity_resolver;
 mod enum_alias;
 mod expr;
 mod graphql;
@@ -9,6 +10,7 @@ mod modify;
 mod protected;
 
 pub use call::*;
+pub use entity_resolver::*;
 pub use enum_alias::*;
 pub use expr::*;
 pub use graphql::*;

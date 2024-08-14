@@ -2,7 +2,7 @@ use async_graphql_value::ConstValue;
 
 use crate::core::blueprint::*;
 use crate::core::config;
-use crate::core::config::{Field, Resolver};
+use crate::core::config::{Expr, Field, Resolver};
 use crate::core::ir::model::IR;
 use crate::core::ir::model::IR::Dynamic;
 use crate::core::try_fold::TryFold;
@@ -25,14 +25,14 @@ fn validate_data_with_schema(
 pub struct CompileExpr<'a> {
     pub config_module: &'a config::ConfigModule,
     pub field: &'a config::Field,
-    pub value: &'a serde_json::Value,
+    pub expr: &'a Expr,
     pub validate: bool,
 }
 
 pub fn compile_expr(inputs: CompileExpr) -> Valid<IR, String> {
     let config_module = inputs.config_module;
     let field = inputs.field;
-    let value = inputs.value;
+    let value = &inputs.expr.body;
     let validate = inputs.validate;
 
     Valid::from(
@@ -68,7 +68,7 @@ pub fn update_const_field<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_expr(CompileExpr { config_module, field, value: &expr.body, validate: true })
+            compile_expr(CompileExpr { config_module, field, expr, validate: true })
                 .map(|resolver| b_field.resolver(Some(resolver)))
         },
     )
