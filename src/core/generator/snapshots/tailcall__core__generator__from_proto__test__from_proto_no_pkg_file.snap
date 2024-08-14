@@ -14,7 +14,7 @@ type News {
 }
 
 type NewsList {
-  news: [News]!
+  news: [News]
 }
 
 type Query {

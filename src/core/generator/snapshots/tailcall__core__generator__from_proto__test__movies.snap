@@ -132,7 +132,7 @@ input movies__MovieInput {
   """
   list of cast
   """
-  cast: [String]!
+  cast: [String]
   duration: google__protobuf__DurationInput
   genre: movies__Genre
   name: String
@@ -378,7 +378,7 @@ type movies__Movie {
   """
   list of cast
   """
-  cast: [String]!
+  cast: [String]
   duration: google__protobuf__Duration
   genre: movies__Genre
   name: String
@@ -412,5 +412,5 @@ type movies__MoviesResult {
   """
   list of movies
   """
-  result: [movies__Movie]!
+  result: [movies__Movie]
 }

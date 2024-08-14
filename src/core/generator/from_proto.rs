@@ -273,11 +273,6 @@ impl Context {
                 // required only applicable for proto2
                 cfg_field.required = matches!(label, Label::Required);
 
-                if cfg_field.list {
-                    // by default proto3 fields are optional and default values are provided.
-                    // in order to support proto2, we mark these list fields required.
-                    cfg_field.required = true;
-                }
 
                 if let Some(type_name) = &field.type_name {
                     // check that current field is map.

@@ -11,7 +11,7 @@ input Id {
 }
 
 input news__MultipleNewsId {
-  ids: [Id]!
+  ids: [Id]
 }
 
 input news__NewsInput {
@@ -57,7 +57,7 @@ type News {
 }
 
 type NewsNewsServiceGetMultipleNew {
-  news: [News]!
+  news: [News]
 }
 
 type Photo {
