@@ -264,7 +264,10 @@ mod grpc_fetch {
         let runtime = crate::core::runtime::test::init(None);
         let resp = grpc_reflection.get_file("news_dto.proto").await?;
 
-        let content = runtime.file.read(tailcall_fixtures::protobuf::NEWS_DTO).await?;
+        let content = runtime
+            .file
+            .read(tailcall_fixtures::protobuf::NEWS_DTO)
+            .await?;
         let expected = protox_parse::parse("news_dto.proto", &content)?;
 
         assert_eq!(expected.name(), resp.name());

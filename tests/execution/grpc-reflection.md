@@ -25,9 +25,9 @@ type News {
 }
 
 enum Status {
-  PUBLISHED,
-  DRAFT,
-  DELETED,
+  PUBLISHED
+  DRAFT
+  DELETED
 }
 ```
 
