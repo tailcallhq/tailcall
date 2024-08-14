@@ -4,7 +4,6 @@ skip: true
 
 # Test variables.
 
-
 TODO: Skipped because Tailcall does not construct the query correctly. Moreover it does not validate the query that is invalid (contains a missing field).
 
 ```graphql @config
