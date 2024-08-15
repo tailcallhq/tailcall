@@ -47,6 +47,7 @@ impl Server {
         }
     }
 
+    /// Starts the server in its own multithreaded Runtime
     pub async fn fork_start(self, rec: Option<&mut broadcast::Receiver<()>>) -> Result<()> {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(self.config_module.deref().server.get_workers())
