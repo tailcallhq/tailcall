@@ -66,9 +66,7 @@ where
             let val = self.iter(child, None, &DataPath::new())?;
 
             let field_name = child
-                .alias
-                .as_ref()
-                .map(|a| a.as_str())
+                .alias.as_deref()
                 .unwrap_or(child.name.as_str());
 
             data.insert_key(field_name, val);
@@ -140,9 +138,7 @@ where
         }
 
         let field_name = node
-            .alias
-            .as_ref()
-            .map(|a| a.as_str())
+            .alias.as_deref()
             .unwrap_or(node.name.as_str());
 
         let TypedValueRef { type_name, value } = result;
@@ -193,9 +189,7 @@ where
                         if include {
                             let val = obj.get_key(child.name.as_str());
                             let field_name = child
-                                .alias
-                                .as_ref()
-                                .map(|a| a.as_str())
+                                .alias.as_deref()
                                 .unwrap_or(child.name.as_str());
                             ans.insert_key(
                                 field_name,

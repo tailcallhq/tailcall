@@ -206,7 +206,7 @@ impl<Input> Field<Flat, Input> {
                 .into_iter()
                 .map(|directive| directive.try_map(&map))
                 .collect::<Result<_, _>>()?,
-                alias: self.alias,
+            alias: self.alias,
         })
     }
 }
