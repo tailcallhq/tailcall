@@ -59,6 +59,7 @@ pub fn from_document(doc: ServiceDocument) -> Valid<Config, String> {
                     schema,
                     links,
                     telemetry,
+                    model: todo!(),
                 },
             )
     })

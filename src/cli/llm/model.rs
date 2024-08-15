@@ -72,13 +72,12 @@ impl Model {
     }
 }
 
-#[derive(Clone, Debug)]
 pub enum ModelKind {
     Gpt3_5Turbo,
     Gpt4,
     Gpt4Turbo,
-    Gpt40Mini,
-    Gpt40,
+    Gpt4OMini,
+    Gpt4O,
     Gemma2b,
     Claude3Haiku20240307,
     Claude3Sonnet20240229,
@@ -112,13 +111,13 @@ impl ModelKind {
             Self::Gpt3_5Turbo => open_ai::GPT3_5_TURBO,
             Self::Gpt4 => open_ai::GPT4,
             Self::Gpt4Turbo => open_ai::GPT4_TURBO,
-            Self::Gpt40Mini => open_ai::GPT4_MINI,
-            Self::Gpt40 => open_ai::GPT40,
-            Self::Gemma2b => ollama::GEMMA_2B,
-            Self::Claude3Haiku20240307 => anthropic::CLAUDE_3_HAIKU_20240307,
-            Self::Claude3Sonnet20240229 => anthropic::CLAUDE_3_SONNET_20240229,
-            Self::Claude3Opus20240229 => anthropic::CLAUDE_3_OPUS_20240229,
-            Self::Claude35Sonnet20240620 => anthropic::CLAUDE_35_SONNET_20240620,
+            Self::Gpt4OMini => open_ai::GPT4O_MINI,
+            Self::Gpt4O => open_ai::GPT4O,
+            Self::Gemma2b => ollama::GEMMA2B,
+            Self::Claude3Haiku20240307 => anthropic::CLAUDE3_HAIKU_20240307,
+            Self::Claude3Sonnet20240229 => anthropic::CLAUDE3_SONNET_20240229,
+            Self::Claude3Opus20240229 => anthropic::CLAUDE3_OPUS_20240229,
+            Self::Claude35Sonnet20240620 => anthropic::CLAUDE35_SONNET_20240620,
             Self::CommandLightNightly => cohere::COMMAND_LIGHT_NIGHTLY,
             Self::CommandLight => cohere::COMMAND_LIGHT,
             Self::CommandNightly => cohere::COMMAND_NIGHTLY,
@@ -139,6 +138,42 @@ impl ModelKind {
             Self::Llama8bInstant => groq::LLAMA8B_INSTANT,
             Self::Llama70bVersatile => groq::LLAMA70B_VERSATILE,
             Self::Llama405bReasoning => groq::LLAMA405B_REASONING,
+        }
+    }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "gpt-3.5-turbo" => Some(Self::Gpt3_5Turbo),
+            "gpt-4" => Some(Self::Gpt4),
+            "gpt-4-turbo" => Some(Self::Gpt4Turbo),
+            "gpt-4o-mini" => Some(Self::Gpt4OMini),
+            "gpt-4o" => Some(Self::Gpt4O),
+            "gemma:2b" => Some(Self::Gemma2b),
+            "claude-3-haiku-20240307" => Some(Self::Claude3Haiku20240307),
+            "claude-3-sonnet-20240229" => Some(Self::Claude3Sonnet20240229),
+            "claude-3-opus-20240229" => Some(Self::Claude3Opus20240229),
+            "claude-3-5-sonnet-20240620" => Some(Self::Claude35Sonnet20240620),
+            "command-light-nightly" => Some(Self::CommandLightNightly),
+            "command-light" => Some(Self::CommandLight),
+            "command-nightly" => Some(Self::CommandNightly),
+            "command" => Some(Self::Command),
+            "command-r" => Some(Self::CommandR),
+            "command-r-plus" => Some(Self::CommandRPlus),
+            "gemini-1.5-flash-latest" => Some(Self::Gemini15FlashLatest),
+            "gemini-1.0-pro" => Some(Self::Gemini10Pro),
+            "gemini-1.5-flash" => Some(Self::Gemini15Flash),
+            "gemini-1.5-pro" => Some(Self::Gemini15Pro),
+            "llama3-70b-8192" => Some(Self::Llama708192),
+            "llama3-8b-8192" => Some(Self::Llama38192),
+            "llama3-groq-8b-8192-tool-use-preview" => Some(Self::LlamaGroq8b8192ToolUsePreview),
+            "llama3-groq-70b-8192-tool-use-preview" => Some(Self::LlamaGroq70b8192ToolUsePreview),
+            "gemma2-9b-it" => Some(Self::Gemma29bIt),
+            "gemma-7b-it" => Some(Self::Gemma7bIt),
+            "mixtral-8x7b-32768" => Some(Self::Mixtral8x7b32768),
+            "llama-3.1-8b-instant" => Some(Self::Llama8bInstant),
+            "llama-3.1-70b-versatile" => Some(Self::Llama70bVersatile),
+            "llama-3.1-405b-reasoning" => Some(Self::Llama405bReasoning),
+            _ => None,
         }
     }
 }

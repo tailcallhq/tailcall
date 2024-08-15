@@ -12,7 +12,6 @@ use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 
-use crate::cli::llm::model::ModelKind;
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
@@ -86,7 +85,7 @@ pub struct Config {
 
     //
     // Setting to dictate the LLM model
-    pub model_kind: Option<ModelKind>,
+    pub model: Option<String>,
 }
 
 ///
