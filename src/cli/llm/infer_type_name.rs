@@ -98,11 +98,11 @@ impl InferTypeName {
             .filter(|(type_name, _)| !config.is_root_operation_type(type_name))
             .collect::<Vec<_>>();
 
-        let type_tango = TypeUsageIndex::new(config);
+        let usage_index = TypeUsageIndex::new(config);
 
         let total = types_to_be_processed.len();
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
-            if let Some(type_refs) = type_tango.get(type_name) {
+            if let Some(type_refs) = usage_index.get(type_name) {
                 // convert to prompt.
                 let question = Question {
                     type_refs: type_refs.clone(),
