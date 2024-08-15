@@ -78,6 +78,13 @@ ChatRequest {
         ChatMessage {
             role: User,
             content: Text(
+                "User Input:",
+            ),
+            extra: None,
+        },
+        ChatMessage {
+            role: User,
+            content: Text(
                 "{\"type_refs\":{\"User\":13,\"Profile\":11,\"Person\":14},\"fields\":[[\"id\",\"String\"],[\"name\",\"String\"],[\"age\",\"Int\"]]}",
             ),
             extra: None,

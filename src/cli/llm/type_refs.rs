@@ -8,41 +8,34 @@ use crate::core::config::Config;
 /// Structure maintains a map where each key is a type name, and the
 /// corresponding value is another map that tracks the field names and the count
 /// of how many times the type name was present in the configuration.
-pub struct TypeUsageIndex {
-    type_refs: IndexMap<String, IndexMap<String, u32>>,
+pub struct TypeUsageIndex<'a> {
+    type_refs: IndexMap<&'a str, IndexMap<&'a str, u32>>,
 }
 
-impl TypeUsageIndex {
-    pub fn new(config: &Config) -> Self {
-        let precomputed_refs = config
+impl<'a> TypeUsageIndex<'a> {
+    pub fn new(config: &'a Config) -> Self {
+        let type_refs = config
             .types
             .keys()
-            .map(|t_name| {
-                // Collect field names and counts where the field's type matches the current
-                // type_name
-                let type_refs = config
+            .map(|type_name| {
+                let type_references = config
                     .types
                     .values()
-                    .flat_map(|type_inner| &type_inner.fields)
-                    .filter_map(|(field_name, field_)| {
-                        if field_.type_of == **t_name {
-                            Some(field_name)
-                        } else {
-                            None
-                        }
-                    })
-                    .fold(IndexMap::new(), |mut acc, field_name| {
-                        *acc.entry(field_name.to_owned()).or_insert(0) += 1;
+                    .flat_map(|t_| &t_.fields)
+                    .filter(|(_, field_)| field_.type_of.as_str() == type_name.as_str())
+                    .fold(IndexMap::new(), |mut acc, (field_name, _)| {
+                        *acc.entry(field_name.as_str()).or_insert(0) += 1;
                         acc
                     });
 
-                (t_name.to_owned(), type_refs)
+                (type_name.as_str(), type_references)
             })
-            .collect::<IndexMap<_, _>>();
+            .collect();
 
-        Self { type_refs: precomputed_refs }
+        Self { type_refs }
     }
-    pub fn get(&self, type_name: &str) -> Option<&IndexMap<String, u32>> {
+
+    pub fn get(&self, type_name: &str) -> Option<&IndexMap<&str, u32>> {
         self.type_refs.get(type_name)
     }
 }

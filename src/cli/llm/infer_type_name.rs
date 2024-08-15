@@ -29,20 +29,20 @@ impl TryFrom<ChatResponse> for Answer {
 }
 
 #[derive(Clone, Serialize)]
-struct Question {
-    type_refs: IndexMap<String, u32>,
+struct Question<'a> {
+    type_refs: IndexMap<&'a str, u32>,
     fields: Vec<(String, String)>,
 }
 
-impl TryInto<ChatRequest> for Question {
+impl TryInto<ChatRequest> for Question<'_> {
     type Error = Error;
 
     fn try_into(self) -> Result<ChatRequest> {
         let content = serde_json::to_string(&self)?;
         let mut type_refs = IndexMap::new();
-        type_refs.insert("User".to_owned(), 13);
-        type_refs.insert("Profile".to_owned(), 11);
-        type_refs.insert("Person".to_owned(), 14);
+        type_refs.insert("User", 13);
+        type_refs.insert("Profile", 11);
+        type_refs.insert("Person", 14);
 
         let input = serde_json::to_string_pretty(&Question {
             type_refs,
@@ -178,9 +178,9 @@ mod test {
     #[test]
     fn test_to_chat_request_conversion() {
         let mut type_refs = IndexMap::new();
-        type_refs.insert("User".to_owned(), 13);
-        type_refs.insert("Profile".to_owned(), 11);
-        type_refs.insert("Person".to_owned(), 14);
+        type_refs.insert("User", 13);
+        type_refs.insert("Profile", 11);
+        type_refs.insert("Person", 14);
 
         let question = Question {
             type_refs,
