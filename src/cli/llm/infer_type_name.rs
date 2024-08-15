@@ -33,11 +33,6 @@ struct Question {
     fields: Vec<(String, String)>,
 }
 
-struct PromptContext {
-    input: String,
-    output: String,
-}
-
 impl TryInto<ChatRequest> for Question {
     type Error = Error;
 
