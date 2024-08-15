@@ -1,0 +1,28 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": "operation getUser is defined twice",
+        "locations": [
+          {
+            "line": 8,
+            "column": 1
+          },
+          {
+            "line": 1,
+            "column": 1
+          }
+        ]
+      }
+    ]
+  }
+}
