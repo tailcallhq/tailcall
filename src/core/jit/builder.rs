@@ -205,18 +205,13 @@ impl Builder {
                             Some(Flat::new(id.clone())),
                             fragments,
                         );
-                        let name = gql_field
-                            .alias
-                            .as_ref()
-                            .map(|alias| alias.node.to_string())
-                            .unwrap_or(field_name.to_string());
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
                         };
                         let flat_field = Field {
                             id,
-                            name,
+                            name: field_name.to_string(),
                             ir,
                             is_scalar: self.index.type_is_scalar(type_of.name()),
                             type_of,
@@ -227,6 +222,7 @@ impl Builder {
                             pos: selection.pos,
                             extensions: exts.clone(),
                             directives,
+                            alias: gql_field.alias.as_ref().map(|a| a.node.to_string()),
                         };
 
                         fields.push(flat_field);

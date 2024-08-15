@@ -64,7 +64,14 @@ where
                 continue;
             }
             let val = self.iter(child, None, &DataPath::new())?;
-            data.insert_key(child.name.as_str(), val);
+
+            let field_name = child
+                .alias
+                .as_ref()
+                .map(|a| a.as_str())
+                .unwrap_or(child.name.as_str());
+
+            data.insert_key(field_name, val);
         }
 
         Ok(Value::object(data))
@@ -132,6 +139,12 @@ where
             return Ok(Value::null());
         }
 
+        let field_name = node
+            .alias
+            .as_ref()
+            .map(|a| a.as_str())
+            .unwrap_or(node.name.as_str());
+
         let TypedValueRef { type_name, value } = result;
 
         if node.is_scalar {
@@ -148,7 +161,7 @@ where
                     pos: node.pos,
                     node: ValidationError::ScalarInvalid {
                         type_of: node.type_of.name().to_string(),
-                        path: node.name.clone(),
+                        path: field_name.to_string(),
                     }
                     .into(),
                 })
@@ -179,9 +192,13 @@ where
                         let include = self.include(child);
                         if include {
                             let val = obj.get_key(child.name.as_str());
-
+                            let field_name = child
+                                .alias
+                                .as_ref()
+                                .map(|a| a.as_str())
+                                .unwrap_or(child.name.as_str());
                             ans.insert_key(
-                                child.name.as_str(),
+                                field_name,
                                 self.iter(child, val.map(TypedValueRef::new), data_path)?,
                             );
                         }

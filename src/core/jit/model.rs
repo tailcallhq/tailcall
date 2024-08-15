@@ -120,6 +120,7 @@ pub struct Field<Extensions, Input> {
     pub pos: Pos,
     pub is_scalar: bool,
     pub directives: Vec<Directive<Input>>,
+    pub alias: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -174,6 +175,7 @@ impl<Input> Field<Nested<Input>, Input> {
                 .into_iter()
                 .map(|directive| directive.try_map(map))
                 .collect::<Result<_, _>>()?,
+            alias: self.alias,
         })
     }
 }
@@ -204,6 +206,7 @@ impl<Input> Field<Flat, Input> {
                 .into_iter()
                 .map(|directive| directive.try_map(&map))
                 .collect::<Result<_, _>>()?,
+                alias: self.alias,
         })
     }
 }
@@ -272,6 +275,7 @@ impl<Input> Field<Flat, Input> {
             extensions,
             is_scalar: self.is_scalar,
             directives: self.directives,
+            alias: self.alias,
         }
     }
 }
@@ -300,6 +304,8 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("include", &self.include);
         }
         debug_struct.field("directives", &self.directives);
+        debug_struct.field("alias", &self.alias);
+
         debug_struct.finish()
     }
 }
