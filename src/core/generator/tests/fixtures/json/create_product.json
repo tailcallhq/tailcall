@@ -1,0 +1,26 @@
+{
+  "request": {
+    "url": "https://fakestoreapi.com/products",
+    "method": "POST",
+    "body": {
+      "title": "Tailcall",
+      "price": 200,
+      "description": "a modern graphQL runtime",
+      "image": "https://tailcall.run/icons/companies/taicall.svg",
+      "category": "graphQL"
+    }
+  },
+  "isMutation": true,
+  "fieldName": "createProduct",
+  "response": {
+    "status": 201,
+    "body": {
+      "id": 21,
+      "title": "Tailcall",
+      "price": 200,
+      "description": "a modern graphQL runtime",
+      "image": "https://tailcall.run/icons/companies/taicall.svg",
+      "category": "graphQL"
+    }
+  }
+}

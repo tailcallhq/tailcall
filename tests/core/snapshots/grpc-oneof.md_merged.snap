@@ -88,29 +88,29 @@ type Query {
     @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
 }
 
-type oneof__Command @tag(id: "oneof.Command") {
+type oneof__Command {
   command: String
 }
 
-type oneof__Payload @tag(id: "oneof.Payload") {
+type oneof__Payload {
   payload: String
 }
 
-type oneof__Response__Var @tag(id: "oneof.Response") {
+type oneof__Response__Var {
   usual: Int
 }
 
-type oneof__Response__Var0 @tag(id: "oneof.Response") {
+type oneof__Response__Var0 {
   payload: oneof__Payload!
   usual: Int
 }
 
-type oneof__Response__Var1 @tag(id: "oneof.Response") {
+type oneof__Response__Var1 {
   command: oneof__Command!
   usual: Int
 }
 
-type oneof__Response__Var2 @tag(id: "oneof.Response") {
+type oneof__Response__Var2 {
   response: String!
   usual: Int
 }

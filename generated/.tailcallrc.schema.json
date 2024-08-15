@@ -735,7 +735,7 @@
           "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. The first parameter referencing a field in the current value using mustache syntax is automatically selected as the batching parameter.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/KeyValue"
+            "$ref": "#/definitions/URLQuery"
           }
         }
       },
@@ -1145,20 +1145,6 @@
         }
       }
     },
-    "Tag": {
-      "description": "Used to represent an identifier for a type. Typically used via only by the configuration generators to provide additional information about the type.",
-      "type": "object",
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "id": {
-          "description": "A unique identifier for the type.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
     "Telemetry": {
       "description": "The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.",
       "type": "object",
@@ -1293,17 +1279,6 @@
               "type": "null"
             }
           ]
-        },
-        "tag": {
-          "description": "Contains source information for the type.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Tag"
-            },
-            {
-              "type": "null"
-            }
-          ]
         }
       }
     },
@@ -1326,6 +1301,31 @@
     "UInt8": {
       "title": "UInt8",
       "description": "Field whose value is an 8-bit unsigned integer."
+    },
+    "URLQuery": {
+      "description": "The URLQuery input type represents a query parameter to be included in a URL.",
+      "type": "object",
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "description": "The key or name of the query parameter.",
+          "type": "string"
+        },
+        "skipEmpty": {
+          "description": "Determines whether to ignore query parameters with empty values.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "value": {
+          "description": "The actual value or a mustache template to resolve the value dynamically for the query parameter.",
+          "type": "string"
+        }
+      }
     },
     "Union": {
       "type": "object",

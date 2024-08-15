@@ -4,7 +4,7 @@ use convert_case::{Case, Casing};
 use regex::Regex;
 use url::Url;
 
-use crate::core::config::{Arg, Field, Http, KeyValue};
+use crate::core::config::{Arg, Field, Http, URLQuery};
 use crate::core::helpers::gql_type::detect_gql_data_type;
 
 #[derive(Debug)]
@@ -113,7 +113,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
 
             self.http
                 .query
-                .push(KeyValue { key: query.key.clone(), value });
+                .push(URLQuery { key: query.key.clone(), value, skip_empty: None });
             field.args.insert(query_key, arg);
         }
     }
