@@ -1,11 +1,15 @@
 use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
+use indexmap::indexmap;
 use serde::{Deserialize, Serialize};
 
 use super::model::groq;
-use super::{Error, Result, Wizard};
+use super::{Error, PromptContext, Result, Wizard};
 use crate::core::config::Config;
+use crate::core::Mustache;
+
+const SYSTEM_PROMPT_TEMPLATE: &str = include_str!("./prompts/system.md");
 
 #[derive(Default)]
 pub struct InferTypeName {
@@ -55,19 +59,15 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
+        let template = Mustache::parse(SYSTEM_PROMPT_TEMPLATE).unwrap();
+
+        let system_message = template.render(&PromptContext::new(indexmap! {
+            "UserInput" => input,
+            "UserOuput" => output
+        }));
+
         Ok(ChatRequest::new(vec![
-            ChatMessage::system(
-                "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
-            ),
-            ChatMessage::system("The name should be concise and preferably a single word"),
-            ChatMessage::system("Example Input:"),
-            ChatMessage::system(input),
-            ChatMessage::system("Example Output:"),
-            ChatMessage::system(output),
-            ChatMessage::system("Ensure the output is in valid JSON format".to_string()),
-            ChatMessage::system(
-                "Do not add any additional text before or after the json".to_string(),
-            ),
+            ChatMessage::system(system_message),
             ChatMessage::user(content),
         ]))
     }
