@@ -165,82 +165,11 @@ impl From<&Blueprint> for Index {
 mod test {
     use super::Index;
     use crate::core::blueprint::Blueprint;
-    use crate::core::config::{Config, ConfigModule};
-    use crate::core::valid::Validator;
+    use crate::core::config::ConfigModule;
+    use crate::include_config;
 
     fn setup() -> Index {
-        let sdl = r#"
-            schema
-                @server(port: 8000)
-                @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
-                query: Query
-                mutation: Mutation
-            }
-
-            # Enum Type
-            enum Status {
-                ACTIVE
-                INACTIVE
-                PENDING
-            }
-
-            # Input Object Type
-            input UserInput {
-                name: String!
-                email: String!
-                status: Status
-            }
-
-            # Interface Type
-            interface Node {
-                id: ID!
-                createdAt: DateTime!
-                updatedAt: DateTime!
-            }
-
-            # Object Type
-            type User implements Node {
-                id: ID!
-                name: String!
-                email: String!
-                status: Status
-                createdAt: DateTime!
-                updatedAt: DateTime!
-            }
-
-            # Union Type
-            union SearchResult = User | Post
-
-            # Object Type
-            type Post implements Node {
-                id: ID!
-                title: String!
-                content: String!
-                author: User!
-                createdAt: DateTime!
-                updatedAt: DateTime!
-            }
-
-            # Query Type
-            type Query {
-                user(id: ID!): User @http(path: "/users/{{.args.id}}")
-                search(term: String!): [SearchResult!] @http(path: "/search", query: [{key: "q", value: "{{.args.term}}"}])
-            }
-
-            input PostInput {
-                title: String!
-                content: String!
-                authorId: ID!
-            }
-
-            # Mutation Type
-            type Mutation {
-                createUser(input: UserInput!): User! @http(path: "/users", body: "{{.args.input}}", method: "POST")
-                createPost(input: PostInput): Post! @http(path: "/posts", body: "{{.args.input}}", method: "POST")
-            }
-        "#;
-
-        let config = Config::from_sdl(sdl).to_result().unwrap();
+        let config = include_config!("./fixture/all-constructs.graphql").unwrap();
         let cfg_module = ConfigModule::from(config);
         let blueprint = Blueprint::try_from(&cfg_module).unwrap();
 
