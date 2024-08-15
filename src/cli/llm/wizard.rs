@@ -3,11 +3,9 @@ use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
 use genai::resolver::AuthResolver;
 use genai::Client;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
 
 use super::Result;
-use crate::cli::llm::model::{Model, ModelKind};
+use crate::cli::llm::model::Model;
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
@@ -18,15 +16,11 @@ pub struct Wizard<Q, A> {
 }
 
 impl<Q, A> Wizard<Q, A> {
-    pub fn new(models: Vec<ModelKind>, secret: Option<String>) -> Self {
+    pub fn new(model: Model, secret: Option<String>) -> Self {
         let mut config = genai::adapter::AdapterConfig::default();
         if let Some(key) = secret {
             config = config.with_auth_resolver(AuthResolver::from_key_value(key));
         }
-
-        let mut rng = thread_rng();
-        let model_kind = models.choose(&mut rng).unwrap();
-        let model = model_kind.to_model();
 
         let adapter = AdapterKind::from_model(model.as_str()).unwrap_or(AdapterKind::Ollama);
 

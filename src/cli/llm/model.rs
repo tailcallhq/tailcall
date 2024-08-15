@@ -66,41 +66,79 @@ pub mod groq {
     pub const LLAMA405B_REASONING: Model = Model("llama-3.1-405b-reasoning");
 }
 
-pub enum ModelKind {
-    OpenAI,
-    Ollama,
-    Anthropic,
-    Cohere,
-    Gemini,
-    Groq,
-}
-
 impl Model {
     pub fn as_str(&self) -> &'static str {
         self.0
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum ModelKind {
+    Gpt3_5Turbo,
+    Gpt4,
+    Gpt4Turbo,
+    Gpt40Mini,
+    Gpt40,
+    Gemma2b,
+    Claude3Haiku20240307,
+    Claude3Sonnet20240229,
+    Claude3Opus20240229,
+    Claude35Sonnet20240620,
+    CommandLightNightly,
+    CommandLight,
+    CommandNightly,
+    Command,
+    CommandR,
+    CommandRPlus,
+    Gemini15FlashLatest,
+    Gemini10Pro,
+    Gemini15Flash,
+    Gemini15Pro,
+    Llama708192,
+    Llama38192,
+    LlamaGroq8b8192ToolUsePreview,
+    LlamaGroq70b8192ToolUsePreview,
+    Gemma29bIt,
+    Gemma7bIt,
+    Mixtral8x7b32768,
+    Llama8bInstant,
+    Llama70bVersatile,
+    Llama405bReasoning,
+}
+
 impl ModelKind {
     pub fn to_model(&self) -> Model {
         match self {
-            Self::OpenAI => open_ai::GPT3_5_TURBO,
-            Self::Ollama => ollama::GEMMA2B,
-            Self::Anthropic => anthropic::CLAUDE35_SONNET_20240620,
-            Self::Cohere => cohere::COMMAND_LIGHT,
-            Self::Gemini => gemini::GEMINI10_PRO,
-            Self::Groq => groq::GEMMA29B_IT,
+            Self::Gpt3_5Turbo => open_ai::GPT3_5_TURBO,
+            Self::Gpt4 => open_ai::GPT4,
+            Self::Gpt4Turbo => open_ai::GPT4_TURBO,
+            Self::Gpt40Mini => open_ai::GPT4_MINI,
+            Self::Gpt40 => open_ai::GPT40,
+            Self::Gemma2b => ollama::GEMMA_2B,
+            Self::Claude3Haiku20240307 => anthropic::CLAUDE_3_HAIKU_20240307,
+            Self::Claude3Sonnet20240229 => anthropic::CLAUDE_3_SONNET_20240229,
+            Self::Claude3Opus20240229 => anthropic::CLAUDE_3_OPUS_20240229,
+            Self::Claude35Sonnet20240620 => anthropic::CLAUDE_35_SONNET_20240620,
+            Self::CommandLightNightly => cohere::COMMAND_LIGHT_NIGHTLY,
+            Self::CommandLight => cohere::COMMAND_LIGHT,
+            Self::CommandNightly => cohere::COMMAND_NIGHTLY,
+            Self::Command => cohere::COMMAND,
+            Self::CommandR => cohere::COMMAND_R,
+            Self::CommandRPlus => cohere::COMMAND_R_PLUS,
+            Self::Gemini15FlashLatest => gemini::GEMINI15_FLASH_LATEST,
+            Self::Gemini10Pro => gemini::GEMINI10_PRO,
+            Self::Gemini15Flash => gemini::GEMINI15_FLASH,
+            Self::Gemini15Pro => gemini::GEMINI15_PRO,
+            Self::Llama708192 => groq::LLAMA708192,
+            Self::Llama38192 => groq::LLAMA38192,
+            Self::LlamaGroq8b8192ToolUsePreview => groq::LLAMA_GROQ8B8192_TOOL_USE_PREVIEW,
+            Self::LlamaGroq70b8192ToolUsePreview => groq::LLAMA_GROQ70B8192_TOOL_USE_PREVIEW,
+            Self::Gemma29bIt => groq::GEMMA29B_IT,
+            Self::Gemma7bIt => groq::GEMMA7B_IT,
+            Self::Mixtral8x7b32768 => groq::MIXTRAL_8X7B32768,
+            Self::Llama8bInstant => groq::LLAMA8B_INSTANT,
+            Self::Llama70bVersatile => groq::LLAMA70B_VERSATILE,
+            Self::Llama405bReasoning => groq::LLAMA405B_REASONING,
         }
-    }
-
-    pub fn all() -> Vec<Self> {
-        vec![
-            Self::OpenAI,
-            Self::Ollama,
-            Self::Anthropic,
-            Self::Cohere,
-            Self::Gemini,
-            Self::Groq,
-        ]
     }
 }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 
-use super::model::ModelKind;
+use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
 
@@ -80,9 +80,9 @@ impl InferTypeName {
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let secret = self.secret.as_ref().map(|s| s.to_owned());
 
-        let models = ModelKind::all();
+        let model = config.model_kind.unwrap().to_model();
 
-        let wizard: Wizard<Question, Answer> = Wizard::new(models, secret);
+        let wizard: Wizard<Question, Answer> = Wizard::new(model, secret);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
