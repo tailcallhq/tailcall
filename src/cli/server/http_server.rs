@@ -59,16 +59,14 @@ impl Server {
         if let Some(receiver) = rec {
             tokio::select! {
                 _ = receiver.recv() => {
-                    tracing::info!("Server shutdown signal received");
                     runtime.shutdown_background();
-                    tracing::info!("Server shutdown complete");
                 }
                 _ = handle => {
-                    tracing::info!("Server completed without shutdown signal");
+                    tracing::debug!("Server completed without shutdown signal");
                 }
             }
         } else {
-            handle.await?;
+            let _ = handle.await?;
         }
         Ok(())
     }

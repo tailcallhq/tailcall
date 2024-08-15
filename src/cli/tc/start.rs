@@ -1,7 +1,8 @@
+use std::sync::Arc;
+
 use anyhow::{Context, Result};
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
-use std::sync::Arc;
-use tokio::sync::{broadcast, Mutex};
+use tokio::sync::broadcast;
 use tokio::task;
 
 use super::helpers::log_endpoint_set;
@@ -57,12 +58,13 @@ async fn start_watch_server(
         }
 
         loop {
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
             match watch_rx.recv() {
                 Ok(event) => {
                     if let Ok(event) = event {
-                        if let notify::EventKind::Modify(notify::event::ModifyKind::Data(_)) =
-                            event.kind
+                        if let notify::EventKind::Modify(notify::event::ModifyKind::Data(
+                            notify::event::DataChange::Content,
+                        )) = event.kind
                         {
                             tracing::info!("File change detected");
                             if let Err(err) = tx.send(()) {
@@ -81,7 +83,7 @@ async fn start_watch_server(
         let file_paths = file_paths.clone();
         async move {
             let mut rec = Some(&mut rx);
-            let shown_warning = Arc::new(Mutex::new(false));
+            let mut config_error = false;
             loop {
                 match config_reader.read_all(&file_paths).await {
                     Ok(config_module) => {
@@ -91,14 +93,14 @@ async fn start_watch_server(
                         if let Err(err) = server.fork_start(rec.as_deref_mut()).await {
                             tracing::error!("Failed to start server: {}", err);
                         }
-                        *shown_warning.lock().await = false;
+                        config_error = false;
                         tracing::info!("Restarting server");
                     }
                     Err(err) => {
-                        if !*shown_warning.lock().await {
+                        if !config_error {
                             tracing::error!("Failed to read config files: {}", err);
                             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                            *shown_warning.lock().await = true;
+                            config_error = true;
                         }
                     }
                 }
