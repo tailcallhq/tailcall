@@ -64,7 +64,7 @@ impl TryInto<ChatRequest> for Question {
             "output".to_string() => output,
         };
 
-        let rendered_prompt = template.render_data_to_string(&context).map_err(|e| Error::TemplateError(e.to_string()))?;
+        let rendered_prompt = template.render_data_to_string(&context)?;
 
         Ok(ChatRequest::new(vec![
             ChatMessage::system(rendered_prompt),
