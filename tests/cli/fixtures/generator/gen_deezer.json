@@ -1,4 +1,5 @@
 {
+  "secret": "",
   "inputs": [
     {
       "curl": {
