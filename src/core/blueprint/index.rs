@@ -163,13 +163,10 @@ impl From<&Blueprint> for Index {
 
 #[cfg(test)]
 mod test {
-    use crate::core::{
-        blueprint::Blueprint,
-        config::{Config, ConfigModule},
-        valid::Validator,
-    };
-
     use super::Index;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::{Config, ConfigModule};
+    use crate::core::valid::Validator;
 
     fn setup() -> Index {
         let sdl = r#"
@@ -246,9 +243,9 @@ mod test {
         let config = Config::from_sdl(sdl).to_result().unwrap();
         let cfg_module = ConfigModule::from(config);
         let blueprint = Blueprint::try_from(&cfg_module).unwrap();
-        let index = Index::from(&blueprint);
+        
 
-        index
+        Index::from(&blueprint)
     }
 
     #[test]
