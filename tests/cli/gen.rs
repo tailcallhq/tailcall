@@ -177,7 +177,7 @@ pub mod test {
                     .map(|v| v.starts_with("gen"))
                     .unwrap_or_default()
             {
-                let _ = generator_spec::run_config_generator_spec(path);
+                generator_spec::run_config_generator_spec(path)?;
             }
         }
         Ok(())
