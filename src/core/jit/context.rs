@@ -97,22 +97,30 @@ mod test {
     use crate::core::jit::{OperationPlan, Request};
     use crate::core::valid::Validator;
 
-    fn setup(query: &str) -> (OperationPlan<ConstValue>, Request<ConstValue>) {
-        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).unwrap();
-        let config = Config::from_sdl(&sdl).to_result().unwrap();
-        let blueprint = Blueprint::try_from(&ConfigModule::from(config)).unwrap();
+    fn setup(query: &str) -> anyhow::Result<(OperationPlan<ConstValue>, Request<ConstValue>)> {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?;
+        let config = Config::from_sdl(&sdl).to_result()?;
+        let blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
         let request = Request::new(query);
-        let plan = request.clone().create_plan(&blueprint).unwrap();
-        (plan, request)
+        let plan = request.clone().create_plan(&blueprint)?;
+        Ok((plan, request))
     }
 
     #[test]
     fn test_field() {
-        let (plan, req) = setup("query {posts {id title}}");
+        let (plan, req) = setup("query {posts {id title}}").unwrap();
         let field = plan.as_nested();
         let env = ExecutionEnv::new(plan.clone());
-        let ctx = Context::<ConstValue, ConstValue>::new(&req, &field[0], &env);
+        let ctx = Context::new(&req, &field[0], &env);
         let expected = <Context<_, _> as ResolverContextLike>::field(&ctx).unwrap();
         insta::assert_debug_snapshot!(expected);
+    }
+
+    #[test]
+    fn test_is_query() {
+        let (plan, req) = setup("query {posts {id title}}").unwrap();
+        let env = ExecutionEnv::new(plan.clone());
+        let ctx = Context::new(&req, &plan.as_nested()[0], &env);
+        assert!(ctx.is_query());
     }
 }
