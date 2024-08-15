@@ -3,8 +3,8 @@
 
 use std::cell::Cell;
 
-use tailcall::core::Errata;
 use tailcall::core::tracing::default_tracing_tailcall;
+use tailcall::core::Errata;
 use tracing::subscriber::DefaultGuard;
 
 thread_local! {

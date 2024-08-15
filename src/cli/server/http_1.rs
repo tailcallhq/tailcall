@@ -4,9 +4,9 @@ use hyper::service::{make_service_fn, service_fn};
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
-use crate::core::Errata;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::core::http::handle_request;
+use crate::core::Errata;
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,

@@ -2,11 +2,11 @@ use anyhow::Result;
 
 use super::helpers::{display_schema, log_endpoint_set};
 use crate::cli::fmt::Fmt;
-use crate::core::Errata;
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
 use crate::core::config::Source;
 use crate::core::runtime::TargetRuntime;
+use crate::core::Errata;
 
 pub(super) struct CheckParams {
     pub(super) file_paths: Vec<String>,

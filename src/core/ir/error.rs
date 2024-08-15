@@ -4,9 +4,8 @@ use std::sync::Arc;
 use async_graphql::{ErrorExtensions, Value as ConstValue};
 use derive_more::From;
 use thiserror::Error;
-use crate::core::Errata;
 
-use crate::core::{auth, cache, worker};
+use crate::core::{auth, cache, worker, Errata};
 #[derive(From, Debug, Error, Clone)]
 pub enum Error {
     IO(String),
@@ -48,8 +47,8 @@ impl From<Error> for Errata {
                 grpc_description,
                 grpc_status_message,
                 grpc_status_details: _,
-            } => Errata::new("GRPC Error")
-                .description(format!("status: {grpc_code}, description: `{grpc_description}`, message: `{grpc_status_message}")),
+            } => Errata::new("gRPC Error")
+                .description(format!("status: {grpc_code}, description: `{grpc_description}`, message: `{grpc_status_message}`")),
             Error::APIValidation(errors) => Errata::new("API Validation Error")
                 .caused_by(errors.iter().map(|e| Errata::new(e)).collect::<Vec<_>>()),
             Error::Deserialize(message) => {

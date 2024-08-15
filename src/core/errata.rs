@@ -209,8 +209,7 @@ impl<'a> From<ValidationError<&'a str>> for Errata {
                 .as_vec()
                 .iter()
                 .map(|cause| {
-                    let mut err =
-                        Errata::new(cause.message).trace(Vec::from(cause.trace.clone()));
+                    let mut err = Errata::new(cause.message).trace(Vec::from(cause.trace.clone()));
                     if let Some(description) = cause.description {
                         err = err.description(description.to_owned());
                     }
