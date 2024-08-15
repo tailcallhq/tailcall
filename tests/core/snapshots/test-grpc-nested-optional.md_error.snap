@@ -4,13 +4,50 @@ expression: errors
 ---
 [
   {
-    "message": "expected type to be required",
+    "message": "expected String, got Opt(Str)",
     "trace": [
       "Query",
       "news",
       "@grpc",
       "NewsData",
-      "news"
+      "news",
+      "body"
+    ],
+    "description": null
+  },
+  {
+    "message": "expected Number, got Opt(Num)",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc",
+      "NewsData",
+      "news",
+      "id"
+    ],
+    "description": null
+  },
+  {
+    "message": "expected String, got Opt(Str)",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc",
+      "NewsData",
+      "news",
+      "postImage"
+    ],
+    "description": null
+  },
+  {
+    "message": "expected String, got Opt(Str)",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc",
+      "NewsData",
+      "news",
+      "title"
     ],
     "description": null
   }
