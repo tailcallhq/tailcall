@@ -31,7 +31,7 @@ impl TryFrom<ChatResponse> for Answer {
 #[derive(Clone, Serialize)]
 struct Question<'a> {
     type_refs: IndexMap<&'a str, u32>,
-    fields: Vec<(String, String)>,
+    fields: Vec<(&'a str, &'a str)>,
 }
 
 impl TryInto<ChatRequest> for Question<'_> {
@@ -46,11 +46,7 @@ impl TryInto<ChatRequest> for Question<'_> {
 
         let input = serde_json::to_string_pretty(&Question {
             type_refs,
-            fields: vec![
-                ("id".to_string(), "String".to_string()),
-                ("name".to_string(), "String".to_string()),
-                ("age".to_string(), "Int".to_string()),
-            ],
+            fields: vec![("id", "String"), ("name", "String"), ("age", "Int")],
         })?;
 
         let output = serde_json::to_string_pretty(&Answer {
@@ -113,7 +109,7 @@ impl InferTypeName {
                     fields: type_
                         .fields
                         .iter()
-                        .map(|(k, v)| (k.clone(), v.type_of.clone()))
+                        .map(|(k, v)| (k.as_str(), v.type_of.as_str()))
                         .collect(),
                 };
 
@@ -184,11 +180,7 @@ mod test {
 
         let question = Question {
             type_refs,
-            fields: vec![
-                ("id".to_string(), "String".to_string()),
-                ("name".to_string(), "String".to_string()),
-                ("age".to_string(), "Int".to_string()),
-            ],
+            fields: vec![("id", "String"), ("name", "String"), ("age", "Int")],
         };
         let request: ChatRequest = question.try_into().unwrap();
         insta::assert_debug_snapshot!(request);
