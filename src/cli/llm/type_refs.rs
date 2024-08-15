@@ -2,10 +2,12 @@ use indexmap::IndexMap;
 
 use crate::core::config::Config;
 
-/// A mapping of type names to their referenced fields and the number of times each type is referenced.
+/// A mapping of type names to their referenced fields and the number of times
+/// each type is referenced.
 ///
-/// Structure maintains a map where each key is a type name, and the corresponding value is
-/// another map that tracks the field names and the count of how many times the type name was present in the configuration.
+/// Structure maintains a map where each key is a type name, and the
+/// corresponding value is another map that tracks the field names and the count
+/// of how many times the type name was present in the configuration.
 pub struct TypeUsageIndex {
     type_refs: IndexMap<String, IndexMap<String, u32>>,
 }
@@ -16,7 +18,8 @@ impl TypeUsageIndex {
             .types
             .keys()
             .map(|t_name| {
-                // Collect field names and counts where the field's type matches the current type_name
+                // Collect field names and counts where the field's type matches the current
+                // type_name
                 let type_refs = config
                     .types
                     .values()
@@ -46,9 +49,9 @@ impl TypeUsageIndex {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::{config::Config, valid::Validator};
-
     use super::TypeUsageIndex;
+    use crate::core::config::Config;
+    use crate::core::valid::Validator;
 
     #[test]
     fn test_type_index() {
@@ -65,12 +68,11 @@ mod tests {
             type Query {
                 user: T1
             }
-        
         "#;
 
         let config = Config::from_sdl(sdl).to_result().unwrap();
-        let ty_tango = TypeUsageIndex::new(&config);
-        let ty_refs = ty_tango.get("T1").unwrap();
+        let ty_index = TypeUsageIndex::new(&config);
+        let ty_refs = ty_index.get("T1").unwrap();
         assert_eq!(ty_refs.len(), 1);
         assert_eq!(ty_refs.get("user").unwrap(), &2u32);
     }

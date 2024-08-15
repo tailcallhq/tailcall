@@ -102,7 +102,7 @@ impl InferTypeName {
             .filter(|(type_name, _)| !config.is_root_operation_type(type_name))
             .collect::<Vec<_>>();
 
-        let type_tango = TypeUsageIndex::new(&config);
+        let type_tango = TypeUsageIndex::new(config);
 
         let total = types_to_be_processed.len();
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
@@ -140,8 +140,9 @@ impl InferTypeName {
                                 total
                             );
 
-                            // TODO: case where suggested names are already used, then extend the base
-                            // question with `suggest different names, we have already used following
+                            // TODO: case where suggested names are already used, then extend the
+                            // base question with `suggest different
+                            // names, we have already used following
                             // names: [names list]`
                             break;
                         }
