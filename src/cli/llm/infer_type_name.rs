@@ -59,6 +59,7 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
+        // Mustache::parse is an infallible function, so we can unwrap it here.
         let template = Mustache::parse(SYSTEM_PROMPT_TEMPLATE).unwrap();
 
         let system_message = template.render(&PromptContext::new(indexmap! {

@@ -4,7 +4,6 @@ use indexmap::IndexMap;
 
 use crate::core::path::PathString;
 
-
 pub struct PromptContext<'a> {
     vars: IndexMap<&'a str, String>,
 }
@@ -22,20 +21,16 @@ impl<'a> PathString for PromptContext<'a> {
         }
 
         path.split_first().and_then(|(head, _)| {
-            if let Some(value) = self.vars.get(head.as_ref()) {
-                Some(value.into())
-            } else {
-                None
-            }
+            self.vars.get(head.as_ref()).map(|value| value.into())
         })
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use super::*;
     use indexmap::indexmap;
+
+    use super::*;
 
     #[test]
     fn test_path_string_with_existing_key() {
@@ -78,4 +73,3 @@ mod tests {
         assert_eq!(result, None);
     }
 }
-
