@@ -1,4 +1,5 @@
 mod error;
+mod type_refs;
 pub mod infer_type_name;
 pub use error::Error;
 use error::Result;
@@ -7,3 +8,4 @@ mod model;
 mod wizard;
 
 pub use wizard::Wizard;
+pub use type_refs::TypeUsageIndex;
