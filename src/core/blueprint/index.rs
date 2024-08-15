@@ -9,6 +9,7 @@ use crate::core::scalar;
 /// A read optimized index of all the types in the Blueprint. Provide O(1)
 /// access to getting any field information.
 
+#[derive(Debug)]
 pub struct Index {
     map: IndexMap<String, (Definition, IndexMap<String, QueryField>)>,
     schema: SchemaDefinition,
@@ -157,5 +158,153 @@ impl From<&Blueprint> for Index {
         }
 
         Self { map, schema: blueprint.schema.to_owned() }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::core::{
+        blueprint::Blueprint,
+        config::{Config, ConfigModule},
+        valid::Validator,
+    };
+
+    use super::Index;
+
+    fn setup() -> Index {
+        let sdl = r#"
+            schema
+                @server(port: 8000)
+                @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+                query: Query
+                mutation: Mutation
+            }
+
+            # Enum Type
+            enum Status {
+                ACTIVE
+                INACTIVE
+                PENDING
+            }
+
+            # Input Object Type
+            input UserInput {
+                name: String!
+                email: String!
+                status: Status
+            }
+
+            # Interface Type
+            interface Node {
+                id: ID!
+                createdAt: DateTime!
+                updatedAt: DateTime!
+            }
+
+            # Object Type
+            type User implements Node {
+                id: ID!
+                name: String!
+                email: String!
+                status: Status
+                createdAt: DateTime!
+                updatedAt: DateTime!
+            }
+
+            # Union Type
+            union SearchResult = User | Post
+
+            # Object Type
+            type Post implements Node {
+                id: ID!
+                title: String!
+                content: String!
+                author: User!
+                createdAt: DateTime!
+                updatedAt: DateTime!
+            }
+
+            # Query Type
+            type Query {
+                user(id: ID!): User @http(path: "/users/{{.args.id}}")
+                search(term: String!): [SearchResult!] @http(path: "/search", query: [{key: "q", value: "{{.args.term}}"}])
+            }
+
+            input PostInput {
+                title: String!
+                content: String!
+                authorId: ID!
+            }
+
+            # Mutation Type
+            type Mutation {
+                createUser(input: UserInput!): User! @http(path: "/users", body: "{{.args.input}}", method: "POST")
+                createPost(input: PostInput): Post! @http(path: "/posts", body: "{{.args.input}}", method: "POST")
+            }
+        "#;
+
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+        let cfg_module = ConfigModule::from(config);
+        let blueprint = Blueprint::try_from(&cfg_module).unwrap();
+        let index = Index::from(&blueprint);
+
+        index
+    }
+
+    #[test]
+    fn test_from_blueprint() {
+        let index = setup();
+        insta::assert_debug_snapshot!(index);
+    }
+
+    #[test]
+    fn test_is_scalar() {
+        let index = setup();
+        assert!(index.type_is_scalar("Int"));
+        assert!(index.type_is_scalar("String"));
+
+        assert!(!index.type_is_scalar("Color"));
+    }
+
+    #[test]
+    fn test_is_enum() {
+        let index = setup();
+        assert!(index.type_is_enum("Status"));
+        assert!(!index.type_is_enum("Int"));
+    }
+
+    #[test]
+    fn test_validate_enum_value() {
+        let index = setup();
+        assert!(index.validate_enum_value("Status", "ACTIVE"));
+        assert!(!index.validate_enum_value("Status", "YELLOW"));
+        assert!(!index.validate_enum_value("Int", "1"));
+    }
+
+    #[test]
+    fn test_get_field() {
+        let index = setup();
+        assert!(index.get_field("Query", "user").is_some());
+        assert!(index.get_field("Query", "non_existent_field").is_none());
+        assert!(index.get_field("Status", "Pending").is_none());
+    }
+
+    #[test]
+    fn test_get_query() {
+        let index = setup();
+        assert_eq!(index.get_query(), "Query");
+    }
+
+    #[test]
+    fn test_get_mutation() {
+        let index = setup();
+        assert_eq!(index.get_mutation(), Some("Mutation"));
+    }
+
+    #[test]
+    fn test_get_mutation_none() {
+        let mut index = setup();
+        index.schema.mutation = None;
+        assert_eq!(index.get_mutation(), None);
     }
 }
