@@ -8,5 +8,4 @@ Example Output:
 {{UserOutput}}
 
 Ensure the output is in valid JSON format.
-
 Do not add any additional text before or after the JSON.
