@@ -38,73 +38,21 @@ async fn start_watch_server(
     config_reader: Arc<ConfigReader>,
 ) -> Result<()> {
     let (tx, mut rx) = broadcast::channel(16);
-    let file_paths_clone = file_paths.clone();
 
-    let watch_handler = task::spawn(async move {
-        let (watch_tx, watch_rx) = std::sync::mpsc::channel();
-
-        let mut watcher = match RecommendedWatcher::new(watch_tx, Config::default()) {
-            Ok(watcher) => watcher,
-            Err(err) => {
-                tracing::error!("Failed to create watcher: {}", err);
-                return;
-            }
-        };
-
-        for path in &file_paths_clone {
-            if let Err(err) = watcher.watch(path.as_ref(), RecursiveMode::Recursive) {
-                tracing::error!("Failed to watch path {:?}: {}", path, err);
-            }
-        }
-
-        loop {
-            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-            match watch_rx.recv() {
-                Ok(event) => {
-                    if let Ok(event) = event {
-                        if let notify::EventKind::Modify(notify::event::ModifyKind::Data(
-                            notify::event::DataChange::Content,
-                        )) = event.kind
-                        {
-                            tracing::info!("File change detected");
-                            if let Err(err) = tx.send(()) {
-                                tracing::error!("Failed to send the signal: {}", err);
-                            }
-                        }
-                    }
-                }
-                Err(e) => tracing::error!("Watch error: {:?}", e),
+    let watch_handler = task::spawn({
+        let file_paths = file_paths.clone();
+        async move {
+            if let Err(err) = watch_files(&file_paths, tx).await {
+                tracing::error!("Watch handler encountered an error: {}", err);
             }
         }
     });
 
     let server_handler = task::spawn({
         let config_reader = Arc::clone(&config_reader);
-        let file_paths = file_paths.clone();
         async move {
-            let mut rec = Some(&mut rx);
-            let mut config_error = false;
-            loop {
-                match config_reader.read_all(&file_paths).await {
-                    Ok(config_module) => {
-                        log_endpoint_set(&config_module.extensions().endpoint_set);
-                        Fmt::log_n_plus_one(false, config_module.config());
-                        let server = Server::new(config_module.clone());
-                        if let Err(err) = server.fork_start(rec.as_deref_mut()).await {
-                            tracing::error!("Failed to start server: {}", err);
-                        }
-                        config_error = false;
-                        tracing::info!("Restarting server");
-                    }
-                    Err(err) => {
-                        if !config_error {
-                            tracing::error!("Failed to read config files: {}", err);
-                            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                            config_error = true;
-                        }
-                    }
-                }
-                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            if let Err(err) = handle_server(&mut rx, &file_paths, config_reader).await {
+                tracing::error!("Server handler encountered an error: {}", err);
             }
         }
     });
@@ -115,5 +63,76 @@ async fn start_watch_server(
     if let Err(err) = server_handler.await {
         tracing::debug!("Error in server handler: {}", err);
     }
+
     Ok(())
+}
+
+async fn watch_files(file_paths: &[String], tx: broadcast::Sender<()>) -> Result<()> {
+    let (watch_tx, watch_rx) = std::sync::mpsc::channel();
+    let mut watcher = match RecommendedWatcher::new(watch_tx, Config::default()) {
+        Ok(watcher) => watcher,
+        Err(err) => {
+            tracing::error!("Failed to create watcher: {}", err);
+            return Ok(());
+        }
+    };
+
+    for path in file_paths {
+        if let Err(err) = watcher.watch(path.as_ref(), RecursiveMode::Recursive) {
+            tracing::error!("Failed to watch path {:?}: {}", path, err);
+        }
+    }
+
+    loop {
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+        match watch_rx.recv() {
+            Ok(event) => {
+                if let Ok(event) = event {
+                    if let notify::EventKind::Modify(notify::event::ModifyKind::Data(
+                        notify::event::DataChange::Content,
+                    )) = event.kind
+                    {
+                        tracing::info!("File change detected");
+                        if let Err(err) = tx.send(()) {
+                            tracing::error!("Failed to send the signal: {}", err);
+                        }
+                    }
+                }
+            }
+            Err(e) => tracing::error!("Watch error: {:?}", e),
+        }
+    }
+}
+
+async fn handle_server(
+    rx: &mut broadcast::Receiver<()>,
+    file_paths: &[String],
+    config_reader: Arc<ConfigReader>,
+) -> Result<()> {
+    let mut config_error = false;
+
+    loop {
+        match config_reader.read_all(file_paths).await {
+            Ok(config_module) => {
+                log_endpoint_set(&config_module.extensions().endpoint_set);
+                Fmt::log_n_plus_one(false, config_module.config());
+
+                let server = Server::new(config_module.clone());
+                if let Err(err) = server.fork_start(Some(rx)).await {
+                    tracing::error!("Failed to start server: {}", err);
+                }
+
+                config_error = false;
+                tracing::info!("Server restarted");
+            }
+            Err(err) => {
+                if !config_error {
+                    tracing::error!("Failed to read config files: {}", err);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                    config_error = true;
+                }
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    }
 }
