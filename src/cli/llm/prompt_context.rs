@@ -20,9 +20,8 @@ impl<'a> PathString for PromptContext<'a> {
             return None;
         }
 
-        path.split_first().and_then(|(head, _)| {
-            self.vars.get(head.as_ref()).map(|value| value.into())
-        })
+        path.split_first()
+            .and_then(|(head, _)| self.vars.get(head.as_ref()).map(|value| value.into()))
     }
 }
 
