@@ -48,11 +48,13 @@ expression: plan.into_nested()
                         type_condition: "Post",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                 ],
             ),
         ),
         is_scalar: false,
         directives: [],
+        alias: None,
     },
 ]

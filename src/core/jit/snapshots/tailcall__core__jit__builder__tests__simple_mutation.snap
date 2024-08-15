@@ -63,6 +63,7 @@ expression: plan.into_nested()
                         type_condition: "User",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                     Field {
                         id: 2,
@@ -71,6 +72,7 @@ expression: plan.into_nested()
                         type_condition: "User",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                     Field {
                         id: 3,
@@ -79,6 +81,7 @@ expression: plan.into_nested()
                         type_condition: "User",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                     Field {
                         id: 4,
@@ -87,6 +90,7 @@ expression: plan.into_nested()
                         type_condition: "User",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                     Field {
                         id: 5,
@@ -95,6 +99,7 @@ expression: plan.into_nested()
                         type_condition: "User",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                     Field {
                         id: 6,
@@ -103,11 +108,13 @@ expression: plan.into_nested()
                         type_condition: "User",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                 ],
             ),
         ),
         is_scalar: false,
         directives: [],
+        alias: None,
     },
 ]

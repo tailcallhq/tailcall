@@ -31,6 +31,7 @@ expression: plan.into_nested()
                                 ],
                             },
                         ],
+                        alias: None,
                     },
                     Field {
                         id: 2,
@@ -44,11 +45,13 @@ expression: plan.into_nested()
                             ),
                         ),
                         directives: [],
+                        alias: None,
                     },
                 ],
             ),
         ),
         is_scalar: false,
         directives: [],
+        alias: None,
     },
 ]

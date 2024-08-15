@@ -48,6 +48,7 @@ expression: plan.into_nested()
                         type_condition: "Post",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                     Field {
                         id: 2,
@@ -56,6 +57,7 @@ expression: plan.into_nested()
                         type_condition: "Post",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                     Field {
                         id: 3,
@@ -64,6 +66,7 @@ expression: plan.into_nested()
                         type_condition: "Post",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                     Field {
                         id: 4,
@@ -72,11 +75,13 @@ expression: plan.into_nested()
                         type_condition: "Post",
                         is_scalar: true,
                         directives: [],
+                        alias: None,
                     },
                 ],
             ),
         ),
         is_scalar: false,
         directives: [],
+        alias: None,
     },
 ]
