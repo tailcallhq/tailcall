@@ -1,0 +1,62 @@
+---
+source: tests/core/spec.rs
+expression: formatted
+---
+scalar Bytes
+
+scalar Date
+
+scalar DateTime
+
+scalar Email
+
+scalar Empty
+
+scalar Int128
+
+scalar Int16
+
+scalar Int32
+
+scalar Int64
+
+scalar Int8
+
+scalar JSON
+
+scalar PhoneNumber
+
+type Query {
+  user(id: ID!): User!
+}
+
+scalar UInt128
+
+scalar UInt16
+
+scalar UInt32
+
+scalar UInt64
+
+scalar UInt8
+
+scalar Url
+
+type User {
+  featuredVideo(video: VideoSize! = {width: 1600, height: 900}): String!
+  featuredVideoPreview(video: VideoSize! = {}): String!
+  id: ID!
+  name: String!
+  profilePic(height: Int = 100, size: Int! = 100, width: Int): String!
+  searchComments(query: [String]! = [["today"]]): String!
+}
+
+input VideoSize {
+  hdr: Boolean = true
+  height: Int!
+  width: Int!
+}
+
+schema {
+  query: Query
+}
