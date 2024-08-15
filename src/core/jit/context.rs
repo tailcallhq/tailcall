@@ -52,6 +52,34 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         }
     }
 
+    pub fn generate_args(&self) -> Self {
+        let mut arg_map = indexmap::IndexMap::new();
+
+        for arg in self.field.args.iter() {
+            let name = arg.name.as_str();
+            let value: Option<Input> = arg
+                .value
+                .clone()
+                // TODO: default value resolution should happen in the InputResolver
+                .or_else(|| arg.default_value.clone());
+
+            if let Some(value) = value {
+                arg_map.insert(Name::new(name), value);
+            } else if !arg.type_of.is_nullable() {
+                // TODO: throw error here
+                todo!()
+            }
+        }
+
+        Self {
+            request: self.request,
+            value: self.value,
+            args: Some(arg_map),
+            is_query: self.is_query,
+            field: self.field,
+        }
+    }
+
     pub fn value(&self) -> Option<&Output> {
         self.value
     }

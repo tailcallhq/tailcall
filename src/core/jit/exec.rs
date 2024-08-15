@@ -77,25 +77,9 @@ where
 
     async fn init(&mut self) {
         join_all(self.plan.as_nested().iter().map(|field| async {
-            let mut arg_map = indexmap::IndexMap::new();
-            for arg in field.args.iter() {
-                let name = arg.name.as_str();
-                let value: Option<Input> = arg
-                    .value
-                    .clone()
-                    // TODO: default value resolution should happen in the InputResolver
-                    .or_else(|| arg.default_value.clone());
-
-                if let Some(value) = value {
-                    arg_map.insert(name, value);
-                } else if !arg.type_of.is_nullable() {
-                    // TODO: throw error here
-                    todo!()
-                }
-            }
+            let ctx = Context::new(&self.request, self.plan.is_query(), field).generate_args();
             // TODO: with_args should be called on inside iter_field on any level, not only
             // for root fields
-            let ctx = Context::new(&self.request, self.plan.is_query(), field).with_args(arg_map);
             self.execute(&ctx, DataPath::new()).await
         }))
         .await;
@@ -159,12 +143,12 @@ where
         data_path: DataPath,
     ) -> Result<(), Error> {
         let field = ctx.field();
-
+        let ctx = ctx.generate_args();
         if let Some(ir) = &field.ir {
-            let result = self.ir_exec.execute(ir, ctx).await;
+            let result = self.ir_exec.execute(ir, &ctx).await;
 
             if let Ok(ref result) = result {
-                self.iter_field(ctx, &data_path, result.as_ref()).await?;
+                self.iter_field(&ctx, &data_path, result.as_ref()).await?;
             }
 
             let mut store = self.store.lock().unwrap();
@@ -191,7 +175,7 @@ where
 
             let result = TypedValueRef { value, type_name: None };
 
-            self.iter_field(ctx, &data_path, result).await?;
+            self.iter_field(&ctx, &data_path, result).await?;
         }
 
         Ok(())
