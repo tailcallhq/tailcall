@@ -1,15 +1,16 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use convert_case::{Case, Casing};
 use serde_json::Value;
 use url::Url;
 
 use super::json::{self, GraphQLTypesGenerator};
-use super::NameGenerator;
+use super::{Input, NameGenerator};
 use crate::core::config::transformer::RenameTypes;
 use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
+use crate::core::mustache::TemplateString;
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::{Valid, Validator};
 
@@ -20,25 +21,40 @@ pub struct RequestSample {
     pub res_body: Value,
     pub field_name: String,
     pub operation_type: GraphQLOperationType,
+    pub headers: Option<BTreeMap<String, TemplateString>>,
 }
 
-impl RequestSample {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new<T: Into<String>>(
-        url: Url,
-        method: Method,
-        body: serde_json::Value,
-        resp: Value,
-        field_name: T,
-        operation_type: GraphQLOperationType,
-    ) -> Self {
-        Self {
-            url,
-            method,
-            req_body: body,
-            res_body: resp,
-            field_name: field_name.into(),
-            operation_type,
+impl From<&Input> for RequestSample {
+    fn from(input: &Input) -> Self {
+        match input {
+            Input::Json {
+                url,
+                method,
+                req_body,
+                res_body,
+                field_name,
+                is_mutation,
+                headers,
+            } => {
+                let operation_type = if *is_mutation {
+                    GraphQLOperationType::Mutation
+                } else {
+                    GraphQLOperationType::Query
+                };
+
+                Self {
+                    url: url.clone(),
+                    method: method.clone(),
+                    req_body: req_body.clone(),
+                    res_body: res_body.clone(),
+                    field_name: field_name.clone(),
+                    headers: headers.clone(),
+                    operation_type,
+                }
+            }
+            _ => {
+                panic!("Cannot convert from non-Json variant");
+            }
         }
     }
 }
@@ -89,12 +105,23 @@ impl Transform for FromJsonGenerator<'_> {
                 ),
             };
 
+            // collect the required header keys
+            let header_keys = sample.headers.as_ref().map(|headers_inner| {
+                headers_inner
+                    .iter()
+                    .map(|(k, _)| k.to_owned())
+                    .collect::<BTreeSet<_>>()
+            });
+
             let mut rename_types = HashMap::new();
             rename_types.insert(existing_name, suggested_name);
 
             // these transformations are required in order to generate a base config.
             GraphQLTypesGenerator::new(sample, type_name_gen)
-                .pipe(json::SchemaGenerator::new(&sample.operation_type))
+                .pipe(json::SchemaGenerator::new(
+                    &sample.operation_type,
+                    &header_keys,
+                ))
                 .pipe(json::FieldBaseUrlGenerator::new(
                     &sample.url,
                     &sample.operation_type,
@@ -113,9 +140,8 @@ impl Transform for FromJsonGenerator<'_> {
 #[cfg(test)]
 mod tests {
     use crate::core::config::transformer::Preset;
-    use crate::core::config::GraphQLOperationType;
     use crate::core::generator::generator::test::JsonFixture;
-    use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
+    use crate::core::generator::{FromJsonGenerator, Input, NameGenerator, RequestSample};
     use crate::core::http::Method;
     use crate::core::transform::TransformerOps;
     use crate::core::valid::Validator;
@@ -133,14 +159,16 @@ mod tests {
         let field_name_generator = NameGenerator::new("f");
         for fixture in fixtures {
             let JsonFixture { url, response } = JsonFixture::read(fixture).await?;
-            request_samples.push(RequestSample::new(
-                url.parse()?,
-                Method::GET,
-                serde_json::Value::Null,
-                response,
-                field_name_generator.next(),
-                GraphQLOperationType::Query,
-            ));
+            let json_input = Input::Json {
+                url: url.parse()?,
+                method: Method::GET,
+                req_body: serde_json::Value::Null,
+                res_body: response,
+                field_name: field_name_generator.next(),
+                is_mutation: false,
+                headers: None,
+            };
+            request_samples.push(RequestSample::from(&json_input));
         }
 
         let config =

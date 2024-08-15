@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use derive_setters::Setters;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::DescriptorPool;
@@ -6,9 +8,10 @@ use url::Url;
 
 use super::from_proto::from_proto;
 use super::{FromJsonGenerator, NameGenerator, RequestSample};
-use crate::core::config::{self, Config, ConfigModule, GraphQLOperationType, Link, LinkType};
+use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
+use crate::core::mustache::TemplateString;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
@@ -34,6 +37,7 @@ pub enum Input {
         res_body: Value,
         field_name: String,
         is_mutation: bool,
+        headers: Option<BTreeMap<String, TemplateString>>,
     },
     Proto(ProtoMetadata),
     Config {
@@ -101,31 +105,11 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                Input::Json {
-                    url,
-                    res_body: response,
-                    field_name,
-                    is_mutation,
-                    method,
-                    req_body,
-                } => {
-                    let operation_type = if *is_mutation {
-                        GraphQLOperationType::Mutation
-                    } else {
-                        GraphQLOperationType::Query
-                    };
-
-                    let request_sample = RequestSample::new(
-                        url.to_owned(),
-                        method.to_owned(),
-                        req_body.to_owned(),
-                        response.to_owned(),
-                        field_name,
-                        operation_type.to_owned(),
-                    );
-                    config = config.merge_right(
-                        self.generate_from_json(&type_name_generator, &[request_sample])?,
-                    );
+                json_value @ Input::Json { .. } => {
+                    config = config.merge_right(self.generate_from_json(
+                        &type_name_generator,
+                        &[RequestSample::from(json_value)],
+                    )?);
                 }
                 Input::Proto(proto_input) => {
                     config =
@@ -259,6 +243,7 @@ pub mod test {
                 res_body: parsed_content.response,
                 field_name: "f1".to_string(),
                 is_mutation: false,
+                headers: None,
             }])
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
@@ -294,6 +279,7 @@ pub mod test {
             res_body: parsed_content.response,
             field_name: "f1".to_string(),
             is_mutation: false,
+            headers: None,
         };
 
         // Combine inputs
@@ -325,6 +311,7 @@ pub mod test {
                 res_body: parsed_content.response,
                 field_name: field_name_generator.next(),
                 is_mutation: false,
+                headers: None,
             });
         }
 

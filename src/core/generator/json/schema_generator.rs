@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use convert_case::{Case, Casing};
 
 use crate::core::config::{Config, GraphQLOperationType};
@@ -6,11 +8,15 @@ use crate::core::valid::Valid;
 
 pub struct SchemaGenerator<'a> {
     operation_type: &'a GraphQLOperationType,
+    header_keys: &'a Option<BTreeSet<String>>,
 }
 
 impl<'a> SchemaGenerator<'a> {
-    pub fn new(operation_type: &'a GraphQLOperationType) -> Self {
-        Self { operation_type }
+    pub fn new(
+        operation_type: &'a GraphQLOperationType,
+        header_keys: &'a Option<BTreeSet<String>>,
+    ) -> Self {
+        Self { operation_type, header_keys }
     }
 }
 
@@ -34,6 +40,10 @@ impl Transform for SchemaGenerator<'_> {
                 );
             }
         }
+
+        // Add allowed headers setting on upstream
+        config.upstream = config.upstream.allowed_headers(self.header_keys.to_owned());
+
         Valid::succeed(config)
     }
 }
@@ -47,7 +57,7 @@ mod test {
 
     #[test]
     fn test_schema_generator_with_mutation() {
-        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Mutation);
+        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Mutation, &None);
         let config = schema_gen
             .transform(Default::default())
             .to_result()
@@ -60,7 +70,7 @@ mod test {
 
     #[test]
     fn test_schema_generator_with_query() {
-        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Query);
+        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Query, &None);
         let config = schema_gen
             .transform(Default::default())
             .to_result()
