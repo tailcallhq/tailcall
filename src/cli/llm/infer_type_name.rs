@@ -62,13 +62,13 @@ impl TryInto<ChatRequest> for Question {
         // Mustache::parse is an infallible function, so we can unwrap it here.
         let template = Mustache::parse(SYSTEM_PROMPT_TEMPLATE).unwrap();
 
-        let system_message = template.render(&PromptContext::new(indexmap! {
+        let system_prompt = template.render(&PromptContext::new(indexmap! {
             "UserInput" => input,
             "UserOuput" => output
         }));
 
         Ok(ChatRequest::new(vec![
-            ChatMessage::system(system_message),
+            ChatMessage::system(system_prompt),
             ChatMessage::user(content),
         ]))
     }
