@@ -1,4 +1,4 @@
-use mustache::MapBuilder;
+use maplit::hashmap;
 use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
@@ -59,10 +59,10 @@ impl TryInto<ChatRequest> for Question {
         let template_str = include_str!("prompts.md");
         let template = mustache::compile_str(template_str)?;
 
-        let context = MapBuilder::new()
-            .insert_str("input", &input)
-            .insert_str("output", &output)
-            .build();
+        let context = hashmap! {
+            "input".to_string() => input,
+            "output".to_string() => output,
+        };
 
         let rendered_prompt = template.render_data_to_string(&context).map_err(|e| Error::TemplateError(e.to_string()))?;
 
