@@ -39,83 +39,79 @@ async fn start_watch_server(
     let (tx, mut rx) = broadcast::channel(16);
     let file_paths_clone = file_paths.clone();
 
-    tokio::spawn(async move {
-        let watch_handler = task::spawn(async move {
-            let (watch_tx, watch_rx) = std::sync::mpsc::channel();
+    let watch_handler = task::spawn(async move {
+        let (watch_tx, watch_rx) = std::sync::mpsc::channel();
 
-            let mut watcher = match RecommendedWatcher::new(watch_tx, Config::default()) {
-                Ok(watcher) => watcher,
-                Err(err) => {
-                    tracing::error!("Failed to create watcher: {}", err);
-                    return;
-                }
-            };
-
-            for path in &file_paths_clone {
-                if let Err(err) = watcher.watch(path.as_ref(), RecursiveMode::Recursive) {
-                    tracing::error!("Failed to watch path {:?}: {}", path, err);
-                }
+        let mut watcher = match RecommendedWatcher::new(watch_tx, Config::default()) {
+            Ok(watcher) => watcher,
+            Err(err) => {
+                tracing::error!("Failed to create watcher: {}", err);
+                return;
             }
+        };
 
+        for path in &file_paths_clone {
+            if let Err(err) = watcher.watch(path.as_ref(), RecursiveMode::Recursive) {
+                tracing::error!("Failed to watch path {:?}: {}", path, err);
+            }
+        }
+
+        loop {
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            match watch_rx.recv() {
+                Ok(event) => {
+                    if let Ok(event) = event {
+                        if let notify::EventKind::Modify(notify::event::ModifyKind::Data(_)) =
+                            event.kind
+                        {
+                            tracing::info!("File change detected");
+                            if let Err(err) = tx.send(()) {
+                                tracing::error!("Failed to send the signal: {}", err);
+                            }
+                        }
+                    }
+                }
+                Err(e) => tracing::error!("Watch error: {:?}", e),
+            }
+        }
+    });
+
+    let server_handler = task::spawn({
+        let config_reader = Arc::clone(&config_reader);
+        let file_paths = file_paths.clone();
+        async move {
+            let mut rec = Some(&mut rx);
+            let shown_warning = Arc::new(Mutex::new(false));
             loop {
-                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                match watch_rx.recv() {
-                    Ok(event) => {
-                        if let Ok(event) = event {
-                            if let notify::EventKind::Modify(notify::event::ModifyKind::Data(_)) =
-                                event.kind
-                            {
-                                tracing::info!("File change detected");
-                                if let Err(err) = tx.send(()) {
-                                    tracing::error!("Failed to send the signal: {}", err);
-                                }
-                            }
+                match config_reader.read_all(&file_paths).await {
+                    Ok(config_module) => {
+                        log_endpoint_set(&config_module.extensions().endpoint_set);
+                        Fmt::log_n_plus_one(false, config_module.config());
+                        let server = Server::new(config_module.clone());
+                        if let Err(err) = server.fork_start(rec.as_deref_mut()).await {
+                            tracing::error!("Failed to start server: {}", err);
+                        }
+                        *shown_warning.lock().await = false;
+                        tracing::info!("Restarting server");
+                    }
+                    Err(err) => {
+                        if !*shown_warning.lock().await {
+                            tracing::error!("Failed to read config files: {}", err);
+                            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                            *shown_warning.lock().await = true;
                         }
                     }
-                    Err(e) => tracing::error!("Watch error: {:?}", e),
                 }
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
             }
-        });
-
-        let server_handler = task::spawn({
-            let config_reader = Arc::clone(&config_reader);
-            let file_paths = file_paths.clone();
-            async move {
-                let mut rec = Some(&mut rx);
-                let shown_warning = Arc::new(Mutex::new(false));
-                loop {
-                    match config_reader.read_all(&file_paths).await {
-                        Ok(config_module) => {
-                            log_endpoint_set(&config_module.extensions().endpoint_set);
-                            Fmt::log_n_plus_one(false, config_module.config());
-                            let server = Server::new(config_module.clone());
-                            if let Err(err) = server.fork_start(rec.as_deref_mut()).await {
-                                tracing::error!("Failed to start server: {}", err);
-                            }
-                            *shown_warning.lock().await = false;
-                            tracing::info!("Restarting server");
-                        }
-                        Err(err) => {
-                            if !*shown_warning.lock().await {
-                                tracing::error!("Failed to read config files: {}", err);
-                                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                                *shown_warning.lock().await = true;
-                            }
-                        }
-                    }
-                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                }
-            }
-        });
-
-        if let Err(err) = watch_handler.await {
-            tracing::debug!("Error in watch handler: {}", err);
         }
-        if let Err(err) = server_handler.await {
-            tracing::debug!("Error in server handler: {}", err);
-        }
-    })
-    .await
-    .context("Failed to spawn watch server task")?;
+    });
+
+    if let Err(err) = watch_handler.await {
+        tracing::debug!("Error in watch handler: {}", err);
+    }
+    if let Err(err) = server_handler.await {
+        tracing::debug!("Error in server handler: {}", err);
+    }
     Ok(())
 }
