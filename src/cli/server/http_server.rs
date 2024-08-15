@@ -2,6 +2,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use anyhow::Result;
+use tokio::sync::broadcast;
 use tokio::sync::oneshot::{self};
 
 use super::http_1::start_http_1;
@@ -46,16 +47,28 @@ impl Server {
         }
     }
 
-    /// Starts the server in its own multithreaded Runtime
-    pub async fn fork_start(self) -> Result<()> {
+    pub async fn fork_start(self, rec: Option<&mut broadcast::Receiver<()>>) -> Result<()> {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(self.config_module.deref().server.get_workers())
             .enable_all()
             .build()?;
 
-        let result = runtime.spawn(async { self.start().await }).await?;
-        runtime.shutdown_background();
+        let handle = runtime.spawn(async { self.start().await });
 
-        result
+        if let Some(receiver) = rec {
+            tokio::select! {
+                _ = receiver.recv() => {
+                    tracing::info!("Server shutdown signal received");
+                    runtime.shutdown_background();
+                    tracing::info!("Server shutdown complete");
+                }
+                _ = handle => {
+                    tracing::info!("Server completed without shutdown signal");
+                }
+            }
+        } else {
+            handle.await?;
+        }
+        Ok(())
     }
 }

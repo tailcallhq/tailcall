@@ -169,6 +169,7 @@ indenter = "0.3.3"
 derive_more = { workspace = true }
 enum_dispatch = "0.3.13"
 strum = "0.26.2"
+notify = "6.1.1"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }

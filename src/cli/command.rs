@@ -26,6 +26,9 @@ pub enum Command {
         /// separated by spaces if more than one
         #[arg(required = true)]
         file_paths: Vec<String>,
+        /// Watch for changes
+        #[arg(short, long)]
+        watch: bool,
     },
 
     /// Validate a composition spec
