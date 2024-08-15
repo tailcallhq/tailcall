@@ -103,7 +103,7 @@ impl Response<Bytes> {
         let grpc_status = match Status::from_header_map(&self.headers) {
             Some(status) => status,
             None => {
-                return Error::IOException("Error while parsing upstream headers".to_owned()).into()
+                return Error::IO("Error while parsing upstream headers".to_owned()).into()
             }
         };
 
@@ -136,7 +136,7 @@ impl Response<Bytes> {
         }
         obj.insert(Name::new("details"), ConstValue::List(status_details));
 
-        let error = Error::GRPCError {
+        let error = Error::GRPC {
             grpc_code: grpc_status.code() as i32,
             grpc_description: grpc_status.code().description().to_owned(),
             grpc_status_message: grpc_status.message().to_owned(),

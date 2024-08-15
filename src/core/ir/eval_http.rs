@@ -236,7 +236,7 @@ pub fn parse_graphql_response<Ctx: ResolverContextLike>(
     field_name: &str,
 ) -> Result<async_graphql::Value, Error> {
     let res: async_graphql::Response =
-        from_value(res.body).map_err(|err| Error::DeserializeError(err.to_string()))?;
+        from_value(res.body).map_err(|err| Error::Deserialize(err.to_string()))?;
 
     for error in res.errors {
         ctx.add_error(error);
