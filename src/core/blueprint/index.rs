@@ -243,7 +243,6 @@ mod test {
         let config = Config::from_sdl(sdl).to_result().unwrap();
         let cfg_module = ConfigModule::from(config);
         let blueprint = Blueprint::try_from(&cfg_module).unwrap();
-        
 
         Index::from(&blueprint)
     }
