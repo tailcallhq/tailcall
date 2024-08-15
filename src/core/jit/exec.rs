@@ -77,7 +77,7 @@ where
 
     async fn init(&mut self) {
         join_all(self.plan.as_nested().iter().map(|field| async {
-            let ctx = Context::new(&self.request, self.plan.is_query(), field).generate_args();
+            let ctx = Context::new(&self.request, self.plan.is_query(), field);
             // TODO: with_args should be called on inside iter_field on any level, not only
             // for root fields
             self.execute(&ctx, DataPath::new()).await
@@ -143,12 +143,11 @@ where
         data_path: DataPath,
     ) -> Result<(), Error> {
         let field = ctx.field();
-        let ctx = ctx.generate_args();
         if let Some(ir) = &field.ir {
-            let result = self.ir_exec.execute(ir, &ctx).await;
+            let result = self.ir_exec.execute(ir, ctx).await;
 
             if let Ok(ref result) = result {
-                self.iter_field(&ctx, &data_path, result.as_ref()).await?;
+                self.iter_field(ctx, &data_path, result.as_ref()).await?;
             }
 
             let mut store = self.store.lock().unwrap();
@@ -175,7 +174,7 @@ where
 
             let result = TypedValueRef { value, type_name: None };
 
-            self.iter_field(&ctx, &data_path, result).await?;
+            self.iter_field(ctx, &data_path, result).await?;
         }
 
         Ok(())

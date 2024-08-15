@@ -1,5 +1,6 @@
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
+use indexmap::IndexMap;
 
 use super::{Field, Nested, Request};
 use crate::core::ir::{ResolverContextLike, SelectionField};
@@ -21,7 +22,13 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         is_query: bool,
         field: &'a Field<Nested<Input>, Input>,
     ) -> Self {
-        Self { request, value: None, args: None, is_query, field }
+        Self {
+            request,
+            value: None,
+            args: Self::build_args(field),
+            is_query,
+            field,
+        }
     }
 
     pub fn with_value_and_field(
@@ -31,52 +38,10 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
     ) -> Self {
         Self {
             request: self.request,
-            args: None,
+            args: Self::build_args(field),
             is_query: self.is_query,
             value: Some(value),
             field,
-        }
-    }
-
-    pub fn with_args(&self, args: indexmap::IndexMap<&str, Input>) -> Self {
-        let mut map = indexmap::IndexMap::new();
-        for (key, value) in args {
-            map.insert(Name::new(key), value);
-        }
-        Self {
-            request: self.request,
-            value: self.value,
-            args: Some(map),
-            is_query: self.is_query,
-            field: self.field,
-        }
-    }
-
-    pub fn generate_args(&self) -> Self {
-        let mut arg_map = indexmap::IndexMap::new();
-
-        for arg in self.field.args.iter() {
-            let name = arg.name.as_str();
-            let value: Option<Input> = arg
-                .value
-                .clone()
-                // TODO: default value resolution should happen in the InputResolver
-                .or_else(|| arg.default_value.clone());
-
-            if let Some(value) = value {
-                arg_map.insert(Name::new(name), value);
-            } else if !arg.type_of.is_nullable() {
-                // TODO: throw error here
-                todo!()
-            }
-        }
-
-        Self {
-            request: self.request,
-            value: self.value,
-            args: Some(arg_map),
-            is_query: self.is_query,
-            field: self.field,
         }
     }
 
@@ -86,6 +51,26 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
 
     pub fn field(&self) -> &Field<Nested<Input>, Input> {
         self.field
+    }
+
+    fn build_args(field: &Field<Nested<Input>, Input>) -> Option<IndexMap<Name, Input>> {
+        let mut arg_map = IndexMap::new();
+
+        for arg in field.args.iter() {
+            let name = arg.name.as_str();
+            let value = arg
+                .value
+                .clone()
+                // TODO: default value resolution should happen in the InputResolver
+                .or_else(|| arg.default_value.clone());
+            if let Some(value) = value {
+                arg_map.insert(Name::new(name), value);
+            } else if !arg.type_of.is_nullable() {
+                // TODO: throw error here
+                todo!()
+            }
+        }
+        Some(arg_map)
     }
 }
 
