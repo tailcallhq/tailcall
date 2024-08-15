@@ -135,7 +135,7 @@ impl Generator {
                         res_body: serde_json::from_str(&response.content)?,
                         field_name,
                         is_mutation,
-                        headers: None,
+                        headers: headers.into_btree_map(),
                     });
                 }
                 Source::Proto { src } => {

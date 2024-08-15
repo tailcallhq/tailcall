@@ -187,6 +187,10 @@ impl Location<UnResolved> {
 }
 
 impl<A> Headers<A> {
+    pub fn into_btree_map(self) -> Option<BTreeMap<String, TemplateString>> {
+        self.0
+    }
+
     pub fn as_btree_map(&self) -> &Option<BTreeMap<String, TemplateString>> {
         &self.0
     }
