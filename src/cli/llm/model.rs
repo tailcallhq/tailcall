@@ -66,8 +66,41 @@ pub mod groq {
     pub const LLAMA405B_REASONING: Model = Model("llama-3.1-405b-reasoning");
 }
 
+pub enum ModelKind {
+    OpenAI,
+    Ollama,
+    Anthropic,
+    Cohere,
+    Gemini,
+    Groq,
+}
+
 impl Model {
     pub fn as_str(&self) -> &'static str {
         self.0
+    }
+}
+
+impl ModelKind {
+    pub fn to_model(&self) -> Model {
+        match self {
+            Self::OpenAI => open_ai::GPT3_5_TURBO,
+            Self::Ollama => ollama::GEMMA2B,
+            Self::Anthropic => anthropic::CLAUDE35_SONNET_20240620,
+            Self::Cohere => cohere::COMMAND_LIGHT,
+            Self::Gemini => gemini::GEMINI10_PRO,
+            Self::Groq => groq::GEMMA29B_IT,
+        }
+    }
+
+    pub fn all() -> Vec<Self> {
+        vec![
+            Self::OpenAI,
+            Self::Ollama,
+            Self::Anthropic,
+            Self::Cohere,
+            Self::Gemini,
+            Self::Groq,
+        ]
     }
 }
