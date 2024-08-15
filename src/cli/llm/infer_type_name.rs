@@ -62,7 +62,7 @@ impl TryInto<ChatRequest> for Question {
         })?;
 
         let template_str = include_str!("prompts.md");
-        let template = mustache::compile_str(template_str).map_err(|e| Error::TemplateError(e.to_string()))?;
+        let template = mustache::compile_str(template_str)?;
 
         let context = MapBuilder::new()
             .insert_str("input", &input)
