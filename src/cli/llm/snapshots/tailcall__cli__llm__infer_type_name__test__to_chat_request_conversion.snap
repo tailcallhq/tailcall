@@ -22,6 +22,20 @@ ChatRequest {
         ChatMessage {
             role: System,
             content: Text(
+                "In this context, 'type_refs' refer to the number of times the type is used in different fields as output type. For example, if the following type is referenced 12 times in the 'user' field and 13 times in the 'profile' field.",
+            ),
+            extra: None,
+        },
+        ChatMessage {
+            role: System,
+            content: Text(
+                "While suggesting the type name, do consider above type_refs information for understanding the type context.",
+            ),
+            extra: None,
+        },
+        ChatMessage {
+            role: System,
+            content: Text(
                 "Example Input:",
             ),
             extra: None,
@@ -29,7 +43,7 @@ ChatRequest {
         ChatMessage {
             role: System,
             content: Text(
-                "{\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ]\n}",
+                "{\n  \"type_refs\": {\n    \"User\": 13,\n    \"Profile\": 11,\n    \"Person\": 14\n  },\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ]\n}",
             ),
             extra: None,
         },
@@ -64,7 +78,14 @@ ChatRequest {
         ChatMessage {
             role: User,
             content: Text(
-                "{\"fields\":[[\"id\",\"String\"],[\"name\",\"String\"],[\"age\",\"Int\"]]}",
+                "User Input:",
+            ),
+            extra: None,
+        },
+        ChatMessage {
+            role: User,
+            content: Text(
+                "{\"type_refs\":{\"User\":13,\"Profile\":11,\"Person\":14},\"fields\":[[\"id\",\"String\"],[\"name\",\"String\"],[\"age\",\"Int\"]]}",
             ),
             extra: None,
         },
