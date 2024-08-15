@@ -1,3 +1,4 @@
+use mustache::compile_str;
 use maplit::hashmap;
 use std::collections::HashMap;
 
