@@ -87,7 +87,7 @@ impl InferTypeName {
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let secret = self.secret.as_ref().map(|s| s.to_owned());
 
-        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA70B_VERSATILE, secret);
+        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
 
         let mut new_name_mappings = HashMap::new();
 
