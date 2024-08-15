@@ -51,7 +51,7 @@ mod tests {
     use super::TypeUsageIndex;
 
     #[test]
-    fn test_type_tango() {
+    fn test_type_index() {
         let sdl = r#"
             type T1 {
                 name: String
@@ -71,6 +71,7 @@ mod tests {
         let config = Config::from_sdl(sdl).to_result().unwrap();
         let ty_tango = TypeUsageIndex::new(&config);
         let ty_refs = ty_tango.get("T1").unwrap();
+        assert_eq!(ty_refs.len(), 1);
         assert_eq!(ty_refs.get("user").unwrap(), &2u32);
     }
 }
