@@ -1,3 +1,4 @@
+use mustache::MapBuilder;
 use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
@@ -32,6 +33,11 @@ struct Question {
     fields: Vec<(String, String)>,
 }
 
+struct PromptContext {
+    input: String,
+    output: String,
+}
+
 impl TryInto<ChatRequest> for Question {
     type Error = Error;
 
@@ -55,20 +61,19 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
+        let template_str = include_str!("prompts.md");
+        let template = mustache::compile_str(template_str).map_err(|e| Error::TemplateError(e.to_string()))?;
+
+        let context = MapBuilder::new()
+            .insert_str("input", &input)
+            .insert_str("output", &output)
+            .build();
+
+        let rendered_prompt = template.render_data_to_string(&context).map_err(|e| Error::TemplateError(e.to_string()))?;
+
         Ok(ChatRequest::new(vec![
-            ChatMessage::system(
-                "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
-            ),
-            ChatMessage::system("The name should be concise and preferably a single word"),
-            ChatMessage::system("Example Input:"),
-            ChatMessage::system(input),
-            ChatMessage::system("Example Output:"),
-            ChatMessage::system(output),
-            ChatMessage::system("Ensure the output is in valid JSON format".to_string()),
-            ChatMessage::system(
-                "Do not add any additional text before or after the json".to_string(),
-            ),
-            ChatMessage::user(content),
+            ChatMessage::system(rendered_prompt),
+            ChatMessage::user(serde_json::to_string(&self)?),
         ]))
     }
 }
