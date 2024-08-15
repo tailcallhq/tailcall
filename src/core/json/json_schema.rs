@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
@@ -275,7 +275,7 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, BTreeSet, HashMap};
+    use std::collections::{BTreeMap, BTreeSet};
 
     use async_graphql::Name;
     use indexmap::IndexMap;
