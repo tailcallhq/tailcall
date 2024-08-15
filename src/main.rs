@@ -3,7 +3,7 @@
 
 use std::cell::Cell;
 
-use tailcall::cli::CLIError;
+use tailcall::core::Errata;
 use tailcall::core::tracing::default_tracing_tailcall;
 use tracing::subscriber::DefaultGuard;
 
@@ -42,8 +42,8 @@ fn main() -> anyhow::Result<()> {
     match result {
         Ok(_) => {}
         Err(error) => {
-            // Ensure all errors are converted to CLIErrors before being printed.
-            let cli_error: CLIError = error.into();
+            // Ensure all errors are converted to Errata before being printed.
+            let cli_error: Errata = error.into();
             tracing::error!("{}", cli_error.color(true));
             std::process::exit(exitcode::CONFIG);
         }

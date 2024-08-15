@@ -40,6 +40,9 @@ mod transform;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
+mod errata;
+
+pub use errata::Errata;
 
 // Re-export everything from `tailcall_macros` as `macros`
 use std::borrow::Cow;

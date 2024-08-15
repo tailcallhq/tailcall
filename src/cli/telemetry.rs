@@ -24,7 +24,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{Layer, Registry};
 
 use super::metrics::init_metrics;
-use crate::cli::CLIError;
+use crate::core::Errata;
 use crate::core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::core::runtime::TargetRuntime;
 use crate::core::tracing::{default_tracing_tailcall, get_log_level, tailcall_filter_target};
@@ -204,8 +204,8 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
                     | global::Error::Log(LogError::Other(_)),
             ) {
                 tracing::subscriber::with_default(default_tracing_tailcall(), || {
-                    let cli = crate::cli::CLIError::new("Open Telemetry Error")
-                        .caused_by(vec![CLIError::new(error.to_string().as_str())])
+                    let cli = crate::core::Errata::new("Open Telemetry Error")
+                        .caused_by(vec![Errata::new(error.to_string().as_str())])
                         .trace(vec!["schema".to_string(), "@telemetry".to_string()]);
                     tracing::error!("{}", cli.color(true));
                 });
