@@ -154,39 +154,42 @@ impl JsonSchema {
     }
 
     /// Check if `self` is a subtype of `other`
-    pub fn is_a(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
-        let actual = self;
-        let expected = other;
-        if let JsonSchema::Any = expected {
+    pub fn is_a(&self, super_type: &JsonSchema, name: &str) -> Valid<(), String> {
+        let sub_type = self;
+        if let JsonSchema::Any = super_type {
             return Valid::succeed(());
         }
 
-        let fail = Valid::fail(format!("expected {} but found {}", expected, actual)).trace(name);
+        let fail = Valid::fail(format!(
+            "Type '{}' is not assignable to type '{}'",
+            sub_type, super_type
+        ))
+        .trace(name);
 
-        match expected {
+        match super_type {
             JsonSchema::Str => {
-                if expected != actual {
+                if super_type != sub_type {
                     return fail;
                 }
             }
             JsonSchema::Num => {
-                if expected != actual {
+                if super_type != sub_type {
                     return fail;
                 }
             }
             JsonSchema::Bool => {
-                if expected != actual {
+                if super_type != sub_type {
                     return fail;
                 }
             }
             JsonSchema::Empty => {
-                if expected != actual {
+                if super_type != sub_type {
                     return fail;
                 }
             }
             JsonSchema::Any => {}
             JsonSchema::Obj(expected) => {
-                if let JsonSchema::Obj(actual) = actual {
+                if let JsonSchema::Obj(actual) = sub_type {
                     return Valid::from_iter(expected.iter(), |(key, expected)| {
                         Valid::from_option(actual.get(key), format!("missing key: {}", key))
                             .and_then(|actual| actual.is_a(expected, key))
@@ -198,21 +201,21 @@ impl JsonSchema {
                 }
             }
             JsonSchema::Arr(expected) => {
-                if let JsonSchema::Arr(actual) = actual {
+                if let JsonSchema::Arr(actual) = sub_type {
                     return actual.is_a(expected, name);
                 } else {
                     return fail;
                 }
             }
             JsonSchema::Opt(expected) => {
-                if let JsonSchema::Opt(actual) = actual {
+                if let JsonSchema::Opt(actual) = sub_type {
                     return actual.is_a(expected, name);
                 } else {
-                    return actual.is_a(expected, name);
+                    return sub_type.is_a(expected, name);
                 }
             }
             JsonSchema::Enum(expected) => {
-                if let JsonSchema::Enum(actual) = actual {
+                if let JsonSchema::Enum(actual) = sub_type {
                     if actual.ne(expected) {
                         return fail;
                     }
