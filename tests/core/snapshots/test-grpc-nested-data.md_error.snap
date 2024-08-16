@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "expected Non repeatable type",
+    "message": "expected {body: Option<String>, id: Option<Number>, postImage: Option<String>, title: Option<String>} but found [{body: Option<String>, id: Option<Number>, postImage: Option<String>, title: Option<String>}]",
     "trace": [
       "Query",
       "newsById",

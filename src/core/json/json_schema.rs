@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::Display,
+};
 
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
@@ -18,6 +21,49 @@ pub enum JsonSchema {
     Bool,
     Empty,
     Any,
+}
+
+impl Display for JsonSchema {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            JsonSchema::Obj(fields) => {
+                let mut fields = fields
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", k, v))
+                    .collect::<Vec<String>>();
+
+                fields.sort();
+
+                write!(f, "{{{}}}", fields.join(", "))
+            }
+            JsonSchema::Arr(schema) => {
+                write!(f, "[{}]", schema)
+            }
+            JsonSchema::Opt(schema) => {
+                write!(f, "Option<{}>", schema)
+            }
+            JsonSchema::Enum(en) => {
+                let mut en = en.iter().map(|a| a.to_string()).collect::<Vec<String>>();
+                en.sort();
+                write!(f, "enum({})", en.join(", "))
+            }
+            JsonSchema::Str => {
+                write!(f, "String")
+            }
+            JsonSchema::Num => {
+                write!(f, "Number")
+            }
+            JsonSchema::Bool => {
+                write!(f, "Boolean")
+            }
+            JsonSchema::Empty => {
+                write!(f, "Empty")
+            }
+            JsonSchema::Any => {
+                write!(f, "Any")
+            }
+        }
+    }
 }
 
 impl<const L: usize> From<[(&'static str, JsonSchema); L]> for JsonSchema {
@@ -117,25 +163,27 @@ impl JsonSchema {
             return Valid::succeed(());
         }
 
+        let fail = Valid::fail(format!("expected {} but found {}", expected, actual)).trace(name);
+
         match expected {
             JsonSchema::Str => {
                 if expected != actual {
-                    return Valid::fail(format!("expected String, got {:?}", actual)).trace(name);
+                    return fail;
                 }
             }
             JsonSchema::Num => {
                 if expected != actual {
-                    return Valid::fail(format!("expected Number, got {:?}", actual)).trace(name);
+                    return fail;
                 }
             }
             JsonSchema::Bool => {
                 if expected != actual {
-                    return Valid::fail(format!("expected Boolean, got {:?}", actual)).trace(name);
+                    return fail;
                 }
             }
             JsonSchema::Empty => {
                 if expected != actual {
-                    return Valid::fail(format!("expected Empty, got {:?}", actual)).trace(name);
+                    return fail;
                 }
             }
             JsonSchema::Any => {}
@@ -148,21 +196,21 @@ impl JsonSchema {
                     .trace(name)
                     .unit();
                 } else {
-                    return Valid::fail("expected Object type".to_string()).trace(name);
+                    return fail;
                 }
             }
             JsonSchema::Arr(expected) => {
                 if let JsonSchema::Arr(actual) = actual {
                     return actual.compare(expected, name);
                 } else {
-                    return Valid::fail("expected Array type".to_string()).trace(name);
+                    return fail;
                 }
             }
             JsonSchema::Opt(expected) => {
                 if let JsonSchema::Opt(actual) = actual {
                     return actual.compare(expected, name);
                 } else {
-                    return Valid::fail("expected type to be optional".to_string()).trace(name);
+                    return fail;
                 }
             }
             JsonSchema::Enum(expected) => {
@@ -175,7 +223,7 @@ impl JsonSchema {
                         .trace(name);
                     }
                 } else {
-                    return Valid::fail(format!("expected Enum got: {:?}", actual)).trace(name);
+                    return fail;
                 }
             }
         }

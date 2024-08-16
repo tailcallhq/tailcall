@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "expected String, got Opt(Str)",
+    "message": "expected Option<String> but found String",
     "trace": [
       "Query",
       "news",
@@ -16,7 +16,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "expected Number, got Opt(Num)",
+    "message": "expected Option<Number> but found Number",
     "trace": [
       "Query",
       "news",
@@ -28,7 +28,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "expected String, got Opt(Str)",
+    "message": "expected Option<String> but found String",
     "trace": [
       "Query",
       "news",
@@ -40,7 +40,7 @@ expression: errors
     "description": null
   },
   {
-    "message": "expected String, got Opt(Str)",
+    "message": "expected Option<String> but found String",
     "trace": [
       "Query",
       "news",
