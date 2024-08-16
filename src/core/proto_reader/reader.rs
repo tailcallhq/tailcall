@@ -12,6 +12,7 @@ use crate::core::proto_reader::fetch::GrpcReflection;
 use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::runtime::TargetRuntime;
 
+#[derive(Clone)]
 pub struct ProtoReader {
     reader: ResourceReader<Cached>,
     runtime: TargetRuntime,
@@ -123,7 +124,7 @@ impl ProtoReader {
     ) -> anyhow::Result<Vec<FileDescriptorProto>> {
         self.resolve_dependencies(parent_proto, |import| {
             let parent_path = parent_path.map(|p| p.to_path_buf());
-            let this = ProtoReader { reader: self.reader.clone(), runtime: self.runtime.clone() };
+            let this = self.clone();
 
             async move { this.read_proto(import, parent_path.as_deref()).await }.boxed()
         })
