@@ -336,11 +336,11 @@ pub struct Field {
     /// Omits a field from public consumption.
     #[serde(default, skip_serializing_if = "is_default")]
     pub omit: Option<Omit>,
-  
+
     ///
     /// Inserts an Extension for the field.
     pub extension: Option<Extension>,
-    
+
     ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
