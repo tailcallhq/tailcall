@@ -123,7 +123,7 @@ impl ProtoReader {
     ) -> anyhow::Result<Vec<FileDescriptorProto>> {
         self.resolve_dependencies(parent_proto, |import| {
             let parent_path = parent_path.map(|p| p.to_path_buf());
-            let this = self.clone();
+            let this = ProtoReader { reader: self.reader.clone(), runtime: self.runtime.clone() };
 
             async move { this.read_proto(import, parent_path.as_deref()).await }.boxed()
         })
