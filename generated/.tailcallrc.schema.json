@@ -492,17 +492,6 @@
             "null"
           ]
         },
-        "expr": {
-          "description": "Inserts a constant resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Expr"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "extension": {
           "description": "Inserts an Extension for the field.",
           "anyOf": [
