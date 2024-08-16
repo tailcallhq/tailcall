@@ -519,10 +519,48 @@ mod tests {
     }
 
     #[test]
-    fn test_covariance() {
+    fn test_covariance_optional() {
         let parent = JsonSchema::Str.optional();
         let child = JsonSchema::Str;
         let child_is_a_parent = child.is_a(&parent, "foo").is_succeed();
         assert!(child_is_a_parent);
+    }
+
+    #[test]
+    fn test_covariance_object() {
+        // type in Proto file
+        let base = JsonSchema::from([
+            ("id", JsonSchema::Num.optional()),
+            ("title", JsonSchema::Str.optional()),
+            ("body", JsonSchema::Str.optional()),
+        ]);
+
+        // type in GraphQL file
+        let child = JsonSchema::from([
+            ("id", JsonSchema::Num),
+            ("title", JsonSchema::Str),
+            ("body", JsonSchema::Str),
+        ]);
+
+        assert!(child.is_a(&base, "foo").is_succeed());
+    }
+
+    #[test]
+    fn test_covariance_array() {
+        // type in Proto file
+        let base = JsonSchema::Arr(Box::new(JsonSchema::from([
+            ("id", JsonSchema::Num.optional()),
+            ("title", JsonSchema::Str.optional()),
+            ("body", JsonSchema::Str.optional()),
+        ])));
+
+        // type in GraphQL file
+        let child = JsonSchema::Arr(Box::new(JsonSchema::from([
+            ("id", JsonSchema::Num),
+            ("title", JsonSchema::Str),
+            ("body", JsonSchema::Str),
+        ])));
+
+        assert!(child.is_a(&base, "foo").is_succeed());
     }
 }
