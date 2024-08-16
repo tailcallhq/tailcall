@@ -1,0 +1,31 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
+  @upstream(baseURL: "http://upstream/graphql", httpCache: 42) {
+  query: Query
+}
+
+input VideoSize {
+  hdr: Boolean = true
+  height: Int!
+  width: Int!
+}
+
+type Query {
+  user(id: ID!): User! @graphQL(args: [{key: "id", value: "{{.args.id}}"}], name: "user")
+}
+
+type User {
+  featuredVideo(video: VideoSize! = {width: 1600, height: 900}): String!
+    @expr(body: "video_{{.value.id}}_{{.args.video.width}}_{{.args.video.height}}_{{.args.video.hdr}}")
+  featuredVideoPreview(video: VideoSize! = {}): String!
+    @expr(body: "video_{{.value.id}}_{{.args.video.width}}_{{.args.video.height}}_{{.args.video.hdr}}")
+  id: ID!
+  name: String!
+  profilePic(height: Int = 100, size: Int! = 100, width: Int): String!
+    @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
+  searchComments(query: [String]! = [["today"]]): String! @expr(body: "video_{{.value.id}}_{{.args.query}}")
+}
