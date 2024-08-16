@@ -10,7 +10,7 @@ use async_graphql::Name;
 use async_graphql_value::ConstValue;
 
 use super::telemetry::Telemetry;
-use super::Alias;
+use super::{Alias, Extension};
 use crate::core::config::{
     self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
     Variant,
@@ -326,7 +326,6 @@ where
     let doc = description.to_owned().map(|pos| pos.node);
     config::Resolver::from_directives(directives)
         .fuse(Extension::from_directives(directives.iter()))
-        .fuse(GraphQL::from_directives(directives.iter()))
         .fuse(Cache::from_directives(directives.iter()))
         .fuse(Omit::from_directives(directives.iter()))
         .fuse(Modify::from_directives(directives.iter()))
