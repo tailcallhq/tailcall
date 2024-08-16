@@ -1,0 +1,50 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "user": {
+        "friends": [
+          {
+            "id": 1,
+            "name": "friend_1",
+            "profilePic": "1_50__"
+          },
+          {
+            "id": 2,
+            "name": "friend_2",
+            "profilePic": "2_50__"
+          },
+          {
+            "id": 3,
+            "name": "friend_3",
+            "profilePic": "3_50__"
+          }
+        ],
+        "mutualFriends": [
+          {
+            "id": 1,
+            "name": "mutual_friend_1",
+            "profilePic": "1_50__"
+          },
+          {
+            "id": 2,
+            "name": "mutual_friend_2",
+            "profilePic": "2_50__"
+          },
+          {
+            "id": 3,
+            "name": "mutual_friend_3",
+            "profilePic": "3_50__"
+          }
+        ]
+      }
+    }
+  }
+}
