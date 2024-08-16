@@ -16,5 +16,8 @@ expression: actual
     }
   ],
   "output": {},
-  "schema": {}
+  "schema": {},
+  "llm": {
+    "model": ""
+  }
 }

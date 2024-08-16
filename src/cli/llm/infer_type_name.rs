@@ -3,13 +3,14 @@ use std::collections::HashMap;
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 
-use super::model::groq;
 use super::{Error, Result, Wizard};
+use crate::cli::generator::config::LLMConfig;
 use crate::core::config::Config;
 
 #[derive(Default)]
 pub struct InferTypeName {
-    secret: Option<String>,
+    model: String,
+    api_key: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,13 +75,18 @@ impl TryInto<ChatRequest> for Question {
 }
 
 impl InferTypeName {
-    pub fn new(secret: Option<String>) -> InferTypeName {
-        Self { secret }
+    pub fn new(llm_config: LLMConfig) -> InferTypeName {
+        let api_key = if !llm_config.api_key.is_empty() {
+            Some(llm_config.api_key.to_string())
+        } else {
+            None
+        };
+        Self { model: llm_config.model, api_key }
     }
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let secret = self.secret.as_ref().map(|s| s.to_owned());
+        let api_key = self.api_key.as_ref().map(|s| s.to_owned());
 
-        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
+        let wizard: Wizard<Question, Answer> = Wizard::new(self.model.clone(), api_key);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 

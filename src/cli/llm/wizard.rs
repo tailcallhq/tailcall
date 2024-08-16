@@ -5,20 +5,19 @@ use genai::resolver::AuthResolver;
 use genai::Client;
 
 use super::Result;
-use crate::cli::llm::model::Model;
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
     client: Client,
-    model: Model,
+    model: String,
     _q: std::marker::PhantomData<Q>,
     _a: std::marker::PhantomData<A>,
 }
 
 impl<Q, A> Wizard<Q, A> {
-    pub fn new(model: Model, secret: Option<String>) -> Self {
+    pub fn new(model: String, api_key: Option<String>) -> Self {
         let mut config = genai::adapter::AdapterConfig::default();
-        if let Some(key) = secret {
+        if let Some(key) = api_key {
             config = config.with_auth_resolver(AuthResolver::from_key_value(key));
         }
 

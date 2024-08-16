@@ -25,8 +25,17 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
+    pub llm: LLMConfig,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+#[derive(PartialEq, Clone)]
+pub struct LLMConfig {
+    pub model: String,
     #[serde(skip_serializing_if = "TemplateString::is_empty")]
-    pub secret: TemplateString,
+    pub api_key: TemplateString,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
@@ -273,13 +282,15 @@ impl Config {
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;
+        let llm_api_key = self.llm.api_key.resolve(&reader_context);
+        let llm = LLMConfig { model: self.llm.model, api_key: llm_api_key };
 
         Ok(Config {
             inputs,
             output,
             schema: self.schema,
             preset: self.preset,
-            secret: self.secret.resolve(&reader_context),
+            llm,
         })
     }
 }
@@ -422,7 +433,7 @@ mod tests {
     fn test_raise_error_unknown_field_at_root_level() {
         let json = r#"{"input": "value"}"#;
         let expected_error =
-            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema`, `secret` at line 1 column 8";
+            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema`, `llm` at line 1 column 8";
         assert_deserialization_error(json, expected_error);
     }
 
@@ -495,10 +506,10 @@ mod tests {
     }
 
     #[test]
-    fn test_secret() {
+    fn test_llm_config() {
         let mut env_vars = HashMap::new();
         let token = "eyJhbGciOiJIUzI1NiIsInR5";
-        env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
+        env_vars.insert("TAILCALL_LLM_API_KEY".to_owned(), token.to_owned());
 
         let mut runtime = crate::core::runtime::test::init(None);
         runtime.env = Arc::new(TestEnvIO::init(env_vars));
@@ -509,12 +520,17 @@ mod tests {
             headers: Default::default(),
         };
 
-        let config =
-            Config::default().secret(TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap());
+        let config = Config::default().llm(LLMConfig {
+            model: "gpt-3.5-turbo".to_string(),
+            api_key: TemplateString::parse("{{.env.TAILCALL_LLM_API_KEY}}").unwrap(),
+        });
         let resolved_config = config.into_resolved("", reader_ctx).unwrap();
 
-        let actual = resolved_config.secret;
-        let expected = TemplateString::try_from("eyJhbGciOiJIUzI1NiIsInR5").unwrap();
+        let actual = resolved_config.llm;
+        let expected = LLMConfig {
+            model: "gpt-3.5-turbo".to_string(),
+            api_key: TemplateString::try_from(token).unwrap(),
+        };
 
         assert_eq!(actual, expected);
     }

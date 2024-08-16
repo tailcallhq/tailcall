@@ -164,7 +164,7 @@ impl Generator {
         let query_type = config.schema.query.clone();
         let mutation_type_name = config.schema.mutation.clone();
 
-        let secret = config.secret.clone();
+        let llm_config = config.llm.clone();
         let preset = config.preset.clone().unwrap_or_default();
         let preset: Preset = preset.validate_into().to_result()?;
         let input_samples = self.resolve_io(config).await?;
@@ -180,13 +180,7 @@ impl Generator {
         let mut config = config_gen.mutation(mutation_type_name).generate(true)?;
 
         if infer_type_names {
-            let key = if !secret.is_empty() {
-                Some(secret.to_string())
-            } else {
-                None
-            };
-
-            let mut llm_gen = InferTypeName::new(key);
+            let mut llm_gen = InferTypeName::new(llm_config);
             let suggested_names = llm_gen.generate(config.config()).await?;
             let cfg = RenameTypes::new(suggested_names.iter())
                 .transform(config.config().to_owned())
