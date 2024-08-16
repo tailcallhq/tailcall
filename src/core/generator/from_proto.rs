@@ -13,7 +13,7 @@ use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
 use crate::core::config::transformer::{AmbiguousType, TreeShake};
-use crate::core::config::{Arg, Config, Enum, Field, Grpc, Type, Union, Variant};
+use crate::core::config::{Arg, Config, Enum, Field, Grpc, Resolver, Type, Union, Variant};
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
 
@@ -364,13 +364,13 @@ impl Context {
                 cfg_field.type_of = output_ty;
                 cfg_field.required = true;
 
-                cfg_field.grpc = Some(Grpc {
+                cfg_field.resolver = Some(Resolver::Grpc(Grpc {
                     base_url: None,
                     body,
                     batch_key: vec![],
                     headers: vec![],
                     method: field_name.id(),
-                });
+                }));
 
                 let method_path =
                     PathBuilder::new(&path).extend(PathField::Method, method_index as i32);

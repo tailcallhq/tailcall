@@ -89,7 +89,7 @@ where
     let schema = if let Some(type_) = type_ {
         let mut schema_fields = BTreeMap::new();
         for (name, field) in type_.fields.iter() {
-            if field.script.is_none() && field.http.is_none() {
+            if field.resolver.is_none() {
                 schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
             }
         }

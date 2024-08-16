@@ -5,7 +5,7 @@ use prost_reflect::FieldDescriptor;
 
 use crate::core::blueprint::{FieldDefinition, TypeLike};
 use crate::core::config::group_by::GroupBy;
-use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc};
+use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc, Resolver};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
 use crate::core::grpc::request_template::RequestTemplate;
 use crate::core::ir::model::{IO, IR};
@@ -214,7 +214,7 @@ pub fn update_grpc<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config_module, field, type_of, _name), b_field| {
-            let Some(grpc) = &field.grpc else {
+            let Some(Resolver::Grpc(grpc)) = &field.resolver else {
                 return Valid::succeed(b_field);
             };
 
