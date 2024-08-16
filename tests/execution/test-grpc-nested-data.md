@@ -60,7 +60,7 @@ input NewsInput {
   postImage: String
 }
 type NewsData {
-  news: [News]!
+  news: [News]
 }
 
 type News {
