@@ -1,0 +1,24 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": null,
+    "errors": [
+      {
+        "message": " --> 6:1\n  |\n6 | \n  | ^---\n  |\n  = expected selection",
+        "locations": [
+          {
+            "line": 6,
+            "column": 1
+          }
+        ]
+      }
+    ]
+  }
+}

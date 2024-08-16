@@ -1,44 +1,73 @@
-use crate::core::config::Config;
+use convert_case::{Case, Casing};
+
+use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
-pub struct SchemaGenerator {
-    query_type: String,
+pub struct SchemaGenerator<'a> {
+    operation_type: &'a GraphQLOperationType,
 }
 
-impl SchemaGenerator {
-    pub fn new(query_type: String) -> Self {
-        Self { query_type }
-    }
-
-    pub fn generate_schema(&self, config: &mut Config) {
-        config.schema.query = Some(self.query_type.to_owned());
-        // TODO: add support for mutation and subscription.
+impl<'a> SchemaGenerator<'a> {
+    pub fn new(operation_type: &'a GraphQLOperationType) -> Self {
+        Self { operation_type }
     }
 }
 
-impl Transform for SchemaGenerator {
+impl Transform for SchemaGenerator<'_> {
     type Value = Config;
     type Error = String;
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
-        self.generate_schema(&mut config);
+        match self.operation_type {
+            GraphQLOperationType::Query => {
+                config.schema.query = Some(
+                    GraphQLOperationType::Query
+                        .to_string()
+                        .to_case(Case::Pascal),
+                );
+            }
+            GraphQLOperationType::Mutation => {
+                config.schema.mutation = Some(
+                    GraphQLOperationType::Mutation
+                        .to_string()
+                        .to_case(Case::Pascal),
+                );
+            }
+        }
         Valid::succeed(config)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use anyhow::Ok;
-
     use super::SchemaGenerator;
+    use crate::core::config::GraphQLOperationType;
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
     #[test]
-    fn test_schema_generator_with_query() -> anyhow::Result<()> {
-        let schema_gen = SchemaGenerator::new("Query".to_owned());
-        let config = schema_gen.transform(Default::default()).to_result()?;
-        insta::assert_snapshot!(config.to_sdl());
-        Ok(())
+    fn test_schema_generator_with_mutation() {
+        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Mutation);
+        let config = schema_gen
+            .transform(Default::default())
+            .to_result()
+            .unwrap();
+        assert!(config.schema.mutation.is_some());
+        assert_eq!(config.schema.mutation, Some("Mutation".to_owned()));
+
+        assert!(config.schema.query.is_none());
+    }
+
+    #[test]
+    fn test_schema_generator_with_query() {
+        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Query);
+        let config = schema_gen
+            .transform(Default::default())
+            .to_result()
+            .unwrap();
+        assert!(config.schema.query.is_some());
+        assert_eq!(config.schema.query, Some("Query".to_owned()));
+
+        assert!(config.schema.mutation.is_none());
     }
 }

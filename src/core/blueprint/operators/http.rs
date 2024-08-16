@@ -1,6 +1,6 @@
 use crate::core::blueprint::*;
 use crate::core::config::group_by::GroupBy;
-use crate::core::config::Field;
+use crate::core::config::{Field, Resolver};
 use crate::core::endpoint::Endpoint;
 use crate::core::http::{HttpFilter, Method, RequestTemplate};
 use crate::core::ir::model::{IO, IR};
@@ -39,7 +39,13 @@ pub fn compile_http(
                 .query
                 .clone()
                 .iter()
-                .map(|key_value| (key_value.key.clone(), key_value.value.clone()))
+                .map(|key_value| {
+                    (
+                        key_value.key.clone(),
+                        key_value.value.clone(),
+                        key_value.skip_empty.unwrap_or_default(),
+                    )
+                })
                 .collect();
 
             RequestTemplate::try_from(
@@ -87,7 +93,7 @@ pub fn update_http<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &'a str), FieldDefinition, String>::new(
         |(config_module, field, type_of, _), b_field| {
-            let Some(http) = &field.http else {
+            let Some(Resolver::Http(http)) = &field.resolver else {
                 return Valid::succeed(b_field);
             };
 

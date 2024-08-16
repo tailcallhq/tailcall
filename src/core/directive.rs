@@ -1,5 +1,3 @@
-use std::slice::Iter;
-
 use async_graphql::parser::types::ConstDirective;
 use async_graphql::{Name, Pos, Positioned};
 use serde::{Deserialize, Serialize};
@@ -25,20 +23,16 @@ fn to_const_directive(directive: &blueprint::Directive) -> Valid<ConstDirective,
     .map(|arguments| ConstDirective { name: pos(Name::new(directive.name.clone())), arguments })
 }
 
-pub trait DirectiveCodec<A> {
+pub trait DirectiveCodec: Sized {
     fn directive_name() -> String;
-    fn from_directive(directive: &ConstDirective) -> Valid<A, String>;
-    #[allow(dead_code)]
-    fn from_blueprint_directive(directive: &blueprint::Directive) -> Valid<A, String> {
-        to_const_directive(directive).and_then(|a| Self::from_directive(&a))
-    }
+    fn from_directive(directive: &ConstDirective) -> Valid<Self, String>;
     fn to_directive(&self) -> ConstDirective;
     fn trace_name() -> String {
         format!("@{}", Self::directive_name())
     }
-    fn from_directives(
-        directives: Iter<'_, Positioned<ConstDirective>>,
-    ) -> Valid<Option<A>, String> {
+    fn from_directives<'a>(
+        directives: impl Iterator<Item = &'a Positioned<ConstDirective>>,
+    ) -> Valid<Option<Self>, String> {
         for directive in directives {
             if directive.node.name.node == Self::directive_name() {
                 return Self::from_directive(&directive.node).map(Some);
@@ -47,7 +41,7 @@ pub trait DirectiveCodec<A> {
         Valid::succeed(None)
     }
 }
-fn lower_case_first_letter(s: String) -> String {
+fn lower_case_first_letter(s: &str) -> String {
     if s.len() <= 2 {
         s.to_lowercase()
     } else if let Some(first_char) = s.chars().next() {
@@ -57,14 +51,13 @@ fn lower_case_first_letter(s: String) -> String {
     }
 }
 
-impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec<A> for A {
+impl<'a, A: Deserialize<'a> + Serialize + 'a> DirectiveCodec for A {
     fn directive_name() -> String {
         lower_case_first_letter(
             std::any::type_name::<A>()
                 .split("::")
                 .last()
-                .unwrap_or_default()
-                .to_string(),
+                .unwrap_or_default(),
         )
     }
 

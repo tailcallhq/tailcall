@@ -189,7 +189,7 @@ directive @http(
   The first parameter referencing a field in the current value using mustache syntax 
   is automatically selected as the batching parameter.
   """
-  query: [KeyValue]
+  query: [URLQuery]
 ) on FIELD_DEFINITION
 
 directive @js(
@@ -529,6 +529,25 @@ input KeyValue {
   value: String!
 }
 
+"""
+The URLQuery input type represents a query parameter to be included in a URL.
+"""
+input URLQuery {
+  """
+  The key or name of the query parameter.
+  """
+  key: String!
+  """
+  Determines whether to ignore query parameters with empty values.
+  """
+  skipEmpty: Boolean
+  """
+  The actual value or a mustache template to resolve the value dynamically for the 
+  query parameter.
+  """
+  value: String!
+}
+
 input Schema {
   Obj: JSON
   Arr: Schema
@@ -820,7 +839,7 @@ input Http {
   The first parameter referencing a field in the current value using mustache syntax 
   is automatically selected as the batching parameter.
   """
-  query: [KeyValue]
+  query: [URLQuery]
 }
 
 """
