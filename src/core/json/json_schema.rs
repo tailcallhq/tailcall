@@ -496,7 +496,8 @@ mod tests {
         let result = schema.is_a(&value, name);
         assert_eq!(
             result,
-            Valid::fail("expected [enum {A, B}] but found enum {A, B}".to_string()).trace(name)
+            Valid::fail("Type 'enum {A, B}' is not assignable to type '[enum {A, B}]'".to_string())
+                .trace(name)
         );
     }
 
@@ -517,7 +518,7 @@ mod tests {
         let result = schema.is_a(&value, name);
         assert_eq!(
             result,
-            Valid::fail("expected enum {A, B, C} but found enum {A, B}".to_string()).trace(name)
+            Valid::fail("Type 'enum {A, B}' is not assignable to type 'enum {A, B, C}'".to_string()).trace(name)
         );
     }
 
