@@ -28,7 +28,7 @@ use crate::cli::CLIError;
 use crate::core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::core::runtime::TargetRuntime;
 use crate::core::tracing::{
-    default_tracing, default_tracing_tailcall, filter_target, get_log_level, tailcall_filter_target,
+    default_tracing, default_tracing_tailcall, get_log_level, tailcall_filter_target,
 };
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
@@ -222,7 +222,7 @@ pub fn init_opentelemetry(config: Telemetry, runtime: &TargetRuntime) -> anyhow:
 
         let subscriber = tracing_subscriber::registry()
             .with(trace_layer)
-            .with(default_tracing().with_filter(filter_target("tailcall")))
+            .with(default_tracing())
             .with(
                 log_layer.with_filter(dynamic_filter_fn(|_metatada, context| {
                     // ignore logs that are generated inside tracing::Span since they will be logged
