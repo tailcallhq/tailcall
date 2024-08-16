@@ -19,7 +19,7 @@ type SharedStore<Output, Error> = Arc<Mutex<Store<Result<TypedValue<Output>, Pos
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
 pub struct Executor<IRExec, Input> {
-    env: RequestContext<Input>,
+    ctx: RequestContext<Input>,
     exec: IRExec,
 }
 
@@ -31,12 +31,12 @@ where
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
     pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { exec, env: RequestContext::new(plan) }
+        Self { exec, ctx: RequestContext::new(plan) }
     }
 
     pub async fn store(&self) -> Store<Result<TypedValue<Output>, Positioned<jit::Error>>> {
         let store = Arc::new(Mutex::new(Store::new()));
-        let mut ctx = ExecutorInner::new(store.clone(), &self.exec, &self.env);
+        let mut ctx = ExecutorInner::new(store.clone(), &self.exec, &self.ctx);
         ctx.init().await;
 
         let store = mem::replace(&mut *store.lock().unwrap(), Store::new());
@@ -45,7 +45,7 @@ where
 
     pub async fn execute(self, synth: Synth<Output>) -> Response<Output, jit::Error> {
         let mut response = Response::new(synth.synthesize());
-        response.add_errors(self.env.errors().clone());
+        response.add_errors(self.ctx.errors().clone());
         response
     }
 }
