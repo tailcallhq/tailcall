@@ -518,7 +518,10 @@ mod tests {
         let result = schema.is_a(&value, name);
         assert_eq!(
             result,
-            Valid::fail("Type 'enum {A, B}' is not assignable to type 'enum {A, B, C}'".to_string()).trace(name)
+            Valid::fail(
+                "Type 'enum {A, B}' is not assignable to type 'enum {A, B, C}'".to_string()
+            )
+            .trace(name)
         );
     }
 
