@@ -59,7 +59,6 @@ input NewsInput {
   body: String
   postImage: String
 }
-
 type NewsData {
   news: [News]
 }
