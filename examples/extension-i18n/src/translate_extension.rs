@@ -1,6 +1,9 @@
+use std::fs::File;
+use std::io::BufReader;
 use std::sync::{Arc, Mutex};
 
 use async_graphql_value::ConstValue;
+use serde_json::Value;
 use tailcall::core::blueprint::{ExtensionTrait, PrepareContext, ProcessContext};
 
 #[derive(Clone, Debug)]
@@ -8,14 +11,20 @@ pub struct TranslateExtension {
     pub load_counter: Arc<Mutex<i32>>,
     pub prepare_counter: Arc<Mutex<i32>>,
     pub process_counter: Arc<Mutex<i32>>,
+    pub translations: Arc<Value>,
 }
 
 impl Default for TranslateExtension {
     fn default() -> Self {
+        let file = File::open("./src/translations.json").unwrap();
+        let reader = BufReader::new(file);
+
+        let translations = Arc::new(serde_json::from_reader(reader).unwrap());
         Self {
             load_counter: Arc::new(Mutex::new(0)),
             prepare_counter: Arc::new(Mutex::new(0)),
             process_counter: Arc::new(Mutex::new(0)),
+            translations,
         }
     }
 }
@@ -40,14 +49,11 @@ impl ExtensionTrait<ConstValue> for TranslateExtension {
     ) -> Result<ConstValue, tailcall::core::ir::Error> {
         *(self.process_counter.lock().unwrap()) += 1;
         if let ConstValue::String(value) = context.value {
-            let new_value = match value.as_str() {
-                "Multi-layered client-server neural-net" => {
-                    "Red neuronal cliente-servidor multicapa".to_string()
-                }
-                "Leanne Graham" => "Leona Grahm".to_string(),
-                _ => value.to_string(),
-            };
-            Ok(ConstValue::String(new_value))
+            if let Some(new_value) = self.translations.get(&value) {
+                Ok(ConstValue::String(new_value.as_str().unwrap().to_string()))
+            } else {
+                Ok(ConstValue::String(value))
+            }
         } else {
             Ok(context.value)
         }
