@@ -111,37 +111,39 @@ impl JsonSchema {
 
     // TODO: add unit tests
     pub fn compare(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
-        if let JsonSchema::Any = other {
+        let actual = self;
+        let expected = other;
+        if let JsonSchema::Any = expected {
             return Valid::succeed(());
         }
 
-        match self {
+        match expected {
             JsonSchema::Str => {
-                if other != self {
-                    return Valid::fail(format!("expected String, got {:?}", other)).trace(name);
+                if expected != actual {
+                    return Valid::fail(format!("expected String, got {:?}", actual)).trace(name);
                 }
             }
             JsonSchema::Num => {
-                if other != self {
-                    return Valid::fail(format!("expected Number, got {:?}", other)).trace(name);
+                if expected != actual {
+                    return Valid::fail(format!("expected Number, got {:?}", actual)).trace(name);
                 }
             }
             JsonSchema::Bool => {
-                if other != self {
-                    return Valid::fail(format!("expected Boolean, got {:?}", other)).trace(name);
+                if expected != actual {
+                    return Valid::fail(format!("expected Boolean, got {:?}", actual)).trace(name);
                 }
             }
             JsonSchema::Empty => {
-                if other != self {
-                    return Valid::fail(format!("expected Empty, got {:?}", other)).trace(name);
+                if expected != actual {
+                    return Valid::fail(format!("expected Empty, got {:?}", actual)).trace(name);
                 }
             }
             JsonSchema::Any => {}
-            JsonSchema::Obj(a) => {
-                if let JsonSchema::Obj(b) = other {
-                    return Valid::from_iter(b.iter(), |(key, b)| {
-                        Valid::from_option(a.get(key), format!("missing key: {}", key))
-                            .and_then(|a| a.compare(b, key))
+            JsonSchema::Obj(expected) => {
+                if let JsonSchema::Obj(actual) = actual {
+                    return Valid::from_iter(expected.iter(), |(key, expected)| {
+                        Valid::from_option(actual.get(key), format!("missing key: {}", key))
+                            .and_then(|actual| actual.compare(expected, key))
                     })
                     .trace(name)
                     .unit();
@@ -149,28 +151,31 @@ impl JsonSchema {
                     return Valid::fail("expected Object type".to_string()).trace(name);
                 }
             }
-            JsonSchema::Arr(a) => {
-                if let JsonSchema::Arr(b) = other {
-                    return a.compare(b, name);
+            JsonSchema::Arr(expected) => {
+                if let JsonSchema::Arr(actual) = actual {
+                    return actual.compare(expected, name);
                 } else {
-                    return Valid::fail("expected Non repeatable type".to_string()).trace(name);
+                    return Valid::fail("expected Array type".to_string()).trace(name);
                 }
             }
-            JsonSchema::Opt(a) => {
-                if let JsonSchema::Opt(b) = other {
-                    return a.compare(b, name);
+            JsonSchema::Opt(expected) => {
+                if let JsonSchema::Opt(actual) = actual {
+                    return actual.compare(expected, name);
                 } else {
-                    return Valid::fail("expected type to be required".to_string()).trace(name);
+                    return Valid::fail("expected type to be optional".to_string()).trace(name);
                 }
             }
-            JsonSchema::Enum(a) => {
-                if let JsonSchema::Enum(b) = other {
-                    if a.ne(b) {
-                        return Valid::fail(format!("expected {:?} but found {:?}", a, b))
-                            .trace(name);
+            JsonSchema::Enum(expected) => {
+                if let JsonSchema::Enum(actual) = actual {
+                    if actual.ne(expected) {
+                        return Valid::fail(format!(
+                            "expected {:?} but found {:?}",
+                            expected, actual
+                        ))
+                        .trace(name);
                     }
                 } else {
-                    return Valid::fail(format!("expected Enum got: {:?}", other)).trace(name);
+                    return Valid::fail(format!("expected Enum got: {:?}", actual)).trace(name);
                 }
             }
         }
