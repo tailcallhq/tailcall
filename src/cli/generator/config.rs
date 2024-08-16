@@ -28,10 +28,9 @@ pub struct Config<Status = UnResolved> {
     pub llm: LLMConfig,
 }
 
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
-#[derive(PartialEq, Clone)]
 pub struct LLMConfig {
     pub model: String,
     #[serde(skip_serializing_if = "TemplateString::is_empty")]
