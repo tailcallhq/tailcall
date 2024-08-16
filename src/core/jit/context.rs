@@ -1,28 +1,25 @@
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
 
-use super::exec::ExecutionEnv;
-use super::{Field, Nested, Request};
+use super::exec::RequestContext;
+use super::{Field, Nested};
 use crate::core::ir::{ResolverContextLike, SelectionField};
 
 /// Rust representation of the GraphQL context available in the DSL
 #[derive(Debug, Clone)]
 pub struct Context<'a, Input, Output> {
-    request: &'a Request<Input>,
     value: Option<&'a Output>,
     args: Option<indexmap::IndexMap<Name, Input>>,
     // TODO: remove the args, since they're already present inside the fields and add support for
     // default values.
     field: &'a Field<Nested<Input>, Input>,
-    env: &'a ExecutionEnv<Input>,
+
+    // FIXME: rename to Request
+    env: &'a RequestContext<Input>,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
-    pub fn new(
-        request: &'a Request<Input>,
-        field: &'a Field<Nested<Input>, Input>,
-        env: &'a ExecutionEnv<Input>,
-    ) -> Self {
-        Self { request, value: None, args: None, field, env }
+    pub fn new(field: &'a Field<Nested<Input>, Input>, env: &'a RequestContext<Input>) -> Self {
+        Self { value: None, args: None, field, env }
     }
 
     pub fn with_value_and_field(
@@ -30,13 +27,7 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         value: &'a Output,
         field: &'a Field<Nested<Input>, Input>,
     ) -> Self {
-        Self {
-            request: self.request,
-            args: None,
-            value: Some(value),
-            field,
-            env: self.env,
-        }
+        Self { args: None, value: Some(value), field, env: self.env }
     }
 
     pub fn with_args(&self, args: indexmap::IndexMap<&str, Input>) -> Self {
@@ -45,7 +36,6 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             map.insert(Name::new(key), value);
         }
         Self {
-            request: self.request,
             value: self.value,
             args: Some(map),
             field: self.field,
@@ -93,7 +83,7 @@ mod test {
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::ResolverContextLike;
-    use crate::core::jit::exec::ExecutionEnv;
+    use crate::core::jit::exec::RequestContext;
     use crate::core::jit::{OperationPlan, Request};
     use crate::core::valid::Validator;
 
@@ -110,8 +100,8 @@ mod test {
     fn test_field() {
         let (plan, req) = setup("query {posts {id title}}");
         let field = plan.as_nested();
-        let env = ExecutionEnv::new(plan.clone());
-        let ctx = Context::<ConstValue, ConstValue>::new(&req, &field[0], &env);
+        let env = RequestContext::new(plan.clone());
+        let ctx = Context::<ConstValue, ConstValue>::new(&field[0], &env);
         let expected = <Context<_, _> as ResolverContextLike>::field(&ctx).unwrap();
         insta::assert_debug_snapshot!(expected);
     }

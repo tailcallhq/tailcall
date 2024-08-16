@@ -6,7 +6,7 @@ use derive_getters::Getters;
 use futures_util::future::join_all;
 
 use super::context::Context;
-use super::{DataPath, OperationPlan, Positioned, Request, Response, Store};
+use super::{DataPath, OperationPlan, Positioned, Response, Store};
 use crate::core::ir::model::IR;
 use crate::core::ir::TypeName;
 use crate::core::jit;
@@ -16,12 +16,12 @@ use crate::core::json::{JsonLike, JsonObjectLike};
 type SharedStore<Output, Error> = Arc<Mutex<Store<Result<TypedValue<Output>, Positioned<Error>>>>>;
 
 #[derive(Debug, Clone)]
-pub struct ExecutionEnv<Input> {
+pub struct RequestContext<Input> {
     plan: OperationPlan<Input>,
     errors: Arc<Mutex<Vec<Positioned<jit::error::Error>>>>,
 }
 
-impl<Input> ExecutionEnv<Input> {
+impl<Input> RequestContext<Input> {
     pub fn new(plan: OperationPlan<Input>) -> Self {
         Self { plan, errors: Arc::new(Mutex::new(vec![])) }
     }
@@ -40,7 +40,7 @@ impl<Input> ExecutionEnv<Input> {
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
 pub struct Executor<IRExec, Input> {
-    env: ExecutionEnv<Input>,
+    env: RequestContext<Input>,
     exec: IRExec,
 }
 
@@ -52,15 +52,12 @@ where
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
     pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { exec, env: ExecutionEnv::new(plan) }
+        Self { exec, env: RequestContext::new(plan) }
     }
 
-    pub async fn store(
-        &self,
-        request: Request<Input>,
-    ) -> Store<Result<TypedValue<Output>, Positioned<jit::Error>>> {
+    pub async fn store(&self) -> Store<Result<TypedValue<Output>, Positioned<jit::Error>>> {
         let store = Arc::new(Mutex::new(Store::new()));
-        let mut ctx = ExecutorInner::new(request, store.clone(), &self.exec, &self.env);
+        let mut ctx = ExecutorInner::new(store.clone(), &self.exec, &self.env);
         ctx.init().await;
 
         let store = mem::replace(&mut *store.lock().unwrap(), Store::new());
@@ -76,10 +73,9 @@ where
 
 #[derive(Getters)]
 struct ExecutorInner<'a, Input, Output, Error, Exec> {
-    request: Request<Input>,
     store: SharedStore<Output, Error>,
     ir_exec: &'a Exec,
-    env: &'a ExecutionEnv<Input>,
+    env: &'a RequestContext<Input>,
 }
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
@@ -89,12 +85,11 @@ where
     Exec: IRExecutor<Input = Input, Output = Output, Error = Error>,
 {
     fn new(
-        request: Request<Input>,
         store: SharedStore<Output, Error>,
         ir_exec: &'a Exec,
-        env: &'a ExecutionEnv<Input>,
+        env: &'a RequestContext<Input>,
     ) -> Self {
-        Self { request, store, ir_exec, env }
+        Self { store, ir_exec, env }
     }
 
     async fn init(&mut self) {
@@ -117,7 +112,7 @@ where
             }
             // TODO: with_args should be called on inside iter_field on any level, not only
             // for root fields
-            let ctx = Context::new(&self.request, field, self.env).with_args(arg_map);
+            let ctx = Context::new(field, self.env).with_args(arg_map);
             self.execute(&ctx, DataPath::new()).await
         }))
         .await;
