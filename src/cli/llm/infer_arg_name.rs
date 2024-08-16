@@ -29,7 +29,7 @@ impl TryFrom<ChatResponse> for Answer {
 
 #[derive(Clone, Serialize)]
 struct Question {
-    fields: (String, Vec<(String, String)>),
+    fields: (String, (String, String)),
 }
 
 impl TryInto<ChatRequest> for Question {
@@ -38,10 +38,7 @@ impl TryInto<ChatRequest> for Question {
     fn try_into(self) -> Result<ChatRequest> {
         let content = serde_json::to_string(&self)?;
         let input = serde_json::to_string_pretty(&Question {
-            fields: (
-                "user".to_string(),
-                vec![("p1".to_string(), "String".to_string())],
-            ),
+            fields: ("user".to_string(), ("p1".to_string(), "String".to_string())),
         })?;
 
         let output = serde_json::to_string_pretty(&Answer {
@@ -76,12 +73,15 @@ impl InferArgName {
     pub fn new(secret: Option<String>) -> InferArgName {
         Self { secret }
     }
-    pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
+    pub async fn generate(
+        &mut self,
+        config: &Config,
+    ) -> Result<HashMap<String, Vec<(String, String)>>> {
         let secret = self.secret.as_ref().map(|s| s.to_owned());
 
         let wizard: Wizard<Question, Answer> = Wizard::new(gemini::GEMINI15_FLASH_LATEST, secret);
 
-        let mut new_name_mappings: HashMap<String, String> = HashMap::new();
+        let mut new_name_mappings: HashMap<String, Vec<(String, String)>> = HashMap::new();
 
         let query_type = config.types.get("Query");
 
@@ -102,55 +102,69 @@ impl InferArgName {
             }
             let total = args_to_be_processed.len();
             for (i, arg) in args_to_be_processed.into_iter().enumerate() {
-                let question = Question { fields: arg.clone() };
+                for j in arg.1.iter() {
+                    let arg = (arg.0.to_string(), j.to_owned());
+                    let question = Question { fields: arg.clone() };
 
-                let mut delay = 3;
-                loop {
-                    let answer = wizard.ask(question.clone()).await;
-                    match answer {
-                        Ok(answer) => {
-                            let name = &answer.suggestions.join(", ");
-                            for name in answer.suggestions {
-                                if type_.fields.contains_key(&name)
-                                    || new_name_mappings.contains_key(&name)
-                                {
-                                    continue;
+                    let mut delay = 3;
+                    loop {
+                        let answer = wizard.ask(question.clone()).await;
+                        match answer {
+                            Ok(answer) => {
+                                let name = &answer.suggestions.join(", ");
+                                for name in answer.suggestions {
+                                    // check if the name is already used for current field
+                                    if let Some(field) = &type_.fields.get(arg.0.as_str()) {
+                                        let args = field.args.iter().collect::<Vec<_>>();
+                                        if !args.is_empty() && args.iter().any(|(k, _)| *k == &name)
+                                        {
+                                            continue;
+                                        }
+                                        new_name_mappings
+                                            .entry(arg.0.to_owned())
+                                            .and_modify(|v| v.push((j.0.clone(), name.to_owned())))
+                                            .or_insert_with(|| {
+                                                vec![(j.0.clone(), name.to_owned())]
+                                            });
+                                        break;
+                                    }
                                 }
-                                new_name_mappings.insert(name, arg.0.to_owned());
+                                tracing::info!(
+                                    "Suggestions for {}'s argument {}: [{}] - {}/{}",
+                                    arg.0,
+                                    arg.1 .0,
+                                    name,
+                                    i + 1,
+                                    total
+                                );
+
+                                // TODO: case where suggested names are already used, then extend the base
+                                // question with `suggest different names, we have already used following
+                                // names: [names list]`
                                 break;
                             }
-                            tracing::info!(
-                                "Suggestions for argument {}: [{}] - {}/{}",
-                                arg.0,
-                                name,
-                                i + 1,
-                                total
-                            );
-
-                            // TODO: case where suggested names are already used, then extend the base
-                            // question with `suggest different names, we have already used following
-                            // names: [names list]`
-                            break;
-                        }
-                        Err(e) => {
-                            // TODO: log errors after certain number of retries.
-                            if let Error::GenAI(_) = e {
-                                // TODO: retry only when it's required.
-                                tracing::warn!(
+                            Err(e) => {
+                                // TODO: log errors after certain number of retries.
+                                if let Error::GenAI(_) = e {
+                                    // TODO: retry only when it's required.
+                                    tracing::warn!(
                                 "Unable to retrieve a name for the argument '{}'. Retrying in {}s. Error: {}",
                                 arg.0,
                                 delay,
                                 e
                             );
-                                tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;
-                                delay *= std::cmp::min(delay * 2, 60);
+                                    tokio::time::sleep(tokio::time::Duration::from_secs(delay))
+                                        .await;
+                                    delay *= std::cmp::min(delay * 2, 60);
+                                }
                             }
                         }
                     }
                 }
             }
+            tracing::info!("new_name_mappings {:?}", new_name_mappings);
 
-            Ok(new_name_mappings.into_iter().map(|(k, v)| (v, k)).collect())
+            Ok(new_name_mappings)
         } else {
             Ok(HashMap::new())
         }
