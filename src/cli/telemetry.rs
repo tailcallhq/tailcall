@@ -27,7 +27,9 @@ use super::metrics::init_metrics;
 use crate::cli::CLIError;
 use crate::core::blueprint::telemetry::{OtlpExporter, Telemetry, TelemetryExporter};
 use crate::core::runtime::TargetRuntime;
-use crate::core::tracing::{default_tracing, default_tracing_tailcall, filter_target, get_log_level, tailcall_filter_target};
+use crate::core::tracing::{
+    default_tracing, default_tracing_tailcall, filter_target, get_log_level, tailcall_filter_target,
+};
 
 static RESOURCE: Lazy<Resource> = Lazy::new(|| {
     Resource::default().merge(&Resource::new(vec![
