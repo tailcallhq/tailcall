@@ -83,11 +83,7 @@ impl InferArgName {
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
-        let query_type = config
-            .types
-            .iter()
-            .find(|(type_name, _)| *type_name == "Query")
-            .map(|(_, type_)| type_);
+        let query_type = config.types.get("Query");
 
         if let Some(type_) = query_type {
             let mut args_to_be_processed = HashMap::new();
@@ -124,7 +120,7 @@ impl InferArgName {
                                 break;
                             }
                             tracing::info!(
-                                "Suggestions for {}: [{}] - {}/{}",
+                                "Suggestions for argument {}: [{}] - {}/{}",
                                 arg.0,
                                 name,
                                 i + 1,
