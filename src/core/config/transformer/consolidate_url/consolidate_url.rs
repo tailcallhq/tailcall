@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use super::max_value_map::MaxValueMap;
-use crate::core::config::Config;
+use crate::core::config::{Config, Resolver};
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
@@ -23,9 +23,9 @@ impl UrlTypeMapping {
     /// Populates the URL type mapping based on the given configuration.
     fn populate_url_frequency_map(&mut self, config: &Config) {
         for (type_name, type_) in config.types.iter() {
-            for field_ in type_.fields.values() {
-                if let Some(http_directive) = &field_.http {
-                    if let Some(base_url) = &http_directive.base_url {
+            for field in type_.fields.values() {
+                if let Some(Resolver::Http(http)) = &field.resolver {
+                    if let Some(base_url) = &http.base_url {
                         self.url_to_frequency_map.increment(base_url.to_owned(), 1);
                         self.visited_type_set.insert(type_name.to_owned());
                     }
@@ -63,11 +63,11 @@ impl ConsolidateURL {
 
             for type_name in url_type_mapping.visited_type_set {
                 if let Some(type_) = config.types.get_mut(&type_name) {
-                    for field_ in type_.fields.values_mut() {
-                        if let Some(htto_directive) = &mut field_.http {
-                            if let Some(base_url) = &htto_directive.base_url {
-                                if *base_url == common_url {
-                                    htto_directive.base_url = None;
+                    for field in type_.fields.values_mut() {
+                        if let Some(Resolver::Http(http)) = &mut field.resolver {
+                            if let Some(base_url) = &http.base_url {
+                                if base_url == &common_url {
+                                    http.base_url = None;
                                 }
                             }
                         }

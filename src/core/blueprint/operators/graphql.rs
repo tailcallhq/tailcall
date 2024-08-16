@@ -1,7 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::core::blueprint::FieldDefinition;
-use crate::core::config::{Config, ConfigModule, Field, GraphQL, GraphQLOperationType, Type};
+use crate::core::config::{
+    Config, ConfigModule, Field, GraphQL, GraphQLOperationType, Resolver, Type,
+};
 use crate::core::graphql::RequestTemplate;
 use crate::core::helpers;
 use crate::core::ir::model::{IO, IR};
@@ -78,7 +80,7 @@ pub fn update_graphql<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a Type, &'a str), FieldDefinition, String> {
     TryFold::<(&ConfigModule, &Field, &Type, &'a str), FieldDefinition, String>::new(
         |(config, field, type_of, _), b_field| {
-            let Some(graphql) = &field.graphql else {
+            let Some(Resolver::Graphql(graphql)) = &field.resolver else {
                 return Valid::succeed(b_field);
             };
 

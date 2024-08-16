@@ -2,7 +2,7 @@ use convert_case::{Case, Casing};
 use url::Url;
 
 use super::url_utils::extract_base_url;
-use crate::core::config::{Config, GraphQLOperationType};
+use crate::core::config::{Config, GraphQLOperationType, Resolver};
 use crate::core::transform::Transform;
 use crate::core::valid::Valid;
 
@@ -19,14 +19,10 @@ impl<'a> FieldBaseUrlGenerator<'a> {
     fn update_base_urls(&self, config: &mut Config, operation_name: &str, base_url: &str) {
         if let Some(query_type) = config.types.get_mut(operation_name) {
             for field in query_type.fields.values_mut() {
-                field.http = match field.http.clone() {
-                    Some(mut http) => {
-                        if http.base_url.is_none() {
-                            http.base_url = Some(base_url.to_owned());
-                        }
-                        Some(http)
+                if let Some(Resolver::Http(http)) = &mut field.resolver {
+                    if http.base_url.is_none() {
+                        http.base_url = Some(base_url.to_owned())
                     }
-                    None => None,
                 }
             }
         }
@@ -55,7 +51,7 @@ mod test {
     use url::Url;
 
     use super::FieldBaseUrlGenerator;
-    use crate::core::config::{Config, Field, GraphQLOperationType, Http, Type};
+    use crate::core::config::{Config, Field, GraphQLOperationType, Http, Resolver, Type};
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
 
@@ -70,7 +66,10 @@ mod test {
             "f1".to_string(),
             Field {
                 type_of: "Int".to_string(),
-                http: Some(Http { path: "/day".to_string(), ..Default::default() }),
+                resolver: Some(Resolver::Http(Http {
+                    path: "/day".to_string(),
+                    ..Default::default()
+                })),
                 ..Default::default()
             },
         );
@@ -78,7 +77,10 @@ mod test {
             "f2".to_string(),
             Field {
                 type_of: "String".to_string(),
-                http: Some(Http { path: "/month".to_string(), ..Default::default() }),
+                resolver: Some(Resolver::Http(Http {
+                    path: "/month".to_string(),
+                    ..Default::default()
+                })),
                 ..Default::default()
             },
         );
@@ -86,7 +88,10 @@ mod test {
             "f3".to_string(),
             Field {
                 type_of: "String".to_string(),
-                http: Some(Http { path: "/status".to_string(), ..Default::default() }),
+                resolver: Some(Resolver::Http(Http {
+                    path: "/status".to_string(),
+                    ..Default::default()
+                })),
                 ..Default::default()
             },
         );
@@ -108,11 +113,11 @@ mod test {
             "f1".to_string(),
             Field {
                 type_of: "Int".to_string(),
-                http: Some(Http {
+                resolver: Some(Resolver::Http(Http {
                     base_url: Some("https://calender.com/api/v1/".to_string()),
                     path: "/day".to_string(),
                     ..Default::default()
-                }),
+                })),
                 ..Default::default()
             },
         );
@@ -120,7 +125,10 @@ mod test {
             "f2".to_string(),
             Field {
                 type_of: "String".to_string(),
-                http: Some(Http { path: "/month".to_string(), ..Default::default() }),
+                resolver: Some(Resolver::Http(Http {
+                    path: "/month".to_string(),
+                    ..Default::default()
+                })),
                 ..Default::default()
             },
         );
@@ -128,7 +136,7 @@ mod test {
             "f3".to_string(),
             Field {
                 type_of: "String".to_string(),
-                http: None,
+                resolver: None,
                 ..Default::default()
             },
         );
