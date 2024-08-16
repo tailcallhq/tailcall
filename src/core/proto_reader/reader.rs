@@ -136,8 +136,7 @@ impl ProtoReader {
         grpc_reflection: Arc<GrpcReflection>,
         parent_proto: FileDescriptorProto,
     ) -> anyhow::Result<Vec<FileDescriptorProto>> {
-        let grpc_reflection = Arc::clone(&grpc_reflection);
-        self.resolve_dependencies(parent_proto, move |file| {
+        self.resolve_dependencies(parent_proto, |file| {
             let grpc_reflection = Arc::clone(&grpc_reflection);
             async move { grpc_reflection.get_file(file).await }.boxed()
         })
