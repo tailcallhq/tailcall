@@ -44,6 +44,16 @@ impl Transform for RenameArgs {
                                 field_info
                                     .args
                                     .insert(suggested_name.to_string(), arg_value);
+                                if let Some(http) = field_info.http.as_mut() {
+                                    http.path = http.path.replace(existing_name, suggested_name);
+                                    for query in http.query.iter_mut() {
+                                        query.key =
+                                            query.key.replace(existing_name, suggested_name);
+                                        query.value =
+                                            query.value.replace(existing_name, suggested_name);
+                                    }
+                                }
+
                                 type_
                                     .fields
                                     .insert(field_name.to_string(), field_info.clone());
