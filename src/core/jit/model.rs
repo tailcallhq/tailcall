@@ -323,6 +323,8 @@ pub struct OperationPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
+
+    // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
 }
 

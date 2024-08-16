@@ -100,8 +100,7 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
 mod test {
     use async_graphql_value::ConstValue;
 
-    use super::Context;
-    use super::RequestContext;
+    use super::{Context, RequestContext};
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::ResolverContextLike;
