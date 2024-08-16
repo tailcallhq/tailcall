@@ -32,7 +32,7 @@ type News {
 }
 
 type NewsData {
-  news: [News]!
+  news: [News]
 }
 
 input NewsInput {
