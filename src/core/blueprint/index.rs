@@ -9,6 +9,7 @@ use crate::core::scalar;
 /// A read optimized index of all the types in the Blueprint. Provide O(1)
 /// access to getting any field information.
 
+#[derive(Debug)]
 pub struct Index {
     map: IndexMap<String, (Definition, IndexMap<String, QueryField>)>,
     schema: SchemaDefinition,
@@ -157,5 +158,78 @@ impl From<&Blueprint> for Index {
         }
 
         Self { map, schema: blueprint.schema.to_owned() }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Index;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::ConfigModule;
+    use crate::include_config;
+
+    fn setup() -> Index {
+        let config = include_config!("./fixture/all-constructs.graphql").unwrap();
+        let cfg_module = ConfigModule::from(config);
+        let blueprint = Blueprint::try_from(&cfg_module).unwrap();
+
+        Index::from(&blueprint)
+    }
+
+    #[test]
+    fn test_from_blueprint() {
+        let index = setup();
+        insta::assert_debug_snapshot!(index);
+    }
+
+    #[test]
+    fn test_is_scalar() {
+        let index = setup();
+        assert!(index.type_is_scalar("Int"));
+        assert!(index.type_is_scalar("String"));
+
+        assert!(!index.type_is_scalar("Color"));
+    }
+
+    #[test]
+    fn test_is_enum() {
+        let index = setup();
+        assert!(index.type_is_enum("Status"));
+        assert!(!index.type_is_enum("Int"));
+    }
+
+    #[test]
+    fn test_validate_enum_value() {
+        let index = setup();
+        assert!(index.validate_enum_value("Status", "ACTIVE"));
+        assert!(!index.validate_enum_value("Status", "YELLOW"));
+        assert!(!index.validate_enum_value("Int", "1"));
+    }
+
+    #[test]
+    fn test_get_field() {
+        let index = setup();
+        assert!(index.get_field("Query", "user").is_some());
+        assert!(index.get_field("Query", "non_existent_field").is_none());
+        assert!(index.get_field("Status", "Pending").is_none());
+    }
+
+    #[test]
+    fn test_get_query() {
+        let index = setup();
+        assert_eq!(index.get_query(), "Query");
+    }
+
+    #[test]
+    fn test_get_mutation() {
+        let index = setup();
+        assert_eq!(index.get_mutation(), Some("Mutation"));
+    }
+
+    #[test]
+    fn test_get_mutation_none() {
+        let mut index = setup();
+        index.schema.mutation = None;
+        assert_eq!(index.get_mutation(), None);
     }
 }
