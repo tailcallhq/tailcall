@@ -1,7 +1,5 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    fmt::Display,
-};
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Display;
 
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
@@ -45,7 +43,7 @@ impl Display for JsonSchema {
             JsonSchema::Enum(en) => {
                 let mut en = en.iter().map(|a| a.to_string()).collect::<Vec<String>>();
                 en.sort();
-                write!(f, "enum({})", en.join(", "))
+                write!(f, "enum {{{}}}", en.join(", "))
             }
             JsonSchema::Str => {
                 write!(f, "String")
@@ -155,8 +153,8 @@ impl JsonSchema {
         }
     }
 
-    // TODO: add unit tests
-    pub fn compare(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
+    /// Check if `self` is a subtype of `other`
+    pub fn is_a(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
         let actual = self;
         let expected = other;
         if let JsonSchema::Any = expected {
@@ -191,7 +189,7 @@ impl JsonSchema {
                 if let JsonSchema::Obj(actual) = actual {
                     return Valid::from_iter(expected.iter(), |(key, expected)| {
                         Valid::from_option(actual.get(key), format!("missing key: {}", key))
-                            .and_then(|actual| actual.compare(expected, key))
+                            .and_then(|actual| actual.is_a(expected, key))
                     })
                     .trace(name)
                     .unit();
@@ -201,26 +199,22 @@ impl JsonSchema {
             }
             JsonSchema::Arr(expected) => {
                 if let JsonSchema::Arr(actual) = actual {
-                    return actual.compare(expected, name);
+                    return actual.is_a(expected, name);
                 } else {
                     return fail;
                 }
             }
             JsonSchema::Opt(expected) => {
                 if let JsonSchema::Opt(actual) = actual {
-                    return actual.compare(expected, name);
+                    return actual.is_a(expected, name);
                 } else {
-                    return fail;
+                    return actual.is_a(expected, name);
                 }
             }
             JsonSchema::Enum(expected) => {
                 if let JsonSchema::Enum(actual) = actual {
                     if actual.ne(expected) {
-                        return Valid::fail(format!(
-                            "expected {:?} but found {:?}",
-                            expected, actual
-                        ))
-                        .trace(name);
+                        return fail;
                     }
                 } else {
                     return fail;
@@ -332,6 +326,7 @@ mod tests {
 
     use async_graphql::Name;
     use indexmap::IndexMap;
+    use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
 
     use crate::core::blueprint::GrpcMethod;
@@ -495,10 +490,10 @@ mod tests {
         let value = JsonSchema::Arr(Box::new(JsonSchema::Enum(en.clone())));
         let schema = JsonSchema::Enum(en);
         let name = "foo";
-        let result = schema.compare(&value, name);
+        let result = schema.is_a(&value, name);
         assert_eq!(
             result,
-            Valid::fail("expected Enum got: Arr(Enum({\"A\", \"B\"}))".to_string()).trace(name)
+            Valid::fail("expected [enum {A, B}] but found enum {A, B}".to_string()).trace(name)
         );
     }
 
@@ -516,11 +511,18 @@ mod tests {
         let value = JsonSchema::Enum(en1.clone());
         let schema = JsonSchema::Enum(en.clone());
         let name = "foo";
-        let result = schema.compare(&value, name);
+        let result = schema.is_a(&value, name);
         assert_eq!(
             result,
-            Valid::fail("expected {\"A\", \"B\"} but found {\"A\", \"B\", \"C\"}".to_string())
-                .trace(name)
+            Valid::fail("expected enum {A, B, C} but found enum {A, B}".to_string()).trace(name)
         );
+    }
+
+    #[test]
+    fn test_covariance() {
+        let parent = JsonSchema::Str.optional();
+        let child = JsonSchema::Str;
+        let child_is_a_parent = child.is_a(&parent, "foo").is_succeed();
+        assert!(child_is_a_parent);
     }
 }

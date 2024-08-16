@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "expected type to be required",
+    "message": "expected {news: Option<[{body: Option<String>, id: Option<Number>, postImage: Option<String>, title: Option<String>}]>} but found Option<{news: Option<[{body: Option<String>, id: Option<Number>, postImage: Option<String>, title: Option<String>}]>}>",
     "trace": [
       "Query",
       "news",

@@ -76,11 +76,11 @@ fn validate_schema(
         .and_then(|(_input_schema, expected_schema)| {
             // TODO: add validation for input schema - should compare result grpc.body to
             // schema
-            let fields = field_schema.field;            
+            let fields = field_schema.field;
             // TODO: all of the fields in protobuf are optional actually
             // and if we want to mark some fields as required in GraphQL
             // JsonSchema won't match and the validation will fail
-            fields.compare(&expected_schema, name)
+            fields.is_a(&expected_schema, name)
         })
 }
 
@@ -109,7 +109,7 @@ fn validate_group_by(
             let fields = &field_schema.field;
             // we're treating List types for gRPC as optional.
             let fields = JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(fields.to_owned()))));
-            fields.compare(&output_schema, group_by[0].as_str())
+            fields.is_a(&output_schema, group_by[0].as_str())
         })
 }
 
