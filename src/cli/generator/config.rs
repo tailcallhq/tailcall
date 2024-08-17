@@ -306,10 +306,7 @@ mod tests {
     #[test]
     fn test_headers_resolve() {
         let mut headers = BTreeMap::new();
-        headers.insert(
-            "Authorization".to_owned(),
-            "Bearer {{.env.TOKEN}}".try_into().unwrap(),
-        );
+        headers.insert("Authorization".to_owned(), "Bearer {{.env.TOKEN}}".into());
 
         let mut env_vars = HashMap::new();
         let token = "eyJhbGciOiJIUzI1NiIsInR5";
@@ -346,7 +343,7 @@ mod tests {
     #[test]
     fn test_config_codec() {
         let mut headers = BTreeMap::new();
-        headers.insert("user-agent".to_owned(), "tailcall-v1".try_into().unwrap());
+        headers.insert("user-agent".to_owned(), "tailcall-v1".into());
         let config = Config::default().inputs(vec![Input {
             source: Source::Curl {
                 src: location("https://example.com"),
@@ -514,7 +511,7 @@ mod tests {
         let resolved_config = config.into_resolved("", reader_ctx).unwrap();
 
         let actual = resolved_config.secret;
-        let expected = TemplateString::try_from("eyJhbGciOiJIUzI1NiIsInR5").unwrap();
+        let expected = TemplateString::from("eyJhbGciOiJIUzI1NiIsInR5");
 
         assert_eq!(actual, expected);
     }

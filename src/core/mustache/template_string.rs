@@ -85,7 +85,7 @@ mod tests {
         let empty_template = TemplateString::default();
         assert!(empty_template.is_empty());
 
-        let non_empty_template = TemplateString::try_from("Hello").unwrap();
+        let non_empty_template = TemplateString::from("Hello");
         assert!(!non_empty_template.is_empty());
     }
 
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_serialize() {
-        let template = TemplateString::try_from("{{.env.TEST}}").unwrap();
+        let template = TemplateString::from("{{.env.TEST}}");
         let serialized = serde_json::to_string(&template).unwrap();
         assert_eq!(serialized, "\"{{env.TEST}}\"");
     }
