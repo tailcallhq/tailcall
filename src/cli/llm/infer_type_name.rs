@@ -1,5 +1,3 @@
-use mustache::compile_str;
-use maplit::hashmap;
 use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
@@ -8,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
+use crate::core::Mustache;
 
 #[derive(Default)]
 pub struct InferTypeName {
@@ -58,14 +57,14 @@ impl TryInto<ChatRequest> for Question {
         })?;
 
         let template_str = include_str!("prompts.md");
-        let template = compile_str(template_str)?;
+        let template = Mustache::parse(template_str).unwrap();
 
-        let context = hashmap! {
+        let context = maplit::hashmap! {
             "input".to_string() => input,
             "output".to_string() => output,
         };
 
-        let rendered_prompt = template.render_data_to_string(&context)?;
+        let rendered_prompt = template.render(&context);
 
         Ok(ChatRequest::new(vec![
             ChatMessage::system(rendered_prompt),
