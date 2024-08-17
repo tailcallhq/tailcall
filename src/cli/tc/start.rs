@@ -80,7 +80,8 @@ async fn watch_files(
     // Debounce delay to prevent multiple server restarts on a single file change
     // https://users.rust-lang.org/t/problem-with-notify-crate-v6-1/99877
     let debounce_duration = Duration::from_secs(1);
-    let mut last_event_time = Instant::now() - debounce_duration;
+    // ensures the first server start is not blocked
+    let mut last_event_time = Instant::now() - (debounce_duration * 2);
     loop {
         match watch_rx.recv() {
             Ok(event) => {
