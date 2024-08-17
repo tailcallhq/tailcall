@@ -84,10 +84,7 @@ impl Generator {
             vars: &Default::default(),
             headers: Default::default(),
         };
-
-        if let Ok(mustache) = Mustache::parse(&config_content) {
-            config_content = mustache.render(&reader_context);
-        }
+        config_content = Mustache::parse(&config_content).render(&reader_context);
 
         let config: Config = match source {
             ConfigSource::Json => serde_json::from_str(&config_content)?,
