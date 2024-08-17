@@ -73,8 +73,6 @@ fn validate_schema(
     Valid::from(JsonSchema::try_from(input_type))
         .zip(Valid::from(JsonSchema::try_from(output_type)))
         .and_then(|(_input_schema, sub_type)| {
-            // TODO: add validation for input schema - should compare result grpc.body to
-            // schema
             let super_type = field_schema.field;
             let super_args = field_schema.args;
 
