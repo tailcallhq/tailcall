@@ -1,27 +1,46 @@
+use std::sync::{Arc, Mutex, MutexGuard};
+
 use async_graphql::{Name, ServerError};
 use async_graphql_value::ConstValue;
 
-use super::{Field, Nested, Request};
+use super::error::*;
+use super::{Field, Nested, OperationPlan, Positioned};
 use crate::core::ir::{ResolverContextLike, SelectionField};
+
+#[derive(Debug, Clone)]
+pub struct RequestContext<Input> {
+    plan: OperationPlan<Input>,
+    errors: Arc<Mutex<Vec<Positioned<Error>>>>,
+}
+
+impl<Input> RequestContext<Input> {
+    pub fn new(plan: OperationPlan<Input>) -> Self {
+        Self { plan, errors: Arc::new(Mutex::new(vec![])) }
+    }
+    pub fn add_error(&self, new_error: Positioned<Error>) {
+        self.errors().push(new_error);
+    }
+    pub fn plan(&self) -> &OperationPlan<Input> {
+        &self.plan
+    }
+    pub fn errors(&self) -> MutexGuard<Vec<Positioned<Error>>> {
+        self.errors.lock().unwrap()
+    }
+}
 
 /// Rust representation of the GraphQL context available in the DSL
 #[derive(Debug, Clone)]
 pub struct Context<'a, Input, Output> {
-    request: &'a Request<Input>,
     value: Option<&'a Output>,
     args: Option<indexmap::IndexMap<Name, Input>>,
     // TODO: remove the args, since they're already present inside the fields and add support for
     // default values.
     field: &'a Field<Nested<Input>, Input>,
-    is_query: bool,
+    request: &'a RequestContext<Input>,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
-    pub fn new(
-        request: &'a Request<Input>,
-        is_query: bool,
-        field: &'a Field<Nested<Input>, Input>,
-    ) -> Self {
-        Self { request, value: None, args: None, is_query, field }
+    pub fn new(field: &'a Field<Nested<Input>, Input>, env: &'a RequestContext<Input>) -> Self {
+        Self { value: None, args: None, field, request: env }
     }
 
     pub fn with_value_and_field(
@@ -29,13 +48,7 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         value: &'a Output,
         field: &'a Field<Nested<Input>, Input>,
     ) -> Self {
-        Self {
-            request: self.request,
-            args: None,
-            is_query: self.is_query,
-            value: Some(value),
-            field,
-        }
+        Self { args: None, value: Some(value), field, request: self.request }
     }
 
     pub fn with_args(&self, args: indexmap::IndexMap<&str, Input>) -> Self {
@@ -44,11 +57,10 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
             map.insert(Name::new(key), value);
         }
         Self {
-            request: self.request,
             value: self.value,
             args: Some(map),
-            is_query: self.is_query,
             field: self.field,
+            request: self.request,
         }
     }
 
@@ -76,11 +88,11 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
     }
 
     fn is_query(&self) -> bool {
-        self.is_query
+        self.request.plan().is_query()
     }
 
-    fn add_error(&self, _error: ServerError) {
-        todo!()
+    fn add_error(&self, error: ServerError) {
+        self.request.add_error(error.into())
     }
 }
 
@@ -88,32 +100,37 @@ impl<'a> ResolverContextLike for Context<'a, ConstValue, ConstValue> {
 mod test {
     use async_graphql_value::ConstValue;
 
-    use super::Context;
+    use super::{Context, RequestContext};
     use crate::core::blueprint::Blueprint;
     use crate::core::config::{Config, ConfigModule};
     use crate::core::ir::ResolverContextLike;
     use crate::core::jit::{OperationPlan, Request};
     use crate::core::valid::Validator;
 
-    fn setup(
-        query: &str,
-    ) -> (
-        OperationPlan<async_graphql::Value>,
-        Request<async_graphql::Value>,
-    ) {
-        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER).unwrap();
-        let config = Config::from_sdl(&sdl).to_result().unwrap();
-        let blueprint = Blueprint::try_from(&ConfigModule::from(config)).unwrap();
+    fn setup(query: &str) -> anyhow::Result<OperationPlan<ConstValue>> {
+        let sdl = std::fs::read_to_string(tailcall_fixtures::configs::JSONPLACEHOLDER)?;
+        let config = Config::from_sdl(&sdl).to_result()?;
+        let blueprint = Blueprint::try_from(&ConfigModule::from(config))?;
         let request = Request::new(query);
-        let plan = request.clone().create_plan(&blueprint).unwrap();
-        (plan, request)
+        let plan = request.clone().create_plan(&blueprint)?;
+        Ok(plan)
     }
 
     #[test]
     fn test_field() {
-        let (plan, req) = setup("query {posts {id title}}");
+        let plan = setup("query {posts {id title}}").unwrap();
         let field = plan.as_nested();
-        let ctx: Context<ConstValue, ConstValue> = Context::new(&req, false, &field[0]);
-        insta::assert_debug_snapshot!(<Context<_, _> as ResolverContextLike>::field(&ctx).unwrap());
+        let env = RequestContext::new(plan.clone());
+        let ctx = Context::<ConstValue, ConstValue>::new(&field[0], &env);
+        let expected = <Context<_, _> as ResolverContextLike>::field(&ctx).unwrap();
+        insta::assert_debug_snapshot!(expected);
+    }
+
+    #[test]
+    fn test_is_query() {
+        let plan = setup("query {posts {id title}}").unwrap();
+        let env = RequestContext::new(plan.clone());
+        let ctx = Context::new(&plan.as_nested()[0], &env);
+        assert!(ctx.is_query());
     }
 }

@@ -362,7 +362,6 @@ impl Context {
                     .into_object_type()
                     .to_string();
                 cfg_field.type_of = output_ty;
-                cfg_field.required = true;
 
                 cfg_field.resolver = Some(Resolver::Grpc(Grpc {
                     base_url: None,

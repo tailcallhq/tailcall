@@ -7,7 +7,7 @@ schema @server @upstream {
 }
 
 type Query {
-  person__PersonService__GetPerson: person__Person! @grpc(method: "person.PersonService.GetPerson")
+  person__PersonService__GetPerson: person__Person @grpc(method: "person.PersonService.GetPerson")
 }
 
   """
