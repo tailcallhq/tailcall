@@ -14,12 +14,7 @@ pub fn to_mustache_headers(headers: &[KeyValue]) -> Valid<MustacheHeaders, Strin
         )
         .trace(&key_value.key);
 
-        let value = Valid::from(
-            Mustache::parse(key_value.value.as_str())
-                .map_err(|e| ValidationError::new(e.to_string())),
-        )
-        .trace(&key_value.value);
-
+        let value = Valid::succeed(Mustache::parse(key_value.value.as_str()));
         name.zip(value).map(|(name, value)| (name, value))
     })
 }

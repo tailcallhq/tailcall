@@ -72,10 +72,7 @@ pub fn compile_http(
                 let key = http
                     .query
                     .iter()
-                    .find_map(|q| match Mustache::parse(&q.value) {
-                        Ok(tmpl) => tmpl.expression_contains("value").then(|| q.key.clone()),
-                        Err(_) => None,
-                    });
+                    .find_map(|q| Some(Mustache::parse(&q.value).to_string()));
                 IR::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),

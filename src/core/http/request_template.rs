@@ -185,7 +185,7 @@ impl RequestTemplate {
 
     pub fn new(root_url: &str) -> anyhow::Result<Self> {
         Ok(Self {
-            root_url: Mustache::parse(root_url)?,
+            root_url: Mustache::parse(root_url),
             query: Default::default(),
             method: reqwest::Method::GET,
             headers: Default::default(),
@@ -210,14 +210,14 @@ impl RequestTemplate {
 impl TryFrom<Endpoint> for RequestTemplate {
     type Error = anyhow::Error;
     fn try_from(endpoint: Endpoint) -> anyhow::Result<Self> {
-        let path = Mustache::parse(endpoint.path.as_str())?;
+        let path = Mustache::parse(endpoint.path.as_str());
         let query = endpoint
             .query
             .iter()
             .map(|(k, v, skip)| {
                 Ok(Query {
                     key: k.as_str().to_string(),
-                    value: Mustache::parse(v.as_str())?,
+                    value: Mustache::parse(v.as_str()),
                     skip_empty: *skip,
                 })
             })
@@ -226,11 +226,11 @@ impl TryFrom<Endpoint> for RequestTemplate {
         let headers = endpoint
             .headers
             .iter()
-            .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?)?)))
+            .map(|(k, v)| Ok((k.clone(), Mustache::parse(v.to_str()?))))
             .collect::<anyhow::Result<Vec<_>>>()?;
 
         let body = if let Some(body) = &endpoint.body {
-            Some(Mustache::parse(body.as_str())?)
+            Some(Mustache::parse(body.as_str()))
         } else {
             None
         };
