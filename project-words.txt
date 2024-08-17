@@ -2,6 +2,7 @@ btreemap
 datatest
 entr
 genai
+Groq
 Hasher
 Htpasswd
 httpmock
@@ -12,7 +13,9 @@ jsonplaceholder
 Jwks
 maplit
 mdast
+Mixtral
 multispace
+Ollama
 opentelemetry
 peekable
 schemars

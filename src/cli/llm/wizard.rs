@@ -22,7 +22,7 @@ impl<Q, A> Wizard<Q, A> {
             config = config.with_auth_resolver(AuthResolver::from_key_value(key));
         }
 
-        let adapter = AdapterKind::from_model(model.as_str()).unwrap_or(AdapterKind::Ollama);
+        let adapter = AdapterKind::from_model(model.name()).unwrap_or(model.adapter());
 
         let chat_options = ChatOptions::default()
             .with_json_mode(true)
@@ -46,7 +46,7 @@ impl<Q, A> Wizard<Q, A> {
     {
         let response = self
             .client
-            .exec_chat(self.model.as_str(), q.try_into()?, None)
+            .exec_chat(self.model.name(), q.try_into()?, None)
             .await?;
         A::try_from(response)
     }
