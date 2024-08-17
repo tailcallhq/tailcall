@@ -72,14 +72,16 @@ fn validate_schema(
     let output_type = &operation.output_type;
     Valid::from(JsonSchema::try_from(input_type))
         .zip(Valid::from(JsonSchema::try_from(output_type)))
-        .and_then(|(_input_schema, sub_type)| {
+        .and_then(|(sub_args, sub_type)| {
             let super_type = field_schema.field;
             let super_args = field_schema.args;
 
             // TODO: all of the fields in protobuf are optional actually
             // and if we want to mark some fields as required in GraphQL
             // JsonSchema won't match and the validation will fail
-            sub_type.is_a(&super_type, name).and(super_args.is_a(&_input_schema, name))
+            sub_type
+                .is_a(&super_type, name)
+                .and(super_args.is_a(&sub_args, name))
         })
 }
 
