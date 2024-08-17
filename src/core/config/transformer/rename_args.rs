@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 
 use crate::core::config::Config;
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::Valid;
 use crate::core::Transform;
 
 /// A transformer that renames existing args by replacing them with suggested
@@ -29,167 +29,98 @@ impl Transform for RenameArgs {
     type Value = Config;
     type Error = String;
 
-    fn transform(&self, config: Self::Value) -> Valid<Self::Value, Self::Error> {
-        let mut config = config;
+    fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
+        let field_renames = self.0.iter().collect::<Vec<_>>();
 
-        Valid::from_iter(
-            self.0.iter(),
-            |(field_name, existing_and_suggested_names)| {
-                let query_type = config.types.get_mut("Query");
-                if let Some(type_) = query_type {
-                    if let Some(mut field_info) = type_.fields.remove(field_name) {
-                        for (existing_name, suggested_name) in existing_and_suggested_names {
-                            let arg_value = field_info.args.remove(existing_name);
-                            if let Some(arg_value) = arg_value {
-                                field_info
-                                    .args
-                                    .insert(suggested_name.to_string(), arg_value);
-                                if let Some(http) = field_info.http.as_mut() {
-                                    http.path = http.path.replace(existing_name, suggested_name);
-                                    for query in http.query.iter_mut() {
-                                        query.key =
-                                            query.key.replace(existing_name, suggested_name);
-                                        query.value =
-                                            query.value.replace(existing_name, suggested_name);
-                                    }
+        for (field_name, existing_and_suggested_names) in field_renames {
+            let types_to_update = config
+                .types
+                .iter_mut()
+                .filter(|(key, _)| *key == "Query" || *key == "Mutation")
+                .map(|(_, type_)| type_)
+                .collect::<Vec<_>>();
+
+            for type_ in types_to_update {
+                if let Some(mut field_info) = type_.fields.remove(field_name) {
+                    for (existing_name, suggested_name) in existing_and_suggested_names {
+                        if let Some(arg_value) = field_info.args.remove(existing_name) {
+                            field_info
+                                .args
+                                .insert(suggested_name.to_string(), arg_value);
+
+                            if let Some(http) = field_info.http.as_mut() {
+                                http.path = http.path.replace(existing_name, suggested_name);
+
+                                for query in http.query.iter_mut() {
+                                    query.key = query.key.replace(existing_name, suggested_name);
+                                    query.value =
+                                        query.value.replace(existing_name, suggested_name);
                                 }
 
-                                type_
-                                    .fields
-                                    .insert(field_name.to_string(), field_info.clone());
-                            } else {
-                                return Valid::fail(format!(
-                                    "Failed to find argument '{}' in field {}.",
-                                    existing_name, field_name
-                                ));
+                                if let Some(body) = http.body.as_mut() {
+                                    *body = body.replace(existing_name, suggested_name);
+                                }
                             }
+
+                            type_
+                                .fields
+                                .insert(field_name.to_string(), field_info.clone());
                         }
-                        Valid::succeed(())
-                    } else {
-                        Valid::fail(format!(
-                            "Failed to find field '{}' in configuration.",
-                            field_name
-                        ))
                     }
-                } else {
-                    Valid::fail("Failed to find Query type in configuration.".to_string())
                 }
-            },
-        )
-        .map(|_| config)
+            }
+        }
+
+        Valid::succeed(config)
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use indexmap::IndexMap;
-//     use maplit::hashmap;
-//
-//     use super::RenameArgs;
-//     use crate::core::config::Config;
-//     use crate::core::transform::Transform;
-//     use crate::core::valid::{ValidationError, Validator};
-//
-//     #[test]
-//     fn test_rename_type() {
-//         let sdl = r#"
-//             schema {
-//                 query: Query
-//             }
-//             type A {
-//                 id: ID!
-//                 name: String
-//             }
-//             type Post {
-//                 id: ID!
-//                 title: String
-//                 body: String
-//             }
-//             type B {
-//                 name: String
-//                 username: String
-//             }
-//             type Query {
-//                 posts: [Post] @http(path: "/posts")
-//             }
-//             type Mutation {
-//               createUser(user: B!): A @http(method: POST, path: "/users", body: "{{args.user}}")
-//             }
-//         "#;
-//         let config = Config::from_sdl(sdl).to_result().unwrap();
-//
-//         let cfg = RenameArgs::new(
-//             hashmap! {
-//                 "Query" => "PostQuery",
-//                 "A" => "User",
-//                 "B" => "InputUser",
-//                 "Mutation" => "UserMutation",
-//             }
-//             .iter(),
-//         )
-//         .transform(config)
-//         .to_result()
-//         .unwrap();
-//
-//         insta::assert_snapshot!(cfg.to_sdl())
-//     }
-//
-//     #[test]
-//     fn test_should_raise_error_when_operation_type_name_is_different() {
-//         let sdl = r#"
-//             schema {
-//                 query: PostQuery
-//             }
-//             type Post {
-//                 id: ID
-//                 title: String
-//             }
-//             type PostQuery {
-//                 posts: [Post] @http(path: "/posts")
-//             }
-//         "#;
-//         let config = Config::from_sdl(sdl).to_result().unwrap();
-//
-//         let result = RenameArgs::new(hashmap! {"Query" =>  "PostQuery"}.iter())
-//             .transform(config)
-//             .to_result();
-//         assert!(result.is_err());
-//     }
-//
-//     #[test]
-//     fn test_should_raise_error_when_type_not_found() {
-//         let sdl = r#"
-//             schema {
-//                 query: Query
-//             }
-//             type A {
-//                 id: ID!
-//                 name: String
-//             }
-//             type Post {
-//                 id: ID!
-//                 title: String
-//                 body: String
-//             }
-//             type Query {
-//                 posts: [Post] @http(path: "/posts")
-//             }
-//         "#;
-//         let config = Config::from_sdl(sdl).to_result().unwrap();
-//
-//         let mut suggested_names = IndexMap::new();
-//         suggested_names.insert("Query", "PostQuery");
-//         suggested_names.insert("A", "User");
-//         suggested_names.insert("B", "User");
-//         suggested_names.insert("C", "User");
-//
-//         let actual = RenameArgs::new(suggested_names.iter())
-//             .transform(config)
-//             .to_result();
-//
-//         let b_err = ValidationError::new("Type 'B' not found in configuration.".to_string());
-//         let c_err = ValidationError::new("Type 'C' not found in configuration.".to_string());
-//         let expected = Err(b_err.combine(c_err));
-//         assert_eq!(actual, expected);
-//     }
-// }
+#[cfg(test)]
+mod test {
+
+    use maplit::hashmap;
+
+    use super::RenameArgs;
+    use crate::core::config::Config;
+    use crate::core::transform::Transform;
+    use crate::core::valid::Validator;
+
+    #[test]
+    fn test_rename_args() {
+        let sdl = r#"
+            schema {
+                query: Query
+                mutation: Mutation
+            }
+            type User {
+                id: ID!
+                name: String
+            }
+            type Post {
+                id: ID!
+                title: String
+                body: String
+            }
+            type Query {
+                post(p1: ID!): Post @http(path: "/posts/{{args.p1}}")
+            }
+            type Mutation {
+              createUser(p2: Int!): A @http(method: POST, path: "/users", body: "{{args.p2}}")
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let cfg = RenameArgs::new(
+            hashmap! {
+                "post".to_string() => vec![("p1".to_string(), "postId".to_string())],
+                "createUser".to_string() => vec![("p2".to_string(), "userId".to_string())],
+            }
+            .into_iter(),
+        )
+        .transform(config)
+        .to_result()
+        .unwrap();
+
+        insta::assert_snapshot!(cfg.to_sdl())
+    }
+}

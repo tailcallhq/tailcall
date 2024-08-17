@@ -194,7 +194,6 @@ impl Generator {
                 .to_result()?;
             let mut llm_args_gen = InferArgName::new(key);
             let suggested_args = llm_args_gen.generate(config.config()).await?;
-            tracing::info!("suggested args: {:?}", suggested_args);
             let cfg = RenameArgs::new(suggested_args.into_iter())
                 .transform(cfg)
                 .to_result()?;

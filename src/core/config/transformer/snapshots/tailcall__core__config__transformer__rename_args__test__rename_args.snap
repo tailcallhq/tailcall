@@ -1,0 +1,27 @@
+---
+source: src/core/config/transformer/rename_args.rs
+expression: cfg.to_sdl()
+---
+schema @server @upstream {
+  query: Query
+  mutation: Mutation
+}
+
+type Mutation {
+  createUser(userId: Int!): A @http(body: "{{args.userId}}", method: "POST", path: "/users")
+}
+
+type Post {
+  body: String
+  id: ID!
+  title: String
+}
+
+type Query {
+  post(postId: ID!): Post @http(path: "/posts/{{args.postId}}")
+}
+
+type User {
+  id: ID!
+  name: String
+}

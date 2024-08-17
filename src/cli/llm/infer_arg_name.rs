@@ -83,27 +83,28 @@ impl InferArgName {
 
         let mut new_name_mappings: HashMap<String, Vec<(String, String)>> = HashMap::new();
 
-        let query_type = config.types.get("Query");
+        let types: Vec<_> = ["Query", "Mutation"]
+            .iter()
+            .filter_map(|&key| config.types.get(key))
+            .collect();
 
-        if let Some(type_) = query_type {
+        for type_ in types {
             let mut args_to_be_processed = HashMap::new();
-            let fields = &type_.fields.keys().collect::<Vec<_>>();
-            for key in fields {
-                if let Some(field) = &type_.fields.get(key.as_str()) {
-                    let args = field.args.iter().collect::<Vec<_>>();
-                    if !args.is_empty() {
-                        let args = args
-                            .iter()
-                            .map(|(k, v)| (k.to_string(), v.type_of.clone()))
-                            .collect::<Vec<_>>();
-                        args_to_be_processed.insert(key.to_string(), args);
-                    }
+            for (key, field) in type_.fields.iter() {
+                let args: Vec<_> = field
+                    .args
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.type_of.clone()))
+                    .collect();
+
+                if !args.is_empty() {
+                    args_to_be_processed.insert(key.clone(), args);
                 }
             }
             let total = args_to_be_processed.len();
             for (i, arg) in args_to_be_processed.into_iter().enumerate() {
-                for j in arg.1.iter() {
-                    let arg = (arg.0.to_string(), j.to_owned());
+                for arg_field in arg.1.iter() {
+                    let arg = (arg.0.to_string(), arg_field.to_owned());
                     let question = Question { fields: arg.clone() };
 
                     let mut delay = 3;
@@ -122,9 +123,11 @@ impl InferArgName {
                                         }
                                         new_name_mappings
                                             .entry(arg.0.to_owned())
-                                            .and_modify(|v| v.push((j.0.clone(), name.to_owned())))
+                                            .and_modify(|v| {
+                                                v.push((arg_field.0.clone(), name.to_owned()))
+                                            })
                                             .or_insert_with(|| {
-                                                vec![(j.0.clone(), name.to_owned())]
+                                                vec![(arg_field.0.clone(), name.to_owned())]
                                             });
                                         break;
                                     }
@@ -162,11 +165,8 @@ impl InferArgName {
                     }
                 }
             }
-            tracing::info!("new_name_mappings {:?}", new_name_mappings);
-
-            Ok(new_name_mappings)
-        } else {
-            Ok(HashMap::new())
         }
+
+        Ok(new_name_mappings)
     }
 }
