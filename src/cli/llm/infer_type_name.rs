@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::{Error, Result, Wizard};
-use crate::cli::generator::config::LLMConfig;
 use crate::core::config::Config;
 use crate::core::Mustache;
 
@@ -75,13 +74,8 @@ impl TryInto<ChatRequest> for Question {
 }
 
 impl InferTypeName {
-    pub fn new(llm_config: LLMConfig) -> InferTypeName {
-        let secret = if !llm_config.secret.is_empty() {
-            Some(llm_config.secret.to_string())
-        } else {
-            None
-        };
-        Self { model: llm_config.model, secret }
+    pub fn new(model: String, secret: Option<String>) -> InferTypeName {
+        Self { model, secret }
     }
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let secret = self.secret.as_ref().map(|s| s.to_owned());

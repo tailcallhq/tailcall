@@ -25,16 +25,18 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
-    pub llm: LLMConfig,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub llm: Option<LLMConfig>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct LLMConfig {
-    pub model: String,
-    #[serde(skip_serializing_if = "TemplateString::is_empty")]
-    pub secret: TemplateString,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub secret: Option<TemplateString>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
@@ -281,8 +283,10 @@ impl Config {
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;
-        let secret = self.llm.secret.resolve(&reader_context);
-        let llm = LLMConfig { model: self.llm.model, secret };
+        let llm = self.llm.map(|llm| {
+            let secret = llm.secret.map(|s| s.resolve(&reader_context));
+            LLMConfig { model: llm.model, secret }
+        });
 
         Ok(Config {
             inputs,
@@ -519,17 +523,17 @@ mod tests {
             headers: Default::default(),
         };
 
-        let config = Config::default().llm(LLMConfig {
-            model: "gpt-3.5-turbo".to_string(),
-            secret: TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap(),
-        });
+        let config = Config::default().llm(Some(LLMConfig {
+            model: Some("gpt-3.5-turbo".to_string()),
+            secret: Some(TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap()),
+        }));
         let resolved_config = config.into_resolved("", reader_ctx).unwrap();
 
         let actual = resolved_config.llm;
-        let expected = LLMConfig {
-            model: "gpt-3.5-turbo".to_string(),
-            secret: TemplateString::try_from(token).unwrap(),
-        };
+        let expected = Some(LLMConfig {
+            model: Some("gpt-3.5-turbo".to_string()),
+            secret: Some(TemplateString::try_from(token).unwrap()),
+        });
 
         assert_eq!(actual, expected);
     }

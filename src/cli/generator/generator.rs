@@ -180,13 +180,18 @@ impl Generator {
         let mut config = config_gen.mutation(mutation_type_name).generate(true)?;
 
         if infer_type_names {
-            let mut llm_gen = InferTypeName::new(llm_config);
-            let suggested_names = llm_gen.generate(config.config()).await?;
-            let cfg = RenameTypes::new(suggested_names.iter())
-                .transform(config.config().to_owned())
-                .to_result()?;
+            if let Some(llm_config) = llm_config {
+                if let Some(model) = llm_config.model {
+                    let mut llm_gen =
+                        InferTypeName::new(model, llm_config.secret.map(|s| s.to_string()));
+                    let suggested_names = llm_gen.generate(config.config()).await?;
+                    let cfg = RenameTypes::new(suggested_names.iter())
+                        .transform(config.config().to_owned())
+                        .to_result()?;
 
-            config = ConfigModule::from(cfg);
+                    config = ConfigModule::from(cfg);
+                }
+            }
         }
 
         self.write(&config, &path).await?;
