@@ -81,7 +81,7 @@ async fn watch_files(
     // https://users.rust-lang.org/t/problem-with-notify-crate-v6-1/99877
     let debounce_duration = Duration::from_secs(1);
     // ensures the first server start is not blocked
-    let mut last_event_time = Instant::now() - (debounce_duration * 2);
+    let mut last_event_time = Instant::now() - (debounce_duration * 4);
     loop {
         match watch_rx.recv() {
             Ok(event) => {
