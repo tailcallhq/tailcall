@@ -71,7 +71,7 @@ pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
     to_json_schema(field, config)
 }
 pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
-    for arg in args.values() {
+    if let Some(arg) = args.values().next() {
         // gRPC can only support one input message, so we check for only one argument
         // compatibility
         return to_json_schema(arg, config);
