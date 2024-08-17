@@ -6,7 +6,7 @@ use hyper::HeaderMap;
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
-use super::config::{Config, Resolved, Source};
+use super::config::{Config, LLMConfig, Resolved, Source};
 use super::source::ConfigSource;
 use crate::cli::llm::InferTypeName;
 use crate::core::config::transformer::{Preset, RenameTypes};
@@ -164,7 +164,7 @@ impl Generator {
         let query_type = config.schema.query.clone();
         let mutation_type_name = config.schema.mutation.clone();
 
-        let llm_config = config.llm.clone();
+        let llm = config.llm.clone();
         let preset = config.preset.clone().unwrap_or_default();
         let preset: Preset = preset.validate_into().to_result()?;
         let input_samples = self.resolve_io(config).await?;
@@ -180,17 +180,14 @@ impl Generator {
         let mut config = config_gen.mutation(mutation_type_name).generate(true)?;
 
         if infer_type_names {
-            if let Some(llm_config) = llm_config {
-                if let Some(model) = llm_config.model {
-                    let mut llm_gen =
-                        InferTypeName::new(model, llm_config.secret.map(|s| s.to_string()));
-                    let suggested_names = llm_gen.generate(config.config()).await?;
-                    let cfg = RenameTypes::new(suggested_names.iter())
-                        .transform(config.config().to_owned())
-                        .to_result()?;
+            if let Some(LLMConfig { model: Some(model), secret }) = llm {
+                let mut llm_gen = InferTypeName::new(model, secret.map(|s| s.to_string()));
+                let suggested_names = llm_gen.generate(config.config()).await?;
+                let cfg = RenameTypes::new(suggested_names.iter())
+                    .transform(config.config().to_owned())
+                    .to_result()?;
 
-                    config = ConfigModule::from(cfg);
-                }
+                config = ConfigModule::from(cfg);
             }
         }
 
