@@ -8,8 +8,7 @@ use pathdiff::diff_paths;
 
 use super::config::{Config, Resolved, Source};
 use super::source::ConfigSource;
-use crate::cli::llm::InferArgName;
-use crate::cli::llm::InferTypeName;
+use crate::cli::llm::{InferArgName, InferTypeName};
 use crate::core::config::transformer::{Preset, RenameArgs, RenameTypes};
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
