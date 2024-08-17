@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use super::model::groq;
 use super::{Error, Result, Wizard};
@@ -37,7 +38,6 @@ impl TryInto<ChatRequest> for Question {
     type Error = Error;
 
     fn try_into(self) -> Result<ChatRequest> {
-        let content = serde_json::to_string(&self)?;
         let input = serde_json::to_string_pretty(&Question {
             fields: vec![
                 ("id".to_string(), "String".to_string()),
@@ -56,13 +56,13 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
-        let template_str = include_str!("prompts.md");
+        let template_str = include_str!("prompts/infer_type_name.md");
         let template = Mustache::parse(template_str).unwrap();
 
-        let context = maplit::hashmap! {
-            "input".to_string() => input,
-            "output".to_string() => output,
-        };
+        let context = json!({
+            "input": input,
+            "output": output,
+        });
 
         let rendered_prompt = template.render(&context);
 
