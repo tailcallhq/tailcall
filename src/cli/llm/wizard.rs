@@ -15,9 +15,9 @@ pub struct Wizard<Q, A> {
 }
 
 impl<Q, A> Wizard<Q, A> {
-    pub fn new(model: String, api_key: Option<String>) -> Self {
+    pub fn new(model: String, secret: Option<String>) -> Self {
         let mut config = genai::adapter::AdapterConfig::default();
-        if let Some(key) = api_key {
+        if let Some(key) = secret {
             config = config.with_auth_resolver(AuthResolver::from_key_value(key));
         }
 

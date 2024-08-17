@@ -92,8 +92,8 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let actual = TemplateString::parse("{{.env.TAILCALL_LLM_API_KEY}}").unwrap();
-        let expected = Mustache::parse("{{.env.TAILCALL_LLM_API_KEY}}").unwrap();
+        let actual = TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap();
+        let expected = Mustache::parse("{{.env.TAILCALL_SECRET}}").unwrap();
         assert_eq!(actual.0, expected);
     }
 
@@ -101,7 +101,7 @@ mod tests {
     fn test_resolve() {
         let mut env_vars = HashMap::new();
         let token = "eyJhbGciOiJIUzI1NiIsInR5";
-        env_vars.insert("TAILCALL_LLM_API_KEY".to_owned(), token.to_owned());
+        env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
 
         let mut runtime = crate::core::runtime::test::init(None);
         runtime.env = Arc::new(TestEnvIO::init(env_vars));
@@ -112,7 +112,7 @@ mod tests {
             headers: Default::default(),
         };
 
-        let actual = TemplateString::parse("{{.env.TAILCALL_LLM_API_KEY}}")
+        let actual = TemplateString::parse("{{.env.TAILCALL_SECRET}}")
             .unwrap()
             .resolve(&ctx);
         let expected = TemplateString::try_from("eyJhbGciOiJIUzI1NiIsInR5").unwrap();

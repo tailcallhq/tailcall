@@ -34,7 +34,7 @@ pub struct Config<Status = UnResolved> {
 pub struct LLMConfig {
     pub model: String,
     #[serde(skip_serializing_if = "TemplateString::is_empty")]
-    pub api_key: TemplateString,
+    pub secret: TemplateString,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
@@ -281,8 +281,8 @@ impl Config {
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;
-        let llm_api_key = self.llm.api_key.resolve(&reader_context);
-        let llm = LLMConfig { model: self.llm.model, api_key: llm_api_key };
+        let secret = self.llm.secret.resolve(&reader_context);
+        let llm = LLMConfig { model: self.llm.model, secret };
 
         Ok(Config {
             inputs,
@@ -508,7 +508,7 @@ mod tests {
     fn test_llm_config() {
         let mut env_vars = HashMap::new();
         let token = "eyJhbGciOiJIUzI1NiIsInR5";
-        env_vars.insert("TAILCALL_LLM_API_KEY".to_owned(), token.to_owned());
+        env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
 
         let mut runtime = crate::core::runtime::test::init(None);
         runtime.env = Arc::new(TestEnvIO::init(env_vars));
@@ -521,14 +521,14 @@ mod tests {
 
         let config = Config::default().llm(LLMConfig {
             model: "gpt-3.5-turbo".to_string(),
-            api_key: TemplateString::parse("{{.env.TAILCALL_LLM_API_KEY}}").unwrap(),
+            secret: TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap(),
         });
         let resolved_config = config.into_resolved("", reader_ctx).unwrap();
 
         let actual = resolved_config.llm;
         let expected = LLMConfig {
             model: "gpt-3.5-turbo".to_string(),
-            api_key: TemplateString::try_from(token).unwrap(),
+            secret: TemplateString::try_from(token).unwrap(),
         };
 
         assert_eq!(actual, expected);

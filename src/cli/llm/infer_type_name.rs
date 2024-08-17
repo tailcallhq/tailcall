@@ -10,7 +10,7 @@ use crate::core::config::Config;
 #[derive(Default)]
 pub struct InferTypeName {
     model: String,
-    api_key: Option<String>,
+    secret: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,17 +76,17 @@ impl TryInto<ChatRequest> for Question {
 
 impl InferTypeName {
     pub fn new(llm_config: LLMConfig) -> InferTypeName {
-        let api_key = if !llm_config.api_key.is_empty() {
-            Some(llm_config.api_key.to_string())
+        let secret = if !llm_config.secret.is_empty() {
+            Some(llm_config.secret.to_string())
         } else {
             None
         };
-        Self { model: llm_config.model, api_key }
+        Self { model: llm_config.model, secret }
     }
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let api_key = self.api_key.as_ref().map(|s| s.to_owned());
+        let secret = self.secret.as_ref().map(|s| s.to_owned());
 
-        let wizard: Wizard<Question, Answer> = Wizard::new(self.model.clone(), api_key);
+        let wizard: Wizard<Question, Answer> = Wizard::new(self.model.clone(), secret);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
