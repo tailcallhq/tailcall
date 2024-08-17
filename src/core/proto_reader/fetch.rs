@@ -136,13 +136,13 @@ impl GrpcReflection {
             .as_str(),
         );
         let req_template = RequestTemplate {
-            url: Mustache::parse(url.as_str())?,
+            url: Mustache::parse(url.as_str()),
             headers: vec![(
                 HeaderName::from_static("content-type"),
-                Mustache::parse("application/grpc+proto")?,
+                Mustache::parse("application/grpc+proto"),
             )],
             body: Some(RequestBody {
-                mustache: Mustache::parse(body.to_string().as_str()).ok(),
+                mustache: Some(Mustache::parse(body.to_string().as_str())),
                 value: Default::default(),
             }),
             operation: operation.clone(),

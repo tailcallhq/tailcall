@@ -18,7 +18,7 @@ impl PartialEq for TemplateString {
 impl TryFrom<&str> for TemplateString {
     type Error = anyhow::Error;
     fn try_from(value: &str) -> anyhow::Result<Self> {
-        Ok(Self(Mustache::parse(value)?))
+        Ok(Self(Mustache::parse(value)))
     }
 }
 
@@ -28,7 +28,7 @@ impl TemplateString {
     }
 
     pub fn parse(value: &str) -> anyhow::Result<Self> {
-        Ok(Self(Mustache::parse(value)?))
+        Ok(Self(Mustache::parse(value)))
     }
 
     pub fn resolve(&self, ctx: &impl PathString) -> Self {
@@ -52,7 +52,7 @@ impl<'de> Deserialize<'de> for TemplateString {
         D: Deserializer<'de>,
     {
         let template_string = String::deserialize(deserializer)?;
-        let mustache = Mustache::parse(&template_string).map_err(serde::de::Error::custom)?;
+        let mustache = Mustache::parse(&template_string);
 
         Ok(TemplateString(mustache))
     }
@@ -93,7 +93,7 @@ mod tests {
     #[test]
     fn test_parse() {
         let actual = TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap();
-        let expected = Mustache::parse("{{.env.TAILCALL_SECRET}}").unwrap();
+        let expected = Mustache::parse("{{.env.TAILCALL_SECRET}}");
         assert_eq!(actual.0, expected);
     }
 
@@ -133,7 +133,7 @@ mod tests {
         let template: TemplateString = serde_json::from_str(serialized).unwrap();
 
         let actual = template.0;
-        let expected = Mustache::parse("{{.env.TEST}}").unwrap();
+        let expected = Mustache::parse("{{.env.TEST}}");
 
         assert_eq!(actual, expected);
     }
