@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::core::blueprint::*;
 use crate::core::config;
-use crate::core::config::{Field, GraphQLOperationType};
+use crate::core::config::{Field, GraphQLOperationType, Resolver};
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -14,11 +14,11 @@ pub fn update_call<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         move |(config, field, _, name), b_field| {
-            let Some(ref calls) = field.call else {
+            let Some(Resolver::Call(call)) = &field.resolver else {
                 return Valid::succeed(b_field);
             };
 
-            compile_call(config, calls, operation_type, object_name)
+            compile_call(config, call, operation_type, object_name)
                 .map(|field| b_field.resolver(field.resolver).name(name.to_string()))
         },
     )

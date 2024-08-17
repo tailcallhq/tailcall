@@ -58,5 +58,5 @@ enum Status {
 }
 
 type NewsData {
-  news: [News]!
+  news: [News]
 }

@@ -189,7 +189,7 @@ directive @http(
   The first parameter referencing a field in the current value using mustache syntax 
   is automatically selected as the batching parameter.
   """
-  query: [KeyValue]
+  query: [URLQuery]
 ) on FIELD_DEFINITION
 
 directive @js(
@@ -314,17 +314,6 @@ directive @server(
   """
   workers: Int
 ) on SCHEMA
-
-"""
-Used to represent an identifier for a type. Typically used via only by the configuration 
-generators to provide additional information about the type.
-"""
-directive @tag(
-  """
-  A unique identifier for the type.
-  """
-  id: String!
-) on OBJECT
 
 """
 The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing 
@@ -537,6 +526,25 @@ input Step {
 
 input KeyValue {
   key: String!
+  value: String!
+}
+
+"""
+The URLQuery input type represents a query parameter to be included in a URL.
+"""
+input URLQuery {
+  """
+  The key or name of the query parameter.
+  """
+  key: String!
+  """
+  Determines whether to ignore query parameters with empty values.
+  """
+  skipEmpty: Boolean
+  """
+  The actual value or a mustache template to resolve the value dynamically for the 
+  query parameter.
+  """
   value: String!
 }
 
@@ -831,7 +839,7 @@ input Http {
   The first parameter referencing a field in the current value using mustache syntax 
   is automatically selected as the batching parameter.
   """
-  query: [KeyValue]
+  query: [URLQuery]
 }
 
 """

@@ -2,14 +2,17 @@ use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
+use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
-
-const MODEL: &str = "llama3-8b-8192";
+use crate::core::Mustache;
 
 #[derive(Default)]
-pub struct InferTypeName {}
+pub struct InferTypeName {
+    secret: Option<String>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Answer {
@@ -35,7 +38,6 @@ impl TryInto<ChatRequest> for Question {
     type Error = Error;
 
     fn try_into(self) -> Result<ChatRequest> {
-        let content = serde_json::to_string(&self)?;
         let input = serde_json::to_string_pretty(&Question {
             fields: vec![
                 ("id".to_string(), "String".to_string()),
@@ -54,27 +56,31 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
+        let template_str = include_str!("prompts/infer_type_name.md");
+        let template = Mustache::parse(template_str);
+
+        let context = json!({
+            "input": input,
+            "output": output,
+        });
+
+        let rendered_prompt = template.render(&context);
+
         Ok(ChatRequest::new(vec![
-            ChatMessage::system(
-                "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
-            ),
-            ChatMessage::system("The name should be concise and preferably a single word"),
-            ChatMessage::system("Example Input:"),
-            ChatMessage::system(input),
-            ChatMessage::system("Example Output:"),
-            ChatMessage::system(output),
-            ChatMessage::system("Ensure the output is in valid JSON format".to_string()),
-            ChatMessage::system(
-                "Do not add any additional text before or after the json".to_string(),
-            ),
-            ChatMessage::user(content),
+            ChatMessage::system(rendered_prompt),
+            ChatMessage::user(serde_json::to_string(&self)?),
         ]))
     }
 }
 
 impl InferTypeName {
+    pub fn new(secret: Option<String>) -> InferTypeName {
+        Self { secret }
+    }
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let wizard: Wizard<Question, Answer> = Wizard::new(MODEL.to_string());
+        let secret = self.secret.as_ref().map(|s| s.to_owned());
+
+        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
