@@ -76,7 +76,7 @@ pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) ->
         // compatibility
         return to_json_schema(arg, config);
     }
-    JsonSchema::Obj(BTreeMap::new())
+    JsonSchema::Empty
 }
 fn to_json_schema<T>(field: &T, config: &Config) -> JsonSchema
 where
