@@ -3,10 +3,12 @@ use std::collections::HashMap;
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use indexmap::{indexmap, IndexMap};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use super::model::groq;
 use super::{Error, Result, TypeUsageIndex, Wizard};
 use crate::core::config::Config;
+use crate::core::Mustache;
 
 #[derive(Default)]
 pub struct InferTypeName {
@@ -38,8 +40,6 @@ impl TryInto<ChatRequest> for Question<'_> {
     type Error = Error;
 
     fn try_into(self) -> Result<ChatRequest> {
-        let content = serde_json::to_string(&self)?;
-
         let input = serde_json::to_string_pretty(&Question {
             type_refs: indexmap! {
                 "User" => 13,
@@ -59,23 +59,19 @@ impl TryInto<ChatRequest> for Question<'_> {
             ],
         })?;
 
+        let template_str = include_str!("prompts/infer_type_name.md");
+        let template = Mustache::parse(template_str);
+
+        let context = json!({
+            "input": input,
+            "output": output,
+        });
+
+        let rendered_prompt = template.render(&context);
+
         Ok(ChatRequest::new(vec![
-            ChatMessage::system(
-                "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
-            ),
-            ChatMessage::system("The name should be concise and preferably a single word"),
-            ChatMessage::system("In this context, 'type_refs' refer to the number of times the type is used in different fields as output type. For example, if the following type is referenced 12 times in the 'user' field and 13 times in the 'profile' field."),
-            ChatMessage::system("While suggesting the type name, do consider above type_refs information for understanding the type context."),
-            ChatMessage::system("Example Input:"),
-            ChatMessage::system(input),
-            ChatMessage::system("Example Output:"),
-            ChatMessage::system(output),
-            ChatMessage::system("Ensure the output is in valid JSON format".to_string()),
-            ChatMessage::system(
-                "Do not add any additional text before or after the json".to_string(),
-            ),
-            ChatMessage::user("User Input:"),
-            ChatMessage::user(content),
+            ChatMessage::system(rendered_prompt),
+            ChatMessage::user(serde_json::to_string(&self)?),
         ]))
     }
 }

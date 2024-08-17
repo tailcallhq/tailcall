@@ -69,13 +69,11 @@ pub fn compile_http(
 
             if !http.batch_key.is_empty() && http.method == Method::GET {
                 // Find a query parameter that contains a reference to the {{.value}} key
-                let key = http
-                    .query
-                    .iter()
-                    .find_map(|q| match Mustache::parse(&q.value) {
-                        Ok(tmpl) => tmpl.expression_contains("value").then(|| q.key.clone()),
-                        Err(_) => None,
-                    });
+                let key = http.query.iter().find_map(|q| {
+                    Mustache::parse(&q.value)
+                        .expression_contains("value")
+                        .then(|| q.key.clone())
+                });
                 IR::IO(IO::Http {
                     req_template,
                     group_by: Some(GroupBy::new(http.batch_key.clone(), key)),
