@@ -94,9 +94,12 @@ async fn watch_files(
                         if now.duration_since(last_event_time) >= debounce_duration {
                             last_event_time = now;
 
+                            // send the signal to the currently running server runtime to shutdown
                             if let Err(err) = tx.send(()) {
-                                tracing::error!("Failed to send the signal: {}", err);
+                                tracing::error!("Failed to stop the server: {}", err);
                             }
+                            // wait for the server to shutdown
+                            tokio::time::sleep(Duration::from_millis(500)).await;
 
                             if let Err(e) = handle_server(
                                 &mut rx,
