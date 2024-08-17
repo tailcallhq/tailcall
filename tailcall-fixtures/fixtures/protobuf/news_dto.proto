@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package news;
+
+import "google/protobuf/empty.proto";
+
+enum Status {
+  PUBLISHED = 0;
+  DRAFT = 1;
+  DELETED = 2;
+}
+
+message News {
+  int32 id = 1;
+  string title = 2;
+  string body = 3;
+  string postImage = 4;
+  Status status = 5;
+}
+
+message NewsId { int32 id = 1; }
+
+message MultipleNewsId { repeated NewsId ids = 1; }
+
+message NewsList { repeated News news = 1; }

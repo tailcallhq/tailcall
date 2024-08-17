@@ -9,10 +9,17 @@ schema
   query: Query
 }
 
+enum Status {
+  DELETED
+  DRAFT
+  PUBLISHED
+}
+
 type News {
   body: String
   id: Int
   postImage: String
+  status: Status
   title: String
 }
 
