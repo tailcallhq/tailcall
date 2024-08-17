@@ -8,14 +8,7 @@ ChatRequest {
         ChatMessage {
             role: System,
             content: Text(
-                "Given the sample schema of a GraphQL type, suggest 5 meaningful names for it.\nThe name should be concise and preferably a single word.\n\nExample Input:\n{\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ]\n}\n\nExample Output:\n{\n  \"suggestions\": [\n    \"Person\",\n    \"Profile\",\n    \"Member\",\n    \"Individual\",\n    \"Contact\"\n  ]\n}\n\nEnsure the output is in valid JSON format.\n\nDo not add any additional text before or after the JSON.\n",
-            ),
-            extra: None,
-        },
-        ChatMessage {
-            role: User,
-            content: Text(
-                "User Input:",
+                "Given the sample schema of a GraphQL type, suggest 5 meaningful names for it.\nThe name should be concise and preferably a single word.\nIn this context, 'type_refs' refer to the number of times the type is used in different fields as output type. For example, if the following type is referenced 12 times in the 'user' field and 13 times in the 'profile' field.\nWhile suggesting the type name, do consider above type_refs information for understanding the type context.\n\nExample Input:\n{\n  \"type_refs\": {\n    \"User\": 13,\n    \"Profile\": 11,\n    \"Person\": 14\n  },\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ]\n}\n\nExample Output:\n{\n  \"suggestions\": [\n    \"Person\",\n    \"Profile\",\n    \"Member\",\n    \"Individual\",\n    \"Contact\"\n  ]\n}\n\nEnsure the output is in valid JSON format.\n\nDo not add any additional text before or after the JSON.\n",
             ),
             extra: None,
         },
