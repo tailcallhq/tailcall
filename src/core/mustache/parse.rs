@@ -10,11 +10,11 @@ use super::*;
 
 impl Mustache {
     // TODO: infallible function, no need to return Result
-    pub fn parse(str: &str) -> anyhow::Result<Mustache> {
+    pub fn parse(str: &str) -> Mustache {
         let result = parse_mustache(str).finish();
         match result {
-            Ok((_, mustache)) => Ok(mustache),
-            Err(_) => Ok(Mustache::from(vec![Segment::Literal(str.to_string())])),
+            Ok((_, mustache)) => mustache,
+            Err(_) => Mustache::from(vec![Segment::Literal(str.to_string())]),
         }
     }
 }
