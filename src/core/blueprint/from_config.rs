@@ -71,11 +71,11 @@ pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
     to_json_schema(field, config)
 }
 pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
-    let mut schema_fields = BTreeMap::new();
-    for (name, arg) in args.iter() {
-        schema_fields.insert(name.clone(), to_json_schema(arg, config));
+    for arg in args.values() {
+        // gRPC can only support one input message, so we check for only one argument compatibility
+        return to_json_schema(arg, config);
     }
-    JsonSchema::Obj(schema_fields)
+    JsonSchema::Obj(BTreeMap::new())
 }
 fn to_json_schema<T>(field: &T, config: &Config) -> JsonSchema
 where
