@@ -2,7 +2,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use notify::{Config, EventKind, FsEventWatcher, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::fsevent::FsEventWatcher;
+use notify::{Config, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::sync::broadcast;
 use tokio::time::Instant;
 
