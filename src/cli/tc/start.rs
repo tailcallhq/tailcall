@@ -40,18 +40,7 @@ async fn start_watch_server(
 ) -> Result<()> {
     let (tx, rx) = broadcast::channel(16);
 
-    let watch_handler = task::spawn({
-        let config_reader = Arc::clone(&config_reader);
-        async move {
-            if let Err(err) = watch_files(&file_paths, tx, rx, config_reader).await {
-                tracing::error!("Watch handler encountered an error: {}", err);
-            }
-        }
-    });
-
-    if let Err(err) = watch_handler.await {
-        tracing::error!("Error in watch handler: {}", err);
-    }
+    watch_files(&file_paths, tx, rx, config_reader).await?;
 
     Ok(())
 }
@@ -88,7 +77,6 @@ async fn watch_files(
     }
 
     loop {
-        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         match watch_rx.recv() {
             Ok(event) => {
                 if let Ok(event) = event {
