@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 
-use crate::core::config::Config;
+use crate::core::config::{Config, Resolver};
 use crate::core::valid::Valid;
 use crate::core::Transform;
 
@@ -48,7 +48,7 @@ impl Transform for RenameArgs {
                                 .args
                                 .insert(suggested_name.to_string(), arg_value);
 
-                            if let Some(http) = field_info.http.as_mut() {
+                            if let Some(Resolver::Http(http)) = field_info.resolver.as_mut() {
                                 http.path = http.path.replace(existing_name, suggested_name);
 
                                 for query in http.query.iter_mut() {
