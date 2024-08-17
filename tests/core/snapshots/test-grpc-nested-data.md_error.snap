@@ -4,7 +4,7 @@ expression: errors
 ---
 [
   {
-    "message": "expected Non repeatable type",
+    "message": "Type '{body: Option<String>, id: Option<Number>, postImage: Option<String>, title: Option<String>}' is not assignable to type '[{body: Option<String>, id: Option<Number>, postImage: Option<String>, title: Option<String>}]'",
     "trace": [
       "Query",
       "newsById",

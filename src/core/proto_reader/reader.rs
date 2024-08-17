@@ -1,8 +1,10 @@
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::Context;
-use futures_util::future::join_all;
+use futures_util::future::{join_all, BoxFuture};
+use futures_util::FutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
@@ -10,6 +12,7 @@ use crate::core::proto_reader::fetch::GrpcReflection;
 use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::runtime::TargetRuntime;
 
+#[derive(Clone)]
 pub struct ProtoReader {
     reader: ResourceReader<Cached>,
     runtime: TargetRuntime,
@@ -29,7 +32,7 @@ impl ProtoReader {
 
     /// Fetches proto files from a grpc server (grpc reflection)
     pub async fn fetch<T: AsRef<str>>(&self, url: T) -> anyhow::Result<Vec<ProtoMetadata>> {
-        let grpc_reflection = GrpcReflection::new(url.as_ref(), self.runtime.clone());
+        let grpc_reflection = Arc::new(GrpcReflection::new(url.as_ref(), self.runtime.clone()));
 
         let mut proto_metadata = vec![];
         let service_list = grpc_reflection.list_all_files().await?;
@@ -39,7 +42,9 @@ impl ProtoReader {
             }
             let file_descriptor_proto = grpc_reflection.get_by_service(&service).await?;
             Self::check_package(&file_descriptor_proto)?;
-            let descriptors = self.resolve(file_descriptor_proto, None).await?;
+            let descriptors = self
+                .reflection_resolve(grpc_reflection.clone(), file_descriptor_proto)
+                .await?;
             let metadata = ProtoMetadata {
                 descriptor_set: FileDescriptorSet { file: descriptors },
                 path: url.as_ref().to_string(),
@@ -64,7 +69,7 @@ impl ProtoReader {
         Self::check_package(&file_read)?;
 
         let descriptors = self
-            .resolve(file_read, PathBuf::from(path.as_ref()).parent())
+            .file_resolve(file_read, PathBuf::from(path.as_ref()).parent())
             .await?;
         let metadata = ProtoMetadata {
             descriptor_set: FileDescriptorSet { file: descriptors },
@@ -73,12 +78,15 @@ impl ProtoReader {
         Ok(metadata)
     }
 
-    /// Performs BFS to import all nested proto files
-    async fn resolve(
+    /// Used as a helper file to resolve dependencies proto files
+    async fn resolve_dependencies<F>(
         &self,
         parent_proto: FileDescriptorProto,
-        parent_path: Option<&Path>,
-    ) -> anyhow::Result<Vec<FileDescriptorProto>> {
+        resolve_fn: F,
+    ) -> anyhow::Result<Vec<FileDescriptorProto>>
+    where
+        F: Fn(&str) -> BoxFuture<'_, anyhow::Result<FileDescriptorProto>>,
+    {
         let mut descriptors: HashMap<String, FileDescriptorProto> = HashMap::new();
         let mut queue = VecDeque::new();
         queue.push_back(parent_proto.clone());
@@ -87,7 +95,7 @@ impl ProtoReader {
             let futures: Vec<_> = file
                 .dependency
                 .iter()
-                .map(|import| self.read_proto(import, parent_path))
+                .map(|import| resolve_fn(import))
                 .collect();
 
             let results = join_all(futures).await;
@@ -106,6 +114,34 @@ impl ProtoReader {
             .collect::<Vec<FileDescriptorProto>>();
         descriptors_vec.push(parent_proto);
         Ok(descriptors_vec)
+    }
+
+    /// Used to resolve dependencies proto files using file reader
+    async fn file_resolve(
+        &self,
+        parent_proto: FileDescriptorProto,
+        parent_path: Option<&Path>,
+    ) -> anyhow::Result<Vec<FileDescriptorProto>> {
+        self.resolve_dependencies(parent_proto, |import| {
+            let parent_path = parent_path.map(|p| p.to_path_buf());
+            let this = self.clone();
+
+            async move { this.read_proto(import, parent_path.as_deref()).await }.boxed()
+        })
+        .await
+    }
+
+    /// Used to resolve dependencies proto files using reflection
+    async fn reflection_resolve(
+        &self,
+        grpc_reflection: Arc<GrpcReflection>,
+        parent_proto: FileDescriptorProto,
+    ) -> anyhow::Result<Vec<FileDescriptorProto>> {
+        self.resolve_dependencies(parent_proto, |file| {
+            let grpc_reflection = Arc::clone(&grpc_reflection);
+            async move { grpc_reflection.get_file(file).await }.boxed()
+        })
+        .await
     }
 
     /// Tries to load well-known google proto files and if not found uses normal
@@ -180,7 +216,7 @@ mod test_proto_config {
 
         let reader = ProtoReader::init(ResourceReader::<Cached>::cached(runtime.clone()), runtime);
         let file_descriptors = reader
-            .resolve(reader.read_proto(&test_file, None).await?, Some(test_dir))
+            .file_resolve(reader.read_proto(&test_file, None).await?, Some(test_dir))
             .await?;
         for file in file_descriptors
             .iter()
