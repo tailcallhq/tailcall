@@ -101,7 +101,7 @@ mod tests {
         ];
 
         for expected in expectations {
-            let mustache = Mustache::parse(expected).unwrap();
+            let mustache = Mustache::parse(expected);
 
             assert_eq!(expected, mustache.to_string());
         }
@@ -110,7 +110,7 @@ mod tests {
     #[test]
     fn test_single_literal() {
         let s = r"hello/world";
-        let mustache: Mustache = Mustache::parse(s).unwrap();
+        let mustache: Mustache = Mustache::parse(s);
         assert_eq!(
             mustache,
             Mustache::from(vec![Segment::Literal("hello/world".to_string())])
@@ -120,7 +120,7 @@ mod tests {
     #[test]
     fn test_single_template() {
         let s = r"{{hello.world}}";
-        let mustache: Mustache = Mustache::parse(s).unwrap();
+        let mustache: Mustache = Mustache::parse(s);
         assert_eq!(
             mustache,
             Mustache::from(vec![Segment::Expression(vec![
@@ -133,7 +133,7 @@ mod tests {
     #[test]
     fn test_mixed() {
         let s = r"http://localhost:8090/{{foo.bar}}/api/{{hello.world}}/end";
-        let mustache: Mustache = Mustache::parse(s).unwrap();
+        let mustache: Mustache = Mustache::parse(s);
         assert_eq!(
             mustache,
             Mustache::from(vec![
@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn test_with_spaces() {
         let s = "{{ foo . bar }}";
-        let mustache: Mustache = Mustache::parse(s).unwrap();
+        let mustache: Mustache = Mustache::parse(s);
         assert_eq!(
             mustache,
             Mustache::from(vec![Segment::Expression(vec![
@@ -161,7 +161,7 @@ mod tests {
 
     #[test]
     fn test_parse_expression_with_valid_input() {
-        let result = Mustache::parse("{{ foo.bar }} extra").unwrap();
+        let result = Mustache::parse("{{ foo.bar }} extra");
         let expected = Mustache::from(vec![
             Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
             Segment::Literal(" extra".to_string()),
@@ -171,14 +171,14 @@ mod tests {
 
     #[test]
     fn test_parse_expression_with_invalid_input() {
-        let result = Mustache::parse("foo.bar }}").unwrap();
+        let result = Mustache::parse("foo.bar }}");
         let expected = Mustache::from(vec![Segment::Literal("foo.bar }}".to_string())]);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn test_parse_segments_mixed() {
-        let result = Mustache::parse("prefix {{foo.bar}} middle {{baz.qux}} suffix").unwrap();
+        let result = Mustache::parse("prefix {{foo.bar}} middle {{baz.qux}} suffix");
         let expected = Mustache::from(vec![
             Segment::Literal("prefix ".to_string()),
             Segment::Expression(vec!["foo".to_string(), "bar".to_string()]),
@@ -191,14 +191,14 @@ mod tests {
 
     #[test]
     fn test_parse_segments_only_literal() {
-        let result = Mustache::parse("just a string").unwrap();
+        let result = Mustache::parse("just a string");
         let expected = Mustache::from(vec![Segment::Literal("just a string".to_string())]);
         assert_eq!(result, expected);
     }
 
     #[test]
     fn test_parse_segments_only_expression() {
-        let result = Mustache::parse("{{foo.bar}}").unwrap();
+        let result = Mustache::parse("{{foo.bar}}");
         let expected = Mustache::from(vec![Segment::Expression(vec![
             "foo".to_string(),
             "bar".to_string(),
@@ -209,7 +209,7 @@ mod tests {
     #[test]
     fn test_unfinished_expression() {
         let s = r"{{hello.world";
-        let mustache: Mustache = Mustache::parse(s).unwrap();
+        let mustache: Mustache = Mustache::parse(s);
         assert_eq!(
             mustache,
             Mustache::from(vec![Segment::Literal("{{hello.world".to_string())])
@@ -218,7 +218,7 @@ mod tests {
 
     #[test]
     fn test_new_number() {
-        let mustache = Mustache::parse("123").unwrap();
+        let mustache = Mustache::parse("123");
         assert_eq!(
             mustache,
             Mustache::from(vec![Segment::Literal("123".to_string())])
@@ -227,7 +227,7 @@ mod tests {
 
     #[test]
     fn parse_env_name() {
-        let result = Mustache::parse("{{env.FOO}}").unwrap();
+        let result = Mustache::parse("{{env.FOO}}");
         assert_eq!(
             result,
             Mustache::from(vec![Segment::Expression(vec![
@@ -239,7 +239,7 @@ mod tests {
 
     #[test]
     fn parse_env_with_underscores() {
-        let result = Mustache::parse("{{env.FOO_BAR}}").unwrap();
+        let result = Mustache::parse("{{env.FOO_BAR}}");
         assert_eq!(
             result,
             Mustache::from(vec![Segment::Expression(vec![
@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn single_curly_brackets() {
-        let result = Mustache::parse("test:{SHA}string").unwrap();
+        let result = Mustache::parse("test:{SHA}string");
         assert_eq!(
             result,
             Mustache::from(vec![Segment::Literal("test:{SHA}string".to_string())])
@@ -261,7 +261,7 @@ mod tests {
     #[test]
     fn test_optional_dot_expression() {
         let s = r"{{.foo.bar}}";
-        let mustache: Mustache = Mustache::parse(s).unwrap();
+        let mustache: Mustache = Mustache::parse(s);
         assert_eq!(
             mustache,
             Mustache::from(vec![Segment::Expression(vec![

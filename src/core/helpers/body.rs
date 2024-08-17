@@ -38,7 +38,7 @@ mod tests {
         assert_eq!(
             result,
             Valid::succeed(Some(RequestBody {
-                mustache: Some(Mustache::parse(value.to_string().as_str()).unwrap()),
+                mustache: Some(Mustache::parse(value.to_string().as_str())),
                 value: value.to_string()
             }))
         );

@@ -18,7 +18,7 @@ mod tests {
 
         assert_eq!(
             url,
-            Valid::succeed(Mustache::parse("http://localhost:3000").unwrap())
+            Valid::succeed(Mustache::parse("http://localhost:3000"))
         );
     }
 }

@@ -119,7 +119,7 @@ mod tests {
         #[test]
         fn test_query_params_template() {
             let s = r"/v1/templates?project-id={{value.projectId}}";
-            let mustache: Mustache = Mustache::parse(s).unwrap();
+            let mustache: Mustache = Mustache::parse(s);
             let ctx = json!(json!({"value": {"projectId": "123"}}));
             let result = mustache.render(&ctx);
             assert_eq!(result, "/v1/templates?project-id=123");
@@ -179,7 +179,7 @@ mod tests {
         #[test]
         fn test_json_like() {
             let mustache =
-                Mustache::parse(r#"{registered: "{{foo}}", display: "{{bar}}"}"#).unwrap();
+                Mustache::parse(r#"{registered: "{{foo}}", display: "{{bar}}"}"#);
             let ctx = json!({"foo": "baz", "bar": "qux"});
             let result = mustache.render(&ctx);
             assert_eq!(result, r#"{registered: "baz", display: "qux"}"#);
@@ -187,7 +187,7 @@ mod tests {
 
         #[test]
         fn test_json_like_static() {
-            let mustache = Mustache::parse(r#"{registered: "foo", display: "bar"}"#).unwrap();
+            let mustache = Mustache::parse(r#"{registered: "foo", display: "bar"}"#);
             let ctx = json!({}); // Context is not used in this case
             let result = mustache.render(&ctx);
             assert_eq!(result, r#"{registered: "foo", display: "bar"}"#);

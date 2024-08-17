@@ -93,7 +93,7 @@ mod tests {
     #[test]
     fn test_parse() {
         let actual = TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap();
-        let expected = Mustache::parse("{{.env.TAILCALL_SECRET}}").unwrap();
+        let expected = Mustache::parse("{{.env.TAILCALL_SECRET}}");
         assert_eq!(actual.0, expected);
     }
 
@@ -133,7 +133,7 @@ mod tests {
         let template: TemplateString = serde_json::from_str(serialized).unwrap();
 
         let actual = template.0;
-        let expected = Mustache::parse("{{.env.TEST}}").unwrap();
+        let expected = Mustache::parse("{{.env.TEST}}");
 
         assert_eq!(actual, expected);
     }

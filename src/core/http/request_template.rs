@@ -379,12 +379,12 @@ mod tests {
         let query = vec![
             Query {
                 key: "baz".to_string(),
-                value: Mustache::parse("{{baz.id}}").unwrap(),
+                value: Mustache::parse("{{baz.id}}"),
                 skip_empty: false,
             },
             Query {
                 key: "foo".to_string(),
-                value: Mustache::parse("{{foo.id}}").unwrap(),
+                value: Mustache::parse("{{foo.id}}"),
                 skip_empty: false,
             },
         ];
@@ -462,17 +462,17 @@ mod tests {
         let query = vec![
             Query {
                 key: "foo".to_string(),
-                value: Mustache::parse("0").unwrap(),
+                value: Mustache::parse("0"),
                 skip_empty: false,
             },
             Query {
                 key: "bar".to_string(),
-                value: Mustache::parse("1").unwrap(),
+                value: Mustache::parse("1"),
                 skip_empty: false,
             },
             Query {
                 key: "baz".to_string(),
-                value: Mustache::parse("2").unwrap(),
+                value: Mustache::parse("2"),
                 skip_empty: false,
             },
         ];
@@ -492,17 +492,17 @@ mod tests {
         let query = vec![
             Query {
                 key: "foo".to_string(),
-                value: Mustache::parse("0").unwrap(),
+                value: Mustache::parse("0"),
                 skip_empty: false,
             },
             Query {
                 key: "bar".to_string(),
-                value: Mustache::parse("{{bar.id}}").unwrap(),
+                value: Mustache::parse("{{bar.id}}"),
                 skip_empty: false,
             },
             Query {
                 key: "baz".to_string(),
-                value: Mustache::parse("{{baz.id}}").unwrap(),
+                value: Mustache::parse("{{baz.id}}"),
                 skip_empty: false,
             },
         ];
@@ -529,15 +529,15 @@ mod tests {
         let headers = vec![
             (
                 HeaderName::from_static("foo"),
-                Mustache::parse("foo").unwrap(),
+                Mustache::parse("foo"),
             ),
             (
                 HeaderName::from_static("bar"),
-                Mustache::parse("bar").unwrap(),
+                Mustache::parse("bar"),
             ),
             (
                 HeaderName::from_static("baz"),
-                Mustache::parse("baz").unwrap(),
+                Mustache::parse("baz"),
             ),
         ];
         let tmpl = RequestTemplate::new("http://localhost:3000")
@@ -555,15 +555,15 @@ mod tests {
         let headers = vec![
             (
                 HeaderName::from_static("foo"),
-                Mustache::parse("0").unwrap(),
+                Mustache::parse("0"),
             ),
             (
                 HeaderName::from_static("bar"),
-                Mustache::parse("{{bar.id}}").unwrap(),
+                Mustache::parse("{{bar.id}}"),
             ),
             (
                 HeaderName::from_static("baz"),
-                Mustache::parse("{{baz.id}}").unwrap(),
+                Mustache::parse("{{baz.id}}"),
             ),
         ];
         let tmpl = RequestTemplate::new("http://localhost:3000")
@@ -625,7 +625,7 @@ mod tests {
     fn test_body() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .body_path(Some(Mustache::parse("foo").unwrap()));
+            .body_path(Some(Mustache::parse("foo")));
         let ctx = Context::default();
         let body = tmpl.to_body(&ctx).unwrap();
         assert_eq!(body, "foo");
@@ -635,7 +635,7 @@ mod tests {
     fn test_body_template() {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
-            .body_path(Some(Mustache::parse("{{foo.bar}}").unwrap()));
+            .body_path(Some(Mustache::parse("{{foo.bar}}")));
         let ctx = Context::default().value(json!({
           "foo": {
             "bar": "baz"
@@ -650,7 +650,7 @@ mod tests {
         let tmpl = RequestTemplate::new("http://localhost:3000")
             .unwrap()
             .encoding(crate::core::config::Encoding::ApplicationJson)
-            .body_path(Some(Mustache::parse("{{foo.bar}}").unwrap()));
+            .body_path(Some(Mustache::parse("{{foo.bar}}")));
         let ctx = Context::default().value(json!({
           "foo": {
             "bar": "baz"
@@ -805,7 +805,7 @@ mod tests {
         fn test_with_string() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse("{{foo.bar}}").unwrap()));
+                .body_path(Some(Mustache::parse("{{foo.bar}}")));
             let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
             let request_body = tmpl.to_body(&ctx);
             let body = request_body.unwrap();
@@ -816,7 +816,7 @@ mod tests {
         fn test_with_json_template() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse(r#"{"foo": "{{baz}}"}"#).unwrap()));
+                .body_path(Some(Mustache::parse(r#"{"foo": "{{baz}}"}"#)));
             let ctx = Context::default().value(json!({"baz": "baz"}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, "foo=baz");
@@ -826,7 +826,7 @@ mod tests {
         fn test_with_json_body() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse("{{foo}}").unwrap()));
+                .body_path(Some(Mustache::parse("{{foo}}")));
             let ctx = Context::default().value(json!({"foo": {"bar": "baz"}}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, "bar=baz");
@@ -836,7 +836,7 @@ mod tests {
         fn test_with_json_body_nested() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse("{{a}}").unwrap()));
+                .body_path(Some(Mustache::parse("{{a}}")));
             let ctx = Context::default()
                 .value(json!({"a": {"special chars": "a !@#$%^&*()<>?:{}-=1[];',./"}}));
             let a = tmpl.to_body(&ctx).unwrap();
@@ -848,7 +848,7 @@ mod tests {
         fn test_with_mustache_literal() {
             let tmpl = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .body_path(Some(Mustache::parse(r#"{"foo": "bar"}"#).unwrap()));
+                .body_path(Some(Mustache::parse(r#"{"foo": "bar"}"#)));
             let ctx = Context::default().value(json!({}));
             let body = tmpl.to_body(&ctx).unwrap();
             assert_eq!(body, r#"foo=bar"#);
@@ -921,22 +921,22 @@ mod tests {
 
             let key_123_1 = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .with_body(Mustache::parse("{{args.value}}").unwrap())
+                .with_body(Mustache::parse("{{args.value}}"))
                 .cache_key(&ctx_with_body(json!({"args": {"value": "123"}})));
 
             let key_234_1 = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .with_body(Mustache::parse("{{args.value}}").unwrap())
+                .with_body(Mustache::parse("{{args.value}}"))
                 .cache_key(&ctx_with_body(json!({"args": {"value": "234"}})));
 
             let key_123_2 = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .with_body(Mustache::parse("{{value.id}}").unwrap())
+                .with_body(Mustache::parse("{{value.id}}"))
                 .cache_key(&ctx_with_body(json!({"value": {"id": "123"}})));
 
             let key_234_2 = RequestTemplate::form_encoded_url("http://localhost:3000")
                 .unwrap()
-                .with_body(Mustache::parse("{{value.id2}}").unwrap())
+                .with_body(Mustache::parse("{{value.id2}}"))
                 .cache_key(&ctx_with_body(
                     json!({"value": {"id1": "123", "id2": "234"}}),
                 ));
