@@ -57,7 +57,7 @@ impl TryInto<ChatRequest> for Question {
         })?;
 
         let template_str = include_str!("prompts/infer_type_name.md");
-        let template = Mustache::parse(template_str).unwrap();
+        let template = Mustache::parse(template_str);
 
         let context = json!({
             "input": input,
