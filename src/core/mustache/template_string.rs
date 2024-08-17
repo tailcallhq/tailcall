@@ -15,10 +15,9 @@ impl PartialEq for TemplateString {
     }
 }
 
-impl TryFrom<&str> for TemplateString {
-    type Error = anyhow::Error;
-    fn try_from(value: &str) -> anyhow::Result<Self> {
-        Ok(Self(Mustache::parse(value)))
+impl From<&str> for TemplateString {
+    fn from(value: &str) -> Self {
+        Self(Mustache::parse(value))
     }
 }
 
@@ -77,7 +76,7 @@ mod tests {
     #[test]
     fn test_from_str() {
         let template_str = "Hello, World!";
-        let template = TemplateString::try_from(template_str).unwrap();
+        let template = TemplateString::from(template_str);
         assert_eq!(template.0.to_string(), template_str);
     }
 
@@ -115,7 +114,7 @@ mod tests {
         let actual = TemplateString::parse("{{.env.TAILCALL_SECRET}}")
             .unwrap()
             .resolve(&ctx);
-        let expected = TemplateString::try_from("eyJhbGciOiJIUzI1NiIsInR5").unwrap();
+        let expected = TemplateString::from("eyJhbGciOiJIUzI1NiIsInR5");
 
         assert_eq!(actual, expected);
     }

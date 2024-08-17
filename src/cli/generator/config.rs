@@ -328,7 +328,7 @@ mod tests {
 
         let resolved_headers = unresolved_headers.resolve(&reader_ctx);
 
-        let expected = TemplateString::try_from(format!("Bearer {token}").as_str()).unwrap();
+        let expected = TemplateString::from(format!("Bearer {token}").as_str());
         let actual = resolved_headers
             .as_btree_map()
             .as_ref()
