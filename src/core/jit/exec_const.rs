@@ -31,7 +31,7 @@ impl ConstValueExecutor {
         // TODO: drop the clones in plan
         let vars = request.variables.clone();
         let exe = Executor::new(plan.clone(), exec);
-        let store = exe.store(request).await;
+        let store = exe.store().await;
         let synth = Synth::new(plan, store, vars);
         exe.execute(synth).await
     }

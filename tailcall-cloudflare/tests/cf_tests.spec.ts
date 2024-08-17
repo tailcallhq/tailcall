@@ -8,10 +8,12 @@ describe("fetch", () => {
     let placeholder_batch = (await readFile("../examples/jsonplaceholder_batch.graphql")).toString()
     let grpc = (await readFile("../examples/grpc.graphql")).toString()
     let news_proto = (await readFile("../tailcall-fixtures/fixtures/protobuf/news.proto")).toString()
+    let news_dto_proto = (await readFile("../tailcall-fixtures/fixtures/protobuf/news_dto.proto")).toString()
 
     let bucket = await mf.getR2Bucket("MY_R2")
     await bucket.put("examples/grpc.graphql", grpc)
     await bucket.put("examples/../tailcall-fixtures/fixtures/protobuf/news.proto", news_proto)
+    await bucket.put("examples/../tailcall-fixtures/fixtures/protobuf/news_dto.proto", news_dto_proto)
     await bucket.put("tailcall-fixtures/fixtures/protobuf/news.proto", grpc)
     await bucket.put("examples/jsonplaceholder.graphql", placeholder)
     await bucket.put("examples/jsonplaceholder_batch.graphql", placeholder_batch)

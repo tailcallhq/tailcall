@@ -1,0 +1,60 @@
+schema
+  @server(port: 8000)
+  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  query: Query
+  mutation: Mutation
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+input UserInput {
+  name: String!
+  email: String!
+  status: Status
+}
+
+interface Node {
+  id: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type User implements Node {
+  id: ID!
+  name: String!
+  email: String!
+  status: Status
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+union SearchResult = User | Post
+
+type Post implements Node {
+  id: ID!
+  title: String!
+  content: String!
+  author: User!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Query {
+  user(id: ID!): User @http(path: "/users/{{.args.id}}")
+  search(term: String!): [SearchResult!] @http(path: "/search", query: [{key: "q", value: "{{.args.term}}"}])
+}
+
+input PostInput {
+  title: String!
+  content: String!
+  authorId: ID!
+}
+
+type Mutation {
+  createUser(input: UserInput!): User! @http(path: "/users", body: "{{.args.input}}", method: "POST")
+  createPost(input: PostInput): Post! @http(path: "/posts", body: "{{.args.input}}", method: "POST")
+}

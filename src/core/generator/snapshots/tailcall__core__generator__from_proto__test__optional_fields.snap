@@ -32,7 +32,7 @@ enum type__Status {
 }
 
 type Query {
-  type__TypeService__Get(type: type__TypeInput!): type__Type! @grpc(body: "{{.args.type}}", method: "type.TypeService.Get")
+  type__TypeService__Get(type: type__TypeInput!): type__Type @grpc(body: "{{.args.type}}", method: "type.TypeService.Get")
 }
 
 type type__Type {

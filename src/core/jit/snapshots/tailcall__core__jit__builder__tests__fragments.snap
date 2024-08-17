@@ -30,7 +30,6 @@ expression: plan.into_nested()
                         name: "name",
                         type_of: String!,
                         type_condition: "User",
-                        is_scalar: true,
                         directives: [],
                     },
                     Field {
@@ -38,7 +37,6 @@ expression: plan.into_nested()
                         name: "email",
                         type_of: String!,
                         type_condition: "User",
-                        is_scalar: true,
                         directives: [],
                     },
                     Field {
@@ -46,7 +44,6 @@ expression: plan.into_nested()
                         name: "phone",
                         type_of: String,
                         type_condition: "User",
-                        is_scalar: true,
                         directives: [],
                     },
                     Field {
@@ -54,7 +51,6 @@ expression: plan.into_nested()
                         name: "title",
                         type_of: String!,
                         type_condition: "Post",
-                        is_scalar: true,
                         directives: [],
                     },
                     Field {
@@ -62,13 +58,11 @@ expression: plan.into_nested()
                         name: "body",
                         type_of: String!,
                         type_condition: "Post",
-                        is_scalar: true,
                         directives: [],
                     },
                 ],
             ),
         ),
-        is_scalar: false,
         directives: [],
     },
 ]
