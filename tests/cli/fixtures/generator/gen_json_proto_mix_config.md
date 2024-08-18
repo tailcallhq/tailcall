@@ -9,7 +9,8 @@
     },
     {
       "proto": {
-        "src": "../../../../../../tailcall-fixtures/fixtures/protobuf/news.proto"      }
+        "src": "tailcall-fixtures/fixtures/protobuf/news.proto"
+      }
     }
   ],
   "preset": {
