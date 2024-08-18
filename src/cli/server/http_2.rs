@@ -1,17 +1,22 @@
 #![allow(clippy::too_many_arguments)]
+
 use std::sync::Arc;
 
-use hyper::server::conn::AddrIncoming;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::Server;
-use hyper_rustls::TlsAcceptor;
+use http_body_util::Full;
+use hyper::server::conn::http2::Builder;
+use hyper::service::service_fn;
+use hyper::Response;
+use hyper_util::rt::{TokioExecutor, TokioIo};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use serde::de::DeserializeOwned;
+use tokio::net::TcpListener;
 use tokio::sync::oneshot;
+use tokio_rustls::TlsAcceptor;
 
 use super::server_config::ServerConfig;
 use crate::cli::CLIError;
-use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
-use crate::core::http::handle_request;
+use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike};
+use crate::core::http::handle_incoming;
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,
@@ -20,47 +25,70 @@ pub async fn start_http_2(
     server_up_sender: Option<oneshot::Sender<()>>,
 ) -> anyhow::Result<()> {
     let addr = sc.addr();
-    let incoming = AddrIncoming::bind(&addr)?;
-    let acceptor = TlsAcceptor::builder()
-        .with_single_cert(cert, key.clone_key())?
-        .with_http2_alpn()
-        .with_incoming(incoming);
-    let make_svc_single_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
 
-    let make_svc_batch_req = make_service_fn(|_conn| {
-        let state = Arc::clone(&sc);
-        async move {
-            Ok::<_, anyhow::Error>(service_fn(move |req| {
-                handle_request::<GraphQLBatchRequest>(req, state.app_ctx.clone())
-            }))
-        }
-    });
+    let mut tls_cfg = rustls::ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(cert, key.clone_key())
+        .map_err(CLIError::from)?;
 
-    let builder = Server::builder(acceptor).http2_only(true);
+    tls_cfg.alpn_protocols = vec![
+        b"h2".to_vec(),
+        b"http/1.1".to_vec(),
+        b"http/1.0".to_vec(),
+        b"http/0.9".to_vec(),
+    ];
 
-    super::log_launch(sc.as_ref());
+    let acceptor = TlsAcceptor::from(Arc::new(tls_cfg));
+
+    let builder = hyper::server::conn::http2::Builder::new(TokioExecutor::new());
 
     if let Some(sender) = server_up_sender {
         sender
             .send(())
             .or(Err(anyhow::anyhow!("Failed to send message")))?;
     }
+    super::log_launch(sc.as_ref());
 
-    let server: std::prelude::v1::Result<(), hyper::Error> =
-        if sc.blueprint.server.enable_batch_requests {
-            builder.serve(make_svc_batch_req).await
-        } else {
-            builder.serve(make_svc_single_req).await
-        };
+    if sc.blueprint.server.enable_batch_requests {
+        handle::<GraphQLBatchRequest>(listener, sc, acceptor, builder).await
+    } else {
+        handle::<GraphQLRequest>(listener, sc, acceptor, builder).await
+    }
+}
 
-    let result = server.map_err(CLIError::from);
-
-    Ok(result?)
+async fn handle<T: DeserializeOwned + GraphQLRequestLike + Send>(
+    listener: TcpListener,
+    sc: Arc<ServerConfig>,
+    acceptor: TlsAcceptor,
+    builder: Builder<TokioExecutor>,
+) -> anyhow::Result<()> {
+    loop {
+        let stream_result = listener.accept().await;
+        if let Ok((stream, _)) = stream_result {
+            let app_ctx = sc.app_ctx.clone();
+            let io_result = acceptor.accept(stream).await;
+            if let Ok(io) = io_result {
+                let io = TokioIo::new(io);
+                let server = builder
+                    .serve_connection(
+                        io,
+                        service_fn(move |req| {
+                            let app_ctx = app_ctx.clone();
+                            async move {
+                                handle_incoming::<T>(req, app_ctx)
+                                    .await
+                                    .map(|res| Response::new(Full::new(res.into_body())))
+                            }
+                        }),
+                    )
+                    .await;
+                tokio::spawn(async move {
+                    if let Err(e) = server {
+                        tracing::error!("An error occurred while handling a request: {e}");
+                    }
+                });
+            }
+        }
+    }
 }

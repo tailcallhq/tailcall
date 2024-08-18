@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use async_graphql::ServerError;
-use hyper::{Body, Request, Response};
+use hyper::body::Bytes;
+use hyper::{Request, Response};
 use serde::de::DeserializeOwned;
 use url::Url;
 
@@ -14,10 +15,10 @@ use crate::core::rest::EndpointSet;
 use crate::core::runtime::TargetRuntime;
 
 pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
-    req: &Request<Body>,
+    req: &Request<Bytes>,
     runtime: TargetRuntime,
     enable_fs: bool,
-) -> Result<Result<AppContext, Response<Body>>> {
+) -> Result<Result<AppContext, Response<Bytes>>> {
     let config_url = req
         .uri()
         .query()
@@ -70,10 +71,10 @@ pub async fn create_app_ctx<T: DeserializeOwned + GraphQLRequestLike>(
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
+    use hyper::body::Bytes;
     use hyper::Request;
     use serde_json::json;
+    use std::sync::Arc;
 
     use crate::core::async_graphql_hyper::GraphQLRequest;
     use crate::core::http::handle_request;
@@ -84,7 +85,7 @@ mod tests {
         let req = Request::builder()
             .method("POST")
             .uri("http://upstream/showcase/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
-            .body(hyper::Body::from(json!({
+            .body(Bytes::from(json!({
                 "query": "query { user { name } }"
             }).to_string()))
             .unwrap();
@@ -98,7 +99,7 @@ mod tests {
         let req = Request::builder()
             .method("POST")
             .uri("http://upstream/graphql?config=.%2Ftests%2Fhttp%2Fconfig%2Fsimple.graphql")
-            .body(hyper::Body::from(
+            .body(Bytes::from(
                 json!({
                     "query": "query { user { name } }"
                 })

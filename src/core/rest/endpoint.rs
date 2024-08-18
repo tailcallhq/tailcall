@@ -4,13 +4,15 @@ use async_graphql::parser::types::{Directive, DocumentOperations, ExecutableDocu
 use async_graphql::{Positioned, Variables};
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
+use hyper::body::Bytes;
+use hyper::Request;
 
 use super::directive::Rest;
 use super::partial_request::PartialRequest;
 use super::path::{Path, Segment};
 use super::query_params::QueryParams;
 use super::type_map::TypeMap;
-use super::{Request, Result};
+use super::Result;
 use crate::core::async_graphql_hyper::GraphQLRequest;
 use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
@@ -137,7 +139,7 @@ impl Endpoint {
         directives.retain(|v| v.node.name.node != name)
     }
 
-    pub fn matches<'a>(&'a self, request: &Request) -> Option<PartialRequest<'a>> {
+    pub fn matches<'a>(&'a self, request: &Request<Bytes>) -> Option<PartialRequest<'a>> {
         let query_params = request
             .uri()
             .query()
@@ -284,7 +286,8 @@ mod tests {
 
         use async_graphql::Variables;
         use async_graphql_value::{ConstValue, Name};
-        use hyper::{Body, Method, Request, Uri, Version};
+        use hyper::body::Bytes;
+        use hyper::{Method, Request, Uri, Version};
         use maplit::btreemap;
         use pretty_assertions::assert_eq;
 
@@ -292,12 +295,12 @@ mod tests {
         use crate::core::rest::endpoint::tests::TEST_QUERY;
         use crate::core::rest::endpoint::Endpoint;
 
-        fn test_request(method: Method, uri: &str) -> Result<hyper::Request<Body>> {
+        fn test_request(method: Method, uri: &str) -> Result<hyper::Request<Bytes>> {
             Ok(Request::builder()
                 .method(method)
                 .uri(Uri::from_str(uri)?)
                 .version(Version::HTTP_11)
-                .body(Body::empty())?)
+                .body(Bytes::new())?)
         }
 
         fn test_matches(query: &str, method: Method, uri: &str) -> Option<Variables> {

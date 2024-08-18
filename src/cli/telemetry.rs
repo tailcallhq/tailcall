@@ -80,17 +80,20 @@ fn set_trace_provider(
                 },
                 runtime::Tokio,
             )
-            .with_config(opentelemetry_sdk::trace::config().with_resource(RESOURCE.clone()))
+            .with_config(
+                opentelemetry_sdk::trace::Config::default().with_resource(RESOURCE.clone()),
+            )
             .build(),
         TelemetryExporter::Otlp(config) => opentelemetry_otlp::new_pipeline()
             .tracing()
             .with_exporter(otlp_exporter(config))
-            .with_trace_config(opentelemetry_sdk::trace::config().with_resource(RESOURCE.clone()))
-            .install_batch(runtime::Tokio)?
-            .provider()
-            .ok_or(TraceError::Other(
-                anyhow!("Failed to instantiate OTLP provider").into(),
-            ))?,
+            .with_trace_config(
+                opentelemetry_sdk::trace::Config::default().with_resource(RESOURCE.clone()),
+            )
+            .install_batch(runtime::Tokio)
+            .map_err(|_| {
+                TraceError::Other(anyhow!("Failed to instantiate OTLP provider").into())
+            })?,
         // Prometheus works only with metrics
         TelemetryExporter::Prometheus(_) => return Ok(None),
         TelemetryExporter::Apollo(_) => return Ok(None),
@@ -125,12 +128,12 @@ fn set_logger_provider(
                 },
                 runtime::Tokio,
             )
-            .with_config(opentelemetry_sdk::logs::config().with_resource(RESOURCE.clone()))
+            .with_resource(RESOURCE.clone())
             .build(),
         TelemetryExporter::Otlp(config) => opentelemetry_otlp::new_pipeline()
             .logging()
             .with_exporter(otlp_exporter(config))
-            .with_log_config(opentelemetry_sdk::logs::config().with_resource(RESOURCE.clone()))
+            .with_resource(RESOURCE.clone())
             .install_batch(runtime::Tokio)?
         ,
         // Prometheus works only with metrics

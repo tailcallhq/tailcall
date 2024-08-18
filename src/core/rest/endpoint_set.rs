@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
+use hyper::body::Bytes;
+use hyper::Request;
+
 use super::endpoint::Endpoint;
 use super::partial_request::PartialRequest;
-use super::{Request, Result};
+use super::Result;
 use crate::core::blueprint::Blueprint;
 use crate::core::http::RequestContext;
 use crate::core::macros::MergeRight;
@@ -83,7 +86,7 @@ impl EndpointSet<Unchecked> {
 }
 
 impl EndpointSet<Checked> {
-    pub fn matches(&self, request: &Request) -> Option<PartialRequest> {
+    pub fn matches(&self, request: &Request<Bytes>) -> Option<PartialRequest> {
         self.endpoints.iter().find_map(|e| e.matches(request))
     }
 }

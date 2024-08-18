@@ -2,7 +2,6 @@ use anyhow::Result;
 use async_graphql_value::{ConstValue, Name};
 use derive_setters::Setters;
 use hyper::body::Bytes;
-use hyper::Body;
 use indexmap::IndexMap;
 use prost::Message;
 use tonic::Status;
@@ -56,10 +55,10 @@ impl Response<Bytes> {
         Ok(Response { status, headers, body })
     }
 
-    pub async fn from_hyper(resp: hyper::Response<hyper::Body>) -> Result<Self> {
+    pub async fn from_hyper(resp: hyper::Response<Bytes>) -> Result<Self> {
         let status = resp.status();
         let headers = resp.headers().to_owned();
-        let body = hyper::body::to_bytes(resp.into_body()).await?;
+        let body = resp.into_body();
         Ok(Response { status, headers, body })
     }
 
@@ -158,9 +157,9 @@ impl Response<Bytes> {
     }
 }
 
-impl From<Response<Bytes>> for hyper::Response<Body> {
+impl From<Response<Bytes>> for hyper::Response<Bytes> {
     fn from(resp: Response<Bytes>) -> Self {
-        let mut response = hyper::Response::new(Body::from(resp.body));
+        let mut response = hyper::Response::new(resp.body);
         *response.headers_mut() = resp.headers;
         *response.status_mut() = resp.status;
         response

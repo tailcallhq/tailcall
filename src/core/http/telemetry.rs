@@ -1,5 +1,6 @@
 use anyhow::Result;
-use hyper::{Body, Request, Response};
+use hyper::body::Bytes;
+use hyper::{Request, Response};
 use once_cell::sync::Lazy;
 use opentelemetry::metrics::Counter;
 use opentelemetry::KeyValue;
@@ -16,7 +17,7 @@ static HTTP_SERVER_REQUEST_COUNT: Lazy<Counter<u64>> = Lazy::new(|| {
 
     meter
         .u64_counter("http.server.request.count")
-        .with_description("Number of incoming request handled")
+        .with_description("Number of Bytes request handled")
         .init()
 });
 
@@ -26,7 +27,7 @@ pub struct RequestCounter {
 }
 
 impl RequestCounter {
-    pub fn new(telemetry: &Telemetry, req: &Request<Body>) -> Self {
+    pub fn new(telemetry: &Telemetry, req: &Request<Bytes>) -> Self {
         if telemetry.export.is_none() {
             return Self::default();
         }
@@ -56,7 +57,7 @@ impl RequestCounter {
         }
     }
 
-    pub fn update(self, response: &Result<Response<Body>>) {
+    pub fn update(self, response: &Result<Response<Bytes>>) {
         if let Some(mut attributes) = self.attributes {
             if let Ok(response) = response {
                 attributes.push(get_response_status_code(response))
@@ -66,11 +67,11 @@ impl RequestCounter {
     }
 }
 
-pub fn get_response_status_code(response: &Response<Body>) -> KeyValue {
+pub fn get_response_status_code(response: &Response<Bytes>) -> KeyValue {
     KeyValue::new(HTTP_RESPONSE_STATUS_CODE, response.status().as_u16() as i64)
 }
 
-pub fn propagate_context(req: &Request<Body>) {
+pub fn propagate_context(req: &Request<Bytes>) {
     let context = opentelemetry::global::get_text_map_propagator(|propagator| {
         propagator.extract(&HeaderExtractor(req.headers()))
     });

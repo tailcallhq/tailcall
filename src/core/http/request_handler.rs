@@ -4,9 +4,11 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_graphql::ServerError;
+use http_body_util::BodyExt;
+use hyper::body::{Bytes, Incoming};
 use hyper::header::{self, HeaderValue, CONTENT_TYPE};
 use hyper::http::Method;
-use hyper::{Body, HeaderMap, Request, Response, StatusCode};
+use hyper::{HeaderMap, Request, Response, StatusCode};
 use opentelemetry::trace::SpanKind;
 use opentelemetry_semantic_conventions::trace::{HTTP_REQUEST_METHOD, HTTP_ROUTE};
 use prometheus::{Encoder, ProtobufEncoder, TextEncoder, TEXT_FORMAT};
@@ -25,7 +27,7 @@ use crate::core::jit::JITExecutor;
 
 pub const API_URL_PREFIX: &str = "/api";
 
-fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Body>> {
+fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Response<Bytes>> {
     let metric_families = prometheus::default_registry().gather();
     let mut buffer = vec![];
 
@@ -44,16 +46,16 @@ fn prometheus_metrics(prometheus_exporter: &PrometheusExporter) -> Result<Respon
     Ok(Response::builder()
         .status(200)
         .header(CONTENT_TYPE, content_type)
-        .body(Body::from(buffer))?)
+        .body(Bytes::from(buffer))?)
 }
 
-fn not_found() -> Result<Response<Body>> {
+fn not_found() -> Result<Response<Bytes>> {
     Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
-        .body(Body::empty())?)
+        .body(Bytes::new())?)
 }
 
-fn create_request_context(req: &Request<Body>, app_ctx: &AppContext) -> RequestContext {
+fn create_request_context(req: &Request<Bytes>, app_ctx: &AppContext) -> RequestContext {
     let upstream = app_ctx.blueprint.upstream.clone();
     let allowed = upstream.allowed_headers;
     let allowed_headers = create_allowed_headers(req.headers(), &allowed);
@@ -76,7 +78,7 @@ fn update_cache_control_header(
 }
 
 pub fn update_response_headers(
-    resp: &mut hyper::Response<hyper::Body>,
+    resp: &mut hyper::Response<Bytes>,
     req_ctx: &RequestContext,
     app_ctx: &AppContext,
 ) {
@@ -98,14 +100,13 @@ pub fn update_response_headers(
 
 #[tracing::instrument(skip_all, fields(otel.name = "graphQL", otel.kind = ?SpanKind::Server))]
 pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+    req: Request<Bytes>,
     app_ctx: &Arc<AppContext>,
     req_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+) -> Result<Response<Bytes>> {
     req_counter.set_http_route("/graphql");
     let req_ctx = Arc::new(create_request_context(&req, app_ctx));
-    let (req, body) = req.into_parts();
-    let bytes = hyper::body::to_bytes(body).await?;
+    let (req, bytes) = req.into_parts();
     let graphql_request = serde_json::from_slice::<T>(&bytes);
     match graphql_request {
         Ok(mut request) => {
@@ -122,7 +123,7 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
                         })
                     })
                     .await?;
-                Ok(hyper::Response::from(out))
+                Ok(out.into())
             }
         }
         Err(err) => {
@@ -136,7 +137,8 @@ pub async fn graphql_request<T: DeserializeOwned + GraphQLRequestLike>(
                 ServerError::new(format!("Unexpected GraphQL Request: {}", err), None);
             response.errors = vec![server_error];
 
-            Ok(GraphQLResponse::from(response).into_response()?)
+            let resp = GraphQLResponse::from(response).into_response()?;
+            Ok(resp)
         }
     }
 }
@@ -145,7 +147,7 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     app_ctx: &Arc<AppContext>,
     req_ctx: &Arc<RequestContext>,
     request: T,
-) -> anyhow::Result<Response<Body>> {
+) -> anyhow::Result<Response<Bytes>> {
     let mut response = if app_ctx.blueprint.server.enable_jit {
         request
             .execute(&JITExecutor::new(app_ctx.clone(), req_ctx.clone()))
@@ -155,7 +157,8 @@ async fn execute_query<T: DeserializeOwned + GraphQLRequestLike>(
     };
     response = update_cache_control_header(response, app_ctx, req_ctx.clone());
 
-    let mut resp = response.into_response()?;
+    let resp = response.into_response()?;
+    let mut resp = Response::new(resp.into_body());
     update_response_headers(&mut resp, req_ctx, app_ctx);
     Ok(resp)
 }
@@ -174,13 +177,13 @@ fn create_allowed_headers(headers: &HeaderMap, allowed: &BTreeSet<String>) -> He
 }
 
 async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+    req: Request<Bytes>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+) -> Result<Response<Bytes>> {
     let method = req.method();
     if method == Method::OPTIONS {
-        let mut res = Response::new(Body::default());
+        let mut res = Response::new(Bytes::new());
         res.headers_mut().insert(
             header::ACCESS_CONTROL_ALLOW_ORIGIN,
             HeaderValue::from_static("https://tailcall.run"),
@@ -206,10 +209,10 @@ async fn handle_origin_tailcall<T: DeserializeOwned + GraphQLRequestLike>(
 }
 
 async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+    req: Request<Bytes>,
     app_ctx: Arc<AppContext>,
     request_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+) -> Result<Response<Bytes>> {
     // Safe to call `.unwrap()` because this method will only be called when
     // `cors` is `Some`
     let cors = app_ctx.blueprint.server.cors.as_ref().unwrap();
@@ -233,7 +236,7 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
         headers.extend(cors.allow_headers_to_header());
         headers.extend(cors.max_age_to_header());
 
-        let mut response = Response::new(Body::default());
+        let mut response = Response::new(Bytes::new());
         std::mem::swap(response.headers_mut(), &mut headers);
 
         Ok(response)
@@ -259,10 +262,10 @@ async fn handle_request_with_cors<T: DeserializeOwned + GraphQLRequestLike>(
 }
 
 async fn handle_rest_apis(
-    mut request: Request<Body>,
+    mut request: Request<Bytes>,
     app_ctx: Arc<AppContext>,
     req_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+) -> Result<Response<Bytes>> {
     *request.uri_mut() = request.uri().path().replace(API_URL_PREFIX, "").parse()?;
     let req_ctx = Arc::new(create_request_context(&request, app_ctx.as_ref()));
     if let Some(p_request) = app_ctx.endpoints.matches(&request) {
@@ -294,10 +297,10 @@ async fn handle_rest_apis(
 }
 
 async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+    req: Request<Bytes>,
     app_ctx: Arc<AppContext>,
     req_counter: &mut RequestCounter,
-) -> Result<Response<Body>> {
+) -> Result<Response<Bytes>> {
     if req.uri().path().starts_with(API_URL_PREFIX) {
         return handle_rest_apis(req, app_ctx, req_counter).await;
     }
@@ -337,6 +340,16 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     }
 }
 
+pub async fn handle_incoming<T: DeserializeOwned + GraphQLRequestLike>(
+    req: Request<Incoming>,
+    app_ctx: Arc<AppContext>,
+) -> Result<Response<Bytes>> {
+    let body = req.into_body();
+    let bytes = body.boxed().collect().await.unwrap().to_bytes();
+    let req = Request::new(bytes);
+    handle_request::<T>(req, app_ctx).await
+}
+
 #[tracing::instrument(
     skip_all,
     err,
@@ -348,9 +361,9 @@ async fn handle_request_inner<T: DeserializeOwned + GraphQLRequestLike>(
     )
 )]
 pub async fn handle_request<T: DeserializeOwned + GraphQLRequestLike>(
-    req: Request<Body>,
+    req: Request<Bytes>,
     app_ctx: Arc<AppContext>,
-) -> Result<Response<Body>> {
+) -> Result<Response<Bytes>> {
     telemetry::propagate_context(&req);
     let mut req_counter = RequestCounter::new(&app_ctx.blueprint.telemetry, &req);
 

@@ -5,11 +5,11 @@ edition = "2021"
 publish = false
 
 [dependencies]
-http-cache-reqwest = { version = "0.13.0", default-features = false, features = ["manager-moka"] }
+http-cache-reqwest = { version = "0.14.0", default-features = false, features = ["manager-moka"] }
 moka = { version = "0.12.7", default-features = false, features = [
     "future",
 ]}
-http-cache-semantics = { version = "1.0.1", default-features = false, features = ["with_serde", "reqwest"]}
+http-cache-semantics = { version = "2.1.0", default-features = false, features = ["reqwest"]}
 serde = "1.0.202"
 async-trait = "0.1.80"
 
@@ -17,5 +17,5 @@ async-trait = "0.1.80"
 tokio = {version = "1.37.0", features = ["full"]}
 url = { workspace = true }
 reqwest = { workspace = true }
-http = "0.2.12"
-http-cache = "0.18.0"
+http = "1.1"
+http-cache = "0.19.0"

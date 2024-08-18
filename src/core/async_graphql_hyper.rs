@@ -5,8 +5,9 @@ use anyhow::Result;
 use async_graphql::parser::types::{ExecutableDocument, OperationType};
 use async_graphql::{BatchResponse, Executor, Value};
 use headers::HeaderMap;
+use hyper::body::Bytes;
 use hyper::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE};
-use hyper::{Body, Response, StatusCode};
+use hyper::{Response, StatusCode};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tailcall_hasher::TailcallHasher;
@@ -173,7 +174,7 @@ static APPLICATION_JSON: Lazy<HeaderValue> =
     Lazy::new(|| HeaderValue::from_static("application/json"));
 
 impl GraphQLResponse {
-    fn build_response(&self, status: StatusCode, body: Body) -> Result<Response<Body>> {
+    fn build_response(&self, status: StatusCode, body: Bytes) -> Result<Response<Bytes>> {
         let mut response = Response::builder()
             .status(status)
             .header(CONTENT_TYPE, APPLICATION_JSON.as_ref())
@@ -191,11 +192,11 @@ impl GraphQLResponse {
         Ok(response)
     }
 
-    fn default_body(&self) -> Result<Body> {
-        Ok(Body::from(serde_json::to_string(&self.0)?))
+    fn default_body(&self) -> Result<Bytes> {
+        Ok(serde_json::to_string(&self.0)?.into())
     }
 
-    pub fn into_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_response(self) -> Result<Response<Bytes>> {
         self.build_response(StatusCode::OK, self.default_body()?)
     }
 
@@ -206,10 +207,10 @@ impl GraphQLResponse {
         }
     }
 
-    /// Transforms a plain `GraphQLResponse` into a `Response<Body>`.
+    /// Transforms a plain `GraphQLResponse` into a `Response<Bytes>`.
     /// Differs as `to_response` by flattening the response's data
     /// `{"data": {"user": {"name": "John"}}}` becomes `{"name": "John"}`.
-    pub fn into_rest_response(self) -> Result<Response<hyper::Body>> {
+    pub fn into_rest_response(self) -> Result<Response<Bytes>> {
         if !self.0.is_ok() {
             return self.build_response(StatusCode::INTERNAL_SERVER_ERROR, self.default_body()?);
         }
@@ -219,7 +220,7 @@ impl GraphQLResponse {
                 let item = Self::flatten_response(&res.data);
                 let data = serde_json::to_string(item)?;
 
-                self.build_response(StatusCode::OK, Body::from(data))
+                self.build_response(StatusCode::OK, data.into())
             }
             BatchResponse::Batch(ref list) => {
                 let item = list
@@ -228,7 +229,7 @@ impl GraphQLResponse {
                     .collect::<Vec<&Value>>();
                 let data = serde_json::to_string(&item)?;
 
-                self.build_response(StatusCode::OK, Body::from(data))
+                self.build_response(StatusCode::OK, data.into())
             }
         }
     }
@@ -289,10 +290,7 @@ mod tests {
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
         assert_eq!(
-            hyper::body::to_bytes(rest_response.into_body())
-                .await
-                .unwrap()
-                .to_vec(),
+            rest_response.into_body(),
             json!({ "name": name }).to_string().as_bytes().to_vec()
         );
     }
@@ -316,10 +314,7 @@ mod tests {
         assert_eq!(rest_response.status(), StatusCode::OK);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
         assert_eq!(
-            hyper::body::to_bytes(rest_response.into_body())
-                .await
-                .unwrap()
-                .to_vec(),
+            rest_response.into_body(),
             json!([
                 { "name": names[0] },
                 { "name": names[1] },
@@ -345,10 +340,7 @@ mod tests {
         assert_eq!(rest_response.status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(rest_response.headers()["content-type"], "application/json");
         assert_eq!(
-            hyper::body::to_bytes(rest_response.into_body())
-                .await
-                .unwrap()
-                .to_vec(),
+            rest_response.into_body(),
             json!({
                 "data": null,
                 "errors": errors.iter().map(|error| {

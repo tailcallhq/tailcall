@@ -54,7 +54,7 @@ impl CacheManager for HttpCacheManager {
         &self,
         cache_key: String,
         response: HttpResponse,
-        policy: CachePolicy,
+        policy: http_cache_semantics::CachePolicy,
     ) -> Result<HttpResponse> {
         let data = Store { response: response.clone(), policy };
         self.cache.insert(cache_key, data).await;

@@ -8,7 +8,8 @@ use std::{fs, panic};
 use anyhow::Context;
 use colored::Colorize;
 use futures_util::future::join_all;
-use hyper::{Body, Request};
+use hyper::body::Bytes;
+use hyper::Request;
 use serde::{Deserialize, Serialize};
 use tailcall::core::app_context::AppContext;
 use tailcall::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
@@ -190,10 +191,7 @@ async fn run_query_tests_on_spec(
                 status: response.status().clone().as_u16(),
                 headers,
                 body: Some(APIBody::Value(
-                    serde_json::from_slice(
-                        &hyper::body::to_bytes(response.into_body()).await.unwrap(),
-                    )
-                    .unwrap_or_default(),
+                    serde_json::from_slice(&response.into_body()).unwrap_or_default(),
                 )),
             };
 
@@ -307,11 +305,11 @@ pub async fn load_and_test_execution_spec(path: &Path) -> anyhow::Result<()> {
 async fn run_test(
     app_ctx: Arc<AppContext>,
     request: &APIRequest,
-) -> anyhow::Result<hyper::Response<Body>> {
-    let body = request
+) -> anyhow::Result<hyper::Response<Bytes>> {
+    let bytes = request
         .body
         .as_ref()
-        .map(|body| Body::from(body.to_bytes()))
+        .map(|body| body.to_bytes())
         .unwrap_or_default();
 
     let method = request.method.clone();
@@ -325,7 +323,7 @@ async fn run_test(
                 .uri(url.as_str()),
             |acc, (key, value)| acc.header(key, value),
         )
-        .body(body)?;
+        .body(Bytes::from(bytes))?;
 
     // TODO: reuse logic from server.rs to select the correct handler
     if app_ctx.blueprint.server.enable_batch_requests {
