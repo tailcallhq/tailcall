@@ -81,7 +81,6 @@ impl Generator {
             ConfigSource::Json => serde_json::from_str(&config_content)?,
             ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
         };
-        println!("{:?}", config.inputs);
 
         // While reading resolve the internal paths and mustache headers of generalized
         // config.

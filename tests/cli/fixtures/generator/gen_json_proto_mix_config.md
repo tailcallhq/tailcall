@@ -9,8 +9,7 @@
     },
     {
       "proto": {
-        "src": "/Users/ssdd/RustroverProjects/tco/tailcall-fixtures/fixtures/protobuf/news_dto.proto"
-      }
+        "src": "../../../../../../tailcall-fixtures/fixtures/protobuf/news.proto"      }
     }
   ],
   "preset": {
