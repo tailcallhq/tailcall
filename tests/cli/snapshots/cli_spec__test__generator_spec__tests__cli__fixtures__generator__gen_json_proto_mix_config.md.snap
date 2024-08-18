@@ -1,0 +1,47 @@
+---
+source: tests/cli/gen.rs
+expression: config.to_sdl()
+---
+schema @server @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+enum news__Status {
+  DELETED
+  DRAFT
+  PUBLISHED
+}
+
+type Address {
+  city: String
+  geo: Geo
+  street: String
+  suite: String
+  zipcode: String
+}
+
+type Company {
+  bs: String
+  catchPhrase: String
+  name: String
+}
+
+type Geo {
+  lat: String
+  lng: String
+}
+
+type Query {
+  users: [User] @http(path: "/users")
+}
+
+type User {
+  address: Address
+  company: Company
+  email: String
+  id: Int
+  name: String
+  phone: String
+  username: String
+  website: String
+}

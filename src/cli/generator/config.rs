@@ -25,7 +25,7 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
-    #[serde(skip_serializing_if = "TemplateString::is_empty")]
+    #[serde(default, skip_serializing_if = "TemplateString::is_empty")]
     pub secret: TemplateString,
 }
 
