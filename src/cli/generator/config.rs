@@ -11,6 +11,7 @@ use url::Url;
 
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
+use crate::core::http::Method;
 use crate::core::mustache::TemplateString;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
 
@@ -50,7 +51,7 @@ pub struct Location<A>(
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(transparent)]
 pub struct Headers<A>(
-    #[serde(skip_serializing_if = "is_default")] pub Option<BTreeMap<String, TemplateString>>,
+    #[serde(skip_serializing_if = "is_default")] Option<BTreeMap<String, TemplateString>>,
     #[serde(skip)] PhantomData<A>,
 );
 
@@ -69,6 +70,12 @@ pub enum Source<Status = UnResolved> {
     Curl {
         src: Location<Status>,
         headers: Headers<Status>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        method: Option<Method>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        body: Option<serde_json::Value>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        is_mutation: Option<bool>,
         field_name: String,
     },
     Proto {
@@ -101,6 +108,8 @@ pub struct UnResolved {}
 pub struct Schema {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mutation: Option<String>,
 }
 
 fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
@@ -178,7 +187,7 @@ impl Location<UnResolved> {
 }
 
 impl<A> Headers<A> {
-    pub fn headers(&self) -> &Option<BTreeMap<String, TemplateString>> {
+    pub fn as_btree_map(&self) -> &Option<BTreeMap<String, TemplateString>> {
         &self.0
     }
 }
@@ -213,10 +222,17 @@ impl Source<UnResolved> {
         reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, field_name, headers } => {
+            Source::Curl { src, field_name, headers, body, method, is_mutation } => {
                 let resolved_path = src.into_resolved(parent_dir);
                 let resolved_headers = headers.resolve(reader_context);
-                Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
+                Ok(Source::Curl {
+                    src: resolved_path,
+                    field_name,
+                    headers: resolved_headers,
+                    body,
+                    method,
+                    is_mutation,
+                })
             }
             Source::Proto { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -290,10 +306,7 @@ mod tests {
     #[test]
     fn test_headers_resolve() {
         let mut headers = BTreeMap::new();
-        headers.insert(
-            "Authorization".to_owned(),
-            "Bearer {{.env.TOKEN}}".try_into().unwrap(),
-        );
+        headers.insert("Authorization".to_owned(), "Bearer {{.env.TOKEN}}".into());
 
         let mut env_vars = HashMap::new();
         let token = "eyJhbGciOiJIUzI1NiIsInR5";
@@ -312,9 +325,9 @@ mod tests {
 
         let resolved_headers = unresolved_headers.resolve(&reader_ctx);
 
-        let expected = TemplateString::try_from(format!("Bearer {token}").as_str()).unwrap();
+        let expected = TemplateString::from(format!("Bearer {token}").as_str());
         let actual = resolved_headers
-            .headers()
+            .as_btree_map()
             .as_ref()
             .unwrap()
             .get("Authorization")
@@ -330,12 +343,15 @@ mod tests {
     #[test]
     fn test_config_codec() {
         let mut headers = BTreeMap::new();
-        headers.insert("user-agent".to_owned(), "tailcall-v1".try_into().unwrap());
+        headers.insert("user-agent".to_owned(), "tailcall-v1".into());
         let config = Config::default().inputs(vec![Input {
             source: Source::Curl {
                 src: location("https://example.com"),
                 headers: to_headers(headers),
+                body: None,
                 field_name: "test".to_string(),
+                method: Some(Method::GET),
+                is_mutation: None,
             },
         }]);
         let actual = serde_json::to_string_pretty(&config).unwrap();
@@ -420,7 +436,7 @@ mod tests {
             }]}
         "#;
         let expected_error =
-            "unknown field `headerss`, expected one of `src`, `headers`, `fieldName` at line 9 column 13";
+            "unknown field `headerss`, expected one of `src`, `headers`, `method`, `body`, `isMutation`, `fieldName` at line 9 column 13";
         assert_deserialization_error(json, expected_error);
 
         let json = r#"
@@ -470,7 +486,8 @@ mod tests {
               "querys": "Query",
           }} 
         "#;
-        let expected_error = "unknown field `querys`, expected `query` at line 3 column 22";
+        let expected_error =
+            "unknown field `querys`, expected `query` or `mutation` at line 3 column 22";
         assert_deserialization_error(json, expected_error);
     }
 
@@ -494,7 +511,7 @@ mod tests {
         let resolved_config = config.into_resolved("", reader_ctx).unwrap();
 
         let actual = resolved_config.secret;
-        let expected = TemplateString::try_from("eyJhbGciOiJIUzI1NiIsInR5").unwrap();
+        let expected = TemplateString::from("eyJhbGciOiJIUzI1NiIsInR5");
 
         assert_eq!(actual, expected);
     }

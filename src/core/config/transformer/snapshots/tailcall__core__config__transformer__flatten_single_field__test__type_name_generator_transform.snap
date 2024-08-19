@@ -14,8 +14,8 @@ type Connection {
   user: User
 }
 
-type Foo {
-  bar: Bar
+type Foo @addField(name: "bar", path: ["bar", "a"]) {
+  bar: Bar @omit
 }
 
 type NotSingle {
@@ -38,8 +38,8 @@ type Type1 {
   t2: Type2
 }
 
-type Type2 {
-  t3: Type3
+type Type2 @addField(name: "t3", path: ["t3", "t5"]) {
+  t3: Type3 @omit
   t4: Type4
 }
 
