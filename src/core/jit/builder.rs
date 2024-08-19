@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use async_graphql::parser::types::{
     Directive, DocumentOperations, ExecutableDocument, FragmentDefinition, OperationDefinition,
@@ -65,7 +66,7 @@ impl Conditions {
 }
 
 pub struct Builder {
-    pub index: Index,
+    pub index: Arc<Index>,
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: ExecutableDocument,
@@ -74,7 +75,7 @@ pub struct Builder {
 // TODO: make generic over Value (Input) type
 impl Builder {
     pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
-        let index = blueprint.index();
+        let index = Arc::new(blueprint.index());
         Self {
             document,
             index,
@@ -218,13 +219,12 @@ impl Builder {
                             id,
                             name,
                             ir,
-                            is_scalar: self.index.type_is_scalar(type_of.name()),
                             type_of,
                             type_condition: type_condition.to_string(),
                             skip,
                             include,
                             args,
-                            pos: selection.pos,
+                            pos: selection.pos.into(),
                             extensions: exts.clone(),
                             directives,
                         };
@@ -236,7 +236,6 @@ impl Builder {
                             id: FieldId::new(self.field_id.next()),
                             name: field_name.to_string(),
                             ir: None,
-                            is_scalar: true,
                             type_of: crate::core::blueprint::Type::NamedType {
                                 name: "String".to_owned(),
                                 non_null: true,
@@ -245,7 +244,7 @@ impl Builder {
                             skip,
                             include,
                             args: Vec::new(),
-                            pos: selection.pos,
+                            pos: selection.pos.into(),
                             extensions: exts.clone(),
                             directives,
                         };
@@ -344,7 +343,7 @@ impl Builder {
         // skip the fields depending on variables.
         fields.retain(|f| !f.skip(variables));
 
-        let plan = OperationPlan::new(fields, operation.ty);
+        let plan = OperationPlan::new(fields, operation.ty, self.index.clone());
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly

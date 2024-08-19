@@ -1,0 +1,20 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "user": {
+        "id": 4,
+        "name": "Tailcall",
+        "smallPic": "profile_pic_64",
+        "bigPic": "profile_pic_1024"
+      }
+    }
+  }
+}

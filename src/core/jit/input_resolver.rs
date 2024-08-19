@@ -59,6 +59,10 @@ where
             .map(|field| field.clone().try_map(|value| value.resolve(variables)))
             .collect::<Result<_, _>>()?;
 
-        Ok(OperationPlan::new(new_fields, self.plan.operation_type()))
+        Ok(OperationPlan::new(
+            new_fields,
+            self.plan.operation_type(),
+            self.plan.index.clone(),
+        ))
     }
 }

@@ -30,7 +30,6 @@ expression: plan.into_nested()
                         name: "id",
                         type_of: ID!,
                         type_condition: "User",
-                        is_scalar: true,
                         directives: [],
                     },
                     Field {
@@ -38,13 +37,11 @@ expression: plan.into_nested()
                         name: "name",
                         type_of: String!,
                         type_condition: "User",
-                        is_scalar: true,
                         directives: [],
                     },
                 ],
             ),
         ),
-        is_scalar: false,
         directives: [],
     },
 ]

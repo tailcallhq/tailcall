@@ -1,8 +1,6 @@
 use async_graphql::parser::types::OperationType;
-use async_graphql::{ErrorExtensions, PathSegment, Pos, Positioned, ServerError};
+use async_graphql::{ErrorExtensions, ServerError};
 use thiserror::Error;
-
-use crate::core::lift::Lift;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 #[error("Error while building the plan")]
@@ -30,6 +28,10 @@ pub enum ValidationError {
     // with async_graphql error message for this case
     #[error(r#"internal: invalid value for scalar "{type_of}", expected "FieldValue::Value""#)]
     ScalarInvalid { type_of: String, path: String },
+    #[error(r#"internal: invalid item for enum "{type_of}""#)]
+    EnumInvalid { type_of: String },
+    #[error("internal: non-null types require a return value")]
+    ValueRequired,
 }
 
 #[derive(Debug, Clone, Error)]
@@ -42,6 +44,8 @@ pub enum Error {
     IR(#[from] crate::core::ir::Error),
     #[error(transparent)]
     Validation(#[from] ValidationError),
+    #[error("{0}")]
+    ServerError(async_graphql::ServerError),
 }
 
 impl ErrorExtensions for Error {
@@ -51,50 +55,25 @@ impl ErrorExtensions for Error {
             Error::ParseError(error) => error.extend(),
             Error::IR(error) => error.extend(),
             Error::Validation(error) => error.extend(),
-        }
-    }
-}
-
-impl Error {
-    pub fn path(&self) -> Vec<PathSegment> {
-        match self {
-            Error::Validation(ValidationError::ScalarInvalid { type_of: _, path }) => {
-                vec![PathSegment::Field(path.clone())]
-            }
-            _ => Vec::new(),
+            Error::ServerError(error) => error.extend(),
         }
     }
 }
 
 pub type Result<A> = std::result::Result<A, Error>;
 
-impl Error {
-    fn into_server_error_with_pos(self, pos: Option<Pos>) -> ServerError {
-        let extensions = self.extend().extensions;
-        let mut server_error = ServerError::new(self.to_string(), pos);
+impl From<Error> for ServerError {
+    fn from(val: Error) -> Self {
+        // async_graphql::parser::Error has special conversion to ServerError
+        if let Error::ParseError(error) = val {
+            return error.into();
+        }
+
+        let extensions = val.extend().extensions;
+        let mut server_error = ServerError::new(val.to_string(), None);
 
         server_error.extensions = extensions;
-        server_error.path = self.path();
 
         server_error
-    }
-
-    pub fn into_server_error(self) -> ServerError {
-        match self {
-            // async_graphql::parser::Error has special conversion to ServerError
-            Error::ParseError(error) => error.into(),
-            error => error.into_server_error_with_pos(None),
-        }
-    }
-}
-
-impl From<Positioned<Error>> for Lift<ServerError> {
-    fn from(a: Positioned<Error>) -> Self {
-        (match a.node {
-            // async_graphql::parser::Error already has builtin positioning
-            Error::ParseError(error) => error.into(),
-            error => error.into_server_error_with_pos(Some(a.pos)),
-        })
-        .into()
     }
 }
