@@ -1,0 +1,1211 @@
+---
+source: src/core/blueprint/index.rs
+expression: index
+---
+Index {
+    map: {
+        "Mutation": (
+            Object(
+                ObjectTypeDefinition {
+                    name: "Mutation",
+                    fields: [
+                        FieldDefinition {
+                            name: "createPost",
+                            args: [
+                                InputFieldDefinition {
+                                    name: "input",
+                                    of_type: PostInput,
+                                    default_value: None,
+                                    description: None,
+                                },
+                            ],
+                            of_type: Post!,
+                            resolver: Some(
+                                IO(
+                                    Http {
+                                        req_template: RequestTemplate {
+                                            root_url: Mustache(
+                                                [
+                                                    Literal(
+                                                        "http://jsonplaceholder.typicode.com/posts",
+                                                    ),
+                                                ],
+                                            ),
+                                            query: [],
+                                            method: POST,
+                                            headers: [],
+                                            body_path: Some(
+                                                Mustache(
+                                                    [
+                                                        Expression(
+                                                            [
+                                                                "args",
+                                                                "input",
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                            endpoint: Endpoint {
+                                                path: "http://jsonplaceholder.typicode.com/posts",
+                                                query: [],
+                                                method: POST,
+                                                input: Obj(
+                                                    {},
+                                                ),
+                                                output: Obj(
+                                                    {},
+                                                ),
+                                                headers: {},
+                                                body: Some(
+                                                    "{{.args.input}}",
+                                                ),
+                                                description: None,
+                                                encoding: ApplicationJson,
+                                            },
+                                            encoding: ApplicationJson,
+                                            query_encoder: RepeatedKey,
+                                        },
+                                        group_by: None,
+                                        dl_id: None,
+                                        http_filter: None,
+                                        is_list: false,
+                                    },
+                                ),
+                            ),
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "createUser",
+                            args: [
+                                InputFieldDefinition {
+                                    name: "input",
+                                    of_type: UserInput!,
+                                    default_value: None,
+                                    description: None,
+                                },
+                            ],
+                            of_type: User!,
+                            resolver: Some(
+                                IO(
+                                    Http {
+                                        req_template: RequestTemplate {
+                                            root_url: Mustache(
+                                                [
+                                                    Literal(
+                                                        "http://jsonplaceholder.typicode.com/users",
+                                                    ),
+                                                ],
+                                            ),
+                                            query: [],
+                                            method: POST,
+                                            headers: [],
+                                            body_path: Some(
+                                                Mustache(
+                                                    [
+                                                        Expression(
+                                                            [
+                                                                "args",
+                                                                "input",
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                            endpoint: Endpoint {
+                                                path: "http://jsonplaceholder.typicode.com/users",
+                                                query: [],
+                                                method: POST,
+                                                input: Obj(
+                                                    {},
+                                                ),
+                                                output: Obj(
+                                                    {},
+                                                ),
+                                                headers: {},
+                                                body: Some(
+                                                    "{{.args.input}}",
+                                                ),
+                                                description: None,
+                                                encoding: ApplicationJson,
+                                            },
+                                            encoding: ApplicationJson,
+                                            query_encoder: RepeatedKey,
+                                        },
+                                        group_by: None,
+                                        dl_id: None,
+                                        http_filter: None,
+                                        is_list: false,
+                                    },
+                                ),
+                            ),
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                    ],
+                    description: None,
+                    implements: {},
+                },
+            ),
+            {
+                "createPost": Field(
+                    (
+                        FieldDefinition {
+                            name: "createPost",
+                            args: [
+                                InputFieldDefinition {
+                                    name: "input",
+                                    of_type: PostInput,
+                                    default_value: None,
+                                    description: None,
+                                },
+                            ],
+                            of_type: Post!,
+                            resolver: Some(
+                                IO(
+                                    Http {
+                                        req_template: RequestTemplate {
+                                            root_url: Mustache(
+                                                [
+                                                    Literal(
+                                                        "http://jsonplaceholder.typicode.com/posts",
+                                                    ),
+                                                ],
+                                            ),
+                                            query: [],
+                                            method: POST,
+                                            headers: [],
+                                            body_path: Some(
+                                                Mustache(
+                                                    [
+                                                        Expression(
+                                                            [
+                                                                "args",
+                                                                "input",
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                            endpoint: Endpoint {
+                                                path: "http://jsonplaceholder.typicode.com/posts",
+                                                query: [],
+                                                method: POST,
+                                                input: Obj(
+                                                    {},
+                                                ),
+                                                output: Obj(
+                                                    {},
+                                                ),
+                                                headers: {},
+                                                body: Some(
+                                                    "{{.args.input}}",
+                                                ),
+                                                description: None,
+                                                encoding: ApplicationJson,
+                                            },
+                                            encoding: ApplicationJson,
+                                            query_encoder: RepeatedKey,
+                                        },
+                                        group_by: None,
+                                        dl_id: None,
+                                        http_filter: None,
+                                        is_list: false,
+                                    },
+                                ),
+                            ),
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {
+                            "input": InputFieldDefinition {
+                                name: "input",
+                                of_type: PostInput,
+                                default_value: None,
+                                description: None,
+                            },
+                        },
+                    ),
+                ),
+                "createUser": Field(
+                    (
+                        FieldDefinition {
+                            name: "createUser",
+                            args: [
+                                InputFieldDefinition {
+                                    name: "input",
+                                    of_type: UserInput!,
+                                    default_value: None,
+                                    description: None,
+                                },
+                            ],
+                            of_type: User!,
+                            resolver: Some(
+                                IO(
+                                    Http {
+                                        req_template: RequestTemplate {
+                                            root_url: Mustache(
+                                                [
+                                                    Literal(
+                                                        "http://jsonplaceholder.typicode.com/users",
+                                                    ),
+                                                ],
+                                            ),
+                                            query: [],
+                                            method: POST,
+                                            headers: [],
+                                            body_path: Some(
+                                                Mustache(
+                                                    [
+                                                        Expression(
+                                                            [
+                                                                "args",
+                                                                "input",
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                            endpoint: Endpoint {
+                                                path: "http://jsonplaceholder.typicode.com/users",
+                                                query: [],
+                                                method: POST,
+                                                input: Obj(
+                                                    {},
+                                                ),
+                                                output: Obj(
+                                                    {},
+                                                ),
+                                                headers: {},
+                                                body: Some(
+                                                    "{{.args.input}}",
+                                                ),
+                                                description: None,
+                                                encoding: ApplicationJson,
+                                            },
+                                            encoding: ApplicationJson,
+                                            query_encoder: RepeatedKey,
+                                        },
+                                        group_by: None,
+                                        dl_id: None,
+                                        http_filter: None,
+                                        is_list: false,
+                                    },
+                                ),
+                            ),
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {
+                            "input": InputFieldDefinition {
+                                name: "input",
+                                of_type: UserInput!,
+                                default_value: None,
+                                description: None,
+                            },
+                        },
+                    ),
+                ),
+            },
+        ),
+        "Node": (
+            Interface(
+                InterfaceTypeDefinition {
+                    name: "Node",
+                    fields: [
+                        FieldDefinition {
+                            name: "createdAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "id",
+                            args: [],
+                            of_type: ID!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "updatedAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                    ],
+                    description: None,
+                },
+            ),
+            {
+                "createdAt": Field(
+                    (
+                        FieldDefinition {
+                            name: "createdAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "id": Field(
+                    (
+                        FieldDefinition {
+                            name: "id",
+                            args: [],
+                            of_type: ID!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "updatedAt": Field(
+                    (
+                        FieldDefinition {
+                            name: "updatedAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+            },
+        ),
+        "Post": (
+            Object(
+                ObjectTypeDefinition {
+                    name: "Post",
+                    fields: [
+                        FieldDefinition {
+                            name: "author",
+                            args: [],
+                            of_type: User!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "content",
+                            args: [],
+                            of_type: String!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "createdAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "id",
+                            args: [],
+                            of_type: ID!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "title",
+                            args: [],
+                            of_type: String!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "updatedAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                    ],
+                    description: None,
+                    implements: {
+                        "Node",
+                    },
+                },
+            ),
+            {
+                "author": Field(
+                    (
+                        FieldDefinition {
+                            name: "author",
+                            args: [],
+                            of_type: User!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "content": Field(
+                    (
+                        FieldDefinition {
+                            name: "content",
+                            args: [],
+                            of_type: String!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "createdAt": Field(
+                    (
+                        FieldDefinition {
+                            name: "createdAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "id": Field(
+                    (
+                        FieldDefinition {
+                            name: "id",
+                            args: [],
+                            of_type: ID!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "title": Field(
+                    (
+                        FieldDefinition {
+                            name: "title",
+                            args: [],
+                            of_type: String!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "updatedAt": Field(
+                    (
+                        FieldDefinition {
+                            name: "updatedAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+            },
+        ),
+        "PostInput": (
+            InputObject(
+                InputObjectTypeDefinition {
+                    name: "PostInput",
+                    fields: [
+                        InputFieldDefinition {
+                            name: "authorId",
+                            of_type: ID!,
+                            default_value: None,
+                            description: None,
+                        },
+                        InputFieldDefinition {
+                            name: "content",
+                            of_type: String!,
+                            default_value: None,
+                            description: None,
+                        },
+                        InputFieldDefinition {
+                            name: "title",
+                            of_type: String!,
+                            default_value: None,
+                            description: None,
+                        },
+                    ],
+                    description: None,
+                },
+            ),
+            {
+                "authorId": InputField(
+                    InputFieldDefinition {
+                        name: "authorId",
+                        of_type: ID!,
+                        default_value: None,
+                        description: None,
+                    },
+                ),
+                "content": InputField(
+                    InputFieldDefinition {
+                        name: "content",
+                        of_type: String!,
+                        default_value: None,
+                        description: None,
+                    },
+                ),
+                "title": InputField(
+                    InputFieldDefinition {
+                        name: "title",
+                        of_type: String!,
+                        default_value: None,
+                        description: None,
+                    },
+                ),
+            },
+        ),
+        "Query": (
+            Object(
+                ObjectTypeDefinition {
+                    name: "Query",
+                    fields: [
+                        FieldDefinition {
+                            name: "search",
+                            args: [
+                                InputFieldDefinition {
+                                    name: "term",
+                                    of_type: String!,
+                                    default_value: None,
+                                    description: None,
+                                },
+                            ],
+                            of_type: [SearchResult!],
+                            resolver: Some(
+                                Discriminate(
+                                    Discriminator {
+                                    types: ["Post", "User"]
+                                    fields_info:
+                                        author:
+                                            presented_in: ["Post"]
+                                            required_in: ["Post"]
+                                        email:
+                                            presented_in: ["User"]
+                                            required_in: ["User"]
+                                        status:
+                                            presented_in: ["User"]
+                                            required_in: []
+                                    }
+                                    ,
+                                    IO(
+                                        Http {
+                                            req_template: RequestTemplate {
+                                                root_url: Mustache(
+                                                    [
+                                                        Literal(
+                                                            "http://jsonplaceholder.typicode.com/search",
+                                                        ),
+                                                    ],
+                                                ),
+                                                query: [
+                                                    Query {
+                                                        key: "q",
+                                                        value: Mustache(
+                                                            [
+                                                                Expression(
+                                                                    [
+                                                                        "args",
+                                                                        "term",
+                                                                    ],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        skip_empty: false,
+                                                    },
+                                                ],
+                                                method: GET,
+                                                headers: [],
+                                                body_path: None,
+                                                endpoint: Endpoint {
+                                                    path: "http://jsonplaceholder.typicode.com/search",
+                                                    query: [
+                                                        (
+                                                            "q",
+                                                            "{{.args.term}}",
+                                                            false,
+                                                        ),
+                                                    ],
+                                                    method: GET,
+                                                    input: Obj(
+                                                        {},
+                                                    ),
+                                                    output: Obj(
+                                                        {},
+                                                    ),
+                                                    headers: {},
+                                                    body: None,
+                                                    description: None,
+                                                    encoding: ApplicationJson,
+                                                },
+                                                encoding: ApplicationJson,
+                                                query_encoder: RepeatedKey,
+                                            },
+                                            group_by: None,
+                                            dl_id: None,
+                                            http_filter: None,
+                                            is_list: true,
+                                        },
+                                    ),
+                                ),
+                            ),
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "user",
+                            args: [
+                                InputFieldDefinition {
+                                    name: "id",
+                                    of_type: ID!,
+                                    default_value: None,
+                                    description: None,
+                                },
+                            ],
+                            of_type: User,
+                            resolver: Some(
+                                IO(
+                                    Http {
+                                        req_template: RequestTemplate {
+                                            root_url: Mustache(
+                                                [
+                                                    Literal(
+                                                        "http://jsonplaceholder.typicode.com/users/",
+                                                    ),
+                                                    Expression(
+                                                        [
+                                                            "args",
+                                                            "id",
+                                                        ],
+                                                    ),
+                                                ],
+                                            ),
+                                            query: [],
+                                            method: GET,
+                                            headers: [],
+                                            body_path: None,
+                                            endpoint: Endpoint {
+                                                path: "http://jsonplaceholder.typicode.com/users/{{.args.id}}",
+                                                query: [],
+                                                method: GET,
+                                                input: Obj(
+                                                    {},
+                                                ),
+                                                output: Obj(
+                                                    {},
+                                                ),
+                                                headers: {},
+                                                body: None,
+                                                description: None,
+                                                encoding: ApplicationJson,
+                                            },
+                                            encoding: ApplicationJson,
+                                            query_encoder: RepeatedKey,
+                                        },
+                                        group_by: None,
+                                        dl_id: None,
+                                        http_filter: None,
+                                        is_list: false,
+                                    },
+                                ),
+                            ),
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                    ],
+                    description: None,
+                    implements: {},
+                },
+            ),
+            {
+                "search": Field(
+                    (
+                        FieldDefinition {
+                            name: "search",
+                            args: [
+                                InputFieldDefinition {
+                                    name: "term",
+                                    of_type: String!,
+                                    default_value: None,
+                                    description: None,
+                                },
+                            ],
+                            of_type: [SearchResult!],
+                            resolver: Some(
+                                Discriminate(
+                                    Discriminator {
+                                    types: ["Post", "User"]
+                                    fields_info:
+                                        author:
+                                            presented_in: ["Post"]
+                                            required_in: ["Post"]
+                                        email:
+                                            presented_in: ["User"]
+                                            required_in: ["User"]
+                                        status:
+                                            presented_in: ["User"]
+                                            required_in: []
+                                    }
+                                    ,
+                                    IO(
+                                        Http {
+                                            req_template: RequestTemplate {
+                                                root_url: Mustache(
+                                                    [
+                                                        Literal(
+                                                            "http://jsonplaceholder.typicode.com/search",
+                                                        ),
+                                                    ],
+                                                ),
+                                                query: [
+                                                    Query {
+                                                        key: "q",
+                                                        value: Mustache(
+                                                            [
+                                                                Expression(
+                                                                    [
+                                                                        "args",
+                                                                        "term",
+                                                                    ],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        skip_empty: false,
+                                                    },
+                                                ],
+                                                method: GET,
+                                                headers: [],
+                                                body_path: None,
+                                                endpoint: Endpoint {
+                                                    path: "http://jsonplaceholder.typicode.com/search",
+                                                    query: [
+                                                        (
+                                                            "q",
+                                                            "{{.args.term}}",
+                                                            false,
+                                                        ),
+                                                    ],
+                                                    method: GET,
+                                                    input: Obj(
+                                                        {},
+                                                    ),
+                                                    output: Obj(
+                                                        {},
+                                                    ),
+                                                    headers: {},
+                                                    body: None,
+                                                    description: None,
+                                                    encoding: ApplicationJson,
+                                                },
+                                                encoding: ApplicationJson,
+                                                query_encoder: RepeatedKey,
+                                            },
+                                            group_by: None,
+                                            dl_id: None,
+                                            http_filter: None,
+                                            is_list: true,
+                                        },
+                                    ),
+                                ),
+                            ),
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {
+                            "term": InputFieldDefinition {
+                                name: "term",
+                                of_type: String!,
+                                default_value: None,
+                                description: None,
+                            },
+                        },
+                    ),
+                ),
+                "user": Field(
+                    (
+                        FieldDefinition {
+                            name: "user",
+                            args: [
+                                InputFieldDefinition {
+                                    name: "id",
+                                    of_type: ID!,
+                                    default_value: None,
+                                    description: None,
+                                },
+                            ],
+                            of_type: User,
+                            resolver: Some(
+                                IO(
+                                    Http {
+                                        req_template: RequestTemplate {
+                                            root_url: Mustache(
+                                                [
+                                                    Literal(
+                                                        "http://jsonplaceholder.typicode.com/users/",
+                                                    ),
+                                                    Expression(
+                                                        [
+                                                            "args",
+                                                            "id",
+                                                        ],
+                                                    ),
+                                                ],
+                                            ),
+                                            query: [],
+                                            method: GET,
+                                            headers: [],
+                                            body_path: None,
+                                            endpoint: Endpoint {
+                                                path: "http://jsonplaceholder.typicode.com/users/{{.args.id}}",
+                                                query: [],
+                                                method: GET,
+                                                input: Obj(
+                                                    {},
+                                                ),
+                                                output: Obj(
+                                                    {},
+                                                ),
+                                                headers: {},
+                                                body: None,
+                                                description: None,
+                                                encoding: ApplicationJson,
+                                            },
+                                            encoding: ApplicationJson,
+                                            query_encoder: RepeatedKey,
+                                        },
+                                        group_by: None,
+                                        dl_id: None,
+                                        http_filter: None,
+                                        is_list: false,
+                                    },
+                                ),
+                            ),
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {
+                            "id": InputFieldDefinition {
+                                name: "id",
+                                of_type: ID!,
+                                default_value: None,
+                                description: None,
+                            },
+                        },
+                    ),
+                ),
+            },
+        ),
+        "User": (
+            Object(
+                ObjectTypeDefinition {
+                    name: "User",
+                    fields: [
+                        FieldDefinition {
+                            name: "createdAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "email",
+                            args: [],
+                            of_type: String!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "id",
+                            args: [],
+                            of_type: ID!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "name",
+                            args: [],
+                            of_type: String!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "status",
+                            args: [],
+                            of_type: Status,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        FieldDefinition {
+                            name: "updatedAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                    ],
+                    description: None,
+                    implements: {
+                        "Node",
+                    },
+                },
+            ),
+            {
+                "createdAt": Field(
+                    (
+                        FieldDefinition {
+                            name: "createdAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "email": Field(
+                    (
+                        FieldDefinition {
+                            name: "email",
+                            args: [],
+                            of_type: String!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "id": Field(
+                    (
+                        FieldDefinition {
+                            name: "id",
+                            args: [],
+                            of_type: ID!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "name": Field(
+                    (
+                        FieldDefinition {
+                            name: "name",
+                            args: [],
+                            of_type: String!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "status": Field(
+                    (
+                        FieldDefinition {
+                            name: "status",
+                            args: [],
+                            of_type: Status,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+                "updatedAt": Field(
+                    (
+                        FieldDefinition {
+                            name: "updatedAt",
+                            args: [],
+                            of_type: DateTime!,
+                            resolver: None,
+                            directives: [],
+                            description: None,
+                            default_value: None,
+                        },
+                        {},
+                    ),
+                ),
+            },
+        ),
+        "UserInput": (
+            InputObject(
+                InputObjectTypeDefinition {
+                    name: "UserInput",
+                    fields: [
+                        InputFieldDefinition {
+                            name: "email",
+                            of_type: String!,
+                            default_value: None,
+                            description: None,
+                        },
+                        InputFieldDefinition {
+                            name: "name",
+                            of_type: String!,
+                            default_value: None,
+                            description: None,
+                        },
+                        InputFieldDefinition {
+                            name: "status",
+                            of_type: Status,
+                            default_value: None,
+                            description: None,
+                        },
+                    ],
+                    description: None,
+                },
+            ),
+            {
+                "email": InputField(
+                    InputFieldDefinition {
+                        name: "email",
+                        of_type: String!,
+                        default_value: None,
+                        description: None,
+                    },
+                ),
+                "name": InputField(
+                    InputFieldDefinition {
+                        name: "name",
+                        of_type: String!,
+                        default_value: None,
+                        description: None,
+                    },
+                ),
+                "status": InputField(
+                    InputFieldDefinition {
+                        name: "status",
+                        of_type: Status,
+                        default_value: None,
+                        description: None,
+                    },
+                ),
+            },
+        ),
+        "SearchResult": (
+            Union(
+                UnionTypeDefinition {
+                    name: "SearchResult",
+                    directives: [],
+                    description: None,
+                    types: {
+                        "Post",
+                        "User",
+                    },
+                },
+            ),
+            {},
+        ),
+        "Status": (
+            Enum(
+                EnumTypeDefinition {
+                    name: "Status",
+                    directives: [],
+                    description: None,
+                    enum_values: [
+                        EnumValueDefinition {
+                            description: None,
+                            name: "ACTIVE",
+                            directives: [],
+                        },
+                        EnumValueDefinition {
+                            description: None,
+                            name: "INACTIVE",
+                            directives: [],
+                        },
+                        EnumValueDefinition {
+                            description: None,
+                            name: "PENDING",
+                            directives: [],
+                        },
+                    ],
+                },
+            ),
+            {},
+        ),
+    },
+    schema: SchemaDefinition {
+        query: "Query",
+        mutation: Some(
+            "Mutation",
+        ),
+        directives: [
+            Directive {
+                name: "server",
+                arguments: {
+                    "port": Number(8000),
+                },
+                index: 0,
+            },
+        ],
+    },
+}

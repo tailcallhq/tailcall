@@ -8,7 +8,7 @@ use async_graphql::Positioned;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall_macros::{DirectiveDefinition, InputDefinition};
+use tailcall_macros::{CustomResolver, DirectiveDefinition, InputDefinition};
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
@@ -115,7 +115,6 @@ pub struct Type {
     /// Marks field as protected by auth providers
     #[serde(default)]
     pub protected: Option<Protected>,
-
     ///
     /// Apollo federation entity resolver.
     #[serde(flatten, default, skip_serializing_if = "is_default")]
@@ -215,87 +214,30 @@ pub struct RootSchema {
 /// Used to omit a field from public consumption.
 pub struct Omit {}
 
-// generate Resolver with macro in order to autogenerate conversion code
-// from the underlying directives.
-// TODO: replace with derive macro
-macro_rules! create_resolver {
-    ($($var:ident($ty:ty)),+$(,)?) => {
-        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, MergeRight)]
-        #[serde(rename_all = "camelCase")]
-        pub enum Resolver {
-            // just specify the same variants
-            $($var($ty),)+
-        }
-
-        impl Resolver {
-            pub fn from_directives(
-                directives: &[Positioned<ConstDirective>],
-            ) -> Valid<Option<Self>, String> {
-                let mut result = None;
-                let mut resolvable_directives = Vec::new();
-                let mut valid = Valid::succeed(());
-
-                $(
-                    // try to parse directive from the Resolver variant
-                    valid = valid.and(<$ty>::from_directives(directives.iter()).map(|resolver| {
-                        if let Some(resolver) = resolver {
-                            // on success store it as a result and remember parsed directives
-                            result = Some(Self::$var(resolver));
-                            resolvable_directives.push(<$ty>::trace_name());
-                        }
-                    }));
-                )+
-
-                valid.and_then(|_| {
-                    if resolvable_directives.len() > 1 {
-                        Valid::fail(format!(
-                            "Multiple resolvers detected [{}]",
-                            resolvable_directives.join(", ")
-                        ))
-                    } else {
-                        Valid::succeed(result)
-                    }
-                })
-            }
-        }
-    };
-}
-
-create_resolver! {
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    MergeRight,
+    CustomResolver,
+)]
+#[serde(rename_all = "camelCase")]
+pub enum Resolver {
     Http(Http),
     Grpc(Grpc),
     Graphql(GraphQL),
     Call(Call),
     Js(JS),
     Expr(Expr),
+    #[resolver(skip_to_directive)]
     EntityResolver(EntityResolver),
 }
 
 impl Resolver {
-    pub fn to_directive(&self) -> Option<ConstDirective> {
-        Some(match self {
-            Resolver::Http(d) => d.to_directive(),
-            Resolver::Grpc(d) => d.to_directive(),
-            Resolver::Graphql(d) => d.to_directive(),
-            Resolver::Call(d) => d.to_directive(),
-            Resolver::Js(d) => d.to_directive(),
-            Resolver::Expr(d) => d.to_directive(),
-            Resolver::EntityResolver(_) => return None,
-        })
-    }
-
-    pub fn directive_name(&self) -> String {
-        match self {
-            Resolver::Http(_) => Http::directive_name(),
-            Resolver::Grpc(_) => Grpc::directive_name(),
-            Resolver::Graphql(_) => GraphQL::directive_name(),
-            Resolver::Call(_) => Call::directive_name(),
-            Resolver::Js(_) => JS::directive_name(),
-            Resolver::Expr(_) => Expr::directive_name(),
-            Resolver::EntityResolver(_) => EntityResolver::directive_name(),
-        }
-    }
-
     pub fn is_batched(&self) -> bool {
         match self {
             Resolver::Http(http) => !http.batch_key.is_empty(),
@@ -311,7 +253,6 @@ impl Resolver {
         }
     }
 }
-
 ///
 /// A field definition containing all the metadata information about resolving a
 /// field.

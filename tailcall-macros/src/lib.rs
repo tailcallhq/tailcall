@@ -1,12 +1,17 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+use syn::{parse_macro_input, DeriveInput};
 
 mod document_definition;
 mod gen;
 mod merge_right;
+mod resolver;
+
 use crate::document_definition::{expand_directive_definition, expand_input_definition};
 use crate::merge_right::expand_merge_right_derive;
+use crate::resolver::expand_resolver_derive;
+
 #[proc_macro_derive(MergeRight, attributes(merge_right))]
 pub fn merge_right_derive(input: TokenStream) -> TokenStream {
     expand_merge_right_derive(input)
@@ -42,4 +47,12 @@ pub fn gen_doc(item: TokenStream) -> TokenStream {
 #[proc_macro_derive(InputDefinition)]
 pub fn input_definition_derive(input: TokenStream) -> TokenStream {
     expand_input_definition(input)
+}
+
+#[proc_macro_derive(CustomResolver, attributes(resolver))]
+pub fn resolver_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    expand_resolver_derive(input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
