@@ -6,7 +6,7 @@ use async_graphql_value::ConstValue;
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
 use super::{Error, EvalContext, ResolverContextLike, TypedValue};
-use crate::core::json::JsonLike;
+use crate::core::json::{JsonLike, JsonLikeList};
 use crate::core::serde_value_ext::ValueExt;
 
 // Fake trait to capture proper lifetimes.
