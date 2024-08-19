@@ -26,23 +26,15 @@ pub fn expand_resolver_derive(input: TokenStream) -> TokenStream {
 
     let variant_parsers = variants.iter().map(|(variant_name, ty)| {
         quote! {
-            let temp_result = <#ty>::from_directives(directives.iter());
-            let result_option = temp_result.to_result();
-            if let Ok(Some(resolver)) = result_option {
-                let directive_name = <#ty>::trace_name();
-                if !resolvable_directives.contains(&directive_name) {
-                    resolvable_directives.push(directive_name);
+            valid = valid.and(<#ty>::from_directives(directives.iter()).map(|resolver| {
+                if let Some(resolver) = resolver {
+                    let directive_name = <#ty>::trace_name();
+                    if !resolvable_directives.contains(&directive_name) {
+                        resolvable_directives.push(directive_name);
+                    }
+                    result = Some(Self::#variant_name(resolver));
                 }
-                if result.is_some() {
-                    return Valid::fail(format!(
-                        "Multiple resolvers detected [{}]",
-                        resolvable_directives.join(", ")
-                    ));
-                }
-                result = Some(Self::#variant_name(resolver));
-            } else if let Err(e) = result_option {
-                return Valid::from_validation_err(e);
-            }
+            }));
         }
     });
 
@@ -65,13 +57,20 @@ pub fn expand_resolver_derive(input: TokenStream) -> TokenStream {
             ) -> Valid<Option<Self>, String> {
                 let mut result = None;
                 let mut resolvable_directives = Vec::new();
+                let mut valid = Valid::succeed(());
 
                 #(#variant_parsers)*
 
-                match result {
-                    Some(res) => Valid::succeed(Some(res)),
-                    None => Valid::succeed(None),
-                }
+                valid.and_then(|_| {
+                    if resolvable_directives.len() > 1 {
+                        Valid::fail(format!(
+                            "Multiple resolvers detected [{}]",
+                            resolvable_directives.join(", ")
+                        ))
+                    } else {
+                        Valid::succeed(result)
+                    }
+                })
             }
 
             pub fn to_directive(&self) -> ConstDirective {
