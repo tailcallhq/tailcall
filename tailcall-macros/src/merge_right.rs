@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::spanned::Spanned;
+use syn::{spanned::Spanned, Index};
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 const MERGE_RIGHT_FN: &str = "merge_right_fn";
@@ -59,29 +59,54 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
     let gen = match input.data {
         // Implement for structs
         Data::Struct(data) => {
-            let fields = if let Fields::Named(fields) = data.fields {
-                fields.named
-            } else {
-                // Adjust this match arm to handle other kinds of struct fields (unnamed/tuple
-                // structs, unit structs)
-                unimplemented!()
+            let fields = match &data.fields {
+                Fields::Named(fields) => &fields.named,
+                Fields::Unnamed(fields) => &fields.unnamed,
+                Fields::Unit => {
+                    return quote! {
+                        impl MergeRight for #name {
+                            fn merge_right(self, other: Self) -> Self {
+                                other
+                            }
+                        }
+                    }
+                    .into()
+                }
             };
 
-            let merge_logic = fields.iter().map(|f| {
+            let merge_logic = fields.iter().enumerate().map(|(i, f)| {
                 let attrs = get_attrs(&f.attrs);
                 if let Err(err) = attrs {
                     panic!("{}", err);
                 }
                 let attrs = attrs.unwrap();
                 let name = &f.ident;
-                if let Some(merge_right_fn) = attrs.merge_right_fn {
-                    quote! {
-                        #name: #merge_right_fn(self.#name, other.#name),
+
+                match &data.fields {
+                    Fields::Named(_) => {
+                        if let Some(merge_right_fn) = attrs.merge_right_fn {
+                            quote! {
+                                #name: #merge_right_fn(self.#name, other.#name),
+                            }
+                        } else {
+                            quote! {
+                                #name: self.#name.merge_right(other.#name),
+                            }
+                        }
                     }
-                } else {
-                    quote! {
-                        #name: self.#name.merge_right(other.#name),
+                    Fields::Unnamed(_) => {
+                        let name = Index::from(i);
+                        if let Some(merge_right_fn) = attrs.merge_right_fn {
+                            quote! {
+                                #merge_right_fn(self.#name, other.#name),
+                            }
+                        } else {
+                            quote! {
+                                self.#name.merge_right(other.#name),
+                            }
+                        }
                     }
+                    Fields::Unit => unreachable!(),
                 }
             });
 
@@ -93,12 +118,22 @@ pub fn expand_merge_right_derive(input: TokenStream) -> TokenStream {
                 #generics_lt #generics_params #generics_gt
             };
 
+            let initializer = match data.fields {
+                Fields::Named(_) => quote! {
+                    Self {
+                        #(#merge_logic)*
+                    }
+                },
+                Fields::Unnamed(_) => quote! {
+                    Self(#(#merge_logic)*)
+                },
+                Fields::Unit => unreachable!(),
+            };
+
             quote! {
                 impl #generics_del MergeRight for #name #generics_del {
                     fn merge_right(self, other: Self) -> Self {
-                        Self {
-                            #(#merge_logic)*
-                        }
+                        #initializer
                     }
                 }
             }
