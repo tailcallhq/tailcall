@@ -1,12 +1,15 @@
+// use std::borrow::Borrow;
+
 use derive_setters::Setters;
 use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
 use genai::resolver::AuthResolver;
 use genai::Client;
+use reqwest::StatusCode;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tokio_retry::Retry;
 
-use super::error::{Error, Result};
+use super::error::{Error, Result, WebcError};
 use crate::cli::llm::model::Model;
 
 #[derive(Setters, Clone)]
@@ -56,28 +59,17 @@ impl<Q, A> Wizard<Q, A> {
                 .await
             {
                 Ok(response) => Ok(A::try_from(response)?),
-                Err(genai::Error::WebModelCall { webc_error, .. }) => {
-                    if webc_error.to_string().contains("429") {
-                        Err(Error::GenAI(genai::Error::WebModelCall {
-                            model_info: genai::ModelInfo::new(
-                                AdapterKind::from_model(self.model.as_str())
-                                    .unwrap_or(AdapterKind::Ollama),
-                                self.model.as_str(),
-                            ),
-                            webc_error,
-                        }))
-                    } else {
-                        Ok(Err(Error::GenAI(genai::Error::WebModelCall {
-                            model_info: genai::ModelInfo::new(
-                                AdapterKind::from_model(self.model.as_str())
-                                    .unwrap_or(AdapterKind::Ollama),
-                                self.model.as_str(),
-                            ),
-                            webc_error,
-                        }))?)
+                Err(err) => {
+                    let error = Error::from(err);
+                    match &error {
+                        Error::Webc(WebcError::ResponseFailedStatus { status, .. })
+                            if *status == StatusCode::TOO_MANY_REQUESTS =>
+                        {
+                            Err(error) // Propagate the error to trigger a retry
+                        }
+                        _ => Ok(Err(error)?), // Other errors are returned without retrying
                     }
                 }
-                Err(e) => Ok(Err(Error::GenAI(e))?),
             }
         })
         .await
