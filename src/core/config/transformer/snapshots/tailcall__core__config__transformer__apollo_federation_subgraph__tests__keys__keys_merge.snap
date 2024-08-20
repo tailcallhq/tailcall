@@ -1,0 +1,32 @@
+---
+source: src/core/config/transformer/apollo_federation_subgraph.rs
+expression: keys_a.merge_right(keys_b)
+---
+Keys(
+    {
+        "a": Keys(
+            {
+                "1": Keys(
+                    {},
+                ),
+                "b": Keys(
+                    {},
+                ),
+            },
+        ),
+        "c": Keys(
+            {
+                "2": Keys(
+                    {},
+                ),
+            },
+        ),
+        "d": Keys(
+            {
+                "3": Keys(
+                    {},
+                ),
+            },
+        ),
+    },
+)

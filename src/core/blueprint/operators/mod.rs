@@ -1,5 +1,5 @@
 mod call;
-mod entity_resolver;
+mod apollo_federation;
 mod enum_alias;
 mod expr;
 mod graphql;
@@ -10,7 +10,7 @@ mod modify;
 mod protected;
 
 pub use call::*;
-pub use entity_resolver::*;
+pub use apollo_federation::*;
 pub use enum_alias::*;
 pub use expr::*;
 pub use graphql::*;

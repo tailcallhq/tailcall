@@ -26,7 +26,10 @@ pub enum IR {
     Map(Map),
     Pipe(Box<IR>, Box<IR>),
     Discriminate(Discriminator, Box<IR>),
+    /// Apollo Federation _entities resolver
     EntityResolver(HashMap<String, IR>),
+    /// Apollo Federation _service resolver
+    Service(String)
 }
 
 #[derive(Clone, Debug)]
@@ -156,6 +159,7 @@ impl IR {
                             .map(|(k, v)| (k, v.modify(modifier)))
                             .collect(),
                     ),
+                    IR::Service(sdl) => IR::Service(sdl),
                 }
             }
         }

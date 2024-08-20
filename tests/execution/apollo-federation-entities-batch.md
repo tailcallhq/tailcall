@@ -1,4 +1,4 @@
-# Apollo federation \_entities query
+# Apollo federation query for batching resolvers
 
 ```graphql @config
 schema
@@ -11,7 +11,7 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
-type User @http(path: "/users", query: [{key: "id", value: "{{.value.id}}"}], batchKey: ["id"]) {
+type User @http(path: "/users", query: [{key: "id", value: "{{.value.user.id}}"}], batchKey: ["id"]) {
   id: Int!
   name: String!
 }
@@ -90,8 +90,8 @@ type Post
     query: >
       {
         _entities(representations: [
-          {id: 1, __typename: "User"}
-          {id: 2, __typename: "User"}
+          {user: { id: 1 }, __typename: "User"}
+          {user: { id: 2 }, __typename: "User"}
           {id: 3, __typename: "Post"}
           {id: 5, __typename: "Post"}
         ]) {
@@ -106,4 +106,10 @@ type Post
           }
         }
       }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: >
+      { _service { sdl } }
 ```

@@ -3,8 +3,8 @@ use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
-use async_graphql::Positioned;
 use async_graphql::parser::types::{ConstDirective, ServiceDocument};
+use async_graphql::Positioned;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -14,7 +14,9 @@ use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
 
 use super::{
-    directives::{Call, EntityResolver, Expr, GraphQL, Grpc, Http, Key, JS}, from_document::from_document, telemetry::Telemetry
+    directives::{Call, EntityResolver, Expr, GraphQL, Grpc, Http, Key, JS},
+    from_document::from_document,
+    telemetry::Telemetry,
 };
 use super::{Link, Server, Upstream};
 use crate::core::config::npo::QueryPath;
@@ -219,6 +221,12 @@ pub struct RootSchema {
 /// Used to omit a field from public consumption.
 pub struct Omit {}
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ApolloFederation {
+    EntityResolver(EntityResolver),
+    Service,
+}
+
 #[derive(
     Serialize,
     Deserialize,
@@ -239,8 +247,8 @@ pub enum Resolver {
     Js(JS),
     Expr(Expr),
     #[serde(skip)]
-    #[resolver(skip_to_directive)]
-    EntityResolver(EntityResolver),
+    #[resolver(skip_directive)]
+    ApolloFederation(ApolloFederation),
 }
 
 impl Resolver {
@@ -249,13 +257,13 @@ impl Resolver {
             Resolver::Http(http) => !http.batch_key.is_empty(),
             Resolver::Grpc(grpc) => !grpc.batch_key.is_empty(),
             Resolver::Graphql(graphql) => graphql.batch,
-            Resolver::Call(_) => false,
-            Resolver::Js(_) => false,
-            Resolver::Expr(_) => false,
-            Resolver::EntityResolver(entity_resolver) => entity_resolver
-                .resolver_by_type
-                .values()
-                .any(Resolver::is_batched),
+            Resolver::ApolloFederation(ApolloFederation::EntityResolver(entity_resolver)) => {
+                entity_resolver
+                    .resolver_by_type
+                    .values()
+                    .any(Resolver::is_batched)
+            }
+            _ => false,
         }
     }
 }

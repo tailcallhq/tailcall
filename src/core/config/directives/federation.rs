@@ -13,7 +13,7 @@ pub struct Key {
 }
 
 /// Resolver for `_entities` field for Apollo Federation
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, schemars::JsonSchema)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityResolver {
     pub resolver_by_type: BTreeMap<String, Resolver>,
 }

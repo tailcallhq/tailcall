@@ -3,11 +3,12 @@ use std::ops::Deref;
 
 use async_graphql_value::ConstValue;
 use futures_util::future::join_all;
+use indexmap::IndexMap;
 
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
 use super::{Error, EvalContext, ResolverContextLike};
-use crate::core::json::JsonLike;
+use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::serde_value_ext::ValueExt;
 
 // Fake trait to capture proper lifetimes.
@@ -135,6 +136,13 @@ impl IR {
                     let entities = result.into_iter().collect::<Result<_, _>>()?;
 
                     Ok(ConstValue::List(entities))
+                }
+                IR::Service(sdl) => {
+                    let mut obj = IndexMap::new();
+
+                    obj.insert_key("sdl", ConstValue::string(sdl.into()));
+
+                    Ok(ConstValue::object(obj))
                 }
             }
         })

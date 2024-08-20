@@ -1,0 +1,17 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "_service": {
+        "sdl": "schema @server(port: 8000) @upstream(baseURL: \"http://jsonplaceholder.typicode.com\", batch: {delay: 100, headers: []}, httpCache: 42) {\n  query: Query\n}\n\nscalar _Any\n\nunion _Entity = Post | User\n\ntype Post @graphQL(args: [{key: \"id\", value: \"{{.value.id}}\"}], baseURL: \"http://upstream/graphql\", batch: true, name: \"post\") @key(fields: \"id\") {\n  id: Int!\n  title: String!\n}\n\ntype Query {\n  \"\"\"\n  Apollo federation Query._entities resolver\n  \"\"\"\n  _entities(representations: [_Any]!): [_Entity]!\n  \"\"\"\n  Apollo federation Query._service resolver\n  \"\"\"\n  _service: _Service!\n  user(id: Int!): User @http(path: \"/users/{{.args.id}}\")\n}\n\ntype User @http(batchKey: [\"id\"], path: \"/users\", query: [{key: \"id\", value: \"{{.value.user.id}}\"}]) @key(fields: \"user { id }\") {\n  id: Int!\n  name: String!\n}\n\ntype _Service {\n  sdl: String\n}\nextend schema @link(\n\turl: \"https://specs.apollo.dev/federation/v2.3\",\n\timport: [\"@key\", \"@tag\", \"@shareable\", \"@inaccessible\", \"@override\", \"@external\", \"@provides\", \"@requires\", \"@composeDirective\", \"@interfaceObject\"]\n)\n"
+      }
+    }
+  }
+}

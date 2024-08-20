@@ -1,0 +1,28 @@
+---
+source: src/core/config/transformer/apollo_federation_subgraph.rs
+expression: keys
+---
+Valid(
+    Err(
+        ValidationError(
+            [
+                Cause {
+                    message: "Type resolver can't use `.args`, use `.value` instead",
+                    description: None,
+                    trace: [
+                        "http",
+                        "path",
+                    ],
+                },
+                Cause {
+                    message: "Type resolver can't use `.args`, use `.value` instead",
+                    description: None,
+                    trace: [
+                        "http",
+                        "query",
+                    ],
+                },
+            ],
+        ),
+    ),
+)

@@ -3,11 +3,11 @@ use quote::quote;
 use syn::{Attribute, Data, DeriveInput, Fields};
 
 const ATTR_NAMESPACE: &str = "resolver";
-const ATTR_SKIP_TO_DIRECTIVE: &str = "skip_to_directive";
+const ATTR_SKIP_DIRECTIVE: &str = "skip_directive";
 
 #[derive(Default)]
 struct Attrs {
-    skip_to_directive: bool,
+    skip_directive: bool,
 }
 
 fn parse_attrs(attributes: &Vec<Attribute>) -> syn::Result<Attrs> {
@@ -16,8 +16,8 @@ fn parse_attrs(attributes: &Vec<Attribute>) -> syn::Result<Attrs> {
     for attr in attributes {
         if attr.path().is_ident(ATTR_NAMESPACE) {
             attr.parse_nested_meta(|meta| {
-                if meta.path.is_ident(ATTR_SKIP_TO_DIRECTIVE) {
-                    result.skip_to_directive = true;
+                if meta.path.is_ident(ATTR_SKIP_DIRECTIVE) {
+                    result.skip_directive = true;
 
                     return Ok(());
                 }
@@ -54,8 +54,12 @@ pub fn expand_resolver_derive(input: DeriveInput) -> syn::Result<TokenStream> {
         panic!("Resolver can only be derived for enums");
     };
 
-    let variant_parsers = variants.iter().map(|(variant_name, ty, _attrs)| {
-        quote! {
+    let variant_parsers = variants.iter().filter_map(|(variant_name, ty, attrs)| {
+        if attrs.skip_directive {
+            return None;
+        }
+
+        Some(quote! {
             valid = valid.and(<#ty>::from_directives(directives.iter()).map(|resolver| {
                 if let Some(resolver) = resolver {
                     let directive_name = <#ty>::trace_name();
@@ -65,11 +69,11 @@ pub fn expand_resolver_derive(input: DeriveInput) -> syn::Result<TokenStream> {
                     result = Some(Self::#variant_name(resolver));
                 }
             }));
-        }
+        })
     });
 
     let match_arms_to_directive = variants.iter().map(|(variant_name, _ty, attrs)| {
-        if attrs.skip_to_directive {
+        if attrs.skip_directive {
             quote! {
                 Self::#variant_name(d) => None,
             }
@@ -80,9 +84,15 @@ pub fn expand_resolver_derive(input: DeriveInput) -> syn::Result<TokenStream> {
         }
     });
 
-    let match_arms_directive_name = variants.iter().map(|(variant_name, ty, _attrs)| {
-        quote! {
-            Self::#variant_name(_) => <#ty>::directive_name(),
+    let match_arms_directive_name = variants.iter().map(|(variant_name, ty, attrs)| {
+        if attrs.skip_directive {
+            quote! {
+                Self::#variant_name(_) => String::new(),
+            }
+        } else {
+            quote! {
+                Self::#variant_name(_) => <#ty>::directive_name(),
+            }
         }
     });
 

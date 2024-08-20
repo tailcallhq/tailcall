@@ -1,4 +1,8 @@
-# Apollo federation query
+---
+error: true
+---
+
+# Apollo federation query validation
 
 ```graphql @config
 schema
@@ -11,12 +15,12 @@ type Query {
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
 }
 
-type User @call(steps: [{query: "user", args: {id: "{{.value.user.id}}"}}]) {
+type User @call(steps: [{query: "user", args: {id: "{{.args.id}}"}}]) {
   id: Int!
   name: String!
 }
 
-type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) {
+type Post @http(path: "/users", query: [{key: "id", value: "{{.args.user.id}}"}]) {
   id: Int!
   title: String!
 }
@@ -51,8 +55,8 @@ type Post @expr(body: {id: "{{.value.id}}", title: "post-title-{{.value.id}}"}) 
         _entities(representations: [
           {user: { id: 1 }, __typename: "User"}
           {user: { id: 2 }, __typename: "User"}
-          {id: 3, __typename: "Post"}
-          {id: 5, __typename: "Post"}
+          {user: { id: 3 }, __typename: "Post"}
+          {user: { id: 5 }, __typename: "Post"}
         ]) {
           __typename
           ...on User {
