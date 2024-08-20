@@ -139,11 +139,12 @@ fn extract_transformations(
 fn optimize_type_lenses(
     type_lenses: HashMap<String, InputTypeLens>,
 ) -> HashMap<String, InputTypeLens> {
+    let mut visited = HashMap::new();
     type_lenses
         .clone()
         .into_iter()
         .filter_map(|(type_name, lens)| {
-            if lens.is_empty(&type_lenses) {
+            if lens.is_empty(&type_lenses, &mut visited) {
                 Some((type_name, lens))
             } else {
                 None
@@ -254,16 +255,29 @@ impl InputTypeLens {
         }
     }
 
-    fn is_empty(&self, type_lenses: &HashMap<String, InputTypeLens>) -> bool {
+    fn is_empty(
+        &self,
+        type_lenses: &HashMap<String, InputTypeLens>,
+        visited: &mut HashMap<String, bool>,
+    ) -> bool {
         match self {
             InputTypeLens::Compose(first, second) => {
-                first.is_empty(type_lenses) && second.is_empty(type_lenses)
+                first.is_empty(type_lenses, visited) && second.is_empty(type_lenses, visited)
             }
             InputTypeLens::Transform(_, InputFieldTransform::Rename(_)) => false,
-            InputTypeLens::Transform(_, InputFieldTransform::FieldType(field_type)) => type_lenses
-                .get(field_type)
-                .map(|lens| lens.is_empty(type_lenses))
-                .unwrap_or(true),
+            InputTypeLens::Transform(_, InputFieldTransform::FieldType(field_type)) => {
+                match visited.get(field_type) {
+                    Some(value) => *value,
+                    None => {
+                        let result = type_lenses
+                            .get(field_type)
+                            .map(|lens| lens.is_empty(type_lenses, visited))
+                            .unwrap_or(true);
+                        visited.insert(field_type.to_string(), result);
+                        result
+                    }
+                }
+            }
         }
     }
 
