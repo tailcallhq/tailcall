@@ -257,6 +257,7 @@ where
                 cache,
                 protected,
                 resolver,
+                key: None,
             }
         })
 }
