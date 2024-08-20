@@ -1,7 +1,7 @@
 use convert_case::{Case, Casing};
 
 use super::http_directive_generator::HttpDirectiveGenerator;
-use crate::core::config::{Arg, Config, Field, GraphQLOperationType, Type};
+use crate::core::config::{Arg, Config, Field, GraphQLOperationType, Resolver, Type};
 use crate::core::generator::json::types_generator::TypeGenerator;
 use crate::core::generator::{NameGenerator, RequestSample};
 use crate::core::valid::Valid;
@@ -25,7 +25,9 @@ impl OperationTypeGenerator {
 
         // generate required http directive.
         let http_directive_gen = HttpDirectiveGenerator::new(&request_sample.url);
-        field.http = Some(http_directive_gen.generate_http_directive(&mut field));
+        field.resolver = Some(Resolver::Http(
+            http_directive_gen.generate_http_directive(&mut field),
+        ));
 
         if let GraphQLOperationType::Mutation = request_sample.operation_type {
             // generate the input type.
@@ -33,9 +35,9 @@ impl OperationTypeGenerator {
                 .generate_types(&request_sample.req_body, &mut config);
             // add input type to field.
             let arg_name = format!("{}Input", request_sample.field_name).to_case(Case::Camel);
-            if let Some(http_) = &mut field.http {
-                http_.body = Some(format!("{{{{.args.{}}}}}", arg_name.clone()));
-                http_.method = request_sample.method.to_owned();
+            if let Some(Resolver::Http(http)) = &mut field.resolver {
+                http.body = Some(format!("{{{{.args.{}}}}}", arg_name));
+                http.method = request_sample.method.to_owned();
             }
             field
                 .args

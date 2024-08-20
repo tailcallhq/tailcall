@@ -68,7 +68,7 @@ impl TryFrom<&Value> for DynamicValue<ConstValue> {
                 Ok(DynamicValue::Array(out?))
             }
             Value::String(s) => {
-                let m = Mustache::parse(s.as_str())?;
+                let m = Mustache::parse(s.as_str());
                 if m.is_const() {
                     Ok(DynamicValue::Value(ConstValue::from_json(value.clone())?))
                 } else {

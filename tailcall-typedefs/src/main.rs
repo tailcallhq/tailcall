@@ -20,7 +20,7 @@ static GRAPHQL_SCHEMA_FILE: &str = "../generated/.tailcallrc.graphql";
 
 #[tokio::main]
 async fn main() {
-    tracing::subscriber::set_global_default(default_tracing_for_name("typedefs")).unwrap();
+    tracing::subscriber::set_global_default(default_tracing_for_name("tailcall_typedefs")).unwrap();
     let args: Vec<String> = env::args().collect();
     let arg = args.get(1);
 
