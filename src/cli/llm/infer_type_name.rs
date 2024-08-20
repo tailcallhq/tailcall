@@ -2,10 +2,12 @@ use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
+use crate::core::Mustache;
 
 #[derive(Default)]
 pub struct InferTypeName {
@@ -37,7 +39,6 @@ impl TryInto<ChatRequest> for Question {
     type Error = Error;
 
     fn try_into(self) -> Result<ChatRequest> {
-        let content = serde_json::to_string(&self)?;
         let input = serde_json::to_string_pretty(&Question {
             fields: vec![
                 ("id".to_string(), "String".to_string()),
@@ -56,20 +57,19 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
+        let template_str = include_str!("prompts/infer_type_name.md");
+        let template = Mustache::parse(template_str);
+
+        let context = json!({
+            "input": input,
+            "output": output,
+        });
+
+        let rendered_prompt = template.render(&context);
+
         Ok(ChatRequest::new(vec![
-            ChatMessage::system(
-                "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
-            ),
-            ChatMessage::system("The name should be concise and preferably a single word"),
-            ChatMessage::system("Example Input:"),
-            ChatMessage::system(input),
-            ChatMessage::system("Example Output:"),
-            ChatMessage::system(output),
-            ChatMessage::system("Ensure the output is in valid JSON format".to_string()),
-            ChatMessage::system(
-                "Do not add any additional text before or after the json".to_string(),
-            ),
-            ChatMessage::user(content),
+            ChatMessage::system(rendered_prompt),
+            ChatMessage::user(serde_json::to_string(&self)?),
         ]))
     }
 }

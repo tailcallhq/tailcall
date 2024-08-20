@@ -138,7 +138,7 @@ impl RequestTemplate {
         if let Some(args) = args.as_ref() {
             operation_arguments = Some(
                 args.iter()
-                    .map(|kv| Ok((kv.key.to_owned(), Mustache::parse(&kv.value)?)))
+                    .map(|kv| Ok((kv.key.to_owned(), Mustache::parse(&kv.value))))
                     .collect::<anyhow::Result<Vec<_>>>()?,
             );
         }
