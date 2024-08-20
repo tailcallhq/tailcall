@@ -42,6 +42,8 @@ pub fn update_input_field_resolver<'a>(
                             &mut type_lenses,
                         );
 
+                        let type_lenses = optimize_type_lenses(type_lenses);
+
                         let input_transforms = InputTransformsContext {
                             type_lenses,
                             arg_name: arg.name.clone(),
@@ -80,7 +82,7 @@ fn extract_transformations(
     target_type: &str,
     config: &&ConfigModule,
     visited: &mut Vec<String>,
-    transforms: &mut HashMap<String, InputTypeLens>,
+    type_lenses: &mut HashMap<String, InputTypeLens>,
 ) {
     // step: check if we visited the type to prevent infinite looping on recursive
     // types
@@ -119,19 +121,35 @@ fn extract_transformations(
             );
             let local_lens = InputTypeLens::compose(type_lens, rename_lens);
 
-            let lens = match transforms.remove(&target_type.to_string()) {
+            let lens = match type_lenses.remove(&target_type.to_string()) {
                 Some(lens) => InputTypeLens::compose(lens, local_lens),
                 None => local_lens,
             };
 
             // step: we put the lens back
-            transforms.insert(target_type.to_string(), lens);
+            type_lenses.insert(target_type.to_string(), lens);
 
             // step: we go deeper in case the field implements an object
             // type
-            extract_transformations(&field.type_of, config, visited, transforms);
+            extract_transformations(&field.type_of, config, visited, type_lenses);
         }
     }
+}
+
+fn optimize_type_lenses(
+    type_lenses: HashMap<String, InputTypeLens>,
+) -> HashMap<String, InputTypeLens> {
+    type_lenses
+        .clone()
+        .into_iter()
+        .filter_map(|(type_name, lens)| {
+            if lens.is_empty(&type_lenses) {
+                Some((type_name, lens))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 /// Used to contain all the directives that can apply on input type fields
@@ -233,6 +251,19 @@ impl InputTypeLens {
                     }
                 }
             },
+        }
+    }
+
+    fn is_empty(&self, type_lenses: &HashMap<String, InputTypeLens>) -> bool {
+        match self {
+            InputTypeLens::Compose(first, second) => {
+                first.is_empty(type_lenses) && second.is_empty(type_lenses)
+            }
+            InputTypeLens::Transform(_, InputFieldTransform::Rename(_)) => false,
+            InputTypeLens::Transform(_, InputFieldTransform::FieldType(field_type)) => type_lenses
+                .get(field_type)
+                .map(|lens| lens.is_empty(type_lenses))
+                .unwrap_or(true),
         }
     }
 
