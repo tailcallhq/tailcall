@@ -35,7 +35,14 @@ input Spam {
     method: POST
     url: http://jsonplaceholder.typicode.com/foo?spamIds[]=1
     body:
-      {"foo": [{"bar": {"info": "bar_1"}, "info": "foo_1"}, {"bar": {"info": "bar_1"}, "info": "foo_1"}], "info": "bar"}
+      {
+        "foo":
+          [
+            {"bar": {"foo": [{"info": "bar_1_foo_1"}, {"info": "bar_1_foo_2"}], "info": "bar_1"}, "info": "foo_1"},
+            {"bar": {"info": "bar_1"}, "info": "foo_1"},
+          ],
+        "info": "bar",
+      }
   response:
     status: 200
     body: Hello from buzz
@@ -48,7 +55,7 @@ input Spam {
     query: |
       {
         foo(
-          input: {buzz: [{fizz: {bar: "bar_1"}, foo: "foo_1"}, {fizz: {bar: "bar_1"}, foo: "foo_1"}], bar: "bar"}
+          input: {buzz: [{fizz: {bar: "bar_1", buzz: [{foo: "bar_1_foo_1"}, {foo: "bar_1_foo_2"}]}, foo: "foo_1"}, {fizz: {bar: "bar_1"}, foo: "foo_1"}], bar: "bar"}
           extra_input: {identifier: 1}
         )
       }

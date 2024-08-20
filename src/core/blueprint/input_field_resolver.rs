@@ -35,7 +35,7 @@ pub fn update_input_field_resolver<'a>(
                         let mut visited: Vec<String> = Vec::new();
 
                         // step: we extract the data required for the InputTransformsContext
-                        extract_transformations(
+                        extract_type_lenses(
                             input_type.name(),
                             config,
                             &mut visited,
@@ -51,10 +51,10 @@ pub fn update_input_field_resolver<'a>(
                         };
 
                         // step: return the resolver only if we have transforms to apply
-                        if !input_transforms.type_lenses.is_empty() {
-                            Some(IR::ModifyInput(input_transforms))
-                        } else {
+                        if input_transforms.type_lenses.is_empty() {
                             None
+                        } else {
+                            Some(IR::ModifyInput(input_transforms))
                         }
                     })
                     .reduce(|first, second| first.pipe(second));
@@ -78,7 +78,7 @@ pub fn update_input_field_resolver<'a>(
 ///
 /// Helper function that is used to recursively extract the required data for
 /// the input transform context.
-fn extract_transformations(
+fn extract_type_lenses(
     target_type: &str,
     config: &&ConfigModule,
     visited: &mut Vec<String>,
@@ -101,25 +101,32 @@ fn extract_transformations(
     {
         // iter: for every field in the type
         for (original_field_name, field) in &metadata.fields {
-            let (field_name, field_type) = if let Some(modify) = &field.modify {
+            let (mut field_name, field_type) =
+                (original_field_name.to_string(), field.type_of.to_string());
+
+            let rename_lens = if let Some(modify) = &field.modify {
                 if let Some(modified_name) = &modify.name {
-                    (modified_name.to_string(), field.type_of.to_string())
+                    field_name = modified_name.to_string();
+                    Some(InputTypeLens::Transform(
+                        field_name.clone(),
+                        InputFieldTransform::rename(original_field_name.clone()),
+                    ))
                 } else {
-                    (original_field_name.to_string(), field.type_of.to_string())
+                    None
                 }
             } else {
-                (original_field_name.to_string(), field.type_of.to_string())
+                None
             };
 
-            let rename_lens = InputTypeLens::Transform(
-                field_name.clone(),
-                InputFieldTransform::rename(original_field_name.clone()),
-            );
             let type_lens = InputTypeLens::Transform(
                 field_name.clone(),
                 InputFieldTransform::field_type(field_type.clone()),
             );
-            let local_lens = InputTypeLens::compose(type_lens, rename_lens);
+
+            let local_lens = match rename_lens {
+                Some(rename_lens) => InputTypeLens::compose(type_lens, rename_lens),
+                None => type_lens,
+            };
 
             let lens = match type_lenses.remove(&target_type.to_string()) {
                 Some(lens) => InputTypeLens::compose(lens, local_lens),
@@ -131,7 +138,7 @@ fn extract_transformations(
 
             // step: we go deeper in case the field implements an object
             // type
-            extract_transformations(&field.type_of, config, visited, type_lenses);
+            extract_type_lenses(&field.type_of, config, visited, type_lenses);
         }
     }
 }
@@ -139,15 +146,14 @@ fn extract_transformations(
 fn optimize_type_lenses(
     type_lenses: HashMap<String, InputTypeLens>,
 ) -> HashMap<String, InputTypeLens> {
-    let mut visited = HashMap::new();
     type_lenses
         .clone()
         .into_iter()
         .filter_map(|(type_name, lens)| {
-            if lens.is_empty(&type_lenses, &mut visited) {
-                Some((type_name, lens))
-            } else {
+            if lens.is_empty() {
                 None
+            } else {
+                Some((type_name, lens))
             }
         })
         .collect()
@@ -255,29 +261,11 @@ impl InputTypeLens {
         }
     }
 
-    fn is_empty(
-        &self,
-        type_lenses: &HashMap<String, InputTypeLens>,
-        visited: &mut HashMap<String, bool>,
-    ) -> bool {
+    fn is_empty(&self) -> bool {
         match self {
-            InputTypeLens::Compose(first, second) => {
-                first.is_empty(type_lenses, visited) && second.is_empty(type_lenses, visited)
-            }
+            InputTypeLens::Compose(first, second) => first.is_empty() && second.is_empty(),
             InputTypeLens::Transform(_, InputFieldTransform::Rename(_)) => false,
-            InputTypeLens::Transform(_, InputFieldTransform::FieldType(field_type)) => {
-                match visited.get(field_type) {
-                    Some(value) => *value,
-                    None => {
-                        let result = type_lenses
-                            .get(field_type)
-                            .map(|lens| lens.is_empty(type_lenses, visited))
-                            .unwrap_or(true);
-                        visited.insert(field_type.to_string(), result);
-                        result
-                    }
-                }
-            }
+            InputTypeLens::Transform(_, InputFieldTransform::FieldType(_)) => true,
         }
     }
 
