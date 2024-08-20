@@ -1,8 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use crate::core::ir::model::{InputTransforms, TransformKey};
-
 pub trait JsonLikeOwned: for<'json> JsonLike<'json> {}
 impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}
 
@@ -43,66 +41,6 @@ pub trait JsonLike<'json>: Sized + Clone {
     fn get_path<T: AsRef<str>>(&'json self, path: &[T]) -> Option<&Self>;
     fn get_key(&'json self, path: &str) -> Option<&Self>;
     fn group_by(&'json self, path: &[String]) -> HashMap<String, Vec<&Self>>;
-
-    ///
-    /// Used to apply `input_transforms` operations on the given `json_like`
-    /// struct. Current supported operations are `modify` - rename.
-    fn handle_input_transforms(
-        &'json self,
-        input_transforms: &'json InputTransforms,
-        type_of: &'json str,
-    ) -> Self {
-        if let Some(items) = self.as_array() {
-            // if: it is an array, we iterate each item and we call recursively the
-            // `handle_input_transforms` to apply the transform for each item.
-            let arr = items
-                .iter()
-                .clone()
-                .map(|item| item.handle_input_transforms(input_transforms, type_of))
-                .collect::<Vec<_>>();
-            Self::array(arr)
-        } else if let Some(obj) = self.as_object() {
-            // if: it is an object, we iterate the fields of the object and we apply the
-            // various transformations on the value
-            let mut new_map = Self::JsonObject::new();
-
-            // iter: every object field and apply transformations or go deeper to the next
-            // object type recursively
-            for (name, item) in obj.get_iterator() {
-                let key = TransformKey::from_str(type_of.to_string(), name.to_string());
-                let type_new = input_transforms.subfield_types.get(&key);
-                let name_new = input_transforms.subfield_renames.get(&key);
-
-                match (type_new, name_new) {
-                    // if: basic type, no rename
-                    (None, None) => new_map.insert_key(
-                        name,
-                        item.handle_input_transforms(input_transforms, type_of),
-                    ),
-                    // if: basic type, rename
-                    (None, Some(name_new)) => new_map.insert_key(
-                        name_new,
-                        item.handle_input_transforms(input_transforms, type_of),
-                    ),
-                    // if: complex type type, no rename
-                    (Some(type_new), None) => new_map.insert_key(
-                        name,
-                        item.handle_input_transforms(input_transforms, type_new),
-                    ),
-                    // if: complex type type, rename
-                    (Some(type_new), Some(name_new)) => new_map.insert_key(
-                        name_new,
-                        item.handle_input_transforms(input_transforms, type_new),
-                    ),
-                };
-            }
-
-            Self::object(new_map)
-        } else {
-            // if: anything else we just return it
-            self.clone()
-        }
-    }
 }
 
 /// A trait for objects that can be used as JSON objects
@@ -111,7 +49,7 @@ pub trait JsonObjectLike<'obj>: Sized {
     fn new() -> Self;
     fn get_key(&'obj self, key: &str) -> Option<&Self::Value>;
     fn insert_key(&mut self, key: &'obj str, value: Self::Value);
-    fn get_iterator(&'obj self) -> impl Iterator<Item = (&'obj str, &'obj Self::Value)>;
+    fn remove_key(&mut self, key: &'obj str) -> Option<Self::Value>;
 }
 
 #[cfg(test)]

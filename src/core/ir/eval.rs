@@ -108,13 +108,16 @@ impl IR {
                                 if name.to_string().eq(&input_transforms.arg_name) {
                                     // if: input argument is the targeted one, we apply the
                                     // `input_transforms`
-                                    (
-                                        name.clone(),
-                                        value.handle_input_transforms(
-                                            input_transforms,
-                                            &input_transforms.arg_type,
-                                        ),
-                                    )
+                                    let value = match input_transforms
+                                        .type_lenses
+                                        .get(&input_transforms.arg_type)
+                                    {
+                                        Some(transforms) => transforms
+                                            .transform(&input_transforms.type_lenses, value),
+                                        None => value.clone(),
+                                    };
+
+                                    (name.clone(), value)
                                 } else {
                                     (name.clone(), value.clone())
                                 }

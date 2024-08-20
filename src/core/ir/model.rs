@@ -2,13 +2,12 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::num::NonZeroU64;
 
-use async_graphql::{Name, Value};
-use derive_getters::Getters;
+use async_graphql::Value;
 use strum_macros::Display;
 
 use super::discriminator::Discriminator;
 use super::{EvalContext, ResolverContextLike};
-use crate::core::blueprint::{DynamicValue, Type};
+use crate::core::blueprint::{DynamicValue, InputTransformsContext};
 use crate::core::config::group_by::GroupBy;
 use crate::core::graphql::{self};
 use crate::core::http::HttpFilter;
@@ -27,7 +26,7 @@ pub enum IR {
     Map(Map),
     Pipe(Box<IR>, Box<IR>),
     Discriminate(Discriminator, Box<IR>),
-    ModifyInput(InputTransforms),
+    ModifyInput(InputTransformsContext),
 }
 
 #[derive(Clone, Debug)]
@@ -107,46 +106,6 @@ impl Cache {
             IR::IO(io) => Some(IR::Cache(Cache { max_age, io: Box::new(io.to_owned()) })),
             _ => None,
         })
-    }
-}
-
-///
-/// Used to hold input field renames.
-#[derive(Clone, Debug)]
-pub struct InputTransforms {
-    /// For a given (type name, field name) combination get back the type of the
-    /// field. This is used to resolve recursive and nested cases like the
-    /// following. (type A -> type A) or (type A -> type B -> type C -> type
-    /// B -> ...)
-    pub subfield_types: HashMap<TransformKey, String>,
-    /// For a given (type name, field name) combination get back the applied
-    /// rename This is used to check if a field of a type has a `@modify`
-    /// directive applied to it.
-    pub subfield_renames: HashMap<TransformKey, String>,
-    pub arg_name: String,
-    pub arg_type: String,
-}
-
-///
-/// Utility struct that is used to represent type of object/input and field name
-/// pairs.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Getters)]
-pub struct TransformKey {
-    /// The type of the object/input.
-    type_of: String,
-    /// The field name.
-    field_name: String,
-}
-
-impl TransformKey {
-    pub fn from_type(type_of: Type, field_name: String) -> Self {
-        Self { type_of: type_of.name().to_string(), field_name }
-    }
-    pub fn from_name(type_of: String, field_name: Name) -> Self {
-        Self { type_of, field_name: field_name.to_string() }
-    }
-    pub fn from_str(type_of: String, field_name: String) -> Self {
-        Self { type_of, field_name }
     }
 }
 

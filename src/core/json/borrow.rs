@@ -20,9 +20,8 @@ impl<'ctx> JsonObjectLike<'ctx> for ObjectAsVec<'ctx> {
         self.insert(key, value);
     }
 
-    fn get_iterator(&'ctx self) -> impl Iterator<Item = (&'ctx str, &'ctx Self::Value)> {
-        let iter = self.iter();
-        iter
+    fn remove_key(&mut self, _key: &'ctx str) -> Option<Self::Value> {
+        panic!("Could not implemented for ObjectAsVec type")
     }
 }
 

@@ -18,9 +18,8 @@ impl<'obj> JsonObjectLike<'obj> for serde_json::Map<String, serde_json::Value> {
         self.insert(key.to_owned(), value);
     }
 
-    fn get_iterator(&'obj self) -> impl Iterator<Item = (&'obj str, &'obj Self::Value)> {
-        let iter = self.iter().map(|(name, value)| (name.as_str(), value));
-        iter
+    fn remove_key(&mut self, key: &'obj str) -> Option<Self::Value> {
+        self.swap_remove(key)
     }
 }
 
