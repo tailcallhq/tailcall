@@ -529,7 +529,7 @@ mod tests {
         let actual = resolved_config.llm;
         let expected = Some(LLMConfig {
             model: Some("gpt-3.5-turbo".to_string()),
-            secret: Some(TemplateString::try_from(token).unwrap()),
+            secret: Some(TemplateString::from(token)),
         });
 
         assert_eq!(actual, expected);
