@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
 
-use super::model::{gemini, groq};
+use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::generator::Input;
 use crate::core::Mustache;
@@ -101,7 +101,7 @@ impl InferFieldName {
     ) -> Result<HashMap<Url, Vec<String>>> {
         let secret = self.secret.as_ref().map(|s| s.to_owned());
 
-        let wizard: Wizard<Question, Answer> = Wizard::new(gemini::GEMINI15_FLASH_LATEST, secret);
+        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
 
         let mut new_field_names: HashMap<Url, Vec<String>> = HashMap::new();
         let total = input_samples.len();

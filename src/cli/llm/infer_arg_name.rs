@@ -4,7 +4,7 @@ use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::model::{gemini, groq};
+use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
 use crate::core::Mustache;
@@ -79,7 +79,7 @@ impl InferArgName {
     ) -> Result<HashMap<String, Vec<(String, String)>>> {
         let secret = self.secret.as_ref().map(|s| s.to_owned());
 
-        let wizard: Wizard<Question, Answer> = Wizard::new(gemini::GEMINI15_FLASH_LATEST, secret);
+        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
 
         let mut new_name_mappings: HashMap<String, Vec<(String, String)>> = HashMap::new();
 
