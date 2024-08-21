@@ -1,37 +1,101 @@
 server:
-  hostname: 0.0.0.0
   port: 8000
+  queryValidation: false
+  hostname: "0.0.0.0"
 upstream:
-  baseURL: http://jsonplaceholder.typicode.com
+  baseURL: https://jsonplaceholder.typicode.com
   httpCache: 42
 schema:
   query: Query
+  mutation: Mutation
 types:
-  Post:
-    fields:
-      body:
-        type: String
-        required: true
-      id:
-        type: Int
-        required: true
-      title:
-        type: String
-        required: true
-      user:
-        type: User
-        http:
-          path: /users/{{value.userId}}
-      userId:
-        type: Int
-        required: true
   Query:
     fields:
+      post:
+        type: Post
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          path: /posts/{{.args.id}}
       posts:
         type: Post
         list: true
+        args:
+          user:
+            type: Id
+            required: true
         http:
-          path: /posts
+          path: /posts?userId={{.args.user}}
+      comment:
+        type: Comment
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          path: /comments/{{.args.id}}
+      comments:
+        type: Comment
+        list: true
+        args:
+          post:
+            type: Id
+            required: true
+        http:
+          path: /comments?postId={{.args.post}}
+      album:
+        type: Album
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          path: /albums/{{.args.id}}
+      albums:
+        type: Album
+        list: true
+        args:
+          user:
+            type: Id
+            required: true
+        http:
+          path: /albums?userId={{.args.user}}
+      photo:
+        type: Photo
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          path: /photos/{{.args.id}}
+      photos:
+        type: Photo
+        list: true
+        args:
+          album:
+            type: Id
+            required: true
+        http:
+          path: /photos?albumId={{.args.album}}
+      todo:
+        type: Todo
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          path: /todos/{{.args.id}}
+      todos:
+        type: Todo
+        list: true
+        args:
+          user:
+            type: Id
+            required: true
+        http:
+          path: /todos?userId={{.args.user}}
       user:
         type: User
         args:
@@ -39,22 +103,552 @@ types:
             type: Int
             required: true
         http:
-          path: /users/{{args.id}}
-  User:
+          path: /users/{{.args.id}}
+      users:
+        type: User
+        list: true
+        http:
+          path: /users
+  Mutation:
     fields:
+      createPost:
+        type: Post
+        args:
+          input:
+            type: PostInput
+            required: true
+        http:
+          method: POST
+          path: /posts
+          body: "{{.args.input}}"
+      updatePost:
+        type: Post
+        args:
+          id:
+            type: Int
+            required: true
+          input:
+            type: PostInput
+            required: true
+        http:
+          method: PUT
+          path: /posts/{{.args.id}}
+          body: "{{.args.input}}"
+      patchPost:
+        type: Post
+        args:
+          id:
+            type: Int
+            required: true
+          input:
+            type: PartialPostInput
+            required: true
+        http:
+          method: PATCH
+          path: /posts/{{.args.id}}
+          body: "{{.args.input}}"
+      deletePost:
+        type: Boolean
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          method: DELETE
+          path: /posts/{{.args.id}}
+      createComment:
+        type: Comment
+        args:
+          input:
+            type: CommentInput
+            required: true
+        http:
+          method: POST
+          path: /comments
+          body: "{{.args.input}}"
+      updateComment:
+        type: Comment
+        args:
+          id:
+            type: Int
+            required: true
+          input:
+            type: CommentInput
+            required: true
+        http:
+          method: PUT
+          path: /comments/{{.args.id}}
+          body: "{{.args.input}}"
+      deleteComment:
+        type: Boolean
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          method: DELETE
+          path: /comments/{{.args.id}}
+      createAlbum:
+        type: Album
+        args:
+          input:
+            type: AlbumInput
+            required: true
+        http:
+          method: POST
+          path: /albums
+          body: "{{.args.input}}"
+      updateAlbum:
+        type: Album
+        args:
+          id:
+            type: Int
+            required: true
+          input:
+            type: AlbumInput
+            required: true
+        http:
+          method: PUT
+          path: /albums/{{.args.id}}
+          body: "{{.args.input}}"
+      deleteAlbum:
+        type: Boolean
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          method: DELETE
+          path: /albums/{{.args.id}}
+      createPhoto:
+        type: Photo
+        args:
+          input:
+            type: PhotoInput
+            required: true
+        http:
+          method: POST
+          path: /photos
+          body: "{{.args.input}}"
+      updatePhoto:
+        type: Photo
+        args:
+          id:
+            type: Int
+            required: true
+          input:
+            type: PhotoInput
+            required: true
+        http:
+          method: PUT
+          path: /photos/{{.args.id}}
+          body: "{{.args.input}}"
+      deletePhoto:
+        type: Boolean
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          method: DELETE
+          path: /photos/{{.args.id}}
+      createTodo:
+        type: Todo
+        args:
+          input:
+            type: TodoInput
+            required: true
+        http:
+          method: POST
+          path: /todos
+          body: "{{.args.input}}"
+      updateTodo:
+        type: Todo
+        args:
+          id:
+            type: Int
+            required: true
+          input:
+            type: TodoInput
+            required: true
+        http:
+          method: PUT
+          path: /todos/{{.args.id}}
+          body: "{{.args.input}}"
+      deleteTodo:
+        type: Boolean
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          method: DELETE
+          path: /todos/{{.args.id}}
+      createUser:
+        type: User
+        args:
+          input:
+            type: UserInput
+            required: true
+        http:
+          method: POST
+          path: /users
+          body: "{{.args.input}}"
+      updateUser:
+        type: User
+        args:
+          id:
+            type: Int
+            required: true
+          input:
+            type: UserInput
+            required: true
+        http:
+          method: PUT
+          path: /users/{{.args.id}}
+          body: "{{.args.input}}"
+      deleteUser:
+        type: Boolean
+        args:
+          id:
+            type: Int
+            required: true
+        http:
+          method: DELETE
+          path: /users/{{.args.id}}
+  Post:
+    fields:
+      id:
+        type: Int
+        required: true
+      userId:
+        type: Int
+        required: true
+      title:
+        type: String
+        required: true
+      body:
+        type: String
+        required: true
+      user:
+        type: User
+        call:
+          steps:
+            - query: user
+              args:
+                id: "{{.value.userId}}"
+      comments:
+        type: Comment
+        list: true
+        call:
+          steps:
+            - query: comments
+              args:
+                post: "{{.value.id}}"
+  Comment:
+    fields:
+      id:
+        type: Int
+        required: true
+      postId:
+        type: Int
+        required: true
+      name:
+        type: String
+        required: true
       email:
         type: String
         required: true
+      body:
+        type: String
+        required: true
+      post:
+        type: Post
+        call:
+          steps:
+            - query: post
+              args:
+                id: "{{.value.postId}}"
+  Album:
+    fields:
+      id:
+        type: Int
+        required: true
+      userId:
+        type: Int
+        required: true
+      title:
+        type: String
+        required: true
+      user:
+        type: User
+        call:
+          steps:
+            - query: user
+              args:
+                id: "{{.value.userId}}"
+      photos:
+        type: Photo
+        list: true
+        call:
+          steps:
+            - query: photos
+              args:
+                album: "{{.value.id}}"
+  Photo:
+    fields:
+      id:
+        type: Int
+        required: true
+      albumId:
+        type: Int
+        required: true
+      title:
+        type: String
+        required: true
+      url:
+        type: String
+        required: true
+      thumbnailUrl:
+        type: String
+        required: true
+      album:
+        type: Album
+        call:
+          steps:
+            - query: album
+              args:
+                id: "{{.value.albumId}}"
+  Todo:
+    fields:
+      id:
+        type: Int
+        required: true
+      userId:
+        type: Int
+        required: true
+      title:
+        type: String
+        required: true
+      completed:
+        type: Boolean
+        required: true
+      user:
+        type: User
+        call:
+          steps:
+            - query: user
+              args:
+                id: "{{.value.userId}}"
+  User:
+    fields:
       id:
         type: Int
         required: true
       name:
         type: String
         required: true
-      phone:
-        type: String
       username:
         type: String
         required: true
+      email:
+        type: String
+        required: true
+      address:
+        type: Address
+      phone:
+        type: String
       website:
         type: String
+      company:
+        type: Company
+      posts:
+        type: Post
+        list: true
+        call:
+          steps:
+            - query: posts
+              args:
+                user: "{{.value.id}}"
+      albums:
+        type: Album
+        list: true
+        call:
+          steps:
+            - query: albums
+              args:
+                user: "{{.value.id}}"
+      todos:
+        type: Todo
+        list: true
+        call:
+          steps:
+            - query: todos
+              args:
+                user: "{{.value.id}}"
+  Address:
+    fields:
+      street:
+        type: String
+      suite:
+        type: String
+      city:
+        type: String
+      zipcode:
+        type: String
+      geo:
+        type: Geo
+  Geo:
+    fields:
+      lat:
+        type: String
+      lng:
+        type: String
+  Company:
+    fields:
+      name:
+        type: String
+      catchPhrase:
+        type: String
+      bs:
+        type: String
+  PostInput:
+    fields:
+      userId:
+        type: Int
+        required: true
+      title:
+        type: String
+        required: true
+      body:
+        type: String
+        required: true
+  PartialPostInput:
+    fields:
+      userId:
+        type: Int
+      title:
+        type: String
+      body:
+        type: String
+  CommentInput:
+    fields:
+      postId:
+        type: Int
+        required: true
+      name:
+        type: String
+        required: true
+      email:
+        type: String
+        required: true
+      body:
+        type: String
+        required: true
+  AlbumInput:
+    fields:
+      userId:
+        type: Int
+        required: true
+      title:
+        type: String
+        required: true
+  PhotoInput:
+    fields:
+      albumId:
+        type: Int
+        required: true
+      title:
+        type: String
+        required: true
+      url:
+        type: String
+        required: true
+      thumbnailUrl:
+        type: String
+        required: true
+  TodoInput:
+    fields:
+      userId:
+        type: Int
+        required: true
+      title:
+        type: String
+        required: true
+      completed:
+        type: Boolean
+        required: true
+  UserInput:
+    fields:
+      name:
+        type: String
+        required: true
+      username:
+        type: String
+        required: true
+      email:
+        type: String
+        required: true
+      address:
+        type: AddressInput
+      phone:
+        type: String
+      website:
+        type: String
+      company:
+        type: CompanyInput
+  AddressInput:
+    fields:
+      street:
+        type: String
+      suite:
+        type: String
+      city:
+        type: String
+      zipcode:
+        type: String
+      geo:
+        type: GeoInput
+  GeoInput:
+    fields:
+      lat:
+        type: String
+      lng:
+        type: String
+  CompanyInput:
+    fields:
+      name:
+        type: String
+      catchPhrase:
+        type: String
+      bs:
+        type: String
+  ComplexQuery:
+    fields:
+      userWithPostsAndComments:
+        type: UserWithPostsAndComments
+        args:
+          userId:
+            type: Int
+            required: true
+        call:
+          steps:
+            - query: user
+              args:
+                id: "{{.args.userId}}"
+            - query: posts
+              args:
+                user: "{{.value.id}}"
+            - query: comments
+              args:
+                post: "{{.value.posts.0.id}}"
+  UserWithPostsAndComments:
+    fields:
+      user:
+        type: User
+      posts:
+        type: Post
+        list: true
+      comments:
+        type: Comment
+        list: true

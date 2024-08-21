@@ -1,28 +1,281 @@
+# Define the schema with upstream configuration and server settings
 schema
+  # Specify server configuration: Start GraphQL server at 0.0.0.0:8000
   @server(port: 8000)
-  @upstream(baseURL: "http://jsonplaceholder.typicode.com", httpCache: 42, batch: {delay: 100}) {
+  # Specify a base URL for all HTTP requests
+  @upstream(baseURL: "https://jsonplaceholder.typicode.com") {
   query: Query
+  mutation: Mutation
 }
 
+# Define the Query type with various fields
 type Query {
-  posts: [Post] @http(path: "/posts")
-  users: [User] @http(path: "/users")
+  # Fetch a post by ID
+  post(id: Int!): Post @http(path: "/posts/{{.args.id}}")
+  # Fetch all posts by a specific user
+  posts(user: Id): [Post] @http(path: "/posts?userId={{.args.user}}")
+  # Fetch a comment by ID
+  comment(id: Int!): Comment @http(path: "/comments/{{.args.id}}")
+  # Fetch all comments on a specific post
+  comments(post: Id): [Comment] @http(path: "/comments?postId={{.args.post}}")
+  # Fetch an album by ID
+  album(id: Int!): Album @http(path: "/albums/{{.args.id}}")
+  # Fetch all albums by a specific user
+  albums(user: Id): [Album] @http(path: "/albums?userId={{.args.user}}")
+  # Fetch a photo by ID
+  photo(id: Int!): Photo @http(path: "/photos/{{.args.id}}")
+  # Fetch all photos in a specific album
+  photos(album: Id): [Photo] @http(path: "/photos?albumId={{.args.album}}")
+  # Fetch a todo by ID
+  todo(id: Int!): Todo @http(path: "/todos/{{.args.id}}")
+  # Fetch all todos by a specific user
+  todos(user: Id): [Todo] @http(path: "/todos?userId={{.args.user}}")
+  # Fetch a user by ID
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
+  # Fetch all users
+  users: [User] @http(path: "/users")
 }
 
-type User {
-  id: Int!
-  name: String!
-  username: String!
-  email: String!
-  phone: String
-  website: String
+# Define the Mutation type with various fields for creating, updating, and deleting resources
+type Mutation {
+  # Create a new post
+  createPost(input: PostInput!): Post @http(method: "POST", path: "/posts", body: "{{.args.input}}")
+  # Update an existing post
+  updatePost(id: Int!, input: PostInput!): Post
+    @http(method: "PUT", path: "/posts/{{.args.id}}", body: "{{.args.input}}")
+  # Patch (partially update) an existing post
+  patchPost(id: Int!, input: PartialPostInput!): Post
+    @http(method: "PATCH", path: "/posts/{{.args.id}}", body: "{{.args.input}}")
+  # Delete a post
+  deletePost(id: Int!): Boolean @http(method: "DELETE", path: "/posts/{{.args.id}}")
+
+  # Create a new comment
+  createComment(input: CommentInput!): Comment @http(method: "POST", path: "/comments", body: "{{.args.input}}")
+  # Update an existing comment
+  updateComment(id: Int!, input: CommentInput!): Comment
+    @http(method: "PUT", path: "/comments/{{.args.id}}", body: "{{.args.input}}")
+  # Delete a comment
+  deleteComment(id: Int!): Boolean @http(method: "DELETE", path: "/comments/{{.args.id}}")
+
+  # Create a new album
+  createAlbum(input: AlbumInput!): Album @http(method: "POST", path: "/albums", body: "{{.args.input}}")
+  # Update an existing album
+  updateAlbum(id: Int!, input: AlbumInput!): Album
+    @http(method: "PUT", path: "/albums/{{.args.id}}", body: "{{.args.input}}")
+  # Delete an album
+  deleteAlbum(id: Int!): Boolean @http(method: "DELETE", path: "/albums/{{.args.id}}")
+
+  # Create a new photo
+  createPhoto(input: PhotoInput!): Photo @http(method: "POST", path: "/photos", body: "{{.args.input}}")
+  # Update an existing photo
+  updatePhoto(id: Int!, input: PhotoInput!): Photo
+    @http(method: "PUT", path: "/photos/{{.args.id}}", body: "{{.args.input}}")
+  # Delete a photo
+  deletePhoto(id: Int!): Boolean @http(method: "DELETE", path: "/photos/{{.args.id}}")
+
+  # Create a new todo
+  createTodo(input: TodoInput!): Todo @http(method: "POST", path: "/todos", body: "{{.args.input}}")
+  # Update an existing todo
+  updateTodo(id: Int!, input: TodoInput!): Todo
+    @http(method: "PUT", path: "/todos/{{.args.id}}", body: "{{.args.input}}")
+  # Delete a todo
+  deleteTodo(id: Int!): Boolean @http(method: "DELETE", path: "/todos/{{.args.id}}")
+
+  # Create a new user
+  createUser(input: UserInput!): User @http(method: "POST", path: "/users", body: "{{.args.input}}")
+  # Update an existing user
+  updateUser(id: Int!, input: UserInput!): User
+    @http(method: "PUT", path: "/users/{{.args.id}}", body: "{{.args.input}}")
+  # Delete a user
+  deleteUser(id: Int!): Boolean @http(method: "DELETE", path: "/users/{{.args.id}}")
 }
 
+# Define the Post type with its fields and related queries
 type Post {
   id: Int!
   userId: Int!
   title: String!
   body: String!
+  # Fetch the user who created the post
   user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+  # Fetch all comments on the post
+  comments: [Comment] @call(steps: [{query: "comments", args: {post: "{{.value.id}}"}}])
+}
+
+# Define the Comment type with its fields and related queries
+type Comment {
+  id: Int!
+  postId: Int!
+  name: String!
+  email: String!
+  body: String!
+  # Fetch the post to which the comment belongs
+  post: Post @call(steps: [{query: "post", args: {id: "{{.value.postId}}"}}])
+}
+
+# Define the Album type with its fields and related queries
+type Album {
+  id: Int!
+  userId: Int!
+  title: String!
+  # Fetch the user who created the album
+  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+  # Fetch all photos in the album
+  photos: [Photo] @call(steps: [{query: "photos", args: {album: "{{.value.id}}"}}])
+}
+
+# Define the Photo type with its fields and related queries
+type Photo {
+  id: Int!
+  albumId: Int!
+  title: String!
+  url: String!
+  thumbnailUrl: String!
+  # Fetch the album to which the photo belongs
+  album: Album @call(steps: [{query: "album", args: {id: "{{.value.albumId}}"}}])
+}
+
+# Define the Todo type with its fields and related queries
+type Todo {
+  id: Int!
+  userId: Int!
+  title: String!
+  completed: Boolean!
+  # Fetch the user who created the todo
+  user: User @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+}
+
+# Define the User type with its fields and related queries
+type User {
+  id: Int!
+  name: String!
+  username: String!
+  email: String!
+  address: Address
+  phone: String
+  website: String
+  company: Company
+  # Fetch all posts by the user
+  posts: [Post] @call(steps: [{query: "posts", args: {user: "{{.value.id}}"}}])
+  # Fetch all albums by the user
+  albums: [Album] @call(steps: [{query: "albums", args: {user: "{{.value.id}}"}}])
+  # Fetch all todos by the user
+  todos: [Todo] @call(steps: [{query: "todos", args: {user: "{{.value.id}}"}}])
+}
+
+# Define the Address type with its fields
+type Address {
+  street: String
+  suite: String
+  city: String
+  zipcode: String
+  geo: Geo
+}
+
+# Define the Geo type with its fields
+type Geo {
+  lat: String
+  lng: String
+}
+
+# Define the Company type with its fields
+type Company {
+  name: String
+  catchPhrase: String
+  bs: String
+}
+
+# Define the input type for creating a post
+input PostInput {
+  userId: Int!
+  title: String!
+  body: String!
+}
+
+# Define the input type for partially updating a post
+input PartialPostInput {
+  userId: Int
+  title: String
+  body: String
+}
+
+# Define the input type for creating a comment
+input CommentInput {
+  postId: Int!
+  name: String!
+  email: String!
+  body: String!
+}
+
+# Define the input type for creating an album
+input AlbumInput {
+  userId: Int!
+  title: String!
+}
+
+# Define the input type for creating a photo
+input PhotoInput {
+  albumId: Int!
+  title: String!
+  url: String!
+  thumbnailUrl: String!
+}
+
+# Define the input type for creating a todo
+input TodoInput {
+  userId: Int!
+  title: String!
+  completed: Boolean!
+}
+
+# Define the input type for creating a user
+input UserInput {
+  name: String!
+  username: String!
+  email: String!
+  address: AddressInput
+  phone: String
+  website: String
+  company: CompanyInput
+}
+
+# Define the input type for the address field
+input AddressInput {
+  street: String
+  suite: String
+  city: String
+  zipcode: String
+  geo: GeoInput
+}
+
+# Define the input type for the geo field
+input GeoInput {
+  lat: String
+  lng: String
+}
+
+# Define the input type for the company field
+input CompanyInput {
+  name: String
+  catchPhrase: String
+  bs: String
+}
+
+# Define a complex query type for fetching user data along with posts and comments
+type ComplexQuery {
+  userWithPostsAndComments(userId: Int!): UserWithPostsAndComments
+    @call(
+      steps: [
+        {query: "user", args: {id: "{{.args.userId}}"}}
+        {query: "posts", args: {user: "{{.value.id}}"}}
+        {query: "comments", args: {post: "{{.value.posts.0.id}}"}}
+      ]
+    )
+}
+
+# Define the UserWithPostsAndComments type with fields for user, posts, and comments
+type UserWithPostsAndComments {
+  user: User
+  posts: [Post]
+  comments: [Comment]
 }
