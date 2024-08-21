@@ -34,14 +34,16 @@ impl OperationTypeGenerator {
             let root_ty = TypeGenerator::new(name_generator)
                 .generate_types(&request_sample.req_body, &mut config);
             // add input type to field.
-            let arg_name = format!("{}Input", request_sample.field_name).to_case(Case::Camel);
-            if let Some(Resolver::Http(http)) = &mut field.resolver {
-                http.body = Some(format!("{{{{.args.{}}}}}", arg_name));
-                http.method = request_sample.method.to_owned();
+            if let Some(field_name) = &request_sample.field_name {
+                let arg_name = format!("{}Input", field_name).to_case(Case::Camel);
+                if let Some(Resolver::Http(http)) = &mut field.resolver {
+                    http.body = Some(format!("{{{{.args.{}}}}}", arg_name));
+                    http.method = request_sample.method.to_owned();
+                }
+                field
+                    .args
+                    .insert(arg_name, Arg { type_of: root_ty, ..Default::default() });
             }
-            field
-                .args
-                .insert(arg_name, Arg { type_of: root_ty, ..Default::default() });
         }
 
         // if type is already present, then append the new field to it else create one.
@@ -49,15 +51,14 @@ impl OperationTypeGenerator {
             .operation_type
             .to_string()
             .to_case(Case::Pascal);
-        if let Some(type_) = config.types.get_mut(req_op.as_str()) {
-            type_
-                .fields
-                .insert(request_sample.field_name.to_owned(), field);
-        } else {
-            let mut ty = Type::default();
-            ty.fields
-                .insert(request_sample.field_name.to_owned(), field);
-            config.types.insert(req_op.to_owned(), ty);
+        if let Some(field_name) = &request_sample.field_name {
+            if let Some(type_) = config.types.get_mut(req_op.as_str()) {
+                type_.fields.insert(field_name.to_owned(), field);
+            } else {
+                let mut ty = Type::default();
+                ty.fields.insert(field_name.to_owned(), field);
+                config.types.insert(req_op.to_owned(), ty);
+            }
         }
 
         Valid::succeed(config)
@@ -83,7 +84,7 @@ mod test {
             Method::GET,
             serde_json::Value::Null,
             serde_json::Value::Null,
-            "postComments",
+            Some("postComments"),
             GraphQLOperationType::Query,
         );
         let config = Config::default();
@@ -104,7 +105,7 @@ mod test {
             Method::GET,
             serde_json::Value::Null,
             serde_json::Value::Null,
-            "postComments",
+            Some("postComments"),
             GraphQLOperationType::Query,
         );
         let mut config = Config::default();
@@ -143,7 +144,7 @@ mod test {
             Method::POST,
             serde_json::from_str(body).unwrap(),
             serde_json::Value::Null,
-            "postComments",
+            Some("postComments"),
             GraphQLOperationType::Mutation,
         );
         let config = Config::default();

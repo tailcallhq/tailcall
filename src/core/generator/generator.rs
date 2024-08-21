@@ -32,7 +32,7 @@ pub enum Input {
         method: Method,
         req_body: Value,
         res_body: Value,
-        field_name: String,
+        field_name: Option<String>,
         is_mutation: bool,
     },
     Proto(ProtoMetadata),
@@ -120,7 +120,7 @@ impl Generator {
                         method.to_owned(),
                         req_body.to_owned(),
                         response.to_owned(),
-                        field_name,
+                        field_name.to_owned(),
                         operation_type.to_owned(),
                     );
                     config = config.merge_right(
@@ -257,7 +257,7 @@ pub mod test {
                 method: Method::GET,
                 req_body: serde_json::Value::Null,
                 res_body: parsed_content.response,
-                field_name: "f1".to_string(),
+                field_name: Some("f1".to_string()),
                 is_mutation: false,
             }])
             .transformers(vec![Box::new(Preset::default())])
@@ -292,7 +292,7 @@ pub mod test {
             method: Method::GET,
             req_body: serde_json::Value::Null,
             res_body: parsed_content.response,
-            field_name: "f1".to_string(),
+            field_name: Some("f1".to_string()),
             is_mutation: false,
         };
 
@@ -323,7 +323,7 @@ pub mod test {
                 method: Method::GET,
                 req_body: serde_json::Value::Null,
                 res_body: parsed_content.response,
-                field_name: field_name_generator.next(),
+                field_name: Some(field_name_generator.next()),
                 is_mutation: false,
             });
         }

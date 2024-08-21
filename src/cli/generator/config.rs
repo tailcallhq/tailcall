@@ -76,7 +76,8 @@ pub enum Source<Status = UnResolved> {
         body: Option<serde_json::Value>,
         #[serde(skip_serializing_if = "Option::is_none")]
         is_mutation: Option<bool>,
-        field_name: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        field_name: Option<String>,
     },
     Proto {
         src: Location<Status>,
@@ -349,7 +350,7 @@ mod tests {
                 src: location("https://example.com"),
                 headers: to_headers(headers),
                 body: None,
-                field_name: "test".to_string(),
+                field_name: Some("test".to_string()),
                 method: Some(Method::GET),
                 is_mutation: None,
             },

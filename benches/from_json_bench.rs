@@ -25,7 +25,7 @@ pub fn benchmark_from_json_method(c: &mut Criterion) {
         method: HTTPMethod::GET,
         req_body: serde_json::Value::Null,
         res_body: reqs[0].clone(),
-        field_name: "f1".to_string(),
+        field_name: Some("f1".to_string()),
         is_mutation: false,
     }];
 

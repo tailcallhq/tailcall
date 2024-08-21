@@ -18,7 +18,7 @@ pub struct RequestSample {
     pub method: Method,
     pub req_body: Value,
     pub res_body: Value,
-    pub field_name: String,
+    pub field_name: Option<String>,
     pub operation_type: GraphQLOperationType,
 }
 
@@ -29,7 +29,7 @@ impl RequestSample {
         method: Method,
         body: serde_json::Value,
         resp: Value,
-        field_name: T,
+        field_name: Option<T>,
         operation_type: GraphQLOperationType,
     ) -> Self {
         Self {
@@ -37,7 +37,7 @@ impl RequestSample {
             method,
             req_body: body,
             res_body: resp,
-            field_name: field_name.into(),
+            field_name: field_name.map(|f| f.into()),
             operation_type,
         }
     }
@@ -138,7 +138,7 @@ mod tests {
                 Method::GET,
                 serde_json::Value::Null,
                 response,
-                field_name_generator.next(),
+                Some(field_name_generator.next()),
                 GraphQLOperationType::Query,
             ));
         }
