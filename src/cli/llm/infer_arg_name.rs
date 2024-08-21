@@ -142,9 +142,7 @@ impl InferArgName {
                                 );
 
                                 // TODO: case where suggested names are already used, then extend
-                                // the base question with `suggest
-                                // different names, we have already used following
-                                // names: [names list]`
+                                // the base question
                                 break;
                             }
                             Err(e) => {
