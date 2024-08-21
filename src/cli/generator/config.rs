@@ -526,11 +526,8 @@ mod tests {
         }));
         let resolved_config = config.into_resolved("", reader_ctx).unwrap();
 
-        let actual = resolved_config.llm;
-        let expected = Some(LLMConfig {
-            model: Some("gpt-3.5-turbo".to_string()),
-            secret: Some(TemplateString::try_from(token).unwrap()),
-        });
+        let actual = resolved_config.secret;
+        let expected = TemplateString::from("eyJhbGciOiJIUzI1NiIsInR5");
 
         assert_eq!(actual, expected);
     }
