@@ -1,5 +1,5 @@
-mod call;
 mod apollo_federation;
+mod call;
 mod enum_alias;
 mod expr;
 mod graphql;
@@ -9,8 +9,8 @@ mod js;
 mod modify;
 mod protected;
 
-pub use call::*;
 pub use apollo_federation::*;
+pub use call::*;
 pub use enum_alias::*;
 pub use expr::*;
 pub use graphql::*;

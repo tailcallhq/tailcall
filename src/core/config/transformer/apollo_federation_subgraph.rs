@@ -1,26 +1,20 @@
-use std::{
-    borrow::Borrow,
-    collections::BTreeMap,
-    convert::identity,
-    fmt::{Display, Write},
-    ops::Deref,
-};
-
-use crate::core::{
-    config::{self, Arg, Config, Field, Grpc, Key, KeyValue, Resolver, Type, Union},
-    directive::DirectiveCodec,
-};
-use crate::core::{
-    config::{ApolloFederation, Http},
-    merge_right::MergeRight,
-};
-use crate::core::{
-    config::{Call, GraphQL},
-    valid::Valid,
-};
-use crate::core::{mustache::Segment, valid::Validator, Mustache, Transform};
+use std::borrow::Borrow;
+use std::collections::BTreeMap;
+use std::convert::identity;
+use std::fmt::{Display, Write};
+use std::ops::Deref;
 
 use tailcall_macros::MergeRight;
+
+use crate::core::config::{
+    self, ApolloFederation, Arg, Call, Config, Field, GraphQL, Grpc, Http, Key, KeyValue, Resolver,
+    Type, Union,
+};
+use crate::core::directive::DirectiveCodec;
+use crate::core::merge_right::MergeRight;
+use crate::core::mustache::Segment;
+use crate::core::valid::{Valid, Validator};
+use crate::core::{Mustache, Transform};
 
 const ENTITIES_FIELD_NAME: &str = "_entities";
 const SERVICE_FIELD_NAME: &str = "_service";
@@ -283,7 +277,7 @@ impl KeysExtractor {
         }
     }
 
-    fn parse_key_value_iter<'a, T: Borrow<KeyValue>>(
+    fn parse_key_value_iter<T: Borrow<KeyValue>>(
         it: impl Iterator<Item = T>,
     ) -> Valid<Keys, String> {
         let mut keys = Keys::new();
@@ -298,7 +292,7 @@ impl KeysExtractor {
         .map_to(keys)
     }
 
-    fn parse_key_value_iter_option<'a, T: Borrow<KeyValue>>(
+    fn parse_key_value_iter_option<T: Borrow<KeyValue>>(
         it: Option<impl Iterator<Item = T>>,
     ) -> Valid<Keys, String> {
         if let Some(it) = it {
@@ -311,7 +305,7 @@ impl KeysExtractor {
     fn parse_value(value: &serde_json::Value) -> Valid<Keys, String> {
         match value {
             serde_json::Value::String(s) => return Self::parse_str(s),
-            serde_json::Value::Array(v) => Valid::from_iter(v.iter(), |v| Self::parse_value(v)),
+            serde_json::Value::Array(v) => Valid::from_iter(v.iter(), Self::parse_value),
             serde_json::Value::Object(map) => Valid::from_iter(map.iter(), |(k, v)| {
                 Self::parse_str(k)
                     .zip(Self::parse_value(v))
@@ -376,12 +370,10 @@ mod tests {
         use insta::assert_debug_snapshot;
         use serde_json::json;
 
-        use crate::core::{
-            config::{Call, Expr, GraphQL, Grpc, Step, URLQuery},
-            http::Method,
-        };
-
-        use super::{config::Http, KeyValue, KeysExtractor, Resolver};
+        use super::config::Http;
+        use super::{KeyValue, KeysExtractor, Resolver};
+        use crate::core::config::{Call, Expr, GraphQL, Grpc, Step, URLQuery};
+        use crate::core::http::Method;
 
         #[test]
         fn test_non_value_template() {

@@ -29,7 +29,7 @@ pub enum IR {
     /// Apollo Federation _entities resolver
     EntityResolver(HashMap<String, IR>),
     /// Apollo Federation _service resolver
-    Service(String)
+    Service(String),
 }
 
 #[derive(Clone, Debug)]

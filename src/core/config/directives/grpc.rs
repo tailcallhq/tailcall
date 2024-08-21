@@ -1,8 +1,9 @@
-use crate::core::config::KeyValue;
-use crate::core::is_default;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
+
+use crate::core::config::KeyValue;
+use crate::core::is_default;
 
 #[derive(
     Serialize,

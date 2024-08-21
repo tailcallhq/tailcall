@@ -2,8 +2,8 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{spanned::Spanned, Index};
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::spanned::Spanned;
+use syn::{parse_macro_input, Data, DeriveInput, Fields, Index};
 
 const MERGE_RIGHT_FN: &str = "merge_right_fn";
 const MERGE_RIGHT: &str = "merge_right";

@@ -1,18 +1,17 @@
 use serde::{Deserialize, Serialize};
-use tailcall_macros::{DirectiveDefinition, InputDefinition};
 use serde_json::Value;
-
+use tailcall_macros::{DirectiveDefinition, InputDefinition};
 
 #[derive(
-  Serialize,
-  Deserialize,
-  Clone,
-  Debug,
-  PartialEq,
-  Eq,
-  schemars::JsonSchema,
-  DirectiveDefinition,
-  InputDefinition,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    schemars::JsonSchema,
+    DirectiveDefinition,
+    InputDefinition,
 )]
 #[directive_definition(locations = "FieldDefinition")]
 #[serde(deny_unknown_fields)]
@@ -20,5 +19,5 @@ use serde_json::Value;
 /// to a value. The expression can be a static value or built form a Mustache
 /// template. schema.
 pub struct Expr {
-  pub body: Value,
+    pub body: Value,
 }

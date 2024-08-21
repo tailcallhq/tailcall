@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::fmt::Write;
 
 use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
+use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{
-    ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver, Type,
+    ApolloFederation, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver, Type,
 };
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
-use crate::core::{blueprint::FieldDefinition, config::ApolloFederation};
 
 pub struct CompileEntityResolver<'a> {
     config_module: &'a ConfigModule,

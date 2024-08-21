@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
-use crate::core::{config::KeyValue, is_default};
 use tailcall_macros::{DirectiveDefinition, InputDefinition};
+
+use crate::core::config::KeyValue;
+use crate::core::is_default;
 
 #[derive(
     Serialize,

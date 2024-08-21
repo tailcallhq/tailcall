@@ -1,15 +1,15 @@
-mod federation;
-mod http;
-mod grpc;
-mod graphql;
 mod call;
 mod expr;
+mod federation;
+mod graphql;
+mod grpc;
+mod http;
 mod js;
 
+pub use call::*;
 pub use expr::*;
 pub use federation::*;
-pub use http::*;
-pub use grpc::*;
 pub use graphql::*;
-pub use call::*;
+pub use grpc::*;
+pub use http::*;
 pub use js::*;

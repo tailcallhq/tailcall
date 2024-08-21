@@ -1,9 +1,10 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use crate::core::is_default;
 use serde_json::Value;
 use tailcall_macros::DirectiveDefinition;
+
+use crate::core::is_default;
 
 ///
 /// Provides the ability to refer to a field defined in the root Query or
