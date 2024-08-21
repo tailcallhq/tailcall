@@ -13,7 +13,7 @@ use tailcall_macros::{DirectiveDefinition, InputDefinition};
     DirectiveDefinition,
     InputDefinition,
 )]
-#[directive_definition(locations = "FieldDefinition")]
+#[directive_definition(locations = "FieldDefinition, Object")]
 #[serde(deny_unknown_fields)]
 /// The `@expr` operators allows you to specify an expression that can evaluate
 /// to a value. The expression can be a static value or built form a Mustache

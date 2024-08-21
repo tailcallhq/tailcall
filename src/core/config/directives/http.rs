@@ -18,7 +18,7 @@ use crate::core::json::JsonSchema;
     DirectiveDefinition,
     InputDefinition,
 )]
-#[directive_definition(locations = "FieldDefinition")]
+#[directive_definition(locations = "FieldDefinition, Object")]
 #[serde(deny_unknown_fields)]
 /// The @http operator indicates that a field or node is backed by a REST API.
 ///

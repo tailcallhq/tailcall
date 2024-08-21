@@ -38,7 +38,7 @@ pub struct Step {
     schemars::JsonSchema,
     DirectiveDefinition,
 )]
-#[directive_definition(locations = "FieldDefinition")]
+#[directive_definition(locations = "FieldDefinition, Object")]
 pub struct Call {
     /// Steps are composed together to form a call.
     /// If you have multiple steps, the output of the previous step is passed as
