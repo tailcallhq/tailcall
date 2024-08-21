@@ -17,5 +17,5 @@ type Post @http(path: "/posts", query: [{key: "id", value: "{{.value.id}}"}], ba
   userId: Int!
   title: String!
   body: String!
-  user: User @expr(body: { id: "{{.value.userId}}" })
+  user: User @expr(body: {id: "{{.value.userId}}"})
 }

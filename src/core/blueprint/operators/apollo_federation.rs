@@ -2,9 +2,10 @@ use std::collections::HashMap;
 use std::fmt::Write;
 
 use super::{compile_call, compile_expr, compile_graphql, compile_grpc, compile_http, compile_js};
-use crate::core::{blueprint::FieldDefinition, config::Config};
+use crate::core::blueprint::FieldDefinition;
 use crate::core::config::{
-    ApolloFederation, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver, Type,
+    ApolloFederation, Config, ConfigModule, EntityResolver, Field, GraphQLOperationType, Resolver,
+    Type,
 };
 use crate::core::ir::model::IR;
 use crate::core::try_fold::TryFold;
@@ -81,7 +82,12 @@ pub fn compile_service(config: &ConfigModule) -> Valid<IR, String> {
 
     writeln!(sdl).ok();
     // Add tailcall specific definitions to the sdl output
-    writeln!(sdl, "{}", crate::core::document::print(Config::graphql_schema())).ok();
+    writeln!(
+        sdl,
+        "{}",
+        crate::core::document::print(Config::graphql_schema())
+    )
+    .ok();
     writeln!(sdl).ok();
     // Mark subgraph as Apollo federation v2 compatible according to [docs](https://www.apollographql.com/docs/apollo-server/using-federation/apollo-subgraph-setup/#2-opt-in-to-federation-2)
     // (borrowed from async_graphql)
