@@ -8,7 +8,7 @@ ChatRequest {
         ChatMessage {
             role: System,
             content: Text(
-                "Given the sample schema of a GraphQL type, suggest 5 meaningful names for it.\nThe name should be concise and preferably a single word.\n\nExample Input:\n{\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ],\n  \"referenced_at\": [\n    \"user\",\n    \"users\",\n    \"artist\"\n  ],\n  \"reference_count\": 3\n}\n\nExample Output:\n{\n  \"suggestions\": [\n    \"Person\",\n    \"Profile\",\n    \"Member\",\n    \"Individual\",\n    \"Contact\"\n  ]\n}\n\nEnsure the output is in valid JSON format.\n\nDo not add any additional text before or after the JSON.\n",
+                "Given the sample schema of a GraphQL type, suggest 5 meaningful names for it.\nThe name should be concise and preferably a single word.\n\nThe referenced_at contains the field names where this type is referenced and the reference_count is the number of times this type is referenced, use those as a context to generate the name\n\nExample Input:\n{\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ],\n  \"referenced_at\": [\n    \"user\",\n    \"users\",\n    \"artist\"\n  ],\n  \"reference_count\": 3\n}\n\nExample Output:\n{\n  \"suggestions\": [\n    \"Person\",\n    \"Profile\",\n    \"Member\",\n    \"Individual\",\n    \"Contact\"\n  ]\n}\n\nEnsure the output is in valid JSON format.\n\nDo not add any additional text before or after the JSON.\n",
             ),
             extra: None,
         },
