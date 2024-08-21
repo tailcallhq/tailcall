@@ -57,7 +57,7 @@ type News {
 }
 
 type NewsData {
-  news: [News]!
+  news: [News]
 }
 
 type Query {

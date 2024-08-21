@@ -15,10 +15,9 @@ impl PartialEq for TemplateString {
     }
 }
 
-impl TryFrom<&str> for TemplateString {
-    type Error = anyhow::Error;
-    fn try_from(value: &str) -> anyhow::Result<Self> {
-        Ok(Self(Mustache::parse(value)?))
+impl From<&str> for TemplateString {
+    fn from(value: &str) -> Self {
+        Self(Mustache::parse(value))
     }
 }
 
@@ -28,7 +27,7 @@ impl TemplateString {
     }
 
     pub fn parse(value: &str) -> anyhow::Result<Self> {
-        Ok(Self(Mustache::parse(value)?))
+        Ok(Self(Mustache::parse(value)))
     }
 
     pub fn resolve(&self, ctx: &impl PathString) -> Self {
@@ -52,7 +51,7 @@ impl<'de> Deserialize<'de> for TemplateString {
         D: Deserializer<'de>,
     {
         let template_string = String::deserialize(deserializer)?;
-        let mustache = Mustache::parse(&template_string).map_err(serde::de::Error::custom)?;
+        let mustache = Mustache::parse(&template_string);
 
         Ok(TemplateString(mustache))
     }
@@ -77,7 +76,7 @@ mod tests {
     #[test]
     fn test_from_str() {
         let template_str = "Hello, World!";
-        let template = TemplateString::try_from(template_str).unwrap();
+        let template = TemplateString::from(template_str);
         assert_eq!(template.0.to_string(), template_str);
     }
 
@@ -86,14 +85,14 @@ mod tests {
         let empty_template = TemplateString::default();
         assert!(empty_template.is_empty());
 
-        let non_empty_template = TemplateString::try_from("Hello").unwrap();
+        let non_empty_template = TemplateString::from("Hello");
         assert!(!non_empty_template.is_empty());
     }
 
     #[test]
     fn test_parse() {
         let actual = TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap();
-        let expected = Mustache::parse("{{.env.TAILCALL_SECRET}}").unwrap();
+        let expected = Mustache::parse("{{.env.TAILCALL_SECRET}}");
         assert_eq!(actual.0, expected);
     }
 
@@ -115,14 +114,14 @@ mod tests {
         let actual = TemplateString::parse("{{.env.TAILCALL_SECRET}}")
             .unwrap()
             .resolve(&ctx);
-        let expected = TemplateString::try_from("eyJhbGciOiJIUzI1NiIsInR5").unwrap();
+        let expected = TemplateString::from("eyJhbGciOiJIUzI1NiIsInR5");
 
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_serialize() {
-        let template = TemplateString::try_from("{{.env.TEST}}").unwrap();
+        let template = TemplateString::from("{{.env.TEST}}");
         let serialized = serde_json::to_string(&template).unwrap();
         assert_eq!(serialized, "\"{{env.TEST}}\"");
     }
@@ -133,7 +132,7 @@ mod tests {
         let template: TemplateString = serde_json::from_str(serialized).unwrap();
 
         let actual = template.0;
-        let expected = Mustache::parse("{{.env.TEST}}").unwrap();
+        let expected = Mustache::parse("{{.env.TEST}}");
 
         assert_eq!(actual, expected);
     }

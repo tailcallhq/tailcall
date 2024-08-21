@@ -25,7 +25,7 @@ input scalars__ItemInput {
 }
 
 type Query {
-  scalars__Example__Get(item: scalars__ItemInput!): scalars__Result! @grpc(body: "{{.args.item}}", method: "scalars.Example.Get")
+  scalars__Example__Get(item: scalars__ItemInput!): scalars__Result @grpc(body: "{{.args.item}}", method: "scalars.Example.Get")
 }
 
 type scalars__Item {

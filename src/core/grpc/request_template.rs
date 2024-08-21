@@ -218,10 +218,10 @@ mod tests {
     #[tokio::test]
     async fn request_with_empty_body() {
         let tmpl = RequestTemplate {
-            url: Mustache::parse("http://localhost:3000/").unwrap(),
+            url: Mustache::parse("http://localhost:3000/"),
             headers: vec![(
                 HeaderName::from_static("test-header"),
-                Mustache::parse("value").unwrap(),
+                Mustache::parse("value"),
             )],
             operation: get_protobuf_op().await,
             body: None,
@@ -255,11 +255,11 @@ mod tests {
     #[tokio::test]
     async fn request_with_body() {
         let tmpl = RequestTemplate {
-            url: Mustache::parse("http://localhost:3000/").unwrap(),
+            url: Mustache::parse("http://localhost:3000/"),
             headers: vec![],
             operation: get_protobuf_op().await,
             body: Some(RequestBody {
-                mustache: Some(Mustache::parse(r#"{ "name": "test" }"#).unwrap()),
+                mustache: Some(Mustache::parse(r#"{ "name": "test" }"#)),
                 value: Default::default(),
             }),
             operation_type: GraphQLOperationType::Query,
@@ -275,11 +275,11 @@ mod tests {
 
     async fn request_template_with_body(body_str: &str) -> RequestTemplate {
         RequestTemplate {
-            url: Mustache::parse("http://localhost:3000/").unwrap(),
+            url: Mustache::parse("http://localhost:3000/"),
             headers: vec![],
             operation: get_protobuf_op().await,
             body: Some(RequestBody {
-                mustache: Some(Mustache::parse(body_str).unwrap()),
+                mustache: Some(Mustache::parse(body_str)),
                 value: Default::default(),
             }),
             operation_type: GraphQLOperationType::Query,
