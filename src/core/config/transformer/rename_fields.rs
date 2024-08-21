@@ -6,8 +6,10 @@ use crate::core::generator::Input;
 use crate::core::valid::Valid;
 use crate::core::Transform;
 
+type SuggestedFieldName = String;
+
 /// A transformer that adds suggested field names to the input_samples
-pub struct RenameFields(HashMap<Url, Vec<String>>);
+pub struct RenameFields(HashMap<Url, Vec<SuggestedFieldName>>);
 
 impl RenameFields {
     pub fn new(suggested_names: HashMap<Url, Vec<String>>) -> Self {

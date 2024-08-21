@@ -4,9 +4,13 @@ use crate::core::config::{Config, Resolver};
 use crate::core::valid::Valid;
 use crate::core::Transform;
 
+type FieldName = String;
+type ExistingArgName = String;
+type SuggestedArgName = String;
+
 /// A transformer that renames existing args by replacing them with suggested
 /// names.
-pub struct RenameArgs(IndexMap<String, Vec<(String, String)>>);
+pub struct RenameArgs(IndexMap<FieldName, Vec<(ExistingArgName, SuggestedArgName)>>);
 
 impl RenameArgs {
     pub fn new<I: Iterator<Item = (S, Vec<(S, S)>)>, S: ToString>(suggested_names: I) -> Self {

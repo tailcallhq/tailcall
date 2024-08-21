@@ -2,11 +2,13 @@ use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use url::Url;
 
 use super::model::{gemini, groq};
 use super::{Error, Result, Wizard};
 use crate::core::generator::Input;
+use crate::core::Mustache;
 
 #[derive(Default)]
 pub struct InferFieldName {
@@ -38,7 +40,6 @@ impl TryInto<ChatRequest> for Question {
     type Error = Error;
 
     fn try_into(self) -> Result<ChatRequest> {
-        let content = serde_json::to_string(&self)?;
         let input1 = serde_json::to_string_pretty(&Question {
             field: (
                 "jsonplaceholder.typicode.com/posts".to_string(),
@@ -71,25 +72,21 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
+        let template_str = include_str!("prompts/infer_field_name.md");
+        let template = Mustache::parse(template_str);
+
+        let context = json!({
+            "input1": input1,
+            "output1": output1,
+            "input2": input2,
+            "output2": output2,
+        });
+
+        let rendered_prompt = template.render(&context);
+
         Ok(ChatRequest::new(vec![
-            ChatMessage::system(
-                "Given the http request url and method, suggest 5 meaningful field names for it that can be used as fields in a GraphQL query or mutation.",
-            ),
-            ChatMessage::system("The name should be concise and preferably a single word"),
-            ChatMessage::system("Example Input1:"),
-            ChatMessage::system(input1),
-            ChatMessage::system("Example Output1:"),
-            ChatMessage::system(output1),
-            ChatMessage::system("Ensure to verify if the url's endpoint carefully for field name generation"),
-            ChatMessage::system("Example Input2:"),
-            ChatMessage::system(input2),
-            ChatMessage::system("Example Output2:"),
-            ChatMessage::system(output2),
-            ChatMessage::system("Ensure the output is in valid JSON format".to_string()),
-            ChatMessage::system(
-                "Do not add any additional text before or after the json".to_string(),
-            ),
-            ChatMessage::user(content),
+            ChatMessage::system(rendered_prompt),
+            ChatMessage::user(serde_json::to_string(&self)?),
         ]))
     }
 }

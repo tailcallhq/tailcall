@@ -4,9 +4,12 @@ use crate::core::config::Config;
 use crate::core::valid::{Valid, Validator};
 use crate::core::Transform;
 
+type ExistingTypeName = String;
+type SuggestedTypeName = String;
+
 /// A transformer that renames existing types by replacing them with suggested
 /// names.
-pub struct RenameTypes(IndexMap<String, String>);
+pub struct RenameTypes(IndexMap<ExistingTypeName, SuggestedTypeName>);
 
 impl RenameTypes {
     pub fn new<I: Iterator<Item = (S, S)>, S: ToString>(suggested_names: I) -> Self {
