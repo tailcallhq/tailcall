@@ -4,7 +4,7 @@ use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::model::groq;
+use super::model::{gemini, groq};
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
 use crate::core::Mustache;
@@ -80,7 +80,7 @@ impl InferTypeName {
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let secret = self.secret.as_ref().map(|s| s.to_owned());
 
-        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
+        let wizard: Wizard<Question, Answer> = Wizard::new(gemini::GEMINI15_FLASH_LATEST, secret);
 
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
@@ -140,7 +140,7 @@ impl InferTypeName {
                                 delay
                             );
                             tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;
-                            delay *= std::cmp::min(delay * 2, 60);
+                            delay = std::cmp::min(delay * 2, 60);
                         }
                     }
                 }
