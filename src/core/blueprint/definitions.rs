@@ -4,7 +4,7 @@ use async_graphql_value::ConstValue;
 use regex::Regex;
 use union_resolver::update_union_resolver;
 
-use crate::core::blueprint::Type::ListType;
+use crate::core::blueprint::WrappingType::ListType;
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
@@ -64,8 +64,8 @@ pub fn to_interface_type_definition(definition: ObjectTypeDefinition) -> Valid<D
     }))
 }
 
-type InvalidPathHandler = dyn Fn(&str, &[String], &[String]) -> Valid<Type, String>;
-type PathResolverErrorHandler = dyn Fn(&str, &str, &str, &[String]) -> Valid<Type, String>;
+type InvalidPathHandler = dyn Fn(&str, &[String], &[String]) -> Valid<WrappingType, String>;
+type PathResolverErrorHandler = dyn Fn(&str, &str, &str, &[String]) -> Valid<WrappingType, String>;
 
 struct ProcessFieldWithinTypeContext<'a> {
     field: &'a config::Field,
@@ -91,7 +91,7 @@ struct ProcessPathContext<'a> {
     original_path: &'a [String],
 }
 
-fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Type, String> {
+fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<WrappingType, String> {
     let field = context.field;
     let field_name = context.field_name;
     let remaining_path = context.remaining_path;
@@ -174,7 +174,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Ty
 
 // Helper function to recursively process the path and return the corresponding
 // type
-fn process_path(context: ProcessPathContext) -> Valid<Type, String> {
+fn process_path(context: ProcessPathContext) -> Valid<WrappingType, String> {
     let path = context.path;
     let field = context.field;
     let type_info = context.type_info;
@@ -299,7 +299,7 @@ fn update_resolver_from_path(
         let resolver = IR::ContextPath(context.path.to_owned());
         if has_index {
             updated_base_field.of_type =
-                Type::NamedType { name: of_type.name().to_string(), non_null: false }
+                WrappingType::NamedType { name: of_type.name().to_string(), non_null: false }
         } else {
             updated_base_field.of_type = of_type;
         }
@@ -422,7 +422,7 @@ fn to_fields(
                 let invalid_path_handler = |field_name: &str,
                                             _added_field_path: &[String],
                                             original_path: &[String]|
-                 -> Valid<Type, String> {
+                 -> Valid<WrappingType, String> {
                     Valid::fail_with(
                         "Cannot add field".to_string(),
                         format!("Path [{}] does not exist", original_path.join(", ")),
@@ -433,8 +433,8 @@ fn to_fields(
                                                    field_type: &str,
                                                    field_name: &str,
                                                    original_path: &[String]|
-                 -> Valid<Type, String> {
-                    Valid::<Type, String>::fail_with(
+                 -> Valid<WrappingType, String> {
+                    Valid::<WrappingType, String>::fail_with(
                         "Cannot add field".to_string(),
                         format!(
                             "Path: [{}] contains resolver {} at [{}.{}]",

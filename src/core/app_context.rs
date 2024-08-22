@@ -6,7 +6,7 @@ use hyper::body::Bytes;
 
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
-use crate::core::blueprint::Type::ListType;
+use crate::core::blueprint::WrappingType::ListType;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
 use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;

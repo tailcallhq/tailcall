@@ -9,14 +9,14 @@ use futures_util::TryFutureExt;
 use strum::IntoEnumIterator;
 use tracing::Instrument;
 
-use crate::core::blueprint::{Blueprint, Definition, Type};
+use crate::core::blueprint::{Blueprint, Definition, WrappingType};
 use crate::core::http::RequestContext;
 use crate::core::ir::{EvalContext, ResolverContext, TypeName};
 use crate::core::scalar;
 
-fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
+fn to_type_ref(type_of: &WrappingType) -> dynamic::TypeRef {
     match type_of {
-        Type::NamedType { name, non_null } => {
+        WrappingType::NamedType { name, non_null } => {
             if *non_null {
                 dynamic::TypeRef::NonNull(Box::from(dynamic::TypeRef::Named(Cow::Owned(
                     name.clone(),
@@ -25,7 +25,7 @@ fn to_type_ref(type_of: &Type) -> dynamic::TypeRef {
                 dynamic::TypeRef::Named(Cow::Owned(name.clone()))
             }
         }
-        Type::ListType { of_type, non_null } => {
+        WrappingType::ListType { of_type, non_null } => {
             let inner = Box::new(to_type_ref(of_type));
             if *non_null {
                 dynamic::TypeRef::NonNull(Box::from(dynamic::TypeRef::List(inner)))

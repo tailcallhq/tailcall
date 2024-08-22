@@ -33,6 +33,7 @@ pub use upstream::*;
 
 use crate::core::config::{Arg, ConfigModule, Field};
 use crate::core::try_fold::TryFold;
+pub use crate::core::config::WrappingType;
 
 pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, String>;
 
@@ -79,7 +80,7 @@ impl TypeLike for Arg {
     }
 }
 
-pub(crate) fn to_type<T>(field: &T, override_non_null: Option<bool>) -> Type
+pub(crate) fn to_type<T>(field: &T, override_non_null: Option<bool>) -> WrappingType
 where
     T: TypeLike,
 {
@@ -93,14 +94,14 @@ where
     };
 
     if list {
-        Type::ListType {
-            of_type: Box::new(Type::NamedType {
+        WrappingType::ListType {
+            of_type: Box::new(WrappingType::NamedType {
                 name: name.to_string(),
                 non_null: list_type_required,
             }),
             non_null,
         }
     } else {
-        Type::NamedType { name: name.to_string(), non_null }
+        WrappingType::NamedType { name: name.to_string(), non_null }
     }
 }

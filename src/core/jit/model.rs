@@ -52,7 +52,7 @@ impl<V> FromIterator<(String, V)> for Variables<V> {
 pub struct Arg<Input> {
     pub id: ArgId,
     pub name: String,
-    pub type_of: crate::core::blueprint::Type,
+    pub type_of: crate::core::blueprint::WrappingType,
     pub value: Option<Input>,
     pub default_value: Option<Input>,
 }
@@ -110,7 +110,7 @@ pub struct Field<Extensions, Input> {
     pub id: FieldId,
     pub name: String,
     pub ir: Option<IR>,
-    pub type_of: crate::core::blueprint::Type,
+    pub type_of: crate::core::blueprint::WrappingType,
     /// Specifies the name of type used in condition to fetch that field
     /// The type could be anything from graphql type system:
     /// interface, type, union, input type.
