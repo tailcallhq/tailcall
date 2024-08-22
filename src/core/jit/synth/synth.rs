@@ -155,7 +155,7 @@ where
             } else {
                 Err(ValidationError::ScalarInvalid {
                     type_of: node.type_of.name().to_string(),
-                    path: node.name.to_string(),
+                    path: field_name.to_string(),
                 }
                 .into())
             }

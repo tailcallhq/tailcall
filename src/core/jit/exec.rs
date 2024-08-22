@@ -21,6 +21,7 @@ type SharedStore<Output, Error> = Arc<Mutex<Store<Result<TypedValue<Output>, Pos
 pub struct Executor<IRExec, Input> {
     ctx: RequestContext<Input>,
     exec: IRExec,
+    plan: OperationPlan<Input>,
 }
 
 impl<Input, Output, Exec> Executor<Exec, Input>
@@ -31,12 +32,12 @@ where
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
     pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { exec, ctx: RequestContext::new(plan) }
+        Self { exec, ctx: RequestContext::new(plan.clone()), plan }
     }
 
     pub async fn store(&self) -> Store<Result<TypedValue<Output>, Positioned<jit::Error>>> {
         let store = Arc::new(Mutex::new(Store::new()));
-        let mut ctx = ExecutorInner::new(store.clone(), &self.exec, &self.ctx);
+        let mut ctx = ExecutorInner::new(store.clone(), &self.exec, &self.ctx, self.plan.clone());
         ctx.init().await;
 
         let store = mem::replace(&mut *store.lock().unwrap(), Store::new());
@@ -55,6 +56,7 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
     store: SharedStore<Output, Error>,
     ir_exec: &'a Exec,
     request: &'a RequestContext<Input>,
+    plan: OperationPlan<Input>,
 }
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
@@ -67,13 +69,14 @@ where
         store: SharedStore<Output, Error>,
         ir_exec: &'a Exec,
         env: &'a RequestContext<Input>,
+        plan: OperationPlan<Input>,
     ) -> Self {
-        Self { store, ir_exec, request: env }
+        Self { store, ir_exec, request: env, plan }
     }
 
     async fn init(&mut self) {
         join_all(self.plan.as_nested().iter().map(|field| async {
-            let ctx = Context::new(&self.request, self.plan.is_query(), field);
+            let ctx = Context::new(field, self.request, self.plan.is_query());
             // TODO: with_args should be called on inside iter_field on any level, not only
             // for root fields
             self.execute(&ctx, DataPath::new()).await
