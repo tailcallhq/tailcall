@@ -10,7 +10,7 @@ type Query {
   posts: [Post] @http(path: "/posts")
   post: Post! @http(path: "/posts/12")
   foo: [Foo]! @http(path: "/foos")
-  fooInner: [Foo!] @http(path: "/foos-inner")
+  foosInner: [Foo!] @http(path: "/foos-inner")
 }
 
 type Foo {
