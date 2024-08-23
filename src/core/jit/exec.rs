@@ -162,7 +162,7 @@ where
             let default_obj = Output::object(Output::JsonObject::new());
             let value = ctx
                 .value()
-                .and_then(|v| v.get_key(field.name()))
+                .and_then(|v| v.get_key(&field.output_name))
                 // in case there is no value we still put some dumb empty value anyway
                 // to force execution of the nested fields even when parent object is not present.
                 // For async_graphql it's done by `fix_dangling_resolvers` fn that basically creates
