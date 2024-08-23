@@ -8,8 +8,8 @@ schema
 }
 
 type Query {
-# TODO: add test for args
   userGroups: [[User!]!]! @graphQL(name: "users")
+  addUsers(userNames: [[String!]!]!): Boolean @graphQL(name: "addUsers", args: [{ key: "userNames", value: "{{.args.userNames}}"}])
 }
 
 type User {
@@ -22,8 +22,7 @@ type User {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: {"query": "query { users { id name } }"}
-  expectedHits: 1
+    textBody: '{ "query": "query { users { id name } }" }'
   response:
     status: 200
     body:
@@ -41,6 +40,15 @@ type User {
               name: user-5
             - id: 6
               name: user-6
+- request:
+    method: POST
+    url: http://upstream/graphql
+    textBody: '{ "query": "query { addUsers(userNames: [[\\\"user-1\\\", \\\"user-2\\\"], [\\\"user-3\\\", \\\"user-4\\\"]])  }" }'
+  response:
+    status: 200
+    body:
+      data:
+        addUsers: true
 ```
 
 ```yml @test
@@ -54,6 +62,14 @@ type User {
           id
           name
         }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        addUsers(userNames: [["user-1", "user-2"], ["user-3", "user-4"]])
       }
 # Negative
 - method: POST

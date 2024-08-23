@@ -9,6 +9,7 @@ schema
 
 type Query {
   userGroups: [[User!]!]! @http(path: "/users")
+  addUsers(userNames: [[String!]!]!): Boolean @http(path: "/users", method: POST, body: "{{.args.userNames}}")
 }
 
 type User {
@@ -37,6 +38,20 @@ type User {
           name: user-5
         - id: 6
           name: user-6
+
+- request:
+    method: POST
+    url: http://upstream/users
+    body:
+      - - user-1
+        - user-2
+      - - user-3
+        - user-4
+  expectedHits: 1
+  response:
+    status: 200
+    body:
+      true
 ```
 
 ```yml @test
@@ -50,6 +65,14 @@ type User {
           id
           name
         }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        addUsers(userNames: [["user-1", "user-2"], ["user-3", "user-4"]])
       }
 # Negative
 - method: POST
