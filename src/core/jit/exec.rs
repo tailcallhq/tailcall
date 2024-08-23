@@ -21,7 +21,6 @@ type SharedStore<Output, Error> = Arc<Mutex<Store<Result<TypedValue<Output>, Pos
 pub struct Executor<IRExec, Input> {
     ctx: RequestContext<Input>,
     exec: IRExec,
-    plan: OperationPlan<Input>,
 }
 
 impl<Input, Output, Exec> Executor<Exec, Input>
@@ -32,12 +31,12 @@ where
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
     pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { exec, ctx: RequestContext::new(plan.clone()), plan }
+        Self { exec, ctx: RequestContext::new(plan.clone()) }
     }
 
     pub async fn store(&self) -> Store<Result<TypedValue<Output>, Positioned<jit::Error>>> {
         let store = Arc::new(Mutex::new(Store::new()));
-        let mut ctx = ExecutorInner::new(store.clone(), &self.exec, &self.ctx, self.plan.clone());
+        let mut ctx = ExecutorInner::new(store.clone(), &self.exec, &self.ctx);
         ctx.init().await;
 
         let store = mem::replace(&mut *store.lock().unwrap(), Store::new());
@@ -56,7 +55,6 @@ struct ExecutorInner<'a, Input, Output, Error, Exec> {
     store: SharedStore<Output, Error>,
     ir_exec: &'a Exec,
     request: &'a RequestContext<Input>,
-    plan: OperationPlan<Input>,
 }
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>
@@ -69,14 +67,13 @@ where
         store: SharedStore<Output, Error>,
         ir_exec: &'a Exec,
         env: &'a RequestContext<Input>,
-        plan: OperationPlan<Input>,
     ) -> Self {
-        Self { store, ir_exec, request: env, plan }
+        Self { store, ir_exec, request: env }
     }
 
     async fn init(&mut self) {
-        join_all(self.plan.as_nested().iter().map(|field| async {
-            let ctx = Context::new(field, self.request, self.plan.is_query());
+        join_all(self.request.plan().as_nested().iter().map(|field| async {
+            let ctx = Context::new(field, self.request);
             // TODO: with_args should be called on inside iter_field on any level, not only
             // for root fields
             self.execute(&ctx, DataPath::new()).await
@@ -142,6 +139,7 @@ where
         data_path: DataPath,
     ) -> Result<(), Error> {
         let field = ctx.field();
+
         if let Some(ir) = &field.ir {
             let result = self.ir_exec.execute(ir, ctx).await;
 

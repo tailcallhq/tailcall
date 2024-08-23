@@ -38,21 +38,10 @@ pub struct Context<'a, Input, Output> {
     // default values.
     field: &'a Field<Nested<Input>, Input>,
     request: &'a RequestContext<Input>,
-    is_query: bool,
 }
 impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
-    pub fn new(
-        field: &'a Field<Nested<Input>, Input>,
-        request: &'a RequestContext<Input>,
-        is_query: bool,
-    ) -> Self {
-        Self {
-            request,
-            value: None,
-            args: Self::build_args(field),
-            is_query,
-            field,
-        }
+    pub fn new(field: &'a Field<Nested<Input>, Input>, request: &'a RequestContext<Input>) -> Self {
+        Self { request, value: None, args: Self::build_args(field), field }
     }
 
     pub fn with_value_and_field(
@@ -63,7 +52,6 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
         Self {
             request: self.request,
             args: Self::build_args(field),
-            is_query: self.is_query,
             value: Some(value),
             field,
         }
@@ -146,7 +134,7 @@ mod test {
         let plan = setup("query {posts {id title}}").unwrap();
         let field = plan.as_nested();
         let env = RequestContext::new(plan.clone());
-        let ctx = Context::<ConstValue, ConstValue>::new(&field[0], &env, false);
+        let ctx = Context::<ConstValue, ConstValue>::new(&field[0], &env);
         let expected = <Context<_, _> as ResolverContextLike>::field(&ctx).unwrap();
         insta::assert_debug_snapshot!(expected);
     }
@@ -155,7 +143,7 @@ mod test {
     fn test_is_query() {
         let plan = setup("query {posts {id title}}").unwrap();
         let env = RequestContext::new(plan.clone());
-        let ctx = Context::new(&plan.as_nested()[0], &env, false);
+        let ctx = Context::new(&plan.as_nested()[0], &env);
         assert!(ctx.is_query());
     }
 }
