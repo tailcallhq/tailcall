@@ -1,7 +1,9 @@
-use lazy_static::lazy_static;
 use std::ops::Deref;
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
+use lazy_static::lazy_static;
+use tokio::runtime::Runtime;
 use tokio::sync::oneshot::{self};
 
 use super::http_1::start_http_1;
@@ -11,9 +13,6 @@ use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
 use crate::core::blueprint::{Blueprint, Http};
 use crate::core::config::ConfigModule;
-
-use std::sync::{Arc, Mutex};
-use tokio::runtime::Runtime;
 
 lazy_static! {
     pub static ref RUNTIME: Arc<Mutex<Option<Runtime>>> = Arc::new(Mutex::new(None));
