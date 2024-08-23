@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use notify::fsevent::FsEventWatcher;
 use notify::{Config, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::time::Instant;
 
@@ -102,7 +101,7 @@ async fn start_watch_server(file_paths: &[String], config_reader: ConfigReader) 
 async fn handle_watch_server(
     file_paths: &[String],
     config_reader: Arc<ConfigReader>,
-    watcher: &mut FsEventWatcher,
+    watcher: &mut RecommendedWatcher,
 ) -> Result<()> {
     if file_paths.len() == 1 {
         match config_reader.read_all(file_paths).await {
@@ -153,7 +152,7 @@ async fn handle_watch_server(
 async fn watch_linked_files(
     file_path: &str,
     config_module: ConfigModule,
-    watcher: &mut FsEventWatcher,
+    watcher: &mut RecommendedWatcher,
 ) {
     let links = config_module
         .links
