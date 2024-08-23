@@ -13,7 +13,9 @@ use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
 use crate::core::config::transformer::{AmbiguousType, TreeShake};
-use crate::core::config::{Arg, Config, Enum, Field, Grpc, Resolver, Type, Union, Variant};
+use crate::core::config::{
+    Arg, Config, Enum, Field, Grpc, Resolver, Type, Union, Variant, WrappingType,
+};
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
 
@@ -109,7 +111,7 @@ impl Context {
                 let mut field = field.clone();
 
                 // mark this field as required to force type-check on specific variant of oneof
-                field.required = true;
+                field.type_of = field.type_of.into_required();
 
                 // add new field specific to this variant of oneof field
                 new_type.fields.insert(field_name.clone(), field);
@@ -268,10 +270,12 @@ impl Context {
 
                 let mut cfg_field = Field::default();
 
-                let label = field.label();
-                cfg_field.list = matches!(label, Label::Repeated);
-                // required only applicable for proto2
-                cfg_field.required = matches!(label, Label::Required);
+                cfg_field.type_of = match field.label() {
+                    Label::Optional => cfg_field.type_of,
+                    // required only applicable for proto2
+                    Label::Required => cfg_field.type_of.into_required(),
+                    Label::Repeated => cfg_field.type_of.into_list(),
+                };
 
                 if let Some(type_name) = &field.type_name {
                     // check that current field is map.
@@ -279,22 +283,20 @@ impl Context {
                     // inside the nested type. It works only if we explore nested types
                     // before the current type
                     if self.map_types.contains(&type_name[1..]) {
-                        cfg_field.type_of = "JSON".to_string();
-                        // drop list option since it is not relevant
-                        // when using JSON representation
-                        cfg_field.list = false;
+                        // override type with single scalar
+                        cfg_field.type_of = "JSON".to_string().into();
                     } else {
                         // for non-primitive types
                         let type_of = graphql_type_from_ref(type_name)?
                             .into_object_type()
                             .to_string();
 
-                        cfg_field.type_of = type_of;
+                        cfg_field.type_of = cfg_field.type_of.with_type(type_of);
                     }
                 } else {
                     let type_of = convert_primitive_type(field.r#type().as_str_name());
 
-                    cfg_field.type_of = type_of;
+                    cfg_field.type_of = cfg_field.type_of.with_type(type_of);
                 }
 
                 let field_path =
@@ -344,9 +346,7 @@ impl Context {
                     let key = graphql_type.clone().into_field().to_string();
                     let type_of = graphql_type.into_object_type().to_string();
                     let val = Arg {
-                        type_of,
-                        list: false,
-                        required: true,
+                        type_of: WrappingType::from(type_of).into_required(),
                         /* Setting it not null by default. There's no way to infer this
                          * from proto file */
                         doc: None,
@@ -361,7 +361,7 @@ impl Context {
                 let output_ty = get_output_type(method.output_type())?
                     .into_object_type()
                     .to_string();
-                cfg_field.type_of = output_ty;
+                cfg_field.type_of = cfg_field.type_of.with_type(output_ty);
 
                 cfg_field.resolver = Some(Resolver::Grpc(Grpc {
                     base_url: None,

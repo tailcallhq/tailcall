@@ -84,6 +84,7 @@ struct ProcessPathContext<'a> {
     path: &'a [String],
     field: &'a config::Field,
     type_info: &'a config::Type,
+    // TODO: does it even used other than as false?
     is_required: bool,
     config_module: &'a ConfigModule,
     invalid_path_handler: &'a InvalidPathHandler,
@@ -91,7 +92,9 @@ struct ProcessPathContext<'a> {
     original_path: &'a [String],
 }
 
-fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<WrappingType, String> {
+fn process_field_within_type(
+    context: ProcessFieldWithinTypeContext,
+) -> Valid<WrappingType, String> {
     let field = context.field;
     let field_name = context.field_name;
     let remaining_path = context.remaining_path;
@@ -105,7 +108,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Wr
         if let Some(resolver) = &next_field.resolver {
             return path_resolver_error_handler(
                 &resolver.directive_name(),
-                &field.type_of,
+                field.type_of.name(),
                 field_name,
                 context.original_path,
             )
@@ -121,8 +124,8 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Wr
             }));
         }
 
-        let next_is_required = is_required && next_field.required;
-        if scalar::Scalar::is_predefined(&next_field.type_of) {
+        let next_is_required = is_required && !next_field.type_of.is_nullable();
+        if scalar::Scalar::is_predefined(next_field.type_of.name()) {
             return process_path(ProcessPathContext {
                 type_info,
                 config_module,
@@ -135,7 +138,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Wr
             });
         }
 
-        if let Some(next_type_info) = config_module.find_type(&next_field.type_of) {
+        if let Some(next_type_info) = config_module.find_type(next_field.type_of.name()) {
             return process_path(ProcessPathContext {
                 config_module,
                 invalid_path_handler,
@@ -147,7 +150,7 @@ fn process_field_within_type(context: ProcessFieldWithinTypeContext) -> Valid<Wr
                 original_path: context.original_path,
             })
             .and_then(|of_type| {
-                if next_field.list {
+                if next_field.type_of.is_list() {
                     Valid::succeed(ListType { of_type: Box::new(of_type), non_null: is_required })
                 } else {
                     Valid::succeed(of_type)
@@ -185,7 +188,8 @@ fn process_path(context: ProcessPathContext) -> Valid<WrappingType, String> {
     if let Some((field_name, remaining_path)) = path.split_first() {
         if field_name.parse::<usize>().is_ok() {
             let mut modified_field = field.clone();
-            modified_field.list = false;
+            // TODO: does it required?
+            modified_field.type_of = modified_field.type_of.into_single();
             return process_path(ProcessPathContext {
                 config_module,
                 type_info,
@@ -201,7 +205,7 @@ fn process_path(context: ProcessPathContext) -> Valid<WrappingType, String> {
             .fields
             .get(field_name)
             .map(|_| type_info)
-            .or_else(|| config_module.find_type(&field.type_of));
+            .or_else(|| config_module.find_type(field.type_of.name()));
 
         if let Some(type_info) = target_type_info {
             return process_field_within_type(ProcessFieldWithinTypeContext {
@@ -219,7 +223,11 @@ fn process_path(context: ProcessPathContext) -> Valid<WrappingType, String> {
         return invalid_path_handler(field_name, path, context.original_path);
     }
 
-    Valid::succeed(to_type(field, Some(is_required)))
+    Valid::succeed(if is_required {
+        field.type_of.clone().into_required()
+    } else {
+        field.type_of.clone().into_nullable()
+    })
 }
 
 fn to_enum_type_definition((name, eu): (&String, &Enum)) -> Definition {
@@ -264,7 +272,7 @@ fn update_args<'a>(
                 Valid::succeed(InputFieldDefinition {
                     name: name.clone(),
                     description: arg.doc.clone(),
-                    of_type: to_type(arg, None),
+                    of_type: arg.type_of.clone(),
                     default_value: arg.default_value.clone(),
                 })
             })
@@ -272,7 +280,7 @@ fn update_args<'a>(
                 name: name.to_string(),
                 description: field.doc.clone(),
                 args,
-                of_type: to_type(*field, None),
+                of_type: field.type_of.clone(),
                 directives: Vec::new(),
                 resolver: None,
                 default_value: field.default_value.clone(),
@@ -281,7 +289,7 @@ fn update_args<'a>(
     )
 }
 
-fn item_is_numberic(list: &[String]) -> bool {
+fn item_is_numeric(list: &[String]) -> bool {
     list.iter().any(|s| {
         let re = Regex::new(r"^\d+$").unwrap();
         re.is_match(s)
@@ -292,7 +300,7 @@ fn update_resolver_from_path(
     context: &ProcessPathContext,
     base_field: blueprint::FieldDefinition,
 ) -> Valid<blueprint::FieldDefinition, String> {
-    let has_index = item_is_numberic(context.path);
+    let has_index = item_is_numeric(context.path);
 
     process_path(context.clone()).and_then(|of_type| {
         let mut updated_base_field = base_field;
@@ -352,7 +360,7 @@ pub fn update_cache_resolvers<'a>(
 }
 
 fn validate_field_type_exist(config: &Config, field: &Field) -> Valid<(), String> {
-    let field_type = &field.type_of;
+    let field_type = field.type_of.name();
     if !scalar::Scalar::is_predefined(field_type) && !config.contains(field_type) {
         Valid::fail(format!("Undeclared type '{field_type}' was found"))
     } else {

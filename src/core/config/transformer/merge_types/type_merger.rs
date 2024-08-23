@@ -112,17 +112,23 @@ impl TypeMerger {
         for type_info in config.types.values_mut() {
             for actual_field in type_info.fields.values_mut() {
                 if let Some(merged_into_type_name) =
-                    type_to_merge_type_mapping.get(actual_field.type_of.as_str())
+                    type_to_merge_type_mapping.get(actual_field.type_of.name())
                 {
-                    actual_field.type_of = merged_into_type_name.to_string();
+                    actual_field.type_of = actual_field
+                        .type_of
+                        .clone()
+                        .with_type(merged_into_type_name.to_string());
                 }
 
                 // make the changes in the input arguments as well.
                 for arg_ in actual_field.args.values_mut() {
                     if let Some(merge_into_type_name) =
-                        type_to_merge_type_mapping.get(arg_.type_of.as_str())
+                        type_to_merge_type_mapping.get(arg_.type_of.name())
                     {
-                        arg_.type_of = merge_into_type_name.to_string();
+                        arg_.type_of = arg_
+                            .type_of
+                            .clone()
+                            .with_type(merge_into_type_name.to_owned());
                     }
                 }
             }
@@ -211,9 +217,9 @@ mod test {
 
     #[test]
     fn test_cyclic_merge_case() -> anyhow::Result<()> {
-        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
-        let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };
+        let str_field = Field { type_of: "String".to_owned().into(), ..Default::default() };
+        let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
+        let bool_field = Field { type_of: "Boolean".to_owned().into(), ..Default::default() };
 
         let mut ty1 = Type::default();
         ty1.fields.insert("body".to_string(), str_field.clone());
@@ -225,7 +231,7 @@ mod test {
         let mut ty2 = Type::default();
         ty2.fields.insert(
             "t1".to_string(),
-            Field { type_of: "T1".to_string(), ..Default::default() },
+            Field { type_of: "T1".to_string().into(), ..Default::default() },
         );
         ty2.fields
             .insert("is_verified".to_string(), bool_field.clone());
@@ -240,11 +246,11 @@ mod test {
         let mut q_type = Type::default();
         q_type.fields.insert(
             "q1".to_string(),
-            Field { type_of: "T1".to_string(), ..Default::default() },
+            Field { type_of: "T1".to_string().into(), ..Default::default() },
         );
         q_type.fields.insert(
             "q2".to_string(),
-            Field { type_of: "T2".to_string(), ..Default::default() },
+            Field { type_of: "T2".to_string().into(), ..Default::default() },
         );
 
         config.types.insert("Query".to_owned(), q_type);
@@ -259,11 +265,11 @@ mod test {
 
     #[test]
     fn test_type_merger() -> anyhow::Result<()> {
-        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
-        let bool_field = Field { type_of: "Boolean".to_owned(), ..Default::default() };
-        let float_field = Field { type_of: "Float".to_owned(), ..Default::default() };
-        let id_field = Field { type_of: "ID".to_owned(), ..Default::default() };
+        let str_field = Field { type_of: "String".to_owned().into(), ..Default::default() };
+        let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
+        let bool_field = Field { type_of: "Boolean".to_owned().into(), ..Default::default() };
+        let float_field = Field { type_of: "Float".to_owned().into(), ..Default::default() };
+        let id_field = Field { type_of: "ID".to_owned().into(), ..Default::default() };
 
         let mut ty = Type::default();
         ty.fields.insert("f1".to_string(), str_field.clone());
@@ -281,19 +287,19 @@ mod test {
         let mut q_type = Type::default();
         q_type.fields.insert(
             "q1".to_string(),
-            Field { type_of: "T1".to_string(), ..Default::default() },
+            Field { type_of: "T1".to_string().into(), ..Default::default() },
         );
         q_type.fields.insert(
             "q2".to_string(),
-            Field { type_of: "T2".to_string(), ..Default::default() },
+            Field { type_of: "T2".to_string().into(), ..Default::default() },
         );
         q_type.fields.insert(
             "q3".to_string(),
-            Field { type_of: "T3".to_string(), ..Default::default() },
+            Field { type_of: "T3".to_string().into(), ..Default::default() },
         );
         q_type.fields.insert(
             "q4".to_string(),
-            Field { type_of: "T4".to_string(), ..Default::default() },
+            Field { type_of: "T4".to_string().into(), ..Default::default() },
         );
 
         config.types.insert("Query".to_owned(), q_type);
@@ -334,8 +340,8 @@ mod test {
 
     #[test]
     fn test_fail_when_scalar_field_not_match() {
-        let str_field = Field { type_of: "String".to_owned(), ..Default::default() };
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+        let str_field = Field { type_of: "String".to_owned().into(), ..Default::default() };
+        let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
 
         let mut ty1 = Type::default();
         ty1.fields.insert("a".to_string(), int_field.clone());
@@ -357,7 +363,7 @@ mod test {
 
     #[test]
     fn test_interface_types() {
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+        let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
 
         let mut ty1 = Type::default();
         ty1.fields.insert("a".to_string(), int_field.clone());

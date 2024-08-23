@@ -1,4 +1,4 @@
-use super::{to_type, FieldDefinition};
+use super::FieldDefinition;
 use crate::core::config::{self, Config};
 use crate::core::ir::model::{IO, IR};
 use crate::core::scalar;
@@ -25,7 +25,7 @@ impl<'a> MustachePartsValidator<'a> {
                     parts[0..parts.len() - len + 1].join(".").as_str()
                 )
             })?;
-            let val_type = to_type(field, None);
+            let val_type = &field.type_of;
 
             if !is_query && val_type.is_nullable() {
                 return Err(format!("value '{}' is a nullable type", item.as_str()));
@@ -37,7 +37,7 @@ impl<'a> MustachePartsValidator<'a> {
 
             type_of = self
                 .config
-                .find_type(&field.type_of)
+                .find_type(val_type.name())
                 .ok_or_else(|| format!("no type '{}' found", parts.join(".").as_str()))?;
 
             len -= 1;
@@ -181,7 +181,7 @@ impl FieldDefinition {
 mod test {
     use super::MustachePartsValidator;
     use crate::core::blueprint::{FieldDefinition, InputFieldDefinition};
-    use crate::core::config::{Config, Field, Type};
+    use crate::core::config::{Config, Field, Type, WrappingType};
     use crate::core::valid::Validator;
 
     fn initialize_test_config_and_field() -> (Config, FieldDefinition) {
@@ -190,7 +190,10 @@ mod test {
         let mut t1_type = Type::default();
         t1_type.fields.insert(
             "numbers".to_owned(),
-            Field { type_of: "Int".to_owned(), list: true, ..Default::default() },
+            Field {
+                type_of: WrappingType::from("Int".to_owned()).into_list(),
+                ..Default::default()
+            },
         );
         config.types.insert("T1".to_string(), t1_type);
 

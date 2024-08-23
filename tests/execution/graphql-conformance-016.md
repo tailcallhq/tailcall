@@ -1,10 +1,4 @@
----
-skip: true
----
-
 # List of lists.
-
-TODO: Skipped because Tailcall cannot extract a list of lists.
 
 ```graphql @config
 schema
@@ -14,6 +8,7 @@ schema
 }
 
 type Query {
+# TODO: add test for args
   userGroups: [[User!]!]! @graphQL(name: "users")
 }
 
@@ -33,7 +28,7 @@ type User {
     status: 200
     body:
       data:
-        userGroups:
+        users:
           - - id: 1
               name: user-1
             - id: 2

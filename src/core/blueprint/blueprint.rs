@@ -9,7 +9,8 @@ use serde_json::Value;
 
 use super::telemetry::Telemetry;
 use super::{GlobalTimeout, Index};
-use crate::core::{blueprint::{Server, Upstream}, config::WrappingType};
+use crate::core::blueprint::{Server, Upstream};
+use crate::core::config::WrappingType;
 use crate::core::ir::model::IR;
 use crate::core::scalar;
 use crate::core::schema_extension::SchemaExtension;

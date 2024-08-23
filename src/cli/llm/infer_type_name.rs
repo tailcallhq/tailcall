@@ -98,7 +98,7 @@ impl InferTypeName {
                 fields: type_
                     .fields
                     .iter()
-                    .map(|(k, v)| (k.clone(), v.type_of.clone()))
+                    .map(|(k, v)| (k.clone(), v.type_of.name().to_owned()))
                     .collect(),
             };
 

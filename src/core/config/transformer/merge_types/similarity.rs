@@ -57,14 +57,14 @@ impl<'a> Similarity<'a> {
 
             for (field_name_1, field_1) in type_1.fields.iter() {
                 if let Some(field_2) = type_2.fields.get(field_name_1) {
-                    let field_1_type_of = field_1.type_of.to_owned();
-                    let field_2_type_of = field_2.type_of.to_owned();
+                    let field_1_type_of = field_1.type_of.name();
+                    let field_2_type_of = field_2.type_of.name();
 
-                    if config.is_scalar(&field_1_type_of) && config.is_scalar(&field_2_type_of) {
+                    if config.is_scalar(field_1_type_of) && config.is_scalar(field_2_type_of) {
                         // if field type_of is scalar and they don't match then we can't merge
                         // types.
                         if field_1_type_of == field_2_type_of {
-                            if field_1.list == field_2.list {
+                            if field_1.type_of.is_list() == field_2.type_of.is_list() {
                                 same_field_count += 1;
                             } else {
                                 return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
@@ -78,16 +78,16 @@ impl<'a> Similarity<'a> {
                     } else if field_1_type_of == field_2_type_of {
                         // in order to consider the fields to be exactly same.
                         // it's output type must match (we can ignore the required bounds).
-                        if field_1.list == field_2.list {
+                        if field_1.type_of.is_list() == field_2.type_of.is_list() {
                             // if they're of both of list type then they're probably of same type.
                             same_field_count += 1;
                         } else {
                             // If the list properties don't match, we cannot merge these types.
                             return Valid::fail("Type merge failed: The fields have different list types and cannot be merged.".to_string());
                         }
-                    } else if let Some(type_1) = config.types.get(field_1_type_of.as_str()) {
-                        if let Some(type_2) = config.types.get(field_2_type_of.as_str()) {
-                            if visited_type.contains(&field_1_type_of, &field_2_type_of) {
+                    } else if let Some(type_1) = config.types.get(field_1_type_of) {
+                        if let Some(type_2) = config.types.get(field_2_type_of) {
+                            if visited_type.contains(field_1_type_of, field_2_type_of) {
                                 // it's cyclic type, return true as they're the same.
                                 return Valid::succeed(true);
                             }
@@ -97,8 +97,8 @@ impl<'a> Similarity<'a> {
                             let type_info = SimilarityTypeInfo {
                                 type_1,
                                 type_2,
-                                type_1_name: field_1_type_of.as_str(),
-                                type_2_name: field_2_type_of.as_str(),
+                                type_1_name: field_1_type_of,
+                                type_2_name: field_2_type_of,
                             };
 
                             let is_nested_type_similar =
@@ -133,7 +133,7 @@ impl<'a> Similarity<'a> {
 #[cfg(test)]
 mod test {
     use super::Similarity;
-    use crate::core::config::{Config, Field, Type};
+    use crate::core::config::{Config, Field, Type, WrappingType};
     use crate::core::valid::Validator;
 
     #[test]
@@ -141,49 +141,49 @@ mod test {
         let mut foo1 = Type::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Field { type_of: "Int".to_owned().into(), ..Default::default() },
         );
         foo1.fields.insert(
             "b".to_owned(),
-            Field { type_of: "String".to_owned(), ..Default::default() },
+            Field { type_of: "String".to_owned().into(), ..Default::default() },
         );
         foo1.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            Field { type_of: "Bar1".to_owned().into(), ..Default::default() },
         );
 
         let mut foo2 = Type::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Field { type_of: "Int".to_owned().into(), ..Default::default() },
         );
         foo2.fields.insert(
             "b".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
+            Field { type_of: "Float".to_owned().into(), ..Default::default() },
         );
         foo2.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            Field { type_of: "Bar2".to_owned().into(), ..Default::default() },
         );
 
         let mut bar1 = Type::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Field { type_of: "Int".to_owned().into(), ..Default::default() },
         );
         bar1.fields.insert(
             "c".to_owned(),
-            Field { type_of: "Float".to_owned(), ..Default::default() },
+            Field { type_of: "Float".to_owned().into(), ..Default::default() },
         );
 
         let mut bar2 = Type::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Field { type_of: "Int".to_owned().into(), ..Default::default() },
         );
         bar2.fields.insert(
             "c".to_owned(),
-            Field { type_of: "String".to_owned(), ..Default::default() },
+            Field { type_of: "String".to_owned().into(), ..Default::default() },
         );
 
         let mut cfg: Config = Config::default();
@@ -205,25 +205,25 @@ mod test {
         let mut foo1 = Type::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            Field { type_of: "Bar1".to_owned().into(), ..Default::default() },
         );
 
         let mut foo2 = Type::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            Field { type_of: "Bar2".to_owned().into(), ..Default::default() },
         );
 
         let mut bar1 = Type::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Foo1".to_owned(), ..Default::default() },
+            Field { type_of: "Foo1".to_owned().into(), ..Default::default() },
         );
 
         let mut bar2 = Type::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Foo2".to_owned(), ..Default::default() },
+            Field { type_of: "Foo2".to_owned().into(), ..Default::default() },
         );
 
         let mut cfg: Config = Config::default();
@@ -246,36 +246,36 @@ mod test {
         let mut foo1 = Type::default();
         foo1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar1".to_owned(), ..Default::default() },
+            Field { type_of: "Bar1".to_owned().into(), ..Default::default() },
         );
 
         let mut foo2 = Type::default();
         foo2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Bar2".to_owned(), ..Default::default() },
+            Field { type_of: "Bar2".to_owned().into(), ..Default::default() },
         );
 
         let mut bar1 = Type::default();
         bar1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Far1".to_owned(), ..Default::default() },
+            Field { type_of: "Far1".to_owned().into(), ..Default::default() },
         );
 
         let mut bar2 = Type::default();
         bar2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Far2".to_owned(), ..Default::default() },
+            Field { type_of: "Far2".to_owned().into(), ..Default::default() },
         );
 
         let mut far1 = Type::default();
         far1.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Field { type_of: "Int".to_owned().into(), ..Default::default() },
         );
         let mut far2 = Type::default();
         far2.fields.insert(
             "a".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Field { type_of: "Int".to_owned().into(), ..Default::default() },
         );
 
         let mut cfg: Config = Config::default();
@@ -298,12 +298,11 @@ mod test {
     #[test]
     fn test_required_and_optional_fields() {
         let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            required: true,
+            type_of: WrappingType::from("Int".to_owned()).into_required(),
             ..Default::default()
         };
 
-        let optional_int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
+        let optional_int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
 
         let mut ty1 = Type::default();
         ty1.fields
@@ -335,14 +334,16 @@ mod test {
     #[test]
     fn test_required_list_of_optional_int_vs_optional_list() {
         let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            required: true,
+            type_of: WrappingType::from("Int".to_owned())
+                .into_list()
+                .into_required(),
             ..Default::default()
         };
 
-        let optional_int_field =
-            Field { type_of: "Int".to_owned(), list: true, ..Default::default() };
+        let optional_int_field = Field {
+            type_of: WrappingType::from("Int".to_owned()).into_list(),
+            ..Default::default()
+        };
 
         let mut ty1 = Type::default();
         ty1.fields
@@ -366,16 +367,16 @@ mod test {
     #[test]
     fn test_list_of_required_int_vs_required_list() {
         let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            list_type_required: true,
+            type_of: WrappingType::from("Int".to_owned())
+                .into_required()
+                .into_list(),
             ..Default::default()
         };
 
         let optional_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            required: true,
+            type_of: WrappingType::from("Int".to_owned())
+                .into_required()
+                .into_list(),
             ..Default::default()
         };
 
@@ -401,9 +402,9 @@ mod test {
     #[test]
     fn test_list_of_required_int_vs_list_of_required_int() {
         let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            list_type_required: true,
+            type_of: WrappingType::from("Int".to_owned())
+                .into_required()
+                .into_list(),
             ..Default::default()
         };
 
@@ -429,9 +430,9 @@ mod test {
     #[test]
     fn test_required_list_vs_required_list() {
         let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            required: true,
+            type_of: WrappingType::from("Int".to_owned())
+                .into_list()
+                .into_required(),
             ..Default::default()
         };
 
@@ -457,10 +458,10 @@ mod test {
     #[test]
     fn test_required_list_of_required_int_vs_required_list_of_required_int() {
         let required_int_field = Field {
-            type_of: "Int".to_owned(),
-            list: true,
-            required: true,
-            list_type_required: true,
+            type_of: WrappingType::from("Int".to_owned())
+                .into_required()
+                .into_list()
+                .into_required(),
             ..Default::default()
         };
 
@@ -486,8 +487,11 @@ mod test {
     #[test]
     fn test_merge_incompatible_list_and_non_list_fields() {
         // Define fields
-        let int_field = Field { type_of: "Int".to_owned(), ..Default::default() };
-        let list_int_field = Field { type_of: "Int".to_owned(), list: true, ..Default::default() };
+        let int_field = Field { type_of: "Int".to_owned().into(), ..Default::default() };
+        let list_int_field = Field {
+            type_of: WrappingType::from("Int".to_owned()).into_list(),
+            ..Default::default()
+        };
 
         // Define types Foo and Bar
         let mut foo = Type::default();

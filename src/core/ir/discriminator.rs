@@ -124,7 +124,7 @@ impl Discriminator {
                 info.presented_in |= repr;
 
                 // And information if it is required in this type.
-                if field.required {
+                if !field.type_of.is_nullable() {
                     info.required_in |= repr;
                 }
             }
@@ -345,7 +345,7 @@ mod tests {
     use test_log::test;
 
     use super::Discriminator;
-    use crate::core::config::{Field, Type};
+    use crate::core::config::{Field, Type, WrappingType};
     use crate::core::ir::discriminator::TypeName;
     use crate::core::valid::Validator;
 
@@ -396,10 +396,20 @@ mod tests {
 
     #[test]
     fn test_single_distinct_field_required() {
-        let foo =
-            Type::default().fields(vec![("foo", Field { required: true, ..Field::default() })]);
-        let bar =
-            Type::default().fields(vec![("bar", Field { required: true, ..Field::default() })]);
+        let foo = Type::default().fields(vec![(
+            "foo",
+            Field {
+                type_of: WrappingType::default().into_required(),
+                ..Field::default()
+            },
+        )]);
+        let bar = Type::default().fields(vec![(
+            "bar",
+            Field {
+                type_of: WrappingType::default().into_required(),
+                ..Field::default()
+            },
+        )]);
         let types = vec![("Foo", &foo), ("Bar", &bar)];
 
         let discriminator = Discriminator::new("Test", &types).to_result().unwrap();
@@ -444,19 +454,73 @@ mod tests {
     #[test]
     fn test_multiple_distinct_field_required() {
         let a = Type::default().fields(vec![
-            ("a", Field { required: true, ..Field::default() }),
-            ("ab", Field { required: true, ..Field::default() }),
-            ("abab", Field { required: true, ..Field::default() }),
+            (
+                "a",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
+            (
+                "ab",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
+            (
+                "abab",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let b = Type::default().fields(vec![
-            ("b", Field { required: true, ..Field::default() }),
-            ("ab", Field { required: true, ..Field::default() }),
-            ("abab", Field { required: true, ..Field::default() }),
-            ("ac", Field { required: true, ..Field::default() }),
+            (
+                "b",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
+            (
+                "ab",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
+            (
+                "abab",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
+            (
+                "ac",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let c = Type::default().fields(vec![
-            ("c", Field { required: true, ..Field::default() }),
-            ("ac", Field { required: true, ..Field::default() }),
+            (
+                "c",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
+            (
+                "ac",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let types = vec![("A", &a), ("B", &b), ("C", &c)];
 
@@ -714,39 +778,111 @@ mod tests {
         let var_var = Type::default().fields(vec![("usual", Field::default())]);
         let var0_var = Type::default().fields(vec![
             ("usual", Field::default()),
-            ("payload", Field { required: true, ..Field::default() }),
+            (
+                "payload",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let var1_var = Type::default().fields(vec![
             ("usual", Field::default()),
-            ("command", Field { required: true, ..Field::default() }),
+            (
+                "command",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let var_var0 = Type::default().fields(vec![
             ("usual", Field::default()),
-            ("flag", Field { required: true, ..Field::default() }),
+            (
+                "flag",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let var_var1 = Type::default().fields(vec![
             ("usual", Field::default()),
-            ("optPayload", Field { required: true, ..Field::default() }),
+            (
+                "optPayload",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let var0_var0 = Type::default().fields(vec![
             ("usual", Field::default()),
-            ("payload", Field { required: true, ..Field::default() }),
-            ("flag", Field { required: true, ..Field::default() }),
+            (
+                "payload",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
+            (
+                "flag",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let var1_var0 = Type::default().fields(vec![
             ("usual", Field::default()),
-            ("command", Field { required: true, ..Field::default() }),
-            ("flag", Field { required: true, ..Field::default() }),
+            (
+                "command",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
+            (
+                "flag",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let var0_var1 = Type::default().fields(vec![
             ("usual", Field::default()),
-            ("payload", Field { required: true, ..Field::default() }),
-            ("optPayload", Field { required: true, ..Field::default() }),
+            (
+                "payload",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
+            (
+                "optPayload",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let var1_var1 = Type::default().fields(vec![
             ("usual", Field::default()),
-            ("command", Field { required: true, ..Field::default() }),
-            ("optPayload", Field { required: true, ..Field::default() }),
+            (
+                "command",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
+            (
+                "optPayload",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let types = vec![
             ("Var_Var", &var_var),
@@ -873,7 +1009,13 @@ mod tests {
             ("common", Field::default()),
         ]);
         let type_b = Type::default().fields(vec![
-            ("uniqueB1", Field { required: true, ..Field::default() }),
+            (
+                "uniqueB1",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
             ("common", Field::default()),
         ]);
         let type_c = Type::default().fields(vec![
@@ -883,7 +1025,13 @@ mod tests {
         let type_d = Type::default().fields(vec![
             ("uniqueD1", Field::default()),
             ("common", Field::default()),
-            ("uniqueD2", Field { required: true, ..Field::default() }),
+            (
+                "uniqueD2",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
 
         let types = vec![
@@ -978,7 +1126,13 @@ mod tests {
         let type_d = Type::default().fields(vec![
             ("field1", Field::default()),
             ("field2", Field::default()),
-            ("field4", Field { required: true, ..Field::default() }),
+            (
+                "field4",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
 
         let types = vec![
@@ -1084,19 +1238,37 @@ mod tests {
     fn test_validation_equal_types() {
         let a = Type::default().fields(vec![("a", Field::default()), ("b", Field::default())]);
         let b = Type::default().fields(vec![
-            ("a", Field { required: true, ..Field::default() }),
+            (
+                "a",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
             ("b", Field::default()),
         ]);
         let c = Type::default().fields(vec![("a", Field::default()), ("b", Field::default())]);
         let d = Type::default().fields(vec![
             ("a", Field::default()),
             ("b", Field::default()),
-            ("c", Field { required: true, ..Field::default() }),
+            (
+                "c",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
         let e = Type::default().fields(vec![("c", Field::default()), ("d", Field::default())]);
         let f = Type::default().fields(vec![
             ("c", Field::default()),
-            ("d", Field { required: true, ..Field::default() }),
+            (
+                "d",
+                Field {
+                    type_of: WrappingType::default().into_required(),
+                    ..Field::default()
+                },
+            ),
         ]);
 
         let types = vec![

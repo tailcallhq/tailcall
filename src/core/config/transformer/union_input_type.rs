@@ -100,7 +100,7 @@ impl<'cfg> Visitor<'cfg> {
         field
             .args
             .values()
-            .for_each(|arg| self.collect_nested_unions_for_type(&arg.type_of))
+            .for_each(|arg| self.collect_nested_unions_for_type(arg.type_of.name()))
     }
 
     /// Recursively walks over nested types and fills union_presence info
@@ -135,7 +135,7 @@ impl<'cfg> Visitor<'cfg> {
         } else if let Some(type_) = self.config.types.get(type_name) {
             // first, recursively walk over nested fields to see if there any nested unions
             for field in type_.fields.values() {
-                self.collect_nested_unions_for_type(&field.type_of);
+                self.collect_nested_unions_for_type(field.type_of.name());
             }
 
             // store any fields that contain union
@@ -145,7 +145,7 @@ impl<'cfg> Visitor<'cfg> {
             // to multiple types. As separate loop to bypass borrow checker
             for (field_name, field) in &type_.fields {
                 if let Some(UnionPresence::Union(union_types)) =
-                    self.union_presence.get(&field.type_of)
+                    self.union_presence.get(field.type_of.name())
                 {
                     union_fields.push((field_name, union_types));
                 }
@@ -204,11 +204,15 @@ impl<'cfg> Visitor<'cfg> {
 
         let args = &args[1..];
 
-        if let Some(UnionPresence::Union(union_types)) = self.union_presence.get(&arg.type_of) {
+        if let Some(UnionPresence::Union(union_types)) = self.union_presence.get(arg.type_of.name())
+        {
             // if the type is union walk over all type members and generate new separate
             // field for this variant
             for (i, type_) in union_types.iter().enumerate() {
-                let new_arg = Arg { type_of: type_.clone(), ..arg.clone() };
+                let new_arg = Arg {
+                    type_of: arg.type_of.clone().with_type(type_.to_owned()),
+                    ..arg.clone()
+                };
 
                 current_field.args.insert(arg_name.to_string(), new_arg);
                 self.walk_arguments(
@@ -255,7 +259,7 @@ impl<'cfg> Visitor<'cfg> {
                     .get_mut(*field_name)
                     .expect("Only available fields could be in list of union_fields");
 
-                field.type_of.clone_from(union_type);
+                field.type_of = field.type_of.clone().with_type(union_type.to_owned());
 
                 inner_create(type_name, new_type, union_fields, result);
             }

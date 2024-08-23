@@ -13,7 +13,7 @@ fn validate_data_with_schema(
     field: &config::Field,
     gql_value: ConstValue,
 ) -> Valid<(), String> {
-    match to_json_schema_for_field(field, config)
+    match to_json_schema(&field.type_of, config)
         .validate(&gql_value)
         .to_result()
     {
