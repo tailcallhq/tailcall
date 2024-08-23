@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use clap::Parser;
 use convert_case::{Case, Casing};
@@ -38,8 +36,7 @@ pub async fn run() -> Result<()> {
 async fn run_command(cli: Cli, config_reader: ConfigReader, runtime: TargetRuntime) -> Result<()> {
     match cli.command {
         Command::Start { file_paths, watch } => {
-            let arc_config_reader = Arc::new(config_reader);
-            start::start_command(file_paths, watch, arc_config_reader).await?;
+            start::start_command(file_paths, watch, config_reader).await?;
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format } => {
             check::check_command(
