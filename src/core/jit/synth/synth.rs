@@ -1,14 +1,16 @@
-use async_graphql::Positioned;
-
+use crate::core::ir::TypeName;
+use crate::core::jit::exec::{TypedValue, TypedValueRef};
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
-use crate::core::jit::{Error, ValidationError};
+use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar;
 
+type ValueStore<Value> = Store<Result<TypedValue<Value>, Positioned<Error>>>;
+
 pub struct Synth<Value> {
-    selection: Vec<Field<Nested<Value>, Value>>,
-    store: Store<Result<Value, Positioned<Error>>>,
+    plan: OperationPlan<Value>,
+    store: ValueStore<Value>,
     variables: Variables<Value>,
 }
 
@@ -34,10 +36,10 @@ impl<Value> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: OperationPlan<Value>,
-        store: Store<Result<Value, Positioned<Error>>>,
+        store: ValueStore<Value>,
         variables: Variables<Value>,
     ) -> Self {
-        Self { selection: plan.into_nested(), store, variables }
+        Self { plan, store, variables }
     }
 }
 
@@ -55,7 +57,7 @@ where
     pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
         let mut data = Value::JsonObject::new();
 
-        for child in self.selection.iter() {
+        for child in self.plan.as_nested().iter() {
             if !self.include(child) {
                 continue;
             }
@@ -76,141 +78,173 @@ where
     fn iter(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        parent: Option<&'a Value>,
+        result: Option<TypedValueRef<'a, Value>>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
-        // TODO: this implementation prefer parent value over value in the store
-        // that's opposite to the way async_graphql engine works in tailcall
-        match parent {
-            Some(parent) => {
-                if !Self::is_array(&node.type_of, parent) {
-                    return Ok(Value::null());
-                }
-                self.iter_inner(node, parent, data_path)
-            }
-            None => {
-                // we perform this check to avoid unnecessary hashing
+        match self.store.get(&node.id) {
+            Some(val) => {
+                let mut data = val;
 
-                match self.store.get(&node.id) {
-                    Some(val) => {
-                        let mut data = val;
-
-                        for index in data_path.as_slice() {
-                            match data {
-                                Data::Multiple(v) => {
-                                    data = &v[index];
-                                }
-                                _ => return Ok(Value::null()),
-                            }
+                for index in data_path.as_slice() {
+                    match data {
+                        Data::Multiple(v) => {
+                            data = &v[index];
                         }
-
-                        match data {
-                            Data::Single(val) => self.iter(
-                                node,
-                                Some(val.as_ref().map_err(Clone::clone)?),
-                                data_path,
-                            ),
-                            _ => {
-                                // TODO: should bailout instead of returning Null
-                                Ok(Value::null())
-                            }
-                        }
+                        _ => return Ok(Value::null()),
                     }
-                    None => {
-                        // IR exists, so there must be a value.
-                        // if there is no value then we must return Null
+                }
+
+                match data {
+                    Data::Single(result) => {
+                        let result = match result {
+                            Ok(result) => result,
+                            Err(err) => return Err(err.clone()),
+                        };
+
+                        if !Self::is_array(&node.type_of, &result.value) {
+                            return Ok(Value::null());
+                        }
+                        self.iter_inner(node, result.as_ref(), data_path)
+                    }
+                    _ => {
+                        // TODO: should bailout instead of returning Null
                         Ok(Value::null())
                     }
                 }
             }
+            None => match result {
+                Some(result) => self.iter_inner(node, result, data_path),
+                None => Ok(Value::null()),
+            },
         }
     }
+
     #[inline(always)]
     fn iter_inner(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        parent: &'a Value,
+        result: TypedValueRef<'a, Value>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
-        let include = self.include(node);
-        if include && node.is_scalar {
+        if !self.include(node) {
+            return Ok(Value::null());
+        }
+
+        let TypedValueRef { type_name, value } = result;
+
+        let eval_result = if value.is_null() {
+            if node.type_of.is_nullable() {
+                Ok(Value::null())
+            } else {
+                Err(ValidationError::ValueRequired.into())
+            }
+        } else if self.plan.field_is_scalar(node) {
             let scalar =
                 scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
 
             // TODO: add validation for input type as well. But input types are not checked
             // by async_graphql anyway so it should be done after replacing
             // default engine with JIT
-            if scalar.validate(parent) {
-                Ok(parent.clone())
+            if scalar.validate(value) {
+                Ok(value.clone())
             } else {
-                Err(Positioned {
-                    pos: node.pos,
-                    node: ValidationError::ScalarInvalid {
-                        type_of: node.type_of.name().to_string(),
-                        path: node.name.clone(),
-                    }
-                    .into(),
-                })
+                Err(ValidationError::ScalarInvalid {
+                    type_of: node.type_of.name().to_string(),
+                    path: node.name.to_string(),
+                }
+                .into())
+            }
+        } else if self.plan.field_is_enum(node) {
+            if value
+                .as_str()
+                .map(|v| self.plan.field_validate_enum_value(node, v))
+                .unwrap_or(false)
+            {
+                Ok(value.clone())
+            } else {
+                Err(
+                    ValidationError::EnumInvalid { type_of: node.type_of.name().to_string() }
+                        .into(),
+                )
             }
         } else {
-            match (parent.as_array(), parent.as_object()) {
+            match (value.as_array(), value.as_object()) {
                 (_, Some(obj)) => {
                     let mut ans = Value::JsonObject::new();
-                    if include {
-                        if let Some(children) = node.nested() {
-                            for child in children {
-                                // all checks for skip must occur in `iter_inner`
-                                // and include be checked before calling `iter` or recursing.
-                                let include = self.include(child);
-                                if include {
-                                    let val = obj.get_key(child.name.as_str());
-                                    if let Some(val) = val {
-                                        ans.insert_key(
-                                            child.name.as_str(),
-                                            self.iter_inner(child, val, data_path)?,
-                                        );
-                                    } else {
-                                        ans.insert_key(
-                                            child.name.as_str(),
-                                            self.iter(child, None, data_path)?,
-                                        );
-                                    }
-                                }
-                            }
-                        } else {
-                            let val = obj.get_key(node.name.as_str());
-                            // if it's a leaf node, then push the value
-                            if let Some(val) = val {
-                                ans.insert_key(node.name.as_str(), val.to_owned());
+
+                    let type_name = match &type_name {
+                        Some(TypeName::Single(type_name)) => type_name,
+                        Some(TypeName::Vec(v)) => {
+                            if let Some(index) = data_path.as_slice().last() {
+                                &v[*index]
                             } else {
-                                return Ok(Value::null());
+                                return Err(Positioned::new(
+                                    ValidationError::TypeNameMismatch.into(),
+                                    node.pos,
+                                ));
                             }
                         }
-                    } else {
-                        let val = obj.get_key(node.name.as_str());
-                        // if it's a leaf node, then push the value
-                        if let Some(val) = val {
-                            ans.insert_key(node.name.as_str(), val.to_owned());
-                        } else {
-                            return Ok(Value::null());
+                        None => node.type_of.name(),
+                    };
+
+                    for child in node.nested_iter(type_name) {
+                        // all checks for skip must occur in `iter_inner`
+                        // and include be checked before calling `iter` or recursing.
+                        let include = self.include(child);
+                        if include {
+                            let val = obj.get_key(child.name.as_str());
+
+                            ans.insert_key(
+                                child.name.as_str(),
+                                self.iter(child, val.map(TypedValueRef::new), data_path)?,
+                            );
                         }
                     }
+
                     Ok(Value::object(ans))
                 }
                 (Some(arr), _) => {
                     let mut ans = vec![];
-                    if include {
-                        for (i, val) in arr.iter().enumerate() {
-                            let val =
-                                self.iter_inner(node, val, &data_path.clone().with_index(i))?;
-                            ans.push(val)
-                        }
+                    for (i, val) in arr.iter().enumerate() {
+                        let val = self.iter_inner(
+                            node,
+                            result.map(|_| val),
+                            &data_path.clone().with_index(i),
+                        )?;
+                        ans.push(val)
                     }
                     Ok(Value::array(ans))
                 }
-                _ => Ok(parent.clone()),
+                _ => Ok(value.clone()),
             }
-        }
+        };
+
+        eval_result.map_err(|e| self.to_location_error(e, node))
+    }
+
+    fn to_location_error(
+        &'a self,
+        error: Error,
+        node: &'a Field<Nested<Value>, Value>,
+    ) -> Positioned<Error> {
+        // create path from the root to the current node in the fields tree
+        let path = {
+            let mut path = Vec::new();
+
+            let mut parent = self.plan.find_field(node.id.clone());
+
+            while let Some(field) = parent {
+                path.push(PathSegment::Field(field.name.to_string()));
+                parent = field
+                    .parent()
+                    .and_then(|id| self.plan.find_field(id.clone()));
+            }
+
+            path.reverse();
+            path
+        };
+
+        Positioned::new(error, node.pos).with_path(path)
     }
 }
 
@@ -223,6 +257,7 @@ mod tests {
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JP;
+    use crate::core::jit::exec::TypedValue;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::synth::Synth;
@@ -278,20 +313,22 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value<'a, Value: Deserialize<'a>>(self) -> Data<Value> {
+        fn into_value<'a, Value: Deserialize<'a>>(self) -> Data<TypedValue<Value>> {
             match self {
-                Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
-                Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
+                Self::Posts => Data::Single(TypedValue::new(serde_json::from_str(POSTS).unwrap())),
+                Self::User1 => Data::Single(TypedValue::new(serde_json::from_str(USER1).unwrap())),
                 TestData::UsersData => Data::Multiple(
                     vec![
-                        Data::Single(serde_json::from_str(USER1).unwrap()),
-                        Data::Single(serde_json::from_str(USER2).unwrap()),
+                        Data::Single(TypedValue::new(serde_json::from_str(USER1).unwrap())),
+                        Data::Single(TypedValue::new(serde_json::from_str(USER2).unwrap())),
                     ]
                     .into_iter()
                     .enumerate()
                     .collect(),
                 ),
-                TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
+                TestData::Users => {
+                    Data::Single(TypedValue::new(serde_json::from_str(USERS).unwrap()))
+                }
             }
         }
     }

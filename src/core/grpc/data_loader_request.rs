@@ -63,7 +63,7 @@ mod tests {
     use super::DataLoaderRequest;
     use crate::core::blueprint::GrpcMethod;
     use crate::core::config::reader::ConfigReader;
-    use crate::core::config::{Config, Field, Grpc, Link, LinkType, Type};
+    use crate::core::config::{Config, Field, Grpc, Link, LinkType, Resolver, Type};
     use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
     use crate::core::grpc::request_template::RenderedRequestTemplate;
 
@@ -82,7 +82,10 @@ mod tests {
         let grpc = Grpc { method: method.to_string(), ..Default::default() };
         config.types.insert(
             "foo".to_string(),
-            Type::default().fields(vec![("bar", Field::default().grpc(grpc))]),
+            Type::default().fields(vec![(
+                "bar",
+                Field::default().resolver(Resolver::Grpc(grpc)),
+            )]),
         );
 
         let runtime = crate::core::runtime::test::init(None);

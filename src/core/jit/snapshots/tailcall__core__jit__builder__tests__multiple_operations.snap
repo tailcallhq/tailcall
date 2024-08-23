@@ -8,6 +8,7 @@ expression: plan.into_nested()
         name: "user",
         ir: "Some(..)",
         type_of: User,
+        type_condition: "Query",
         args: [
             Arg {
                 id: 0,
@@ -28,20 +29,19 @@ expression: plan.into_nested()
                         id: 1,
                         name: "id",
                         type_of: ID!,
-                        is_scalar: true,
+                        type_condition: "User",
                         directives: [],
                     },
                     Field {
                         id: 2,
                         name: "username",
                         type_of: String!,
-                        is_scalar: true,
+                        type_condition: "User",
                         directives: [],
                     },
                 ],
             ),
         ),
-        is_scalar: false,
         directives: [],
     },
     Field {
@@ -49,6 +49,7 @@ expression: plan.into_nested()
         name: "posts",
         ir: "Some(..)",
         type_of: [Post],
+        type_condition: "Query",
         extensions: Some(
             Nested(
                 [
@@ -56,20 +57,19 @@ expression: plan.into_nested()
                         id: 4,
                         name: "id",
                         type_of: ID!,
-                        is_scalar: true,
+                        type_condition: "Post",
                         directives: [],
                     },
                     Field {
                         id: 5,
                         name: "title",
                         type_of: String!,
-                        is_scalar: true,
+                        type_condition: "Post",
                         directives: [],
                     },
                 ],
             ),
         ),
-        is_scalar: false,
         directives: [],
     },
 ]

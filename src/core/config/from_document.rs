@@ -10,10 +10,10 @@ use async_graphql::Name;
 use async_graphql_value::ConstValue;
 
 use super::telemetry::Telemetry;
-use super::{Alias, Tag, JS};
+use super::Alias;
 use crate::core::config::{
-    self, Cache, Call, Config, Enum, GraphQL, Grpc, Link, Modify, Omit, Protected, RootSchema,
-    Server, Union, Upstream, Variant,
+    self, Cache, Config, Enum, Link, Modify, Omit, Protected, RootSchema, Server, Union, Upstream,
+    Variant,
 };
 use crate::core::directive::DirectiveCodec;
 use crate::core::valid::{Valid, ValidationError, Validator};
@@ -74,7 +74,7 @@ fn schema_definition(doc: &ServiceDocument) -> Valid<&SchemaDefinition, String> 
         .map_or_else(|| Valid::succeed(DEFAULT_SCHEMA_DEFINITION), Valid::succeed)
 }
 
-fn process_schema_directives<T: DirectiveCodec<T> + Default>(
+fn process_schema_directives<T: DirectiveCodec + Default>(
     schema_definition: &SchemaDefinition,
     directive_name: &str,
 ) -> Valid<T, String> {
@@ -87,7 +87,7 @@ fn process_schema_directives<T: DirectiveCodec<T> + Default>(
     res
 }
 
-fn process_schema_multiple_directives<T: DirectiveCodec<T> + Default>(
+fn process_schema_multiple_directives<T: DirectiveCodec + Default>(
     schema_definition: &SchemaDefinition,
     directive_name: &str,
 ) -> Valid<Vec<T>, String> {
@@ -152,12 +152,14 @@ fn to_types(
                 &type_definition.node.description,
                 &type_definition.node.directives,
             )
+            .trace(&type_name)
             .some(),
             TypeKind::Interface(interface_type) => to_object_type(
                 &interface_type,
                 &type_definition.node.description,
                 &type_definition.node.directives,
             )
+            .trace(&type_name)
             .some(),
             TypeKind::Enum(_) => Valid::none(),
             TypeKind::InputObject(input_object_type) => to_input_object(
@@ -165,6 +167,7 @@ fn to_types(
                 &type_definition.node.description,
                 &type_definition.node.directives,
             )
+            .trace(&type_name)
             .some(),
             TypeKind::Union(_) => Valid::none(),
             TypeKind::Scalar => Valid::succeed(Some(to_scalar_type())),
@@ -227,7 +230,6 @@ fn to_enum_types(
     .map(|values| values.into_iter().flatten().collect())
 }
 
-#[allow(clippy::too_many_arguments)]
 fn to_object_type<T>(
     object: &T,
     description: &Option<Positioned<String>>,
@@ -242,12 +244,11 @@ where
     Cache::from_directives(directives.iter())
         .fuse(to_fields(fields))
         .fuse(Protected::from_directives(directives.iter()))
-        .fuse(Tag::from_directives(directives.iter()))
-        .map(|(cache, fields, protected, tag)| {
+        .map(|(cache, fields, protected)| {
             let doc = description.to_owned().map(|pos| pos.node);
             let implements = implements.iter().map(|pos| pos.node.to_string()).collect();
             let added_fields = to_add_fields_from_directives(directives);
-            config::Type { fields, added_fields, doc, implements, cache, protected, tag }
+            config::Type { fields, added_fields, doc, implements, cache, protected }
         })
 }
 fn to_input_object(
@@ -306,7 +307,7 @@ fn to_common_field<F>(
     default_value: Option<ConstValue>,
 ) -> Valid<config::Field, String>
 where
-    F: FieldLike,
+    F: FieldLike + HasName,
 {
     let type_of = field.type_of();
     let base = &type_of.base;
@@ -323,40 +324,30 @@ where
     let list = matches!(&base, BaseType::List(_));
     let list_type_required = matches!(&base, BaseType::List(type_of) if !type_of.nullable);
     let doc = description.to_owned().map(|pos| pos.node);
-    config::Http::from_directives(directives.iter())
-        .fuse(GraphQL::from_directives(directives.iter()))
+
+    config::Resolver::from_directives(directives)
         .fuse(Cache::from_directives(directives.iter()))
-        .fuse(Grpc::from_directives(directives.iter()))
         .fuse(Omit::from_directives(directives.iter()))
         .fuse(Modify::from_directives(directives.iter()))
-        .fuse(JS::from_directives(directives.iter()))
-        .fuse(Call::from_directives(directives.iter()))
         .fuse(Protected::from_directives(directives.iter()))
         .fuse(default_value)
         .map(
-            |(http, graphql, cache, grpc, omit, modify, script, call, protected, default_value)| {
-                let const_field = to_const_field(directives);
-                config::Field {
-                    type_of,
-                    list,
-                    required: !nullable,
-                    list_type_required,
-                    args,
-                    doc,
-                    modify,
-                    omit,
-                    http,
-                    grpc,
-                    script,
-                    const_field,
-                    graphql,
-                    cache,
-                    call,
-                    protected,
-                    default_value,
-                }
+            |(resolver, cache, omit, modify, protected, default_value)| config::Field {
+                type_of,
+                list,
+                required: !nullable,
+                list_type_required,
+                args,
+                doc,
+                modify,
+                omit,
+                cache,
+                protected,
+                default_value,
+                resolver,
             },
         )
+        .trace(pos_name_to_string(field.name()).as_str())
 }
 
 fn to_type_of(type_: &Type) -> String {
@@ -421,17 +412,6 @@ fn to_enum(enum_type: EnumType, doc: Option<String>) -> Valid<Enum, String> {
         }
     });
     variants.map(|v| Enum { variants: v.into_iter().collect::<BTreeSet<Variant>>(), doc })
-}
-fn to_const_field(directives: &[Positioned<ConstDirective>]) -> Option<config::Expr> {
-    directives.iter().find_map(|directive| {
-        if directive.node.name.node == config::Expr::directive_name() {
-            config::Expr::from_directive(&directive.node)
-                .to_result()
-                .ok()
-        } else {
-            None
-        }
-    })
 }
 
 fn to_add_fields_from_directives(

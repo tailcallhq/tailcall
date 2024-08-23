@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_graphql_value::ConstValue;
 
 use super::context::Context;
-use super::exec::{Executor, IRExecutor};
+use super::exec::{Executor, IRExecutor, TypedValue};
 use super::{Error, OperationPlan, Request, Response, Result};
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
@@ -31,7 +31,7 @@ impl ConstValueExecutor {
         // TODO: drop the clones in plan
         let vars = request.variables.clone();
         let exe = Executor::new(plan.clone(), exec);
-        let store = exe.store(request).await;
+        let store = exe.store().await;
         let synth = Synth::new(plan, store, vars);
         exe.execute(synth).await
     }
@@ -47,7 +47,6 @@ impl<'a> ConstValueExec<'a> {
     }
 }
 
-#[async_trait::async_trait]
 impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
     type Input = ConstValue;
     type Output = ConstValue;
@@ -57,9 +56,13 @@ impl<'ctx> IRExecutor for ConstValueExec<'ctx> {
         &'a self,
         ir: &'a IR,
         ctx: &'a Context<'a, Self::Input, Self::Output>,
-    ) -> Result<Self::Output> {
+    ) -> Result<TypedValue<Self::Output>> {
         let req_context = &self.req_context;
-        let mut ctx = EvalContext::new(req_context, ctx);
-        Ok(ir.eval(&mut ctx).await?)
+        let mut eval_ctx = EvalContext::new(req_context, ctx);
+
+        Ok(ir
+            .eval(&mut eval_ctx)
+            .await
+            .map(|value| TypedValue { value, type_name: eval_ctx.type_name.take() })?)
     }
 }

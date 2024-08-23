@@ -1,15 +1,14 @@
 use std::collections::HashMap;
 
-use async_graphql::Positioned;
 use serde::Deserialize;
 
 use crate::core::blueprint::Blueprint;
 use crate::core::config::{Config, ConfigModule};
-use crate::core::jit;
 use crate::core::jit::builder::Builder;
+use crate::core::jit::exec::TypedValue;
 use crate::core::jit::store::{Data, Store};
 use crate::core::jit::synth::Synth;
-use crate::core::jit::{OperationPlan, Variables};
+use crate::core::jit::{self, OperationPlan, Positioned, Variables};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::Validator;
 
@@ -27,9 +26,11 @@ struct TestData<Value> {
     users: Vec<Value>,
 }
 
+type Entry<Value> = Data<Result<TypedValue<Value>, Positioned<jit::Error>>>;
+
 struct ProcessedTestData<Value> {
     posts: Value,
-    users: HashMap<usize, Data<Result<Value, Positioned<jit::Error>>>>,
+    users: HashMap<usize, Entry<Value>>,
 }
 
 impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
@@ -74,6 +75,7 @@ impl<'a, Value: JsonLike<'a> + Deserialize<'a> + Clone + 'a> TestData<Value> {
                     Value::null()
                 }
             })
+            .map(TypedValue::new)
             .map(Ok)
             .map(Data::Single)
             .enumerate()
@@ -128,7 +130,7 @@ impl<
             .to_owned();
 
         let store = [
-            (posts_id, Data::Single(Ok(posts))),
+            (posts_id, Data::Single(Ok(TypedValue::new(posts)))),
             (users_id, Data::Multiple(users)),
         ]
         .into_iter()

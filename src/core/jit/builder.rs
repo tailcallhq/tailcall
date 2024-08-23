@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use async_graphql::parser::types::{
     Directive, DocumentOperations, ExecutableDocument, FragmentDefinition, OperationDefinition,
@@ -65,7 +66,7 @@ impl Conditions {
 }
 
 pub struct Builder {
-    pub index: Index,
+    pub index: Arc<Index>,
     pub arg_id: Counter<usize>,
     pub field_id: Counter<usize>,
     pub document: ExecutableDocument,
@@ -74,7 +75,7 @@ pub struct Builder {
 // TODO: make generic over Value (Input) type
 impl Builder {
     pub fn new(blueprint: &Blueprint, document: ExecutableDocument) -> Self {
-        let index = blueprint.index();
+        let index = Arc::new(blueprint.index());
         Self {
             document,
             index,
@@ -129,7 +130,7 @@ impl Builder {
     fn iter(
         &self,
         selection: &SelectionSet,
-        type_of: &str,
+        type_condition: &str,
         exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
     ) -> Vec<Field<Flat, Value>> {
@@ -170,7 +171,7 @@ impl Builder {
                         .map(|(k, v)| (k.node.as_str().to_string(), v.node.to_owned()))
                         .collect::<HashMap<_, _>>();
 
-                    if let Some(field_def) = self.index.get_field(type_of, field_name) {
+                    if let Some(field_def) = self.index.get_field(type_condition, field_name) {
                         let mut args = Vec::with_capacity(request_args.len());
                         if let QueryField::Field((_, schema_args)) = field_def {
                             for (arg_name, arg_value) in schema_args {
@@ -218,12 +219,12 @@ impl Builder {
                             id,
                             name,
                             ir,
-                            is_scalar: self.index.type_is_scalar(type_of.name()),
                             type_of,
+                            type_condition: type_condition.to_string(),
                             skip,
                             include,
                             args,
-                            pos: selection.pos,
+                            pos: selection.pos.into(),
                             extensions: exts.clone(),
                             directives,
                         };
@@ -246,7 +247,20 @@ impl Builder {
                         ));
                     }
                 }
-                _ => {}
+                Selection::InlineFragment(Positioned { node: fragment, .. }) => {
+                    let type_of = fragment
+                        .type_condition
+                        .as_ref()
+                        .map(|cond| cond.node.on.node.as_str())
+                        .unwrap_or(type_condition);
+
+                    fields.extend(self.iter(
+                        &fragment.selection_set.node,
+                        type_of,
+                        exts.clone(),
+                        fragments,
+                    ));
+                }
             }
         }
 
@@ -312,7 +326,7 @@ impl Builder {
         // skip the fields depending on variables.
         fields.retain(|f| !f.skip(variables));
 
-        let plan = OperationPlan::new(fields, operation.ty);
+        let plan = OperationPlan::new(fields, operation.ty, self.index.clone());
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly
@@ -429,9 +443,15 @@ mod tests {
               phone
             }
 
+            fragment PostPII on Post {
+              title
+              body
+            }
+
             query {
               user(id:1) {
                 ...UserPII
+                ...PostPII
               }
             }
         "#,

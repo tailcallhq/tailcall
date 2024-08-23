@@ -1,4 +1,5 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Display;
 
 use convert_case::{Case, Casing};
 use prost_reflect::{EnumDescriptor, FieldDescriptor, Kind, MessageDescriptor};
@@ -9,7 +10,7 @@ use crate::core::valid::{Valid, Validator};
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename = "schema")]
 pub enum JsonSchema {
-    Obj(HashMap<String, JsonSchema>),
+    Obj(BTreeMap<String, JsonSchema>),
     Arr(Box<JsonSchema>),
     Opt(Box<JsonSchema>),
     Enum(BTreeSet<String>),
@@ -20,9 +21,52 @@ pub enum JsonSchema {
     Any,
 }
 
+impl Display for JsonSchema {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            JsonSchema::Obj(fields) => {
+                let mut fields = fields
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", k, v))
+                    .collect::<Vec<String>>();
+
+                fields.sort();
+
+                write!(f, "{{{}}}", fields.join(", "))
+            }
+            JsonSchema::Arr(schema) => {
+                write!(f, "[{}]", schema)
+            }
+            JsonSchema::Opt(schema) => {
+                write!(f, "Option<{}>", schema)
+            }
+            JsonSchema::Enum(en) => {
+                let mut en = en.iter().map(|a| a.to_string()).collect::<Vec<String>>();
+                en.sort();
+                write!(f, "enum {{{}}}", en.join(", "))
+            }
+            JsonSchema::Str => {
+                write!(f, "String")
+            }
+            JsonSchema::Num => {
+                write!(f, "Number")
+            }
+            JsonSchema::Bool => {
+                write!(f, "Boolean")
+            }
+            JsonSchema::Empty => {
+                write!(f, "Empty")
+            }
+            JsonSchema::Any => {
+                write!(f, "Any")
+            }
+        }
+    }
+}
+
 impl<const L: usize> From<[(&'static str, JsonSchema); L]> for JsonSchema {
     fn from(fields: [(&'static str, JsonSchema); L]) -> Self {
-        let mut map = HashMap::new();
+        let mut map = BTreeMap::new();
         for (name, schema) in fields {
             map.insert(name.to_string(), schema);
         }
@@ -32,7 +76,7 @@ impl<const L: usize> From<[(&'static str, JsonSchema); L]> for JsonSchema {
 
 impl Default for JsonSchema {
     fn default() -> Self {
-        JsonSchema::Obj(HashMap::new())
+        JsonSchema::Obj(BTreeMap::new())
     }
 }
 
@@ -109,68 +153,74 @@ impl JsonSchema {
         }
     }
 
-    // TODO: add unit tests
-    pub fn compare(&self, other: &JsonSchema, name: &str) -> Valid<(), String> {
-        if let JsonSchema::Any = other {
+    /// Check if `self` is a subtype of `other`
+    pub fn is_a(&self, super_type: &JsonSchema, name: &str) -> Valid<(), String> {
+        let sub_type = self;
+        if let JsonSchema::Any = super_type {
             return Valid::succeed(());
         }
 
-        match self {
+        let fail = Valid::fail(format!(
+            "Type '{}' is not assignable to type '{}'",
+            sub_type, super_type
+        ))
+        .trace(name);
+
+        match super_type {
             JsonSchema::Str => {
-                if other != self {
-                    return Valid::fail(format!("expected String, got {:?}", other)).trace(name);
+                if super_type != sub_type {
+                    return fail;
                 }
             }
             JsonSchema::Num => {
-                if other != self {
-                    return Valid::fail(format!("expected Number, got {:?}", other)).trace(name);
+                if super_type != sub_type {
+                    return fail;
                 }
             }
             JsonSchema::Bool => {
-                if other != self {
-                    return Valid::fail(format!("expected Boolean, got {:?}", other)).trace(name);
+                if super_type != sub_type {
+                    return fail;
                 }
             }
             JsonSchema::Empty => {
-                if other != self {
-                    return Valid::fail(format!("expected Empty, got {:?}", other)).trace(name);
+                if super_type != sub_type {
+                    return fail;
                 }
             }
             JsonSchema::Any => {}
-            JsonSchema::Obj(a) => {
-                if let JsonSchema::Obj(b) = other {
-                    return Valid::from_iter(b.iter(), |(key, b)| {
-                        Valid::from_option(a.get(key), format!("missing key: {}", key))
-                            .and_then(|a| a.compare(b, key))
+            JsonSchema::Obj(expected) => {
+                if let JsonSchema::Obj(actual) = sub_type {
+                    return Valid::from_iter(expected.iter(), |(key, expected)| {
+                        Valid::from_option(actual.get(key), format!("missing key: {}", key))
+                            .and_then(|actual| actual.is_a(expected, key))
                     })
                     .trace(name)
                     .unit();
                 } else {
-                    return Valid::fail("expected Object type".to_string()).trace(name);
+                    return fail;
                 }
             }
-            JsonSchema::Arr(a) => {
-                if let JsonSchema::Arr(b) = other {
-                    return a.compare(b, name);
+            JsonSchema::Arr(expected) => {
+                if let JsonSchema::Arr(actual) = sub_type {
+                    return actual.is_a(expected, name);
                 } else {
-                    return Valid::fail("expected Non repeatable type".to_string()).trace(name);
+                    return fail;
                 }
             }
-            JsonSchema::Opt(a) => {
-                if let JsonSchema::Opt(b) = other {
-                    return a.compare(b, name);
+            JsonSchema::Opt(expected) => {
+                if let JsonSchema::Opt(actual) = sub_type {
+                    return actual.is_a(expected, name);
                 } else {
-                    return Valid::fail("expected type to be required".to_string()).trace(name);
+                    return sub_type.is_a(expected, name);
                 }
             }
-            JsonSchema::Enum(a) => {
-                if let JsonSchema::Enum(b) = other {
-                    if a.ne(b) {
-                        return Valid::fail(format!("expected {:?} but found {:?}", a, b))
-                            .trace(name);
+            JsonSchema::Enum(expected) => {
+                if let JsonSchema::Enum(actual) = sub_type {
+                    if actual.ne(expected) {
+                        return fail;
                     }
                 } else {
-                    return Valid::fail(format!("expected Enum got: {:?}", other)).trace(name);
+                    return fail;
                 }
             }
         }
@@ -199,7 +249,7 @@ impl TryFrom<&MessageDescriptor> for JsonSchema {
             return Ok(JsonSchema::Any);
         }
 
-        let mut map = std::collections::HashMap::new();
+        let mut map = BTreeMap::new();
         let fields = value.fields();
 
         for field in fields {
@@ -263,7 +313,8 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
             field_schema
         };
         let field_schema = if value.is_list() {
-            JsonSchema::Arr(Box::new(field_schema))
+            // if value is of type list then we treat it as optional.
+            JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(field_schema))))
         } else {
             field_schema
         };
@@ -274,10 +325,11 @@ impl TryFrom<&FieldDescriptor> for JsonSchema {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeSet, HashMap};
+    use std::collections::{BTreeMap, BTreeSet};
 
     use async_graphql::Name;
     use indexmap::IndexMap;
+    use pretty_assertions::assert_eq;
     use tailcall_fixtures::protobuf;
 
     use crate::core::blueprint::GrpcMethod;
@@ -409,7 +461,7 @@ mod tests {
 
         assert_eq!(
             schema,
-            JsonSchema::Obj(HashMap::from_iter([
+            JsonSchema::Obj(BTreeMap::from_iter([
                 (
                     "postImage".to_owned(),
                     JsonSchema::Opt(JsonSchema::Str.into())
@@ -441,10 +493,11 @@ mod tests {
         let value = JsonSchema::Arr(Box::new(JsonSchema::Enum(en.clone())));
         let schema = JsonSchema::Enum(en);
         let name = "foo";
-        let result = schema.compare(&value, name);
+        let result = schema.is_a(&value, name);
         assert_eq!(
             result,
-            Valid::fail("expected Enum got: Arr(Enum({\"A\", \"B\"}))".to_string()).trace(name)
+            Valid::fail("Type 'enum {A, B}' is not assignable to type '[enum {A, B}]'".to_string())
+                .trace(name)
         );
     }
 
@@ -462,11 +515,59 @@ mod tests {
         let value = JsonSchema::Enum(en1.clone());
         let schema = JsonSchema::Enum(en.clone());
         let name = "foo";
-        let result = schema.compare(&value, name);
+        let result = schema.is_a(&value, name);
         assert_eq!(
             result,
-            Valid::fail("expected {\"A\", \"B\"} but found {\"A\", \"B\", \"C\"}".to_string())
-                .trace(name)
+            Valid::fail(
+                "Type 'enum {A, B}' is not assignable to type 'enum {A, B, C}'".to_string()
+            )
+            .trace(name)
         );
+    }
+
+    #[test]
+    fn test_covariance_optional() {
+        let parent = JsonSchema::Str.optional();
+        let child = JsonSchema::Str;
+        let child_is_a_parent = child.is_a(&parent, "foo").is_succeed();
+        assert!(child_is_a_parent);
+    }
+
+    #[test]
+    fn test_covariance_object() {
+        // type in Proto file
+        let base = JsonSchema::from([
+            ("id", JsonSchema::Num.optional()),
+            ("title", JsonSchema::Str.optional()),
+            ("body", JsonSchema::Str.optional()),
+        ]);
+
+        // type in GraphQL file
+        let child = JsonSchema::from([
+            ("id", JsonSchema::Num),
+            ("title", JsonSchema::Str),
+            ("body", JsonSchema::Str),
+        ]);
+
+        assert!(child.is_a(&base, "foo").is_succeed());
+    }
+
+    #[test]
+    fn test_covariance_array() {
+        // type in Proto file
+        let base = JsonSchema::Arr(Box::new(JsonSchema::from([
+            ("id", JsonSchema::Num.optional()),
+            ("title", JsonSchema::Str.optional()),
+            ("body", JsonSchema::Str.optional()),
+        ])));
+
+        // type in GraphQL file
+        let child = JsonSchema::Arr(Box::new(JsonSchema::from([
+            ("id", JsonSchema::Num),
+            ("title", JsonSchema::Str),
+            ("body", JsonSchema::Str),
+        ])));
+
+        assert!(child.is_a(&base, "foo").is_succeed());
     }
 }

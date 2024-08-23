@@ -1,0 +1,26 @@
+{
+  "request": {
+    "url": "https://jsonplaceholder.typicode.com/posts",
+    "method": "POST",
+    "body": {
+      "name": "Tailcall User",
+      "username": "tailcall_user",
+      "email": "tailcall@test.in",
+      "phone": "8888888888",
+      "website": "tailcall.run"
+    }
+  },
+  "isMutation": true,
+  "fieldName": "createPost",
+  "response": {
+    "status": 201,
+    "body": {
+      "id": 1,
+      "name": "Tailcall User",
+      "username": "tailcall_user",
+      "email": "tailcall@test.in",
+      "phone": "8888888888",
+      "website": "tailcall.run"
+    }
+  }
+}
