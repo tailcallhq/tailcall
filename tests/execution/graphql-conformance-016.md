@@ -9,7 +9,8 @@ schema
 
 type Query {
   userGroups: [[User!]!]! @graphQL(name: "users")
-  addUsers(userNames: [[String!]!]!): Boolean @graphQL(name: "addUsers", args: [{ key: "userNames", value: "{{.args.userNames}}"}])
+  addUsers(userNames: [[String!]!]!): Boolean
+    @graphQL(name: "addUsers", args: [{key: "userNames", value: "{{.args.userNames}}"}])
 }
 
 type User {

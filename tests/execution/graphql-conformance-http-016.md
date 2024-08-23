@@ -50,8 +50,7 @@ type User {
   expectedHits: 1
   response:
     status: 200
-    body:
-      true
+    body: true
 ```
 
 ```yml @test
