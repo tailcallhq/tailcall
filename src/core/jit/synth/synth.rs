@@ -131,8 +131,6 @@ where
             return Ok(Value::null());
         }
 
-        let field_name = &node.output_name;
-
         let TypedValueRef { type_name, value } = result;
 
         let eval_result = if value.is_null() {
@@ -151,11 +149,10 @@ where
             if scalar.validate(value) {
                 Ok(value.clone())
             } else {
-                Err(ValidationError::ScalarInvalid {
-                    type_of: node.type_of.name().to_string(),
-                    path: field_name.to_string(),
-                }
-                .into())
+                Err(
+                    ValidationError::ScalarInvalid { type_of: node.type_of.name().to_string() }
+                        .into(),
+                )
             }
         } else if self.plan.field_is_enum(node) {
             if value
@@ -236,7 +233,7 @@ where
             let mut parent = self.plan.find_field(node.id.clone());
 
             while let Some(field) = parent {
-                path.push(PathSegment::Field(field.name.to_string()));
+                path.push(PathSegment::Field(field.output_name.to_string()));
                 parent = field
                     .parent()
                     .and_then(|id| self.plan.find_field(id.clone()));
