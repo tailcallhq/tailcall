@@ -401,6 +401,21 @@ mod tests {
     }
 
     #[test]
+    fn test_alias_query() {
+        let plan = plan(
+            r#"
+            query {
+                articles: posts { author: user { identifier: id } }
+            }
+        "#,
+            &Variables::new(),
+        );
+
+        assert!(plan.is_query());
+        insta::assert_debug_snapshot!(plan.into_nested());
+    }
+
+    #[test]
     fn test_simple_mutation() {
         let plan = plan(
             r#"

@@ -179,6 +179,10 @@ impl<Input> Field<Nested<Input>, Input> {
             alias: self.alias,
         })
     }
+
+    pub fn name(&self) -> &str {
+        self.alias.as_deref().unwrap_or(self.name.as_str())
+    }
 }
 
 impl<Input> Field<Flat, Input> {
@@ -208,6 +212,10 @@ impl<Input> Field<Flat, Input> {
                 .collect::<Result<_, _>>()?,
             alias: self.alias,
         })
+    }
+
+    pub fn name(&self) -> &str {
+        self.alias.as_deref().unwrap_or(self.name.as_str())
     }
 }
 

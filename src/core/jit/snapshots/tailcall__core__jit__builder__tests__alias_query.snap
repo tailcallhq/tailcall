@@ -1,0 +1,50 @@
+---
+source: src/core/jit/builder.rs
+expression: plan.into_nested()
+---
+[
+    Field {
+        id: 0,
+        name: "posts",
+        ir: "Some(..)",
+        type_of: [Post],
+        type_condition: "Query",
+        extensions: Some(
+            Nested(
+                [
+                    Field {
+                        id: 1,
+                        name: "user",
+                        ir: "Some(..)",
+                        type_of: User,
+                        type_condition: "Post",
+                        extensions: Some(
+                            Nested(
+                                [
+                                    Field {
+                                        id: 2,
+                                        name: "id",
+                                        type_of: ID!,
+                                        type_condition: "User",
+                                        directives: [],
+                                        alias: Some(
+                                            "identifier",
+                                        ),
+                                    },
+                                ],
+                            ),
+                        ),
+                        directives: [],
+                        alias: Some(
+                            "author",
+                        ),
+                    },
+                ],
+            ),
+        ),
+        directives: [],
+        alias: Some(
+            "articles",
+        ),
+    },
+]

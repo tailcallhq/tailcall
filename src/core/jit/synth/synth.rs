@@ -133,7 +133,7 @@ where
             return Ok(Value::null());
         }
 
-        let field_name = node.alias.as_deref().unwrap_or(node.name.as_str());
+        let field_name = node.name();
 
         let TypedValueRef { type_name, value } = result;
 
