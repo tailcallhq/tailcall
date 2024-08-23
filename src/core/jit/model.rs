@@ -110,7 +110,8 @@ pub struct Field<Extensions, Input> {
     pub id: FieldId,
     /// Name of key in the value object for this field
     pub name: String,
-    /// Output name (i.e. with alias) that should be used for the result value of this field
+    /// Output name (i.e. with alias) that should be used for the result value
+    /// of this field
     pub output_name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,

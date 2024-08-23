@@ -213,7 +213,11 @@ impl Builder {
                         let flat_field = Field {
                             id,
                             name: field_name.to_string(),
-                            output_name: gql_field.alias.as_ref().map(|a| a.node.to_string()).unwrap_or(field_name.to_owned()),
+                            output_name: gql_field
+                                .alias
+                                .as_ref()
+                                .map(|a| a.node.to_string())
+                                .unwrap_or(field_name.to_owned()),
                             ir,
                             type_of,
                             type_condition: type_condition.to_string(),
