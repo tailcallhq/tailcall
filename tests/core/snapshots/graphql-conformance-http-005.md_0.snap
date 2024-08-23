@@ -1,0 +1,19 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "customer": {
+        "id": 4,
+        "name": "Tailcall",
+        "date_of_birth": "2000-01-01"
+      }
+    }
+  }
+}

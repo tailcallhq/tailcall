@@ -1,4 +1,10 @@
 {
-  "url": "https://example.com/user/12/online",
-  "body": true
+  "request": {
+    "url": "https://example.com/user/12/online"
+  },
+  "fieldName": "userStatus",
+  "response": {
+    "status": 200,
+    "body": true
+  }
 }

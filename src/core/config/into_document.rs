@@ -215,7 +215,6 @@ fn config_document(config: &Config) -> ServiceDocument {
                         .as_ref()
                         .map(|protected| pos(protected.to_directive())),
                 )
-                .chain(type_def.tag.as_ref().map(|tag| pos(tag.to_directive())))
                 .collect::<Vec<_>>(),
             kind,
         })));
@@ -266,15 +265,10 @@ fn config_document(config: &Config) -> ServiceDocument {
 
 fn get_directives(field: &crate::core::config::Field) -> Vec<Positioned<ConstDirective>> {
     let directives = vec![
-        field.http.as_ref().map(|d| pos(d.to_directive())),
-        field.script.as_ref().map(|d| pos(d.to_directive())),
-        field.const_field.as_ref().map(|d| pos(d.to_directive())),
+        field.resolver.as_ref().map(|d| pos(d.to_directive())),
         field.modify.as_ref().map(|d| pos(d.to_directive())),
         field.omit.as_ref().map(|d| pos(d.to_directive())),
-        field.graphql.as_ref().map(|d| pos(d.to_directive())),
-        field.grpc.as_ref().map(|d| pos(d.to_directive())),
         field.cache.as_ref().map(|d| pos(d.to_directive())),
-        field.call.as_ref().map(|d| pos(d.to_directive())),
         field.protected.as_ref().map(|d| pos(d.to_directive())),
     ];
 

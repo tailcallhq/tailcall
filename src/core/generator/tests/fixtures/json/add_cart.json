@@ -1,0 +1,54 @@
+{
+  "request": {
+    "url": "https://dummyjson.com/carts/add?code=AXS123E",
+    "method": "POST",
+    "body": {
+      "userId": 1,
+      "products": [
+        {
+          "id": 144,
+          "quantity": 4
+        },
+        {
+          "id": 98,
+          "quantity": 1
+        }
+      ]
+    }
+  },
+  "isMutation": true,
+  "fieldName": "addCart",
+  "response": {
+    "status": 201,
+    "body": {
+      "id": 51,
+      "products": [
+        {
+          "id": 98,
+          "title": "Rolex Submariner Watch",
+          "price": 13999.99,
+          "quantity": 4,
+          "total": 55999.96,
+          "discountPercentage": 0.82,
+          "discountedPrice": 55541,
+          "thumbnail": "https://cdn.dummyjson.com/products/images/mens-watches/Rolex%20Submariner%20Watch/thumbnail.png"
+        },
+        {
+          "id": 144,
+          "title": "Cricket Helmet",
+          "price": 44.99,
+          "quantity": 1,
+          "total": 44.99,
+          "discountPercentage": 10.75,
+          "discountedPrice": 40,
+          "thumbnail": "https://cdn.dummyjson.com/products/images/sports-accessories/Cricket%20Helmet/thumbnail.png"
+        }
+      ],
+      "total": 56044.95,
+      "discountedTotal": 55581,
+      "userId": 1,
+      "totalProducts": 2,
+      "totalQuantity": 5
+    }
+  }
+}

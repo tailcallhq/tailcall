@@ -12,9 +12,9 @@ pub fn to_body(body: Option<&Value>) -> Valid<Option<RequestBody>, String> {
     let mut req_body = RequestBody::default();
 
     let value = body.to_string();
-    if let Ok(mustache) = Mustache::parse(&value) {
-        req_body = req_body.mustache(Some(mustache));
-    }
+    let mustache = Mustache::parse(&value);
+    req_body = req_body.mustache(Some(mustache));
+
     Valid::succeed(Some(req_body.value(value)))
 }
 
@@ -40,7 +40,7 @@ mod tests {
         assert_eq!(
             result,
             Valid::succeed(Some(RequestBody {
-                mustache: Some(Mustache::parse(value.to_string().as_str()).unwrap()),
+                mustache: Some(Mustache::parse(value.to_string().as_str())),
                 value: value.to_string()
             }))
         );
