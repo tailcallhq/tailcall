@@ -1,8 +1,7 @@
+use lazy_static::lazy_static;
 use std::ops::Deref;
-use std::sync::Arc;
 
 use anyhow::Result;
-use tokio::sync::broadcast;
 use tokio::sync::oneshot::{self};
 
 use super::http_1::start_http_1;
@@ -12,6 +11,13 @@ use crate::cli::telemetry::init_opentelemetry;
 use crate::cli::CLIError;
 use crate::core::blueprint::{Blueprint, Http};
 use crate::core::config::ConfigModule;
+
+use std::sync::{Arc, Mutex};
+use tokio::runtime::Runtime;
+
+lazy_static! {
+    pub static ref RUNTIME: Arc<Mutex<Option<Runtime>>> = Arc::new(Mutex::new(None));
+}
 
 pub struct Server {
     config_module: ConfigModule,
@@ -48,25 +54,21 @@ impl Server {
     }
 
     /// Starts the server in its own multithreaded Runtime
-    pub async fn fork_start(self, rec: Option<&mut broadcast::Receiver<()>>) -> Result<()> {
+    pub async fn fork_start(self, watch: bool) -> Result<()> {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(self.config_module.deref().server.get_workers())
             .enable_all()
             .build()?;
-
-        let handle = runtime.spawn(async { self.start().await });
-
-        if let Some(receiver) = rec {
-            tokio::select! {
-                _ = receiver.recv() => {
-                    runtime.shutdown_background();
-                }
-                _ = handle => {
-                    tracing::debug!("Server completed without shutdown signal");
-                }
-            }
+        if watch {
+            RUNTIME
+                .lock()
+                .unwrap()
+                .get_or_insert_with(|| runtime)
+                .spawn(async { self.start().await });
         } else {
-            let _ = handle.await?;
+            let result = runtime.spawn(async { self.start().await }).await?;
+            runtime.shutdown_background();
+            return result;
         }
         Ok(())
     }

@@ -228,7 +228,7 @@ impl ConfigReader {
 
     /// Checks if path is a URL or absolute path, returns directly if so.
     /// Otherwise, it joins file path with relative dir path.
-    fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
+    pub fn resolve_path(src: &str, root_dir: Option<&Path>) -> String {
         if let Ok(url) = Url::parse(src) {
             url.to_string()
         } else if Path::new(&src).is_absolute() {

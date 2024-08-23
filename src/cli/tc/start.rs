@@ -1,16 +1,18 @@
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
 use notify::fsevent::FsEventWatcher;
 use notify::{Config, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use tokio::sync::broadcast;
 use tokio::time::Instant;
 
 use super::helpers::log_endpoint_set;
 use crate::cli::fmt::Fmt;
+use crate::cli::server::http_server::RUNTIME;
 use crate::cli::server::Server;
 use crate::core::config::reader::ConfigReader;
+use crate::core::config::ConfigModule;
 
 pub(super) async fn start_command(
     file_paths: Vec<String>,
@@ -18,7 +20,7 @@ pub(super) async fn start_command(
     config_reader: Arc<ConfigReader>,
 ) -> Result<()> {
     if watch {
-        start_watch_server(file_paths, config_reader).await?;
+        start_watch_server(&file_paths, config_reader).await?;
     } else {
         let config_module = config_reader
             .read_all(&file_paths)
@@ -28,7 +30,7 @@ pub(super) async fn start_command(
         Fmt::log_n_plus_one(false, config_module.config());
         let server = Server::new(config_module);
         server
-            .fork_start(None)
+            .fork_start(false)
             .await
             .context("Failed to start server")?;
     }
@@ -36,24 +38,7 @@ pub(super) async fn start_command(
 }
 
 /// Starts the server in watch mode
-async fn start_watch_server(
-    file_paths: Vec<String>,
-    config_reader: Arc<ConfigReader>,
-) -> Result<()> {
-    let (tx, rx) = broadcast::channel(16);
-
-    watch_files(&file_paths, tx, rx, config_reader).await?;
-
-    Ok(())
-}
-
-/// Watches the file paths for changes
-async fn watch_files(
-    file_paths: &[String],
-    tx: broadcast::Sender<()>,
-    mut rx: broadcast::Receiver<()>,
-    config_reader: Arc<ConfigReader>,
-) -> Result<()> {
+async fn start_watch_server(file_paths: &[String], config_reader: Arc<ConfigReader>) -> Result<()> {
     let (watch_tx, watch_rx) = std::sync::mpsc::channel();
     // fake event to trigger the first server start
     watch_tx
@@ -64,13 +49,8 @@ async fn watch_files(
             )),
         )))
         .unwrap();
-    let mut watcher = match RecommendedWatcher::new(watch_tx, Config::default()) {
-        Ok(watcher) => watcher,
-        Err(err) => {
-            tracing::error!("Failed to create watcher: {}", err);
-            return Ok(());
-        }
-    };
+    let mut watcher =
+        RecommendedWatcher::new(watch_tx, Config::default()).context("Failed to create watcher")?;
 
     for path in file_paths {
         if let Err(err) = watcher.watch(path.as_ref(), RecursiveMode::NonRecursive) {
@@ -95,23 +75,14 @@ async fn watch_files(
                         if now.duration_since(last_event_time) >= debounce_duration {
                             last_event_time = now;
 
-                            // send the signal to the currently running server runtime to shutdown
-                            if let Err(err) = tx.send(()) {
-                                tracing::error!("Failed to stop the server: {}", err);
+                            tracing::info!("Restarting server");
+                            if let Some(runtime) = RUNTIME.lock().unwrap().take() {
+                                runtime.shutdown_background();
                             }
-                            // wait for the server to shutdown
-                            tokio::time::sleep(Duration::from_millis(500)).await;
 
-                            if let Err(e) = handle_server(
-                                &mut rx,
-                                file_paths,
-                                config_reader.clone(),
-                                &mut watcher,
-                            )
-                            .await
-                            {
-                                tracing::error!("Failed to handle server: {}", e);
-                            }
+                            handle_watch_server(file_paths, config_reader.clone(), &mut watcher)
+                                .await
+                                .context("Failed to handle watch server")?;
                         }
                     }
                 }
@@ -123,36 +94,77 @@ async fn watch_files(
 
 /// Handles the server (in watch mode)
 /// Prevents server crashes if config reader fails
-async fn handle_server(
-    rx: &mut broadcast::Receiver<()>,
+async fn handle_watch_server(
     file_paths: &[String],
     config_reader: Arc<ConfigReader>,
     watcher: &mut FsEventWatcher,
 ) -> Result<()> {
-    match config_reader.read_all(file_paths).await {
-        Ok(config_module) => {
-            let links = config_module
-                .clone()
-                .links
-                .iter()
-                .map(|link| link.src.clone())
-                .collect::<Vec<_>>();
-            for link in links {
-                if let Err(err) = watcher.watch(link.as_ref(), RecursiveMode::NonRecursive) {
-                    tracing::error!("Failed to watch path {:?}: {}", link, err);
+    if file_paths.len() == 1 {
+        match config_reader.read_all(file_paths).await {
+            Ok(config_module) => {
+                watch_linked_files(file_paths[0].as_str(), config_module.clone(), watcher).await;
+                log_endpoint_set(&config_module.extensions().endpoint_set);
+                Fmt::log_n_plus_one(false, config_module.config());
+
+                let server = Server::new(config_module);
+                if let Err(err) = server.fork_start(true).await {
+                    tracing::error!("Failed to start server: {}", err);
                 }
             }
-            log_endpoint_set(&config_module.extensions().endpoint_set);
-            Fmt::log_n_plus_one(false, config_module.config());
-
-            let server = Server::new(config_module.clone());
-            if let Err(err) = server.fork_start(Some(rx)).await {
-                tracing::error!("Failed to start server: {}", err);
+            Err(err) => {
+                tracing::error!("{}", err);
             }
         }
-        Err(err) => {
-            tracing::error!("Failed to read config files: {}", err);
+    } else {
+        // ensure to watch for correct linked files wrt the config file
+        for file in file_paths {
+            match config_reader.read(file.as_str()).await {
+                Ok(config_module) => {
+                    watch_linked_files(file, config_module, watcher).await;
+                }
+                Err(err) => {
+                    tracing::error!("Failed to read config files: {}", err);
+                }
+            }
+        }
+        match config_reader.read_all(file_paths).await {
+            Ok(config_module) => {
+                log_endpoint_set(&config_module.extensions().endpoint_set);
+                Fmt::log_n_plus_one(false, config_module.config());
+
+                let server = Server::new(config_module);
+                if let Err(err) = server.fork_start(true).await {
+                    tracing::error!("Failed to start server: {}", err);
+                }
+            }
+            Err(err) => {
+                tracing::error!("Failed to read config files: {}", err);
+            }
         }
     }
     Ok(())
+}
+
+async fn watch_linked_files(
+    file_path: &str,
+    config_module: ConfigModule,
+    watcher: &mut FsEventWatcher,
+) {
+    let links = config_module
+        .links
+        .iter()
+        .map(|link| link.src.clone())
+        .collect::<Vec<_>>();
+    for link in links {
+        let mut link_path = link.clone();
+        if let Some(pos) = file_path.rfind('/') {
+            let root_dir = Path::new(&file_path[..pos]);
+            link_path = ConfigReader::resolve_path(&link, Some(root_dir));
+        } else if let Ok(current_dir) = std::env::current_dir() {
+            link_path = ConfigReader::resolve_path(&link, Some(current_dir.as_path()));
+        }
+        if let Err(err) = watcher.watch(link_path.as_ref(), RecursiveMode::NonRecursive) {
+            tracing::error!("Failed to watch path {:?}: {}", link, err);
+        }
+    }
 }
