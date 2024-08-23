@@ -113,7 +113,7 @@ impl Telemetry {
     pub fn render_mustache(&mut self, reader_ctx: &ConfigReaderContext) -> Result<()> {
         match &mut self.export {
             Some(TelemetryExporter::Otlp(otlp)) => {
-                let url_tmpl = Mustache::parse(&otlp.url)?;
+                let url_tmpl = Mustache::parse(&otlp.url);
                 otlp.url = url_tmpl.render(reader_ctx);
 
                 let headers = to_mustache_headers(&otlp.headers).to_result()?;

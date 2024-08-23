@@ -170,6 +170,7 @@ derive_more = { workspace = true }
 enum_dispatch = "0.3.13"
 strum = "0.26.2"
 notify = "6.1.1"
+maplit = "1.0.2"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }
