@@ -1,4 +1,3 @@
-use crate::core::ir::TypedValue;
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
@@ -166,9 +165,7 @@ where
                 (_, Some(obj)) => {
                     let mut ans = Value::JsonObject::new();
 
-                    let type_name = value.get_type_name().unwrap_or(node.type_of.name());
-
-                    for child in node.nested_iter(type_name) {
+                    for child in self.plan.field_nested_iter(node, value) {
                         // all checks for skip must occur in `iter_inner`
                         // and include be checked before calling `iter` or recursing.
                         let include = self.include(child);

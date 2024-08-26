@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use super::Error;
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
+use crate::core::ir::TypedValue;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
@@ -143,6 +144,15 @@ impl Variable {
     }
 }
 
+impl<Extensions, Input> Field<Extensions, Input> {
+    pub fn value_type<'a, Output>(&'a self, value: &'a Output) -> &'a str
+    where
+        Output: TypedValue<'a>,
+    {
+        value.get_type_name().unwrap_or(self.type_of.name())
+    }
+}
+
 impl<Input> Field<Nested<Input>, Input> {
     pub fn try_map<Output, Error>(
         self,
@@ -215,27 +225,15 @@ impl<Input> Field<Flat, Input> {
 }
 
 impl<Input> Field<Nested<Input>, Input> {
-    /// iters over children fields that are
-    /// related to passed `type_name` either
-    /// as direct field of the queried type or
-    /// field from fragment on type `type_name`
+    /// iters over children fields that satisfies
+    /// passed filter_fn
     pub fn nested_iter<'a>(
         &'a self,
-        type_name: &'a str,
+        mut filter_fn: impl FnMut(&'a Field<Nested<Input>, Input>) -> bool + 'a,
     ) -> impl Iterator<Item = &Field<Nested<Input>, Input>> + 'a {
         self.extensions
             .as_ref()
-            .map(move |nested| {
-                nested
-                    .0
-                    .iter()
-                    // TODO: handle Interface and Union types here
-                    // Right now only exact type name is used to check the set of fields
-                    // but with Interfaces/Unions we need to check if that specific type
-                    // is member of some Interface/Union and if so call the fragments for
-                    // the related Interfaces/Unions
-                    .filter(move |field| field.type_condition == type_name)
-            })
+            .map(move |nested| nested.0.iter().filter(move |&field| filter_fn(field)))
             .into_iter()
             .flatten()
     }
@@ -332,7 +330,6 @@ pub struct OperationPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
-
     // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
 }
@@ -446,6 +443,22 @@ impl<Input> OperationPlan<Input> {
         value: &str,
     ) -> bool {
         self.index.validate_enum_value(field.type_of.name(), value)
+    }
+
+    pub fn field_nested_iter<'a, Output>(
+        &'a self,
+        field: &'a Field<Nested<Input>, Input>,
+        value: &'a Output,
+    ) -> impl Iterator<Item = &'a Field<Nested<Input>, Input>>
+    where
+        Output: TypedValue<'a>,
+    {
+        let value_type = field.value_type(value);
+
+        field.nested_iter(move |field| {
+            self.index
+                .is_type_implements(value_type, &field.type_condition)
+        })
     }
 }
 

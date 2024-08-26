@@ -96,8 +96,9 @@ impl SelectionField {
         field: &crate::core::jit::Field<Nested<ConstValue>, ConstValue>,
     ) -> SelectionField {
         let name = field.output_name.to_string();
+        let type_name = field.type_of.name();
         let selection_set = field
-            .nested_iter(field.type_of.name())
+            .nested_iter(|field| field.type_condition == type_name)
             .map(Self::from_jit_field)
             .collect();
         let args = field
