@@ -6,6 +6,7 @@ expression: plan.into_nested()
     Field {
         id: 0,
         name: "users",
+        output_name: "users",
         ir: "Some(..)",
         type_of: [User],
         type_condition: "Query",
@@ -15,9 +16,9 @@ expression: plan.into_nested()
                     Field {
                         id: 1,
                         name: "id",
+                        output_name: "id",
                         type_of: ID!,
                         type_condition: "User",
-                        is_scalar: true,
                         directives: [
                             Directive {
                                 name: "options",
@@ -35,9 +36,9 @@ expression: plan.into_nested()
                     Field {
                         id: 2,
                         name: "name",
+                        output_name: "name",
                         type_of: String!,
                         type_condition: "User",
-                        is_scalar: true,
                         include: Some(
                             Variable(
                                 "includeName",
@@ -48,7 +49,6 @@ expression: plan.into_nested()
                 ],
             ),
         ),
-        is_scalar: false,
         directives: [],
     },
 ]

@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use std::sync::Arc;
 
 use async_graphql::parser::types::{ConstDirective, OperationType};
-use async_graphql::{Name, Pos, Positioned};
+use async_graphql::{ErrorExtensions, Name, Positioned as AsyncPositioned, ServerError};
 use async_graphql_value::ConstValue;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
+use super::Error;
+use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -105,7 +108,11 @@ impl FieldId {
 #[derive(Clone)]
 pub struct Field<Extensions, Input> {
     pub id: FieldId,
+    /// Name of key in the value object for this field
     pub name: String,
+    /// Output name (i.e. with alias) that should be used for the result value
+    /// of this field
+    pub output_name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
     /// Specifies the name of type used in condition to fetch that field
@@ -118,7 +125,6 @@ pub struct Field<Extensions, Input> {
     pub args: Vec<Arg<Input>>,
     pub extensions: Option<Extensions>,
     pub pos: Pos,
-    pub is_scalar: bool,
     pub directives: Vec<Directive<Input>>,
 }
 
@@ -156,6 +162,7 @@ impl<Input> Field<Nested<Input>, Input> {
         Ok(Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -168,7 +175,6 @@ impl<Input> Field<Nested<Input>, Input> {
                 .into_iter()
                 .map(|arg| arg.try_map(map))
                 .collect::<Result<_, _>>()?,
-            is_scalar: false,
             directives: self
                 .directives
                 .into_iter()
@@ -186,6 +192,7 @@ impl<Input> Field<Flat, Input> {
         Ok(Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -198,7 +205,6 @@ impl<Input> Field<Flat, Input> {
                 .into_iter()
                 .map(|arg| arg.try_map(&map))
                 .collect::<Result<_, _>>()?,
-            is_scalar: self.is_scalar,
             directives: self
                 .directives
                 .into_iter()
@@ -236,7 +242,7 @@ impl<Input> Field<Nested<Input>, Input> {
 }
 
 impl<Input> Field<Flat, Input> {
-    fn parent(&self) -> Option<&FieldId> {
+    pub fn parent(&self) -> Option<&FieldId> {
         self.extensions.as_ref().map(|flat| &flat.0)
     }
 
@@ -262,6 +268,7 @@ impl<Input> Field<Flat, Input> {
         Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -270,7 +277,6 @@ impl<Input> Field<Flat, Input> {
             args: self.args,
             pos: self.pos,
             extensions,
-            is_scalar: self.is_scalar,
             directives: self.directives,
         }
     }
@@ -281,6 +287,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
         let mut debug_struct = f.debug_struct("Field");
         debug_struct.field("id", &self.id);
         debug_struct.field("name", &self.name);
+        debug_struct.field("output_name", &self.output_name);
         if self.ir.is_some() {
             debug_struct.field("ir", &"Some(..)");
         }
@@ -292,7 +299,6 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
         if self.extensions.is_some() {
             debug_struct.field("extensions", &self.extensions);
         }
-        debug_struct.field("is_scalar", &self.is_scalar);
         if self.skip.is_some() {
             debug_struct.field("skip", &self.skip);
         }
@@ -300,6 +306,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("include", &self.include);
         }
         debug_struct.field("directives", &self.directives);
+
         debug_struct.finish()
     }
 }
@@ -320,11 +327,22 @@ impl Flat {
 #[derive(Clone, Debug)]
 pub struct Nested<Input>(Vec<Field<Nested<Input>, Input>>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct OperationPlan<Input> {
     flat: Vec<Field<Flat, Input>>,
     operation_type: OperationType,
     nested: Vec<Field<Nested<Input>, Input>>,
+
+    // TODO: drop index from here. Embed all the necessary information in each field of the plan.
+    pub index: Arc<Index>,
+}
+
+impl<Input> std::fmt::Debug for OperationPlan<Input> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OperationPlan")
+            .field("operation_type", &self.operation_type)
+            .finish()
+    }
 }
 
 impl<Input> OperationPlan<Input> {
@@ -344,12 +362,21 @@ impl<Input> OperationPlan<Input> {
             nested.push(n.try_map(&map)?);
         }
 
-        Ok(OperationPlan { flat, operation_type: self.operation_type, nested })
+        Ok(OperationPlan {
+            flat,
+            operation_type: self.operation_type,
+            nested,
+            index: self.index,
+        })
     }
 }
 
 impl<Input> OperationPlan<Input> {
-    pub fn new(fields: Vec<Field<Flat, Input>>, operation_type: OperationType) -> Self
+    pub fn new(
+        fields: Vec<Field<Flat, Input>>,
+        operation_type: OperationType,
+        index: Arc<Index>,
+    ) -> Self
     where
         Input: Clone,
     {
@@ -360,7 +387,7 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        Self { flat: fields, nested, operation_type }
+        Self { flat: fields, nested, operation_type, index }
     }
 
     pub fn operation_type(&self) -> OperationType {
@@ -404,6 +431,22 @@ impl<Input> OperationPlan<Input> {
     pub fn size(&self) -> usize {
         self.flat.len()
     }
+
+    pub fn field_is_scalar<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
+        self.index.type_is_scalar(field.type_of.name())
+    }
+
+    pub fn field_is_enum<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
+        self.index.type_is_enum(field.type_of.name())
+    }
+
+    pub fn field_validate_enum_value<Extensions>(
+        &self,
+        field: &Field<Extensions, Input>,
+        value: &str,
+    ) -> bool {
+        self.index.validate_enum_value(field.type_of.name(), value)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -432,17 +475,136 @@ impl<'a> From<&'a Directive<ConstValue>> for ConstDirective {
     fn from(value: &'a Directive<ConstValue>) -> Self {
         // we don't use pos required in Positioned struct, hence using defaults.
         ConstDirective {
-            name: Positioned::new(Name::new(&value.name), Default::default()),
+            name: AsyncPositioned::new(Name::new(&value.name), Default::default()),
             arguments: value
                 .arguments
                 .iter()
                 .map(|a| {
                     (
-                        Positioned::new(Name::new(a.0.clone()), Default::default()),
-                        Positioned::new(a.1.clone(), Default::default()),
+                        AsyncPositioned::new(Name::new(a.0.clone()), Default::default()),
+                        AsyncPositioned::new(a.1.clone(), Default::default()),
                     )
                 })
                 .collect::<Vec<_>>(),
+        }
+    }
+}
+
+/// Original position of an element in source code.
+///
+/// You can serialize and deserialize it to the GraphQL `locations` format
+/// ([reference](https://spec.graphql.org/October2021/#sec-Errors)).
+#[derive(
+    Debug, PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Default, Hash, Serialize, Deserialize,
+)]
+pub struct Pos {
+    /// One-based line number.
+    pub line: usize,
+
+    /// One-based column number.
+    pub column: usize,
+}
+
+impl From<async_graphql::Pos> for Pos {
+    fn from(pos: async_graphql::Pos) -> Self {
+        Self { line: pos.line, column: pos.column }
+    }
+}
+
+impl From<Pos> for async_graphql::Pos {
+    fn from(value: Pos) -> Self {
+        async_graphql::Pos { line: value.line, column: value.column }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PathSegment {
+    /// A field in an object.
+    Field(String),
+    /// An index in a list.
+    Index(usize),
+}
+
+impl From<async_graphql::PathSegment> for PathSegment {
+    fn from(value: async_graphql::PathSegment) -> Self {
+        match value {
+            async_graphql::PathSegment::Field(field) => PathSegment::Field(field),
+            async_graphql::PathSegment::Index(index) => PathSegment::Index(index),
+        }
+    }
+}
+
+impl From<PathSegment> for async_graphql::PathSegment {
+    fn from(val: PathSegment) -> Self {
+        match val {
+            PathSegment::Field(field) => async_graphql::PathSegment::Field(field),
+            PathSegment::Index(index) => async_graphql::PathSegment::Index(index),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct Positioned<Value> {
+    pub value: Value,
+    pub pos: Pos,
+    pub path: Vec<PathSegment>,
+}
+
+impl<Value> Positioned<Value> {
+    pub fn new(value: Value, pos: Pos) -> Self {
+        Positioned { value, pos, path: vec![] }
+    }
+}
+
+impl<Value> Positioned<Value>
+where
+    Value: Clone,
+{
+    pub fn with_path(&mut self, path: Vec<PathSegment>) -> Self {
+        Self { value: self.value.clone(), pos: self.pos, path }
+    }
+}
+
+// TODO: Improve conversion logic to avoid unnecessary round-trip conversions
+//       between ServerError and Positioned<Error>.
+impl From<ServerError> for Positioned<Error> {
+    fn from(val: ServerError) -> Self {
+        Self {
+            value: Error::ServerError(val.clone()),
+            pos: val.locations.first().cloned().unwrap_or_default().into(),
+            path: val
+                .path
+                .into_iter()
+                .map(PathSegment::from)
+                .collect::<Vec<_>>(),
+        }
+    }
+}
+
+impl From<Positioned<Error>> for ServerError {
+    fn from(val: Positioned<Error>) -> Self {
+        match val.value {
+            Error::ServerError(e) => e,
+            _ => {
+                let extensions = val.value.extend().extensions;
+                let mut server_error =
+                    ServerError::new(val.value.to_string(), Some(val.pos.into()));
+
+                server_error.extensions = extensions;
+
+                // TODO: in order to be compatible with async_graphql path is only set for
+                // validation errors here but in general we might consider setting it
+                // for every error
+                if let Error::Validation(_) = val.value {
+                    server_error.path = val
+                        .path
+                        .into_iter()
+                        .map(|path| path.into())
+                        .collect::<Vec<_>>();
+                }
+
+                server_error
+            }
         }
     }
 }
