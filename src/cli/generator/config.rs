@@ -436,7 +436,7 @@ mod tests {
     fn test_raise_error_unknown_field_at_root_level() {
         let json = r#"{"input": "value"}"#;
         let expected_error =
-            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema`, `llm` at line 1 column 8";
+            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema`, `secret`, `llm` at line 1 column 8";
         assert_deserialization_error(json, expected_error);
     }
 
