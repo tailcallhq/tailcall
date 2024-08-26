@@ -102,6 +102,10 @@ input oneof__Request__Var__Var1 @tag(id: "oneof.Request") {
   usual: String
 }
 
+interface oneof__Response__Interface {
+  usual: Int
+}
+
 union oneof__Response = oneof__Response__Var | oneof__Response__Var0 | oneof__Response__Var1 | oneof__Response__Var2
 
 type Query {
@@ -133,21 +137,21 @@ type oneof__Payload @tag(id: "oneof.Payload") {
   payload: String
 }
 
-type oneof__Response__Var @tag(id: "oneof.Response") {
+type oneof__Response__Var implements oneof__Response__Interface {
   usual: Int
 }
 
-type oneof__Response__Var0 @tag(id: "oneof.Response") {
+type oneof__Response__Var0 implements oneof__Response__Interface {
   payload: oneof__Payload!
   usual: Int
 }
 
-type oneof__Response__Var1 @tag(id: "oneof.Response") {
+type oneof__Response__Var1 implements oneof__Response__Interface {
   command: oneof__Command!
   usual: Int
 }
 
-type oneof__Response__Var2 @tag(id: "oneof.Response") {
+type oneof__Response__Var2 implements oneof__Response__Interface {
   response: String!
   usual: Int
 }
@@ -169,9 +173,9 @@ type oneof__Response__Var2 @tag(id: "oneof.Response") {
     query: >
       query {
         oneof__OneOfService__GetOneOfVar1(request: { command: { command: "start" } }) {
-          # TODO: check that it's possible to get shared field from Union like that
-          # outside of the fragment
-          usual
+          ... on oneof__Response__Interface {
+            usual
+          }
           ... on oneof__Response__Var1 {
             command {
               command
