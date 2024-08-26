@@ -206,18 +206,18 @@ impl Builder {
                             Some(Flat::new(id.clone())),
                             fragments,
                         );
-                        let name = gql_field
-                            .alias
-                            .as_ref()
-                            .map(|alias| alias.node.to_string())
-                            .unwrap_or(field_name.to_string());
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
                         };
                         let flat_field = Field {
                             id,
-                            name,
+                            name: field_name.to_string(),
+                            output_name: gql_field
+                                .alias
+                                .as_ref()
+                                .map(|a| a.node.to_string())
+                                .unwrap_or(field_name.to_owned()),
                             ir,
                             type_of,
                             type_condition: type_condition.to_string(),
@@ -235,6 +235,7 @@ impl Builder {
                         let flat_field = Field {
                             id: FieldId::new(self.field_id.next()),
                             name: field_name.to_string(),
+                            output_name: field_name.to_string(),
                             ir: None,
                             type_of: crate::core::blueprint::Type::NamedType {
                                 name: "String".to_owned(),
@@ -412,6 +413,21 @@ mod tests {
             r#"
             query {
                 posts { user { id } }
+            }
+        "#,
+            &Variables::new(),
+        );
+
+        assert!(plan.is_query());
+        insta::assert_debug_snapshot!(plan.into_nested());
+    }
+
+    #[test]
+    fn test_alias_query() {
+        let plan = plan(
+            r#"
+            query {
+                articles: posts { author: user { identifier: id } }
             }
         "#,
             &Variables::new(),

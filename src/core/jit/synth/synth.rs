@@ -61,7 +61,8 @@ where
                 continue;
             }
             let val = self.iter(child, None, &DataPath::new())?;
-            data.insert_key(child.name.as_str(), val);
+
+            data.insert_key(&child.output_name, val);
         }
 
         Ok(Value::object(data))
@@ -142,11 +143,10 @@ where
             if scalar.validate(value) {
                 Ok(value.clone())
             } else {
-                Err(ValidationError::ScalarInvalid {
-                    type_of: node.type_of.name().to_string(),
-                    path: node.name.to_string(),
-                }
-                .into())
+                Err(
+                    ValidationError::ScalarInvalid { type_of: node.type_of.name().to_string() }
+                        .into(),
+                )
             }
         } else if self.plan.field_is_enum(node) {
             if value
@@ -174,8 +174,7 @@ where
                         let include = self.include(child);
                         if include {
                             let val = obj.get_key(child.name.as_str());
-
-                            ans.insert_key(child.name.as_str(), self.iter(child, val, data_path)?);
+                            ans.insert_key(&child.output_name, self.iter(child, val, data_path)?);
                         }
                     }
 
@@ -208,7 +207,7 @@ where
             let mut parent = self.plan.find_field(node.id.clone());
 
             while let Some(field) = parent {
-                path.push(PathSegment::Field(field.name.to_string()));
+                path.push(PathSegment::Field(field.output_name.to_string()));
                 parent = field
                     .parent()
                     .and_then(|id| self.plan.find_field(id.clone()));

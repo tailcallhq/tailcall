@@ -60,15 +60,15 @@ input NU__u2 {
 scalar PhoneNumber
 
 type Query {
-  testVar0Var0(nnu: NNU__nu0, nu: NU__u0!): U
-  testVar0Var1(nnu: NNU__nu0, nu: NU__u1!): U
-  testVar0Var2(nnu: NNU__nu0, nu: NU__u2!): U
-  testVar1Var0(nnu: NNU__nu1, nu: NU__u0!): U
-  testVar1Var1(nnu: NNU__nu1, nu: NU__u1!): U
-  testVar1Var2(nnu: NNU__nu1, nu: NU__u2!): U
-  testVar2Var0(nnu: NNU__nu2, nu: NU__u0!): U
-  testVar2Var1(nnu: NNU__nu2, nu: NU__u1!): U
-  testVar2Var2(nnu: NNU__nu2, nu: NU__u2!): U
+  testVar0Var0(nu: NU__u0!, nnu: NNU__nu0): U
+  testVar0Var1(nu: NU__u0!, nnu: NNU__nu1): U
+  testVar0Var2(nu: NU__u0!, nnu: NNU__nu2): U
+  testVar1Var0(nu: NU__u1!, nnu: NNU__nu0): U
+  testVar1Var1(nu: NU__u1!, nnu: NNU__nu1): U
+  testVar1Var2(nu: NU__u1!, nnu: NNU__nu2): U
+  testVar2Var0(nu: NU__u2!, nnu: NNU__nu0): U
+  testVar2Var1(nu: NU__u2!, nnu: NNU__nu1): U
+  testVar2Var2(nu: NU__u2!, nnu: NNU__nu2): U
 }
 
 type T1 {
