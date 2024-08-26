@@ -295,6 +295,7 @@ impl Config {
             output,
             schema: self.schema,
             preset: self.preset,
+            secret: self.secret,
             llm,
         })
     }
