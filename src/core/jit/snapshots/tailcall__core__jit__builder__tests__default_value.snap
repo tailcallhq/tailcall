@@ -6,6 +6,7 @@ expression: plan.into_nested()
     Field {
         id: 0,
         name: "createPost",
+        output_name: "createPost",
         ir: "Some(..)",
         type_of: Post,
         type_condition: "Mutation",
@@ -44,6 +45,7 @@ expression: plan.into_nested()
                     Field {
                         id: 1,
                         name: "id",
+                        output_name: "id",
                         type_of: ID!,
                         type_condition: "Post",
                         directives: [],
