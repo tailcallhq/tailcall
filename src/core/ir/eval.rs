@@ -72,13 +72,10 @@ impl IR {
                         if let Some(value) = map.get(&key) {
                             Ok(ConstValue::String(value.to_owned()))
                         } else {
-                            Err(Error::ExprEvalError(format!(
-                                "Can't find mapped key: {}.",
-                                key
-                            )))
+                            Err(Error::ExprEval(format!("Can't find mapped key: {}.", key)))
                         }
                     } else {
-                        Err(Error::ExprEvalError(
+                        Err(Error::ExprEval(
                             "Mapped key must be string value.".to_owned(),
                         ))
                     }
