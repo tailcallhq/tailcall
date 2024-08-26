@@ -70,16 +70,9 @@ impl<'a, Input: Clone, Output> Context<'a, Input, Output> {
 
         for arg in field.args.iter() {
             let name = arg.name.as_str();
-            let value = arg
-                .value
-                .clone()
-                // TODO: default value resolution should happen in the InputResolver
-                .or_else(|| arg.default_value.clone());
+            let value = arg.value.clone();
             if let Some(value) = value {
                 arg_map.insert(Name::new(name), value);
-            } else if !arg.type_of.is_nullable() {
-                // TODO: throw error here
-                todo!()
             }
         }
         Some(arg_map)

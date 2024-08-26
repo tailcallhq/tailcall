@@ -1,6 +1,6 @@
 use async_graphql_value::{ConstValue, Value};
 
-use super::{OperationPlan, ResolveInputError, Variables};
+use super::{Arg, Field, OperationPlan, ResolveInputError, Variables};
 
 /// Trait to represent conversion from some dynamic type (with variables)
 /// to the resolved variant based on the additional provided info.
@@ -13,6 +13,16 @@ pub trait InputResolvable {
         self,
         variables: &Variables<Self::Output>,
     ) -> Result<Self::Output, ResolveInputError>;
+}
+
+pub trait OutputTrait {
+    fn is_null_value(&self) -> bool;
+}
+
+impl OutputTrait for ConstValue {
+    fn is_null_value(&self) -> bool {
+        self.eq(&ConstValue::Null)
+    }
 }
 
 impl InputResolvable for Value {
@@ -45,7 +55,7 @@ impl<Input> InputResolver<Input> {
 impl<Input, Output> InputResolver<Input>
 where
     Input: Clone,
-    Output: Clone,
+    Output: Clone + OutputTrait,
     Input: InputResolvable<Output = Output>,
 {
     pub fn resolve_input(
@@ -57,7 +67,42 @@ where
             .as_parent()
             .iter()
             .map(|field| field.clone().try_map(|value| value.resolve(variables)))
-            .collect::<Result<_, _>>()?;
+            .map(|field| match field {
+                Ok(field) => {
+                    let args = field
+                        .args
+                        .into_iter()
+                        .map(|arg| {
+                            // TODO: this should recursively check the InputType for field presence
+                            if arg
+                                .value
+                                .as_ref()
+                                .map(|val| val.is_null_value())
+                                .unwrap_or(true)
+                                && !arg.type_of.is_nullable()
+                            {
+                                let default_value = arg.default_value.clone();
+                                match default_value {
+                                    Some(value) => Ok(Arg { value: Some(value), ..arg }),
+                                    None => Err(ResolveInputError::ArgumentIsRequired {
+                                        arg_name: arg.name,
+                                        field_name: field.output_name.clone(),
+                                    }),
+                                }
+                            } else if arg.value.is_none() {
+                                let default_value = arg.default_value.clone();
+                                Ok(Arg { value: default_value, ..arg })
+                            } else {
+                                Ok(arg)
+                            }
+                        })
+                        .collect::<Result<_, _>>()?;
+
+                    Ok(Field { args, ..field })
+                }
+                Err(err) => Err(err),
+            })
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(OperationPlan::new(
             new_fields,
