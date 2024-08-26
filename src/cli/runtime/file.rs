@@ -1,5 +1,6 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+use crate::cli::tc::start::PREVENT_LOGS;
 use crate::cli::CLIError;
 use crate::core::FileIO;
 
@@ -41,7 +42,10 @@ impl FileIO for NativeFileIO {
             CLIError::new(format!("Failed to read file: {}", path).as_str())
                 .description(err.to_string())
         })?;
-        tracing::info!("File read: {} ... ok", path);
+        let prevent_logs = *PREVENT_LOGS.lock().unwrap();
+        if !prevent_logs {
+            tracing::info!("File read: {} ... ok", path);
+        }
         Ok(content)
     }
 }
