@@ -25,6 +25,8 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
+    #[serde(default, skip_serializing_if = "TemplateString::is_empty")]
+    pub secret: TemplateString,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub llm: Option<LLMConfig>,
 }
@@ -293,6 +295,7 @@ impl Config {
             output,
             schema: self.schema,
             preset: self.preset,
+            secret: self.secret,
             llm,
         })
     }
