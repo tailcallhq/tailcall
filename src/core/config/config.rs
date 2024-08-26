@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -6,6 +6,7 @@ use anyhow::Result;
 use async_graphql::parser::types::{ConstDirective, ServiceDocument};
 use async_graphql::Positioned;
 use derive_setters::Setters;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall_macros::{CustomResolver, DirectiveDefinition, InputDefinition};
@@ -239,7 +240,8 @@ pub struct Field {
     ///
     /// Map of argument name and its definition.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub args: BTreeMap<String, Arg>,
+    #[schemars(with = "HashMap::<String, Arg>")]
+    pub args: IndexMap<String, Arg>,
 
     ///
     /// Publicly visible documentation for the field.

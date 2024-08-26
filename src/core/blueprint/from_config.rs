@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::dynamic::SchemaBuilder;
+use indexmap::IndexMap;
 
 use self::telemetry::to_opentelemetry;
 use super::Server;
@@ -67,7 +68,7 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
     blueprint
 }
 
-pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
+pub fn to_json_schema_for_args(args: &IndexMap<String, Arg>, config: &Config) -> JsonSchema {
     let mut schema_fields = BTreeMap::new();
     for (name, arg) in args.iter() {
         schema_fields.insert(name.clone(), to_json_schema(&arg.type_of, config));

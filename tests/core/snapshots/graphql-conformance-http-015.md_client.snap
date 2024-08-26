@@ -47,7 +47,7 @@ type User {
   featuredVideoPreview(video: VideoSize! = {}): String!
   id: ID!
   name: String!
-  profilePic(height: Int = 100, size: Int! = 100, width: Int): String!
+  profilePic(size: Int! = 100, width: Int, height: Int = 100): String!
   searchComments(query: [[String!]!]! = [["today"]]): String!
 }
 

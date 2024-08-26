@@ -31,7 +31,7 @@ where
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
     pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { exec, ctx: RequestContext::new(plan) }
+        Self { exec, ctx: RequestContext::new(plan.clone()) }
     }
 
     pub async fn store(&self) -> Store<Result<TypedValue<Output>, Positioned<jit::Error>>> {
@@ -73,25 +73,9 @@ where
 
     async fn init(&mut self) {
         join_all(self.request.plan().as_nested().iter().map(|field| async {
-            let mut arg_map = indexmap::IndexMap::new();
-            for arg in field.args.iter() {
-                let name = arg.name.as_str();
-                let value: Option<Input> = arg
-                    .value
-                    .clone()
-                    // TODO: default value resolution should happen in the InputResolver
-                    .or_else(|| arg.default_value.clone());
-
-                if let Some(value) = value {
-                    arg_map.insert(name, value);
-                } else if !arg.type_of.is_nullable() {
-                    // TODO: throw error here
-                    todo!()
-                }
-            }
+            let ctx = Context::new(field, self.request);
             // TODO: with_args should be called on inside iter_field on any level, not only
             // for root fields
-            let ctx = Context::new(field, self.request).with_args(arg_map);
             self.execute(&ctx, DataPath::new()).await
         }))
         .await;
@@ -176,7 +160,7 @@ where
             let default_obj = Output::object(Output::JsonObject::new());
             let value = ctx
                 .value()
-                .and_then(|v| v.get_key(&field.name))
+                .and_then(|v| v.get_key(&field.output_name))
                 // in case there is no value we still put some dumb empty value anyway
                 // to force execution of the nested fields even when parent object is not present.
                 // For async_graphql it's done by `fix_dangling_resolvers` fn that basically creates
