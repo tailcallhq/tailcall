@@ -108,7 +108,11 @@ impl FieldId {
 #[derive(Clone)]
 pub struct Field<Extensions, Input> {
     pub id: FieldId,
+    /// Name of key in the value object for this field
     pub name: String,
+    /// Output name (i.e. with alias) that should be used for the result value
+    /// of this field
+    pub output_name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
     /// Specifies the name of type used in condition to fetch that field
@@ -158,6 +162,7 @@ impl<Input> Field<Nested<Input>, Input> {
         Ok(Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -187,6 +192,7 @@ impl<Input> Field<Flat, Input> {
         Ok(Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -262,6 +268,7 @@ impl<Input> Field<Flat, Input> {
         Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -280,6 +287,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
         let mut debug_struct = f.debug_struct("Field");
         debug_struct.field("id", &self.id);
         debug_struct.field("name", &self.name);
+        debug_struct.field("output_name", &self.output_name);
         if self.ir.is_some() {
             debug_struct.field("ir", &"Some(..)");
         }
@@ -298,6 +306,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("include", &self.include);
         }
         debug_struct.field("directives", &self.directives);
+
         debug_struct.finish()
     }
 }
