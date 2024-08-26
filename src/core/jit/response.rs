@@ -103,7 +103,9 @@ mod test {
             Pos { line: 1, column: 2 },
         );
         let error2 = Positioned::new(
-            jit::Error::Validation(jit::ValidationError::TypeNameMismatch),
+            jit::Error::Validation(jit::ValidationError::EnumInvalid {
+                type_of: "EnumDef".to_string(),
+            }),
             Pos { line: 3, column: 4 },
         );
 
