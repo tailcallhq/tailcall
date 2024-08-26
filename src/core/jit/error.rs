@@ -27,7 +27,7 @@ pub enum ValidationError {
     // TODO: replace with sane error message. Right now, it's defined as is only for compatibility
     // with async_graphql error message for this case
     #[error(r#"internal: invalid value for scalar "{type_of}", expected "FieldValue::Value""#)]
-    ScalarInvalid { type_of: String, path: String },
+    ScalarInvalid { type_of: String },
     #[error("TypeName shape doesn't satisfy the processed object")]
     TypeNameMismatch,
     #[error(r#"internal: invalid item for enum "{type_of}""#)]

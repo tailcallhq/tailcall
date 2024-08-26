@@ -22,7 +22,7 @@ input PostInputWithoutUserId {
 type Mutation {
   attachPostToFirstUser(postId: Int!): User
     @call(steps: [{mutation: "attachPostToUser", args: {postId: "{{.args.postId}}", userId: 1}}])
-  attachPostToUser(postId: Int!, userId: Int!): User
+  attachPostToUser(userId: Int!, postId: Int!): User
     @http(body: "{\"postId\":{{.args.postId}}}", method: "PATCH", path: "/users/{{.args.userId}}")
   insertMockedPost: Post
     @call(steps: [{mutation: "insertPost", args: {input: {body: "post-body", title: "post-title", userId: 1}}}])
