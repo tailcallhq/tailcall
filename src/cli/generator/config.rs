@@ -27,6 +27,18 @@ pub struct Config<Status = UnResolved> {
     pub schema: Schema,
     #[serde(default, skip_serializing_if = "TemplateString::is_empty")]
     pub secret: TemplateString,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub llm: Option<LLMConfig>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct LLMConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub secret: Option<TemplateString>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
@@ -273,13 +285,17 @@ impl Config {
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;
+        let llm = self.llm.map(|llm| {
+            let secret = llm.secret.map(|s| s.resolve(&reader_context));
+            LLMConfig { model: llm.model, secret }
+        });
 
         Ok(Config {
             inputs,
             output,
             schema: self.schema,
             preset: self.preset,
-            secret: self.secret.resolve(&reader_context),
+            llm,
         })
     }
 }
@@ -419,7 +435,7 @@ mod tests {
     fn test_raise_error_unknown_field_at_root_level() {
         let json = r#"{"input": "value"}"#;
         let expected_error =
-            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema`, `secret` at line 1 column 8";
+            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema`, `llm` at line 1 column 8";
         assert_deserialization_error(json, expected_error);
     }
 
@@ -492,7 +508,7 @@ mod tests {
     }
 
     #[test]
-    fn test_secret() {
+    fn test_llm_config() {
         let mut env_vars = HashMap::new();
         let token = "eyJhbGciOiJIUzI1NiIsInR5";
         env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
@@ -506,12 +522,17 @@ mod tests {
             headers: Default::default(),
         };
 
-        let config =
-            Config::default().secret(TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap());
+        let config = Config::default().llm(Some(LLMConfig {
+            model: Some("gpt-3.5-turbo".to_string()),
+            secret: Some(TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap()),
+        }));
         let resolved_config = config.into_resolved("", reader_ctx).unwrap();
 
-        let actual = resolved_config.secret;
-        let expected = TemplateString::from("eyJhbGciOiJIUzI1NiIsInR5");
+        let actual = resolved_config.llm;
+        let expected = Some(LLMConfig {
+            model: Some("gpt-3.5-turbo".to_string()),
+            secret: Some(TemplateString::from(token)),
+        });
 
         assert_eq!(actual, expected);
     }
