@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use super::Error;
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
+use crate::core::json::JsonLike;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
@@ -45,6 +46,24 @@ impl<Value> Variables<Value> {
 impl<V> FromIterator<(String, V)> for Variables<V> {
     fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
         Self(iter.into_iter().collect())
+    }
+}
+
+impl<Extensions, Input> Field<Extensions, Input> {
+    #[inline(always)]
+    pub fn skip<'json, Value: JsonLike<'json>>(&self, variables: &Variables<Value>) -> bool {
+        let eval =
+            |variable_option: Option<&Variable>, variables: &Variables<Value>, default: bool| {
+                variable_option
+                    .map(|a| a.as_str())
+                    .and_then(|name| variables.get(name))
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(default)
+            };
+        let skip = eval(self.skip.as_ref(), variables, false);
+        let include = eval(self.include.as_ref(), variables, true);
+
+        skip == include
     }
 }
 
