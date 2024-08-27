@@ -1,5 +1,4 @@
-use crate::core::ir::TypeName;
-use crate::core::jit::exec::{TypedValue, TypedValueRef};
+use crate::core::ir::TypedValue;
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
