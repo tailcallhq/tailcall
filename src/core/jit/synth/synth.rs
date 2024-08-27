@@ -100,10 +100,10 @@ where
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
     ) -> Result<Value, Positioned<Error>> {
+        // according to GraphQL spec https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
         if node.type_of.is_nullable() {
             Ok(Value::null())
         } else {
-            // link to GraphQL reference https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
             Err(ValidationError::ValueRequired.into()).map_err(|e| self.to_location_error(e, node))
         }
     }
@@ -121,7 +121,7 @@ where
         }
 
         let eval_result = if value.is_null() {
-            // link to GraphQL reference https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
+            // check the nullability of this type unwrapping list modifier
             let is_nullable = match &node.type_of {
                 crate::core::blueprint::Type::NamedType { non_null, .. } => !*non_null,
                 crate::core::blueprint::Type::ListType { of_type, .. } => of_type.is_nullable(),
