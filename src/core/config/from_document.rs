@@ -8,6 +8,7 @@ use async_graphql::parser::types::{
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 use async_graphql_value::ConstValue;
+use indexmap::IndexMap;
 
 use super::telemetry::Telemetry;
 use super::{Alias, Resolver};
@@ -304,7 +305,7 @@ fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> 
 fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
     to_common_field(
         field_definition,
-        BTreeMap::new(),
+        IndexMap::new(),
         field_definition
             .default_value
             .as_ref()
@@ -313,7 +314,7 @@ fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<confi
 }
 fn to_common_field<F>(
     field: &F,
-    args: BTreeMap<String, config::Arg>,
+    args: IndexMap<String, config::Arg>,
     default_value: Option<ConstValue>,
 ) -> Valid<config::Field, String>
 where
@@ -366,8 +367,8 @@ fn to_type_of(type_: &Type) -> String {
         BaseType::List(ty) => to_type_of(ty),
     }
 }
-fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> {
-    let mut args: BTreeMap<String, config::Arg> = BTreeMap::new();
+fn to_args(field_definition: &FieldDefinition) -> IndexMap<String, config::Arg> {
+    let mut args = IndexMap::new();
 
     for arg in field_definition.arguments.iter() {
         let arg_name = pos_name_to_string(&arg.node.name);
