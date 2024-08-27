@@ -46,7 +46,7 @@ schema
   query: Query
 }
 
-input oneof__CommandInput{
+input oneof__CommandInput {
   command: String
 }
 
@@ -82,22 +82,22 @@ input oneof__Request__Var1__Var0 {
   usual: String
 }
 
-
+input oneof__Request__Var1__Var1 {
   command: oneof__CommandInput!
   optPayload: oneof__PayloadInput!
   usual: String
 }
 
-
+input oneof__Request__Var__Var {
   usual: String
 }
 
-
+input oneof__Request__Var__Var0 {
   flag: Boolean!
   usual: String
 }
 
-
+input oneof__Request__Var__Var1 {
   optPayload: oneof__PayloadInput!
   usual: String
 }
@@ -125,29 +125,29 @@ type Query {
     @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
 }
 
-
+type oneof__Command {
   command: String
 }
 
-
+type oneof__Payload {
   payload: String
 }
 
-
+type oneof__Response__Var {
   usual: Int
 }
 
-
+type oneof__Response__Var0 {
   payload: oneof__Payload!
   usual: Int
 }
 
-
+type oneof__Response__Var1 {
   command: oneof__Command!
   usual: Int
 }
 
-
+type oneof__Response__Var2 {
   response: String!
   usual: Int
 }
