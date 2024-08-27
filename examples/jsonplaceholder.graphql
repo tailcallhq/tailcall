@@ -13,23 +13,23 @@ type Query {
   # Fetch a post by ID
   post(id: Int!): Post @http(path: "/posts/{{.args.id}}")
   # Fetch all posts by a specific user
-  posts(user: Id): [Post] @http(path: "/posts?userId={{.args.user}}")
+  posts(user: Int!): [Post] @http(path: "/posts?userId={{.args.user}}")
   # Fetch a comment by ID
   comment(id: Int!): Comment @http(path: "/comments/{{.args.id}}")
   # Fetch all comments on a specific post
-  comments(post: Id): [Comment] @http(path: "/comments?postId={{.args.post}}")
+  comments(post: Int!): [Comment] @http(path: "/comments?postId={{.args.post}}")
   # Fetch an album by ID
   album(id: Int!): Album @http(path: "/albums/{{.args.id}}")
   # Fetch all albums by a specific user
-  albums(user: Id): [Album] @http(path: "/albums?userId={{.args.user}}")
+  albums(user: Int!): [Album] @http(path: "/albums?userId={{.args.user}}")
   # Fetch a photo by ID
   photo(id: Int!): Photo @http(path: "/photos/{{.args.id}}")
   # Fetch all photos in a specific album
-  photos(album: Id): [Photo] @http(path: "/photos?albumId={{.args.album}}")
+  photos(album: Int!): [Photo] @http(path: "/photos?albumId={{.args.album}}")
   # Fetch a todo by ID
   todo(id: Int!): Todo @http(path: "/todos/{{.args.id}}")
   # Fetch all todos by a specific user
-  todos(user: Id): [Todo] @http(path: "/todos?userId={{.args.user}}")
+  todos(user: Int!): [Todo] @http(path: "/todos?userId={{.args.user}}")
   # Fetch a user by ID
   user(id: Int!): User @http(path: "/users/{{.args.id}}")
   # Fetch all users

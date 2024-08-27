@@ -24,7 +24,7 @@ types:
         list: true
         args:
           user:
-            type: Id
+            type: Int
             required: true
         http:
           path: /posts?userId={{.args.user}}
@@ -41,7 +41,7 @@ types:
         list: true
         args:
           post:
-            type: Id
+            type: Int
             required: true
         http:
           path: /comments?postId={{.args.post}}
@@ -58,7 +58,7 @@ types:
         list: true
         args:
           user:
-            type: Id
+            type: Int
             required: true
         http:
           path: /albums?userId={{.args.user}}
@@ -75,7 +75,7 @@ types:
         list: true
         args:
           album:
-            type: Id
+            type: Int
             required: true
         http:
           path: /photos?albumId={{.args.album}}
@@ -92,7 +92,7 @@ types:
         list: true
         args:
           user:
-            type: Id
+            type: Int
             required: true
         http:
           path: /todos?userId={{.args.user}}
