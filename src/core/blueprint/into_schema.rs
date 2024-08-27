@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder, TypeRef};
@@ -8,13 +7,10 @@ use futures_util::TryFutureExt;
 use strum::IntoEnumIterator;
 use tracing::Instrument;
 
+use crate::core::blueprint::{Blueprint, Definition};
 use crate::core::http::RequestContext;
 use crate::core::ir::{EvalContext, ResolverContext, TypedValue};
 use crate::core::scalar;
-use crate::core::{
-    blueprint::{Blueprint, Definition},
-    WrappingType,
-};
 
 /// We set the default value for an `InputValue` by reading it from the
 /// blueprint and assigning it to the provided `InputValue` during the

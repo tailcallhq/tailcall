@@ -10,10 +10,9 @@ use serde_json::Value;
 use super::telemetry::Telemetry;
 use super::{GlobalTimeout, Index};
 use crate::core::blueprint::{Server, Upstream};
-use crate::core::WrappingType;
 use crate::core::ir::model::IR;
-use crate::core::scalar;
 use crate::core::schema_extension::SchemaExtension;
+use crate::core::{scalar, Type};
 
 /// Blueprint is an intermediary representation that allows us to generate
 /// graphQL APIs. It can only be generated from a valid Config.
@@ -98,7 +97,7 @@ pub struct SchemaDefinition {
 #[derive(Clone, Debug)]
 pub struct InputFieldDefinition {
     pub name: String,
-    pub of_type: WrappingType,
+    pub of_type: Type,
     pub default_value: Option<serde_json::Value>,
     pub description: Option<String>,
 }
@@ -107,7 +106,7 @@ pub struct InputFieldDefinition {
 pub struct FieldDefinition {
     pub name: String,
     pub args: Vec<InputFieldDefinition>,
-    pub of_type: WrappingType,
+    pub of_type: Type,
     pub resolver: Option<IR>,
     pub directives: Vec<Directive>,
     pub description: Option<String>,

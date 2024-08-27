@@ -12,12 +12,11 @@ use super::graphql_type::{GraphQLType, Unparsed};
 use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
-use crate::core::{config::transformer::{AmbiguousType, TreeShake}, WrappingType};
-use crate::core::config::{
-    Arg, Config, Enum, Field, Grpc, Resolver, Type, Union, Variant,
-};
+use crate::core::config::transformer::{AmbiguousType, TreeShake};
+use crate::core::config::{self, Arg, Config, Enum, Field, Grpc, Resolver, Union, Variant};
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
+use crate::core::Type;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -58,7 +57,7 @@ impl Context {
     }
 
     /// Resolves the actual name and inserts the type.
-    fn insert_type(mut self, name: String, ty: Type) -> Self {
+    fn insert_type(mut self, name: String, ty: config::Type) -> Self {
         self.config.types.insert(name.to_string(), ty);
         self
     }
@@ -66,16 +65,16 @@ impl Context {
     /// Converts oneof definitions in message to set of types with union
     fn insert_oneofs(
         mut self,
-        type_name: String, // name of the message
-        base_type: Type,   // that's the type with fields that are not oneofs
+        type_name: String,       // name of the message
+        base_type: config::Type, // that's the type with fields that are not oneofs
         oneof_fields: Vec<Vec<(String, Field)>>, /* there is multiple oneof definitions every
-                            * one of which contains multiple fields */
+                                  * one of which contains multiple fields */
     ) -> Self {
         fn collect_types(
             type_name: String,
-            base_type: Type,
+            base_type: config::Type,
             oneof_fields: &[Vec<(String, Field)>], // currently processed set of oneof fields
-            output: &mut Vec<(String, Type)>,      // newly generated types with their names
+            output: &mut Vec<(String, config::Type)>, // newly generated types with their names
         ) {
             let Some(one_of) = oneof_fields.first() else {
                 output.push((type_name, base_type));
@@ -258,7 +257,7 @@ impl Context {
 
             let mut oneof_fields: Vec<_> = message.oneof_decl.iter().map(|_| Vec::new()).collect();
 
-            let mut ty = Type {
+            let mut ty = config::Type {
                 doc: self.comments_builder.get_comments(&msg_path),
                 ..Default::default()
             };
@@ -346,7 +345,7 @@ impl Context {
                     let key = graphql_type.clone().into_field().to_string();
                     let type_of = graphql_type.into_object_type().to_string();
                     let val = Arg {
-                        type_of: WrappingType::from(type_of).into_required(),
+                        type_of: Type::from(type_of).into_required(),
                         /* Setting it not null by default. There's no way to infer this
                          * from proto file */
                         doc: None,
@@ -381,7 +380,7 @@ impl Context {
                     .entry(self.query.clone())
                     .or_insert_with(|| {
                         self.config.schema.query = Some(self.query.clone());
-                        Type::default()
+                        config::Type::default()
                     });
 
                 ty.fields.insert(field_name.to_string(), cfg_field);

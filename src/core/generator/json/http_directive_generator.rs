@@ -4,8 +4,9 @@ use convert_case::{Case, Casing};
 use regex::Regex;
 use url::Url;
 
-use crate::core::{config::{Arg, Field, Http, URLQuery}, WrappingType};
+use crate::core::config::{Arg, Field, Http, URLQuery};
 use crate::core::helpers::gql_type::detect_gql_data_type;
+use crate::core::Type;
 
 #[derive(Debug)]
 struct QueryParamInfo {
@@ -79,7 +80,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
                             let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
 
                             let arg = Arg {
-                                type_of: WrappingType::from(type_of.to_owned()).into_required(),
+                                type_of: Type::from(type_of.to_owned()).into_required(),
                                 ..Default::default()
                             };
 
@@ -99,7 +100,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
         let url_utility = UrlUtility::new(self.url);
 
         for query in url_utility.get_query_params() {
-            let type_of = WrappingType::from(query.data_type.clone());
+            let type_of = Type::from(query.data_type.clone());
             let type_of = if query.is_list {
                 type_of.into_list()
             } else {

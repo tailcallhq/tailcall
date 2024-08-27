@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 
 use self::telemetry::to_opentelemetry;
 use super::Server;
-use crate::core::{blueprint::compress::compress, WrappingType};
+use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::transformer::Required;
 use crate::core::config::{Arg, Batch, Config, ConfigModule};
@@ -13,6 +13,7 @@ use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::Type;
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
@@ -75,9 +76,9 @@ pub fn to_json_schema_for_args(args: &IndexMap<String, Arg>, config: &Config) ->
     }
     JsonSchema::Obj(schema_fields)
 }
-pub fn to_json_schema(type_of: &WrappingType, config: &Config) -> JsonSchema {
+pub fn to_json_schema(type_of: &Type, config: &Config) -> JsonSchema {
     let json_schema = match type_of {
-        WrappingType::Named { name, .. } => {
+        Type::Named { name, .. } => {
             let type_ = config.find_type(name);
             let type_enum_ = config.find_enum(name);
 
@@ -101,9 +102,7 @@ pub fn to_json_schema(type_of: &WrappingType, config: &Config) -> JsonSchema {
                 JsonSchema::from_scalar_type(name)
             }
         }
-        WrappingType::List { of_type, .. } => {
-            JsonSchema::Arr(Box::new(to_json_schema(of_type, config)))
-        }
+        Type::List { of_type, .. } => JsonSchema::Arr(Box::new(to_json_schema(of_type, config))),
     };
 
     if type_of.is_nullable() {

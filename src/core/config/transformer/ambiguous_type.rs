@@ -155,29 +155,30 @@ mod tests {
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
 
-    use crate::core::{config::transformer::AmbiguousType, WrappingType};
-    use crate::core::config::{Config, Type};
+    use crate::core::config::transformer::AmbiguousType;
+    use crate::core::config::{self, Config};
     use crate::core::generator::{Generator, Input};
     use crate::core::proto_reader::ProtoMetadata;
     use crate::core::transform::Transform;
     use crate::core::valid::Validator;
+    use crate::core::Type;
 
     fn build_qry(mut config: Config) -> Config {
-        let mut query = Type::default();
+        let mut query = config::Type::default();
         let mut field1 = crate::core::config::Field {
             type_of: "Type1".to_string().into(),
             ..Default::default()
         };
 
         let arg1 = crate::core::config::Arg {
-            type_of: WrappingType::from("Type1".to_string()),
+            type_of: Type::from("Type1".to_string()),
             ..Default::default()
         };
 
         field1.args.insert("arg1".to_string(), arg1);
 
         let arg2 = crate::core::config::Arg {
-            type_of: WrappingType::from("Type2".to_string()),
+            type_of: Type::from("Type2".to_string()),
             ..Default::default()
         };
 
@@ -200,9 +201,9 @@ mod tests {
         // Create a ConfigModule instance with ambiguous types
         let mut config = Config::default();
 
-        let mut type1 = Type::default();
-        let mut type2 = Type::default();
-        let mut type3 = Type::default();
+        let mut type1 = config::Type::default();
+        let mut type2 = config::Type::default();
+        let mut type3 = config::Type::default();
 
         type1.fields.insert(
             "name".to_string(),

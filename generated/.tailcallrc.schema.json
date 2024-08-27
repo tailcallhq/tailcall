@@ -171,7 +171,7 @@
           ]
         },
         "type": {
-          "$ref": "#/definitions/WrappingType"
+          "$ref": "#/definitions/Type2"
         }
       }
     },
@@ -507,7 +507,7 @@
           "description": "Refers to the type of the value the field can be resolved to.",
           "allOf": [
             {
-              "$ref": "#/definitions/WrappingType"
+              "$ref": "#/definitions/Type2"
             }
           ]
         }
@@ -1276,6 +1276,47 @@
         }
       }
     },
+    "Type2": {
+      "description": "Type to represent GraphQL type usage with modifiers [spec](https://spec.graphql.org/October2021/#sec-Wrapping-Types)",
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "description": "Name of the type",
+              "type": "string"
+            },
+            "required": {
+              "description": "Flag to indicate the type is required.",
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "list"
+          ],
+          "properties": {
+            "list": {
+              "description": "Type is a list",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Type2"
+                }
+              ]
+            },
+            "required": {
+              "description": "Flag to indicate the type is required.",
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
     "UInt128": {
       "title": "UInt128",
       "description": "Field whose value is a 128-bit unsigned integer."
@@ -1514,47 +1555,6 @@
           "type": "string"
         }
       }
-    },
-    "WrappingType": {
-      "description": "Type to represent GraphQL type usage with modifiers [spec](https://spec.graphql.org/October2021/#sec-Wrapping-Types)",
-      "anyOf": [
-        {
-          "type": "object",
-          "required": [
-            "name"
-          ],
-          "properties": {
-            "name": {
-              "description": "Name of the type",
-              "type": "string"
-            },
-            "required": {
-              "description": "Flag to indicate the type is required.",
-              "type": "boolean"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "list"
-          ],
-          "properties": {
-            "list": {
-              "description": "Type is a list",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/WrappingType"
-                }
-              ]
-            },
-            "required": {
-              "description": "Flag to indicate the type is required.",
-              "type": "boolean"
-            }
-          }
-        }
-      ]
     },
     "schema": {
       "oneOf": [

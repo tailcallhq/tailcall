@@ -180,28 +180,26 @@ impl FieldDefinition {
 #[cfg(test)]
 mod test {
     use super::MustachePartsValidator;
-    use crate::core::config::{Config, Field, Type};
+    use crate::core::blueprint::{FieldDefinition, InputFieldDefinition};
+    use crate::core::config::{self, Config, Field};
     use crate::core::valid::Validator;
-    use crate::core::{
-        blueprint::{FieldDefinition, InputFieldDefinition},
-        WrappingType,
-    };
+    use crate::core::Type;
 
     fn initialize_test_config_and_field() -> (Config, FieldDefinition) {
         let mut config = Config::default();
 
-        let mut t1_type = Type::default();
+        let mut t1_type = config::Type::default();
         t1_type.fields.insert(
             "numbers".to_owned(),
             Field {
-                type_of: WrappingType::from("Int".to_owned()).into_list(),
+                type_of: Type::from("Int".to_owned()).into_list(),
                 ..Default::default()
             },
         );
         config.types.insert("T1".to_string(), t1_type);
 
-        let type_ = WrappingType::List {
-            of_type: Box::new(WrappingType::Named { name: "Int".to_string(), non_null: false }),
+        let type_ = Type::List {
+            of_type: Box::new(Type::Named { name: "Int".to_string(), non_null: false }),
             non_null: false,
         };
 
@@ -213,7 +211,7 @@ mod test {
                 default_value: None,
                 description: None,
             }],
-            of_type: WrappingType::Named { name: "T1".to_string(), non_null: false },
+            of_type: Type::Named { name: "T1".to_string(), non_null: false },
             resolver: None,
             directives: vec![],
             description: None,

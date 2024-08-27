@@ -70,7 +70,7 @@ where
 
     /// checks if type_of is an array and value is an array
     #[inline(always)]
-    fn is_array(type_of: &crate::core::WrappingType, value: &Value) -> bool {
+    fn is_array(type_of: &crate::core::Type, value: &Value) -> bool {
         type_of.is_list() == value.as_array().is_some()
     }
 

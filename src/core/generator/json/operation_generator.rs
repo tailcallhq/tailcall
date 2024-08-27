@@ -1,13 +1,11 @@
 use convert_case::{Case, Casing};
 
 use super::http_directive_generator::HttpDirectiveGenerator;
+use crate::core::config::{Arg, Config, Field, GraphQLOperationType, Resolver};
 use crate::core::generator::json::types_generator::TypeGenerator;
 use crate::core::generator::{NameGenerator, RequestSample};
 use crate::core::valid::Valid;
-use crate::core::{
-    config::{Arg, Config, Field, GraphQLOperationType, Resolver, Type},
-    WrappingType,
-};
+use crate::core::{config, Type};
 
 pub struct OperationTypeGenerator;
 
@@ -20,7 +18,7 @@ impl OperationTypeGenerator {
         name_generator: &NameGenerator,
         mut config: Config,
     ) -> Valid<Config, String> {
-        let type_of = WrappingType::from(root_type.to_owned());
+        let type_of = Type::from(root_type.to_owned());
         let mut field = Field {
             type_of: if request_sample.res_body.is_array() {
                 type_of.into_list()
@@ -62,7 +60,7 @@ impl OperationTypeGenerator {
                 .fields
                 .insert(request_sample.field_name.to_owned(), field);
         } else {
-            let mut ty = Type::default();
+            let mut ty = config::Type::default();
             ty.fields
                 .insert(request_sample.field_name.to_owned(), field);
             config.types.insert(req_op.to_owned(), ty);

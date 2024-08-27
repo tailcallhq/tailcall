@@ -235,7 +235,7 @@ pub struct Field {
     ///
     /// Refers to the type of the value the field can be resolved to.
     #[serde(rename = "type", default, skip_serializing_if = "is_default")]
-    pub type_of: crate::core::WrappingType,
+    pub type_of: crate::core::Type,
 
     ///
     /// Map of argument name and its definition.
@@ -378,7 +378,7 @@ pub struct Inline {
 #[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Arg {
     #[serde(rename = "type")]
-    pub type_of: crate::core::WrappingType,
+    pub type_of: crate::core::Type,
     #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
