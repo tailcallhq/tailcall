@@ -1,3 +1,4 @@
+```json @config
 {
   "inputs": [
     {
@@ -63,3 +64,4 @@
     "query": "Query"
   }
 }
+```
