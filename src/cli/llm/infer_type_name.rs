@@ -5,7 +5,7 @@ use indexmap::{indexmap, IndexMap};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::{Error, Result, Wizard, TypeUsageIndex};
+use super::{Error, Result, TypeUsageIndex, Wizard};
 use crate::core::config::Config;
 use crate::core::Mustache;
 
