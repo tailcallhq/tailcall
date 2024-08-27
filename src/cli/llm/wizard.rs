@@ -1,4 +1,4 @@
-
+use super::error::{Error, Result, WebcError};
 use derive_setters::Setters;
 use genai::adapter::AdapterKind;
 use genai::chat::{ChatOptions, ChatRequest, ChatResponse};
@@ -6,10 +6,7 @@ use genai::resolver::AuthResolver;
 use genai::Client;
 use reqwest::StatusCode;
 use tokio_retry::strategy::{jitter, ExponentialBackoff};
-use tokio_retry::Retry;
-use super::error::{Error, Result, WebcError};
-use crate::cli::llm::model::Model;
-
+use tokio_retry::RetryIf;
 
 #[derive(Setters, Clone)]
 pub struct Wizard<Q, A> {
@@ -50,27 +47,18 @@ impl<Q, A> Wizard<Q, A> {
     {
         let retry_strategy = ExponentialBackoff::from_millis(1000).map(jitter).take(5);
 
-        Retry::spawn(retry_strategy, || async {
-            let request = q.clone().try_into()?;
-            match self
-                .client
-                .exec_chat(self.model.as_str(), request, None)
-                .await
-            {
-                Ok(response) => Ok(A::try_from(response)?),
-                Err(err) => {
-                    let error = Error::from(err);
-                    match &error {
-                        Error::Webc(WebcError::ResponseFailedStatus { status, .. })
-                            if *status == StatusCode::TOO_MANY_REQUESTS =>
-                        {
-                            Err(error) // Propagate the error to trigger a retry
-                        }
-                        _ => Ok(Err(error)?), // Other errors are returned without retrying
-                    }
-                }
-            }
-        })
+        RetryIf::spawn(
+            retry_strategy,
+            || async {
+                let request = q.clone().try_into()?;
+                self.client
+                    .exec_chat(self.model.as_str(), request, None)
+                    .await
+                    .map_err(Error::from)
+                    .and_then(A::try_from)
+            },
+            |err: &Error| matches!(err, Error::Webc(WebcError::ResponseFailedStatus { status, .. }) if *status == StatusCode::TOO_MANY_REQUESTS)
+        )
         .await
     }
 }

@@ -38,8 +38,8 @@ impl From<genai::Error> for Error {
                     }
                 }
             }
-        }
-        Error::GenAI(err)
+        };
+        err.into()
     }
 }
 
