@@ -70,9 +70,9 @@ where
         Ok(Value::object(data))
     }
 
-    /// checks if both are array or both are scalar type
+    /// checks if both are array or both are named type
     #[inline(always)]
-    fn is_both_array_or_scalar(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
+    fn is_both_array_or_named_type(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
         type_of.is_list() == value.as_array().is_some()
     }
 
@@ -100,7 +100,7 @@ where
                     Data::Single(result) => {
                         let value = result.as_ref().map_err(Clone::clone)?;
 
-                        if !Self::is_both_array_or_scalar(&node.type_of, value) {
+                        if !Self::is_both_array_or_named_type(&node.type_of, value) {
                             return self.node_nullable_guard(node);
                         }
                         self.iter_inner(node, value, data_path)
