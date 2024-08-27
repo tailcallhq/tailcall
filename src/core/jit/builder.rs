@@ -12,10 +12,13 @@ use async_graphql_value::{ConstValue, Value};
 use super::input_resolver::InputResolver;
 use super::model::{Directive as JitDirective, *};
 use super::BuildError;
-use crate::core::{blueprint::{Blueprint, Index, QueryField}, config};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
 use crate::core::merge_right::MergeRight;
+use crate::core::{
+    blueprint::{Blueprint, Index, QueryField},
+    WrappingType,
+};
 
 #[derive(PartialEq, strum_macros::Display)]
 enum Condition {
@@ -237,7 +240,7 @@ impl Builder {
                             name: field_name.to_string(),
                             output_name: field_name.to_string(),
                             ir: None,
-                            type_of: config::WrappingType::Named {
+                            type_of: WrappingType::Named {
                                 name: "String".to_owned(),
                                 non_null: true,
                             },

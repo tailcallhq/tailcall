@@ -155,8 +155,8 @@ mod tests {
     use prost_reflect::prost_types::FileDescriptorSet;
     use tailcall_fixtures::protobuf;
 
-    use crate::core::config::transformer::AmbiguousType;
-    use crate::core::config::{Config, Type, WrappingType};
+    use crate::core::{config::transformer::AmbiguousType, WrappingType};
+    use crate::core::config::{Config, Type};
     use crate::core::generator::{Generator, Input};
     use crate::core::proto_reader::ProtoMetadata;
     use crate::core::transform::Transform;

@@ -140,12 +140,33 @@ impl From<&WrappingType> for async_graphql_types::Type {
             WrappingType::Named { name, .. } => {
                 async_graphql_types::BaseType::Named(Name::new(name))
             }
-            WrappingType::List { of_type, .. } => async_graphql_types::BaseType::List(
-                Box::new(async_graphql_types::Type::from(of_type.deref())),
-            ),
+            WrappingType::List { of_type, .. } => async_graphql_types::BaseType::List(Box::new(
+                async_graphql_types::Type::from(of_type.deref()),
+            )),
         };
 
         async_graphql_types::Type { base, nullable }
+    }
+}
+
+impl From<&WrappingType> for async_graphql::dynamic::TypeRef {
+    fn from(value: &WrappingType) -> Self {
+        let nullable = value.is_nullable();
+
+        let base = match value {
+            WrappingType::Named { name, .. } => {
+                async_graphql::dynamic::TypeRef::Named(name.to_owned().into())
+            }
+            WrappingType::List { of_type, .. } => async_graphql::dynamic::TypeRef::List(Box::new(
+                async_graphql::dynamic::TypeRef::from(of_type.deref()),
+            )),
+        };
+
+        if nullable {
+            base
+        } else {
+            async_graphql::dynamic::TypeRef::NonNull(Box::new(base))
+        }
     }
 }
 

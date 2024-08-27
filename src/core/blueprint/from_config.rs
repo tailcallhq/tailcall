@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 
 use self::telemetry::to_opentelemetry;
 use super::Server;
-use crate::core::blueprint::compress::compress;
+use crate::core::{blueprint::compress::compress, WrappingType};
 use crate::core::blueprint::*;
 use crate::core::config::transformer::Required;
 use crate::core::config::{Arg, Batch, Config, ConfigModule};

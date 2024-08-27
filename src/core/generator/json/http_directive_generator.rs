@@ -4,7 +4,7 @@ use convert_case::{Case, Casing};
 use regex::Regex;
 use url::Url;
 
-use crate::core::config::{Arg, Field, Http, URLQuery, WrappingType};
+use crate::core::{config::{Arg, Field, Http, URLQuery}, WrappingType};
 use crate::core::helpers::gql_type::detect_gql_data_type;
 
 #[derive(Debug)]

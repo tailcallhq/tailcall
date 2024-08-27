@@ -4,8 +4,8 @@ use std::path::Path;
 use anyhow::Result;
 
 use super::helpers::{FILE_NAME, JSON_FILE_NAME, YML_FILE_NAME};
-use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
-use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source, Type, WrappingType};
+use crate::{cli::runtime::{confirm_and_write, create_directory, select_prompt}, core::WrappingType};
+use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source, Type};
 use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
 

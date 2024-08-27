@@ -353,7 +353,7 @@ mod tests {
     use test_log::test;
 
     use super::Discriminator;
-    use crate::core::config::{Field, Type, WrappingType};
+    use crate::core::{config::{Field, Type}, WrappingType};
     use crate::core::valid::Validator;
 
     #[test]

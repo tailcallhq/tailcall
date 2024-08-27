@@ -4,7 +4,7 @@ use async_graphql_value::ConstValue;
 use regex::Regex;
 use union_resolver::update_union_resolver;
 
-use crate::core::blueprint::*;
+use crate::core::{blueprint::*, WrappingType};
 use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
 use crate::core::ir::model::{Cache, IR};

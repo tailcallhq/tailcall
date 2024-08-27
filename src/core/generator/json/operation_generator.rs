@@ -1,10 +1,13 @@
 use convert_case::{Case, Casing};
 
 use super::http_directive_generator::HttpDirectiveGenerator;
-use crate::core::config::{Arg, Config, Field, GraphQLOperationType, Resolver, Type, WrappingType};
 use crate::core::generator::json::types_generator::TypeGenerator;
 use crate::core::generator::{NameGenerator, RequestSample};
 use crate::core::valid::Valid;
+use crate::core::{
+    config::{Arg, Config, Field, GraphQLOperationType, Resolver, Type},
+    WrappingType,
+};
 
 pub struct OperationTypeGenerator;
 

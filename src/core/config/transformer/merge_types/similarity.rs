@@ -133,7 +133,7 @@ impl<'a> Similarity<'a> {
 #[cfg(test)]
 mod test {
     use super::Similarity;
-    use crate::core::config::{Config, Field, Type, WrappingType};
+    use crate::core::{config::{Config, Field, Type}, WrappingType};
     use crate::core::valid::Validator;
 
     #[test]

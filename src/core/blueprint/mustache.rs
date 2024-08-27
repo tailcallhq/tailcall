@@ -180,9 +180,12 @@ impl FieldDefinition {
 #[cfg(test)]
 mod test {
     use super::MustachePartsValidator;
-    use crate::core::blueprint::{FieldDefinition, InputFieldDefinition};
-    use crate::core::config::{Config, Field, Type, WrappingType};
+    use crate::core::config::{Config, Field, Type};
     use crate::core::valid::Validator;
+    use crate::core::{
+        blueprint::{FieldDefinition, InputFieldDefinition},
+        WrappingType,
+    };
 
     fn initialize_test_config_and_field() -> (Config, FieldDefinition) {
         let mut config = Config::default();

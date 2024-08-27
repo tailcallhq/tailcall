@@ -32,7 +32,6 @@ pub use timeout::GlobalTimeout;
 pub use upstream::*;
 
 use crate::core::config::ConfigModule;
-pub use crate::core::config::WrappingType;
 use crate::core::try_fold::TryFold;
 
 pub type TryFoldConfig<'a, A> = TryFold<'a, ConfigModule, A, String>;
