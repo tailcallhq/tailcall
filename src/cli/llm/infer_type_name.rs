@@ -32,7 +32,7 @@ impl TryFrom<ChatResponse> for Answer {
 
 #[derive(Clone, Serialize)]
 struct Question<'a> {
-    type_refs: IndexMap<&'a str, u32>,
+    references: IndexMap<&'a str, u32>,
     fields: Vec<(&'a str, &'a str)>,
 }
 
@@ -41,10 +41,10 @@ impl TryInto<ChatRequest> for Question<'_> {
 
     fn try_into(self) -> Result<ChatRequest> {
         let input = serde_json::to_string_pretty(&Question {
-            type_refs: indexmap! {
-                "User" => 13,
-                "Profile" => 11,
-                "Person" => 14,
+            references: indexmap! {
+                "users" => 13,
+                "profiles" => 11,
+                "people" => 14,
             },
             fields: vec![("id", "String"), ("name", "String"), ("age", "Int")],
         })?;
@@ -98,10 +98,10 @@ impl InferTypeName {
 
         let total = types_to_be_processed.len();
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
-            if let Some(type_refs) = usage_index.get(type_name) {
+            if let Some(references) = usage_index.get(type_name) {
                 // convert to prompt.
                 let question = Question {
-                    type_refs: type_refs.clone(),
+                    references: references.clone(),
                     fields: type_
                         .fields
                         .iter()
@@ -170,10 +170,10 @@ mod test {
     #[test]
     fn test_to_chat_request_conversion() {
         let question = Question {
-            type_refs: indexmap! {
-                "User" => 13,
-                "Profile" => 11,
-                "Person" => 14,
+            references: indexmap! {
+                "users" => 13,
+                "profiles" => 11,
+                "people" => 14,
             },
             fields: vec![("id", "String"), ("name", "String"), ("age", "Int")],
         };
