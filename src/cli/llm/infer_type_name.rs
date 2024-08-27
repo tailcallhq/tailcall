@@ -94,7 +94,8 @@ impl InferTypeName<'_> {
 
         let total = types_to_be_processed.len();
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
-            if let Some(references) = usage_index.get(type_name) {
+            let references = usage_index.usage_map(type_name);
+            if !references.is_empty() {
                 // convert to prompt.
                 let question = Question {
                     references: references.clone(),

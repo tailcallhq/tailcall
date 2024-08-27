@@ -35,8 +35,13 @@ impl<'a> TypeUsageIndex<'a> {
         Self { type_refs }
     }
 
-    pub fn get(&self, type_name: &str) -> Option<&IndexMap<&str, u32>> {
-        self.type_refs.get(type_name)
+    /// Given a type name, returns a map of field names and their reference
+    /// counts, or an empty map if no references are found.
+    pub fn usage_map(&self, type_name: &str) -> IndexMap<&str, u32> {
+        self.type_refs
+            .get(type_name)
+            .cloned()
+            .unwrap_or_else(IndexMap::new)
     }
 }
 
@@ -65,7 +70,7 @@ mod tests {
 
         let config = Config::from_sdl(sdl).to_result().unwrap();
         let ty_index = TypeUsageIndex::new(&config);
-        let ty_refs = ty_index.get("T1").unwrap();
+        let ty_refs = ty_index.usage_map("T1");
         assert_eq!(ty_refs.len(), 1);
         assert_eq!(ty_refs.get("user").unwrap(), &2u32);
     }
