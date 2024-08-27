@@ -1,35 +1,16 @@
-use crate::core::ir::TypeName;
-use crate::core::jit::exec::{TypedValue, TypedValueRef};
-use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
+use crate::core::ir::TypedValue;
+use crate::core::jit::model::{Field, Nested, OperationPlan, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar;
 
-type ValueStore<Value> = Store<Result<TypedValue<Value>, Positioned<Error>>>;
+type ValueStore<Value> = Store<Result<Value, Positioned<Error>>>;
 
 pub struct Synth<Value> {
     plan: OperationPlan<Value>,
     store: ValueStore<Value>,
     variables: Variables<Value>,
-}
-
-impl<Extensions, Input> Field<Extensions, Input> {
-    #[inline(always)]
-    pub fn skip<'json, Value: JsonLike<'json>>(&self, variables: &Variables<Value>) -> bool {
-        let eval =
-            |variable_option: Option<&Variable>, variables: &Variables<Value>, default: bool| {
-                variable_option
-                    .map(|a| a.as_str())
-                    .and_then(|name| variables.get(name))
-                    .and_then(|value| value.as_bool())
-                    .unwrap_or(default)
-            };
-        let skip = eval(self.skip.as_ref(), variables, false);
-        let include = eval(self.include.as_ref(), variables, true);
-
-        skip == include
-    }
 }
 
 impl<Value> Synth<Value> {
@@ -45,7 +26,7 @@ impl<Value> Synth<Value> {
 
 impl<'a, Value> Synth<Value>
 where
-    Value: JsonLike<'a> + Clone,
+    Value: JsonLike<'a> + Clone + std::fmt::Debug,
     Value::JsonObject<'a>: JsonObjectLike<'a, Value = Value>,
 {
     #[inline(always)]
@@ -62,7 +43,8 @@ where
                 continue;
             }
             let val = self.iter(child, None, &DataPath::new())?;
-            data.insert_key(child.name.as_str(), val);
+
+            data.insert_key(&child.output_name, val);
         }
 
         Ok(Value::object(data))
@@ -78,7 +60,7 @@ where
     fn iter(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        result: Option<TypedValueRef<'a, Value>>,
+        value: Option<&'a Value>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         match self.store.get(&node.id) {
@@ -96,15 +78,12 @@ where
 
                 match data {
                     Data::Single(result) => {
-                        let result = match result {
-                            Ok(result) => result,
-                            Err(err) => return Err(err.clone()),
-                        };
+                        let value = result.as_ref().map_err(Clone::clone)?;
 
-                        if !Self::is_array(&node.type_of, &result.value) {
+                        if !Self::is_array(&node.type_of, value) {
                             return Ok(Value::null());
                         }
-                        self.iter_inner(node, result.as_ref(), data_path)
+                        self.iter_inner(node, value, data_path)
                     }
                     _ => {
                         // TODO: should bailout instead of returning Null
@@ -112,8 +91,8 @@ where
                     }
                 }
             }
-            None => match result {
-                Some(result) => self.iter_inner(node, result, data_path),
+            None => match value {
+                Some(value) => self.iter_inner(node, value, data_path),
                 None => Ok(Value::null()),
             },
         }
@@ -123,14 +102,12 @@ where
     fn iter_inner(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        result: TypedValueRef<'a, Value>,
+        value: &'a Value,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
         if !self.include(node) {
             return Ok(Value::null());
         }
-
-        let TypedValueRef { type_name, value } = result;
 
         let eval_result = if value.is_null() {
             if node.type_of.is_nullable() {
@@ -148,11 +125,10 @@ where
             if scalar.validate(value) {
                 Ok(value.clone())
             } else {
-                Err(ValidationError::ScalarInvalid {
-                    type_of: node.type_of.name().to_string(),
-                    path: node.name.to_string(),
-                }
-                .into())
+                Err(
+                    ValidationError::ScalarInvalid { type_of: node.type_of.name().to_string() }
+                        .into(),
+                )
             }
         } else if self.plan.field_is_enum(node) {
             if value
@@ -172,20 +148,7 @@ where
                 (_, Some(obj)) => {
                     let mut ans = Value::JsonObject::new();
 
-                    let type_name = match &type_name {
-                        Some(TypeName::Single(type_name)) => type_name,
-                        Some(TypeName::Vec(v)) => {
-                            if let Some(index) = data_path.as_slice().last() {
-                                &v[*index]
-                            } else {
-                                return Err(Positioned::new(
-                                    ValidationError::TypeNameMismatch.into(),
-                                    node.pos,
-                                ));
-                            }
-                        }
-                        None => node.type_of.name(),
-                    };
+                    let type_name = value.get_type_name().unwrap_or(node.type_of.name());
 
                     for child in node.nested_iter(type_name) {
                         // all checks for skip must occur in `iter_inner`
@@ -193,11 +156,7 @@ where
                         let include = self.include(child);
                         if include {
                             let val = obj.get_key(child.name.as_str());
-
-                            ans.insert_key(
-                                child.name.as_str(),
-                                self.iter(child, val.map(TypedValueRef::new), data_path)?,
-                            );
+                            ans.insert_key(&child.output_name, self.iter(child, val, data_path)?);
                         }
                     }
 
@@ -206,11 +165,7 @@ where
                 (Some(arr), _) => {
                     let mut ans = vec![];
                     for (i, val) in arr.iter().enumerate() {
-                        let val = self.iter_inner(
-                            node,
-                            result.map(|_| val),
-                            &data_path.clone().with_index(i),
-                        )?;
+                        let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
                         ans.push(val)
                     }
                     Ok(Value::array(ans))
@@ -234,7 +189,7 @@ where
             let mut parent = self.plan.find_field(node.id.clone());
 
             while let Some(field) = parent {
-                path.push(PathSegment::Field(field.name.to_string()));
+                path.push(PathSegment::Field(field.output_name.to_string()));
                 parent = field
                     .parent()
                     .and_then(|id| self.plan.find_field(id.clone()));
@@ -257,7 +212,6 @@ mod tests {
     use crate::core::config::{Config, ConfigModule};
     use crate::core::jit::builder::Builder;
     use crate::core::jit::common::JP;
-    use crate::core::jit::exec::TypedValue;
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::synth::Synth;
@@ -313,22 +267,20 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value<'a, Value: Deserialize<'a>>(self) -> Data<TypedValue<Value>> {
+        fn into_value<'a, Value: Deserialize<'a>>(self) -> Data<Value> {
             match self {
-                Self::Posts => Data::Single(TypedValue::new(serde_json::from_str(POSTS).unwrap())),
-                Self::User1 => Data::Single(TypedValue::new(serde_json::from_str(USER1).unwrap())),
+                Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
+                Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
                 TestData::UsersData => Data::Multiple(
                     vec![
-                        Data::Single(TypedValue::new(serde_json::from_str(USER1).unwrap())),
-                        Data::Single(TypedValue::new(serde_json::from_str(USER2).unwrap())),
+                        Data::Single(serde_json::from_str(USER1).unwrap()),
+                        Data::Single(serde_json::from_str(USER2).unwrap()),
                     ]
                     .into_iter()
                     .enumerate()
                     .collect(),
                 ),
-                TestData::Users => {
-                    Data::Single(TypedValue::new(serde_json::from_str(USERS).unwrap()))
-                }
+                TestData::Users => Data::Single(serde_json::from_str(USERS).unwrap()),
             }
         }
     }

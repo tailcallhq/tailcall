@@ -5,14 +5,12 @@ use indexmap::{indexmap, IndexMap};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::model::groq;
-use super::{Error, Result, TypeUsageIndex, Wizard};
+use super::{Error, Result, Wizard, TypeUsageIndex};
 use crate::core::config::Config;
 use crate::core::Mustache;
 
-#[derive(Default)]
-pub struct InferTypeName {
-    secret: Option<String>,
+pub struct InferTypeName<'a> {
+    wizard: Wizard<Question<'a>, Answer>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,16 +74,13 @@ impl TryInto<ChatRequest> for Question<'_> {
     }
 }
 
-impl InferTypeName {
-    pub fn new(secret: Option<String>) -> InferTypeName {
-        Self { secret }
+impl InferTypeName<'_> {
+    pub fn new(model: String, secret: Option<String>) -> Self {
+        Self { wizard: Wizard::new(model, secret) }
     }
+
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let secret = self.secret.as_ref().map(|s| s.to_owned());
-
-        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
-
-        let mut new_name_mappings = HashMap::new();
+        let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
         // removed root type from types.
         let types_to_be_processed = config
@@ -111,7 +106,7 @@ impl InferTypeName {
 
                 let mut delay = 3;
                 loop {
-                    let answer = wizard.ask(question.clone()).await;
+                    let answer = self.wizard.ask(question.clone()).await;
                     match answer {
                         Ok(answer) => {
                             let name = &answer.suggestions.join(", ");

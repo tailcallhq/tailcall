@@ -5,8 +5,8 @@ use async_graphql_value::ConstValue;
 
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
-use super::{Error, EvalContext, ResolverContextLike};
-use crate::core::json::JsonLike;
+use super::{Error, EvalContext, ResolverContextLike, TypedValue};
+use crate::core::json::{JsonLike, JsonLikeList};
 use crate::core::serde_value_ext::ValueExt;
 
 // Fake trait to capture proper lifetimes.
@@ -72,13 +72,10 @@ impl IR {
                         if let Some(value) = map.get(&key) {
                             Ok(ConstValue::String(value.to_owned()))
                         } else {
-                            Err(Error::ExprEvalError(format!(
-                                "Can't find mapped key: {}.",
-                                key
-                            )))
+                            Err(Error::ExprEval(format!("Can't find mapped key: {}.", key)))
                         }
                     } else {
-                        Err(Error::ExprEvalError(
+                        Err(Error::ExprEval(
                             "Mapped key must be string value.".to_owned(),
                         ))
                     }
@@ -89,9 +86,13 @@ impl IR {
                     second.eval(ctx).await
                 }
                 IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
-                    let type_name = discriminator.resolve_type(&value)?;
+                    let value = value.map(|mut value| {
+                        let type_name = discriminator.resolve_type(&value)?;
 
-                    ctx.set_type_name(type_name);
+                        value.set_type_name(type_name.to_string())?;
+
+                        anyhow::Ok(value)
+                    })?;
 
                     Ok(value)
                 }),
