@@ -60,6 +60,8 @@ where
             if !self.include(child) {
                 continue;
             }
+            // TODO: in case of error set `child.output_name` to null
+            // and append error to response error array
             let val = self.iter(child, None, &DataPath::new())?;
 
             data.insert_key(&child.output_name, val);
