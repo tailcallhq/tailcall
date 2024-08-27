@@ -31,7 +31,7 @@ schema @server @upstream {
   query: Query
 }
 
-input map__MapRequest @tag(id: "map.MapRequest") {
+input map__MapRequest {
   map: JSON!
 }
 
@@ -40,7 +40,7 @@ type Query {
     @grpc(body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
 }
 
-type map__MapResponse @tag(id: "map.MapResponse") {
+type map__MapResponse {
   map: JSON!
 }
 ```
@@ -50,7 +50,7 @@ type map__MapResponse @tag(id: "map.MapResponse") {
     method: POST
     url: http://localhost:50051/map.MapService/GetMap
   response:
-    status: 200
+    sta tus: 200
     textBody: \0\0\0\0\x12\n\t\x08\x01\x12\x05value
 ```
 
