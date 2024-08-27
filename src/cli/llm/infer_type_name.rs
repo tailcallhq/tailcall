@@ -63,6 +63,7 @@ impl TryInto<ChatRequest> for Question<'_> {
         let context = json!({
             "input": input,
             "output": output,
+            "count": 5,
         });
 
         let rendered_prompt = template.render(&context);
