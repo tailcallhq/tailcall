@@ -47,7 +47,7 @@ type User {
   id: ID!
   mutualFriends(first: Int): [User!]!
   name: String!
-  profilePic(height: Int, size: Int, width: Int): String!
+  profilePic(size: Int, width: Int, height: Int): String!
 }
 
 schema {

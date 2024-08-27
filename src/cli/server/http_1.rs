@@ -12,6 +12,7 @@ use tokio::sync::oneshot;
 use super::server_config::ServerConfig;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike};
 use crate::core::http::handle_incoming;
+use crate::core::Errata;
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,
@@ -44,7 +45,6 @@ async fn handle<T: DeserializeOwned + GraphQLRequestLike + Send>(
     loop {
         let stream = listener.accept().await;
         let app_ctx = sc.app_ctx.clone();
-
         if let Ok((stream, _)) = stream {
             let connection = builder.serve_connection(
                 TokioIo::new(stream),
@@ -54,6 +54,7 @@ async fn handle<T: DeserializeOwned + GraphQLRequestLike + Send>(
                         handle_incoming::<T>(req, app_ctx)
                             .await
                             .map(|res| Response::new(Full::new(res.into_body())))
+                            .map_err(Errata::from)
                     }
                 }),
             );

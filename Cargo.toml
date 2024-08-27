@@ -173,7 +173,7 @@ enum_dispatch = "0.3.13"
 strum = "0.26.2"
 http-body-util = "0.1.2"
 hyper-util = "0.1.7"
-# hyper-util = { version = "0.1.7", features = ["tokio"] }
+maplit = "1.0.2"
 
 [dev-dependencies]
 tailcall-prettier = { path = "tailcall-prettier" }

@@ -17,6 +17,7 @@ use super::server_config::ServerConfig;
 use crate::cli::CLIError;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike};
 use crate::core::http::handle_incoming;
+use crate::core::Errata;
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,
@@ -79,6 +80,7 @@ async fn handle<T: DeserializeOwned + GraphQLRequestLike + Send>(
                                 handle_incoming::<T>(req, app_ctx)
                                     .await
                                     .map(|res| Response::new(Full::new(res.into_body())))
+                                    .map_err(Errata::from)
                             }
                         }),
                     )
