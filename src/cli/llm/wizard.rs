@@ -1,4 +1,3 @@
-// use std::borrow::Borrow;
 
 use derive_setters::Setters;
 use genai::adapter::AdapterKind;
