@@ -37,7 +37,7 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
-  foo(extra_input: Spam!, input: Bar!): String!
+  foo(input: Bar!, extra_input: Spam!): String!
 }
 
 input Spam {

@@ -21,7 +21,7 @@ input Spam {
 }
 
 type Query {
-  foo(extra_input: Spam!, input: Bar!): String!
+  foo(input: Bar!, extra_input: Spam!): String!
     @http(
       body: "{{.args.input}}"
       method: "POST"
