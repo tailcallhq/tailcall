@@ -99,13 +99,7 @@ where
                         let value = result.as_ref().map_err(Clone::clone)?;
 
                         if !Self::is_both_array_or_scalar(&node.type_of, value) {
-                            if node.type_of.is_nullable() {
-                                return Ok(Value::null());
-                            } else {
-                                // link to GraphQL reference https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
-                                return Err(ValidationError::ValueRequired.into())
-                                    .map_err(|e| self.to_location_error(e, node));
-                            }
+                            return self.node_nullable_guard(node);
                         }
                         self.iter_inner(node, value, data_path)
                     }
@@ -117,16 +111,22 @@ where
             }
             None => match value {
                 Some(result) => self.iter_inner(node, result, data_path),
-                None => {
-                    if node.type_of.is_nullable() {
-                        Ok(Value::null())
-                    } else {
-                        // link to GraphQL reference https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
-                        Err(ValidationError::ValueRequired.into())
-                            .map_err(|e| self.to_location_error(e, node))
-                    }
-                }
+                None => self.node_nullable_guard(node),
             },
+        }
+    }
+
+    /// This guard ensures to return Null value only if node type permits it, in
+    /// case it does not it throws an Error
+    fn node_nullable_guard(
+        &'a self,
+        node: &'a Field<Nested<Value>, Value>,
+    ) -> Result<Value, Positioned<Error>> {
+        if node.type_of.is_nullable() {
+            Ok(Value::null())
+        } else {
+            // link to GraphQL reference https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
+            Err(ValidationError::ValueRequired.into()).map_err(|e| self.to_location_error(e, node))
         }
     }
 
@@ -137,27 +137,17 @@ where
         value: &'a Value,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
+        // skip the field if field is not included in schema
         if !self.include(node) {
             return Ok(Value::null());
         }
 
         let eval_result = if value.is_null() {
             // link to GraphQL reference https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
-            match &node.type_of {
-                crate::core::blueprint::Type::NamedType { name: _, non_null: _ } => {
-                    if node.type_of.is_nullable() {
-                        Ok(Value::null())
-                    } else {
-                        Err(ValidationError::ValueRequired.into())
-                    }
-                }
-                crate::core::blueprint::Type::ListType { of_type, non_null: _ } => {
-                    if of_type.is_nullable() {
-                        Ok(Value::null())
-                    } else {
-                        Err(ValidationError::ValueRequired.into())
-                    }
-                }
+            if node.type_of.is_inner_nullable() {
+                Ok(Value::null())
+            } else {
+                Err(ValidationError::ValueRequired.into())
             }
         } else if self.plan.field_is_scalar(node) {
             let scalar =

@@ -32,16 +32,26 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
+  basicFieldMissing: Foo!
   basicMissing: Foo!
   basicPresent: Foo!
+  fullEntryMissing: [Foo!]!
+  fullFieldMissing: [Foo!]!
   fullMissing: [Foo!]!
   fullPresent: [Foo!]!
+  innerEntryMissing: [Foo!]
+  innerFieldMissing: [Foo!]
   innerMissing: [Foo!]
   innerPresent: [Foo!]
+  noneEntryMissing: [Foo]
+  noneFieldMissing: [Foo]
   noneMissing: [Foo]
   nonePresent: [Foo]
+  outerEntryMissing: [Foo]!
+  outerFieldMissing: [Foo]!
   outerMissing: [Foo]!
   outerPresent: [Foo]!
+  relaxedFieldMissing: Foo
   relaxedMissing: Foo
   relaxedPresent: Foo
 }

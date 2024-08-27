@@ -8,10 +8,22 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": {
-      "outerPresent": [
-        null
-      ]
-    }
+    "data": null,
+    "errors": [
+      {
+        "message": "internal: non-null types require a return value",
+        "locations": [
+          {
+            "line": 1,
+            "column": 31
+          }
+        ],
+        "path": [
+          "fullFieldMissing",
+          1,
+          "bar"
+        ]
+      }
+    ]
   }
 }

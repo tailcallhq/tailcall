@@ -9,7 +9,10 @@ expression: response
   },
   "body": {
     "data": {
-      "relaxedMissing": null
+      "relaxedPresent": {
+        "id": 1,
+        "bar": "bar_1"
+      }
     }
   }
 }

@@ -9,7 +9,16 @@ expression: response
   },
   "body": {
     "data": {
-      "innerPresent": null
+      "fullPresent": [
+        {
+          "id": 1,
+          "bar": "bar_1"
+        },
+        {
+          "id": 2,
+          "bar": "bar_2"
+        }
+      ]
     }
   }
 }

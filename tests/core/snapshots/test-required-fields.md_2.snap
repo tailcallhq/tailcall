@@ -8,11 +8,20 @@ expression: response
     "content-type": "application/json"
   },
   "body": {
-    "data": {
-      "relaxedPresent": {
-        "id": 1,
-        "bar": "bar_1"
+    "data": null,
+    "errors": [
+      {
+        "message": "internal: non-null types require a return value",
+        "locations": [
+          {
+            "line": 1,
+            "column": 9
+          }
+        ],
+        "path": [
+          "basicMissing"
+        ]
       }
-    }
+    ]
   }
 }

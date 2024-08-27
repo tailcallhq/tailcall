@@ -15,13 +15,11 @@ expression: response
         "locations": [
           {
             "line": 1,
-            "column": 28
+            "column": 9
           }
         ],
         "path": [
-          "fullEntryMissing",
-          1,
-          "id"
+          "outerMissing"
         ]
       }
     ]

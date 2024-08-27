@@ -19,7 +19,7 @@ expression: response
           }
         ],
         "path": [
-          "fullEntryMissing",
+          "noneEntryMissing",
           1,
           "id"
         ]
