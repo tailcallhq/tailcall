@@ -1,3 +1,4 @@
+```json @config
 {
   "inputs": [
     {
@@ -8,7 +9,7 @@
     },
     {
       "proto": {
-        "src": "../../../../../../tailcall-fixtures/fixtures/protobuf/news.proto"
+        "src": "tailcall-fixtures/fixtures/protobuf/news.proto"
       }
     }
   ],
@@ -26,3 +27,4 @@
     "query": "Query"
   }
 }
+```
