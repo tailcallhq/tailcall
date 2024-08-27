@@ -78,14 +78,6 @@ impl Type {
         }
     }
 
-    // checks if inner type is nullable
-    pub fn is_inner_nullable(&self) -> bool {
-        match self {
-            Type::NamedType { non_null, .. } => !*non_null,
-            Type::ListType { of_type, .. } => of_type.is_nullable(),
-        }
-    }
-
     /// checks if the type is a list
     pub fn is_list(&self) -> bool {
         matches!(self, Type::ListType { .. })

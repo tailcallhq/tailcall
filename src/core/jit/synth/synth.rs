@@ -140,7 +140,11 @@ where
 
         let eval_result = if value.is_null() {
             // link to GraphQL reference https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
-            if node.type_of.is_inner_nullable() {
+            let is_nullable = match &node.type_of {
+                crate::core::blueprint::Type::NamedType { non_null, .. } => !*non_null,
+                crate::core::blueprint::Type::ListType { of_type, .. } => of_type.is_nullable(),
+            };
+            if is_nullable {
                 Ok(Value::null())
             } else {
                 Err(ValidationError::ValueRequired.into())
