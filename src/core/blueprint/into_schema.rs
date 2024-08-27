@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
-use anyhow::{bail, Result};
 use async_graphql::dynamic::{self, FieldFuture, FieldValue, SchemaBuilder};
 use async_graphql::ErrorExtensions;
 use async_graphql_value::ConstValue;
@@ -11,7 +10,7 @@ use tracing::Instrument;
 
 use crate::core::blueprint::{Blueprint, Definition, WrappingType};
 use crate::core::http::RequestContext;
-use crate::core::ir::{EvalContext, ResolverContext, TypeName};
+use crate::core::ir::{EvalContext, ResolverContext, TypedValue};
 use crate::core::scalar;
 
 fn to_type_ref(type_of: &WrappingType) -> dynamic::TypeRef {
@@ -59,27 +58,21 @@ fn set_default_value(
     }
 }
 
-fn to_field_value<'a>(
-    ctx: &mut EvalContext<'a, ResolverContext<'a>>,
-    value: async_graphql::Value,
-) -> Result<FieldValue<'static>> {
-    let type_name = ctx.type_name.take();
+fn to_field_value(value: async_graphql::Value) -> FieldValue<'static> {
+    match value {
+        ConstValue::List(vec) => FieldValue::list(vec.into_iter().map(to_field_value)),
+        value => {
+            let type_name = value.get_type_name().map(|s| s.to_string());
 
-    Ok(match (value, type_name) {
-        // NOTE: Mostly type_name is going to be None so we should keep that as the first check.
-        (value, None) => FieldValue::from(value),
-        (ConstValue::List(values), Some(TypeName::Vec(names))) => FieldValue::list(
-            values
-                .into_iter()
-                .zip(names)
-                .map(|(value, type_name)| FieldValue::from(value).with_type(type_name)),
-        ),
-        (value @ ConstValue::Object(_), Some(TypeName::Single(type_name))) => {
-            FieldValue::from(value).with_type(type_name)
+            let field_value = FieldValue::from(value);
+
+            if let Some(type_name) = type_name {
+                field_value.with_type(type_name)
+            } else {
+                field_value
+            }
         }
-        (ConstValue::Null, _) => FieldValue::NULL,
-        (_, Some(_)) => bail!("Failed to match type_name"),
-    })
+    }
 }
 
 fn to_type(def: &Definition) -> dynamic::Type {
@@ -131,7 +124,7 @@ fn to_type(def: &Definition) -> dynamic::Type {
                                         if let ConstValue::Null = value {
                                             Ok(FieldValue::NONE)
                                         } else {
-                                            Ok(Some(to_field_value(ctx, value)?))
+                                            Ok(Some(to_field_value(value)))
                                         }
                                     }
                                     .instrument(span)

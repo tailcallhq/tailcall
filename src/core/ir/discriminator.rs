@@ -8,17 +8,40 @@ use indenter::indented;
 use indexmap::IndexMap;
 
 use crate::core::config::Type;
+use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::valid::{Cause, Valid, Validator};
 
-/// Represents the type name for the resolved value.
-/// It is used when the GraphQL executor needs to resolve values of a union
-/// type. In order to select the correct fields, the executor must know the
-/// exact type name for each resolved value. When the output is a list of a
-/// union type, it should resolve the exact type for every entry in the list.
-#[derive(PartialEq, Eq, Debug, Clone)]
-pub enum TypeName {
-    Single(String),
-    Vec(Vec<String>),
+pub trait TypedValue<'a> {
+    type Error;
+
+    fn get_type_name(&'a self) -> Option<&'a str>;
+    fn set_type_name(&'a mut self, type_name: String) -> Result<(), Self::Error>;
+}
+
+const TYPENAME_FIELD: &str = "__typename";
+
+impl<'json, T> TypedValue<'json> for T
+where
+    T: JsonLike<'json>,
+    T::JsonObject<'json>: JsonObjectLike<'json, Value = T>,
+{
+    type Error = anyhow::Error;
+
+    fn get_type_name(&'json self) -> Option<&'json str> {
+        self.as_object()
+            .and_then(|obj| obj.get_key(TYPENAME_FIELD))
+            .and_then(|val| val.as_str())
+    }
+
+    fn set_type_name(&'json mut self, type_name: String) -> Result<(), Self::Error> {
+        if let Some(obj) = self.as_object_mut() {
+            obj.insert_key(TYPENAME_FIELD, T::string(type_name.into()));
+
+            Ok(())
+        } else {
+            bail!("Expected object")
+        }
+    }
 }
 
 /// Resolver for type member of a union.
@@ -214,22 +237,7 @@ impl Discriminator {
         Valid::succeed(discriminator)
     }
 
-    pub fn resolve_type(&self, value: &Value) -> Result<TypeName> {
-        if let Value::List(list) = value {
-            let results: Result<Vec<_>> = list
-                .iter()
-                .map(|item| Ok(self.resolve_type_for_single(item)?.to_string()))
-                .collect();
-
-            Ok(TypeName::Vec(results?))
-        } else {
-            Ok(TypeName::Single(
-                self.resolve_type_for_single(value)?.to_string(),
-            ))
-        }
-    }
-
-    fn resolve_type_for_single(&self, value: &Value) -> Result<&str> {
+    pub fn resolve_type(&self, value: &Value) -> Result<&str> {
         let Value::Object(obj) = value else {
             bail!("Value expected to be object");
         };
@@ -346,7 +354,6 @@ mod tests {
 
     use super::Discriminator;
     use crate::core::config::{Field, Type, WrappingType};
-    use crate::core::ir::discriminator::TypeName;
     use crate::core::valid::Validator;
 
     #[test]
@@ -361,14 +368,14 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
 
         // ambiguous cases
@@ -376,21 +383,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
     }
 
@@ -418,14 +425,14 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
 
         // ambiguous cases
@@ -433,21 +440,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
     }
 
@@ -530,21 +537,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "a": 1, "ab": 1, "abab": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "b": 1, "ab": 1, "abab": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("B".to_string())
+            "B"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "c": 1, "ac": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("C".to_string())
+            "C"
         );
 
         // ambiguous cases
@@ -552,21 +559,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "a": 1, "b": 1, "c": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("C".to_string())
+            "C"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("C".to_string())
+            "C"
         );
     }
 
@@ -592,14 +599,14 @@ mod tests {
                     &Value::from_json(json!({ "a": 123, "b": true, "foo": "test" })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
 
         // ambiguous cases
@@ -607,21 +614,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         // ambiguous cases
@@ -629,21 +636,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
     }
 
@@ -663,14 +670,14 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "b": 123, "foo": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Bar".to_string())
+            "Bar"
         );
 
         assert_eq!(
@@ -679,7 +686,7 @@ mod tests {
                     &Value::from_json(json!({ "unknown": { "foo": "bar" }, "a": 1 })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         // ambiguous cases
@@ -687,21 +694,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "foo": "test", "bar": "test" })).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Foo".to_string())
+            "Foo"
         );
     }
 
@@ -731,21 +738,21 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "a": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "b": 1, "aa": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("B".to_string())
+            "B"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "c": 1, "aaa": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("C".to_string())
+            "C"
         );
 
         // ambiguous cases
@@ -755,21 +762,21 @@ mod tests {
                     &Value::from_json(json!({ "shared": 1, "a": 1, "b": 1, "c": 1 })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("A".to_string())
+            "A"
         );
     }
 
@@ -902,14 +909,14 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({ "usual": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("Var_Var".to_string())
+            "Var_Var"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "usual": 1, "payload": 1 })).unwrap())
                 .unwrap(),
-            TypeName::Single("Var0_Var".to_string())
+            "Var0_Var"
         );
 
         assert_eq!(
@@ -918,14 +925,14 @@ mod tests {
                     &Value::from_json(json!({ "usual": 1, "command": 2, "useless": 1 })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var1_Var".to_string())
+            "Var1_Var"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "usual": 1, "flag": true })).unwrap())
                 .unwrap(),
-            TypeName::Single("Var_Var0".to_string())
+            "Var_Var0"
         );
 
         assert_eq!(
@@ -935,7 +942,7 @@ mod tests {
                         .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var_Var1".to_string())
+            "Var_Var1"
         );
 
         assert_eq!(
@@ -944,7 +951,7 @@ mod tests {
                     &Value::from_json(json!({ "usual": 1, "payload": 1, "flag": true })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var0_Var0".to_string())
+            "Var0_Var0"
         );
 
         assert_eq!(
@@ -954,7 +961,7 @@ mod tests {
                         .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var0_Var1".to_string())
+            "Var0_Var1"
         );
 
         assert_eq!(
@@ -963,7 +970,7 @@ mod tests {
                     &Value::from_json(json!({ "usual": 1, "command": 1, "flag": true })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var1_Var0".to_string())
+            "Var1_Var0"
         );
 
         assert_eq!(
@@ -973,7 +980,7 @@ mod tests {
                         .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("Var1_Var1".to_string())
+            "Var1_Var1"
         );
 
         // ambiguous cases
@@ -991,14 +998,14 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("Var_Var".to_string())
+            "Var_Var"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("Var_Var".to_string())
+            "Var_Var"
         );
     }
 
@@ -1049,14 +1056,14 @@ mod tests {
                     &Value::from_json(json!({ "uniqueA1": "value", "common": 1 })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "uniqueB1": true, "common": 2 })).unwrap())
                 .unwrap(),
-            TypeName::Single("TypeB".to_string())
+            "TypeB"
         );
 
         assert_eq!(
@@ -1066,7 +1073,7 @@ mod tests {
                         .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeC".to_string())
+            "TypeC"
         );
 
         assert_eq!(
@@ -1078,7 +1085,7 @@ mod tests {
                     .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeD".to_string())
+            "TypeD"
         );
 
         // ambiguous cases
@@ -1091,21 +1098,21 @@ mod tests {
                     .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
     }
 
@@ -1150,7 +1157,7 @@ mod tests {
                     &Value::from_json(json!({ "field1": "value", "field2": "value" })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
 
         assert_eq!(
@@ -1159,7 +1166,7 @@ mod tests {
                     &Value::from_json(json!({ "field2": "value", "field3": "value" })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeB".to_string())
+            "TypeB"
         );
 
         assert_eq!(
@@ -1168,7 +1175,7 @@ mod tests {
                     &Value::from_json(json!({ "field1": "value", "field3": "value" })).unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeC".to_string())
+            "TypeC"
         );
 
         assert_eq!(
@@ -1180,7 +1187,7 @@ mod tests {
                     .unwrap()
                 )
                 .unwrap(),
-            TypeName::Single("TypeD".to_string())
+            "TypeD"
         );
 
         // ambiguous cases
@@ -1201,14 +1208,14 @@ mod tests {
             discriminator
                 .resolve_type(&Value::from_json(json!({})).unwrap())
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
 
         assert_eq!(
             discriminator
                 .resolve_type(&Value::from_json(json!({ "unknown": { "foo": "bar" }})).unwrap())
                 .unwrap(),
-            TypeName::Single("TypeA".to_string())
+            "TypeA"
         );
     }
 
