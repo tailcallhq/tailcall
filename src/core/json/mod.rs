@@ -1,12 +1,14 @@
 mod borrow;
 mod graphql;
 mod json_like;
+mod json_like_list;
 mod json_schema;
 mod serde;
 
 use std::collections::HashMap;
 
 pub use json_like::*;
+pub use json_like_list::*;
 pub use json_schema::*;
 
 // Highly micro-optimized and benchmarked version of get_path_all
