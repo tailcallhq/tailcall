@@ -12,14 +12,18 @@ use crate::core::is_default;
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(untagged)]
 pub enum WrappingType {
-    NamedType {
+    Named {
+        /// Name of the type
         name: String,
+        /// Flag to indicate the type is required.
         #[serde(rename = "required", default, skip_serializing_if = "is_default")]
         non_null: bool,
     },
-    ListType {
+    List {
+        /// Type is a list
         #[serde(rename = "list")]
         of_type: Box<WrappingType>,
+        /// Flag to indicate the type is required.
         #[serde(rename = "required", default, skip_serializing_if = "is_default")]
         non_null: bool,
     },
@@ -28,14 +32,14 @@ pub enum WrappingType {
 impl std::fmt::Debug for WrappingType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            WrappingType::NamedType { name, non_null } => {
+            WrappingType::Named { name, non_null } => {
                 if *non_null {
                     write!(f, "{}!", name)
                 } else {
                     write!(f, "{}", name)
                 }
             }
-            WrappingType::ListType { of_type, non_null } => {
+            WrappingType::List { of_type, non_null } => {
                 if *non_null {
                     write!(f, "[{:?}]!", of_type)
                 } else {
@@ -48,7 +52,7 @@ impl std::fmt::Debug for WrappingType {
 
 impl Default for WrappingType {
     fn default() -> Self {
-        WrappingType::NamedType { name: "JSON".to_string(), non_null: false }
+        WrappingType::Named { name: "JSON".to_string(), non_null: false }
     }
 }
 
@@ -56,53 +60,58 @@ impl WrappingType {
     /// gets the name of the type
     pub fn name(&self) -> &String {
         match self {
-            WrappingType::NamedType { name, .. } => name,
-            WrappingType::ListType { of_type, .. } => of_type.name(),
+            WrappingType::Named { name, .. } => name,
+            WrappingType::List { of_type, .. } => of_type.name(),
         }
     }
 
     /// checks if the type is nullable
     pub fn is_nullable(&self) -> bool {
         !match self {
-            WrappingType::NamedType { non_null, .. } => *non_null,
-            WrappingType::ListType { non_null, .. } => *non_null,
+            WrappingType::Named { non_null, .. } => *non_null,
+            WrappingType::List { non_null, .. } => *non_null,
         }
     }
     /// checks if the type is a list
     pub fn is_list(&self) -> bool {
-        matches!(self, WrappingType::ListType { .. })
+        matches!(self, WrappingType::List { .. })
     }
 
+    /// convert this type into NonNull type
     pub fn into_required(self) -> Self {
         match self {
-            WrappingType::NamedType { name, .. } => Self::NamedType { name, non_null: true },
-            WrappingType::ListType { of_type, .. } => Self::ListType { of_type, non_null: true },
+            WrappingType::Named { name, .. } => Self::Named { name, non_null: true },
+            WrappingType::List { of_type, .. } => Self::List { of_type, non_null: true },
         }
     }
 
+    /// convert this into nullable type
     pub fn into_nullable(self) -> Self {
         match self {
-            WrappingType::NamedType { name, .. } => Self::NamedType { name, non_null: false },
-            WrappingType::ListType { of_type, .. } => Self::ListType { of_type, non_null: false },
+            WrappingType::Named { name, .. } => Self::Named { name, non_null: false },
+            WrappingType::List { of_type, .. } => Self::List { of_type, non_null: false },
         }
     }
 
+    /// create a nullable list type from this type
     pub fn into_list(self) -> Self {
-        WrappingType::ListType { of_type: Box::new(self), non_null: false }
+        WrappingType::List { of_type: Box::new(self), non_null: false }
     }
 
+    /// convert this type from list to non-list for any level of nesting
     pub fn into_single(self) -> Self {
         match self {
-            WrappingType::NamedType { .. } => self,
-            WrappingType::ListType { of_type, .. } => of_type.into_single(),
+            WrappingType::Named { .. } => self,
+            WrappingType::List { of_type, .. } => of_type.into_single(),
         }
     }
 
-    pub fn with_type(self, name: String) -> Self {
+    /// replace the name of the underlying type
+    pub fn with_name(self, name: String) -> Self {
         match self {
-            WrappingType::NamedType { non_null, .. } => WrappingType::NamedType { name, non_null },
-            WrappingType::ListType { of_type, non_null } => {
-                WrappingType::ListType { of_type: Box::new(of_type.with_type(name)), non_null }
+            WrappingType::Named { non_null, .. } => WrappingType::Named { name, non_null },
+            WrappingType::List { of_type, non_null } => {
+                WrappingType::List { of_type: Box::new(of_type.with_name(name)), non_null }
             }
         }
     }
@@ -114,10 +123,10 @@ impl From<&async_graphql_types::Type> for WrappingType {
 
         match &value.base {
             async_graphql_types::BaseType::Named(name) => {
-                Self::NamedType { name: name.to_string(), non_null }
+                Self::Named { name: name.to_string(), non_null }
             }
             async_graphql_types::BaseType::List(type_) => {
-                Self::ListType { of_type: Box::new(type_.as_ref().into()), non_null }
+                Self::List { of_type: Box::new(type_.as_ref().into()), non_null }
             }
         }
     }
@@ -128,10 +137,10 @@ impl From<&WrappingType> for async_graphql_types::Type {
         let nullable = value.is_nullable();
 
         let base = match value {
-            WrappingType::NamedType { name, .. } => {
+            WrappingType::Named { name, .. } => {
                 async_graphql_types::BaseType::Named(Name::new(name))
             }
-            WrappingType::ListType { of_type, .. } => async_graphql_types::BaseType::List(
+            WrappingType::List { of_type, .. } => async_graphql_types::BaseType::List(
                 Box::new(async_graphql_types::Type::from(of_type.deref())),
             ),
         };
@@ -142,6 +151,6 @@ impl From<&WrappingType> for async_graphql_types::Type {
 
 impl From<String> for WrappingType {
     fn from(value: String) -> Self {
-        Self::NamedType { name: value, non_null: false }
+        Self::Named { name: value, non_null: false }
     }
 }

@@ -55,13 +55,13 @@ impl Transform for RenameTypes {
                     // replace type of field.
                     if let Some(suggested_name) = lookup.get(field_.type_of.name()) {
                         field_.type_of =
-                            field_.type_of.clone().with_type(suggested_name.to_owned());
+                            field_.type_of.clone().with_name(suggested_name.to_owned());
                     }
                     // replace type of argument.
                     for arg_ in field_.args.values_mut() {
                         if let Some(suggested_name) = lookup.get(arg_.type_of.name()) {
                             arg_.type_of =
-                                arg_.type_of.clone().with_type(suggested_name.to_owned());
+                                arg_.type_of.clone().with_name(suggested_name.to_owned());
                         }
                     }
                 }

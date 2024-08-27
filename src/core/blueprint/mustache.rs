@@ -197,11 +197,8 @@ mod test {
         );
         config.types.insert("T1".to_string(), t1_type);
 
-        let type_ = crate::core::blueprint::WrappingType::ListType {
-            of_type: Box::new(crate::core::blueprint::WrappingType::NamedType {
-                name: "Int".to_string(),
-                non_null: false,
-            }),
+        let type_ = WrappingType::List {
+            of_type: Box::new(WrappingType::Named { name: "Int".to_string(), non_null: false }),
             non_null: false,
         };
 
@@ -213,10 +210,7 @@ mod test {
                 default_value: None,
                 description: None,
             }],
-            of_type: crate::core::blueprint::WrappingType::NamedType {
-                name: "T1".to_string(),
-                non_null: false,
-            },
+            of_type: WrappingType::Named { name: "T1".to_string(), non_null: false },
             resolver: None,
             directives: vec![],
             description: None,

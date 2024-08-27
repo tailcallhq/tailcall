@@ -15,7 +15,7 @@ use crate::core::scalar;
 
 fn to_type_ref(type_of: &WrappingType) -> dynamic::TypeRef {
     match type_of {
-        WrappingType::NamedType { name, non_null } => {
+        WrappingType::Named { name, non_null } => {
             if *non_null {
                 dynamic::TypeRef::NonNull(Box::from(dynamic::TypeRef::Named(Cow::Owned(
                     name.clone(),
@@ -24,7 +24,7 @@ fn to_type_ref(type_of: &WrappingType) -> dynamic::TypeRef {
                 dynamic::TypeRef::Named(Cow::Owned(name.clone()))
             }
         }
-        WrappingType::ListType { of_type, non_null } => {
+        WrappingType::List { of_type, non_null } => {
             let inner = Box::new(to_type_ref(of_type));
             if *non_null {
                 dynamic::TypeRef::NonNull(Box::from(dynamic::TypeRef::List(inner)))

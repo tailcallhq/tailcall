@@ -117,7 +117,7 @@ impl TypeMerger {
                     actual_field.type_of = actual_field
                         .type_of
                         .clone()
-                        .with_type(merged_into_type_name.to_string());
+                        .with_name(merged_into_type_name.to_string());
                 }
 
                 // make the changes in the input arguments as well.
@@ -128,7 +128,7 @@ impl TypeMerger {
                         arg_.type_of = arg_
                             .type_of
                             .clone()
-                            .with_type(merge_into_type_name.to_owned());
+                            .with_name(merge_into_type_name.to_owned());
                     }
                 }
             }

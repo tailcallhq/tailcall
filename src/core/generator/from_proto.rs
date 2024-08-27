@@ -291,12 +291,12 @@ impl Context {
                             .into_object_type()
                             .to_string();
 
-                        cfg_field.type_of = cfg_field.type_of.with_type(type_of);
+                        cfg_field.type_of = cfg_field.type_of.with_name(type_of);
                     }
                 } else {
                     let type_of = convert_primitive_type(field.r#type().as_str_name());
 
-                    cfg_field.type_of = cfg_field.type_of.with_type(type_of);
+                    cfg_field.type_of = cfg_field.type_of.with_name(type_of);
                 }
 
                 let field_path =
@@ -361,7 +361,7 @@ impl Context {
                 let output_ty = get_output_type(method.output_type())?
                     .into_object_type()
                     .to_string();
-                cfg_field.type_of = cfg_field.type_of.with_type(output_ty);
+                cfg_field.type_of = cfg_field.type_of.with_name(output_ty);
 
                 cfg_field.resolver = Some(Resolver::Grpc(Grpc {
                     base_url: None,

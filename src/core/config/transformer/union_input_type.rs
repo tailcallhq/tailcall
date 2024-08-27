@@ -210,7 +210,7 @@ impl<'cfg> Visitor<'cfg> {
             // field for this variant
             for (i, type_) in union_types.iter().enumerate() {
                 let new_arg = Arg {
-                    type_of: arg.type_of.clone().with_type(type_.to_owned()),
+                    type_of: arg.type_of.clone().with_name(type_.to_owned()),
                     ..arg.clone()
                 };
 
@@ -259,7 +259,7 @@ impl<'cfg> Visitor<'cfg> {
                     .get_mut(*field_name)
                     .expect("Only available fields could be in list of union_fields");
 
-                field.type_of = field.type_of.clone().with_type(union_type.to_owned());
+                field.type_of = field.type_of.clone().with_name(union_type.to_owned());
 
                 inner_create(type_name, new_type, union_fields, result);
             }

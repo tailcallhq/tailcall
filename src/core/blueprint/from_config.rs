@@ -77,7 +77,7 @@ pub fn to_json_schema_for_args(args: &IndexMap<String, Arg>, config: &Config) ->
 }
 pub fn to_json_schema(type_of: &WrappingType, config: &Config) -> JsonSchema {
     let json_schema = match type_of {
-        WrappingType::NamedType { name, .. } => {
+        WrappingType::Named { name, .. } => {
             let type_ = config.find_type(name);
             let type_enum_ = config.find_enum(name);
 
@@ -101,7 +101,7 @@ pub fn to_json_schema(type_of: &WrappingType, config: &Config) -> JsonSchema {
                 JsonSchema::from_scalar_type(name)
             }
         }
-        WrappingType::ListType { of_type, .. } => {
+        WrappingType::List { of_type, .. } => {
             JsonSchema::Arr(Box::new(to_json_schema(of_type, config)))
         }
     };

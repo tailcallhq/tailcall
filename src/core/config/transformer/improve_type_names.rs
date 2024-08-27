@@ -132,7 +132,7 @@ impl ImproveTypeNames {
                             actual_field.type_of = actual_field
                                 .type_of
                                 .clone()
-                                .with_type(new_type_name.to_owned());
+                                .with_name(new_type_name.to_owned());
                         }
                     }
                 }

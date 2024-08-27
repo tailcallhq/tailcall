@@ -1525,9 +1525,11 @@
           ],
           "properties": {
             "name": {
+              "description": "Name of the type",
               "type": "string"
             },
             "required": {
+              "description": "Flag to indicate the type is required.",
               "type": "boolean"
             }
           }
@@ -1539,9 +1541,15 @@
           ],
           "properties": {
             "list": {
-              "$ref": "#/definitions/WrappingType"
+              "description": "Type is a list",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/WrappingType"
+                }
+              ]
             },
             "required": {
+              "description": "Flag to indicate the type is required.",
               "type": "boolean"
             }
           }

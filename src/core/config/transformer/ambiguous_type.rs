@@ -128,16 +128,16 @@ impl Transform for AmbiguousType {
                                 field.type_of = field
                                     .type_of
                                     .clone()
-                                    .with_type(resolution.output.to_owned());
+                                    .with_name(resolution.output.to_owned());
                             } else if input_types.contains(&k) {
                                 field.type_of =
-                                    field.type_of.clone().with_type(resolution.input.to_owned());
+                                    field.type_of.clone().with_name(resolution.input.to_owned());
                             }
                         }
                         for arg in field.args.values_mut() {
                             if let Some(resolution) = resolution_map.get(arg.type_of.name()) {
                                 arg.type_of =
-                                    arg.type_of.clone().with_type(resolution.input.clone());
+                                    arg.type_of.clone().with_name(resolution.input.clone());
                             }
                         }
                     }

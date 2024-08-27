@@ -4,7 +4,6 @@ use async_graphql_value::ConstValue;
 use regex::Regex;
 use union_resolver::update_union_resolver;
 
-use crate::core::blueprint::WrappingType::ListType;
 use crate::core::blueprint::*;
 use crate::core::config::{Config, Enum, Field, GraphQLOperationType, Protected, Union};
 use crate::core::directive::DirectiveCodec;
@@ -151,7 +150,7 @@ fn process_field_within_type(
             })
             .and_then(|of_type| {
                 if next_field.type_of.is_list() {
-                    Valid::succeed(ListType { of_type: Box::new(of_type), non_null: is_required })
+                    Valid::succeed(WrappingType::List { of_type: Box::new(of_type), non_null: is_required })
                 } else {
                     Valid::succeed(of_type)
                 }
@@ -307,7 +306,7 @@ fn update_resolver_from_path(
         let resolver = IR::ContextPath(context.path.to_owned());
         if has_index {
             updated_base_field.of_type =
-                WrappingType::NamedType { name: of_type.name().to_string(), non_null: false }
+                WrappingType::Named { name: of_type.name().to_string(), non_null: false }
         } else {
             updated_base_field.of_type = of_type;
         }

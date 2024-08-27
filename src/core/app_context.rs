@@ -6,7 +6,7 @@ use hyper::body::Bytes;
 
 use crate::core::async_graphql_hyper::OperationId;
 use crate::core::auth::context::GlobalAuthContext;
-use crate::core::blueprint::WrappingType::ListType;
+use crate::core::blueprint::WrappingType::List;
 use crate::core::blueprint::{Blueprint, Definition, SchemaModifiers};
 use crate::core::data_loader::{DataLoader, DedupeResult};
 use crate::core::graphql::GraphqlDataLoader;
@@ -53,7 +53,7 @@ impl AppContext {
                                     let data_loader = HttpDataLoader::new(
                                         runtime.clone(),
                                         group_by.clone(),
-                                        matches!(of_type, ListType { .. }),
+                                        matches!(of_type, List { .. }),
                                     )
                                     .to_data_loader(upstream_batch.clone().unwrap_or_default());
 
