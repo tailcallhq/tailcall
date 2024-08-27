@@ -6,5 +6,5 @@ use error::Result;
 pub use infer_type_name::InferTypeName;
 mod wizard;
 
-pub use type_refs::TypeUsageIndex;
+use type_refs::TypeUsageIndex;
 pub use wizard::Wizard;
