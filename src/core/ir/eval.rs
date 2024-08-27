@@ -88,9 +88,13 @@ impl IR {
                     second.eval(ctx).await
                 }
                 IR::Discriminate(discriminator, expr) => expr.eval(ctx).await.and_then(|value| {
-                    // TODO: in some cases __typename could be already present or could be inferred
-                    // by some way like for EntityResolver
                     let value = value.map(|mut value| {
+                        if value.get_type_name().is_some() {
+                            // if typename is already present in value just reuse it instead
+                            // of recalculating from scratch
+                            return Ok(value);
+                        }
+
                         let type_name = discriminator.resolve_type(&value)?;
 
                         value.set_type_name(type_name.to_string())?;
@@ -114,22 +118,25 @@ impl IR {
 
                     for repr in representations {
                         // TODO: combine errors, instead of fail fast?
-                        let typename = repr.get_key("__typename").and_then(|t| t.as_str()).ok_or(
-                            Error::EntityResolver(
-                                "expected __typename to be the part of the representation"
-                                    .to_string(),
-                            ),
-                        )?;
+                        let type_name = repr.get_type_name().ok_or(Error::EntityResolver(
+                            "expected __typename to be the part of the representation".to_string(),
+                        ))?;
 
-                        let ir = map.get(typename).ok_or(Error::EntityResolver(format!(
-                            "Cannot find a resolver for type: `{typename}`"
+                        let ir = map.get(type_name).ok_or(Error::EntityResolver(format!(
+                            "Cannot find a resolver for type: `{type_name}`"
                         )))?;
 
                         // pass the input for current representation as value in context
                         // TODO: can we drop clone?
                         let mut ctx = ctx.with_value(repr.clone());
 
-                        tasks.push(async move { ir.eval(&mut ctx).await });
+                        tasks.push(async move {
+                            ir.eval(&mut ctx).await.and_then(|mut value| {
+                                // set typename explicitly to reuse it if needed
+                                value.set_type_name(type_name.to_owned())?;
+                                Ok(value)
+                            })
+                        });
                     }
 
                     let result = join_all(tasks).await;
