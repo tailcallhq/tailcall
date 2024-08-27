@@ -1,6 +1,6 @@
 use crate::core::ir::TypeName;
 use crate::core::jit::exec::{TypedValue, TypedValueRef};
-use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
+use crate::core::jit::model::{Field, Nested, OperationPlan, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
@@ -12,24 +12,6 @@ pub struct Synth<Value> {
     plan: OperationPlan<Value>,
     store: ValueStore<Value>,
     variables: Variables<Value>,
-}
-
-impl<Extensions, Input> Field<Extensions, Input> {
-    #[inline(always)]
-    pub fn skip<'json, Value: JsonLike<'json>>(&self, variables: &Variables<Value>) -> bool {
-        let eval =
-            |variable_option: Option<&Variable>, variables: &Variables<Value>, default: bool| {
-                variable_option
-                    .map(|a| a.as_str())
-                    .and_then(|name| variables.get(name))
-                    .and_then(|value| value.as_bool())
-                    .unwrap_or(default)
-            };
-        let skip = eval(self.skip.as_ref(), variables, false);
-        let include = eval(self.include.as_ref(), variables, true);
-
-        skip == include
-    }
 }
 
 impl<Value> Synth<Value> {
