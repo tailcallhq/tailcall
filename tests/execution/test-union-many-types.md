@@ -272,7 +272,7 @@ type Type65 {
 }
 
 union AllTypes =
-    Type1
+  | Type1
   | Type2
   | Type3
   | Type4
