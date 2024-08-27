@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
+  query: Query
+}
+
+type Foo {
+  bar: String!
+  id: Int!
+}
+
+type Query {
+  basicMissing: Foo! @http(path: "/basic-missing")
+  basicPresent: Foo! @http(path: "/basic-present")
+  fullMissing: [Foo!]! @http(path: "/full-missing")
+  fullPresent: [Foo!]! @http(path: "/full-present")
+  innerMissing: [Foo!] @http(path: "/inner-missing")
+  innerPresent: [Foo!] @http(path: "/inner-present")
+  noneMissing: [Foo] @http(path: "/none-missing")
+  nonePresent: [Foo] @http(path: "/none-present")
+  outerMissing: [Foo]! @http(path: "/outer-missing")
+  outerPresent: [Foo]! @http(path: "/outer-present")
+  relaxedMissing: Foo @http(path: "/relaxed-missing")
+  relaxedPresent: Foo @http(path: "/relaxed-present")
+}

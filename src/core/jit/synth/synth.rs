@@ -68,9 +68,9 @@ where
         Ok(Value::object(data))
     }
 
-    /// checks if type_of is an array and value is an array
+    /// checks if both are array or both are scalar type
     #[inline(always)]
-    fn is_array(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
+    fn is_both_array_or_scalar(type_of: &crate::core::blueprint::Type, value: &Value) -> bool {
         type_of.is_list() == value.as_array().is_some()
     }
 
@@ -98,8 +98,14 @@ where
                     Data::Single(result) => {
                         let value = result.as_ref().map_err(Clone::clone)?;
 
-                        if !Self::is_array(&node.type_of, value) {
-                            return Ok(Value::null());
+                        if !Self::is_both_array_or_scalar(&node.type_of, value) {
+                            if node.type_of.is_nullable() {
+                                return Ok(Value::null());
+                            } else {
+                                // link to GraphQL reference https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
+                                return Err(ValidationError::ValueRequired.into())
+                                    .map_err(|e| self.to_location_error(e, node));
+                            }
                         }
                         self.iter_inner(node, value, data_path)
                     }
@@ -110,8 +116,16 @@ where
                 }
             }
             None => match value {
-                Some(value) => self.iter_inner(node, value, data_path),
-                None => Ok(Value::null()),
+                Some(result) => self.iter_inner(node, result, data_path),
+                None => {
+                    if node.type_of.is_nullable() {
+                        Ok(Value::null())
+                    } else {
+                        // link to GraphQL reference https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
+                        Err(ValidationError::ValueRequired.into())
+                            .map_err(|e| self.to_location_error(e, node))
+                    }
+                }
             },
         }
     }
@@ -128,10 +142,22 @@ where
         }
 
         let eval_result = if value.is_null() {
-            if node.type_of.is_nullable() {
-                Ok(Value::null())
-            } else {
-                Err(ValidationError::ValueRequired.into())
+            // link to GraphQL reference https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
+            match &node.type_of {
+                crate::core::blueprint::Type::NamedType { name: _, non_null: _ } => {
+                    if node.type_of.is_nullable() {
+                        Ok(Value::null())
+                    } else {
+                        Err(ValidationError::ValueRequired.into())
+                    }
+                }
+                crate::core::blueprint::Type::ListType { of_type, non_null: _ } => {
+                    if of_type.is_nullable() {
+                        Ok(Value::null())
+                    } else {
+                        Err(ValidationError::ValueRequired.into())
+                    }
+                }
             }
         } else if self.plan.field_is_scalar(node) {
             let scalar =
