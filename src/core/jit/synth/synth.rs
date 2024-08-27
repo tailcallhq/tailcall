@@ -42,18 +42,14 @@ where
             if !self.include(child) {
                 continue;
             }
+            // TODO: in case of error set `child.output_name` to null
+            // and append error to response error array
             let val = self.iter(child, None, &DataPath::new())?;
 
             data.insert_key(&child.output_name, val);
         }
 
         Ok(Value::object(data))
-    }
-
-    /// checks if type_of is an array and value is an array
-    #[inline(always)]
-    fn is_array(type_of: &crate::core::Type, value: &Value) -> bool {
-        type_of.is_list() == value.as_array().is_some()
     }
 
     #[inline(always)]
@@ -80,8 +76,8 @@ where
                     Data::Single(result) => {
                         let value = result.as_ref().map_err(Clone::clone)?;
 
-                        if !Self::is_array(&node.type_of, value) {
-                            return Ok(Value::null());
+                        if node.type_of.is_list() != value.as_array().is_some() {
+                            return self.node_nullable_guard(node);
                         }
                         self.iter_inner(node, value, data_path)
                     }
@@ -92,9 +88,23 @@ where
                 }
             }
             None => match value {
-                Some(value) => self.iter_inner(node, value, data_path),
-                None => Ok(Value::null()),
+                Some(result) => self.iter_inner(node, result, data_path),
+                None => self.node_nullable_guard(node),
             },
+        }
+    }
+
+    /// This guard ensures to return Null value only if node type permits it, in
+    /// case it does not it throws an Error
+    fn node_nullable_guard(
+        &'a self,
+        node: &'a Field<Nested<Value>, Value>,
+    ) -> Result<Value, Positioned<Error>> {
+        // according to GraphQL spec https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
+        if node.type_of.is_nullable() {
+            Ok(Value::null())
+        } else {
+            Err(ValidationError::ValueRequired.into()).map_err(|e| self.to_location_error(e, node))
         }
     }
 
@@ -105,12 +115,18 @@ where
         value: &'a Value,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
+        // skip the field if field is not included in schema
         if !self.include(node) {
             return Ok(Value::null());
         }
 
         let eval_result = if value.is_null() {
-            if node.type_of.is_nullable() {
+            // check the nullability of this type unwrapping list modifier
+            let is_nullable = match &node.type_of {
+                crate::core::Type::Named { non_null, .. } => !*non_null,
+                crate::core::Type::List { of_type, .. } => of_type.is_nullable(),
+            };
+            if is_nullable {
                 Ok(Value::null())
             } else {
                 Err(ValidationError::ValueRequired.into())
