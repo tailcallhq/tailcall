@@ -94,7 +94,7 @@ where
                     Data::Single(result) => {
                         let value = result.as_ref().map_err(Clone::clone)?;
 
-                        if !node.type_of.is_list() == value.as_array().is_some() {
+                        if node.type_of.is_list() != value.as_array().is_some() {
                             return self.node_nullable_guard(node);
                         }
                         self.iter_inner(node, value, data_path)
