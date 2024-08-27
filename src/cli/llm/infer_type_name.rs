@@ -175,7 +175,8 @@ mod test {
             fields: vec![("id", "String"), ("name", "String"), ("age", "Int")],
         };
         let request: ChatRequest = question.try_into().unwrap();
-        insta::assert_debug_snapshot!(request);
+        let request_str = format!("{:?}", request);
+        insta::assert_snapshot!(request_str)
     }
 
     #[test]
