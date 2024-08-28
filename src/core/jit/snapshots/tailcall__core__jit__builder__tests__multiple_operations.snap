@@ -6,6 +6,7 @@ expression: plan.into_nested()
     Field {
         id: 0,
         name: "user",
+        output_name: "user",
         ir: "Some(..)",
         type_of: User,
         type_condition: "Query",
@@ -28,6 +29,7 @@ expression: plan.into_nested()
                     Field {
                         id: 1,
                         name: "id",
+                        output_name: "id",
                         type_of: ID!,
                         type_condition: "User",
                         directives: [],
@@ -35,6 +37,7 @@ expression: plan.into_nested()
                     Field {
                         id: 2,
                         name: "username",
+                        output_name: "username",
                         type_of: String!,
                         type_condition: "User",
                         directives: [],
@@ -47,6 +50,7 @@ expression: plan.into_nested()
     Field {
         id: 3,
         name: "posts",
+        output_name: "posts",
         ir: "Some(..)",
         type_of: [Post],
         type_condition: "Query",
@@ -56,6 +60,7 @@ expression: plan.into_nested()
                     Field {
                         id: 4,
                         name: "id",
+                        output_name: "id",
                         type_of: ID!,
                         type_condition: "Post",
                         directives: [],
@@ -63,6 +68,7 @@ expression: plan.into_nested()
                     Field {
                         id: 5,
                         name: "title",
+                        output_name: "title",
                         type_of: String!,
                         type_condition: "Post",
                         directives: [],

@@ -4,14 +4,12 @@ use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
 use crate::core::Mustache;
 
-#[derive(Default)]
 pub struct InferTypeName {
-    secret: Option<String>,
+    wizard: Wizard<Question, Answer>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,14 +72,11 @@ impl TryInto<ChatRequest> for Question {
 }
 
 impl InferTypeName {
-    pub fn new(secret: Option<String>) -> InferTypeName {
-        Self { secret }
+    pub fn new(model: String, secret: Option<String>) -> InferTypeName {
+        Self { wizard: Wizard::new(model, secret) }
     }
+
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
-        let secret = self.secret.as_ref().map(|s| s.to_owned());
-
-        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
-
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
         // removed root type from types.
@@ -104,7 +99,7 @@ impl InferTypeName {
 
             let mut delay = 3;
             loop {
-                let answer = wizard.ask(question.clone()).await;
+                let answer = self.wizard.ask(question.clone()).await;
                 match answer {
                     Ok(answer) => {
                         let name = &answer.suggestions.join(", ");

@@ -6,7 +6,7 @@ use hyper::HeaderMap;
 use inquire::Confirm;
 use pathdiff::diff_paths;
 
-use super::config::{Config, Resolved, Source};
+use super::config::{Config, LLMConfig, Resolved, Source};
 use super::source::ConfigSource;
 use crate::cli::llm::{InferArgName, InferFieldName, InferTypeName};
 use crate::core::config::transformer::{Preset, RenameArgs, RenameFields, RenameTypes};
@@ -164,20 +164,18 @@ impl Generator {
         let query_type = config.schema.query.clone();
         let mutation_type_name = config.schema.mutation.clone();
 
-        let secret = config.secret.clone();
+        let llm = config.llm.clone();
         let preset = config.preset.clone().unwrap_or_default();
         let preset: Preset = preset.validate_into().to_result()?;
         let input_samples = self.resolve_io(config).await?;
-        let use_llm = preset.infer_type_names;
-
-        let llm_key = if !secret.is_empty() {
-            Some(secret.to_string())
-        } else {
-            None
-        };
+        let infer_type_names = preset.infer_type_names;
 
         //NOTE: Field name is required before config generation
-        let mut llm_field_gen = InferFieldName::new(llm_key.clone(), use_llm);
+        let llm_key = llm
+            .clone()
+            .map(|llm| llm.secret.clone().unwrap_or_default());
+        let llm_model = llm.clone().map(|llm| llm.model.clone().unwrap_or_default());
+        let mut llm_field_gen = InferFieldName::new(llm_model, llm_key.map(|s| s.to_string()));
         let suggested_field_names = llm_field_gen.generate(input_samples.clone()).await?;
 
         let input_samples = RenameFields::new(suggested_field_names)
@@ -194,19 +192,22 @@ impl Generator {
 
         let mut config = config_gen.mutation(mutation_type_name).generate(true)?;
 
-        if use_llm {
-            let mut llm_type_gen = InferTypeName::new(llm_key.clone());
-            let suggested_names = llm_type_gen.generate(config.config()).await?;
-            let cfg = RenameTypes::new(suggested_names.iter())
-                .transform(config.config().to_owned())
-                .to_result()?;
-            let mut llm_args_gen = InferArgName::new(llm_key);
-            let suggested_args = llm_args_gen.generate(&cfg).await?;
-            let cfg = RenameArgs::new(suggested_args.into_iter())
-                .transform(config.config().to_owned())
-                .to_result()?;
+        if infer_type_names {
+            if let Some(LLMConfig { model: Some(model), secret }) = llm {
+                let mut llm_type_gen =
+                    InferTypeName::new(model.clone(), secret.clone().map(|s| s.to_string()));
+                let suggested_names = llm_type_gen.generate(config.config()).await?;
+                let cfg = RenameTypes::new(suggested_names.iter())
+                    .transform(config.config().to_owned())
+                    .to_result()?;
+                let mut llm_args_gen = InferArgName::new(model, secret.map(|s| s.to_string()));
+                let suggested_args = llm_args_gen.generate(&cfg).await?;
+                let cfg = RenameArgs::new(suggested_args.into_iter())
+                    .transform(config.config().to_owned())
+                    .to_result()?;
 
-            config = ConfigModule::from(cfg);
+                config = ConfigModule::from(cfg);
+            }
         }
 
         self.write(&config, &path).await?;

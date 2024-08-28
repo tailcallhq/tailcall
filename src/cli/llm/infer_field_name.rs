@@ -5,15 +5,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
 
-use super::model::groq;
 use super::{Error, Result, Wizard};
 use crate::core::generator::Input;
 use crate::core::Mustache;
 
-#[derive(Default)]
 pub struct InferFieldName {
-    secret: Option<String>,
-    use_llm: bool,
+    wizard: Wizard<Question, Answer>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,31 +91,31 @@ impl TryInto<ChatRequest> for Question {
 }
 
 impl InferFieldName {
-    pub fn new(secret: Option<String>, use_llm: bool) -> InferFieldName {
-        Self { secret, use_llm }
+    pub fn new(model: Option<String>, secret: Option<String>) -> InferFieldName {
+        if let Some(model) = model {
+            Self { wizard: Wizard::new(model, secret) }
+        } else {
+            Self { wizard: Wizard::new(String::new(), None) }
+        }
     }
     pub async fn generate(
         &mut self,
         mut input_samples: Vec<Input>,
     ) -> Result<HashMap<Url, Vec<String>>> {
-        let secret = self.secret.as_ref().map(|s| s.to_owned());
-
-        let wizard: Wizard<Question, Answer> = Wizard::new(groq::LLAMA38192, secret);
-
         let mut new_field_names: HashMap<Url, Vec<String>> = HashMap::new();
         let total = input_samples.len();
         for (i, input) in input_samples.iter_mut().enumerate() {
             if let Input::Json { url, method, field_name, .. } = input {
                 if field_name.is_none() {
                     let mut suggested_field_names = vec![format!("field{}", i)];
-                    if self.use_llm {
+                    if !self.wizard.model.is_empty() {
                         let domain = url.host().unwrap_or(url::Host::Domain("")).to_string();
                         let formatted_url = format!("{:?}{:?}", domain, url.path());
                         let question = Question { field: (formatted_url, method.to_string()) };
 
                         let mut delay = 3;
                         loop {
-                            let answer = wizard.ask(question.clone()).await;
+                            let answer = self.wizard.ask(question.clone()).await;
                             match answer {
                                 Ok(answer) => {
                                     suggested_field_names = answer.suggestions;

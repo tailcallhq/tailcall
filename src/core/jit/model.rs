@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use super::Error;
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
+use crate::core::json::JsonLike;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
@@ -45,6 +46,24 @@ impl<Value> Variables<Value> {
 impl<V> FromIterator<(String, V)> for Variables<V> {
     fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
         Self(iter.into_iter().collect())
+    }
+}
+
+impl<Extensions, Input> Field<Extensions, Input> {
+    #[inline(always)]
+    pub fn skip<'json, Value: JsonLike<'json>>(&self, variables: &Variables<Value>) -> bool {
+        let eval =
+            |variable_option: Option<&Variable>, variables: &Variables<Value>, default: bool| {
+                variable_option
+                    .map(|a| a.as_str())
+                    .and_then(|name| variables.get(name))
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(default)
+            };
+        let skip = eval(self.skip.as_ref(), variables, false);
+        let include = eval(self.include.as_ref(), variables, true);
+
+        skip == include
     }
 }
 
@@ -108,7 +127,11 @@ impl FieldId {
 #[derive(Clone)]
 pub struct Field<Extensions, Input> {
     pub id: FieldId,
+    /// Name of key in the value object for this field
     pub name: String,
+    /// Output name (i.e. with alias) that should be used for the result value
+    /// of this field
+    pub output_name: String,
     pub ir: Option<IR>,
     pub type_of: crate::core::blueprint::Type,
     /// Specifies the name of type used in condition to fetch that field
@@ -158,6 +181,7 @@ impl<Input> Field<Nested<Input>, Input> {
         Ok(Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -187,6 +211,7 @@ impl<Input> Field<Flat, Input> {
         Ok(Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -262,6 +287,7 @@ impl<Input> Field<Flat, Input> {
         Field {
             id: self.id,
             name: self.name,
+            output_name: self.output_name,
             ir: self.ir,
             type_of: self.type_of,
             type_condition: self.type_condition,
@@ -280,6 +306,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
         let mut debug_struct = f.debug_struct("Field");
         debug_struct.field("id", &self.id);
         debug_struct.field("name", &self.name);
+        debug_struct.field("output_name", &self.output_name);
         if self.ir.is_some() {
             debug_struct.field("ir", &"Some(..)");
         }
@@ -298,6 +325,7 @@ impl<Extensions: Debug, Input: Debug> Debug for Field<Extensions, Input> {
             debug_struct.field("include", &self.include);
         }
         debug_struct.field("directives", &self.directives);
+
         debug_struct.finish()
     }
 }
