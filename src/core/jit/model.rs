@@ -139,7 +139,7 @@ pub struct Field<Extensions, Input> {
     /// The type could be anything from graphql type system:
     /// interface, type, union, input type.
     /// See [spec](https://spec.graphql.org/October2021/#sec-Type-Conditions)
-    pub type_condition: String,
+    pub type_condition: Option<String>,
     pub skip: Option<Variable>,
     pub include: Option<Variable>,
     pub args: Vec<Arg<Input>>,
@@ -488,9 +488,10 @@ impl<Input> OperationPlan<Input> {
     {
         let value_type = field.value_type(value);
 
-        field.iter_only(move |field| {
-            self.index
-                .is_type_implements(value_type, &field.type_condition)
+        field.iter_only(move |field| match &field.type_condition {
+            Some(type_condition) => self.index.is_type_implements(value_type, type_condition),
+            // if there is no type_condition restriction then use this field
+            None => true,
         })
     }
 }
