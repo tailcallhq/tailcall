@@ -189,17 +189,14 @@ impl TypeMerger {
 }
 
 fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
-    // merge rest of fields with merge_right.
-    let added_fields_t1 = merge_into.added_fields.clone();
-    let added_fields_t2 = type_.added_fields.clone();
-    let merged_added_fields = added_fields_t1.merge_right(added_fields_t2);
-
-    let implements_t1 = merge_into.implements.clone();
-    let implements_t2 = type_.implements.clone();
-    let merged_implements = implements_t1.merge_right(implements_t2);
-
-    merge_into.added_fields = merged_added_fields;
-    merge_into.implements = merged_implements;
+    // Merge the simple fields using `merge_right`.
+    merge_into.added_fields = merge_into
+        .added_fields
+        .merge_right(type_.added_fields.clone());
+    merge_into.implements = merge_into.implements.merge_right(type_.implements.clone());
+    merge_into.cache = merge_into.cache.merge_right(type_.cache.clone());
+    merge_into.protected = merge_into.protected.merge_right(type_.protected.clone());
+    merge_into.doc = merge_into.doc.merge_right(type_.doc.clone());
 
     // handle field output type merging correctly.
     for (key, new_field) in type_.fields.iter() {
