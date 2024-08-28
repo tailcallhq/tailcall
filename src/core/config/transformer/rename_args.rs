@@ -47,7 +47,7 @@ impl Transform for RenameArgs {
             for type_ in types_to_update {
                 if let Some(mut field_info) = type_.fields.remove(field_name) {
                     for (existing_name, suggested_name) in existing_and_suggested_names {
-                        if let Some(arg_value) = field_info.args.remove(existing_name) {
+                        if let Some(arg_value) = field_info.args.swap_remove(existing_name) {
                             field_info
                                 .args
                                 .insert(suggested_name.to_string(), arg_value);

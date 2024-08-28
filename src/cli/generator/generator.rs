@@ -172,9 +172,11 @@ impl Generator {
 
         //NOTE: Field name is required before config generation
         let llm_key = llm
-            .clone()
+            .as_ref()
             .map(|llm| llm.secret.clone().unwrap_or_default());
-        let llm_model = llm.clone().map(|llm| llm.model.clone().unwrap_or_default());
+        let llm_model = llm
+            .as_ref()
+            .map(|llm| llm.model.clone().unwrap_or_default());
         let mut llm_field_gen = InferFieldName::new(llm_model, llm_key.map(|s| s.to_string()));
         let suggested_field_names = llm_field_gen.generate(input_samples.clone()).await?;
 
