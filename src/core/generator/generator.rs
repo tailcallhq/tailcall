@@ -148,24 +148,37 @@ fn resolve_file_descriptor_set(
 
 #[cfg(test)]
 pub mod test {
+    use std::collections::BTreeMap;
+
     use prost_reflect::prost_types::FileDescriptorSet;
     use serde::{Deserialize, Deserializer};
     use serde_json::Value;
+    use url::Url;
 
     use super::Generator;
     use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::Input;
-    use crate::core::generator::NameGenerator;
     use crate::core::http::Method;
+    use crate::core::mustache::TemplateString;
     use crate::core::proto_reader::ProtoMetadata;
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
         Ok(protox::compile(files, [tailcall_fixtures::protobuf::SELF])?)
     }
 
+    #[derive(Deserialize)]
+    pub struct Request {
+        pub url: Url,
+        pub method: Method,
+        pub body: Option<Value>,
+        pub headers: Option<BTreeMap<String, TemplateString>>,
+    }
+
     pub struct JsonFixture {
-        pub url: String,
-        pub response: serde_json::Value,
+        pub request: Request,
+        pub response: Value,
+        pub is_mutation: bool,
+        pub field_name: String,
     }
 
     impl JsonFixture {
@@ -183,12 +196,11 @@ pub mod test {
         {
             let json_content: Value = Value::deserialize(deserializer)?;
 
-            let url = json_content
+            let req_value = json_content
                 .get("request")
-                .and_then(|req| req.get("url"))
-                .and_then(|url| url.as_str())
-                .ok_or_else(|| serde::de::Error::missing_field("request.url"))?
-                .to_string();
+                .ok_or_else(|| serde::de::Error::missing_field("request"))?;
+
+            let request = serde_json::from_value(req_value.to_owned()).unwrap();
 
             let response = json_content
                 .get("response")
@@ -196,7 +208,24 @@ pub mod test {
                 .cloned()
                 .ok_or_else(|| serde::de::Error::missing_field("response.body"))?;
 
-            Ok(JsonFixture { url, response })
+            let is_mutation = json_content
+                .get("is_mutation")
+                .ok_or_else(|| serde::de::Error::missing_field("isMutation"))?
+                .as_bool()
+                .unwrap_or_default();
+
+            let field_name = json_content
+                .get("fieldName")
+                .ok_or_else(|| serde::de::Error::missing_field("fieldName"))?
+                .as_str()
+                .unwrap_or_default();
+
+            Ok(JsonFixture {
+                request,
+                response,
+                is_mutation,
+                field_name: field_name.to_owned(),
+            })
         }
     }
 
@@ -231,19 +260,19 @@ pub mod test {
 
     #[tokio::test]
     async fn should_generate_config_from_json() -> anyhow::Result<()> {
-        let parsed_content = JsonFixture::read(
+        let JsonFixture {request, response, field_name, is_mutation}  = JsonFixture::read(
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",
         )
         .await?;
         let cfg_module = Generator::default()
             .inputs(vec![Input::Json {
-                url: parsed_content.url.parse()?,
-                method: Method::GET,
-                req_body: serde_json::Value::Null,
-                res_body: parsed_content.response,
-                field_name: "f1".to_string(),
-                is_mutation: false,
-                headers: None,
+                url: request.url,
+                method: request.method,
+                req_body: request.body.unwrap_or_default(),
+                res_body: response,
+                field_name: field_name,
+                is_mutation: is_mutation,
+                headers: request.headers,
             }])
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
@@ -273,13 +302,13 @@ pub mod test {
         )
         .await?;
         let json_input = Input::Json {
-            url: parsed_content.url.parse()?,
-            method: Method::GET,
-            req_body: serde_json::Value::Null,
+            url: parsed_content.request.url,
+            method: parsed_content.request.method,
+            req_body: parsed_content.request.body.unwrap_or_default(),
             res_body: parsed_content.response,
-            field_name: "f1".to_string(),
-            is_mutation: false,
-            headers: None,
+            field_name: parsed_content.field_name,
+            is_mutation: parsed_content.is_mutation,
+            headers: parsed_content.request.headers,
         };
 
         // Combine inputs
@@ -301,17 +330,16 @@ pub mod test {
             "src/core/generator/tests/fixtures/json/list_incompatible_object.json",
             "src/core/generator/tests/fixtures/json/list.json",
         ];
-        let field_name_generator = NameGenerator::new("f");
         for json_path in json_fixtures {
             let parsed_content = JsonFixture::read(json_path).await?;
             inputs.push(Input::Json {
-                url: parsed_content.url.parse()?,
-                method: Method::GET,
-                req_body: serde_json::Value::Null,
+                url: parsed_content.request.url,
+                method: parsed_content.request.method,
+                req_body: parsed_content.request.body.unwrap_or_default(),
                 res_body: parsed_content.response,
-                field_name: field_name_generator.next(),
-                is_mutation: false,
-                headers: None,
+                field_name: parsed_content.field_name,
+                is_mutation: parsed_content.is_mutation,
+                headers: parsed_content.request.headers,
             });
         }
 

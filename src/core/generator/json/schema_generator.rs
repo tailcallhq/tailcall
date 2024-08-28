@@ -50,6 +50,8 @@ impl Transform for SchemaGenerator<'_> {
 
 #[cfg(test)]
 mod test {
+    use std::collections::BTreeSet;
+
     use super::SchemaGenerator;
     use crate::core::config::GraphQLOperationType;
     use crate::core::transform::Transform;
@@ -77,6 +79,21 @@ mod test {
             .unwrap();
         assert!(config.schema.query.is_some());
         assert_eq!(config.schema.query, Some("Query".to_owned()));
+
+        assert!(config.schema.mutation.is_none());
+    }
+
+    #[test]
+    fn test_schema_generator_with_headers() {
+        let expected_header_keys = Some(BTreeSet::from(["X-Custom-Header".to_owned()]));
+        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Query, &expected_header_keys);
+        let config = schema_gen
+            .transform(Default::default())
+            .to_result()
+            .unwrap();
+        assert!(config.schema.query.is_some());
+        assert_eq!(config.schema.query, Some("Query".to_owned()));
+        assert_eq!(config.upstream.allowed_headers, expected_header_keys);
 
         assert!(config.schema.mutation.is_none());
     }

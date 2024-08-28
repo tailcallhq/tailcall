@@ -142,7 +142,6 @@ mod tests {
     use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::test::JsonFixture;
     use crate::core::generator::{FromJsonGenerator, Input, NameGenerator, RequestSample};
-    use crate::core::http::Method;
     use crate::core::transform::TransformerOps;
     use crate::core::valid::Validator;
 
@@ -156,17 +155,17 @@ mod tests {
             "src/core/generator/tests/fixtures/json/nested_same_properties.json",
             "src/core/generator/tests/fixtures/json/incompatible_root_object.json",
         ];
-        let field_name_generator = NameGenerator::new("f");
         for fixture in fixtures {
-            let JsonFixture { url, response } = JsonFixture::read(fixture).await?;
+            let JsonFixture { request, response, is_mutation, field_name } =
+                JsonFixture::read(fixture).await?;
             let json_input = Input::Json {
-                url: url.parse()?,
-                method: Method::GET,
-                req_body: serde_json::Value::Null,
+                url: request.url,
+                method: request.method,
+                req_body: request.body.unwrap_or_default(),
                 res_body: response,
-                field_name: field_name_generator.next(),
-                is_mutation: false,
-                headers: None,
+                field_name,
+                is_mutation,
+                headers: request.headers,
             };
             request_samples.push(RequestSample::from(&json_input));
         }
