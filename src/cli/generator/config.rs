@@ -50,7 +50,6 @@ pub struct PresetConfig {
     pub tree_shake: Option<bool>,
     pub unwrap_single_field_types: Option<bool>,
 }
-
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(transparent)]
 pub struct Location<A>(
