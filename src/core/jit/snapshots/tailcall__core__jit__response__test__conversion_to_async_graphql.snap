@@ -1,0 +1,31 @@
+---
+source: src/core/jit/response.rs
+expression: async_response
+---
+Response {
+    data: Null,
+    extensions: {},
+    cache_control: CacheControl {
+        public: true,
+        max_age: 0,
+    },
+    errors: [
+        ServerError {
+            message: "internal: invalid item for enum \"EnumDef\"",
+            locations: [
+                Pos(3:4),
+            ],
+            path: [],
+            extensions: None,
+        },
+        ServerError {
+            message: "internal: non-null types require a return value",
+            locations: [
+                Pos(1:2),
+            ],
+            path: [],
+            extensions: None,
+        },
+    ],
+    http_headers: {},
+}

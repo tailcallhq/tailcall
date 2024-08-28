@@ -46,58 +46,58 @@ schema
   query: Query
 }
 
-input oneof__CommandInput @tag(id: "oneof.Command") {
+input oneof__CommandInput {
   command: String
 }
 
-input oneof__PayloadInput @tag(id: "oneof.Payload") {
+input oneof__PayloadInput {
   payload: String
 }
 
-input oneof__Request__Var0__Var @tag(id: "oneof.Request") {
+input oneof__Request__Var0__Var {
   payload: oneof__PayloadInput!
   usual: String
 }
 
-input oneof__Request__Var0__Var0 @tag(id: "oneof.Request") {
+input oneof__Request__Var0__Var0 {
   flag: Boolean!
   payload: oneof__PayloadInput!
   usual: String
 }
 
-input oneof__Request__Var0__Var1 @tag(id: "oneof.Request") {
+input oneof__Request__Var0__Var1 {
   optPayload: oneof__PayloadInput!
   payload: oneof__PayloadInput!
   usual: String
 }
 
-input oneof__Request__Var1__Var @tag(id: "oneof.Request") {
+input oneof__Request__Var1__Var {
   command: oneof__CommandInput!
   usual: String
 }
 
-input oneof__Request__Var1__Var0 @tag(id: "oneof.Request") {
+input oneof__Request__Var1__Var0 {
   command: oneof__CommandInput!
   flag: Boolean!
   usual: String
 }
 
-input oneof__Request__Var1__Var1 @tag(id: "oneof.Request") {
+input oneof__Request__Var1__Var1 {
   command: oneof__CommandInput!
   optPayload: oneof__PayloadInput!
   usual: String
 }
 
-input oneof__Request__Var__Var @tag(id: "oneof.Request") {
+input oneof__Request__Var__Var {
   usual: String
 }
 
-input oneof__Request__Var__Var0 @tag(id: "oneof.Request") {
+input oneof__Request__Var__Var0 {
   flag: Boolean!
   usual: String
 }
 
-input oneof__Request__Var__Var1 @tag(id: "oneof.Request") {
+input oneof__Request__Var__Var1 {
   optPayload: oneof__PayloadInput!
   usual: String
 }
@@ -125,29 +125,29 @@ type Query {
     @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
 }
 
-type oneof__Command @tag(id: "oneof.Command") {
+type oneof__Command {
   command: String
 }
 
-type oneof__Payload @tag(id: "oneof.Payload") {
+type oneof__Payload {
   payload: String
 }
 
-type oneof__Response__Var @tag(id: "oneof.Response") {
+type oneof__Response__Var {
   usual: Int
 }
 
-type oneof__Response__Var0 @tag(id: "oneof.Response") {
+type oneof__Response__Var0 {
   payload: oneof__Payload!
   usual: Int
 }
 
-type oneof__Response__Var1 @tag(id: "oneof.Response") {
+type oneof__Response__Var1 {
   command: oneof__Command!
   usual: Int
 }
 
-type oneof__Response__Var2 @tag(id: "oneof.Response") {
+type oneof__Response__Var2 {
   response: String!
   usual: Int
 }
@@ -169,6 +169,8 @@ type oneof__Response__Var2 @tag(id: "oneof.Response") {
     query: >
       query {
         oneof__OneOfService__GetOneOfVar1(request: { command: { command: "start" } }) {
+          # TODO: check that it's possible to get shared field from Union like that
+          # outside of the fragment
           usual
           ... on oneof__Response__Var1 {
             command {

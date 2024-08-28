@@ -6,7 +6,8 @@ use url::Url;
 
 use super::from_proto::from_proto;
 use super::{FromJsonGenerator, NameGenerator, RequestSample};
-use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
+use crate::core::config::{self, Config, ConfigModule, GraphQLOperationType, Link, LinkType};
+use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::transform::{Transform, TransformerOps};
@@ -14,11 +15,11 @@ use crate::core::valid::Validator;
 
 /// Generator offers an abstraction over the actual config generators and allows
 /// to generate the single config from multiple sources. i.e (Protobuf and Json)
-/// TODO: add support for is_mutation.
 
 #[derive(Setters)]
 pub struct Generator {
-    operation_name: String,
+    query: String,
+    mutation: Option<String>,
     inputs: Vec<Input>,
     type_name_prefix: String,
     transformers: Vec<Box<dyn Transform<Value = Config, Error = String>>>,
@@ -28,8 +29,11 @@ pub struct Generator {
 pub enum Input {
     Json {
         url: Url,
-        response: Value,
+        method: Method,
+        req_body: Value,
+        res_body: Value,
         field_name: String,
+        is_mutation: bool,
     },
     Proto(ProtoMetadata),
     Config {
@@ -47,9 +51,10 @@ impl Default for Generator {
 impl Generator {
     pub fn new() -> Generator {
         Generator {
-            operation_name: "Query".to_string(),
+            query: "Query".into(),
+            mutation: None,
             inputs: Vec::new(),
-            type_name_prefix: "T".to_string(),
+            type_name_prefix: "T".into(),
             transformers: Default::default(),
         }
     }
@@ -60,11 +65,14 @@ impl Generator {
         type_name_generator: &NameGenerator,
         json_samples: &[RequestSample],
     ) -> anyhow::Result<Config> {
-        Ok(
-            FromJsonGenerator::new(json_samples, type_name_generator, &self.operation_name)
-                .generate()
-                .to_result()?,
+        Ok(FromJsonGenerator::new(
+            json_samples,
+            type_name_generator,
+            &self.query,
+            &self.mutation,
         )
+        .generate()
+        .to_result()?)
     }
 
     /// Generates the configuration from the provided protobuf.
@@ -93,16 +101,35 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                Input::Json { url, response, field_name } => {
-                    let request_sample =
-                        RequestSample::new(url.to_owned(), response.to_owned(), field_name);
+                Input::Json {
+                    url,
+                    res_body: response,
+                    field_name,
+                    is_mutation,
+                    method,
+                    req_body,
+                } => {
+                    let operation_type = if *is_mutation {
+                        GraphQLOperationType::Mutation
+                    } else {
+                        GraphQLOperationType::Query
+                    };
+
+                    let request_sample = RequestSample::new(
+                        url.to_owned(),
+                        method.to_owned(),
+                        req_body.to_owned(),
+                        response.to_owned(),
+                        field_name,
+                        operation_type.to_owned(),
+                    );
                     config = config.merge_right(
                         self.generate_from_json(&type_name_generator, &[request_sample])?,
                     );
                 }
                 Input::Proto(proto_input) => {
-                    config = config
-                        .merge_right(self.generate_from_proto(proto_input, &self.operation_name)?);
+                    config =
+                        config.merge_right(self.generate_from_proto(proto_input, &self.query)?);
                 }
             }
         }
@@ -136,29 +163,57 @@ fn resolve_file_descriptor_set(
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use prost_reflect::prost_types::FileDescriptorSet;
-    use serde::Deserialize;
+    use serde::{Deserialize, Deserializer};
+    use serde_json::Value;
 
     use super::Generator;
     use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::Input;
     use crate::core::generator::NameGenerator;
+    use crate::core::http::Method;
     use crate::core::proto_reader::ProtoMetadata;
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
         Ok(protox::compile(files, [tailcall_fixtures::protobuf::SELF])?)
     }
 
-    #[derive(Deserialize)]
-    struct JsonFixture {
-        url: String,
-        body: serde_json::Value,
+    pub struct JsonFixture {
+        pub url: String,
+        pub response: serde_json::Value,
     }
 
-    fn parse_json(path: &str) -> JsonFixture {
-        let content = std::fs::read_to_string(path).unwrap();
-        serde_json::from_str(&content).unwrap()
+    impl JsonFixture {
+        pub async fn read(path: &str) -> anyhow::Result<JsonFixture> {
+            let content = tokio::fs::read_to_string(path).await?;
+            let result: JsonFixture = serde_json::from_str(&content)?;
+            Ok(result)
+        }
+    }
+
+    impl<'de> Deserialize<'de> for JsonFixture {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let json_content: Value = Value::deserialize(deserializer)?;
+
+            let url = json_content
+                .get("request")
+                .and_then(|req| req.get("url"))
+                .and_then(|url| url.as_str())
+                .ok_or_else(|| serde::de::Error::missing_field("request.url"))?
+                .to_string();
+
+            let response = json_content
+                .get("response")
+                .and_then(|resp| resp.get("body"))
+                .cloned()
+                .ok_or_else(|| serde::de::Error::missing_field("response.body"))?;
+
+            Ok(JsonFixture { url, response })
+        }
     }
 
     #[test]
@@ -190,15 +245,20 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn should_generate_config_from_json() -> anyhow::Result<()> {
-        let parsed_content =
-            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
+    #[tokio::test]
+    async fn should_generate_config_from_json() -> anyhow::Result<()> {
+        let parsed_content = JsonFixture::read(
+            "src/core/generator/tests/fixtures/json/incompatible_properties.json",
+        )
+        .await?;
         let cfg_module = Generator::default()
             .inputs(vec![Input::Json {
                 url: parsed_content.url.parse()?,
-                response: parsed_content.body,
+                method: Method::GET,
+                req_body: serde_json::Value::Null,
+                res_body: parsed_content.response,
                 field_name: "f1".to_string(),
+                is_mutation: false,
             }])
             .transformers(vec![Box::new(Preset::default())])
             .generate(true)?;
@@ -206,8 +266,8 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn should_generate_combined_config() -> anyhow::Result<()> {
+    #[tokio::test]
+    async fn should_generate_combined_config() -> anyhow::Result<()> {
         // Proto input
         let news_proto = tailcall_fixtures::protobuf::NEWS;
         let proto_set = compile_protobuf(&[news_proto])?;
@@ -223,12 +283,17 @@ mod test {
         };
 
         // Json Input
-        let parsed_content =
-            parse_json("src/core/generator/tests/fixtures/json/incompatible_properties.json");
+        let parsed_content = JsonFixture::read(
+            "src/core/generator/tests/fixtures/json/incompatible_properties.json",
+        )
+        .await?;
         let json_input = Input::Json {
             url: parsed_content.url.parse()?,
-            response: parsed_content.body,
+            method: Method::GET,
+            req_body: serde_json::Value::Null,
+            res_body: parsed_content.response,
             field_name: "f1".to_string(),
+            is_mutation: false,
         };
 
         // Combine inputs
@@ -242,8 +307,8 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn generate_from_config_from_multiple_jsons() -> anyhow::Result<()> {
+    #[tokio::test]
+    async fn generate_from_config_from_multiple_jsons() -> anyhow::Result<()> {
         let mut inputs = vec![];
         let json_fixtures = [
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",
@@ -252,11 +317,14 @@ mod test {
         ];
         let field_name_generator = NameGenerator::new("f");
         for json_path in json_fixtures {
-            let parsed_content = parse_json(json_path);
+            let parsed_content = JsonFixture::read(json_path).await?;
             inputs.push(Input::Json {
                 url: parsed_content.url.parse()?,
-                response: parsed_content.body,
+                method: Method::GET,
+                req_body: serde_json::Value::Null,
+                res_body: parsed_content.response,
                 field_name: field_name_generator.next(),
+                is_mutation: false,
             });
         }
 

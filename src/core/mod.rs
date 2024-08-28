@@ -12,6 +12,7 @@ pub mod data_loader;
 pub mod directive;
 pub mod document;
 pub mod endpoint;
+mod errata;
 pub mod error;
 pub mod generator;
 pub mod graphql;
@@ -47,6 +48,7 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
+pub use errata::Errata;
 pub use error::{Error, Result};
 use http::Response;
 use ir::model::IoId;
@@ -81,8 +83,8 @@ pub trait Cache: Send + Sync {
         key: Self::Key,
         value: Self::Value,
         ttl: NonZeroU64,
-    ) -> error::cache::Result<()>;
-    async fn get<'a>(&'a self, key: &'a Self::Key) -> error::cache::Result<Option<Self::Value>>;
+    ) -> Result<(), cache::Error>;
+    async fn get<'a>(&'a self, key: &'a Self::Key) -> Result<Option<Self::Value>, cache::Error>;
 
     fn hit_rate(&self) -> Option<f64>;
 }
@@ -92,7 +94,7 @@ pub type EntityCache = dyn Cache<Key = IoId, Value = ConstValue>;
 #[async_trait::async_trait]
 pub trait WorkerIO<In, Out>: Send + Sync + 'static {
     /// Calls a global JS function
-    async fn call(&self, name: &str, input: In) -> error::worker::Result<Option<Out>>;
+    async fn call(&self, name: &str, input: In) -> Result<Option<Out>, worker::Error>;
 }
 
 pub fn is_default<T: Default + Eq>(val: &T) -> bool {
@@ -104,6 +106,19 @@ pub mod tests {
     use std::collections::HashMap;
 
     use super::*;
+
+    #[macro_export]
+    macro_rules! include_config {
+        ($file:literal) => {{
+            use $crate::core::config::{Config, Source};
+            let config_str = include_str!($file);
+            let result = || {
+                let source = Source::detect($file)?;
+                Config::from_source(source, config_str)
+            };
+            result()
+        }};
+    }
 
     #[derive(Clone, Default)]
     pub struct TestEnvIO(HashMap<String, String>);
@@ -124,5 +139,12 @@ pub mod tests {
         fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
             Self(HashMap::from_iter(iter))
         }
+    }
+    #[test]
+    fn test_include_config() {
+        let cfg = include_config!("fixtures/helloworld.graphql")
+            .unwrap()
+            .to_sdl();
+        insta::assert_snapshot!(cfg);
     }
 }

@@ -6,6 +6,8 @@ scalar Bytes
 
 scalar Date
 
+scalar DateTime
+
 scalar Email
 
 scalar Empty
@@ -30,7 +32,7 @@ type News {
 }
 
 type NewsData {
-  news: [News]!
+  news: [News]
 }
 
 input NewsInput {

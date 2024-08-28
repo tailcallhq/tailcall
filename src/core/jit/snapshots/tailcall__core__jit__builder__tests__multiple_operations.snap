@@ -6,8 +6,10 @@ expression: plan.into_nested()
     Field {
         id: 0,
         name: "user",
+        output_name: "user",
         ir: "Some(..)",
         type_of: User,
+        type_condition: "Query",
         args: [
             Arg {
                 id: 0,
@@ -27,49 +29,53 @@ expression: plan.into_nested()
                     Field {
                         id: 1,
                         name: "id",
+                        output_name: "id",
                         type_of: ID!,
-                        is_scalar: true,
+                        type_condition: "User",
                         directives: [],
                     },
                     Field {
                         id: 2,
                         name: "username",
+                        output_name: "username",
                         type_of: String!,
-                        is_scalar: true,
+                        type_condition: "User",
                         directives: [],
                     },
                 ],
             ),
         ),
-        is_scalar: false,
         directives: [],
     },
     Field {
         id: 3,
         name: "posts",
+        output_name: "posts",
         ir: "Some(..)",
         type_of: [Post],
+        type_condition: "Query",
         extensions: Some(
             Nested(
                 [
                     Field {
                         id: 4,
                         name: "id",
+                        output_name: "id",
                         type_of: ID!,
-                        is_scalar: true,
+                        type_condition: "Post",
                         directives: [],
                     },
                     Field {
                         id: 5,
                         name: "title",
+                        output_name: "title",
                         type_of: String!,
-                        is_scalar: true,
+                        type_condition: "Post",
                         directives: [],
                     },
                 ],
             ),
         ),
-        is_scalar: false,
         directives: [],
     },
 ]

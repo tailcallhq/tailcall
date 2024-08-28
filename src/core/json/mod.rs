@@ -1,24 +1,23 @@
 mod borrow;
 mod graphql;
 mod json_like;
+mod json_like_list;
 mod json_schema;
 mod serde;
 
 use std::collections::HashMap;
 
 pub use json_like::*;
+pub use json_like_list::*;
 pub use json_schema::*;
 
 // Highly micro-optimized and benchmarked version of get_path_all
 // Any further changes should be verified with benchmarks
-pub fn gather_path_matches<'a, J: JsonLike<'a>>(
-    root: &'a J,
-    path: &'a [String],
-    mut vector: Vec<(&'a J, &'a J)>,
-) -> Vec<(&'a J, &'a J)>
-where
-    J::JsonObject: JsonObjectLike<'a>,
-{
+pub fn gather_path_matches<'json, J: JsonLike<'json>>(
+    root: &'json J,
+    path: &[String],
+    mut vector: Vec<(&'json J, &'json J)>,
+) -> Vec<(&'json J, &'json J)> {
     if let Some(root) = root.as_array() {
         for value in root.iter() {
             vector = gather_path_matches(value, path, vector);
@@ -36,8 +35,10 @@ where
     vector
 }
 
-fn group_by_key<'a, J: JsonLike<'a>>(src: Vec<(&'a J, &'a J)>) -> HashMap<String, Vec<&'a J>> {
-    let mut map: HashMap<String, Vec<&'a J>> = HashMap::new();
+fn group_by_key<'json, J: JsonLike<'json>>(
+    src: Vec<(&'json J, &'json J)>,
+) -> HashMap<String, Vec<&'json J>> {
+    let mut map: HashMap<String, Vec<&'json J>> = HashMap::new();
     for (key, value) in src {
         // Need to handle number and string keys
         let key_str = key

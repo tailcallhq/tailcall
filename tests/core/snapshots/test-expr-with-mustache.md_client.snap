@@ -23,6 +23,8 @@ type D {
 
 scalar Date
 
+scalar DateTime
+
 scalar Email
 
 scalar Empty

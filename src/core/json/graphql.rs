@@ -7,69 +7,75 @@ use indexmap::IndexMap;
 
 use super::*;
 
-impl<'a, Value: JsonLike<'a> + Clone> JsonObjectLike<'a> for IndexMap<Name, Value> {
+impl<'obj, Value: JsonLike<'obj> + Clone> JsonObjectLike<'obj> for IndexMap<Name, Value> {
     type Value = Value;
 
     fn new() -> Self {
         IndexMap::new()
     }
 
-    fn get_key(&'a self, key: &str) -> Option<&Self::Value> {
-        self.get(&Name::new(key))
+    fn get_key(&'obj self, key: &str) -> Option<&Self::Value> {
+        self.get(key)
     }
 
-    fn insert_key(mut self, key: &'a str, value: Self::Value) -> Self {
+    fn insert_key(&mut self, key: &'obj str, value: Self::Value) {
         self.insert(Name::new(key), value);
-        self
     }
 }
 
-impl<'a> JsonLike<'a> for ConstValue {
-    type JsonObject = IndexMap<Name, ConstValue>;
+impl<'json> JsonLike<'json> for ConstValue {
+    type JsonObject<'obj> = IndexMap<Name, ConstValue>;
 
-    fn as_array(&'a self) -> Option<&'a Vec<Self>> {
+    fn as_array(&self) -> Option<&Vec<Self>> {
         match self {
             ConstValue::List(seq) => Some(seq),
             _ => None,
         }
     }
 
-    fn as_str(&'a self) -> Option<&'a str> {
+    fn into_array(self) -> Option<Vec<Self>> {
+        match self {
+            ConstValue::List(seq) => Some(seq),
+            _ => None,
+        }
+    }
+
+    fn as_str(&self) -> Option<&str> {
         match self {
             ConstValue::String(s) => Some(s),
             _ => None,
         }
     }
 
-    fn as_i64(&'a self) -> Option<i64> {
+    fn as_i64(&self) -> Option<i64> {
         match self {
             ConstValue::Number(n) => n.as_i64(),
             _ => None,
         }
     }
 
-    fn as_u64(&'a self) -> Option<u64> {
+    fn as_u64(&self) -> Option<u64> {
         match self {
             ConstValue::Number(n) => n.as_u64(),
             _ => None,
         }
     }
 
-    fn as_f64(&'a self) -> Option<f64> {
+    fn as_f64(&self) -> Option<f64> {
         match self {
             ConstValue::Number(n) => n.as_f64(),
             _ => None,
         }
     }
 
-    fn as_bool(&'a self) -> Option<bool> {
+    fn as_bool(&self) -> Option<bool> {
         match self {
             ConstValue::Boolean(b) => Some(*b),
             _ => None,
         }
     }
 
-    fn is_null(&'a self) -> bool {
+    fn is_null(&self) -> bool {
         matches!(self, ConstValue::Null)
     }
 
@@ -95,7 +101,7 @@ impl<'a> JsonLike<'a> for ConstValue {
         }
     }
 
-    fn group_by(&'a self, path: &'a [String]) -> HashMap<String, Vec<&'a Self>> {
+    fn group_by(&self, path: &[String]) -> HashMap<String, Vec<&Self>> {
         let src = gather_path_matches(self, path, vec![]);
         group_by_key(src)
     }
@@ -104,14 +110,28 @@ impl<'a> JsonLike<'a> for ConstValue {
         Default::default()
     }
 
-    fn as_object(&'a self) -> Option<&'a Self::JsonObject> {
+    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         match self {
             ConstValue::Object(map) => Some(map),
             _ => None,
         }
     }
 
-    fn object(obj: Self::JsonObject) -> Self {
+    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject<'_>> {
+        match self {
+            ConstValue::Object(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    fn into_object(self) -> Option<Self::JsonObject<'json>> {
+        match self {
+            ConstValue::Object(map) => Some(map),
+            _ => None,
+        }
+    }
+
+    fn object(obj: Self::JsonObject<'json>) -> Self {
         ConstValue::Object(obj)
     }
 
@@ -119,7 +139,7 @@ impl<'a> JsonLike<'a> for ConstValue {
         ConstValue::List(arr)
     }
 
-    fn string(s: Cow<'a, str>) -> Self {
+    fn string(s: Cow<'json, str>) -> Self {
         ConstValue::String(s.to_string())
     }
 }

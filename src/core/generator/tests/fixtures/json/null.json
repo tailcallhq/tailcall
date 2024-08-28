@@ -1,4 +1,10 @@
 {
-  "url": "https://example.com/users?age=12",
-  "body": null
+  "request": {
+    "url": "https://example.com/users?age=12"
+  },
+  "fieldName": "usersAge",
+  "response": {
+    "status": 204,
+    "body": null
+  }
 }

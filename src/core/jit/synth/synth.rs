@@ -1,51 +1,36 @@
-use async_graphql::Positioned;
-
-use crate::core::jit::model::{Field, Nested, OperationPlan, Variable, Variables};
+use crate::core::ir::TypedValue;
+use crate::core::jit::model::{Field, Nested, OperationPlan, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
-use crate::core::jit::{Error, ValidationError};
+use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
 use crate::core::json::{JsonLike, JsonObjectLike};
 use crate::core::scalar;
 
+type ValueStore<Value> = Store<Result<Value, Positioned<Error>>>;
+
 pub struct Synth<Value> {
-    selection: Vec<Field<Nested<Value>, Value>>,
-    store: Store<Result<Value, Positioned<Error>>>,
+    plan: OperationPlan<Value>,
+    store: ValueStore<Value>,
     variables: Variables<Value>,
 }
 
-impl<Extensions, Input> Field<Extensions, Input> {
-    #[inline(always)]
-    pub fn skip<'json, Value: JsonLike<'json>>(
-        &'json self,
-        variables: &'json Variables<Value>,
-    ) -> bool {
-        let eval = |variable_option: Option<&'json Variable>,
-                    variables: &'json Variables<Value>,
-                    default: bool| {
-            variable_option
-                .map(|a| a.as_str())
-                .and_then(|name| variables.get(name))
-                .and_then(|value| value.as_bool())
-                .unwrap_or(default)
-        };
-        let skip = eval(self.skip.as_ref(), variables, false);
-        let include = eval(self.include.as_ref(), variables, true);
-
-        skip == include
-    }
-}
-
-impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
+impl<Value> Synth<Value> {
     #[inline(always)]
     pub fn new(
         plan: OperationPlan<Value>,
-        store: Store<Result<Value, Positioned<Error>>>,
+        store: ValueStore<Value>,
         variables: Variables<Value>,
     ) -> Self {
-        Self { selection: plan.into_nested(), store, variables }
+        Self { plan, store, variables }
     }
+}
 
+impl<'a, Value> Synth<Value>
+where
+    Value: JsonLike<'a> + Clone + std::fmt::Debug,
+    Value::JsonObject<'a>: JsonObjectLike<'a, Value = Value>,
+{
     #[inline(always)]
-    fn include<T>(&'a self, field: &'a Field<T, Value>) -> bool {
+    fn include<T>(&self, field: &Field<T, Value>) -> bool {
         !field.skip(&self.variables)
     }
 
@@ -53,162 +38,184 @@ impl<'a, Value: JsonLike<'a> + Clone + 'a> Synth<Value> {
     pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
         let mut data = Value::JsonObject::new();
 
-        for child in self.selection.iter() {
+        for child in self.plan.as_nested().iter() {
             if !self.include(child) {
                 continue;
             }
+            // TODO: in case of error set `child.output_name` to null
+            // and append error to response error array
             let val = self.iter(child, None, &DataPath::new())?;
-            data = data.insert_key(child.name.as_str(), val);
+
+            data.insert_key(&child.output_name, val);
         }
 
         Ok(Value::object(data))
-    }
-
-    /// checks if type_of is an array and value is an array
-    #[inline(always)]
-    fn is_array(type_of: &crate::core::blueprint::Type, value: &'a Value) -> bool {
-        type_of.is_list() == value.as_array().is_some()
     }
 
     #[inline(always)]
     fn iter(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        parent: Option<&'a Value>,
+        value: Option<&'a Value>,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
-        // TODO: this implementation prefer parent value over value in the store
-        // that's opposite to the way async_graphql engine works in tailcall
-        match parent {
-            Some(parent) => {
-                if !Self::is_array(&node.type_of, parent) {
-                    return Ok(Value::null());
-                }
-                self.iter_inner(node, parent, data_path)
-            }
-            None => {
-                // we perform this check to avoid unnecessary hashing
+        match self.store.get(&node.id) {
+            Some(val) => {
+                let mut data = val;
 
-                match self.store.get(&node.id) {
-                    Some(val) => {
-                        let mut data = val;
-
-                        for index in data_path.as_slice() {
-                            match data {
-                                Data::Multiple(v) => {
-                                    data = &v[index];
-                                }
-                                _ => return Ok(Value::null()),
-                            }
+                for index in data_path.as_slice() {
+                    match data {
+                        Data::Multiple(v) => {
+                            data = &v[index];
                         }
-
-                        match data {
-                            Data::Single(val) => self.iter(
-                                node,
-                                Some(val.as_ref().map_err(Clone::clone)?),
-                                data_path,
-                            ),
-                            _ => {
-                                // TODO: should bailout instead of returning Null
-                                Ok(Value::null())
-                            }
-                        }
+                        _ => return Ok(Value::null()),
                     }
-                    None => {
-                        // IR exists, so there must be a value.
-                        // if there is no value then we must return Null
+                }
+
+                match data {
+                    Data::Single(result) => {
+                        let value = result.as_ref().map_err(Clone::clone)?;
+
+                        if node.type_of.is_list() != value.as_array().is_some() {
+                            return self.node_nullable_guard(node);
+                        }
+                        self.iter_inner(node, value, data_path)
+                    }
+                    _ => {
+                        // TODO: should bailout instead of returning Null
                         Ok(Value::null())
                     }
                 }
             }
+            None => match value {
+                Some(result) => self.iter_inner(node, result, data_path),
+                None => self.node_nullable_guard(node),
+            },
         }
     }
+
+    /// This guard ensures to return Null value only if node type permits it, in
+    /// case it does not it throws an Error
+    fn node_nullable_guard(
+        &'a self,
+        node: &'a Field<Nested<Value>, Value>,
+    ) -> Result<Value, Positioned<Error>> {
+        // according to GraphQL spec https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
+        if node.type_of.is_nullable() {
+            Ok(Value::null())
+        } else {
+            Err(ValidationError::ValueRequired.into()).map_err(|e| self.to_location_error(e, node))
+        }
+    }
+
     #[inline(always)]
     fn iter_inner(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
-        parent: &'a Value,
+        value: &'a Value,
         data_path: &DataPath,
     ) -> Result<Value, Positioned<Error>> {
-        let include = self.include(node);
-        if include && node.is_scalar {
+        // skip the field if field is not included in schema
+        if !self.include(node) {
+            return Ok(Value::null());
+        }
+
+        let eval_result = if value.is_null() {
+            // check the nullability of this type unwrapping list modifier
+            let is_nullable = match &node.type_of {
+                crate::core::blueprint::Type::NamedType { non_null, .. } => !*non_null,
+                crate::core::blueprint::Type::ListType { of_type, .. } => of_type.is_nullable(),
+            };
+            if is_nullable {
+                Ok(Value::null())
+            } else {
+                Err(ValidationError::ValueRequired.into())
+            }
+        } else if self.plan.field_is_scalar(node) {
             let scalar =
                 scalar::Scalar::find(node.type_of.name()).unwrap_or(&scalar::Scalar::Empty);
 
             // TODO: add validation for input type as well. But input types are not checked
             // by async_graphql anyway so it should be done after replacing
             // default engine with JIT
-            if scalar.validate(parent) {
-                Ok(parent.clone())
+            if scalar.validate(value) {
+                Ok(value.clone())
             } else {
-                Err(Positioned {
-                    pos: node.pos,
-                    node: ValidationError::ScalarInvalid {
-                        type_of: node.type_of.name().to_string(),
-                        path: node.name.clone(),
-                    }
-                    .into(),
-                })
+                Err(
+                    ValidationError::ScalarInvalid { type_of: node.type_of.name().to_string() }
+                        .into(),
+                )
+            }
+        } else if self.plan.field_is_enum(node) {
+            if value
+                .as_str()
+                .map(|v| self.plan.field_validate_enum_value(node, v))
+                .unwrap_or(false)
+            {
+                Ok(value.clone())
+            } else {
+                Err(
+                    ValidationError::EnumInvalid { type_of: node.type_of.name().to_string() }
+                        .into(),
+                )
             }
         } else {
-            match (parent.as_array(), parent.as_object()) {
+            match (value.as_array(), value.as_object()) {
                 (_, Some(obj)) => {
                     let mut ans = Value::JsonObject::new();
-                    if include {
-                        if let Some(children) = node.nested() {
-                            for child in children {
-                                // all checks for skip must occur in `iter_inner`
-                                // and include be checked before calling `iter` or recursing.
-                                let include = self.include(child);
-                                if include {
-                                    let val = obj.get_key(child.name.as_str());
-                                    if let Some(val) = val {
-                                        ans = ans.insert_key(
-                                            child.name.as_str(),
-                                            self.iter_inner(child, val, data_path)?,
-                                        );
-                                    } else {
-                                        ans = ans.insert_key(
-                                            child.name.as_str(),
-                                            self.iter(child, None, data_path)?,
-                                        );
-                                    }
-                                }
-                            }
-                        } else {
-                            let val = obj.get_key(node.name.as_str());
-                            // if it's a leaf node, then push the value
-                            if let Some(val) = val {
-                                ans = ans.insert_key(node.name.as_str(), val.to_owned());
-                            } else {
-                                return Ok(Value::null());
-                            }
-                        }
-                    } else {
-                        let val = obj.get_key(node.name.as_str());
-                        // if it's a leaf node, then push the value
-                        if let Some(val) = val {
-                            ans = ans.insert_key(node.name.as_str(), val.to_owned());
-                        } else {
-                            return Ok(Value::null());
+
+                    let type_name = value.get_type_name().unwrap_or(node.type_of.name());
+
+                    for child in node.nested_iter(type_name) {
+                        // all checks for skip must occur in `iter_inner`
+                        // and include be checked before calling `iter` or recursing.
+                        let include = self.include(child);
+                        if include {
+                            let val = obj.get_key(child.name.as_str());
+                            ans.insert_key(&child.output_name, self.iter(child, val, data_path)?);
                         }
                     }
+
                     Ok(Value::object(ans))
                 }
                 (Some(arr), _) => {
                     let mut ans = vec![];
-                    if include {
-                        for (i, val) in arr.iter().enumerate() {
-                            let val =
-                                self.iter_inner(node, val, &data_path.clone().with_index(i))?;
-                            ans.push(val)
-                        }
+                    for (i, val) in arr.iter().enumerate() {
+                        let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
+                        ans.push(val)
                     }
                     Ok(Value::array(ans))
                 }
-                _ => Ok(parent.clone()),
+                _ => Ok(value.clone()),
             }
-        }
+        };
+
+        eval_result.map_err(|e| self.to_location_error(e, node))
+    }
+
+    fn to_location_error(
+        &'a self,
+        error: Error,
+        node: &'a Field<Nested<Value>, Value>,
+    ) -> Positioned<Error> {
+        // create path from the root to the current node in the fields tree
+        let path = {
+            let mut path = Vec::new();
+
+            let mut parent = self.plan.find_field(node.id.clone());
+
+            while let Some(field) = parent {
+                path.push(PathSegment::Field(field.output_name.to_string()));
+                parent = field
+                    .parent()
+                    .and_then(|id| self.plan.find_field(id.clone()));
+            }
+
+            path.reverse();
+            path
+        };
+
+        Positioned::new(error, node.pos).with_path(path)
     }
 }
 
@@ -224,7 +231,6 @@ mod tests {
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::synth::Synth;
-    use crate::core::json::JsonLike;
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -277,7 +283,7 @@ mod tests {
     }
 
     impl TestData {
-        fn into_value<'a, Value: JsonLike<'a> + Deserialize<'a>>(self) -> Data<Value> {
+        fn into_value<'a, Value: Deserialize<'a>>(self) -> Data<Value> {
             match self {
                 Self::Posts => Data::Single(serde_json::from_str(POSTS).unwrap()),
                 Self::User1 => Data::Single(serde_json::from_str(USER1).unwrap()),
@@ -297,13 +303,10 @@ mod tests {
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn make_store<
-        'a,
-        Value: JsonLike<'a> + Deserialize<'a> + Serialize + Clone + 'a + std::fmt::Debug,
-    >(
-        query: &str,
-        store: Vec<(FieldId, TestData)>,
-    ) -> Synth<Value> {
+    fn make_store<'a, Value>(query: &str, store: Vec<(FieldId, TestData)>) -> Synth<Value>
+    where
+        Value: Deserialize<'a> + Serialize + Clone + std::fmt::Debug,
+    {
         let store = store
             .into_iter()
             .map(|(id, data)| (id, data.into_value()))

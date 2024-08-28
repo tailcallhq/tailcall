@@ -1,0 +1,11 @@
+---
+source: src/core/mod.rs
+expression: cfg
+---
+schema @server @upstream {
+  query: Query
+}
+
+type Query {
+  hello: String @expr(body: "Hello, World!")
+}

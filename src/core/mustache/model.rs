@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq, Hash, Default)]
 pub struct Mustache(Vec<Segment>);
 
 #[derive(Debug, Clone, PartialEq, Hash)]
@@ -41,6 +41,13 @@ impl Mustache {
                 _ => None,
             })
             .collect()
+    }
+
+    /// Checks if the mustache template contains the given expression
+    pub fn expression_contains(&self, expression: &str) -> bool {
+        self.segments()
+            .iter()
+            .any(|seg| matches!(seg, Segment::Expression(parts) if parts.iter().any(|part| part.as_str() == expression)))
     }
 }
 

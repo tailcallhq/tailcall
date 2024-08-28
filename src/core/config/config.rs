@@ -1,13 +1,15 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
 use anyhow::Result;
-use async_graphql::parser::types::ServiceDocument;
+use async_graphql::parser::types::{ConstDirective, ServiceDocument};
+use async_graphql::Positioned;
 use derive_setters::Setters;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall_macros::{DirectiveDefinition, InputDefinition};
+use tailcall_macros::{CustomResolver, DirectiveDefinition, InputDefinition};
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
@@ -15,8 +17,9 @@ use tailcall_typedefs_common::ServiceDocumentBuilder;
 use super::telemetry::Telemetry;
 use super::{KeyValue, Link, Server, Upstream};
 use crate::core::config::from_document::from_document;
-use crate::core::config::npo::Queries;
+use crate::core::config::npo::QueryPath;
 use crate::core::config::source::Source;
+use crate::core::config::url_query::URLQuery;
 use crate::core::directive::DirectiveCodec;
 use crate::core::http::Method;
 use crate::core::is_default;
@@ -113,10 +116,17 @@ pub struct Type {
     /// Marks field as protected by auth providers
     #[serde(default)]
     pub protected: Option<Protected>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    ///
-    /// Contains source information for the type.
-    pub tag: Option<Tag>,
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{{")?;
+
+        for (field_name, field) in &self.fields {
+            writeln!(f, "  {}: {},", field_name, field.type_of)?;
+        }
+        writeln!(f, "}}")
+    }
 }
 
 impl Type {
@@ -132,27 +142,6 @@ impl Type {
     pub fn scalar(&self) -> bool {
         self.fields.is_empty()
     }
-}
-
-#[derive(
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Deserialize,
-    Serialize,
-    Eq,
-    schemars::JsonSchema,
-    MergeRight,
-    DirectiveDefinition,
-)]
-#[directive_definition(locations = "Object")]
-#[serde(deny_unknown_fields)]
-/// Used to represent an identifier for a type. Typically used via only by the
-/// configuration generators to provide additional information about the type.
-pub struct Tag {
-    /// A unique identifier for the type.
-    pub id: String,
 }
 
 #[derive(
@@ -222,6 +211,19 @@ pub struct RootSchema {
 /// Used to omit a field from public consumption.
 pub struct Omit {}
 
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, CustomResolver,
+)]
+#[serde(rename_all = "camelCase")]
+pub enum Resolver {
+    Http(Http),
+    Grpc(Grpc),
+    Graphql(GraphQL),
+    Call(Call),
+    Js(JS),
+    Expr(Expr),
+}
+
 ///
 /// A field definition containing all the metadata information about resolving a
 /// field.
@@ -253,7 +255,8 @@ pub struct Field {
     ///
     /// Map of argument name and its definition.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub args: BTreeMap<String, Arg>,
+    #[schemars(with = "HashMap::<String, Arg>")]
+    pub args: IndexMap<String, Arg>,
 
     ///
     /// Publicly visible documentation for the field.
@@ -271,38 +274,13 @@ pub struct Field {
     pub omit: Option<Omit>,
 
     ///
-    /// Inserts an HTTP resolver for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub http: Option<Http>,
-
-    ///
-    /// Inserts a call resolver for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub call: Option<Call>,
-
-    ///
-    /// Inserts a GRPC resolver for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub grpc: Option<Grpc>,
-
-    ///
-    /// Inserts a Javascript resolver for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub script: Option<JS>,
-
-    ///
-    /// Inserts a constant resolver for the field.
-    #[serde(rename = "expr", default, skip_serializing_if = "is_default")]
-    pub const_field: Option<Expr>,
-
-    ///
-    /// Inserts a GraphQL resolver for the field.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub graphql: Option<GraphQL>,
-
-    ///
     /// Sets the cache configuration for a field
     pub cache: Option<Cache>,
+
+    ///
+    /// Stores the default value for the field
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub default_value: Option<Value>,
 
     ///
     /// Marks field as protected by auth provider
@@ -310,9 +288,9 @@ pub struct Field {
     pub protected: Option<Protected>,
 
     ///
-    /// Stores the default value for the field
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub default_value: Option<Value>,
+    /// Resolver for the field
+    #[serde(flatten, default, skip_serializing_if = "is_default")]
+    pub resolver: Option<Resolver>,
 }
 
 // It's a terminal implementation of MergeRight
@@ -324,46 +302,21 @@ impl MergeRight for Field {
 
 impl Field {
     pub fn has_resolver(&self) -> bool {
-        self.http.is_some()
-            || self.script.is_some()
-            || self.const_field.is_some()
-            || self.graphql.is_some()
-            || self.grpc.is_some()
-            || self.call.is_some()
-    }
-
-    /// Returns a list of resolvable directives for the field.
-    pub fn resolvable_directives(&self) -> Vec<String> {
-        let mut directives = Vec::new();
-        if self.http.is_some() {
-            directives.push(Http::trace_name());
-        }
-        if self.graphql.is_some() {
-            directives.push(GraphQL::trace_name());
-        }
-        if self.script.is_some() {
-            directives.push(JS::trace_name());
-        }
-        if self.const_field.is_some() {
-            directives.push(Expr::trace_name());
-        }
-        if self.grpc.is_some() {
-            directives.push(Grpc::trace_name());
-        }
-        if self.call.is_some() {
-            directives.push(Call::trace_name());
-        }
-        directives
+        self.resolver.is_some()
     }
     pub fn has_batched_resolver(&self) -> bool {
-        self.http
-            .as_ref()
-            .is_some_and(|http| !http.batch_key.is_empty())
-            || self.graphql.as_ref().is_some_and(|graphql| graphql.batch)
-            || self
-                .grpc
-                .as_ref()
-                .is_some_and(|grpc| !grpc.batch_key.is_empty())
+        if let Some(resolver) = &self.resolver {
+            match resolver {
+                Resolver::Http(http) => !http.batch_key.is_empty(),
+                Resolver::Grpc(grpc) => !grpc.batch_key.is_empty(),
+                Resolver::Graphql(graphql) => graphql.batch,
+                Resolver::Call(_) => false,
+                Resolver::Js(_) => false,
+                Resolver::Expr(_) => false,
+            }
+        } else {
+            false
+        }
     }
     pub fn into_list(mut self) -> Self {
         self.list = true;
@@ -590,9 +543,10 @@ pub struct Http {
     /// This represents the query parameters of your API call. You can pass it
     /// as a static object or use Mustache template for dynamic parameters.
     /// These parameters will be added to the URL.
-    /// When `batchKey` is present Tailcall uses the first query parameter as
-    /// the key for the groupBy operator.
-    pub query: Vec<KeyValue>,
+    /// NOTE: Query parameter order is critical for batching in Tailcall. The
+    /// first parameter referencing a field in the current value using mustache
+    /// syntax is automatically selected as the batching parameter.
+    pub query: Vec<URLQuery>,
 }
 
 ///
@@ -872,8 +826,8 @@ impl Config {
         }
     }
 
-    pub fn n_plus_one(&self) -> Queries {
-        super::npo::Identifier::new(self).identify()
+    pub fn n_plus_one(&self) -> QueryPath {
+        super::npo::PathTracker::new(self).find()
     }
 
     ///
@@ -1038,7 +992,6 @@ impl Config {
             .add_directive(Omit::directive_definition(generated_types))
             .add_directive(Protected::directive_definition(generated_types))
             .add_directive(Server::directive_definition(generated_types))
-            .add_directive(Tag::directive_definition(generated_types))
             .add_directive(Telemetry::directive_definition(generated_types))
             .add_directive(Upstream::directive_definition(generated_types))
             .add_input(GraphQL::input_definition())
@@ -1090,12 +1043,18 @@ mod tests {
         let f1 = Field { ..Default::default() };
 
         let f2 = Field {
-            http: Some(Http { batch_key: vec!["id".to_string()], ..Default::default() }),
+            resolver: Some(Resolver::Http(Http {
+                batch_key: vec!["id".to_string()],
+                ..Default::default()
+            })),
             ..Default::default()
         };
 
         let f3 = Field {
-            http: Some(Http { batch_key: vec![], ..Default::default() }),
+            resolver: Some(Resolver::Http(Http {
+                batch_key: vec![],
+                ..Default::default()
+            })),
             ..Default::default()
         };
 

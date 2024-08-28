@@ -12,7 +12,6 @@ import "google/protobuf/empty.proto";
 package news;
 
 message News {
-    int32 id = 1;
     string title = 2;
     string body = 3;
     string postImage = 4;
@@ -50,10 +49,11 @@ type Query {
 }
 
 type NewsData {
-  news: [News]!
+  news: [News]
 }
 
 type News {
+  id: ID
   body: String
   postImage: String
   title: String

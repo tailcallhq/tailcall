@@ -15,8 +15,7 @@ use crate::core::http::{
 use crate::core::ir::Error;
 use crate::core::json::JsonLike;
 use crate::core::valid::Validator;
-use crate::core::worker::*;
-use crate::core::{grpc, http, WorkerIO};
+use crate::core::{grpc, http, worker, WorkerIO};
 
 ///
 /// Executing a HTTP request is a bit more complex than just sending a request
@@ -81,21 +80,21 @@ impl<'a, 'ctx, Context: ResolverContextLike + Sync> EvalHttp<'a, 'ctx, Context> 
     pub async fn execute_with_worker(
         &self,
         mut request: reqwest::Request,
-        worker: &Arc<dyn WorkerIO<Event, Command>>,
+        worker: &Arc<dyn WorkerIO<worker::Event, worker::Command>>,
         http_filter: &HttpFilter,
     ) -> Result<Response<async_graphql::Value>, Error> {
-        let js_request = WorkerRequest::try_from(&request)?;
-        let event = Event::Request(js_request);
+        let js_request = worker::WorkerRequest::try_from(&request)?;
+        let event = worker::Event::Request(js_request);
 
         let command = worker.call(&http_filter.on_request, event).await?;
 
         match command {
             Some(command) => match command {
-                Command::Request(w_request) => {
+                worker::Command::Request(w_request) => {
                     let response = self.execute(w_request.into()).await?;
                     Ok(response)
                 }
-                Command::Response(w_response) => {
+                worker::Command::Response(w_response) => {
                     // Check if the response is a redirect
                     if (w_response.status() == 301 || w_response.status() == 302)
                         && w_response.headers().contains_key("location")
@@ -237,7 +236,7 @@ pub fn parse_graphql_response<Ctx: ResolverContextLike>(
     field_name: &str,
 ) -> Result<async_graphql::Value, Error> {
     let res: async_graphql::Response =
-        from_value(res.body).map_err(|err| Error::DeserializeError(err.to_string()))?;
+        from_value(res.body).map_err(|err| Error::Deserialize(err.to_string()))?;
 
     for error in res.errors {
         ctx.add_error(error);

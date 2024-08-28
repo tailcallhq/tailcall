@@ -1,0 +1,27 @@
+---
+source: tests/core/spec.rs
+expression: formatter
+---
+schema
+  @server(hostname: "0.0.0.0", port: 8001, queryValidation: false)
+  @upstream(baseURL: "http://upstream/", httpCache: 42) {
+  query: Query
+}
+
+type Query {
+  user(id: ID!): User! @http(path: "/user", query: [{key: "id", value: "{{.args.id}}"}])
+}
+
+type User {
+  friends(first: Int): [User!]!
+    @http(path: "/friends", query: [{key: "id", value: "{{.value.id}}"}, {key: "first", value: "{{.args.first}}"}])
+  id: ID!
+  mutualFriends(first: Int): [User!]!
+    @http(
+      path: "/mutual-friends"
+      query: [{key: "id", value: "{{.value.id}}"}, {key: "first", value: "{{.args.first}}"}]
+    )
+  name: String!
+  profilePic(size: Int, width: Int, height: Int): String!
+    @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
+}

@@ -6,8 +6,10 @@ expression: plan.into_nested()
     Field {
         id: 0,
         name: "getUserIdOrEmail",
+        output_name: "getUserIdOrEmail",
         ir: "Some(..)",
         type_of: UserIdOrEmail,
+        type_condition: "Query",
         args: [
             Arg {
                 id: 0,
@@ -21,7 +23,28 @@ expression: plan.into_nested()
                 default_value: None,
             },
         ],
-        is_scalar: false,
+        extensions: Some(
+            Nested(
+                [
+                    Field {
+                        id: 1,
+                        name: "id",
+                        output_name: "id",
+                        type_of: ID!,
+                        type_condition: "UserId",
+                        directives: [],
+                    },
+                    Field {
+                        id: 2,
+                        name: "email",
+                        output_name: "email",
+                        type_of: String!,
+                        type_condition: "UserEmail",
+                        directives: [],
+                    },
+                ],
+            ),
+        ),
         directives: [],
     },
 ]

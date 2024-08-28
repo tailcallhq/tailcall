@@ -317,6 +317,10 @@
       "title": "Date",
       "description": "Field whose value conforms to the standard date format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339)."
     },
+    "DateTime": {
+      "title": "DateTime",
+      "description": "Field whose value conforms to the standard datetime format as specified in RFC 3339 (https://datatracker.ietf.org/doc/html/rfc3339\")."
+    },
     "Email": {
       "title": "Email",
       "description": "Field whose value conforms to the standard internet email address format as specified in HTML Spec: https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address."
@@ -368,6 +372,80 @@
     "Field": {
       "description": "A field definition containing all the metadata information about resolving a field.",
       "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "http"
+          ],
+          "properties": {
+            "http": {
+              "$ref": "#/definitions/Http"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "grpc"
+          ],
+          "properties": {
+            "grpc": {
+              "$ref": "#/definitions/Grpc"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "graphql"
+          ],
+          "properties": {
+            "graphql": {
+              "$ref": "#/definitions/GraphQL"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "call"
+          ],
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/Call"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "js"
+          ],
+          "properties": {
+            "js": {
+              "$ref": "#/definitions/JS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "expr"
+          ],
+          "properties": {
+            "expr": {
+              "$ref": "#/definitions/Expr"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
       "properties": {
         "args": {
           "description": "Map of argument name and its definition.",
@@ -387,17 +465,6 @@
             }
           ]
         },
-        "call": {
-          "description": "Inserts a call resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Call"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "default_value": {
           "description": "Stores the default value for the field"
         },
@@ -406,50 +473,6 @@
           "type": [
             "string",
             "null"
-          ]
-        },
-        "expr": {
-          "description": "Inserts a constant resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Expr"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "graphql": {
-          "description": "Inserts a GraphQL resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/GraphQL"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "grpc": {
-          "description": "Inserts a GRPC resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Grpc"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "http": {
-          "description": "Inserts an HTTP resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Http"
-            },
-            {
-              "type": "null"
-            }
           ]
         },
         "list": {
@@ -497,17 +520,6 @@
         "required": {
           "description": "Flag to indicate the type is required.",
           "type": "boolean"
-        },
-        "script": {
-          "description": "Inserts a Javascript resolver for the field.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/JS"
-            },
-            {
-              "type": "null"
-            }
-          ]
         },
         "type": {
           "description": "Refers to the type of the value the field can be resolved to.",
@@ -728,10 +740,10 @@
           "type": "string"
         },
         "query": {
-          "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. When `batchKey` is present Tailcall uses the first query parameter as the key for the groupBy operator.",
+          "description": "This represents the query parameters of your API call. You can pass it as a static object or use Mustache template for dynamic parameters. These parameters will be added to the URL. NOTE: Query parameter order is critical for batching in Tailcall. The first parameter referencing a field in the current value using mustache syntax is automatically selected as the batching parameter.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/KeyValue"
+            "$ref": "#/definitions/URLQuery"
           }
         }
       },
@@ -1141,20 +1153,6 @@
         }
       }
     },
-    "Tag": {
-      "description": "Used to represent an identifier for a type. Typically used via only by the configuration generators to provide additional information about the type.",
-      "type": "object",
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "id": {
-          "description": "A unique identifier for the type.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
     "Telemetry": {
       "description": "The @telemetry directive facilitates seamless integration with OpenTelemetry, enhancing the observability of your GraphQL services powered by Tailcall.  By leveraging this directive, developers gain access to valuable insights into the performance and behavior of their applications.",
       "type": "object",
@@ -1289,17 +1287,6 @@
               "type": "null"
             }
           ]
-        },
-        "tag": {
-          "description": "Contains source information for the type.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Tag"
-            },
-            {
-              "type": "null"
-            }
-          ]
         }
       }
     },
@@ -1322,6 +1309,31 @@
     "UInt8": {
       "title": "UInt8",
       "description": "Field whose value is an 8-bit unsigned integer."
+    },
+    "URLQuery": {
+      "description": "The URLQuery input type represents a query parameter to be included in a URL.",
+      "type": "object",
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "description": "The key or name of the query parameter.",
+          "type": "string"
+        },
+        "skipEmpty": {
+          "description": "Determines whether to ignore query parameters with empty values.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "value": {
+          "description": "The actual value or a mustache template to resolve the value dynamically for the query parameter.",
+          "type": "string"
+        }
+      }
     },
     "Union": {
       "type": "object",

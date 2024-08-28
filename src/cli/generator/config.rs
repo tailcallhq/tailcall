@@ -11,11 +11,13 @@ use url::Url;
 
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigReaderContext};
-use crate::core::mustache::Mustache;
+use crate::core::http::Method;
+use crate::core::mustache::TemplateString;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub inputs: Vec<Input<Status>>,
@@ -23,17 +25,30 @@ pub struct Config<Status = UnResolved> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<PresetConfig>,
     pub schema: Schema,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub llm: Option<LLMConfig>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Default, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct LLMConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub secret: Option<TemplateString>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct PresetConfig {
-    merge_type: Option<f32>,
+    pub merge_type: Option<f32>,
     #[serde(rename = "consolidateURL")]
-    consolidate_url: Option<f32>,
-    use_better_names: Option<bool>,
-    tree_shake: Option<bool>,
-    unwrap_single_field_types: Option<bool>,
+    pub consolidate_url: Option<f32>,
+    pub infer_type_names: Option<bool>,
+    pub tree_shake: Option<bool>,
+    pub unwrap_single_field_types: Option<bool>,
 }
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(transparent)]
@@ -45,7 +60,7 @@ pub struct Location<A>(
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(transparent)]
 pub struct Headers<A>(
-    #[serde(skip_serializing_if = "is_default")] pub Option<BTreeMap<String, String>>,
+    #[serde(skip_serializing_if = "is_default")] Option<BTreeMap<String, TemplateString>>,
     #[serde(skip)] PhantomData<A>,
 );
 
@@ -58,11 +73,18 @@ pub struct Input<Status = UnResolved> {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub enum Source<Status = UnResolved> {
     #[serde(rename_all = "camelCase")]
     Curl {
         src: Location<Status>,
         headers: Headers<Status>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        method: Option<Method>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        body: Option<serde_json::Value>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        is_mutation: Option<bool>,
         field_name: String,
     },
     Proto {
@@ -75,6 +97,7 @@ pub enum Source<Status = UnResolved> {
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 #[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
 pub struct Output<Status = UnResolved> {
     #[serde(skip_serializing_if = "Location::is_empty")]
     pub path: Location<Status>,
@@ -90,9 +113,12 @@ pub enum Resolved {}
 pub struct UnResolved {}
 
 #[derive(Deserialize, Serialize, Debug, Default)]
+#[serde(deny_unknown_fields)]
 pub struct Schema {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mutation: Option<String>,
 }
 
 fn between(threshold: f32, min: f32, max: f32) -> Valid<(), String> {
@@ -116,8 +142,8 @@ impl ValidateFrom<PresetConfig> for Preset {
             preset = preset.consolidate_url(consolidate_url);
         }
 
-        if let Some(use_better_names) = config.use_better_names {
-            preset = preset.use_better_names(use_better_names);
+        if let Some(use_better_names) = config.infer_type_names {
+            preset = preset.infer_type_names(use_better_names);
         }
 
         if let Some(unwrap_single_field_types) = config.unwrap_single_field_types {
@@ -170,30 +196,22 @@ impl Location<UnResolved> {
 }
 
 impl<A> Headers<A> {
-    pub fn headers(&self) -> &Option<BTreeMap<String, String>> {
+    pub fn as_btree_map(&self) -> &Option<BTreeMap<String, TemplateString>> {
         &self.0
     }
 }
 
 impl Headers<UnResolved> {
-    pub fn resolve(
-        self,
-        reader_context: &ConfigReaderContext,
-    ) -> anyhow::Result<Headers<Resolved>> {
+    pub fn resolve(self, reader_context: &ConfigReaderContext) -> Headers<Resolved> {
         // Resolve the header values with mustache template.
-        let resolved_headers = if let Some(headers_inner) = self.0 {
-            let mut resolved_headers = BTreeMap::new();
-            for (key, value) in headers_inner.into_iter() {
-                let template = Mustache::parse(&value)?;
-                let resolved_value = template.render(reader_context);
-                resolved_headers.insert(key, resolved_value);
-            }
-            Some(resolved_headers)
-        } else {
-            None
-        };
+        let resolved_headers = self.0.map(|headers_inner| {
+            headers_inner
+                .into_iter()
+                .map(|(k, v)| (k, v.resolve(reader_context)))
+                .collect::<BTreeMap<_, _>>()
+        });
 
-        Ok(Headers(resolved_headers, PhantomData))
+        Headers(resolved_headers, PhantomData)
     }
 }
 
@@ -213,10 +231,17 @@ impl Source<UnResolved> {
         reader_context: &ConfigReaderContext,
     ) -> anyhow::Result<Source<Resolved>> {
         match self {
-            Source::Curl { src, field_name, headers } => {
+            Source::Curl { src, field_name, headers, body, method, is_mutation } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                let resolved_headers = headers.resolve(reader_context)?;
-                Ok(Source::Curl { src: resolved_path, field_name, headers: resolved_headers })
+                let resolved_headers = headers.resolve(reader_context);
+                Ok(Source::Curl {
+                    src: resolved_path,
+                    field_name,
+                    headers: resolved_headers,
+                    body,
+                    method,
+                    is_mutation,
+                })
             }
             Source::Proto { src } => {
                 let resolved_path = src.into_resolved(parent_dir);
@@ -257,8 +282,18 @@ impl Config {
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;
+        let llm = self.llm.map(|llm| {
+            let secret = llm.secret.map(|s| s.resolve(&reader_context));
+            LLMConfig { model: llm.model, secret }
+        });
 
-        Ok(Config { inputs, output, schema: self.schema, preset: self.preset })
+        Ok(Config {
+            inputs,
+            output,
+            schema: self.schema,
+            preset: self.preset,
+            llm,
+        })
     }
 }
 
@@ -277,17 +312,14 @@ mod tests {
         Location(s.as_ref().to_string(), PhantomData)
     }
 
-    fn to_headers(raw_headers: BTreeMap<String, String>) -> Headers<UnResolved> {
+    fn to_headers(raw_headers: BTreeMap<String, TemplateString>) -> Headers<UnResolved> {
         Headers(Some(raw_headers), PhantomData)
     }
 
     #[test]
     fn test_headers_resolve() {
         let mut headers = BTreeMap::new();
-        headers.insert(
-            "Authorization".to_owned(),
-            "Bearer {{.env.TOKEN}}".to_owned(),
-        );
+        headers.insert("Authorization".to_owned(), "Bearer {{.env.TOKEN}}".into());
 
         let mut env_vars = HashMap::new();
         let token = "eyJhbGciOiJIUzI1NiIsInR5";
@@ -304,18 +336,19 @@ mod tests {
             headers: Default::default(),
         };
 
-        let resolved_headers = unresolved_headers.resolve(&reader_ctx).unwrap();
+        let resolved_headers = unresolved_headers.resolve(&reader_ctx);
 
-        let expected = format!("Bearer {token}");
-        let result = resolved_headers
-            .headers()
-            .to_owned()
+        let expected = TemplateString::from(format!("Bearer {token}").as_str());
+        let actual = resolved_headers
+            .as_btree_map()
+            .as_ref()
             .unwrap()
             .get("Authorization")
             .unwrap()
             .to_owned();
+
         assert_eq!(
-            result, expected,
+            actual, expected,
             "Authorization header should be resolved correctly"
         );
     }
@@ -323,12 +356,15 @@ mod tests {
     #[test]
     fn test_config_codec() {
         let mut headers = BTreeMap::new();
-        headers.insert("user-agent".to_owned(), "tailcall-v1".to_owned());
+        headers.insert("user-agent".to_owned(), "tailcall-v1".into());
         let config = Config::default().inputs(vec![Input {
             source: Source::Curl {
                 src: location("https://example.com"),
                 headers: to_headers(headers),
+                body: None,
                 field_name: "test".to_string(),
+                method: Some(Method::GET),
+                is_mutation: None,
             },
         }]);
         let actual = serde_json::to_string_pretty(&config).unwrap();
@@ -339,7 +375,7 @@ mod tests {
     fn should_fail_when_invalid_merge_type_threshold() {
         let config_preset = PresetConfig {
             tree_shake: None,
-            use_better_names: None,
+            infer_type_names: None,
             merge_type: Some(2.0),
             consolidate_url: None,
             unwrap_single_field_types: None,
@@ -354,14 +390,14 @@ mod tests {
     fn should_use_user_provided_presets_when_provided() {
         let config_preset = PresetConfig {
             tree_shake: Some(true),
-            use_better_names: Some(true),
+            infer_type_names: Some(true),
             merge_type: Some(0.5),
             consolidate_url: Some(1.0),
             unwrap_single_field_types: None,
         };
         let transform_preset: Preset = config_preset.validate_into().to_result().unwrap();
         let expected_preset = Preset::new()
-            .use_better_names(true)
+            .infer_type_names(true)
             .tree_shake(true)
             .consolidate_url(1.0)
             .merge_type(0.5);
@@ -384,5 +420,117 @@ mod tests {
             serde_json::from_str(r#""https://dummyjson.com/products""#).unwrap();
         assert!(location_empty.is_empty());
         assert!(!location_non_empty.is_empty());
+    }
+
+    fn assert_deserialization_error(json: &str, expected_error: &str) {
+        let config: Result<Config<UnResolved>, serde_json::Error> = serde_json::from_str(json);
+        let actual = config.err().unwrap().to_string();
+        assert_eq!(actual, expected_error);
+    }
+
+    #[test]
+    fn test_raise_error_unknown_field_at_root_level() {
+        let json = r#"{"input": "value"}"#;
+        let expected_error =
+            "unknown field `input`, expected one of `inputs`, `output`, `preset`, `schema`, `llm` at line 1 column 8";
+        assert_deserialization_error(json, expected_error);
+    }
+
+    #[test]
+    fn test_raise_error_unknown_field_in_inputs() {
+        let json = r#"
+            {"inputs": [{
+                "curl": {
+                    "src": "https://tailcall.run/graphql",
+                    "headerss": {
+                        "content-type": "application/json"
+                    }
+                }
+            }]}
+        "#;
+        let expected_error =
+            "unknown field `headerss`, expected one of `src`, `headers`, `method`, `body`, `isMutation`, `fieldName` at line 9 column 13";
+        assert_deserialization_error(json, expected_error);
+
+        let json = r#"
+            {"inputs": [{
+                "curls": {
+                    "src": "https://tailcall.run/graphql",
+                    "headerss": {
+                        "content-type": "application/json"
+                    }
+                }
+            }]}
+        "#;
+        let expected_error =
+            "no variant of enum Source found in flattened data at line 9 column 13";
+        assert_deserialization_error(json, expected_error);
+    }
+
+    #[test]
+    fn test_raise_error_unknown_field_in_preset() {
+        let json = r#"
+            {"preset": {
+                "mergeTypes": 1.0,
+                "consolidateURL": 0.5
+            }} 
+        "#;
+        let expected_error =
+            "unknown field `mergeTypes`, expected one of `mergeType`, `consolidateURL`, `inferTypeNames`, `treeShake`, `unwrapSingleFieldTypes` at line 3 column 28";
+        assert_deserialization_error(json, expected_error);
+    }
+
+    #[test]
+    fn test_raise_error_unknown_field_in_output() {
+        let json = r#"
+          {"output": {
+              "paths": "./output.graphql",
+          }} 
+        "#;
+        let expected_error =
+            "unknown field `paths`, expected `path` or `format` at line 3 column 21";
+        assert_deserialization_error(json, expected_error);
+    }
+
+    #[test]
+    fn test_raise_error_unknown_field_in_schema() {
+        let json = r#"
+          {"schema": {
+              "querys": "Query",
+          }} 
+        "#;
+        let expected_error =
+            "unknown field `querys`, expected `query` or `mutation` at line 3 column 22";
+        assert_deserialization_error(json, expected_error);
+    }
+
+    #[test]
+    fn test_llm_config() {
+        let mut env_vars = HashMap::new();
+        let token = "eyJhbGciOiJIUzI1NiIsInR5";
+        env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
+
+        let mut runtime = crate::core::runtime::test::init(None);
+        runtime.env = Arc::new(TestEnvIO::init(env_vars));
+
+        let reader_ctx = ConfigReaderContext {
+            runtime: &runtime,
+            vars: &Default::default(),
+            headers: Default::default(),
+        };
+
+        let config = Config::default().llm(Some(LLMConfig {
+            model: Some("gpt-3.5-turbo".to_string()),
+            secret: Some(TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap()),
+        }));
+        let resolved_config = config.into_resolved("", reader_ctx).unwrap();
+
+        let actual = resolved_config.llm;
+        let expected = Some(LLMConfig {
+            model: Some("gpt-3.5-turbo".to_string()),
+            secret: Some(TemplateString::from(token)),
+        });
+
+        assert_eq!(actual, expected);
     }
 }
