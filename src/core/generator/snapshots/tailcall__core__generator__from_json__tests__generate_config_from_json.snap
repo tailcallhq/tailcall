@@ -2,7 +2,7 @@
 source: src/core/generator/from_json.rs
 expression: config.to_sdl()
 ---
-schema @server @upstream(baseURL: "https://example.com") {
+schema @server @upstream(allowedHeaders: ["authorization"], baseURL: "https://example.com") {
   query: Query
 }
 

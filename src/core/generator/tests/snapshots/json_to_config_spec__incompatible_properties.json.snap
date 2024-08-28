@@ -2,7 +2,7 @@
 source: src/core/generator/tests/json_to_config_spec.rs
 expression: cfg.to_sdl()
 ---
-schema @server @upstream {
+schema @server @upstream(allowedHeaders: ["authorization"]) {
   query: Query
 }
 
