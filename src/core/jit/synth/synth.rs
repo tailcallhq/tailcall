@@ -168,8 +168,13 @@ where
                         // and include be checked before calling `iter` or recursing.
                         let include = self.include(child);
                         if include {
-                            let val = obj.get_key(child.name.as_str());
-                            ans.insert_key(&child.output_name, self.iter(child, val, data_path)?);
+                            let value = if child.name == "__typename" {
+                                Value::string(node.value_type(value).into())
+                            } else {
+                                let val = obj.get_key(child.name.as_str());
+                                self.iter(child, val, data_path)?
+                            };
+                            ans.insert_key(&child.output_name, value);
                         }
                     }
 
@@ -417,6 +422,14 @@ mod tests {
     #[test]
     fn test_json_placeholder_borrowed() {
         let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let synth = jp.synth();
+        let val: serde_json_borrow::Value = synth.synthesize().unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
+    }
+
+    #[test]
+    fn test_json_placeholder_typename() {
+        let jp = JP::init("{ posts { id __typename user { __typename id } } }", None);
         let synth = jp.synth();
         let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
