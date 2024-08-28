@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
-use crate::core::config::{Config, Type};
+use crate::core::config::{Config, Field, Type};
 use crate::core::merge_right::MergeRight;
 use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
@@ -202,13 +202,13 @@ fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
     for (key, new_field) in type_.fields.iter() {
         if let Some(existing_field) = merge_into.fields.get(key) {
             // for conflicting output types, merge it with it's supert type.
-            if existing_field.type_of.is_empty()
-                || existing_field.type_of == Scalar::JSON.to_string()
+            if existing_field.type_of == Scalar::JSON.to_string()
                 || new_field.type_of == Scalar::JSON.to_string()
             {
-                merge_into
-                    .fields
-                    .insert(key.to_owned(), new_field.to_owned());
+                merge_into.fields.insert(
+                    key.to_owned(),
+                    Field { type_of: Scalar::JSON.to_string(), ..Default::default() },
+                );
             }
         } else {
             merge_into
@@ -415,13 +415,14 @@ mod test {
             schema {
                 query: Query
             }
-            type Foo {
-                id: Int
-                name: String
-            }
+           
             type Bar {
                 id: Int
                 name: JSON
+            }
+             type Foo {
+                id: Int
+                name: String
             }
             type Query {
                 foo: Foo

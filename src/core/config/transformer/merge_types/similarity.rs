@@ -64,12 +64,9 @@ impl<'a> Similarity<'a> {
                     if config.is_scalar(&field_1_type_of) && config.is_scalar(&field_2_type_of) {
                         // if field type_of is scalar and they don't match then we can't merge
                         // types.
-
-                        let unknown_scalar_types =
-                            [Scalar::JSON.to_string(), Scalar::Empty.to_string()];
                         if field_1_type_of == field_2_type_of
-                            || unknown_scalar_types.contains(&field_1_type_of)
-                            || unknown_scalar_types.contains(&field_2_type_of)
+                            || field_1_type_of == Scalar::JSON.to_string()
+                            || field_2_type_of == Scalar::JSON.to_string()
                         {
                             if field_1.list == field_2.list {
                                 same_field_count += 1;
@@ -528,9 +525,6 @@ mod test {
                 primarySubcategoryId: String
             }
             type B {
-                primarySubcategoryId: Empty
-            }
-            type C {
                 primarySubcategoryId: JSON
             }
         "#;
@@ -542,26 +536,6 @@ mod test {
             .similarity(
                 ("B", config.types.get("B").unwrap()),
                 ("A", config.types.get("A").unwrap()),
-                0.9,
-            )
-            .to_result()
-            .unwrap();
-        assert!(result);
-
-        let result = similarity
-            .similarity(
-                ("C", config.types.get("C").unwrap()),
-                ("A", config.types.get("A").unwrap()),
-                0.9,
-            )
-            .to_result()
-            .unwrap();
-        assert!(result);
-
-        let result = similarity
-            .similarity(
-                ("C", config.types.get("C").unwrap()),
-                ("B", config.types.get("B").unwrap()),
                 0.9,
             )
             .to_result()

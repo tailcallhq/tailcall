@@ -8,7 +8,7 @@ schema @server @upstream {
 
 type M1 {
   id: Int
-  name: String
+  name: JSON
 }
 
 type Query {
