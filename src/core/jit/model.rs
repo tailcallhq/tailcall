@@ -66,6 +66,14 @@ impl<Extensions, Input> Field<Extensions, Input> {
 
         skip == include
     }
+
+    /// Returns the __typename of the value related to this field
+    pub fn value_type<'a, Output>(&'a self, value: &'a Output) -> &'a str
+    where
+        Output: TypedValue<'a>,
+    {
+        value.get_type_name().unwrap_or(self.type_of.name())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -160,16 +168,6 @@ impl Variable {
     }
     pub fn into_string(self) -> String {
         self.0
-    }
-}
-
-impl<Extensions, Input> Field<Extensions, Input> {
-    /// Returns the __typename of the value related to this field
-    pub fn value_type<'a, Output>(&'a self, value: &'a Output) -> &'a str
-    where
-        Output: TypedValue<'a>,
-    {
-        value.get_type_name().unwrap_or(self.type_of.name())
     }
 }
 
