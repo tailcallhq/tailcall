@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 use super::Error;
 use crate::core::blueprint::Index;
 use crate::core::ir::model::IR;
-use crate::core::json::JsonLike;
 use crate::core::ir::TypedValue;
+use crate::core::json::JsonLike;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Variables<Value>(HashMap<String, Value>);
@@ -476,7 +476,8 @@ impl<Input> OperationPlan<Input> {
         self.index.validate_enum_value(field.type_of.name(), value)
     }
 
-    /// Iterate over nested fields that are related to the __typename of the value
+    /// Iterate over nested fields that are related to the __typename of the
+    /// value
     pub fn field_iter_only<'a, Output>(
         &'a self,
         field: &'a Field<Nested<Input>, Input>,
