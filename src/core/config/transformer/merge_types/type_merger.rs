@@ -411,4 +411,29 @@ mod test {
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }
+
+    #[test]
+    fn test_merge_to_supertype() {
+        let sdl = r#"
+            schema {
+                query: Query
+            }
+            type Foo {
+                id: Int
+                name: String
+            }
+            type Bar {
+                id: Int
+                name: JSON
+            }
+            type Query {
+                foo: Foo
+                bar: Bar
+            }
+        "#;
+
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+        let config = TypeMerger::default().transform(config).to_result().unwrap();
+        insta::assert_snapshot!(config.to_sdl());
+    }
 }
