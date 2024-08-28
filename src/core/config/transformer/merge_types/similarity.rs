@@ -1,6 +1,7 @@
 use super::pair_map::PairMap;
 use super::pair_set::PairSet;
 use crate::core::config::{Config, Type};
+use crate::core::scalar::Scalar;
 use crate::core::valid::{Valid, Validator};
 
 /// Given Two types,it tells similarity between two types based on a specified
@@ -63,7 +64,11 @@ impl<'a> Similarity<'a> {
                     if config.is_scalar(field_1_type_of) && config.is_scalar(field_2_type_of) {
                         // if field type_of is scalar and they don't match then we can't merge
                         // types.
-                        if field_1_type_of == field_2_type_of {
+                        let json_scalar = &Scalar::JSON.to_string();
+                        if field_1_type_of == field_2_type_of
+                            || field_1_type_of == json_scalar
+                            || field_2_type_of == json_scalar
+                        {
                             if field_1.type_of.is_list() == field_2.type_of.is_list() {
                                 same_field_count += 1;
                             } else {
@@ -507,5 +512,30 @@ mod test {
 
         // Assert that merging incompatible list and non-list fields fails
         assert!(result.is_err())
+    }
+
+    #[test]
+    fn test_unknown_types_similarity() {
+        let sdl = r#"
+            type A {
+                primarySubcategoryId: String
+            }
+            type B {
+                primarySubcategoryId: JSON
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let mut similarity = Similarity::new(&config);
+
+        let result = similarity
+            .similarity(
+                ("B", config.types.get("B").unwrap()),
+                ("A", config.types.get("A").unwrap()),
+                0.9,
+            )
+            .to_result()
+            .unwrap();
+        assert!(result);
     }
 }

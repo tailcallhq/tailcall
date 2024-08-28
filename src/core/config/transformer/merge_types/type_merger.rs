@@ -4,6 +4,7 @@ use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
 use crate::core::merge_right::MergeRight;
+use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
 use crate::core::valid::{Valid, Validator};
 
@@ -57,7 +58,6 @@ impl TypeMerger {
 
                     if let Some(type_info_2) = config.types.get(type_name_2) {
                         let threshold = mergeable_types.get_threshold(type_name_1, type_name_2);
-
                         visited_types.insert(type_name_1.clone());
                         let is_similar = stat_gen
                             .similarity(
@@ -66,6 +66,7 @@ impl TypeMerger {
                                 threshold,
                             )
                             .to_result();
+
                         if let Ok(similar) = is_similar {
                             if similar {
                                 visited_types.insert(type_name_2.clone());
@@ -193,8 +194,34 @@ impl TypeMerger {
     }
 }
 
-fn merge_type(type_: &Type, merge_into: Type) -> Type {
-    merge_into.merge_right(type_.clone())
+fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
+    // Merge the simple fields using `merge_right`.
+    merge_into.added_fields = merge_into
+        .added_fields
+        .merge_right(type_.added_fields.clone());
+    merge_into.implements = merge_into.implements.merge_right(type_.implements.clone());
+    merge_into.cache = merge_into.cache.merge_right(type_.cache.clone());
+    merge_into.protected = merge_into.protected.merge_right(type_.protected.clone());
+    merge_into.doc = merge_into.doc.merge_right(type_.doc.clone());
+
+    // Handle field output type merging correctly.
+    type_.fields.iter().for_each(|(key, new_field)| {
+        merge_into
+            .fields
+            .entry(key.to_owned())
+            .and_modify(|existing_field| {
+                let mut merged_field = existing_field.clone().merge_right(new_field.clone());
+                if existing_field.type_of.name() == &Scalar::JSON.to_string()
+                    || new_field.type_of.name() == &Scalar::JSON.to_string()
+                {
+                    merged_field.type_of = Scalar::JSON.to_string().into();
+                }
+                *existing_field = merged_field;
+            })
+            .or_insert_with(|| new_field.to_owned());
+    });
+
+    merge_into
 }
 
 impl Transform for TypeMerger {
@@ -382,6 +409,32 @@ mod test {
         config.types.insert("B".to_string(), ty2);
         config.types.insert("C".to_string(), ty3);
 
+        let config = TypeMerger::default().transform(config).to_result().unwrap();
+        insta::assert_snapshot!(config.to_sdl());
+    }
+
+    #[test]
+    fn test_merge_to_supertype() {
+        let sdl = r#"
+            schema {
+                query: Query
+            }
+
+            type Bar {
+                id: Int
+                name: JSON
+            }
+             type Foo {
+                id: Int
+                name: String
+            }
+            type Query {
+                foo: Foo
+                bar: Bar
+            }
+        "#;
+
+        let config = Config::from_sdl(sdl).to_result().unwrap();
         let config = TypeMerger::default().transform(config).to_result().unwrap();
         insta::assert_snapshot!(config.to_sdl());
     }

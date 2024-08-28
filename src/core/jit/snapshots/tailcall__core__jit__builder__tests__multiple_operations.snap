@@ -9,7 +9,9 @@ expression: plan.into_nested()
         output_name: "user",
         ir: "Some(..)",
         type_of: User,
-        type_condition: "Query",
+        type_condition: Some(
+            "Query",
+        ),
         args: [
             Arg {
                 id: 0,
@@ -31,7 +33,9 @@ expression: plan.into_nested()
                         name: "id",
                         output_name: "id",
                         type_of: ID!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -39,7 +43,9 @@ expression: plan.into_nested()
                         name: "username",
                         output_name: "username",
                         type_of: String!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                 ],
@@ -53,7 +59,9 @@ expression: plan.into_nested()
         output_name: "posts",
         ir: "Some(..)",
         type_of: [Post],
-        type_condition: "Query",
+        type_condition: Some(
+            "Query",
+        ),
         extensions: Some(
             Nested(
                 [
@@ -62,7 +70,9 @@ expression: plan.into_nested()
                         name: "id",
                         output_name: "id",
                         type_of: ID!,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -70,7 +80,9 @@ expression: plan.into_nested()
                         name: "title",
                         output_name: "title",
                         type_of: String!,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         directives: [],
                     },
                 ],
