@@ -297,18 +297,18 @@ pub mod test {
         };
 
         // Json Input
-        let parsed_content = JsonFixture::read(
+        let JsonFixture { request, response, field_name, is_mutation } = JsonFixture::read(
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",
         )
         .await?;
         let json_input = Input::Json {
-            url: parsed_content.request.url,
-            method: parsed_content.request.method,
-            req_body: parsed_content.request.body.unwrap_or_default(),
-            res_body: parsed_content.response,
-            field_name: parsed_content.field_name,
-            is_mutation: parsed_content.is_mutation,
-            headers: parsed_content.request.headers,
+            url: request.url,
+            method: request.method,
+            req_body: request.body.unwrap_or_default(),
+            res_body: response,
+            field_name,
+            is_mutation,
+            headers: request.headers,
         };
 
         // Combine inputs
@@ -331,15 +331,16 @@ pub mod test {
             "src/core/generator/tests/fixtures/json/list.json",
         ];
         for json_path in json_fixtures {
-            let parsed_content = JsonFixture::read(json_path).await?;
+            let JsonFixture { request, response, field_name, is_mutation } =
+                JsonFixture::read(json_path).await?;
             inputs.push(Input::Json {
-                url: parsed_content.request.url,
-                method: parsed_content.request.method,
-                req_body: parsed_content.request.body.unwrap_or_default(),
-                res_body: parsed_content.response,
-                field_name: parsed_content.field_name,
-                is_mutation: parsed_content.is_mutation,
-                headers: parsed_content.request.headers,
+                url: request.url,
+                method: request.method,
+                req_body: request.body.unwrap_or_default(),
+                res_body: response,
+                field_name,
+                is_mutation,
+                headers: request.headers,
             });
         }
 
