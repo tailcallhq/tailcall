@@ -1,4 +1,3 @@
-use crate::core::ir::TypedValue;
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
@@ -164,15 +163,18 @@ where
                 (_, Some(obj)) => {
                     let mut ans = Value::JsonObject::new();
 
-                    let type_name = value.get_type_name().unwrap_or(node.type_of.name());
-
-                    for child in node.nested_iter(type_name) {
+                    for child in self.plan.field_iter_only(node, value) {
                         // all checks for skip must occur in `iter_inner`
                         // and include be checked before calling `iter` or recursing.
                         let include = self.include(child);
                         if include {
-                            let val = obj.get_key(child.name.as_str());
-                            ans.insert_key(&child.output_name, self.iter(child, val, data_path)?);
+                            let value = if child.name == "__typename" {
+                                Value::string(node.value_type(value).into())
+                            } else {
+                                let val = obj.get_key(child.name.as_str());
+                                self.iter(child, val, data_path)?
+                            };
+                            ans.insert_key(&child.output_name, value);
                         }
                     }
 
@@ -420,6 +422,14 @@ mod tests {
     #[test]
     fn test_json_placeholder_borrowed() {
         let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let synth = jp.synth();
+        let val: serde_json_borrow::Value = synth.synthesize().unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
+    }
+
+    #[test]
+    fn test_json_placeholder_typename() {
+        let jp = JP::init("{ posts { id __typename user { __typename id } } }", None);
         let synth = jp.synth();
         let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
