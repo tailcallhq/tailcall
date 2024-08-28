@@ -335,15 +335,8 @@ pub mod test {
         }
     }
     async fn test_generator(path: &Path) -> datatest_stable::Result<()> {
-        if path
-            .file_name()
-            .and_then(|v| v.to_str())
-            .map(|v| v.starts_with("gen"))
-            .unwrap_or_default()
-        {
-            let spec = ExecutionSpec::from_source(path, std::fs::read_to_string(path)?)?;
-            generator_spec::run_test(path, spec).await?;
-        }
+        let spec = ExecutionSpec::from_source(path, std::fs::read_to_string(path)?)?;
+        generator_spec::run_test(path, spec).await?;
         Ok(())
     }
     pub fn run(path: &Path) -> datatest_stable::Result<()> {
