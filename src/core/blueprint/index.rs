@@ -67,35 +67,16 @@ impl Index {
         self.schema.mutation.as_deref()
     }
 
-    pub fn is_type_implements(&self, type_name: &str, implements: &str) -> bool {
-        if type_name == implements {
-            return true;
-        }
-
-        if !matches!(
-            self.map.get(implements),
-            Some((Definition::Interface(_), _))
-        ) {
-            return false;
-        }
-
-        self.is_type_implements_rec(type_name, implements)
-    }
-
-    fn is_type_implements_rec(&self, type_name: &str, implements: &str) -> bool {
-        if type_name == implements {
+    pub fn is_type_implements(&self, type_name: &str, type_or_interface: &str) -> bool {
+        if type_name == type_or_interface {
             return true;
         }
 
         if let Some((Definition::Object(obj), _)) = self.map.get(type_name) {
-            for interface in obj.implements.iter() {
-                if self.is_type_implements_rec(interface, implements) {
-                    return true;
-                }
-            }
+            obj.implements.contains(type_or_interface)
+        } else {
+            false
         }
-
-        false
     }
 }
 
