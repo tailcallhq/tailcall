@@ -71,6 +71,7 @@ impl TryInto<ChatRequest> for Question {
                 "event".into(),
             ],
         })?;
+        let count = 5;
 
         let template_str = include_str!("prompts/infer_field_name.md");
         let template = Mustache::parse(template_str);
@@ -80,6 +81,7 @@ impl TryInto<ChatRequest> for Question {
             "output1": output1,
             "input2": input2,
             "output2": output2,
+            "count": count,
         });
 
         let rendered_prompt = template.render(&context);
