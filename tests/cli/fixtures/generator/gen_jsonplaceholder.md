@@ -1,6 +1,5 @@
 ```json @config
 {
-  "secret": "",
   "inputs": [
     {
       "curl": {
