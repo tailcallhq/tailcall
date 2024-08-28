@@ -64,9 +64,10 @@ impl<'a> Similarity<'a> {
                     if config.is_scalar(&field_1_type_of) && config.is_scalar(&field_2_type_of) {
                         // if field type_of is scalar and they don't match then we can't merge
                         // types.
+                        let json_scalar = Scalar::JSON.to_string();
                         if field_1_type_of == field_2_type_of
-                            || field_1_type_of == Scalar::JSON.to_string()
-                            || field_2_type_of == Scalar::JSON.to_string()
+                            || field_1_type_of == json_scalar
+                            || field_2_type_of == json_scalar
                         {
                             if field_1.list == field_2.list {
                                 same_field_count += 1;
