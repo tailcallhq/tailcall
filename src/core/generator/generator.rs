@@ -260,7 +260,7 @@ pub mod test {
 
     #[tokio::test]
     async fn should_generate_config_from_json() -> anyhow::Result<()> {
-        let JsonFixture {request, response, field_name, is_mutation}  = JsonFixture::read(
+        let JsonFixture { request, response, field_name, is_mutation } = JsonFixture::read(
             "src/core/generator/tests/fixtures/json/incompatible_properties.json",
         )
         .await?;
@@ -270,8 +270,8 @@ pub mod test {
                 method: request.method,
                 req_body: request.body.unwrap_or_default(),
                 res_body: response,
-                field_name: field_name,
-                is_mutation: is_mutation,
+                field_name,
+                is_mutation,
                 headers: request.headers,
             }])
             .transformers(vec![Box::new(Preset::default())])
