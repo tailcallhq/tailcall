@@ -4,6 +4,7 @@ use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
 use crate::core::merge_right::MergeRight;
+use crate::core::scalar::Scalar;
 use crate::core::transform::Transform;
 use crate::core::valid::{Valid, Validator};
 
@@ -187,8 +188,39 @@ impl TypeMerger {
     }
 }
 
-fn merge_type(type_: &Type, merge_into: Type) -> Type {
-    merge_into.merge_right(type_.clone())
+fn merge_type(type_: &Type, mut merge_into: Type) -> Type {
+    // merge rest of fields with merge_right.
+    let added_fields_t1 = merge_into.added_fields.clone();
+    let added_fields_t2 = type_.added_fields.clone();
+    let merged_added_fields = added_fields_t1.merge_right(added_fields_t2);
+
+    let implements_t1 = merge_into.implements.clone();
+    let implements_t2 = type_.implements.clone();
+    let merged_implements = implements_t1.merge_right(implements_t2);
+
+    merge_into.added_fields = merged_added_fields;
+    merge_into.implements = merged_implements;
+
+    // handle field output type merging correctly.
+    for (key, new_field) in type_.fields.iter() {
+        if let Some(existing_field) = merge_into.fields.get(key) {
+            // for conflicting output types, merge it with it's supert type.
+            if existing_field.type_of.is_empty()
+                || existing_field.type_of == Scalar::JSON.to_string()
+                || new_field.type_of == Scalar::JSON.to_string()
+            {
+                merge_into
+                    .fields
+                    .insert(key.to_owned(), new_field.to_owned());
+            }
+        } else {
+            merge_into
+                .fields
+                .insert(key.to_owned(), new_field.to_owned());
+        }
+    }
+
+    merge_into
 }
 
 impl Transform for TypeMerger {
