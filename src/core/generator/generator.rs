@@ -185,7 +185,9 @@ pub mod test {
     #[derive(Deserialize)]
     pub struct Request {
         pub url: Url,
+        #[serde(default)]
         pub method: Method,
+        #[serde(default)]
         pub body: Option<Value>,
         pub headers: Option<BTreeMap<String, TemplateString>>,
     }
@@ -224,10 +226,10 @@ pub mod test {
                 .cloned()
                 .ok_or_else(|| serde::de::Error::missing_field("response.body"))?;
 
+            // is mutation isn't present, then mark it as false.
             let is_mutation = json_content
                 .get("is_mutation")
-                .ok_or_else(|| serde::de::Error::missing_field("isMutation"))?
-                .as_bool()
+                .and_then(|is_mutation| is_mutation.as_bool().to_owned())
                 .unwrap_or_default();
 
             let field_name = json_content

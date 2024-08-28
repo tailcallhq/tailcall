@@ -7,7 +7,7 @@ schema @server @upstream {
 }
 
 type Query {
-  test: T1 @http(baseURL: "https://example.com", path: "/")
+  inCompatibleProperties: T1 @http(baseURL: "https://example.com", path: "/")
 }
 
 type T1 {
