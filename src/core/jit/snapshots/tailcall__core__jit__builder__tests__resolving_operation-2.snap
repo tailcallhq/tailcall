@@ -6,9 +6,12 @@ expression: plan.into_nested()
     Field {
         id: 0,
         name: "createPost",
+        output_name: "createPost",
         ir: "Some(..)",
         type_of: Post,
-        type_condition: "Mutation",
+        type_condition: Some(
+            "Mutation",
+        ),
         args: [
             Arg {
                 id: 0,
@@ -44,29 +47,41 @@ expression: plan.into_nested()
                     Field {
                         id: 1,
                         name: "id",
+                        output_name: "id",
                         type_of: ID!,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         directives: [],
                     },
                     Field {
                         id: 2,
                         name: "userId",
+                        output_name: "userId",
                         type_of: ID!,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         directives: [],
                     },
                     Field {
                         id: 3,
                         name: "title",
+                        output_name: "title",
                         type_of: String!,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         directives: [],
                     },
                     Field {
                         id: 4,
                         name: "body",
+                        output_name: "body",
                         type_of: String!,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         directives: [],
                     },
                 ],

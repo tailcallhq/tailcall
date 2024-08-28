@@ -95,9 +95,13 @@ impl SelectionField {
     fn from_jit_field(
         field: &crate::core::jit::Field<Nested<ConstValue>, ConstValue>,
     ) -> SelectionField {
-        let name = field.name.clone();
+        let name = field.output_name.to_string();
+        let type_name = field.type_of.name();
         let selection_set = field
-            .nested_iter(field.type_of.name())
+            .iter_only(|field| match &field.type_condition {
+                Some(type_condition) => type_condition == type_name,
+                None => true,
+            })
             .map(Self::from_jit_field)
             .collect();
         let args = field
