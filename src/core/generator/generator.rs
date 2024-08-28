@@ -226,7 +226,7 @@ pub mod test {
                 .cloned()
                 .ok_or_else(|| serde::de::Error::missing_field("response.body"))?;
 
-            // is mutation isn't present, then mark it as false.
+            // if is mutation isn't present, then mark it as false.
             let is_mutation = json_content
                 .get("is_mutation")
                 .and_then(|is_mutation| is_mutation.as_bool().to_owned())
