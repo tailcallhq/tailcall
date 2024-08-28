@@ -97,7 +97,7 @@ where
                     join_all(
                         self.request
                             .plan()
-                            .field_nested_iter(field, value)
+                            .field_iter_only(field, value)
                             .map(|field| {
                                 let ctx = ctx.with_value_and_field(value, field);
                                 let data_path = data_path.clone().with_index(index);
@@ -117,7 +117,7 @@ where
             join_all(
                 self.request
                     .plan()
-                    .field_nested_iter(field, value)
+                    .field_iter_only(field, value)
                     .map(|child| {
                         let ctx = ctx.with_value_and_field(value, child);
                         let data_path = data_path.clone();

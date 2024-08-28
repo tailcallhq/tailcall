@@ -163,7 +163,7 @@ where
                 (_, Some(obj)) => {
                     let mut ans = Value::JsonObject::new();
 
-                    for child in self.plan.field_nested_iter(node, value) {
+                    for child in self.plan.field_iter_only(node, value) {
                         // all checks for skip must occur in `iter_inner`
                         // and include be checked before calling `iter` or recursing.
                         let include = self.include(child);

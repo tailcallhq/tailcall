@@ -164,6 +164,7 @@ impl Variable {
 }
 
 impl<Extensions, Input> Field<Extensions, Input> {
+    /// Returns the __typename of the value related to this field
     pub fn value_type<'a, Output>(&'a self, value: &'a Output) -> &'a str
     where
         Output: TypedValue<'a>,
@@ -246,7 +247,7 @@ impl<Input> Field<Flat, Input> {
 impl<Input> Field<Nested<Input>, Input> {
     /// iters over children fields that satisfies
     /// passed filter_fn
-    pub fn nested_iter<'a>(
+    pub fn iter_only<'a>(
         &'a self,
         mut filter_fn: impl FnMut(&'a Field<Nested<Input>, Input>) -> bool + 'a,
     ) -> impl Iterator<Item = &Field<Nested<Input>, Input>> + 'a {
@@ -406,30 +407,37 @@ impl<Input> OperationPlan<Input> {
         Self { flat: fields, nested, operation_type, index }
     }
 
+    /// Returns a graphQL operation type
     pub fn operation_type(&self) -> OperationType {
         self.operation_type
     }
 
+    /// Check if current graphQL operation is query
     pub fn is_query(&self) -> bool {
         self.operation_type == OperationType::Query
     }
 
+    /// Returns a nested [Field] representation
     pub fn as_nested(&self) -> &[Field<Nested<Input>, Input>] {
         &self.nested
     }
 
+    /// Returns an owned version of [Field] representation
     pub fn into_nested(self) -> Vec<Field<Nested<Input>, Input>> {
         self.nested
     }
 
+    /// Returns a flat [Field] representation
     pub fn as_parent(&self) -> &[Field<Flat, Input>] {
         &self.flat
     }
 
+    /// Search for a field with a specified [FieldId]
     pub fn find_field(&self, id: FieldId) -> Option<&Field<Flat, Input>> {
         self.flat.iter().find(|field| field.id == id)
     }
 
+    /// Search for a field by specified path of nested fields
     pub fn find_field_path<S: AsRef<str>>(&self, path: &[S]) -> Option<&Field<Flat, Input>> {
         match path.split_first() {
             None => None,
@@ -444,18 +452,22 @@ impl<Input> OperationPlan<Input> {
         }
     }
 
+    /// Returns number of fields in plan
     pub fn size(&self) -> usize {
         self.flat.len()
     }
 
+    /// Check if the field is of scalar type
     pub fn field_is_scalar<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
         self.index.type_is_scalar(field.type_of.name())
     }
 
+    /// Check if the field is of enum type
     pub fn field_is_enum<Extensions>(&self, field: &Field<Extensions, Input>) -> bool {
         self.index.type_is_enum(field.type_of.name())
     }
 
+    /// Validate the value against enum variants of the field
     pub fn field_validate_enum_value<Extensions>(
         &self,
         field: &Field<Extensions, Input>,
@@ -464,7 +476,8 @@ impl<Input> OperationPlan<Input> {
         self.index.validate_enum_value(field.type_of.name(), value)
     }
 
-    pub fn field_nested_iter<'a, Output>(
+    /// Iterate over nested fields that are related to the __typename of the value
+    pub fn field_iter_only<'a, Output>(
         &'a self,
         field: &'a Field<Nested<Input>, Input>,
         value: &'a Output,
@@ -474,7 +487,7 @@ impl<Input> OperationPlan<Input> {
     {
         let value_type = field.value_type(value);
 
-        field.nested_iter(move |field| {
+        field.iter_only(move |field| {
             self.index
                 .is_type_implements(value_type, &field.type_condition)
         })
