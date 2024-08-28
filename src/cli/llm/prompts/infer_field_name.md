@@ -16,4 +16,3 @@ Example Output2:
 Ensure to verify if the url's endpoint carefully for field name generation.
 
 Ensure the output is in valid JSON format.
-

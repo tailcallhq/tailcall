@@ -8,4 +8,3 @@ Example Output:
 {{output}}
 
 Ensure the output is in valid JSON format.
-
