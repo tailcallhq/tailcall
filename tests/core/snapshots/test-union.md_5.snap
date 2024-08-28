@@ -1,0 +1,45 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "foo": {
+        "__typename": "Foo"
+      },
+      "bar": {
+        "__typename": "Bar"
+      },
+      "arr": [
+        {
+          "__typename": "Foo"
+        },
+        {
+          "__typename": "Bar"
+        },
+        {
+          "__typename": "Foo"
+        },
+        {
+          "__typename": "Foo"
+        },
+        {
+          "__typename": "Bar"
+        }
+      ],
+      "nested": {
+        "foo": {
+          "__typename": "Foo"
+        },
+        "bar": {
+          "__typename": "Bar"
+        }
+      }
+    }
+  }
+}

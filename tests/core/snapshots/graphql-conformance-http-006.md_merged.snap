@@ -22,6 +22,6 @@ type User {
       query: [{key: "id", value: "{{.value.id}}"}, {key: "first", value: "{{.args.first}}"}]
     )
   name: String!
-  profilePic(height: Int, size: Int, width: Int): String!
+  profilePic(size: Int, width: Int, height: Int): String!
     @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
 }

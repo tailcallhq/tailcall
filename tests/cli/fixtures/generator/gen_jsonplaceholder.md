@@ -1,3 +1,4 @@
+```json @config
 {
   "secret": "",
   "inputs": [
@@ -86,3 +87,4 @@
     "query": "Query"
   }
 }
+```

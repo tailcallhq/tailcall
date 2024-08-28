@@ -1,6 +1,6 @@
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
-use crate::core::config::{ConfigModule, Field};
+use crate::core::config::{ConfigModule, Field, Resolver};
 use crate::core::ir::model::{IO, IR};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, Validator};
@@ -21,7 +21,7 @@ pub fn update_js_field<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         |(module, field, _, _), b_field| {
-            let Some(js) = &field.script else {
+            let Some(Resolver::Js(js)) = &field.resolver else {
                 return Valid::succeed(b_field);
             };
 

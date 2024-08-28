@@ -6,6 +6,7 @@ expression: plan.into_nested()
     Field {
         id: 0,
         name: "user",
+        output_name: "user",
         ir: "Some(..)",
         type_of: User,
         type_condition: "Query",
@@ -28,23 +29,22 @@ expression: plan.into_nested()
                     Field {
                         id: 1,
                         name: "id",
+                        output_name: "id",
                         type_of: ID!,
                         type_condition: "User",
-                        is_scalar: true,
                         directives: [],
                     },
                     Field {
                         id: 2,
                         name: "name",
+                        output_name: "name",
                         type_of: String!,
                         type_condition: "User",
-                        is_scalar: true,
                         directives: [],
                     },
                 ],
             ),
         ),
-        is_scalar: false,
         directives: [],
     },
 ]

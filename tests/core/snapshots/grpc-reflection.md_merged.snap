@@ -9,15 +9,22 @@ schema
   query: Query
 }
 
+enum Status {
+  DELETED
+  DRAFT
+  PUBLISHED
+}
+
 type News {
   body: String
   id: Int
   postImage: String
+  status: Status
   title: String
 }
 
 type NewsData {
-  news: [News]!
+  news: [News]
 }
 
 type Query {
