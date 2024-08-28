@@ -5,7 +5,7 @@ use serde_json::Value;
 use url::Url;
 
 use super::json::{self, GraphQLTypesGenerator};
-use super::{Input, NameGenerator};
+use super::NameGenerator;
 use crate::core::config::transformer::RenameTypes;
 use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::http::Method;
@@ -24,38 +24,42 @@ pub struct RequestSample {
     pub headers: Option<BTreeMap<String, TemplateString>>,
 }
 
-impl From<&Input> for RequestSample {
-    fn from(input: &Input) -> Self {
-        match input {
-            Input::Json {
-                url,
-                method,
-                req_body,
-                res_body,
-                field_name,
-                is_mutation,
-                headers,
-            } => {
-                let operation_type = if *is_mutation {
-                    GraphQLOperationType::Mutation
-                } else {
-                    GraphQLOperationType::Query
-                };
-
-                Self {
-                    url: url.clone(),
-                    method: method.clone(),
-                    req_body: req_body.clone(),
-                    res_body: res_body.clone(),
-                    field_name: field_name.clone(),
-                    headers: headers.clone(),
-                    operation_type,
-                }
-            }
-            _ => {
-                panic!("Cannot convert from non-Json variant");
-            }
+impl RequestSample {
+    pub fn new(url: Url, response_body: Value, field_name: String) -> Self {
+        Self {
+            url,
+            field_name,
+            res_body: response_body,
+            method: Default::default(),
+            req_body: Default::default(),
+            headers: Default::default(),
+            operation_type: Default::default(),
         }
+    }
+
+    pub fn with_method(mut self, method: Method) -> Self {
+        self.method = method;
+        self
+    }
+
+    pub fn with_req_body(mut self, req_body: Value) -> Self {
+        self.req_body = req_body;
+        self
+    }
+
+    pub fn with_headers(mut self, headers: Option<BTreeMap<String, TemplateString>>) -> Self {
+        self.headers = headers;
+        self
+    }
+
+    pub fn with_is_mutation(mut self, is_mutation: bool) -> Self {
+        let operation_type = if is_mutation {
+            GraphQLOperationType::Mutation
+        } else {
+            GraphQLOperationType::Query
+        };
+        self.operation_type = operation_type;
+        self
     }
 }
 
@@ -141,7 +145,7 @@ impl Transform for FromJsonGenerator<'_> {
 mod tests {
     use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::test::JsonFixture;
-    use crate::core::generator::{FromJsonGenerator, Input, NameGenerator, RequestSample};
+    use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
     use crate::core::transform::TransformerOps;
     use crate::core::valid::Validator;
 
@@ -158,16 +162,13 @@ mod tests {
         for fixture in fixtures {
             let JsonFixture { request, response, is_mutation, field_name } =
                 JsonFixture::read(fixture).await?;
-            let json_input = Input::Json {
-                url: request.url,
-                method: request.method,
-                req_body: request.body.unwrap_or_default(),
-                res_body: response,
-                field_name,
-                is_mutation,
-                headers: request.headers,
-            };
-            request_samples.push(RequestSample::from(&json_input));
+            let req_sample = RequestSample::new(request.url, response, field_name)
+                .with_method(request.method)
+                .with_headers(request.headers)
+                .with_is_mutation(is_mutation)
+                .with_req_body(request.body.unwrap_or_default());
+
+            request_samples.push(req_sample);
         }
 
         let config =

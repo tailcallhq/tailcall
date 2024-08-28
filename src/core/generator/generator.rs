@@ -105,11 +105,27 @@ impl Generator {
                 Input::Config { source, schema } => {
                     config = config.merge_right(Config::from_source(source.clone(), schema)?);
                 }
-                json_value @ Input::Json { .. } => {
-                    config = config.merge_right(self.generate_from_json(
-                        &type_name_generator,
-                        &[RequestSample::from(json_value)],
-                    )?);
+                Input::Json {
+                    url,
+                    method,
+                    req_body,
+                    res_body,
+                    field_name,
+                    is_mutation,
+                    headers,
+                } => {
+                    let req_sample = RequestSample::new(
+                        url.to_owned(),
+                        res_body.to_owned(),
+                        field_name.to_owned(),
+                    )
+                    .with_method(method.to_owned())
+                    .with_headers(headers.to_owned())
+                    .with_is_mutation(is_mutation.to_owned())
+                    .with_req_body(req_body.to_owned());
+
+                    config = config
+                        .merge_right(self.generate_from_json(&type_name_generator, &[req_sample])?);
                 }
                 Input::Proto(proto_input) => {
                     config =
