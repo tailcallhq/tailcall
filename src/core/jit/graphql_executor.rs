@@ -1,13 +1,14 @@
 use std::future::Future;
 use std::sync::Arc;
 
-use async_graphql::{Data, Executor, Response};
+use async_graphql::{Data, Executor, Response, Value};
 use futures_util::stream::BoxStream;
 
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::jit;
 use crate::core::jit::ConstValueExecutor;
+use crate::core::json::JsonLike;
 
 #[derive(Clone)]
 pub struct JITExecutor {
@@ -23,13 +24,30 @@ impl JITExecutor {
 
 impl Executor for JITExecutor {
     fn execute(&self, request: async_graphql::Request) -> impl Future<Output = Response> + Send {
-        let request = jit::Request::from(request);
+        let jit_request = jit::Request::from(&request);
+
+        // execute only introspection requests with async graphql.
+        let introspection_req = request.only_introspection();
 
         async {
-            match ConstValueExecutor::new(&request, self.app_ctx.clone()) {
+            match ConstValueExecutor::new(&jit_request, self.app_ctx.clone()) {
                 Ok(exec) => {
-                    let resp = exec.execute(&self.req_ctx, request).await;
-                    resp.into_async_graphql()
+                    let resp = self.app_ctx.execute(introspection_req).await;
+                    let jit_resp = exec.execute(&self.req_ctx, jit_request).await;
+                    let mut async_converted_response = jit_resp.into_async_graphql();
+
+                    if !resp.data.is_null() {
+                        if let Value::Object(mut obj) = resp.data {
+                            if !obj.is_empty() {
+                                if let Value::Object(jit_obj) = async_converted_response.data {
+                                    obj.extend(jit_obj);
+                                    async_converted_response.data = Value::Object(obj);
+                                }
+                            }
+                        }
+                    }
+
+                    async_converted_response
                 }
                 Err(error) => Response::from_errors(vec![error.into()]),
             }

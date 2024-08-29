@@ -19,15 +19,17 @@ pub struct Request<V> {
     pub extensions: HashMap<String, V>,
 }
 
-impl From<async_graphql::Request> for Request<ConstValue> {
-    fn from(mut value: async_graphql::Request) -> Self {
-        let variables = std::mem::take(value.variables.deref_mut());
+impl From<&async_graphql::Request> for Request<ConstValue> {
+    fn from(value: &async_graphql::Request) -> Self {
+        let variables = std::mem::take(value.variables.clone().deref_mut());
 
         Self {
-            query: value.query,
-            operation_name: value.operation_name,
-            variables: Variables::from_iter(variables.into_iter().map(|(k, v)| (k.to_string(), v))),
-            extensions: value.extensions,
+            query: value.query.clone(),
+            operation_name: value.operation_name.clone(),
+            variables: Variables::from_iter(
+                variables.iter().map(|(k, v)| (k.to_string(), v.to_owned())),
+            ),
+            extensions: value.extensions.clone(),
         }
     }
 }
