@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::DerefMut};
 
 use async_graphql_value::ConstValue;
 use serde::Deserialize;
@@ -18,18 +18,16 @@ pub struct Request<V> {
     pub extensions: HashMap<String, V>,
 }
 
-impl From<&async_graphql::Request> for Request<ConstValue> {
-    fn from(value: &async_graphql::Request) -> Self {
+// NOTE: This is hot code and should allocate minimal memory
+impl From<async_graphql::Request> for Request<ConstValue> {
+    fn from(mut value: async_graphql::Request) -> Self {
+        let variables = std::mem::take(value.variables.deref_mut());
+
         Self {
-            query: value.query.clone(),
-            operation_name: value.operation_name.clone(),
-            variables: Variables::from_iter(
-                value
-                    .variables
-                    .iter()
-                    .map(|(k, v)| (k.to_string(), v.to_owned())),
-            ),
-            extensions: value.extensions.clone(),
+            query: value.query,
+            operation_name: value.operation_name,
+            variables: Variables::from_iter(variables.into_iter().map(|(k, v)| (k.to_string(), v))),
+            extensions: value.extensions,
         }
     }
 }

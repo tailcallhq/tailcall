@@ -22,9 +22,18 @@ impl JITExecutor {
     }
 }
 
+fn clone_request(req: &async_graphql::Request) -> async_graphql::Request {
+    let mut request = async_graphql::Request::new(req.query.clone());
+    request.variables = req.variables.clone();
+    request.extensions = req.extensions.clone();
+    request.operation_name = req.operation_name.clone();
+    request.query = req.query.clone();
+    request
+}
+
 impl Executor for JITExecutor {
     fn execute(&self, request: async_graphql::Request) -> impl Future<Output = Response> + Send {
-        let jit_request = jit::Request::from(&request);
+        let jit_request = jit::Request::from(clone_request(&request));
 
         // execute only introspection requests with async graphql.
         let introspection_req = request.only_introspection();
