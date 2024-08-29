@@ -1,4 +1,5 @@
-use std::{collections::HashMap, ops::DerefMut};
+use std::collections::HashMap;
+use std::ops::DerefMut;
 
 use async_graphql_value::ConstValue;
 use serde::Deserialize;

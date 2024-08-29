@@ -352,7 +352,7 @@ impl Builder {
 
         let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
             if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
-                Self::is_introspection_query(&gql_field.name.node.as_str())
+                Self::is_introspection_query(gql_field.name.node.as_str())
             } else {
                 false
             }
