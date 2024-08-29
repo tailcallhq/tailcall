@@ -220,7 +220,7 @@ impl Builder {
                                 .unwrap_or(field_name.to_owned()),
                             ir,
                             type_of,
-                            type_condition: type_condition.to_string(),
+                            type_condition: Some(type_condition.to_string()),
                             skip,
                             include,
                             args,
@@ -241,7 +241,9 @@ impl Builder {
                                 name: "String".to_owned(),
                                 non_null: true,
                             },
-                            type_condition: type_condition.to_string(),
+                            // __typename has a special meaning and could be applied
+                            // to any type
+                            type_condition: None,
                             skip,
                             include,
                             args: Vec::new(),

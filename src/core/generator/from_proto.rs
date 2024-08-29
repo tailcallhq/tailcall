@@ -127,7 +127,7 @@ impl Context {
 
         collect_types(
             type_name.clone(),
-            base_type,
+            base_type.clone(),
             &oneof_fields,
             &mut union_types,
         );
@@ -141,13 +141,17 @@ impl Context {
         }
 
         let mut union_ = Union::default();
+        let interface_name = format!("{type_name}__Interface");
 
-        for (type_name, ty) in union_types {
+        for (type_name, mut ty) in union_types {
+            ty.implements.insert(interface_name.clone());
             union_.types.insert(type_name.clone());
 
             self = self.insert_type(type_name, ty);
         }
 
+        // base interface type
+        self.config.types.insert(interface_name, base_type);
         self.config.unions.insert(type_name, union_);
 
         self
