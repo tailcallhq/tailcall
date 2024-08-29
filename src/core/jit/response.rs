@@ -161,7 +161,8 @@ mod test {
             }
         }
         "#;
-        let introspection_data = ConstValue::from_json(serde_json::from_str(introspection_response).unwrap()).unwrap();
+        let introspection_data =
+            ConstValue::from_json(serde_json::from_str(introspection_response).unwrap()).unwrap();
         let introspection_response = async_graphql::Response::new(introspection_data);
 
         let user_response = r#"
@@ -173,9 +174,10 @@ mod test {
             }
         }
         "#;
-        let user_data = ConstValue::from_json(serde_json::from_str(user_response).unwrap()).unwrap();
+        let user_data =
+            ConstValue::from_json(serde_json::from_str(user_response).unwrap()).unwrap();
         let query_response = async_graphql::Response::new(user_data);
-        
+
         let merged_response = introspection_response.merge_right(query_response);
 
         insta::assert_json_snapshot!(merged_response);
@@ -188,7 +190,10 @@ mod test {
         resp1.errors.append(&mut err1);
 
         let mut resp2 = async_graphql::Response::new(ConstValue::default());
-        let mut err2 = vec![async_graphql::ServerError::new("Error-2", Some(async_graphql::Pos::default()))];
+        let mut err2 = vec![async_graphql::ServerError::new(
+            "Error-2",
+            Some(async_graphql::Pos::default()),
+        )];
         resp2.errors.append(&mut err2);
 
         let merged_resp = resp1.merge_right(resp2);
