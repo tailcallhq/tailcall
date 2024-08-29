@@ -102,7 +102,7 @@ impl InferTypeName<'_> {
                     fields: type_
                         .fields
                         .iter()
-                        .map(|(k, v)| (k.as_str(), v.type_of.as_str()))
+                        .map(|(k, v)| (k.as_str(), v.type_of.name()))
                         .collect(),
                 };
 

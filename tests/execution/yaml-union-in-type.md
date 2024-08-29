@@ -8,45 +8,57 @@ types:
   T1:
     fields:
       t1:
-        type: String
+        type:
+          name: String
   T2:
     fields:
       t2:
-        type: Int
+        type:
+          name: Int
   T3:
     fields:
       t3:
-        type: Boolean
+        type:
+          name: Boolean
       t33:
-        type: Float
-        required: true
+        type:
+          name: Float
+          required: true
 
   NU:
     fields:
       test:
-        type: String
+        type:
+          name: String
       u:
-        type: U
+        type:
+          name: U
 
   NNU:
     fields:
       other:
-        type: Int
+        type:
+          name: Int
       new:
-        type: Boolean
+        type:
+          name: Boolean
       nu:
-        type: NU
+        type:
+          name: NU
 
   Query:
     fields:
       test:
-        type: U
+        type:
+          name: U
         args:
           nu:
-            type: NU
-            required: true
+            type:
+              name: NU
+              required: true
           nnu:
-            type: NNU
+            type:
+              name: NNU
         http:
           baseURL: http://localhost
           path: /users/{{args.nu.u}}

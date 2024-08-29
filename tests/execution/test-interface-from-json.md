@@ -12,7 +12,9 @@
     "IA": {
       "fields": {
         "a": {
-          "type": "String"
+          "type": {
+            "name": "String"
+          }
         }
       }
     },
@@ -20,17 +22,23 @@
       "implements": ["IA"],
       "fields": {
         "a": {
-          "type": "String"
+          "type": {
+            "name": "String"
+          }
         },
         "b": {
-          "type": "String"
+          "type": {
+            "name": "String"
+          }
         }
       }
     },
     "Query": {
       "fields": {
         "bar": {
-          "type": "B",
+          "type": {
+            "name": "B"
+          },
           "http": {
             "path": "/posts"
           }

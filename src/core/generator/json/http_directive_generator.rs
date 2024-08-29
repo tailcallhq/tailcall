@@ -6,6 +6,7 @@ use url::Url;
 
 use crate::core::config::{Arg, Field, Http, URLQuery};
 use crate::core::helpers::gql_type::detect_gql_data_type;
+use crate::core::Type;
 
 #[derive(Debug)]
 struct QueryParamInfo {
@@ -79,8 +80,7 @@ impl<'a> HttpDirectiveGenerator<'a> {
                             let placeholder = format!("/{{{{.args.{}}}}}", arg_key);
 
                             let arg = Arg {
-                                type_of: type_of.to_string(),
-                                required: true,
+                                type_of: Type::from(type_of.to_owned()).into_required(),
                                 ..Default::default()
                             };
 
@@ -100,12 +100,14 @@ impl<'a> HttpDirectiveGenerator<'a> {
         let url_utility = UrlUtility::new(self.url);
 
         for query in url_utility.get_query_params() {
-            let arg = Arg {
-                list: query.is_list,
-                type_of: query.data_type,
-                required: false,
-                ..Default::default()
+            let type_of = Type::from(query.data_type.clone());
+            let type_of = if query.is_list {
+                type_of.into_list()
+            } else {
+                type_of
             };
+
+            let arg = Arg { type_of, ..Default::default() };
 
             // Convert query key to camel case for better readability.
             let query_key = query.key.to_case(Case::Camel);
@@ -200,7 +202,7 @@ mod test {
         let args: HashMap<String, String> = field
             .args
             .iter()
-            .map(|(name, arg)| (name.to_string(), arg.type_of.clone()))
+            .map(|(name, arg)| (name.to_string(), arg.type_of.name().to_owned()))
             .collect::<HashMap<_, _>>();
         let test_args = vec![
             ("p1".to_string(), "Int".to_string()),

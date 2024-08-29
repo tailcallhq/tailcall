@@ -4,6 +4,10 @@
     {
       "curl": {
         "src": "https://jsonplaceholder.typicode.com/posts/1",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         "fieldName": "post"
       }
     },
@@ -69,7 +73,7 @@
     }
   ],
   "preset": {
-    "mergeType": 1,
+    "mergeType": 1.0,
     "consolidateURL": 0.5,
     "treeShake": true,
     "inferTypeNames": true

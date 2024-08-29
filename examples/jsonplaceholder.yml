@@ -10,51 +10,65 @@ types:
   Post:
     fields:
       body:
-        type: String
-        required: true
+        type:
+          name: String
+          required: true
       id:
-        type: Int
-        required: true
+        type:
+          name: Int
+          required: true
       title:
-        type: String
-        required: true
+        type:
+          name: String
+          required: true
       user:
-        type: User
+        type:
+          name: User
         http:
           path: /users/{{value.userId}}
       userId:
-        type: Int
-        required: true
+        type:
+          name: Int
+          required: true
   Query:
     fields:
       posts:
-        type: Post
-        list: true
+        type:
+          list:
+            name: Post
         http:
           path: /posts
       user:
-        type: User
+        type:
+          name: User
         args:
           id:
-            type: Int
-            required: true
+            type:
+              name: Int
+              required: true
         http:
           path: /users/{{args.id}}
   User:
     fields:
       email:
-        type: String
-        required: true
+        type:
+          name: String
+          required: true
       id:
-        type: Int
-        required: true
+        type:
+          name: Int
+          required: true
       name:
-        type: String
-        required: true
+        type:
+          name: String
+          required: true
       phone:
-        type: String
+        type:
+          name: String
       username:
-        type: String
-        required: true
+        type:
+          name: String
+          required: true
       website:
-        type: String
+        type:
+          name: String

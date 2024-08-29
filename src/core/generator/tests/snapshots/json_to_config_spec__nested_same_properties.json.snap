@@ -7,7 +7,7 @@ schema @server @upstream {
 }
 
 type Query {
-  test: T4 @http(baseURL: "https://example.com", path: "/")
+  nestedSameProperties: T4 @http(baseURL: "https://example.com", path: "/")
 }
 
 type T1 {

@@ -160,9 +160,6 @@
             "null"
           ]
         },
-        "list": {
-          "type": "boolean"
-        },
         "modify": {
           "anyOf": [
             {
@@ -173,11 +170,8 @@
             }
           ]
         },
-        "required": {
-          "type": "boolean"
-        },
         "type": {
-          "type": "string"
+          "$ref": "#/definitions/Type2"
         }
       }
     },
@@ -475,14 +469,6 @@
             "null"
           ]
         },
-        "list": {
-          "description": "Flag to indicate the type is a list.",
-          "type": "boolean"
-        },
-        "list_type_required": {
-          "description": "Flag to indicate if the type inside the list is required.",
-          "type": "boolean"
-        },
         "modify": {
           "description": "Allows modifying existing fields.",
           "anyOf": [
@@ -517,13 +503,13 @@
             }
           ]
         },
-        "required": {
-          "description": "Flag to indicate the type is required.",
-          "type": "boolean"
-        },
         "type": {
           "description": "Refers to the type of the value the field can be resolved to.",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/Type2"
+            }
+          ]
         }
       }
     },
@@ -1289,6 +1275,47 @@
           ]
         }
       }
+    },
+    "Type2": {
+      "description": "Type to represent GraphQL type usage with modifiers [spec](https://spec.graphql.org/October2021/#sec-Wrapping-Types)",
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "description": "Name of the type",
+              "type": "string"
+            },
+            "required": {
+              "description": "Flag to indicate the type is required.",
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "list"
+          ],
+          "properties": {
+            "list": {
+              "description": "Type is a list",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Type2"
+                }
+              ]
+            },
+            "required": {
+              "description": "Flag to indicate the type is required.",
+              "type": "boolean"
+            }
+          }
+        }
+      ]
     },
     "UInt128": {
       "title": "UInt128",

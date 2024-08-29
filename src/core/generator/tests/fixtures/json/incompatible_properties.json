@@ -1,8 +1,11 @@
 {
   "request": {
-    "url": "https://example.com"
+    "url": "https://example.com",
+    "headers": {
+      "authorization": "Bearer TESTTEST"
+    }
   },
-  "fieldName": "test",
+  "fieldName": "inCompatibleProperties",
   "response": {
     "status": 200,
     "body": {

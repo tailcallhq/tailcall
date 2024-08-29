@@ -17,11 +17,15 @@ error: true
     "Query": {
       "fields": {
         "foo": {
-          "type": "Foo",
+          "type": {
+            "name": "Foo"
+          },
           "args": {
             "val": {
-              "type": "String",
-              "required": true
+              "type": {
+                "name": "String",
+                "required": true
+              }
             }
           },
           "expr": {

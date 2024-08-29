@@ -2,7 +2,7 @@
   "request": {
     "url": "https://example.com/"
   },
-  "fieldName": "test",
+  "fieldName": "inCompatibleRootObject",
   "response": {
     "status": 200,
     "body": {

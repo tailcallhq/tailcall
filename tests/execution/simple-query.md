@@ -13,7 +13,9 @@
     "Query": {
       "fields": {
         "firstUser": {
-          "type": "User",
+          "type": {
+            "name": "User"
+          },
           "http": {
             "path": "/users/1"
           },
@@ -25,11 +27,15 @@
     "User": {
       "fields": {
         "id": {
-          "type": "Int",
+          "type": {
+            "name": "Int"
+          },
           "cache": null
         },
         "name": {
-          "type": "String",
+          "type": {
+            "name": "String"
+          },
           "cache": null
         }
       },

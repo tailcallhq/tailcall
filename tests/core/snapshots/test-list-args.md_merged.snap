@@ -7,7 +7,7 @@ schema @server(queryValidation: true) @upstream(baseURL: "http://localhost:3000"
 }
 
 type Query {
-  f1(q: [Int]!): T1 @http(path: "/api", query: [{key: "q", value: "{{.args.q}}"}])
+  f1(q: [Int!]!): T1 @http(path: "/api", query: [{key: "q", value: "{{.args.q}}"}])
 }
 
 type T1 {
