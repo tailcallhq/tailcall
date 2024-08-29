@@ -16,6 +16,7 @@ pub mod telemetry;
 mod timeout;
 mod union_resolver;
 mod upstream;
+mod wrapping_type;
 
 pub use auth::*;
 pub use blueprint::*;
@@ -30,6 +31,7 @@ pub use schema::*;
 pub use server::*;
 pub use timeout::GlobalTimeout;
 pub use upstream::*;
+pub use wrapping_type::Type;
 
 use crate::core::config::ConfigModule;
 use crate::core::try_fold::TryFold;
