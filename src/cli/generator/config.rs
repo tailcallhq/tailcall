@@ -195,6 +195,10 @@ impl Location<UnResolved> {
 }
 
 impl<A> Headers<A> {
+    pub fn into_btree_map(self) -> Option<BTreeMap<String, String>> {
+        self.0
+    }
+
     pub fn as_btree_map(&self) -> &Option<BTreeMap<String, String>> {
         &self.0
     }
@@ -286,12 +290,12 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    
+
 
     use pretty_assertions::assert_eq;
 
     use super::*;
-    
+
     use crate::core::valid::{ValidateInto, ValidationError, Validator};
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {

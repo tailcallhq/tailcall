@@ -4,6 +4,10 @@
     {
       "curl": {
         "src": "{{.env.BASE_URL}}/posts/1",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         "fieldName": "post"
       }
     },

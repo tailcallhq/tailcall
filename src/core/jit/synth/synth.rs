@@ -122,8 +122,8 @@ where
         let eval_result = if value.is_null() {
             // check the nullability of this type unwrapping list modifier
             let is_nullable = match &node.type_of {
-                crate::core::blueprint::Type::NamedType { non_null, .. } => !*non_null,
-                crate::core::blueprint::Type::ListType { of_type, .. } => of_type.is_nullable(),
+                crate::core::Type::Named { non_null, .. } => !*non_null,
+                crate::core::Type::List { of_type, .. } => of_type.is_nullable(),
             };
             if is_nullable {
                 Ok(Value::null())

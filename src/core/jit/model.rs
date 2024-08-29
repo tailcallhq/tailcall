@@ -80,7 +80,7 @@ impl<Extensions, Input> Field<Extensions, Input> {
 pub struct Arg<Input> {
     pub id: ArgId,
     pub name: String,
-    pub type_of: crate::core::blueprint::Type,
+    pub type_of: crate::core::Type,
     pub value: Option<Input>,
     pub default_value: Option<Input>,
 }
@@ -142,7 +142,7 @@ pub struct Field<Extensions, Input> {
     /// of this field
     pub output_name: String,
     pub ir: Option<IR>,
-    pub type_of: crate::core::blueprint::Type,
+    pub type_of: crate::core::Type,
     /// Specifies the name of type used in condition to fetch that field
     /// The type could be anything from graphql type system:
     /// interface, type, union, input type.
