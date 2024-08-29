@@ -199,14 +199,6 @@ impl Headers {
     pub fn as_btree_map(&self) -> &Option<BTreeMap<String, String>> {
         &self.0
     }
-    pub fn resolve(self) -> Headers {
-        // Resolve the header values with mustache template.
-        let resolved_headers = self
-            .0
-            .map(|headers_inner| headers_inner.into_iter().collect::<BTreeMap<_, _>>());
-
-        Headers(resolved_headers)
-    }
 }
 
 impl Output<UnResolved> {
@@ -223,11 +215,10 @@ impl Source<UnResolved> {
         match self {
             Source::Curl { src, field_name, headers, body, method, is_mutation } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                let resolved_headers = headers.resolve();
                 Ok(Source::Curl {
                     src: resolved_path,
                     field_name,
-                    headers: resolved_headers,
+                    headers,
                     body,
                     method,
                     is_mutation,
@@ -305,12 +296,10 @@ mod tests {
         let token = "eyJhbGciOiJIUzI1NiIsInR5";
         env_vars.insert("TOKEN".to_owned(), token.to_owned());
 
-        let unresolved_headers = to_headers(headers);
-
-        let resolved_headers = unresolved_headers.resolve();
+        let headers = to_headers(headers);
 
         let expected = format!("Bearer {token}");
-        let actual = resolved_headers
+        let actual = headers
             .as_btree_map()
             .as_ref()
             .unwrap()
