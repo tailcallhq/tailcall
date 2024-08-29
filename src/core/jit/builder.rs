@@ -125,7 +125,7 @@ impl Builder {
                 .unwrap_or(Condition::True),
         }
     }
-  
+
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter(
