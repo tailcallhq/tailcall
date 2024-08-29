@@ -58,10 +58,7 @@ pub struct Location<A>(
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(transparent)]
-pub struct Headers<A>(
-    #[serde(skip_serializing_if = "is_default")] Option<BTreeMap<String, String>>,
-    #[serde(skip)] PhantomData<A>,
-);
+pub struct Headers(#[serde(skip_serializing_if = "is_default")] Option<BTreeMap<String, String>>);
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -77,7 +74,7 @@ pub enum Source<Status = UnResolved> {
     #[serde(rename_all = "camelCase")]
     Curl {
         src: Location<Status>,
-        headers: Headers<Status>,
+        headers: Headers,
         #[serde(skip_serializing_if = "Option::is_none")]
         method: Option<Method>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -194,7 +191,7 @@ impl Location<UnResolved> {
     }
 }
 
-impl<A> Headers<A> {
+impl Headers {
     pub fn into_btree_map(self) -> Option<BTreeMap<String, String>> {
         self.0
     }
@@ -202,16 +199,13 @@ impl<A> Headers<A> {
     pub fn as_btree_map(&self) -> &Option<BTreeMap<String, String>> {
         &self.0
     }
-}
-
-impl Headers<UnResolved> {
-    pub fn resolve(self) -> Headers<Resolved> {
+    pub fn resolve(self) -> Headers {
         // Resolve the header values with mustache template.
         let resolved_headers = self
             .0
             .map(|headers_inner| headers_inner.into_iter().collect::<BTreeMap<_, _>>());
 
-        Headers(resolved_headers, PhantomData)
+        Headers(resolved_headers)
     }
 }
 
@@ -298,8 +292,8 @@ mod tests {
         Location(s.as_ref().to_string(), PhantomData)
     }
 
-    fn to_headers(raw_headers: BTreeMap<String, String>) -> Headers<UnResolved> {
-        Headers(Some(raw_headers), PhantomData)
+    fn to_headers(raw_headers: BTreeMap<String, String>) -> Headers {
+        Headers(Some(raw_headers))
     }
 
     #[test]
