@@ -3,6 +3,7 @@ use serde::Serialize;
 
 use super::Positioned;
 use crate::core::jit;
+use crate::core::merge_right::MergeRight;
 
 #[derive(Setters, Serialize)]
 pub struct Response<Value, Error> {
@@ -28,6 +29,22 @@ impl<Value, Error> Response<Value, Error> {
 
     pub fn add_errors(&mut self, new_errors: Vec<Positioned<Error>>) {
         self.errors.extend(new_errors);
+    }
+}
+
+impl MergeRight for async_graphql::Response {
+    fn merge_right(mut self, other: Self) -> Self {
+        if let async_graphql::Value::Object(mut other_obj) = other.data {
+            if let async_graphql::Value::Object(self_obj) = self.data.clone() {
+                other_obj.extend(self_obj);
+                self.data = async_graphql::Value::Object(other_obj);
+            }
+        }
+
+        self.errors.extend(other.errors);
+        self.extensions.extend(other.extensions);
+
+        self
     }
 }
 
