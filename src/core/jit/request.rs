@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::ops::DerefMut;
 
 use async_graphql_value::ConstValue;
 use serde::Deserialize;
@@ -21,13 +20,14 @@ pub struct Request<V> {
 
 impl From<&async_graphql::Request> for Request<ConstValue> {
     fn from(value: &async_graphql::Request) -> Self {
-        let variables = std::mem::take(value.variables.clone().deref_mut());
-
         Self {
             query: value.query.clone(),
             operation_name: value.operation_name.clone(),
             variables: Variables::from_iter(
-                variables.iter().map(|(k, v)| (k.to_string(), v.to_owned())),
+                value
+                    .variables
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_owned())),
             ),
             extensions: value.extensions.clone(),
         }
