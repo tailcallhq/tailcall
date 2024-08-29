@@ -11,7 +11,6 @@ use super::{FromJsonGenerator, NameGenerator, RequestSample};
 use crate::core::config::{self, Config, ConfigModule, Link, LinkType};
 use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
-use crate::core::mustache::TemplateString;
 use crate::core::proto_reader::ProtoMetadata;
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
@@ -37,7 +36,7 @@ pub enum Input {
         res_body: Value,
         field_name: String,
         is_mutation: bool,
-        headers: Option<BTreeMap<String, TemplateString>>,
+        headers: Option<BTreeMap<String, String>>,
     },
     Proto(ProtoMetadata),
     Config {
@@ -175,7 +174,6 @@ pub mod test {
     use crate::core::config::transformer::Preset;
     use crate::core::generator::generator::Input;
     use crate::core::http::Method;
-    use crate::core::mustache::TemplateString;
     use crate::core::proto_reader::ProtoMetadata;
 
     fn compile_protobuf(files: &[&str]) -> anyhow::Result<FileDescriptorSet> {
@@ -189,7 +187,7 @@ pub mod test {
         pub method: Method,
         #[serde(default)]
         pub body: Option<Value>,
-        pub headers: Option<BTreeMap<String, TemplateString>>,
+        pub headers: Option<BTreeMap<String, String>>,
     }
 
     pub struct JsonFixture {

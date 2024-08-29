@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tailcall::core::generator::{Generator, Input};
 use tailcall::core::http::Method;
-use tailcall::core::mustache::TemplateString;
 use url::Url;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -15,7 +14,7 @@ pub struct APIRequest {
     pub method: Method,
     pub url: Url,
     #[serde(default)]
-    pub headers: Option<BTreeMap<String, TemplateString>>,
+    pub headers: Option<BTreeMap<String, String>>,
     #[serde(default, rename = "body")]
     pub body: Option<Value>,
 }
@@ -32,7 +31,7 @@ pub struct APIResponse {
     #[serde(default = "default::status")]
     pub status: u16,
     #[serde(default)]
-    pub headers: BTreeMap<String, TemplateString>,
+    pub headers: BTreeMap<String, String>,
     #[serde(default, rename = "body")]
     pub body: Option<Value>,
 }

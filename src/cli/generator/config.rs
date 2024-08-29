@@ -207,11 +207,9 @@ impl<A> Headers<A> {
 impl Headers<UnResolved> {
     pub fn resolve(self) -> Headers<Resolved> {
         // Resolve the header values with mustache template.
-        let resolved_headers = self.0.map(|headers_inner| {
-            headers_inner
-                .into_iter()
-                .collect::<BTreeMap<_, _>>()
-        });
+        let resolved_headers = self
+            .0
+            .map(|headers_inner| headers_inner.into_iter().collect::<BTreeMap<_, _>>());
 
         Headers(resolved_headers, PhantomData)
     }
@@ -291,11 +289,9 @@ impl Config {
 mod tests {
     use std::collections::HashMap;
 
-
     use pretty_assertions::assert_eq;
 
     use super::*;
-
     use crate::core::valid::{ValidateInto, ValidationError, Validator};
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
