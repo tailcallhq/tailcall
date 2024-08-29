@@ -1,7 +1,4 @@
 # Test API
----
-skip: true
----
 
 ```graphql @config
 schema @server @upstream(baseURL: "http://jsonplaceholder.typicode.com") {
