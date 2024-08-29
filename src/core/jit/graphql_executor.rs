@@ -27,7 +27,6 @@ fn clone_request(req: &async_graphql::Request) -> async_graphql::Request {
     request.variables = req.variables.clone();
     request.extensions = req.extensions.clone();
     request.operation_name = req.operation_name.clone();
-    request.query = req.query.clone();
     request
 }
 
