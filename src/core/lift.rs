@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 ///
-/// Just an empty wrapper around a value used to implement `From` for foreign
+/// Just an empty wrapper around a value used to implement foreign traits for foreign
 /// types.
 pub struct Lift<A>(A);
 impl<A> Deref for Lift<A> {
@@ -12,7 +12,6 @@ impl<A> Deref for Lift<A> {
 }
 
 impl<A> Lift<A> {
-    #[allow(dead_code)]
     pub fn take(self) -> A {
         self.0
     }
@@ -21,5 +20,15 @@ impl<A> Lift<A> {
 impl<A> From<A> for Lift<A> {
     fn from(a: A) -> Self {
         Lift(a)
+    }
+}
+
+pub trait CanLift: Sized {
+    fn lift(self) -> Lift<Self>;
+}
+
+impl<A> CanLift for A {
+    fn lift(self) -> Lift<Self> {
+        Lift::from(self)
     }
 }

@@ -8,6 +8,7 @@ use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::jit;
 use crate::core::jit::ConstValueExecutor;
+use crate::core::lift::{CanLift, Lift};
 use crate::core::merge_right::MergeRight;
 
 #[derive(Clone)]
@@ -22,20 +23,23 @@ impl JITExecutor {
     }
 }
 
-fn clone_request(req: &async_graphql::Request) -> async_graphql::Request {
-    let mut request = async_graphql::Request::new(req.query.clone());
-    request.variables = req.variables.clone();
-    request.extensions = req.extensions.clone();
-    request.operation_name = req.operation_name.clone();
-    request
+impl Clone for Lift<async_graphql::Request> {
+    fn clone(&self) -> Self {
+        let mut request = async_graphql::Request::new(self.query.clone());
+        request.variables = self.variables.clone();
+        request.extensions = self.extensions.clone();
+        request.operation_name = self.operation_name.clone();
+        request.into()
+    }
 }
 
 impl Executor for JITExecutor {
     fn execute(&self, request: async_graphql::Request) -> impl Future<Output = Response> + Send {
-        let jit_request = jit::Request::from(clone_request(&request));
+        let request = request.lift();
+        let jit_request = jit::Request::from(request.clone().take());
 
         // execute only introspection requests with async graphql.
-        let introspection_req = request.only_introspection();
+        let introspection_req = request.take().only_introspection();
 
         async {
             match ConstValueExecutor::new(&jit_request, self.app_ctx.clone()) {
