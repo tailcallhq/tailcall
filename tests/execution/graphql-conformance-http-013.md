@@ -30,7 +30,6 @@ type User {
       birthday: "12-06-1998"
 ```
 
-
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
