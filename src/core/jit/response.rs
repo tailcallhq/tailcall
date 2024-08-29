@@ -69,6 +69,7 @@ mod test {
 
     use super::Response;
     use crate::core::jit::{self, Pos, Positioned};
+    use crate::core::merge_right::MergeRight;
 
     #[test]
     fn test_with_response() {
@@ -135,5 +136,48 @@ mod test {
 
         assert_eq!(async_response.errors.len(), 2);
         insta::assert_debug_snapshot!(async_response);
+    }
+
+    #[test]
+    pub fn test_merging_of_responses() {
+        let introspection_response = r#"
+        {
+            "__type": {
+                "name": "User",
+                "fields": [
+                    {
+                        "name": "birthday",
+                        "type": {
+                            "name": "Date"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "type": {
+                            "name": "String"
+                        }
+                    }
+                ]
+            }
+        }
+        "#;
+        let introspection_data = ConstValue::from_json(serde_json::from_str(introspection_response).unwrap()).unwrap();
+        let introspection_response = async_graphql::Response::new(introspection_data);
+
+        let user_response = r#"
+        {
+            "me": {
+                "id": 1,
+                "name": "John Smith",
+                "birthday": "2023-03-08T12:45:26-05:00"
+            }
+        }
+        "#;
+        let user_data = ConstValue::from_json(serde_json::from_str(user_response).unwrap()).unwrap();
+        let query_response = async_graphql::Response::new(user_data);
+        
+        let merged_response = introspection_response.merge_right(query_response);
+
+        insta::assert_json_snapshot!(merged_response);
     }
 }
