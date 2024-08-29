@@ -10,9 +10,8 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::core::config::transformer::Preset;
-use crate::core::config::{self, ConfigReaderContext};
+use crate::core::config::{self};
 use crate::core::http::Method;
-use crate::core::mustache::TemplateString;
 use crate::core::valid::{Valid, ValidateFrom, Validator};
 
 #[derive(Deserialize, Serialize, Debug, Default, Setters)]
@@ -36,7 +35,7 @@ pub struct LLMConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub secret: Option<TemplateString>,
+    pub secret: Option<String>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, Default)]
@@ -60,7 +59,7 @@ pub struct Location<A>(
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(transparent)]
 pub struct Headers<A>(
-    #[serde(skip_serializing_if = "is_default")] Option<BTreeMap<String, TemplateString>>,
+    #[serde(skip_serializing_if = "is_default")] Option<BTreeMap<String, String>>,
     #[serde(skip)] PhantomData<A>,
 );
 
@@ -196,18 +195,17 @@ impl Location<UnResolved> {
 }
 
 impl<A> Headers<A> {
-    pub fn as_btree_map(&self) -> &Option<BTreeMap<String, TemplateString>> {
+    pub fn as_btree_map(&self) -> &Option<BTreeMap<String, String>> {
         &self.0
     }
 }
 
 impl Headers<UnResolved> {
-    pub fn resolve(self, reader_context: &ConfigReaderContext) -> Headers<Resolved> {
+    pub fn resolve(self) -> Headers<Resolved> {
         // Resolve the header values with mustache template.
         let resolved_headers = self.0.map(|headers_inner| {
             headers_inner
                 .into_iter()
-                .map(|(k, v)| (k, v.resolve(reader_context)))
                 .collect::<BTreeMap<_, _>>()
         });
 
@@ -225,15 +223,11 @@ impl Output<UnResolved> {
 }
 
 impl Source<UnResolved> {
-    pub fn resolve(
-        self,
-        parent_dir: Option<&Path>,
-        reader_context: &ConfigReaderContext,
-    ) -> anyhow::Result<Source<Resolved>> {
+    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Source<Resolved>> {
         match self {
             Source::Curl { src, field_name, headers, body, method, is_mutation } => {
                 let resolved_path = src.into_resolved(parent_dir);
-                let resolved_headers = headers.resolve(reader_context);
+                let resolved_headers = headers.resolve();
                 Ok(Source::Curl {
                     src: resolved_path,
                     field_name,
@@ -256,34 +250,26 @@ impl Source<UnResolved> {
 }
 
 impl Input<UnResolved> {
-    pub fn resolve(
-        self,
-        parent_dir: Option<&Path>,
-        reader_context: &ConfigReaderContext,
-    ) -> anyhow::Result<Input<Resolved>> {
-        let resolved_source = self.source.resolve(parent_dir, reader_context)?;
+    pub fn resolve(self, parent_dir: Option<&Path>) -> anyhow::Result<Input<Resolved>> {
+        let resolved_source = self.source.resolve(parent_dir)?;
         Ok(Input { source: resolved_source })
     }
 }
 
 impl Config {
     /// Resolves all the relative paths present inside the GeneratorConfig.
-    pub fn into_resolved(
-        self,
-        config_path: &str,
-        reader_context: ConfigReaderContext,
-    ) -> anyhow::Result<Config<Resolved>> {
+    pub fn into_resolved(self, config_path: &str) -> anyhow::Result<Config<Resolved>> {
         let parent_dir = Some(Path::new(config_path).parent().unwrap_or(Path::new("")));
 
         let inputs = self
             .inputs
             .into_iter()
-            .map(|input| input.resolve(parent_dir, &reader_context))
+            .map(|input| input.resolve(parent_dir))
             .collect::<anyhow::Result<Vec<Input<Resolved>>>>()?;
 
         let output = self.output.resolve(parent_dir)?;
         let llm = self.llm.map(|llm| {
-            let secret = llm.secret.map(|s| s.resolve(&reader_context));
+            let secret = llm.secret;
             LLMConfig { model: llm.model, secret }
         });
 
@@ -300,19 +286,19 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
-    use std::sync::Arc;
+    
 
     use pretty_assertions::assert_eq;
 
     use super::*;
-    use crate::core::tests::TestEnvIO;
+    
     use crate::core::valid::{ValidateInto, ValidationError, Validator};
 
     fn location<S: AsRef<str>>(s: S) -> Location<UnResolved> {
         Location(s.as_ref().to_string(), PhantomData)
     }
 
-    fn to_headers(raw_headers: BTreeMap<String, TemplateString>) -> Headers<UnResolved> {
+    fn to_headers(raw_headers: BTreeMap<String, String>) -> Headers<UnResolved> {
         Headers(Some(raw_headers), PhantomData)
     }
 
@@ -327,18 +313,9 @@ mod tests {
 
         let unresolved_headers = to_headers(headers);
 
-        let mut runtime = crate::core::runtime::test::init(None);
-        runtime.env = Arc::new(TestEnvIO::init(env_vars));
+        let resolved_headers = unresolved_headers.resolve();
 
-        let reader_ctx = ConfigReaderContext {
-            runtime: &runtime,
-            vars: &Default::default(),
-            headers: Default::default(),
-        };
-
-        let resolved_headers = unresolved_headers.resolve(&reader_ctx);
-
-        let expected = TemplateString::from(format!("Bearer {token}").as_str());
+        let expected = format!("Bearer {token}");
         let actual = resolved_headers
             .as_btree_map()
             .as_ref()
@@ -506,29 +483,18 @@ mod tests {
 
     #[test]
     fn test_llm_config() {
-        let mut env_vars = HashMap::new();
         let token = "eyJhbGciOiJIUzI1NiIsInR5";
-        env_vars.insert("TAILCALL_SECRET".to_owned(), token.to_owned());
-
-        let mut runtime = crate::core::runtime::test::init(None);
-        runtime.env = Arc::new(TestEnvIO::init(env_vars));
-
-        let reader_ctx = ConfigReaderContext {
-            runtime: &runtime,
-            vars: &Default::default(),
-            headers: Default::default(),
-        };
 
         let config = Config::default().llm(Some(LLMConfig {
             model: Some("gpt-3.5-turbo".to_string()),
-            secret: Some(TemplateString::parse("{{.env.TAILCALL_SECRET}}").unwrap()),
+            secret: Some(token.to_string()),
         }));
-        let resolved_config = config.into_resolved("", reader_ctx).unwrap();
+        let resolved_config = config.into_resolved("").unwrap();
 
         let actual = resolved_config.llm;
         let expected = Some(LLMConfig {
             model: Some("gpt-3.5-turbo".to_string()),
-            secret: Some(TemplateString::from(token)),
+            secret: Some(token.to_string()),
         });
 
         assert_eq!(actual, expected);

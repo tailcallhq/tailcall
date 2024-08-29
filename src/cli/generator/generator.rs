@@ -91,7 +91,7 @@ impl Generator {
             ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
         };
 
-        config.into_resolved(config_path, reader_context)
+        config.into_resolved(config_path)
     }
 
     /// performs all the i/o's required in the config file and generates
