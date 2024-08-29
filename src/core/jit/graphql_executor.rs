@@ -34,7 +34,7 @@ impl Executor for JITExecutor {
                 Ok(exec) => {
                     let is_introspection_query =
                         self.app_ctx.blueprint.server.get_enable_introspection()
-                            && exec.plan.is_introspection_query();
+                            && exec.plan.is_introspection_query;
 
                     let jit_resp = exec
                         .execute(&self.req_ctx, jit_request)

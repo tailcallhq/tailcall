@@ -350,7 +350,7 @@ pub struct OperationPlan<Input> {
     nested: Vec<Field<Nested<Input>, Input>>,
     // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
-    is_introspection_query: bool,
+    pub is_introspection_query: bool,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
@@ -422,10 +422,6 @@ impl<Input> OperationPlan<Input> {
     /// Check if current graphQL operation is query
     pub fn is_query(&self) -> bool {
         self.operation_type == OperationType::Query
-    }
-
-    pub fn is_introspection_query(&self) -> bool {
-        self.is_introspection_query
     }
 
     /// Returns a nested [Field] representation

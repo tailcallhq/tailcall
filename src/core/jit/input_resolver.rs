@@ -63,7 +63,7 @@ where
             new_fields,
             self.plan.operation_type(),
             self.plan.index.clone(),
-            self.plan.is_introspection_query(),
+            self.plan.is_introspection_query,
         ))
     }
 }
