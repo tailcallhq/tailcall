@@ -75,23 +75,18 @@ mod test {
     use std::collections::BTreeMap;
 
     use super::OperationTypeGenerator;
-    use crate::core::config::{Config, Field, GraphQLOperationType, Type};
+    use crate::core::config::{Config, Field, Type};
     use crate::core::generator::{NameGenerator, RequestSample};
     use crate::core::http::Method;
     use crate::core::valid::Validator;
 
     #[test]
     fn test_query() {
-        let sample = RequestSample::new(
-            "https://jsonplaceholder.typicode.com/comments?postId=1"
-                .parse()
-                .unwrap(),
-            Method::GET,
-            serde_json::Value::Null,
-            serde_json::Value::Null,
-            "postComments",
-            GraphQLOperationType::Query,
-        );
+        let url = "https://jsonplaceholder.typicode.com/comments?postId=1"
+            .parse()
+            .unwrap();
+
+        let sample = RequestSample::new(url, Default::default(), "postComments".into());
         let config = Config::default();
         let config = OperationTypeGenerator
             .generate(&sample, "T44", &NameGenerator::new("Input"), config)
@@ -103,16 +98,11 @@ mod test {
 
     #[test]
     fn test_append_field_if_operation_type_exists() {
-        let sample = RequestSample::new(
-            "https://jsonplaceholder.typicode.com/comments?postId=1"
-                .parse()
-                .unwrap(),
-            Method::GET,
-            serde_json::Value::Null,
-            serde_json::Value::Null,
-            "postComments",
-            GraphQLOperationType::Query,
-        );
+        let url = "https://jsonplaceholder.typicode.com/comments?postId=1"
+            .parse()
+            .unwrap();
+
+        let sample = RequestSample::new(url, Default::default(), "postComments".into());
         let mut config = Config::default();
         let mut fields = BTreeMap::default();
         fields.insert(
@@ -142,16 +132,15 @@ mod test {
             }
         "#;
 
-        let sample = RequestSample::new(
-            "https://jsonplaceholder.typicode.com/posts"
-                .parse()
-                .unwrap(),
-            Method::POST,
-            serde_json::from_str(body).unwrap(),
-            serde_json::Value::Null,
-            "postComments",
-            GraphQLOperationType::Mutation,
-        );
+        let url = "https://jsonplaceholder.typicode.com/posts"
+            .parse()
+            .unwrap();
+
+        let sample = RequestSample::new(url, Default::default(), "postComments".into())
+            .with_method(Method::POST)
+            .with_req_body(serde_json::from_str(body).unwrap())
+            .with_is_mutation(true);
+
         let config = Config::default();
         let config = OperationTypeGenerator
             .generate(&sample, "T44", &NameGenerator::new("Input"), config)
