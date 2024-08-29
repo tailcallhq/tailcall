@@ -126,7 +126,7 @@ impl Builder {
     }
 
     fn is_introspection_query(query: &str) -> bool {
-        query.contains("__schema") || query.contains("__type") || query.contains("__typename")
+        query.contains("__schema") || query.contains("__type")
     }
 
     #[allow(clippy::too_many_arguments)]
