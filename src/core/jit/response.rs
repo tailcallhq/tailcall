@@ -180,4 +180,18 @@ mod test {
 
         insta::assert_json_snapshot!(merged_response);
     }
+
+    #[test]
+    pub fn test_merging_of_errors() {
+        let mut resp1 = async_graphql::Response::new(ConstValue::default());
+        let mut err1 = vec![async_graphql::ServerError::new("Error-1", None)];
+        resp1.errors.append(&mut err1);
+
+        let mut resp2 = async_graphql::Response::new(ConstValue::default());
+        let mut err2 = vec![async_graphql::ServerError::new("Error-2", Some(async_graphql::Pos::default()))];
+        resp2.errors.append(&mut err2);
+
+        let merged_resp = resp1.merge_right(resp2);
+        insta::assert_json_snapshot!(merged_resp);
+    }
 }
