@@ -1,8 +1,8 @@
 use std::ops::Deref;
 
 ///
-/// Just an empty wrapper around a value used to implement foreign traits for foreign
-/// types.
+/// Just an empty wrapper around a value used to implement foreign traits for
+/// foreign types.
 pub struct Lift<A>(A);
 impl<A> Deref for Lift<A> {
     type Target = A;

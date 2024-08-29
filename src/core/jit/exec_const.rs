@@ -24,7 +24,7 @@ impl ConstValueExecutor {
     pub async fn execute(
         self,
         req_ctx: &RequestContext,
-        request: Request<ConstValue>,
+        request: &Request<ConstValue>,
     ) -> Response<ConstValue, Error> {
         let exec = ConstValueExec::new(req_ctx);
         let plan = self.plan;

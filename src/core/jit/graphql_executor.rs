@@ -1,14 +1,14 @@
+use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::Arc;
 
-use async_graphql::{Data, Executor, Response};
+use async_graphql::{Data, Executor, Response, Value};
 use futures_util::stream::BoxStream;
 
 use crate::core::app_context::AppContext;
 use crate::core::http::RequestContext;
 use crate::core::jit;
 use crate::core::jit::ConstValueExecutor;
-use crate::core::lift::{CanLift, Lift};
 use crate::core::merge_right::MergeRight;
 
 #[derive(Clone)]
@@ -23,23 +23,26 @@ impl JITExecutor {
     }
 }
 
-impl Clone for Lift<async_graphql::Request> {
-    fn clone(&self) -> Self {
-        let mut request = async_graphql::Request::new(self.query.clone());
-        request.variables = self.variables.clone();
-        request.extensions = self.extensions.clone();
-        request.operation_name = self.operation_name.clone();
-        request.into()
+impl From<jit::Request<Value>> for async_graphql::Request {
+    fn from(value: jit::Request<Value>) -> Self {
+        let mut request = async_graphql::Request::new(value.query);
+        request.variables.extend(
+            value
+                .variables
+                .into_hashmap()
+                .into_iter()
+                .map(|(k, v)| (async_graphql::Name::new(k), v))
+                .collect::<BTreeMap<_, _>>(),
+        );
+        request.extensions = value.extensions;
+        request.operation_name = value.operation_name;
+        request
     }
 }
 
 impl Executor for JITExecutor {
     fn execute(&self, request: async_graphql::Request) -> impl Future<Output = Response> + Send {
-        let request = request.lift();
-        let jit_request = jit::Request::from(request.clone().take());
-
-        // execute only introspection requests with async graphql.
-        let introspection_req = request.take().only_introspection();
+        let jit_request = jit::Request::from(request);
 
         async {
             match ConstValueExecutor::new(&jit_request, self.app_ctx.clone()) {
@@ -49,12 +52,14 @@ impl Executor for JITExecutor {
                             && exec.plan.is_introspection_query;
 
                     let jit_resp = exec
-                        .execute(&self.req_ctx, jit_request)
+                        .execute(&self.req_ctx, &jit_request)
                         .await
                         .into_async_graphql();
 
                     if is_introspection_query {
-                        let async_resp = self.app_ctx.execute(introspection_req).await;
+                        let async_req =
+                            async_graphql::Request::from(jit_request).only_introspection();
+                        let async_resp = self.app_ctx.execute(async_req).await;
                         jit_resp.merge_right(async_resp)
                     } else {
                         jit_resp

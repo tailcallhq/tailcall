@@ -29,6 +29,10 @@ impl<Value> Variables<Value> {
     pub fn get(&self, key: &str) -> Option<&Value> {
         self.0.get(key)
     }
+    pub fn into_hashmap(self) -> HashMap<String, Value> {
+        self.0
+    }
+
     pub fn insert(&mut self, key: String, value: Value) {
         self.0.insert(key, value);
     }
