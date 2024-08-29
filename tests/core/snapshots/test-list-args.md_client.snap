@@ -27,7 +27,7 @@ scalar JSON
 scalar PhoneNumber
 
 type Query {
-  f1(q: [Int]!): T1
+  f1(q: [Int!]!): T1
 }
 
 type T1 {
