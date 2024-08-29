@@ -350,7 +350,8 @@ impl Builder {
 
         let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
             if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
-                Self::is_introspection_query(gql_field.name.node.as_str())
+                let query = gql_field.name.node.as_str();
+                query.contains("__schema") || query.contains("__type")
             } else {
                 false
             }
