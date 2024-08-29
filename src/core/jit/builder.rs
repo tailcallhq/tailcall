@@ -137,9 +137,8 @@ impl Builder {
         type_condition: &str,
         exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> (Vec<Field<Flat, Value>>, bool) {
+    ) -> Vec<Field<Flat, Value>> {
         let mut fields = vec![];
-        let mut is_for_introspection = false;
         for selection in &selection.items {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
@@ -149,10 +148,6 @@ impl Builder {
                     // then we can skip the field from the plan
                     if conditions.is_const_skip() {
                         continue;
-                    }
-
-                    if Self::is_introspection_query(gql_field.name.node.as_str()) {
-                        is_for_introspection = true;
                     }
 
                     let mut directives = Vec::with_capacity(gql_field.directives.len());
@@ -209,13 +204,12 @@ impl Builder {
                         };
 
                         let id = FieldId::new(self.field_id.next());
-                        let (child_fields, is_introspection_query) = self.iter(
+                        let child_fields = self.iter(
                             &gql_field.selection_set.node,
                             type_of.name(),
                             Some(Flat::new(id.clone())),
                             fragments,
                         );
-                        is_for_introspection = is_for_introspection || is_introspection_query;
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
@@ -269,14 +263,12 @@ impl Builder {
                     if let Some(fragment) =
                         fragments.get(fragment_spread.fragment_name.node.as_str())
                     {
-                        let (iter_fields, is_introspection_query) = self.iter(
+                        fields.extend(self.iter(
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
                             exts.clone(),
                             fragments,
-                        );
-                        is_for_introspection = is_for_introspection || is_introspection_query;
-                        fields.extend(iter_fields);
+                        ));
                     }
                 }
                 Selection::InlineFragment(Positioned { node: fragment, .. }) => {
@@ -286,20 +278,17 @@ impl Builder {
                         .map(|cond| cond.node.on.node.as_str())
                         .unwrap_or(type_condition);
 
-                    let (iter_fields, is_introspection_query) = self.iter(
+                    fields.extend(self.iter(
                         &fragment.selection_set.node,
                         type_of,
                         exts.clone(),
                         fragments,
-                    );
-
-                    is_for_introspection = is_for_introspection || is_introspection_query;
-                    fields.extend(iter_fields);
+                    ));
                 }
             }
         }
 
-        (fields, is_for_introspection)
+        fields
     }
 
     #[inline(always)]
@@ -356,12 +345,18 @@ impl Builder {
         let name = self
             .get_type(operation.ty)
             .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
-        let (iter_fields, is_introspection_query) =
-            self.iter(&operation.selection_set.node, name, None, &fragments);
-        fields.extend(iter_fields);
+        fields.extend(self.iter(&operation.selection_set.node, name, None, &fragments));
 
         // skip the fields depending on variables.
         fields.retain(|f| !f.skip(variables));
+
+        let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
+            if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
+                Self::is_introspection_query(&gql_field.name.node.as_str())
+            } else {
+                false
+            }
+        });
 
         let plan = OperationPlan::new(
             fields,
