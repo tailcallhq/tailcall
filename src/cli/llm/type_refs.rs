@@ -22,7 +22,7 @@ impl<'a> TypeUsageIndex<'a> {
                     .types
                     .values()
                     .flat_map(|t_| &t_.fields)
-                    .filter(|(_, field_)| field_.type_of.as_str() == type_name.as_str())
+                    .filter(|(_, field_)| field_.type_of.name() == type_name.as_str())
                     .fold(IndexMap::new(), |mut acc, (field_name, _)| {
                         *acc.entry(field_name.as_str()).or_insert(0) += 1;
                         acc
