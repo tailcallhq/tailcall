@@ -27,7 +27,7 @@ type User {
     body:
       id: 1
       name: "John Smith"
-      birthday: "12-06-1998"
+      birthday: "2023-03-08T12:45:26-05:00"
 ```
 
 ```yml @test
@@ -64,6 +64,7 @@ type User {
         me {
           id
           name
+          birthday
         }
       }
 ```

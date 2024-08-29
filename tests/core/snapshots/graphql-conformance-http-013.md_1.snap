@@ -34,7 +34,8 @@ expression: response
       },
       "me": {
         "id": 1,
-        "name": "John Smith"
+        "name": "John Smith",
+        "birthday": "2023-03-08T12:45:26-05:00"
       }
     }
   }
