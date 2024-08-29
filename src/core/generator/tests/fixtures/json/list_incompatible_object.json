@@ -2,7 +2,7 @@
   "request": {
     "url": "https://example.com/api/v2/users"
   },
-  "fieldName": "users",
+  "fieldName": "inCompatibleObjects",
   "response": {
     "status": 200,
     "body": [
