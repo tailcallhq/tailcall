@@ -1,3 +1,5 @@
+use std::borrow::BorrowMut;
+
 use derive_setters::Setters;
 use serde::Serialize;
 
@@ -35,7 +37,7 @@ impl<Value, Error> Response<Value, Error> {
 impl MergeRight for async_graphql::Response {
     fn merge_right(mut self, other: Self) -> Self {
         if let async_graphql::Value::Object(mut other_obj) = other.data {
-            if let async_graphql::Value::Object(self_obj) = self.data.clone() {
+            if let async_graphql::Value::Object(self_obj) = std::mem::take(self.data.borrow_mut()) {
                 other_obj.extend(self_obj);
                 self.data = async_graphql::Value::Object(other_obj);
             }
