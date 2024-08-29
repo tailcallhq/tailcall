@@ -125,11 +125,7 @@ impl Builder {
                 .unwrap_or(Condition::True),
         }
     }
-
-    fn is_introspection_query(query: &str) -> bool {
-        query.contains("__schema") || query.contains("__type")
-    }
-
+  
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter(
