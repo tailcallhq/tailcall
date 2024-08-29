@@ -1,10 +1,11 @@
 use convert_case::{Case, Casing};
 
 use super::http_directive_generator::HttpDirectiveGenerator;
-use crate::core::config::{Arg, Config, Field, GraphQLOperationType, Resolver, Type};
+use crate::core::config::{Arg, Config, Field, GraphQLOperationType, Resolver};
 use crate::core::generator::json::types_generator::TypeGenerator;
 use crate::core::generator::{NameGenerator, RequestSample};
 use crate::core::valid::Valid;
+use crate::core::{config, Type};
 
 pub struct OperationTypeGenerator;
 
@@ -17,9 +18,13 @@ impl OperationTypeGenerator {
         name_generator: &NameGenerator,
         mut config: Config,
     ) -> Valid<Config, String> {
+        let type_of = Type::from(root_type.to_owned());
         let mut field = Field {
-            list: request_sample.res_body.is_array(),
-            type_of: root_type.to_owned(),
+            type_of: if request_sample.res_body.is_array() {
+                type_of.into_list()
+            } else {
+                type_of
+            },
             ..Default::default()
         };
 
@@ -39,9 +44,10 @@ impl OperationTypeGenerator {
                 http.body = Some(format!("{{{{.args.{}}}}}", arg_name));
                 http.method = request_sample.method.to_owned();
             }
-            field
-                .args
-                .insert(arg_name, Arg { type_of: root_ty, ..Default::default() });
+            field.args.insert(
+                arg_name,
+                Arg { type_of: root_ty.into(), ..Default::default() },
+            );
         }
 
         // if type is already present, then append the new field to it else create one.
@@ -54,7 +60,7 @@ impl OperationTypeGenerator {
                 .fields
                 .insert(request_sample.field_name.to_owned(), field);
         } else {
-            let mut ty = Type::default();
+            let mut ty = config::Type::default();
             ty.fields
                 .insert(request_sample.field_name.to_owned(), field);
             config.types.insert(req_op.to_owned(), ty);
@@ -101,7 +107,7 @@ mod test {
         let mut fields = BTreeMap::default();
         fields.insert(
             "post".to_owned(),
-            Field { type_of: "Int".to_owned(), ..Default::default() },
+            Field { type_of: "Int".to_owned().into(), ..Default::default() },
         );
 
         let type_ = Type { fields, ..Default::default() };

@@ -36,10 +36,10 @@ impl TypeMerger {
         for current_type in type_list {
             for (key, new_field) in current_type.fields {
                 if let Some(existing_field) = ty.fields.get(&key) {
-                    if existing_field.type_of.is_empty()
-                        || existing_field.type_of == Scalar::Empty.to_string()
-                        || (existing_field.type_of == Scalar::JSON.to_string()
-                            && new_field.type_of != Scalar::Empty.to_string())
+                    if existing_field.type_of.name().is_empty()
+                        || existing_field.type_of.name() == &Scalar::Empty.to_string()
+                        || (existing_field.type_of.name() == &Scalar::JSON.to_string()
+                            && new_field.type_of.name() != &Scalar::Empty.to_string())
                     {
                         ty.fields.insert(key, new_field);
                     }
@@ -76,25 +76,29 @@ impl<'a> TypeGenerator<'a> {
     ) -> Type {
         let mut ty = Type::default();
         for (json_property, json_val) in json_object {
-            let field = if !JSONValidator::is_graphql_compatible(json_val) {
+            let mut field = if !JSONValidator::is_graphql_compatible(json_val) {
                 // if object, array is empty or object has in-compatible fields then
                 // generate scalar for it.
                 Field {
-                    type_of: self.generate_scalar(config).to_string(),
-                    list: json_val.is_array(),
+                    type_of: self.generate_scalar(config).to_string().into(),
                     ..Default::default()
                 }
             } else {
                 let mut field = Field::default();
                 if is_primitive(json_val) {
-                    field.type_of = to_gql_type(json_val);
+                    field.type_of = to_gql_type(json_val).into();
                 } else {
                     let type_name = self.generate_types(json_val, config);
-                    field.type_of = type_name;
-                    field.list = json_val.is_array()
+                    field.type_of = type_name.into();
                 }
                 field
             };
+            field.type_of = if json_val.is_array() {
+                field.type_of.into_list()
+            } else {
+                field.type_of
+            };
+
             ty.fields.insert(json_property.to_string(), field);
         }
         ty
