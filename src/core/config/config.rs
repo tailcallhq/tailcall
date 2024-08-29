@@ -962,6 +962,9 @@ impl Config {
                     stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
                     stack.push(field.type_of.clone());
                 }
+                for interface in typ.implements.iter() {
+                    stack.push(interface.clone())
+                }
             }
         }
 
