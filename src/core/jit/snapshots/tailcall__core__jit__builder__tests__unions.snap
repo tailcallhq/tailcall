@@ -9,7 +9,9 @@ expression: plan.into_nested()
         output_name: "getUserIdOrEmail",
         ir: "Some(..)",
         type_of: UserIdOrEmail,
-        type_condition: "Query",
+        type_condition: Some(
+            "Query",
+        ),
         args: [
             Arg {
                 id: 0,
@@ -31,7 +33,9 @@ expression: plan.into_nested()
                         name: "id",
                         output_name: "id",
                         type_of: ID!,
-                        type_condition: "UserId",
+                        type_condition: Some(
+                            "UserId",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -39,7 +43,9 @@ expression: plan.into_nested()
                         name: "email",
                         output_name: "email",
                         type_of: String!,
-                        type_condition: "UserEmail",
+                        type_condition: Some(
+                            "UserEmail",
+                        ),
                         directives: [],
                     },
                 ],

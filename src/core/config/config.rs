@@ -123,7 +123,7 @@ impl Display for Type {
         writeln!(f, "{{")?;
 
         for (field_name, field) in &self.fields {
-            writeln!(f, "  {}: {},", field_name, field.type_of)?;
+            writeln!(f, "  {}: {:?},", field_name, field.type_of)?;
         }
         writeln!(f, "}}")
     }
@@ -235,22 +235,7 @@ pub struct Field {
     ///
     /// Refers to the type of the value the field can be resolved to.
     #[serde(rename = "type", default, skip_serializing_if = "is_default")]
-    pub type_of: String,
-
-    ///
-    /// Flag to indicate the type is a list.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub list: bool,
-
-    ///
-    /// Flag to indicate the type is required.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub required: bool,
-
-    ///
-    /// Flag to indicate if the type inside the list is required.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub list_type_required: bool,
+    pub type_of: crate::core::Type,
 
     ///
     /// Map of argument name and its definition.
@@ -318,29 +303,25 @@ impl Field {
             false
         }
     }
-    pub fn into_list(mut self) -> Self {
-        self.list = true;
-        self
-    }
 
     pub fn int() -> Self {
-        Self { type_of: "Int".to_string(), ..Default::default() }
+        Self { type_of: "Int".to_string().into(), ..Default::default() }
     }
 
     pub fn string() -> Self {
-        Self { type_of: "String".to_string(), ..Default::default() }
+        Self { type_of: "String".to_string().into(), ..Default::default() }
     }
 
     pub fn float() -> Self {
-        Self { type_of: "Float".to_string(), ..Default::default() }
+        Self { type_of: "Float".to_string().into(), ..Default::default() }
     }
 
     pub fn boolean() -> Self {
-        Self { type_of: "Boolean".to_string(), ..Default::default() }
+        Self { type_of: "Boolean".to_string().into(), ..Default::default() }
     }
 
     pub fn id() -> Self {
-        Self { type_of: "ID".to_string(), ..Default::default() }
+        Self { type_of: "ID".to_string().into(), ..Default::default() }
     }
 
     pub fn is_omitted(&self) -> bool {
@@ -397,11 +378,7 @@ pub struct Inline {
 #[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Arg {
     #[serde(rename = "type")]
-    pub type_of: String,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub list: bool,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub required: bool,
+    pub type_of: crate::core::Type,
     #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
@@ -843,8 +820,8 @@ impl Config {
         } else if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
-                if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
-                    types = self.find_connections(&field.type_of, types);
+                if !types.contains(field.type_of.name()) && !self.is_scalar(field.type_of.name()) {
+                    types = self.find_connections(field.type_of.name(), types);
                 }
             }
         }
@@ -865,8 +842,8 @@ impl Config {
     pub fn input_types(&self) -> HashSet<String> {
         self.arguments()
             .iter()
-            .filter(|(_, arg)| !self.is_scalar(&arg.type_of))
-            .map(|(_, arg)| arg.type_of.as_str())
+            .filter(|(_, arg)| !self.is_scalar(arg.type_of.name()))
+            .map(|(_, arg)| arg.type_of.name())
             .fold(HashSet::new(), |types, type_of| {
                 self.find_connections(type_of, types)
             })
@@ -959,8 +936,11 @@ impl Config {
             } else if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
                 for field in typ.fields.values() {
-                    stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
-                    stack.push(field.type_of.clone());
+                    stack.extend(field.args.values().map(|arg| arg.type_of.name().to_owned()));
+                    stack.push(field.type_of.name().clone());
+                }
+                for interface in typ.implements.iter() {
+                    stack.push(interface.clone())
                 }
             }
         }

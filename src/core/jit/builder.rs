@@ -16,6 +16,7 @@ use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
 use crate::core::merge_right::MergeRight;
+use crate::core::Type;
 
 #[derive(PartialEq, strum_macros::Display)]
 enum Condition {
@@ -220,7 +221,7 @@ impl Builder {
                                 .unwrap_or(field_name.to_owned()),
                             ir,
                             type_of,
-                            type_condition: type_condition.to_string(),
+                            type_condition: Some(type_condition.to_string()),
                             skip,
                             include,
                             args,
@@ -237,11 +238,10 @@ impl Builder {
                             name: field_name.to_string(),
                             output_name: field_name.to_string(),
                             ir: None,
-                            type_of: crate::core::blueprint::Type::NamedType {
-                                name: "String".to_owned(),
-                                non_null: true,
-                            },
-                            type_condition: type_condition.to_string(),
+                            type_of: Type::Named { name: "String".to_owned(), non_null: true },
+                            // __typename has a special meaning and could be applied
+                            // to any type
+                            type_condition: None,
                             skip,
                             include,
                             args: Vec::new(),

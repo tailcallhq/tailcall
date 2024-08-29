@@ -48,7 +48,7 @@ type User {
   id: ID!
   name: String!
   profilePic(size: Int! = 100, width: Int, height: Int = 100): String!
-  searchComments(query: [String]! = [["today"]]): String!
+  searchComments(query: [[String!]!]! = [["today"]]): String!
 }
 
 input VideoSize {

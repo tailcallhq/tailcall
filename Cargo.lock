@@ -2457,7 +2457,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -5161,9 +5161,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json_borrow"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a60291362be3646d15fb0b5a5bddfd8003ebf013b2186a3c60a534fd35d6a26"
+checksum = "176a77dea19cf9b2cfe7f9e31966112ef8282a709af7c0a0fb28fc6347c7ba78"
 dependencies = [
  "serde",
  "serde_json",
