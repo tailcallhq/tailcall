@@ -18,6 +18,19 @@ type User {
 }
 ```
 
+```yml @mock
+- request:
+    method: GET
+    url: http://upstream/me
+  response:
+    status: 200
+    body:
+      id: 1
+      name: "John Smith"
+      birthday: "12-06-1998"
+```
+
+
 ```yml @test
 - method: POST
   url: http://localhost:8080/graphql
@@ -25,13 +38,33 @@ type User {
     query: |
       {
         __type(name: "User") {
-          name
-          fields {
             name
-            type {
+            fields {
               name
+              type {
+                name
+              }
             }
-          }
+        }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      {
+        __type(name: "User") {
+            name
+            fields {
+              name
+              type {
+                name
+              }
+            }
+        }
+        me {
+          id
+          name
         }
       }
 ```

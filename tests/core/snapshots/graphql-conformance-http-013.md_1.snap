@@ -1,0 +1,41 @@
+---
+source: tests/core/spec.rs
+expression: response
+---
+{
+  "status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "data": {
+      "__type": {
+        "name": "User",
+        "fields": [
+          {
+            "name": "birthday",
+            "type": {
+              "name": "Date"
+            }
+          },
+          {
+            "name": "id",
+            "type": {
+              "name": "String"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "name": "String"
+            }
+          }
+        ]
+      },
+      "me": {
+        "id": 1,
+        "name": "John Smith"
+      }
+    }
+  }
+}
