@@ -13,7 +13,7 @@ use crate::core::jit::synth::Synth;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
-    plan: OperationPlan<ConstValue>,
+    pub plan: OperationPlan<ConstValue>,
 }
 
 impl ConstValueExecutor {

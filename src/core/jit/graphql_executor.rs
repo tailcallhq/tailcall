@@ -32,9 +32,21 @@ impl Executor for JITExecutor {
         async {
             match ConstValueExecutor::new(&jit_request, self.app_ctx.clone()) {
                 Ok(exec) => {
-                    let async_resp = self.app_ctx.execute(introspection_req).await;
-                    let jit_resp = exec.execute(&self.req_ctx, jit_request).await;
-                    jit_resp.into_async_graphql().merge_right(async_resp)
+                    let is_introspection_query =
+                        self.app_ctx.blueprint.server.get_enable_introspection()
+                            && exec.plan.is_introspection_query();
+
+                    let jit_resp = exec
+                        .execute(&self.req_ctx, jit_request)
+                        .await
+                        .into_async_graphql();
+
+                    if is_introspection_query {
+                        let async_resp = self.app_ctx.execute(introspection_req).await;
+                        jit_resp.merge_right(async_resp)
+                    } else {
+                        jit_resp
+                    }
                 }
                 Err(error) => Response::from_errors(vec![error.into()]),
             }

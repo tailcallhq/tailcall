@@ -125,6 +125,10 @@ impl Builder {
         }
     }
 
+    fn is_introspection_query(query: &str) -> bool {
+        query.contains("__schema") || query.contains("__type") || query.contains("__typename")
+    }
+
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter(
@@ -133,8 +137,9 @@ impl Builder {
         type_condition: &str,
         exts: Option<Flat>,
         fragments: &HashMap<&str, &FragmentDefinition>,
-    ) -> Vec<Field<Flat, Value>> {
+    ) -> (Vec<Field<Flat, Value>>, bool) {
         let mut fields = vec![];
+        let mut is_for_introspection = false;
         for selection in &selection.items {
             match &selection.node {
                 Selection::Field(Positioned { node: gql_field, .. }) => {
@@ -144,6 +149,10 @@ impl Builder {
                     // then we can skip the field from the plan
                     if conditions.is_const_skip() {
                         continue;
+                    }
+
+                    if Self::is_introspection_query(gql_field.name.node.as_str()) {
+                        is_for_introspection = true;
                     }
 
                     let mut directives = Vec::with_capacity(gql_field.directives.len());
@@ -200,12 +209,13 @@ impl Builder {
                         };
 
                         let id = FieldId::new(self.field_id.next());
-                        let child_fields = self.iter(
+                        let (child_fields, is_introspection_query) = self.iter(
                             &gql_field.selection_set.node,
                             type_of.name(),
                             Some(Flat::new(id.clone())),
                             fragments,
                         );
+                        is_for_introspection = is_for_introspection || is_introspection_query;
                         let ir = match field_def {
                             QueryField::Field((field_def, _)) => field_def.resolver.clone(),
                             _ => None,
@@ -259,12 +269,14 @@ impl Builder {
                     if let Some(fragment) =
                         fragments.get(fragment_spread.fragment_name.node.as_str())
                     {
-                        fields.extend(self.iter(
+                        let (iter_fields, is_introspection_query) = self.iter(
                             &fragment.selection_set.node,
                             fragment.type_condition.node.on.node.as_str(),
                             exts.clone(),
                             fragments,
-                        ));
+                        );
+                        is_for_introspection = is_for_introspection || is_introspection_query;
+                        fields.extend(iter_fields);
                     }
                 }
                 Selection::InlineFragment(Positioned { node: fragment, .. }) => {
@@ -274,17 +286,20 @@ impl Builder {
                         .map(|cond| cond.node.on.node.as_str())
                         .unwrap_or(type_condition);
 
-                    fields.extend(self.iter(
+                    let (iter_fields, is_introspection_query) = self.iter(
                         &fragment.selection_set.node,
                         type_of,
                         exts.clone(),
                         fragments,
-                    ));
+                    );
+
+                    is_for_introspection = is_for_introspection || is_introspection_query;
+                    fields.extend(iter_fields);
                 }
             }
         }
 
-        fields
+        (fields, is_for_introspection)
     }
 
     #[inline(always)]
@@ -341,12 +356,20 @@ impl Builder {
         let name = self
             .get_type(operation.ty)
             .ok_or(BuildError::RootOperationTypeNotDefined { operation: operation.ty })?;
-        fields.extend(self.iter(&operation.selection_set.node, name, None, &fragments));
+        let (iter_fields, is_introspection_query) =
+            self.iter(&operation.selection_set.node, name, None, &fragments);
+        fields.extend(iter_fields);
 
         // skip the fields depending on variables.
         fields.retain(|f| !f.skip(variables));
 
-        let plan = OperationPlan::new(fields, operation.ty, self.index.clone());
+        let plan = OperationPlan::new(
+            fields,
+            operation.ty,
+            self.index.clone(),
+            is_introspection_query,
+        );
+
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly
