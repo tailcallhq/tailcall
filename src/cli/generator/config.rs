@@ -290,10 +290,10 @@ mod tests {
     #[test]
     fn test_headers_resolve() {
         let mut headers = BTreeMap::new();
-        headers.insert("Authorization".to_owned(), "Bearer {{.env.TOKEN}}".into());
+        let token = "eyJhbGciOiJIUzI1NiIsInR5";
+        headers.insert("Authorization".to_owned(), format!("Bearer {token}"));
 
         let mut env_vars = HashMap::new();
-        let token = "eyJhbGciOiJIUzI1NiIsInR5";
         env_vars.insert("TOKEN".to_owned(), token.to_owned());
 
         let headers = to_headers(headers);
