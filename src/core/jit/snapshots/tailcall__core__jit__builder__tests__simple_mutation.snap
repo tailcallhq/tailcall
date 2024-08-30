@@ -9,7 +9,9 @@ expression: plan.into_nested()
         output_name: "createUser",
         ir: "Some(..)",
         type_of: User,
-        type_condition: "Mutation",
+        type_condition: Some(
+            "Mutation",
+        ),
         args: [
             Arg {
                 id: 0,
@@ -62,7 +64,9 @@ expression: plan.into_nested()
                         name: "id",
                         output_name: "id",
                         type_of: ID!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -70,7 +74,9 @@ expression: plan.into_nested()
                         name: "name",
                         output_name: "name",
                         type_of: String!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -78,7 +84,9 @@ expression: plan.into_nested()
                         name: "email",
                         output_name: "email",
                         type_of: String!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -86,7 +94,9 @@ expression: plan.into_nested()
                         name: "phone",
                         output_name: "phone",
                         type_of: String,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -94,7 +104,9 @@ expression: plan.into_nested()
                         name: "website",
                         output_name: "website",
                         type_of: String,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -102,7 +114,9 @@ expression: plan.into_nested()
                         name: "username",
                         output_name: "username",
                         type_of: String!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                 ],

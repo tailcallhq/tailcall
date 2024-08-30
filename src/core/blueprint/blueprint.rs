@@ -1,5 +1,4 @@
 use std::collections::{BTreeSet, HashMap};
-use std::fmt::Formatter;
 use std::sync::Arc;
 
 use async_graphql::dynamic::{Schema, SchemaBuilder};
@@ -12,8 +11,8 @@ use super::telemetry::Telemetry;
 use super::{GlobalTimeout, Index};
 use crate::core::blueprint::{Server, Upstream};
 use crate::core::ir::model::IR;
-use crate::core::scalar;
 use crate::core::schema_extension::SchemaExtension;
+use crate::core::{scalar, Type};
 
 /// Blueprint is an intermediary representation that allows us to generate
 /// graphQL APIs. It can only be generated from a valid Config.
@@ -26,62 +25,6 @@ pub struct Blueprint {
     pub server: Server,
     pub upstream: Upstream,
     pub telemetry: Telemetry,
-}
-
-#[derive(Clone)]
-pub enum Type {
-    NamedType { name: String, non_null: bool },
-    ListType { of_type: Box<Type>, non_null: bool },
-}
-
-impl std::fmt::Debug for Type {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Type::NamedType { name, non_null } => {
-                if *non_null {
-                    write!(f, "{}!", name)
-                } else {
-                    write!(f, "{}", name)
-                }
-            }
-            Type::ListType { of_type, non_null } => {
-                if *non_null {
-                    write!(f, "[{:?}]!", of_type)
-                } else {
-                    write!(f, "[{:?}]", of_type)
-                }
-            }
-        }
-    }
-}
-
-impl Default for Type {
-    fn default() -> Self {
-        Type::NamedType { name: "JSON".to_string(), non_null: false }
-    }
-}
-
-impl Type {
-    /// gets the name of the type
-    pub fn name(&self) -> &str {
-        match self {
-            Type::NamedType { name, .. } => name,
-            Type::ListType { of_type, .. } => of_type.name(),
-        }
-    }
-
-    /// checks if the type is nullable
-    pub fn is_nullable(&self) -> bool {
-        !match self {
-            Type::NamedType { non_null, .. } => *non_null,
-            Type::ListType { non_null, .. } => *non_null,
-        }
-    }
-
-    /// checks if the type is a list
-    pub fn is_list(&self) -> bool {
-        matches!(self, Type::ListType { .. })
-    }
 }
 
 #[derive(Clone, Debug)]

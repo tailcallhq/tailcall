@@ -9,7 +9,9 @@ expression: plan.into_nested()
         output_name: "user",
         ir: "Some(..)",
         type_of: User,
-        type_condition: "Query",
+        type_condition: Some(
+            "Query",
+        ),
         args: [
             Arg {
                 id: 0,
@@ -31,7 +33,9 @@ expression: plan.into_nested()
                         name: "name",
                         output_name: "name",
                         type_of: String!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -39,7 +43,9 @@ expression: plan.into_nested()
                         name: "email",
                         output_name: "email",
                         type_of: String!,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -47,7 +53,9 @@ expression: plan.into_nested()
                         name: "phone",
                         output_name: "phone",
                         type_of: String,
-                        type_condition: "User",
+                        type_condition: Some(
+                            "User",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -55,7 +63,9 @@ expression: plan.into_nested()
                         name: "title",
                         output_name: "title",
                         type_of: String!,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         directives: [],
                     },
                     Field {
@@ -63,7 +73,9 @@ expression: plan.into_nested()
                         name: "body",
                         output_name: "body",
                         type_of: String!,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         directives: [],
                     },
                 ],

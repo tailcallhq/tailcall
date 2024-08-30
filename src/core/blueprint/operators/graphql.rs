@@ -27,7 +27,7 @@ fn create_related_fields(
             if !field.has_resolver() {
                 map.insert(
                     name.clone(),
-                    create_related_fields(config, &field.type_of, visited),
+                    create_related_fields(config, field.type_of.name(), visited),
                 );
             }
         }
@@ -84,7 +84,7 @@ pub fn update_graphql<'a>(
                 return Valid::succeed(b_field);
             };
 
-            compile_graphql(config, operation_type, &field.type_of, graphql)
+            compile_graphql(config, operation_type, field.type_of.name(), graphql)
                 .map(|resolver| b_field.resolver(Some(resolver)))
                 .and_then(|b_field| b_field.validate_field(type_of, config).map_to(b_field))
         },

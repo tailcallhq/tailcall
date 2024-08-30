@@ -27,5 +27,5 @@ type User {
   name: String!
   profilePic(size: Int! = 100, width: Int, height: Int = 100): String!
     @expr(body: "{{.value.id}}_{{.args.size}}_{{.args.width}}_{{.args.height}}")
-  searchComments(query: [String]! = [["today"]]): String! @expr(body: "video_{{.value.id}}_{{.args.query}}")
+  searchComments(query: [[String!]!]! = [["today"]]): String! @expr(body: "video_{{.value.id}}_{{.args.query}}")
 }
