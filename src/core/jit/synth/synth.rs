@@ -111,8 +111,7 @@ where
         if node.type_of.is_nullable() {
             Ok(Value::null())
         } else {
-            Err(ValidationError::ValueRequired.into())
-                .map_err(|e| self.to_location_error(e, node, path))
+            Err(ValidationError::ValueRequired.into()).map_err(|e| self.to_location_error(e, node, path))
         }
     }
 
@@ -193,8 +192,7 @@ where
                     let mut ans = vec![];
                     for (i, val) in arr.iter().enumerate() {
                         path.push(PathSegment::Index(i));
-                        let val =
-                            self.iter_inner(node, val, &data_path.clone().with_index(i), path)?;
+                        let val = self.iter_inner(node, val, &data_path.clone().with_index(i), path)?;
                         path.pop();
                         ans.push(val);
                     }
