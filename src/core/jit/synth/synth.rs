@@ -51,6 +51,7 @@ where
         Ok(Value::object(data))
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter(
         &'a self,
@@ -116,6 +117,7 @@ where
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter_inner(
         &'a self,
