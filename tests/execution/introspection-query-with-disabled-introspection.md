@@ -1,8 +1,8 @@
-# Test schema inspection
+# Test schema inspection with false flag
 
 ```graphql @config
 schema
-  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0")
+  @server(port: 8001, queryValidation: false, hostname: "0.0.0.0", introspection: false)
   @upstream(baseURL: "http://upstream/", httpCache: 42) {
   query: Query
 }
