@@ -57,7 +57,6 @@ use ir::model::IoId;
 pub use mustache::Mustache;
 pub use tailcall_macros as macros;
 pub use transform::Transform;
-pub use wrapping_type::Type;
 
 pub trait EnvIO: Send + Sync + 'static {
     fn get(&self, key: &str) -> Option<Cow<'_, str>>;
