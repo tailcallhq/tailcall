@@ -3,49 +3,49 @@
   "inputs": [
     {
       "curl": {
-        "src": "https://api.deezer.com/track/3135556",
+        "src": "{{.env.BASE_URL}}/track/3135556",
         "fieldName": "track"
       }
     },
     {
       "curl": {
-        "src": "https://api.deezer.com/album/302127",
+        "src": "{{.env.BASE_URL}}/album/302127",
         "fieldName": "album"
       }
     },
     {
       "curl": {
-        "src": "https://api.deezer.com/artist/27",
+        "src": "{{.env.BASE_URL}}/artist/27",
         "fieldName": "artist"
       }
     },
     {
       "curl": {
-        "src": "https://api.deezer.com/playlist/908622995",
+        "src": "{{.env.BASE_URL}}/playlist/908622995",
         "fieldName": "playlist"
       }
     },
     {
       "curl": {
-        "src": "https://api.deezer.com/chart",
+        "src": "{{.env.BASE_URL}}/chart",
         "fieldName": "chart"
       }
     },
     {
       "curl": {
-        "src": "https://api.deezer.com/editorial",
+        "src": "{{.env.BASE_URL}}/editorial",
         "fieldName": "editorial"
       }
     },
     {
       "curl": {
-        "src": "https://api.deezer.com/user/2529",
+        "src": "{{.env.BASE_URL}}/user/2529",
         "fieldName": "user"
       }
     },
     {
       "curl": {
-        "src": "https://api.deezer.com/search?q=eminem",
+        "src": "{{.env.BASE_URL}}/search?q=eminem",
         "fieldName": "search"
       }
     }
@@ -63,5 +63,11 @@
   "schema": {
     "query": "Query"
   }
+}
+```
+
+```json @env
+{
+  "BASE_URL": "https://api.deezer.com"
 }
 ```
