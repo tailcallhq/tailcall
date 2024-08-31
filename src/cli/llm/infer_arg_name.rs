@@ -90,7 +90,7 @@ impl InferArgName {
                 let args: Vec<_> = field
                     .args
                     .iter()
-                    .map(|(k, v)| (k.clone(), v.type_of.clone()))
+                    .map(|(k, v)| (k.clone(), v.type_of.name().clone()))
                     .collect();
 
                 if !args.is_empty() {
