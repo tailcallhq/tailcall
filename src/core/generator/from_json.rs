@@ -10,7 +10,6 @@ use crate::core::config::transformer::RenameTypes;
 use crate::core::config::{Config, GraphQLOperationType};
 use crate::core::http::Method;
 use crate::core::merge_right::MergeRight;
-use crate::core::mustache::TemplateString;
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::{Valid, Validator};
 
@@ -21,7 +20,7 @@ pub struct RequestSample {
     pub res_body: Value,
     pub field_name: String,
     pub operation_type: GraphQLOperationType,
-    pub headers: Option<BTreeMap<String, TemplateString>>,
+    pub headers: Option<BTreeMap<String, String>>,
 }
 
 impl RequestSample {
@@ -47,7 +46,7 @@ impl RequestSample {
         self
     }
 
-    pub fn with_headers(mut self, headers: Option<BTreeMap<String, TemplateString>>) -> Self {
+    pub fn with_headers(mut self, headers: Option<BTreeMap<String, String>>) -> Self {
         self.headers = headers;
         self
     }

@@ -344,7 +344,22 @@ impl Builder {
         // skip the fields depending on variables.
         fields.retain(|f| !f.skip(variables));
 
-        let plan = OperationPlan::new(fields, operation.ty, self.index.clone());
+        let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
+            if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
+                let query = gql_field.name.node.as_str();
+                query.contains("__schema") || query.contains("__type")
+            } else {
+                false
+            }
+        });
+
+        let plan = OperationPlan::new(
+            fields,
+            operation.ty,
+            self.index.clone(),
+            is_introspection_query,
+        );
+
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly

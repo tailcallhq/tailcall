@@ -16,7 +16,7 @@ use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
 use crate::core::valid::{ValidateInto, Validator};
-use crate::core::Transform;
+use crate::core::{Mustache, Transform};
 
 /// CLI that reads the the config file and generates the required tailcall
 /// configuration.
@@ -75,12 +75,7 @@ impl Generator {
     pub async fn read(&self) -> anyhow::Result<Config<Resolved>> {
         let config_path = &self.config_path;
         let source = ConfigSource::detect(config_path)?;
-        let config_content = self.runtime.file.read(config_path).await?;
-
-        let config: Config = match source {
-            ConfigSource::Json => serde_json::from_str(&config_content)?,
-            ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
-        };
+        let mut config_content = self.runtime.file.read(config_path).await?;
 
         // While reading resolve the internal paths and mustache headers of generalized
         // config.
@@ -89,7 +84,14 @@ impl Generator {
             vars: &Default::default(),
             headers: Default::default(),
         };
-        config.into_resolved(config_path, reader_context)
+        config_content = Mustache::parse(&config_content).render(&reader_context);
+
+        let config: Config = match source {
+            ConfigSource::Json => serde_json::from_str(&config_content)?,
+            ConfigSource::Yml => serde_yaml::from_str(&config_content)?,
+        };
+
+        config.into_resolved(config_path)
     }
 
     /// performs all the i/o's required in the config file and generates
