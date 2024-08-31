@@ -59,16 +59,13 @@ impl Server {
             .enable_all()
             .build()?;
         if watch {
-            RUNTIME
-                .lock()
-                .unwrap()
-                .get_or_insert_with(|| runtime)
-                .spawn(async { self.start().await });
+            let handle = runtime.spawn(async { self.start().await });
+            RUNTIME.lock().unwrap().get_or_insert(runtime);
+            handle.await?
         } else {
             let result = runtime.spawn(async { self.start().await }).await?;
             runtime.shutdown_background();
-            return result;
+            result
         }
-        Ok(())
     }
 }

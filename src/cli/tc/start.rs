@@ -1,10 +1,11 @@
-use lazy_static::lazy_static;
 use std::path::Path;
+use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use notify::{Config, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use lazy_static::lazy_static;
+use notify::{Config, Error, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::time::Instant;
 
 use super::helpers::log_endpoint_set;
@@ -61,13 +62,41 @@ async fn start_watch_server(file_paths: &[String], config_reader: ConfigReader) 
             tracing::error!("Failed to watch path {:?}: {}", path, err);
         }
     }
+    let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+    let watch = tokio::spawn(async move {
+        handle_watch_event(watch_rx, tx).await;
+    });
+    let arc_config_reader = Arc::new(config_reader);
+    let arc_file_paths = Arc::new(file_paths.to_vec());
+    let server = tokio::spawn(async move {
+        loop {
+            tokio::select! {
+                _ = rx.recv() => {
+                let _ = handle_watch_server(
+                &arc_file_paths.clone(),
+                arc_config_reader.clone(),
+                &mut watcher,
+            )
+            .await;
+            }};
+        }
+    });
+    watch.await?;
+    server.await?;
+    Ok(())
+}
 
+/// Handles file change events
+/// Stops the server and notifies server task to restart
+async fn handle_watch_event(
+    watch_rx: Receiver<Result<Event, Error>>,
+    tx: tokio::sync::mpsc::Sender<()>,
+) {
     // Debounce delay to prevent multiple server restarts on a single file change
     // https://users.rust-lang.org/t/problem-with-notify-crate-v6-1/99877
     let debounce_duration = Duration::from_secs(1);
     // ensures the first server start is not blocked
     let mut last_event_time = Instant::now() - (debounce_duration * 4);
-    let arc_config_reader = Arc::new(config_reader);
     loop {
         match watch_rx.recv() {
             Ok(event) => {
@@ -81,29 +110,21 @@ async fn start_watch_server(file_paths: &[String], config_reader: ConfigReader) 
                             last_event_time = now;
 
                             if !event.paths.is_empty() {
-                                {
-                                    let mut prevent_logs = PREVENT_LOGS.lock().unwrap();
-                                    *prevent_logs = true;
-                                }
+                                let mut prevent_logs = PREVENT_LOGS.lock().unwrap();
+                                *prevent_logs = true;
                                 tracing::info!("Reloaded configuration {:?}", event.paths[0]);
                             }
                             if let Some(runtime) = RUNTIME.lock().unwrap().take() {
                                 runtime.shutdown_background();
                             }
-
-                            handle_watch_server(
-                                file_paths,
-                                arc_config_reader.clone(),
-                                &mut watcher,
-                            )
-                            .await
-                            .context("Failed to handle watch server")?;
+                            let _ = tx.send(()).await;
                         }
                     }
                 }
             }
-            Err(e) => tracing::error!("Watch error: {:?}", e),
+            Err(e) => tracing::error!("Error while watching: {:?}", e),
         }
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
 }
 
@@ -126,7 +147,9 @@ async fn handle_watch_server(
 
                 let server = Server::new(config_module);
                 if let Err(err) = server.fork_start(true).await {
-                    tracing::error!("Failed to start server: {}", err);
+                    if !err.to_string().contains("task") {
+                        tracing::error!("Failed to start server: {}", err);
+                    }
                 }
             }
             Err(err) => {
