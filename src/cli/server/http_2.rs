@@ -9,10 +9,11 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
+
 use crate::cli::tc::start::PREVENT_LOGS;
-use crate::cli::CLIError;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::core::http::handle_request;
+use crate::core::Errata;
 
 pub async fn start_http_2(
     sc: Arc<ServerConfig>,
@@ -64,7 +65,7 @@ pub async fn start_http_2(
             builder.serve(make_svc_single_req).await
         };
 
-    let result = server.map_err(CLIError::from);
+    let result = server.map_err(Errata::from);
 
     Ok(result?)
 }

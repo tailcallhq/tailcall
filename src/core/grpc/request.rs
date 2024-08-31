@@ -160,7 +160,7 @@ mod tests {
 
         if let Err(err) = result {
             match err.downcast_ref::<Error>() {
-                Some(Error::GRPCError {
+                Some(Error::GRPC {
                     grpc_code,
                     grpc_description,
                     grpc_status_message,

@@ -16,6 +16,7 @@ use crate::core::blueprint::{Blueprint, Index, QueryField};
 use crate::core::counter::{Count, Counter};
 use crate::core::jit::model::OperationPlan;
 use crate::core::merge_right::MergeRight;
+use crate::core::Type;
 
 #[derive(PartialEq, strum_macros::Display)]
 enum Condition {
@@ -220,7 +221,7 @@ impl Builder {
                                 .unwrap_or(field_name.to_owned()),
                             ir,
                             type_of,
-                            type_condition: type_condition.to_string(),
+                            type_condition: Some(type_condition.to_string()),
                             skip,
                             include,
                             args,
@@ -237,11 +238,10 @@ impl Builder {
                             name: field_name.to_string(),
                             output_name: field_name.to_string(),
                             ir: None,
-                            type_of: crate::core::blueprint::Type::NamedType {
-                                name: "String".to_owned(),
-                                non_null: true,
-                            },
-                            type_condition: type_condition.to_string(),
+                            type_of: Type::Named { name: "String".to_owned(), non_null: true },
+                            // __typename has a special meaning and could be applied
+                            // to any type
+                            type_condition: None,
                             skip,
                             include,
                             args: Vec::new(),
@@ -344,7 +344,22 @@ impl Builder {
         // skip the fields depending on variables.
         fields.retain(|f| !f.skip(variables));
 
-        let plan = OperationPlan::new(fields, operation.ty, self.index.clone());
+        let is_introspection_query = operation.selection_set.node.items.iter().any(|f| {
+            if let Selection::Field(Positioned { node: gql_field, .. }) = &f.node {
+                let query = gql_field.name.node.as_str();
+                query.contains("__schema") || query.contains("__type")
+            } else {
+                false
+            }
+        });
+
+        let plan = OperationPlan::new(
+            fields,
+            operation.ty,
+            self.index.clone(),
+            is_introspection_query,
+        );
+
         // TODO: operation from [ExecutableDocument] could contain definitions for
         // default values of arguments. That info should be passed to
         // [InputResolver] to resolve defaults properly

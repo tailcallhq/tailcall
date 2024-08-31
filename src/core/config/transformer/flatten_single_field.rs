@@ -31,7 +31,7 @@ fn get_single_field_path(
                 let sub_path = get_single_field_path(
                     config,
                     sub_field_name,
-                    &sub_field.type_of,
+                    sub_field.type_of.name(),
                     visited_types,
                 );
                 if let Some(sub_path) = sub_path {
@@ -63,7 +63,7 @@ impl Transform for FlattenSingleField {
                 if let Some(path) = get_single_field_path(
                     &origin_config,
                     field_name,
-                    &field.type_of,
+                    field.type_of.name(),
                     &mut visited_types,
                 ) {
                     if path.len() > 1 {

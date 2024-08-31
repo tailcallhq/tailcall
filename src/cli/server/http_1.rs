@@ -4,10 +4,11 @@ use hyper::service::{make_service_fn, service_fn};
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
+
 use crate::cli::tc::start::PREVENT_LOGS;
-use crate::cli::CLIError;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::core::http::handle_request;
+use crate::core::Errata;
 
 pub async fn start_http_1(
     sc: Arc<ServerConfig>,
@@ -32,7 +33,7 @@ pub async fn start_http_1(
         }
     });
     let builder = hyper::Server::try_bind(&addr)
-        .map_err(CLIError::from)?
+        .map_err(Errata::from)?
         .http1_pipeline_flush(sc.app_ctx.blueprint.server.pipeline_flush);
     let prevent_logs = *PREVENT_LOGS.lock().unwrap();
     if !prevent_logs {
@@ -52,7 +53,7 @@ pub async fn start_http_1(
             builder.serve(make_svc_single_req).await
         };
 
-    let result = server.map_err(CLIError::from);
+    let result = server.map_err(Errata::from);
 
     Ok(result?)
 }

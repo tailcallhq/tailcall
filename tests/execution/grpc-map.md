@@ -31,7 +31,7 @@ schema @server @upstream {
   query: Query
 }
 
-input map__MapRequest @tag(id: "map.MapRequest") {
+input map__MapRequest {
   map: JSON!
 }
 
@@ -40,7 +40,7 @@ type Query {
     @grpc(body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
 }
 
-type map__MapResponse @tag(id: "map.MapResponse") {
+type map__MapResponse {
   map: JSON!
 }
 ```
