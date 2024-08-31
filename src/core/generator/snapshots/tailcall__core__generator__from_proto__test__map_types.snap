@@ -11,7 +11,7 @@ input map__MapRequest {
 }
 
 type Query {
-  map__MapService__GetMap(mapRequest: map__MapRequest!): map__MapResponse! @grpc(body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
+  map__MapService__GetMap(mapRequest: map__MapRequest!): map__MapResponse @grpc(body: "{{.args.mapRequest}}", method: "map.MapService.GetMap")
 }
 
 type map__MapResponse {

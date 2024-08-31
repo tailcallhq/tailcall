@@ -9,6 +9,7 @@ use crate::core::scalar;
 /// A read optimized index of all the types in the Blueprint. Provide O(1)
 /// access to getting any field information.
 
+#[derive(Debug)]
 pub struct Index {
     map: IndexMap<String, (Definition, IndexMap<String, QueryField>)>,
     schema: SchemaDefinition,
@@ -36,6 +37,22 @@ impl Index {
         matches!(def, Some(Definition::Scalar(_))) || scalar::Scalar::is_predefined(type_name)
     }
 
+    pub fn type_is_enum(&self, type_name: &str) -> bool {
+        let def = self.map.get(type_name).map(|(def, _)| def);
+
+        matches!(def, Some(Definition::Enum(_)))
+    }
+
+    pub fn validate_enum_value(&self, type_name: &str, value: &str) -> bool {
+        let def = self.map.get(type_name).map(|(def, _)| def);
+
+        if let Some(Definition::Enum(enum_)) = def {
+            enum_.enum_values.iter().any(|v| v.name == value)
+        } else {
+            false
+        }
+    }
+
     pub fn get_field(&self, type_name: &str, field_name: &str) -> Option<&QueryField> {
         self.map
             .get(type_name)
@@ -48,6 +65,18 @@ impl Index {
 
     pub fn get_mutation(&self) -> Option<&str> {
         self.schema.mutation.as_deref()
+    }
+
+    pub fn is_type_implements(&self, type_name: &str, type_or_interface: &str) -> bool {
+        if type_name == type_or_interface {
+            return true;
+        }
+
+        if let Some((Definition::Object(obj), _)) = self.map.get(type_name) {
+            obj.implements.contains(type_or_interface)
+        } else {
+            false
+        }
     }
 }
 
@@ -141,5 +170,87 @@ impl From<&Blueprint> for Index {
         }
 
         Self { map, schema: blueprint.schema.to_owned() }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Index;
+    use crate::core::blueprint::Blueprint;
+    use crate::core::config::ConfigModule;
+    use crate::include_config;
+
+    fn setup() -> Index {
+        let config = include_config!("./fixture/all-constructs.graphql").unwrap();
+        let cfg_module = ConfigModule::from(config);
+        let blueprint = Blueprint::try_from(&cfg_module).unwrap();
+
+        Index::from(&blueprint)
+    }
+
+    #[test]
+    fn test_from_blueprint() {
+        let index = setup();
+        insta::assert_debug_snapshot!(index);
+    }
+
+    #[test]
+    fn test_is_scalar() {
+        let index = setup();
+        assert!(index.type_is_scalar("Int"));
+        assert!(index.type_is_scalar("String"));
+
+        assert!(!index.type_is_scalar("Color"));
+    }
+
+    #[test]
+    fn test_is_enum() {
+        let index = setup();
+        assert!(index.type_is_enum("Status"));
+        assert!(!index.type_is_enum("Int"));
+    }
+
+    #[test]
+    fn test_validate_enum_value() {
+        let index = setup();
+        assert!(index.validate_enum_value("Status", "ACTIVE"));
+        assert!(!index.validate_enum_value("Status", "YELLOW"));
+        assert!(!index.validate_enum_value("Int", "1"));
+    }
+
+    #[test]
+    fn test_get_field() {
+        let index = setup();
+        assert!(index.get_field("Query", "user").is_some());
+        assert!(index.get_field("Query", "non_existent_field").is_none());
+        assert!(index.get_field("Status", "Pending").is_none());
+    }
+
+    #[test]
+    fn test_get_query() {
+        let index = setup();
+        assert_eq!(index.get_query(), "Query");
+    }
+
+    #[test]
+    fn test_get_mutation() {
+        let index = setup();
+        assert_eq!(index.get_mutation(), Some("Mutation"));
+    }
+
+    #[test]
+    fn test_get_mutation_none() {
+        let mut index = setup();
+        index.schema.mutation = None;
+        assert_eq!(index.get_mutation(), None);
+    }
+
+    #[test]
+    fn test_is_type_implements() {
+        let index = setup();
+
+        assert!(index.is_type_implements("User", "Node"));
+        assert!(index.is_type_implements("Post", "Post"));
+        assert!(!index.is_type_implements("Node", "User"));
     }
 }

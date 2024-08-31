@@ -136,10 +136,10 @@ impl<'a> PathTracker<'a> {
                     } else {
                         let mut visited = visited.clone();
                         visited.insert((type_name, field_name));
-                        let is_list = is_list | field.list;
+                        let is_list = is_list | field.type_of.is_list();
                         chunks = chunks.concat(self.iter(
                             path,
-                            TypeName::new(field.type_of.as_str()),
+                            TypeName::new(field.type_of.name()),
                             is_list,
                             visited,
                         ))

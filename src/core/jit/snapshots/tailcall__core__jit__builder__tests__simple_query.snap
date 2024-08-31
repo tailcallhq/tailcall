@@ -6,39 +6,45 @@ expression: plan.into_nested()
     Field {
         id: 0,
         name: "posts",
+        output_name: "posts",
         ir: "Some(..)",
         type_of: [Post],
-        type_condition: "Query",
+        type_condition: Some(
+            "Query",
+        ),
         extensions: Some(
             Nested(
                 [
                     Field {
                         id: 1,
                         name: "user",
+                        output_name: "user",
                         ir: "Some(..)",
                         type_of: User,
-                        type_condition: "Post",
+                        type_condition: Some(
+                            "Post",
+                        ),
                         extensions: Some(
                             Nested(
                                 [
                                     Field {
                                         id: 2,
                                         name: "id",
+                                        output_name: "id",
                                         type_of: ID!,
-                                        type_condition: "User",
-                                        is_scalar: true,
+                                        type_condition: Some(
+                                            "User",
+                                        ),
                                         directives: [],
                                     },
                                 ],
                             ),
                         ),
-                        is_scalar: false,
                         directives: [],
                     },
                 ],
             ),
         ),
-        is_scalar: false,
         directives: [],
     },
 ]

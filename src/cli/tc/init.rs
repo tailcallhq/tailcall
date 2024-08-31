@@ -5,10 +5,11 @@ use anyhow::Result;
 
 use super::helpers::{FILE_NAME, JSON_FILE_NAME, YML_FILE_NAME};
 use crate::cli::runtime::{confirm_and_write, create_directory, select_prompt};
-use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source, Type};
+use crate::core::config::{Config, Expr, Field, Resolver, RootSchema, Source};
 use crate::core::error::Error;
 use crate::core::merge_right::MergeRight;
 use crate::core::runtime::TargetRuntime;
+use crate::core::{config, Type};
 
 pub(super) async fn init_command(runtime: TargetRuntime, folder_path: &str) -> Result<()> {
     create_directory(folder_path).await?;
@@ -78,13 +79,12 @@ async fn confirm_and_write_yml(
 
 fn main_config() -> Config {
     let field = Field {
-        type_of: "String".to_string(),
-        required: true,
+        type_of: Type::from("String".to_owned()).into_required(),
         resolver: Some(Resolver::Expr(Expr { body: "Hello, World!".into() })),
         ..Default::default()
     };
 
-    let query_type = Type {
+    let query_type = config::Type {
         fields: BTreeMap::from([("greet".into(), field)]),
         ..Default::default()
     };

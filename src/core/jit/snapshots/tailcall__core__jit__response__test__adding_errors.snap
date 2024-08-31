@@ -1,0 +1,25 @@
+---
+source: src/core/jit/response.rs
+expression: response.into_async_graphql()
+---
+Response {
+    data: String(
+        "Tailcall - Modern GraphQL Runtime",
+    ),
+    extensions: {},
+    cache_control: CacheControl {
+        public: true,
+        max_age: 0,
+    },
+    errors: [
+        ServerError {
+            message: "internal: non-null types require a return value",
+            locations: [
+                Pos(1:2),
+            ],
+            path: [],
+            extensions: None,
+        },
+    ],
+    http_headers: {},
+}

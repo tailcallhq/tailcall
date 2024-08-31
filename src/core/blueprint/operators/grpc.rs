@@ -3,7 +3,7 @@ use std::fmt::Display;
 use prost_reflect::prost_types::FileDescriptorSet;
 use prost_reflect::FieldDescriptor;
 
-use crate::core::blueprint::{FieldDefinition, TypeLike};
+use crate::core::blueprint::FieldDefinition;
 use crate::core::config::group_by::GroupBy;
 use crate::core::config::{Config, ConfigModule, Field, GraphQLOperationType, Grpc, Resolver};
 use crate::core::grpc::protobuf::{ProtobufOperation, ProtobufSet};
@@ -55,7 +55,7 @@ fn to_operation(
 }
 
 fn json_schema_from_field(config: &Config, field: &Field) -> FieldSchema {
-    let field_schema = crate::core::blueprint::to_json_schema_for_field(field, config);
+    let field_schema = crate::core::blueprint::to_json_schema(&field.type_of, config);
     let args_schema = crate::core::blueprint::to_json_schema_for_args(&field.args, config);
     FieldSchema { args: args_schema, field: field_schema }
 }
@@ -73,15 +73,14 @@ fn validate_schema(
 
     Valid::from(JsonSchema::try_from(input_type))
         .zip(Valid::from(JsonSchema::try_from(output_type)))
-        .and_then(|(_input_schema, output_schema)| {
+        .and_then(|(_input_schema, sub_type)| {
             // TODO: add validation for input schema - should compare result grpc.body to
             // schema
-            let fields = field_schema.field;
-            let _args = field_schema.args;
+            let super_type = field_schema.field;
             // TODO: all of the fields in protobuf are optional actually
             // and if we want to mark some fields as required in GraphQL
             // JsonSchema won't match and the validation will fail
-            fields.compare(&output_schema, name)
+            sub_type.is_a(&super_type, name)
         })
 }
 
@@ -108,10 +107,9 @@ fn validate_group_by(
             // TODO: add validation for input schema - should compare result grpc.body to
             // schema considering repeated message type
             let fields = &field_schema.field;
-            let args = &field_schema.args;
-            let fields = JsonSchema::Arr(Box::new(fields.to_owned()));
-            let _args = JsonSchema::Arr(Box::new(args.to_owned()));
-            fields.compare(&output_schema, group_by[0].as_str())
+            // we're treating List types for gRPC as optional.
+            let fields = JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(fields.to_owned()))));
+            fields.is_a(&output_schema, group_by[0].as_str())
         })
 }
 
@@ -181,7 +179,7 @@ pub fn compile_grpc(inputs: CompileGrpc) -> Valid<IR, String> {
             let validation = if validate_with_schema {
                 let field_schema = json_schema_from_field(config_module, field);
                 if grpc.batch_key.is_empty() {
-                    validate_schema(field_schema, &operation, field.name()).unit()
+                    validate_schema(field_schema, &operation, field.type_of.name()).unit()
                 } else {
                     validate_group_by(&field_schema, &operation, grpc.batch_key.clone()).unit()
                 }

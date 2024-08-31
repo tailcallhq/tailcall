@@ -1,0 +1,808 @@
+---
+source: src/core/jit/synth/synth.rs
+expression: "serde_json::to_string_pretty(&val).unwrap()"
+---
+{
+  "posts": [
+    {
+      "id": 1,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 1
+      }
+    },
+    {
+      "id": 2,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 1
+      }
+    },
+    {
+      "id": 3,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 1
+      }
+    },
+    {
+      "id": 4,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 1
+      }
+    },
+    {
+      "id": 5,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 1
+      }
+    },
+    {
+      "id": 6,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 1
+      }
+    },
+    {
+      "id": 7,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 1
+      }
+    },
+    {
+      "id": 8,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 1
+      }
+    },
+    {
+      "id": 9,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 1
+      }
+    },
+    {
+      "id": 10,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 1
+      }
+    },
+    {
+      "id": 11,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 2
+      }
+    },
+    {
+      "id": 12,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 2
+      }
+    },
+    {
+      "id": 13,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 2
+      }
+    },
+    {
+      "id": 14,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 2
+      }
+    },
+    {
+      "id": 15,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 2
+      }
+    },
+    {
+      "id": 16,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 2
+      }
+    },
+    {
+      "id": 17,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 2
+      }
+    },
+    {
+      "id": 18,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 2
+      }
+    },
+    {
+      "id": 19,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 2
+      }
+    },
+    {
+      "id": 20,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 2
+      }
+    },
+    {
+      "id": 21,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 3
+      }
+    },
+    {
+      "id": 22,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 3
+      }
+    },
+    {
+      "id": 23,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 3
+      }
+    },
+    {
+      "id": 24,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 3
+      }
+    },
+    {
+      "id": 25,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 3
+      }
+    },
+    {
+      "id": 26,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 3
+      }
+    },
+    {
+      "id": 27,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 3
+      }
+    },
+    {
+      "id": 28,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 3
+      }
+    },
+    {
+      "id": 29,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 3
+      }
+    },
+    {
+      "id": 30,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 3
+      }
+    },
+    {
+      "id": 31,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 4
+      }
+    },
+    {
+      "id": 32,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 4
+      }
+    },
+    {
+      "id": 33,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 4
+      }
+    },
+    {
+      "id": 34,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 4
+      }
+    },
+    {
+      "id": 35,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 4
+      }
+    },
+    {
+      "id": 36,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 4
+      }
+    },
+    {
+      "id": 37,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 4
+      }
+    },
+    {
+      "id": 38,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 4
+      }
+    },
+    {
+      "id": 39,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 4
+      }
+    },
+    {
+      "id": 40,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 4
+      }
+    },
+    {
+      "id": 41,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 5
+      }
+    },
+    {
+      "id": 42,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 5
+      }
+    },
+    {
+      "id": 43,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 5
+      }
+    },
+    {
+      "id": 44,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 5
+      }
+    },
+    {
+      "id": 45,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 5
+      }
+    },
+    {
+      "id": 46,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 5
+      }
+    },
+    {
+      "id": 47,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 5
+      }
+    },
+    {
+      "id": 48,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 5
+      }
+    },
+    {
+      "id": 49,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 5
+      }
+    },
+    {
+      "id": 50,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 5
+      }
+    },
+    {
+      "id": 51,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 6
+      }
+    },
+    {
+      "id": 52,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 6
+      }
+    },
+    {
+      "id": 53,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 6
+      }
+    },
+    {
+      "id": 54,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 6
+      }
+    },
+    {
+      "id": 55,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 6
+      }
+    },
+    {
+      "id": 56,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 6
+      }
+    },
+    {
+      "id": 57,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 6
+      }
+    },
+    {
+      "id": 58,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 6
+      }
+    },
+    {
+      "id": 59,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 6
+      }
+    },
+    {
+      "id": 60,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 6
+      }
+    },
+    {
+      "id": 61,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 7
+      }
+    },
+    {
+      "id": 62,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 7
+      }
+    },
+    {
+      "id": 63,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 7
+      }
+    },
+    {
+      "id": 64,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 7
+      }
+    },
+    {
+      "id": 65,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 7
+      }
+    },
+    {
+      "id": 66,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 7
+      }
+    },
+    {
+      "id": 67,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 7
+      }
+    },
+    {
+      "id": 68,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 7
+      }
+    },
+    {
+      "id": 69,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 7
+      }
+    },
+    {
+      "id": 70,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 7
+      }
+    },
+    {
+      "id": 71,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 8
+      }
+    },
+    {
+      "id": 72,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 8
+      }
+    },
+    {
+      "id": 73,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 8
+      }
+    },
+    {
+      "id": 74,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 8
+      }
+    },
+    {
+      "id": 75,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 8
+      }
+    },
+    {
+      "id": 76,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 8
+      }
+    },
+    {
+      "id": 77,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 8
+      }
+    },
+    {
+      "id": 78,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 8
+      }
+    },
+    {
+      "id": 79,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 8
+      }
+    },
+    {
+      "id": 80,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 8
+      }
+    },
+    {
+      "id": 81,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 9
+      }
+    },
+    {
+      "id": 82,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 9
+      }
+    },
+    {
+      "id": 83,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 9
+      }
+    },
+    {
+      "id": 84,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 9
+      }
+    },
+    {
+      "id": 85,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 9
+      }
+    },
+    {
+      "id": 86,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 9
+      }
+    },
+    {
+      "id": 87,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 9
+      }
+    },
+    {
+      "id": 88,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 9
+      }
+    },
+    {
+      "id": 89,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 9
+      }
+    },
+    {
+      "id": 90,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 9
+      }
+    },
+    {
+      "id": 91,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 10
+      }
+    },
+    {
+      "id": 92,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 10
+      }
+    },
+    {
+      "id": 93,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 10
+      }
+    },
+    {
+      "id": 94,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 10
+      }
+    },
+    {
+      "id": 95,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 10
+      }
+    },
+    {
+      "id": 96,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 10
+      }
+    },
+    {
+      "id": 97,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 10
+      }
+    },
+    {
+      "id": 98,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 10
+      }
+    },
+    {
+      "id": 99,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 10
+      }
+    },
+    {
+      "id": 100,
+      "__typename": "Post",
+      "user": {
+        "__typename": "User",
+        "id": 10
+      }
+    }
+  ]
+}

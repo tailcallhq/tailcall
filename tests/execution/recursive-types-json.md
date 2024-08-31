@@ -15,7 +15,9 @@
     "Query": {
       "fields": {
         "user": {
-          "type": "User",
+          "type": {
+            "name": "User"
+          },
           "http": {
             "path": "/users/1"
           }
@@ -27,10 +29,14 @@
         "createUser": {
           "args": {
             "user": {
-              "type": "User"
+              "type": {
+                "name": "User"
+              }
             }
           },
-          "type": "User",
+          "type": {
+            "name": "User"
+          },
           "http": {
             "path": "/user",
             "method": "POST",
@@ -42,16 +48,23 @@
     "User": {
       "fields": {
         "id": {
-          "type": "Int",
-          "required": true
+          "type": {
+            "name": "Int",
+            "required": true
+          }
         },
         "name": {
-          "type": "String",
-          "required": true
+          "type": {
+            "name": "String",
+            "required": true
+          }
         },
         "connections": {
-          "type": "Connection",
-          "list": true,
+          "type": {
+            "list": {
+              "name": "Connection"
+            }
+          },
           "http": {
             "path": "/connections/{{.value.id}}"
           }
@@ -61,10 +74,14 @@
     "Connection": {
       "fields": {
         "type": {
-          "type": "String"
+          "type": {
+            "name": "String"
+          }
         },
         "user": {
-          "type": "User"
+          "type": {
+            "name": "User"
+          }
         }
       }
     }

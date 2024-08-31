@@ -1,17 +1,19 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::dynamic::SchemaBuilder;
+use indexmap::IndexMap;
 
 use self::telemetry::to_opentelemetry;
-use super::{Server, TypeLike};
+use super::Server;
 use crate::core::blueprint::compress::compress;
 use crate::core::blueprint::*;
 use crate::core::config::transformer::Required;
-use crate::core::config::{Arg, Batch, Config, ConfigModule, Field};
+use crate::core::config::{Arg, Batch, Config, ConfigModule};
 use crate::core::ir::model::{IO, IR};
 use crate::core::json::JsonSchema;
 use crate::core::try_fold::TryFold;
 use crate::core::valid::{Valid, ValidationError, Validator};
+use crate::core::Type;
 
 pub fn config_blueprint<'a>() -> TryFold<'a, ConfigModule, Blueprint, String> {
     let server = TryFoldConfig::<Blueprint>::new(|config_module, blueprint| {
@@ -67,55 +69,46 @@ pub fn apply_batching(mut blueprint: Blueprint) -> Blueprint {
     blueprint
 }
 
-pub fn to_json_schema_for_field(field: &Field, config: &Config) -> JsonSchema {
-    to_json_schema(field, config)
-}
-pub fn to_json_schema_for_args(args: &BTreeMap<String, Arg>, config: &Config) -> JsonSchema {
-    let mut schema_fields = HashMap::new();
+pub fn to_json_schema_for_args(args: &IndexMap<String, Arg>, config: &Config) -> JsonSchema {
+    let mut schema_fields = BTreeMap::new();
     for (name, arg) in args.iter() {
-        schema_fields.insert(name.clone(), to_json_schema(arg, config));
+        schema_fields.insert(name.clone(), to_json_schema(&arg.type_of, config));
     }
     JsonSchema::Obj(schema_fields)
 }
-fn to_json_schema<T>(field: &T, config: &Config) -> JsonSchema
-where
-    T: TypeLike,
-{
-    let type_of = field.name();
-    let list = field.list();
-    let required = field.non_null();
-    let type_ = config.find_type(type_of);
-    let type_enum_ = config.find_enum(type_of);
-    let schema = if let Some(type_) = type_ {
-        let mut schema_fields = HashMap::new();
-        for (name, field) in type_.fields.iter() {
-            if field.resolver.is_none() {
-                schema_fields.insert(name.clone(), to_json_schema_for_field(field, config));
+pub fn to_json_schema(type_of: &Type, config: &Config) -> JsonSchema {
+    let json_schema = match type_of {
+        Type::Named { name, .. } => {
+            let type_ = config.find_type(name);
+            let type_enum_ = config.find_enum(name);
+
+            if let Some(type_) = type_ {
+                let mut schema_fields = BTreeMap::new();
+                for (name, field) in type_.fields.iter() {
+                    if field.resolver.is_none() {
+                        schema_fields.insert(name.clone(), to_json_schema(&field.type_of, config));
+                    }
+                }
+                JsonSchema::Obj(schema_fields)
+            } else if let Some(type_enum_) = type_enum_ {
+                JsonSchema::Enum(
+                    type_enum_
+                        .variants
+                        .iter()
+                        .map(|variant| variant.name.clone())
+                        .collect::<BTreeSet<String>>(),
+                )
+            } else {
+                JsonSchema::from_scalar_type(name)
             }
         }
-        JsonSchema::Obj(schema_fields)
-    } else if let Some(type_enum_) = type_enum_ {
-        JsonSchema::Enum(
-            type_enum_
-                .variants
-                .iter()
-                .map(|variant| variant.name.clone())
-                .collect::<BTreeSet<String>>(),
-        )
-    } else {
-        JsonSchema::from_scalar_type(type_of)
+        Type::List { of_type, .. } => JsonSchema::Arr(Box::new(to_json_schema(of_type, config))),
     };
 
-    if !required {
-        if list {
-            JsonSchema::Opt(Box::new(JsonSchema::Arr(Box::new(schema))))
-        } else {
-            JsonSchema::Opt(Box::new(schema))
-        }
-    } else if list {
-        JsonSchema::Arr(Box::new(schema))
+    if type_of.is_nullable() {
+        JsonSchema::Opt(Box::new(json_schema))
     } else {
-        schema
+        json_schema
     }
 }
 

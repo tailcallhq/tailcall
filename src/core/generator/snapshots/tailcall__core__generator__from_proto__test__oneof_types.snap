@@ -62,12 +62,20 @@ input oneof__Request__Var__Var1 {
   usual: String
 }
 
+interface oneof__Request__Interface {
+  usual: String
+}
+
+interface oneof__Response__Interface {
+  usual: Int
+}
+
 union oneof__Request = oneof__Request__Var0__Var | oneof__Request__Var0__Var0 | oneof__Request__Var0__Var1 | oneof__Request__Var1__Var | oneof__Request__Var1__Var0 | oneof__Request__Var1__Var1 | oneof__Request__Var__Var | oneof__Request__Var__Var0 | oneof__Request__Var__Var1
 
 union oneof__Response = oneof__Response__Var | oneof__Response__Var0 | oneof__Response__Var1 | oneof__Response__Var2
 
 type Query {
-  oneof__OneOfService__GetOneOf(request: oneof__Request!): oneof__Response! @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
+  oneof__OneOfService__GetOneOf(request: oneof__Request!): oneof__Response @grpc(body: "{{.args.request}}", method: "oneof.OneOfService.GetOneOf")
 }
 
 type oneof__Command {
@@ -78,21 +86,21 @@ type oneof__Payload {
   payload: String
 }
 
-type oneof__Response__Var {
+type oneof__Response__Var implements oneof__Response__Interface {
   usual: Int
 }
 
-type oneof__Response__Var0 {
+type oneof__Response__Var0 implements oneof__Response__Interface {
   payload: oneof__Payload!
   usual: Int
 }
 
-type oneof__Response__Var1 {
+type oneof__Response__Var1 implements oneof__Response__Interface {
   command: oneof__Command!
   usual: Int
 }
 
-type oneof__Response__Var2 {
+type oneof__Response__Var2 implements oneof__Response__Interface {
   response: String!
   usual: Int
 }

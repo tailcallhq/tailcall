@@ -4,12 +4,50 @@ expression: errors
 ---
 [
   {
-    "message": "expected type to be required",
+    "message": "Type 'Option<String>' is not assignable to type 'String'",
     "trace": [
       "Query",
       "news",
       "@grpc",
-      "NewsData"
+      "NewsData",
+      "news",
+      "body"
+    ],
+    "description": null
+  },
+  {
+    "message": "Type 'Option<Number>' is not assignable to type 'Number'",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc",
+      "NewsData",
+      "news",
+      "id"
+    ],
+    "description": null
+  },
+  {
+    "message": "Type 'Option<String>' is not assignable to type 'String'",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc",
+      "NewsData",
+      "news",
+      "postImage"
+    ],
+    "description": null
+  },
+  {
+    "message": "Type 'Option<String>' is not assignable to type 'String'",
+    "trace": [
+      "Query",
+      "news",
+      "@grpc",
+      "NewsData",
+      "news",
+      "title"
     ],
     "description": null
   }

@@ -26,6 +26,14 @@ impl<'json> JsonLike<'json> for serde_json::Value {
         self.as_array()
     }
 
+    fn into_array(self) -> Option<Vec<Self>> {
+        if let Self::Array(vec) = self {
+            Some(vec)
+        } else {
+            None
+        }
+    }
+
     fn as_str(&self) -> Option<&str> {
         self.as_str()
     }
@@ -83,6 +91,18 @@ impl<'json> JsonLike<'json> for serde_json::Value {
 
     fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
         self.as_object()
+    }
+
+    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject<'_>> {
+        self.as_object_mut()
+    }
+
+    fn into_object(self) -> Option<Self::JsonObject<'json>> {
+        if let Self::Object(obj) = self {
+            Some(obj)
+        } else {
+            None
+        }
     }
 
     fn object(obj: Self::JsonObject<'json>) -> Self {

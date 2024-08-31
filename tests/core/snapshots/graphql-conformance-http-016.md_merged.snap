@@ -9,7 +9,8 @@ schema
 }
 
 type Query {
-  userGroups: [User!]! @http(path: "/users")
+  addUsers(userNames: [[String!]!]!): Boolean @http(body: "{{.args.userNames}}", method: "POST", path: "/users")
+  userGroups: [[User!]!]! @http(path: "/users")
 }
 
 type User {

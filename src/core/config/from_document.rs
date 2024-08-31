@@ -1,13 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::parser::types::{
-    BaseType, ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition,
+    ConstDirective, EnumType, FieldDefinition, InputObjectType, InputValueDefinition,
     InterfaceType, ObjectType, SchemaDefinition, ServiceDocument, Type, TypeDefinition, TypeKind,
     TypeSystemDefinition, UnionType,
 };
 use async_graphql::parser::Positioned;
 use async_graphql::Name;
 use async_graphql_value::ConstValue;
+use indexmap::IndexMap;
 
 use super::telemetry::Telemetry;
 use super::Alias;
@@ -294,7 +295,7 @@ fn to_field(field_definition: &FieldDefinition) -> Valid<config::Field, String> 
 fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<config::Field, String> {
     to_common_field(
         field_definition,
-        BTreeMap::new(),
+        IndexMap::new(),
         field_definition
             .default_value
             .as_ref()
@@ -303,15 +304,13 @@ fn to_input_object_field(field_definition: &InputValueDefinition) -> Valid<confi
 }
 fn to_common_field<F>(
     field: &F,
-    args: BTreeMap<String, config::Arg>,
+    args: IndexMap<String, config::Arg>,
     default_value: Option<ConstValue>,
 ) -> Valid<config::Field, String>
 where
     F: FieldLike + HasName,
 {
     let type_of = field.type_of();
-    let base = &type_of.base;
-    let nullable = &type_of.nullable;
     let description = field.description();
     let directives = field.directives();
     let default_value = default_value
@@ -319,10 +318,6 @@ where
         .transpose()
         .map_err(|err| ValidationError::new(err.to_string()))
         .into();
-
-    let type_of = to_type_of(type_of);
-    let list = matches!(&base, BaseType::List(_));
-    let list_type_required = matches!(&base, BaseType::List(type_of) if !type_of.nullable);
     let doc = description.to_owned().map(|pos| pos.node);
 
     config::Resolver::from_directives(directives)
@@ -333,10 +328,7 @@ where
         .fuse(default_value)
         .map(
             |(resolver, cache, omit, modify, protected, default_value)| config::Field {
-                type_of,
-                list,
-                required: !nullable,
-                list_type_required,
+                type_of: type_of.into(),
                 args,
                 doc,
                 modify,
@@ -350,14 +342,8 @@ where
         .trace(pos_name_to_string(field.name()).as_str())
 }
 
-fn to_type_of(type_: &Type) -> String {
-    match &type_.base {
-        BaseType::Named(name) => name.to_string(),
-        BaseType::List(ty) => to_type_of(ty),
-    }
-}
-fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> {
-    let mut args: BTreeMap<String, config::Arg> = BTreeMap::new();
+fn to_args(field_definition: &FieldDefinition) -> IndexMap<String, config::Arg> {
+    let mut args = IndexMap::new();
 
     for arg in field_definition.arguments.iter() {
         let arg_name = pos_name_to_string(&arg.node.name);
@@ -368,9 +354,7 @@ fn to_args(field_definition: &FieldDefinition) -> BTreeMap<String, config::Arg> 
     args
 }
 fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
-    let type_of = to_type_of(&input_value_definition.ty.node);
-    let list = matches!(&input_value_definition.ty.node.base, BaseType::List(_));
-    let required = !input_value_definition.ty.node.nullable;
+    let type_of = &input_value_definition.ty.node;
     let doc = input_value_definition
         .description
         .to_owned()
@@ -385,7 +369,7 @@ fn to_arg(input_value_definition: &InputValueDefinition) -> config::Arg {
     } else {
         None
     };
-    config::Arg { type_of, list, required, doc, modify, default_value }
+    config::Arg { type_of: type_of.into(), doc, modify, default_value }
 }
 
 fn to_union(union_type: UnionType, doc: &Option<String>) -> Union {

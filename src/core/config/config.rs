@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::{self, Display};
 use std::num::NonZeroU64;
 
@@ -6,9 +6,10 @@ use anyhow::Result;
 use async_graphql::parser::types::{ConstDirective, ServiceDocument};
 use async_graphql::Positioned;
 use derive_setters::Setters;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tailcall_macros::{DirectiveDefinition, InputDefinition};
+use tailcall_macros::{CustomResolver, DirectiveDefinition, InputDefinition};
 use tailcall_typedefs_common::directive_definition::DirectiveDefinition;
 use tailcall_typedefs_common::input_definition::InputDefinition;
 use tailcall_typedefs_common::ServiceDocumentBuilder;
@@ -122,7 +123,7 @@ impl Display for Type {
         writeln!(f, "{{")?;
 
         for (field_name, field) in &self.fields {
-            writeln!(f, "  {}: {},", field_name, field.type_of)?;
+            writeln!(f, "  {}: {:?},", field_name, field.type_of)?;
         }
         writeln!(f, "}}")
     }
@@ -210,83 +211,17 @@ pub struct RootSchema {
 /// Used to omit a field from public consumption.
 pub struct Omit {}
 
-// generate Resolver with macro in order to autogenerate conversion code
-// from the underlying directives.
-// TODO: replace with derive macro
-macro_rules! create_resolver {
-    ($($var:ident($ty:ty)),+$(,)?) => {
-        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
-        #[serde(rename_all = "camelCase")]
-        pub enum Resolver {
-            // just specify the same variants
-            $($var($ty),)+
-        }
-
-        impl Resolver {
-            pub fn from_directives(
-                directives: &[Positioned<ConstDirective>],
-            ) -> Valid<Option<Self>, String> {
-                let mut result = None;
-                let mut resolvable_directives = Vec::new();
-                let mut valid = Valid::succeed(());
-
-                $(
-                    // try to parse directive from the Resolver variant
-                    valid = valid.and(<$ty>::from_directives(directives.iter()).map(|resolver| {
-                        if let Some(resolver) = resolver {
-                            // on success store it as a result and remember parsed directives
-                            result = Some(Self::$var(resolver));
-                            resolvable_directives.push(<$ty>::trace_name());
-                        }
-                    }));
-                )+
-
-                valid.and_then(|_| {
-                    if resolvable_directives.len() > 1 {
-                        Valid::fail(format!(
-                            "Multiple resolvers detected [{}]",
-                            resolvable_directives.join(", ")
-                        ))
-                    } else {
-                        Valid::succeed(result)
-                    }
-                })
-            }
-        }
-    };
-}
-
-create_resolver! {
+#[derive(
+    Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema, CustomResolver,
+)]
+#[serde(rename_all = "camelCase")]
+pub enum Resolver {
     Http(Http),
     Grpc(Grpc),
     Graphql(GraphQL),
     Call(Call),
     Js(JS),
     Expr(Expr),
-}
-
-impl Resolver {
-    pub fn to_directive(&self) -> ConstDirective {
-        match self {
-            Resolver::Http(d) => d.to_directive(),
-            Resolver::Grpc(d) => d.to_directive(),
-            Resolver::Graphql(d) => d.to_directive(),
-            Resolver::Call(d) => d.to_directive(),
-            Resolver::Js(d) => d.to_directive(),
-            Resolver::Expr(d) => d.to_directive(),
-        }
-    }
-
-    pub fn directive_name(&self) -> String {
-        match self {
-            Resolver::Http(_) => Http::directive_name(),
-            Resolver::Grpc(_) => Grpc::directive_name(),
-            Resolver::Graphql(_) => GraphQL::directive_name(),
-            Resolver::Call(_) => Call::directive_name(),
-            Resolver::Js(_) => JS::directive_name(),
-            Resolver::Expr(_) => Expr::directive_name(),
-        }
-    }
 }
 
 ///
@@ -300,27 +235,13 @@ pub struct Field {
     ///
     /// Refers to the type of the value the field can be resolved to.
     #[serde(rename = "type", default, skip_serializing_if = "is_default")]
-    pub type_of: String,
-
-    ///
-    /// Flag to indicate the type is a list.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub list: bool,
-
-    ///
-    /// Flag to indicate the type is required.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub required: bool,
-
-    ///
-    /// Flag to indicate if the type inside the list is required.
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub list_type_required: bool,
+    pub type_of: crate::core::Type,
 
     ///
     /// Map of argument name and its definition.
     #[serde(default, skip_serializing_if = "is_default")]
-    pub args: BTreeMap<String, Arg>,
+    #[schemars(with = "HashMap::<String, Arg>")]
+    pub args: IndexMap<String, Arg>,
 
     ///
     /// Publicly visible documentation for the field.
@@ -382,29 +303,25 @@ impl Field {
             false
         }
     }
-    pub fn into_list(mut self) -> Self {
-        self.list = true;
-        self
-    }
 
     pub fn int() -> Self {
-        Self { type_of: "Int".to_string(), ..Default::default() }
+        Self { type_of: "Int".to_string().into(), ..Default::default() }
     }
 
     pub fn string() -> Self {
-        Self { type_of: "String".to_string(), ..Default::default() }
+        Self { type_of: "String".to_string().into(), ..Default::default() }
     }
 
     pub fn float() -> Self {
-        Self { type_of: "Float".to_string(), ..Default::default() }
+        Self { type_of: "Float".to_string().into(), ..Default::default() }
     }
 
     pub fn boolean() -> Self {
-        Self { type_of: "Boolean".to_string(), ..Default::default() }
+        Self { type_of: "Boolean".to_string().into(), ..Default::default() }
     }
 
     pub fn id() -> Self {
-        Self { type_of: "ID".to_string(), ..Default::default() }
+        Self { type_of: "ID".to_string().into(), ..Default::default() }
     }
 
     pub fn is_omitted(&self) -> bool {
@@ -461,11 +378,7 @@ pub struct Inline {
 #[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, schemars::JsonSchema)]
 pub struct Arg {
     #[serde(rename = "type")]
-    pub type_of: String,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub list: bool,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub required: bool,
+    pub type_of: crate::core::Type,
     #[serde(default, skip_serializing_if = "is_default")]
     pub doc: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
@@ -907,8 +820,8 @@ impl Config {
         } else if let Some(type_) = self.find_type(type_of) {
             types.insert(type_of.into());
             for (_, field) in type_.fields.iter() {
-                if !types.contains(&field.type_of) && !self.is_scalar(&field.type_of) {
-                    types = self.find_connections(&field.type_of, types);
+                if !types.contains(field.type_of.name()) && !self.is_scalar(field.type_of.name()) {
+                    types = self.find_connections(field.type_of.name(), types);
                 }
             }
         }
@@ -929,8 +842,8 @@ impl Config {
     pub fn input_types(&self) -> HashSet<String> {
         self.arguments()
             .iter()
-            .filter(|(_, arg)| !self.is_scalar(&arg.type_of))
-            .map(|(_, arg)| arg.type_of.as_str())
+            .filter(|(_, arg)| !self.is_scalar(arg.type_of.name()))
+            .map(|(_, arg)| arg.type_of.name())
             .fold(HashSet::new(), |types, type_of| {
                 self.find_connections(type_of, types)
             })
@@ -1023,8 +936,11 @@ impl Config {
             } else if let Some(typ) = self.types.get(&type_name) {
                 set.insert(type_name);
                 for field in typ.fields.values() {
-                    stack.extend(field.args.values().map(|arg| arg.type_of.clone()));
-                    stack.push(field.type_of.clone());
+                    stack.extend(field.args.values().map(|arg| arg.type_of.name().to_owned()));
+                    stack.push(field.type_of.name().clone());
+                }
+                for interface in typ.implements.iter() {
+                    stack.push(interface.clone())
                 }
             }
         }

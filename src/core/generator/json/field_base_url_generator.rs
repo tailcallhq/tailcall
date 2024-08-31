@@ -65,7 +65,7 @@ mod test {
         query_type.fields.insert(
             "f1".to_string(),
             Field {
-                type_of: "Int".to_string(),
+                type_of: "Int".to_string().into(),
                 resolver: Some(Resolver::Http(Http {
                     path: "/day".to_string(),
                     ..Default::default()
@@ -76,7 +76,7 @@ mod test {
         query_type.fields.insert(
             "f2".to_string(),
             Field {
-                type_of: "String".to_string(),
+                type_of: "String".to_string().into(),
                 resolver: Some(Resolver::Http(Http {
                     path: "/month".to_string(),
                     ..Default::default()
@@ -87,7 +87,7 @@ mod test {
         query_type.fields.insert(
             "f3".to_string(),
             Field {
-                type_of: "String".to_string(),
+                type_of: "String".to_string().into(),
                 resolver: Some(Resolver::Http(Http {
                     path: "/status".to_string(),
                     ..Default::default()
@@ -112,7 +112,7 @@ mod test {
         query_type.fields.insert(
             "f1".to_string(),
             Field {
-                type_of: "Int".to_string(),
+                type_of: "Int".to_string().into(),
                 resolver: Some(Resolver::Http(Http {
                     base_url: Some("https://calender.com/api/v1/".to_string()),
                     path: "/day".to_string(),
@@ -124,7 +124,7 @@ mod test {
         query_type.fields.insert(
             "f2".to_string(),
             Field {
-                type_of: "String".to_string(),
+                type_of: "String".to_string().into(),
                 resolver: Some(Resolver::Http(Http {
                     path: "/month".to_string(),
                     ..Default::default()
@@ -135,7 +135,7 @@ mod test {
         query_type.fields.insert(
             "f3".to_string(),
             Field {
-                type_of: "String".to_string(),
+                type_of: "String".to_string().into(),
                 resolver: None,
                 ..Default::default()
             },

@@ -8,56 +8,7 @@ ChatRequest {
         ChatMessage {
             role: System,
             content: Text(
-                "Given the sample schema of a GraphQL type suggest 5 meaningful names for it.",
-            ),
-            extra: None,
-        },
-        ChatMessage {
-            role: System,
-            content: Text(
-                "The name should be concise and preferably a single word",
-            ),
-            extra: None,
-        },
-        ChatMessage {
-            role: System,
-            content: Text(
-                "Example Input:",
-            ),
-            extra: None,
-        },
-        ChatMessage {
-            role: System,
-            content: Text(
-                "{\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ]\n}",
-            ),
-            extra: None,
-        },
-        ChatMessage {
-            role: System,
-            content: Text(
-                "Example Output:",
-            ),
-            extra: None,
-        },
-        ChatMessage {
-            role: System,
-            content: Text(
-                "{\n  \"suggestions\": [\n    \"Person\",\n    \"Profile\",\n    \"Member\",\n    \"Individual\",\n    \"Contact\"\n  ]\n}",
-            ),
-            extra: None,
-        },
-        ChatMessage {
-            role: System,
-            content: Text(
-                "Ensure the output is in valid JSON format",
-            ),
-            extra: None,
-        },
-        ChatMessage {
-            role: System,
-            content: Text(
-                "Do not add any additional text before or after the json",
+                "Given the sample schema of a GraphQL type, suggest 5 meaningful names for it.\nThe name should be concise and preferably a single word.\n\nExample Input:\n{\n  \"fields\": [\n    [\n      \"id\",\n      \"String\"\n    ],\n    [\n      \"name\",\n      \"String\"\n    ],\n    [\n      \"age\",\n      \"Int\"\n    ]\n  ]\n}\n\nExample Output:\n{\n  \"suggestions\": [\n    \"Person\",\n    \"Profile\",\n    \"Member\",\n    \"Individual\",\n    \"Contact\"\n  ]\n}\n\nEnsure the output is in valid JSON format.\n\nDo not add any additional text before or after the JSON.\n",
             ),
             extra: None,
         },

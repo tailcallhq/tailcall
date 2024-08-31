@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::core::config::{AddField, Config, Omit};
 use crate::core::transform::Transform;
-use crate::core::valid::{Valid, Validator};
+use crate::core::valid::Valid;
 
 /// Flat single field type and inline to Query directly by addField
 #[derive(Default)]
@@ -31,7 +31,7 @@ fn get_single_field_path(
                 let sub_path = get_single_field_path(
                     config,
                     sub_field_name,
-                    &sub_field.type_of,
+                    sub_field.type_of.name(),
                     visited_types,
                 );
                 if let Some(sub_path) = sub_path {
@@ -56,34 +56,25 @@ impl Transform for FlattenSingleField {
     type Error = String;
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         let origin_config = config.clone();
-        if let Some(root) = &config.schema.query {
-            let root_query = config.types.get_mut(root);
-            if let Some(root_query) = root_query {
-                let field_trans =
-                    Valid::from_iter(root_query.fields.iter_mut(), |(name, field)| {
-                        let mut visited_types = HashSet::<String>::new();
-                        if let Some(path) = get_single_field_path(
-                            &origin_config,
-                            name,
-                            &field.type_of,
-                            &mut visited_types,
-                        ) {
-                            if path.len() > 1 {
-                                field.omit = Some(Omit {});
-                                root_query
-                                    .added_fields
-                                    .push(AddField { name: name.to_owned(), path });
-                            }
-                        }
-                        Valid::succeed(())
-                    });
-                field_trans.map(|_| config)
-            } else {
-                Valid::fail("Query type is not existed.".to_owned())
+
+        for ty in config.types.values_mut() {
+            for (field_name, field) in ty.fields.iter_mut() {
+                let mut visited_types = HashSet::<String>::new();
+                if let Some(path) = get_single_field_path(
+                    &origin_config,
+                    field_name,
+                    field.type_of.name(),
+                    &mut visited_types,
+                ) {
+                    if path.len() > 1 {
+                        field.omit = Some(Omit {});
+                        ty.added_fields
+                            .push(AddField { name: field_name.to_owned(), path });
+                    }
+                }
             }
-        } else {
-            Valid::succeed(config)
         }
+        Valid::succeed(config)
     }
 }
 
