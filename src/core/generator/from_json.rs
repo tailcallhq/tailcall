@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use convert_case::{Case, Casing};
 use serde_json::Value;
@@ -20,26 +20,45 @@ pub struct RequestSample {
     pub res_body: Value,
     pub field_name: Option<String>,
     pub operation_type: GraphQLOperationType,
+    pub headers: Option<BTreeMap<String, String>>,
 }
 
 impl RequestSample {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new<T: Into<String>>(
-        url: Url,
-        method: Method,
-        body: serde_json::Value,
-        resp: Value,
-        field_name: Option<T>,
-        operation_type: GraphQLOperationType,
-    ) -> Self {
+    pub fn new(url: Url, response_body: Value, field_name: Option<String>) -> Self {
         Self {
             url,
-            method,
-            req_body: body,
-            res_body: resp,
-            field_name: field_name.map(|f| f.into()),
-            operation_type,
+            field_name,
+            res_body: response_body,
+            method: Default::default(),
+            req_body: Default::default(),
+            headers: Default::default(),
+            operation_type: Default::default(),
         }
+    }
+
+    pub fn with_method(mut self, method: Method) -> Self {
+        self.method = method;
+        self
+    }
+
+    pub fn with_req_body(mut self, req_body: Value) -> Self {
+        self.req_body = req_body;
+        self
+    }
+
+    pub fn with_headers(mut self, headers: Option<BTreeMap<String, String>>) -> Self {
+        self.headers = headers;
+        self
+    }
+
+    pub fn with_is_mutation(mut self, is_mutation: bool) -> Self {
+        let operation_type = if is_mutation {
+            GraphQLOperationType::Mutation
+        } else {
+            GraphQLOperationType::Query
+        };
+        self.operation_type = operation_type;
+        self
     }
 }
 
@@ -89,12 +108,23 @@ impl Transform for FromJsonGenerator<'_> {
                 ),
             };
 
+            // collect the required header keys
+            let header_keys = sample.headers.as_ref().map(|headers_inner| {
+                headers_inner
+                    .iter()
+                    .map(|(k, _)| k.to_owned())
+                    .collect::<BTreeSet<_>>()
+            });
+
             let mut rename_types = HashMap::new();
             rename_types.insert(existing_name, suggested_name);
 
             // these transformations are required in order to generate a base config.
             GraphQLTypesGenerator::new(sample, type_name_gen)
-                .pipe(json::SchemaGenerator::new(&sample.operation_type))
+                .pipe(json::SchemaGenerator::new(
+                    &sample.operation_type,
+                    &header_keys,
+                ))
                 .pipe(json::FieldBaseUrlGenerator::new(
                     &sample.url,
                     &sample.operation_type,
@@ -113,10 +143,8 @@ impl Transform for FromJsonGenerator<'_> {
 #[cfg(test)]
 mod tests {
     use crate::core::config::transformer::Preset;
-    use crate::core::config::GraphQLOperationType;
     use crate::core::generator::generator::test::JsonFixture;
     use crate::core::generator::{FromJsonGenerator, NameGenerator, RequestSample};
-    use crate::core::http::Method;
     use crate::core::transform::TransformerOps;
     use crate::core::valid::Validator;
 
@@ -130,17 +158,16 @@ mod tests {
             "src/core/generator/tests/fixtures/json/nested_same_properties.json",
             "src/core/generator/tests/fixtures/json/incompatible_root_object.json",
         ];
-        let field_name_generator = NameGenerator::new("f");
         for fixture in fixtures {
-            let JsonFixture { url, response } = JsonFixture::read(fixture).await?;
-            request_samples.push(RequestSample::new(
-                url.parse()?,
-                Method::GET,
-                serde_json::Value::Null,
-                response,
-                Some(field_name_generator.next()),
-                GraphQLOperationType::Query,
-            ));
+            let JsonFixture { request, response, is_mutation, field_name } =
+                JsonFixture::read(fixture).await?;
+            let req_sample = RequestSample::new(request.url, response, Some(field_name))
+                .with_method(request.method)
+                .with_headers(request.headers)
+                .with_is_mutation(is_mutation)
+                .with_req_body(request.body.unwrap_or_default());
+
+            request_samples.push(req_sample);
         }
 
         let config =

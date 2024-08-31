@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use convert_case::{Case, Casing};
 
 use crate::core::config::{Config, GraphQLOperationType};
@@ -6,11 +8,15 @@ use crate::core::valid::Valid;
 
 pub struct SchemaGenerator<'a> {
     operation_type: &'a GraphQLOperationType,
+    header_keys: &'a Option<BTreeSet<String>>,
 }
 
 impl<'a> SchemaGenerator<'a> {
-    pub fn new(operation_type: &'a GraphQLOperationType) -> Self {
-        Self { operation_type }
+    pub fn new(
+        operation_type: &'a GraphQLOperationType,
+        header_keys: &'a Option<BTreeSet<String>>,
+    ) -> Self {
+        Self { operation_type, header_keys }
     }
 }
 
@@ -34,12 +40,18 @@ impl Transform for SchemaGenerator<'_> {
                 );
             }
         }
+
+        // Add allowed headers setting on upstream
+        config.upstream = config.upstream.allowed_headers(self.header_keys.to_owned());
+
         Valid::succeed(config)
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::collections::BTreeSet;
+
     use super::SchemaGenerator;
     use crate::core::config::GraphQLOperationType;
     use crate::core::transform::Transform;
@@ -47,7 +59,7 @@ mod test {
 
     #[test]
     fn test_schema_generator_with_mutation() {
-        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Mutation);
+        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Mutation, &None);
         let config = schema_gen
             .transform(Default::default())
             .to_result()
@@ -60,13 +72,28 @@ mod test {
 
     #[test]
     fn test_schema_generator_with_query() {
-        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Query);
+        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Query, &None);
         let config = schema_gen
             .transform(Default::default())
             .to_result()
             .unwrap();
         assert!(config.schema.query.is_some());
         assert_eq!(config.schema.query, Some("Query".to_owned()));
+
+        assert!(config.schema.mutation.is_none());
+    }
+
+    #[test]
+    fn test_schema_generator_with_headers() {
+        let expected_header_keys = Some(BTreeSet::from(["X-Custom-Header".to_owned()]));
+        let schema_gen = SchemaGenerator::new(&GraphQLOperationType::Query, &expected_header_keys);
+        let config = schema_gen
+            .transform(Default::default())
+            .to_result()
+            .unwrap();
+        assert!(config.schema.query.is_some());
+        assert_eq!(config.schema.query, Some("Query".to_owned()));
+        assert_eq!(config.upstream.allowed_headers, expected_header_keys);
 
         assert!(config.schema.mutation.is_none());
     }

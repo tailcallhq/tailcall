@@ -1,10 +1,4 @@
----
-skip: true
----
-
 # List of lists.
-
-TODO: Skipped because Tailcall cannot extract a list of lists.
 
 ```graphql @config
 schema
@@ -15,6 +9,8 @@ schema
 
 type Query {
   userGroups: [[User!]!]! @graphQL(name: "users")
+  addUsers(userNames: [[String!]!]!): Boolean
+    @graphQL(name: "addUsers", args: [{key: "userNames", value: "{{.args.userNames}}"}])
 }
 
 type User {
@@ -27,13 +23,12 @@ type User {
 - request:
     method: POST
     url: http://upstream/graphql
-    textBody: {"query": "query { users { id name } }"}
-  expectedHits: 1
+    textBody: '{ "query": "query { users { id name } }" }'
   response:
     status: 200
     body:
       data:
-        userGroups:
+        users:
           - - id: 1
               name: user-1
             - id: 2
@@ -46,6 +41,15 @@ type User {
               name: user-5
             - id: 6
               name: user-6
+- request:
+    method: POST
+    url: http://upstream/graphql
+    textBody: '{ "query": "query { addUsers(userNames: [[\\\"user-1\\\", \\\"user-2\\\"], [\\\"user-3\\\", \\\"user-4\\\"]])  }" }'
+  response:
+    status: 200
+    body:
+      data:
+        addUsers: true
 ```
 
 ```yml @test
@@ -59,6 +63,14 @@ type User {
           id
           name
         }
+      }
+
+- method: POST
+  url: http://localhost:8080/graphql
+  body:
+    query: |
+      query {
+        addUsers(userNames: [["user-1", "user-2"], ["user-3", "user-4"]])
       }
 # Negative
 - method: POST

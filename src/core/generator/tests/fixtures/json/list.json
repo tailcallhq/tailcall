@@ -2,7 +2,7 @@
   "request": {
     "url": "https://example.com/users"
   },
-  "fieldName": "users",
+  "fieldName": "userData",
   "response": {
     "status": 200,
     "body": [

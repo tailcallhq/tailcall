@@ -2,7 +2,7 @@
   "request": {
     "url": "https://example.com"
   },
-  "fieldName": "test",
+  "fieldName": "nestedSameProperties",
   "response": {
     "status": 200,
     "body": {

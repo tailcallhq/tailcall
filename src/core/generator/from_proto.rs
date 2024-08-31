@@ -13,9 +13,10 @@ use super::proto::comments_builder::CommentsBuilder;
 use super::proto::path_builder::PathBuilder;
 use super::proto::path_field::PathField;
 use crate::core::config::transformer::{AmbiguousType, TreeShake};
-use crate::core::config::{Arg, Config, Enum, Field, Grpc, Resolver, Type, Union, Variant};
+use crate::core::config::{self, Arg, Config, Enum, Field, Grpc, Resolver, Union, Variant};
 use crate::core::transform::{Transform, TransformerOps};
 use crate::core::valid::Validator;
+use crate::core::Type;
 
 /// Assists in the mapping and retrieval of proto type names to custom formatted
 /// strings based on the descriptor type.
@@ -56,7 +57,7 @@ impl Context {
     }
 
     /// Resolves the actual name and inserts the type.
-    fn insert_type(mut self, name: String, ty: Type) -> Self {
+    fn insert_type(mut self, name: String, ty: config::Type) -> Self {
         self.config.types.insert(name.to_string(), ty);
         self
     }
@@ -64,16 +65,16 @@ impl Context {
     /// Converts oneof definitions in message to set of types with union
     fn insert_oneofs(
         mut self,
-        type_name: String, // name of the message
-        base_type: Type,   // that's the type with fields that are not oneofs
+        type_name: String,       // name of the message
+        base_type: config::Type, // that's the type with fields that are not oneofs
         oneof_fields: Vec<Vec<(String, Field)>>, /* there is multiple oneof definitions every
-                            * one of which contains multiple fields */
+                                  * one of which contains multiple fields */
     ) -> Self {
         fn collect_types(
             type_name: String,
-            base_type: Type,
+            base_type: config::Type,
             oneof_fields: &[Vec<(String, Field)>], // currently processed set of oneof fields
-            output: &mut Vec<(String, Type)>,      // newly generated types with their names
+            output: &mut Vec<(String, config::Type)>, // newly generated types with their names
         ) {
             let Some(one_of) = oneof_fields.first() else {
                 output.push((type_name, base_type));
@@ -109,7 +110,7 @@ impl Context {
                 let mut field = field.clone();
 
                 // mark this field as required to force type-check on specific variant of oneof
-                field.required = true;
+                field.type_of = field.type_of.into_required();
 
                 // add new field specific to this variant of oneof field
                 new_type.fields.insert(field_name.clone(), field);
@@ -127,7 +128,7 @@ impl Context {
 
         collect_types(
             type_name.clone(),
-            base_type,
+            base_type.clone(),
             &oneof_fields,
             &mut union_types,
         );
@@ -141,13 +142,17 @@ impl Context {
         }
 
         let mut union_ = Union::default();
+        let interface_name = format!("{type_name}__Interface");
 
-        for (type_name, ty) in union_types {
+        for (type_name, mut ty) in union_types {
+            ty.implements.insert(interface_name.clone());
             union_.types.insert(type_name.clone());
 
             self = self.insert_type(type_name, ty);
         }
 
+        // base interface type
+        self.config.types.insert(interface_name, base_type);
         self.config.unions.insert(type_name, union_);
 
         self
@@ -256,7 +261,7 @@ impl Context {
 
             let mut oneof_fields: Vec<_> = message.oneof_decl.iter().map(|_| Vec::new()).collect();
 
-            let mut ty = Type {
+            let mut ty = config::Type {
                 doc: self.comments_builder.get_comments(&msg_path),
                 ..Default::default()
             };
@@ -268,10 +273,12 @@ impl Context {
 
                 let mut cfg_field = Field::default();
 
-                let label = field.label();
-                cfg_field.list = matches!(label, Label::Repeated);
-                // required only applicable for proto2
-                cfg_field.required = matches!(label, Label::Required);
+                cfg_field.type_of = match field.label() {
+                    Label::Optional => cfg_field.type_of,
+                    // required only applicable for proto2
+                    Label::Required => cfg_field.type_of.into_required(),
+                    Label::Repeated => cfg_field.type_of.into_list(),
+                };
 
                 if let Some(type_name) = &field.type_name {
                     // check that current field is map.
@@ -279,22 +286,20 @@ impl Context {
                     // inside the nested type. It works only if we explore nested types
                     // before the current type
                     if self.map_types.contains(&type_name[1..]) {
-                        cfg_field.type_of = "JSON".to_string();
-                        // drop list option since it is not relevant
-                        // when using JSON representation
-                        cfg_field.list = false;
+                        // override type with single scalar
+                        cfg_field.type_of = "JSON".to_string().into();
                     } else {
                         // for non-primitive types
                         let type_of = graphql_type_from_ref(type_name)?
                             .into_object_type()
                             .to_string();
 
-                        cfg_field.type_of = type_of;
+                        cfg_field.type_of = cfg_field.type_of.with_name(type_of);
                     }
                 } else {
                     let type_of = convert_primitive_type(field.r#type().as_str_name());
 
-                    cfg_field.type_of = type_of;
+                    cfg_field.type_of = cfg_field.type_of.with_name(type_of);
                 }
 
                 let field_path =
@@ -344,9 +349,7 @@ impl Context {
                     let key = graphql_type.clone().into_field().to_string();
                     let type_of = graphql_type.into_object_type().to_string();
                     let val = Arg {
-                        type_of,
-                        list: false,
-                        required: true,
+                        type_of: Type::from(type_of).into_required(),
                         /* Setting it not null by default. There's no way to infer this
                          * from proto file */
                         doc: None,
@@ -361,7 +364,7 @@ impl Context {
                 let output_ty = get_output_type(method.output_type())?
                     .into_object_type()
                     .to_string();
-                cfg_field.type_of = output_ty;
+                cfg_field.type_of = cfg_field.type_of.with_name(output_ty);
 
                 cfg_field.resolver = Some(Resolver::Grpc(Grpc {
                     base_url: None,
@@ -381,7 +384,7 @@ impl Context {
                     .entry(self.query.clone())
                     .or_insert_with(|| {
                         self.config.schema.query = Some(self.query.clone());
-                        Type::default()
+                        config::Type::default()
                     });
 
                 ty.fields.insert(field_name.to_string(), cfg_field);

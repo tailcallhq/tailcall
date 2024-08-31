@@ -13,7 +13,9 @@
     "Query": {
       "fields": {
         "firstUser": {
-          "type": "User1",
+          "type": {
+            "name": "User1"
+          },
           "http": {
             "path": "/users/1",
             "baseURL": "https://jsonplaceholder.typicode.com"
@@ -26,11 +28,15 @@
     "User": {
       "fields": {
         "id": {
-          "type": "Int",
+          "type": {
+            "name": "Int"
+          },
           "cache": null
         },
         "name": {
-          "type": "String",
+          "type": {
+            "name": "String"
+          },
           "cache": null
         }
       },
@@ -39,7 +45,9 @@
     "User1": {
       "fields": {
         "user1": {
-          "type": "User2",
+          "type": {
+            "name": "User2"
+          },
           "cache": null
         }
       },
@@ -48,7 +56,9 @@
     "User2": {
       "fields": {
         "user2": {
-          "type": "User",
+          "type": {
+            "name": "User"
+          },
           "http": {
             "path": "/users/1",
             "baseURL": "https://jsonplaceholder.typicode.com"

@@ -8,13 +8,13 @@ use tailcall::core::generator::{Generator, Input};
 use tailcall::core::http::Method;
 use url::Url;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct APIRequest {
     #[serde(default)]
     pub method: Method,
     pub url: Url,
     #[serde(default)]
-    pub headers: BTreeMap<String, String>,
+    pub headers: Option<BTreeMap<String, String>>,
     #[serde(default, rename = "body")]
     pub body: Option<Value>,
 }
@@ -77,6 +77,7 @@ fn test_spec(path: &Path, json_data: JsonFixture) -> anyhow::Result<()> {
         res_body: resp_body,
         field_name: Some(field_name),
         is_mutation: is_mutation.unwrap_or_default(),
+        headers: request.headers,
     }]);
 
     let cfg = if is_mutation.unwrap_or_default() {
