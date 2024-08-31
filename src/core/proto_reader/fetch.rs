@@ -179,7 +179,7 @@ fn request_proto(response: ReflectionResponse) -> Result<FileDescriptorProto> {
 mod grpc_fetch {
     use std::path::PathBuf;
 
-    use anyhow::Result;
+    use anyhow::{anyhow, Result};
 
     use super::*;
     use crate::core::Error;
@@ -268,7 +268,8 @@ mod grpc_fetch {
         let content = runtime
             .file
             .read(tailcall_fixtures::protobuf::NEWS_DTO)
-            .await?;
+            .await
+            .map_err(|e| anyhow!(e.to_string()))?;
         let expected = protox_parse::parse("news_dto.proto", &content)?;
 
         assert_eq!(expected.name(), resp.name());

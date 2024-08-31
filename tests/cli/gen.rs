@@ -72,14 +72,18 @@ pub mod file {
     use std::sync::Arc;
 
     use async_trait::async_trait;
-    use tailcall::core::FileIO;
+    use tailcall::core::{error, FileIO};
     use tokio::sync::RwLock;
 
     #[derive(Clone, Default)]
     pub struct NativeFileTest(Arc<RwLock<HashMap<String, String>>>);
     #[async_trait]
     impl FileIO for NativeFileTest {
-        async fn write<'a>(&'a self, path: &'a str, content: &'a [u8]) -> anyhow::Result<()> {
+        async fn write<'a>(
+            &'a self,
+            path: &'a str,
+            content: &'a [u8],
+        ) -> Result<(), error::file::Error> {
             self.0.write().await.insert(
                 path.to_string(),
                 String::from_utf8_lossy(content).to_string(),
@@ -87,7 +91,7 @@ pub mod file {
             Ok(())
         }
 
-        async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
+        async fn read<'a>(&'a self, path: &'a str) -> Result<String, error::file::Error> {
             let val = if let Some(val) = self.0.read().await.get(path).cloned() {
                 val
             } else {

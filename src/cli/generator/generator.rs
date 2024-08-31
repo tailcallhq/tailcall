@@ -74,7 +74,8 @@ impl Generator {
 
     pub async fn read(&self) -> Result<Config<Resolved>, Error> {
         let config_path = &self.config_path;
-        let source = ConfigSource::detect(config_path).map_err(|e| Error::UnsupportedFileFormat(e.to_string()))?;
+        let source = ConfigSource::detect(config_path)
+            .map_err(|e| Error::UnsupportedFileFormat(e.to_string()))?;
         let mut config_content = self.runtime.file.read(config_path).await?;
 
         // While reading resolve the internal paths and mustache headers of generalized
