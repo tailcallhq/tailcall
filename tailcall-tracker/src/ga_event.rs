@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::helpers::{get_client_id, get_cpu_cores, get_os_name};
+use crate::helpers::{get_client_id, get_cpu_cores, get_os_name, get_uptime};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Params {
@@ -23,11 +23,7 @@ impl GaEventValue {
         let os_name = get_os_name();
         let mut uptime = None;
         if name == "ping" {
-            let current_time = Utc::now();
-            uptime = Some(format!(
-                "{} minutes",
-                current_time.signed_duration_since(start_time).num_minutes()
-            ));
+            uptime = Some(get_uptime(start_time));
         }
         GaEventValue {
             name: name.to_string(),

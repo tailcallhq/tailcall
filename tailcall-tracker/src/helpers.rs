@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use sysinfo::System;
 
@@ -19,4 +20,12 @@ pub fn get_cpu_cores() -> String {
 }
 pub fn get_os_name() -> String {
     System::long_os_version().unwrap_or("Unknown".to_string())
+}
+
+pub fn get_uptime(start_time: DateTime<Utc>) -> String {
+    let current_time = Utc::now();
+    format!(
+        "{} minutes",
+        current_time.signed_duration_since(start_time).num_minutes()
+    )
 }

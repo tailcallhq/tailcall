@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use tailcall_version::VERSION;
 
 use super::super::Result;
-use crate::helpers::{get_client_id, get_cpu_cores, get_os_name};
+use crate::helpers::{get_client_id, get_cpu_cores, get_os_name, get_uptime};
 use crate::tracker::EventCollector;
 
 const POSTHOG_API_KEY: &str = "phc_CWdKhSxlSsKceZhhnSJ1LfkaGxgYhZLh4Fx7ssjrkRf";
@@ -31,9 +31,7 @@ impl EventCollector for PostHogTracker {
             event.insert_prop("app_version", VERSION.as_str())?;
             event.insert_prop("start_time", start_time.to_string())?;
             if event_name == "ping" {
-                let current_time = Utc::now();
-                let uptime = current_time.signed_duration_since(start_time).num_minutes();
-                event.insert_prop("uptime", format!("{} minutes", uptime))?;
+                event.insert_prop("uptime", get_uptime(start_time))?;
             }
             client.capture(event)?;
             Ok(())
