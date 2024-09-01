@@ -1,20 +1,20 @@
 use reqwest::header::{HeaderName, HeaderValue};
 
 use super::super::Result;
-
-use crate::{event::Event, tracker::EventCollector};
+use crate::ga_event::GaEvent;
+use crate::tracker::EventCollector;
 
 const GA_TRACKER_URL: &str = "https://www.google-analytics.com";
 const GA_TRACKER_API_SECRET: &str = "GVaEzXFeRkCI9YBIylbEjQ";
 const GA_TRACKER_MEASUREMENT_ID: &str = "G-JEP3QDWT0G";
 
-pub struct GATracker {
+pub struct GaTracker {
     base_url: String,
     api_secret: String,
     measurement_id: String,
 }
 
-impl GATracker {
+impl GaTracker {
     pub fn default() -> Self {
         Self {
             base_url: GA_TRACKER_URL.to_string(),
@@ -23,7 +23,7 @@ impl GATracker {
         }
     }
     fn create_request(&self, event_name: &str) -> Result<reqwest::Request> {
-        let event = Event::new(event_name);
+        let event = GaEvent::new(event_name);
         tracing::debug!("Sending event: {:?}", event);
         let mut url = reqwest::Url::parse(self.base_url.as_str())?;
         url.set_path("/mp/collect");
@@ -44,7 +44,7 @@ impl GATracker {
 }
 
 #[async_trait::async_trait]
-impl EventCollector for GATracker {
+impl EventCollector for GaTracker {
     async fn dispatch(&self, event_name: &str) -> Result<()> {
         let request = self.create_request(event_name)?;
         let client = reqwest::Client::new();
@@ -63,7 +63,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_ga_tracker() {
-        let ga_tracker = GATracker::default();
+        let ga_tracker = GaTracker::default();
         if let Err(e) = ga_tracker.dispatch("test").await {
             panic!("Failed to dispatch event: {}", e);
         }

@@ -1,5 +1,6 @@
-use crate::helpers::{get_client_id, get_cpu_cores, get_os_name};
 use serde::{Deserialize, Serialize};
+
+use crate::helpers::{get_client_id, get_cpu_cores, get_os_name};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Params {
@@ -8,16 +9,16 @@ struct Params {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct EventValue {
+pub struct GaEventValue {
     name: String,
     params: Params,
 }
 
-impl EventValue {
-    fn new(name: &str) -> EventValue {
+impl GaEventValue {
+    fn new(name: &str) -> GaEventValue {
         let cores = get_cpu_cores();
         let os_name = get_os_name();
-        EventValue {
+        GaEventValue {
             name: name.to_string(),
             params: Params { cpu_cores: cores, os_name },
         }
@@ -26,15 +27,15 @@ impl EventValue {
 
 /// Event structure to be sent to GA
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Event {
+pub struct GaEvent {
     client_id: String,
-    events: Vec<EventValue>,
+    events: Vec<GaEventValue>,
 }
 
-impl Event {
+impl GaEvent {
     pub fn new(name: &str) -> Self {
         let id = get_client_id();
 
-        Self { client_id: id, events: vec![EventValue::new(name)] }
+        Self { client_id: id, events: vec![GaEventValue::new(name)] }
     }
 }

@@ -1,9 +1,9 @@
-use super::Result;
-use crate::{
-    check_tracking::check_tracking,
-    collect::{ga::GATracker, posthog::PostHogTracker},
-};
 use tokio::time::Duration;
+
+use super::Result;
+use crate::check_tracking::check_tracking;
+use crate::collect::ga::GaTracker;
+use crate::collect::posthog::PostHogTracker;
 
 #[async_trait::async_trait]
 pub trait EventCollector: Send + Sync {
@@ -17,7 +17,7 @@ pub struct Tracker {
 
 impl Default for Tracker {
     fn default() -> Self {
-        let ga_tracker = GATracker::default();
+        let ga_tracker = GaTracker::default();
         let posthog_tracker = PostHogTracker::default();
         Self {
             collectors: vec![Box::new(ga_tracker), Box::new(posthog_tracker)],

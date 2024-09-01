@@ -19,6 +19,9 @@ pub enum Error {
 
     #[debug(fmt = "PostHog Error: {}", _0)]
     PostHog(posthog_rs::Error),
+
+    #[debug(fmt = "Tokio Join Error: {}", _0)]
+    TokioJoin(tokio::task::JoinError),
 }
 
 impl Display for Error {
@@ -29,6 +32,7 @@ impl Display for Error {
             Error::SerdeJson(error) => write!(f, "Serde JSON Error: {}", error),
             Error::UrlParser(error) => write!(f, "Url Parser Error: {}", error),
             Error::PostHog(error) => write!(f, "PostHog Error: {}", error),
+            Error::TokioJoin(error) => write!(f, "Tokio Join Error: {}", error),
         }
     }
 }

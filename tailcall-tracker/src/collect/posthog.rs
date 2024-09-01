@@ -1,7 +1,5 @@
-use crate::helpers::{get_client_id, get_cpu_cores, get_os_name};
-
 use super::super::Result;
-
+use crate::helpers::{get_client_id, get_cpu_cores, get_os_name};
 use crate::tracker::EventCollector;
 
 const POSTHOG_API_KEY: &str = "phc_CWdKhSxlSsKceZhhnSJ1LfkaGxgYhZLh4Fx7ssjrkRf";
@@ -22,15 +20,16 @@ impl EventCollector for PostHogTracker {
         let api_secret = self.api_secret.clone();
         let event_name = event_name.to_string();
 
-        tokio::task::spawn_blocking(move || {
+        let handle_posthog = tokio::task::spawn_blocking(move || -> Result<()> {
             let client = posthog_rs::client(api_secret.as_str());
             let mut event = posthog_rs::Event::new(event_name, get_client_id());
-            event.insert_prop("cpu_cores", get_cpu_cores()).unwrap();
-            event.insert_prop("os_name", get_os_name()).unwrap();
-            client.capture(event).unwrap();
+            event.insert_prop("cpu_cores", get_cpu_cores())?;
+            event.insert_prop("os_name", get_os_name())?;
+            client.capture(event)?;
+            Ok(())
         })
-        .await
-        .unwrap();
+        .await;
+        handle_posthog??;
         Ok(())
     }
 }
