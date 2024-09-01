@@ -24,7 +24,7 @@ impl EventCollector for PostHogTracker {
 
         tokio::task::spawn_blocking(move || {
             let client = posthog_rs::client(api_secret.as_str());
-            let mut event = posthog_rs::Event::new(get_client_id(), event_name);
+            let mut event = posthog_rs::Event::new(event_name, get_client_id());
             event.insert_prop("cpu_cores", get_cpu_cores()).unwrap();
             event.insert_prop("os_name", get_os_name()).unwrap();
             client.capture(event).unwrap();
