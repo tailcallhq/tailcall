@@ -16,6 +16,9 @@ pub enum Error {
 
     #[debug(fmt = "Url Parser Error: {}", _0)]
     UrlParser(url::ParseError),
+
+    #[debug(fmt = "PostHog Error: {}", _0)]
+    PostHog(posthog_rs::Error),
 }
 
 impl Display for Error {
@@ -25,6 +28,7 @@ impl Display for Error {
             Error::InvalidHeaderValue(error) => write!(f, "Invalid Header Value: {}", error),
             Error::SerdeJson(error) => write!(f, "Serde JSON Error: {}", error),
             Error::UrlParser(error) => write!(f, "Url Parser Error: {}", error),
+            Error::PostHog(error) => write!(f, "PostHog Error: {}", error),
         }
     }
 }

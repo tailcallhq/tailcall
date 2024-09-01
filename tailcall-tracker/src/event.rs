@@ -1,9 +1,5 @@
-use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
+use crate::helpers::{get_client_id, get_cpu_cores, get_os_name};
 use serde::{Deserialize, Serialize};
-use sysinfo::System;
-
-const PARAPHRASE: &str = "tc_key";
-const DEFAULT_CLIENT_ID: &str = "<anonymous>";
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Params {
@@ -12,16 +8,15 @@ struct Params {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct EventValue {
+pub struct EventValue {
     name: String,
     params: Params,
 }
 
 impl EventValue {
     fn new(name: &str) -> EventValue {
-        let sys = System::new_all();
-        let cores = sys.physical_core_count().unwrap_or(2).to_string();
-        let os_name = System::long_os_version().unwrap_or("Unknown".to_string());
+        let cores = get_cpu_cores();
+        let os_name = get_os_name();
         EventValue {
             name: name.to_string(),
             params: Params { cpu_cores: cores, os_name },
@@ -38,14 +33,7 @@ pub struct Event {
 
 impl Event {
     pub fn new(name: &str) -> Self {
-        let mut builder = IdBuilder::new(Encryption::SHA256);
-        builder
-            .add_component(HWIDComponent::SystemID)
-            .add_component(HWIDComponent::CPUCores);
-
-        let id = builder
-            .build(PARAPHRASE)
-            .unwrap_or(DEFAULT_CLIENT_ID.to_string());
+        let id = get_client_id();
 
         Self { client_id: id, events: vec![EventValue::new(name)] }
     }

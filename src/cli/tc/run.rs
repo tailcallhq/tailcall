@@ -54,3 +54,15 @@ async fn run_command(cli: Cli, config_reader: ConfigReader, runtime: TargetRunti
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_tracker() {
+        if let Err(e) = TRACKER.dispatch("test").await {
+            panic!("Failed to dispatch event: {}", e);
+        }
+    }
+}
