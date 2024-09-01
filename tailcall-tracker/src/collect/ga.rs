@@ -4,6 +4,7 @@ use super::super::Result;
 
 use crate::{event::Event, tracker::EventCollector};
 
+const GA_TRACKER_URL: &str = "https://www.google-analytics.com";
 const GA_TRACKER_API_SECRET: &str = "GVaEzXFeRkCI9YBIylbEjQ";
 const GA_TRACKER_MEASUREMENT_ID: &str = "G-JEP3QDWT0G";
 
@@ -16,7 +17,7 @@ pub struct GATracker {
 impl GATracker {
     pub fn default() -> Self {
         Self {
-            base_url: "https://www.google-analytics.com".to_string(),
+            base_url: GA_TRACKER_URL.to_string(),
             api_secret: GA_TRACKER_API_SECRET.to_string(),
             measurement_id: GA_TRACKER_MEASUREMENT_ID.to_string(),
         }
