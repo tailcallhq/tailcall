@@ -1,9 +1,7 @@
-use chrono::{DateTime, Utc};
 use tailcall_version::VERSION;
 
-use super::super::Result;
-use crate::helpers::{get_client_id, get_cpu_cores, get_os_name, get_uptime};
-use crate::tracker::EventCollector;
+use super::{super::Result, collectors::EventCollector};
+use crate::tracker::Event;
 
 const POSTHOG_API_KEY: &str = "phc_CWdKhSxlSsKceZhhnSJ1LfkaGxgYhZLh4Fx7ssjrkRf";
 
@@ -19,21 +17,30 @@ impl PostHogTracker {
 
 #[async_trait::async_trait]
 impl EventCollector for PostHogTracker {
-    async fn dispatch(&self, event_name: &str, start_time: DateTime<Utc>) -> Result<()> {
+    async fn dispatch(&self, event: Event) -> Result<()> {
         let api_secret = self.api_secret.clone();
-        let event_name = event_name.to_string();
 
         let handle_posthog = tokio::task::spawn_blocking(move || -> Result<()> {
             let client = posthog_rs::client(api_secret.as_str());
-            let mut event = posthog_rs::Event::new(event_name.clone(), get_client_id());
-            event.insert_prop("cpu_cores", get_cpu_cores())?;
-            event.insert_prop("os_name", get_os_name())?;
-            event.insert_prop("app_version", VERSION.as_str())?;
-            event.insert_prop("start_time", start_time.to_string())?;
-            if event_name == "ping" {
-                event.insert_prop("uptime", get_uptime(start_time))?;
+            let mut posthog_event =
+                posthog_rs::Event::new(event.event_name.clone(), event.client_id);
+            posthog_event.insert_prop("cpu_cores", event.cores)?;
+            posthog_event.insert_prop("os_name", event.os_name)?;
+            posthog_event.insert_prop("app_version", VERSION.as_str())?;
+            posthog_event.insert_prop("start_time", event.start_time)?;
+            if let Some(args) = event.args {
+                posthog_event.insert_prop("args", args.join(", "))?;
             }
-            client.capture(event)?;
+            if let Some(uptime) = event.up_time {
+                posthog_event.insert_prop("uptime", uptime)?;
+            }
+            if let Some(path) = event.path {
+                posthog_event.insert_prop("path", path)?;
+            }
+            if let Some(user) = event.user {
+                posthog_event.insert_prop("user", user)?;
+            }
+            client.capture(posthog_event)?;
             Ok(())
         })
         .await;

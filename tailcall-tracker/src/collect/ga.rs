@@ -1,9 +1,7 @@
-use chrono::{DateTime, Utc};
 use reqwest::header::{HeaderName, HeaderValue};
 
-use super::super::Result;
-use crate::ga_event::GaEvent;
-use crate::tracker::EventCollector;
+use super::{super::Result, collectors::EventCollector};
+use crate::{collect::ga_event::GaEvent, Event};
 
 const GA_TRACKER_URL: &str = "https://www.google-analytics.com";
 const GA_TRACKER_API_SECRET: &str = "GVaEzXFeRkCI9YBIylbEjQ";
@@ -23,12 +21,8 @@ impl GaTracker {
             measurement_id: GA_TRACKER_MEASUREMENT_ID.to_string(),
         }
     }
-    fn create_request(
-        &self,
-        event_name: &str,
-        start_time: DateTime<Utc>,
-    ) -> Result<reqwest::Request> {
-        let event = GaEvent::new(event_name, start_time);
+    fn create_request(&self, event: Event) -> Result<reqwest::Request> {
+        let event = GaEvent::new(event);
         tracing::debug!("Sending event: {:?}", event);
         let mut url = reqwest::Url::parse(self.base_url.as_str())?;
         url.set_path("/mp/collect");
@@ -50,8 +44,8 @@ impl GaTracker {
 
 #[async_trait::async_trait]
 impl EventCollector for GaTracker {
-    async fn dispatch(&self, event_name: &str, start_time: DateTime<Utc>) -> Result<()> {
-        let request = self.create_request(event_name, start_time)?;
+    async fn dispatch(&self, event: Event) -> Result<()> {
+        let request = self.create_request(event)?;
         let client = reqwest::Client::new();
         let response = client.execute(request).await?;
         let status = response.status();

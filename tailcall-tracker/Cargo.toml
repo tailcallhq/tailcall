@@ -9,7 +9,7 @@ edition = "2021"
 reqwest = { workspace = true }
 derive_more = { workspace = true }
 url = { workspace = true }
-lazy_static = { workspace = true }
+lazy_static.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 machineid-rs = "1.2.4"

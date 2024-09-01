@@ -1,8 +1,6 @@
 mod check_tracking;
 mod collect;
 mod error;
-mod ga_event;
-mod helpers;
 mod tracker;
-pub use error::{Error, Result};
-pub use tracker::Tracker;
+use error::Result;
+pub use tracker::{Event, EventKind, Tracker};

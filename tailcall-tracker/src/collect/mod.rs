@@ -1,2 +1,4 @@
-pub mod ga;
-pub mod posthog;
+pub mod collectors;
+mod ga;
+mod ga_event;
+mod posthog;

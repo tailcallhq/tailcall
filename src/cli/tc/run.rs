@@ -1,5 +1,4 @@
 use anyhow::Result;
-use chrono::Utc;
 use clap::Parser;
 use convert_case::{Case, Casing};
 use dotenvy::dotenv;
@@ -23,15 +22,15 @@ pub async fn run() -> Result<()> {
 
     // Initialize ping event every 60 seconds
     let _ = TRACKER
-        .init_ping(tokio::time::Duration::from_secs(60), Utc::now())
+        .init_ping(tokio::time::Duration::from_secs(60))
         .await;
 
     // Dispatch the command as an event
     let _ = TRACKER
-        .dispatch(
-            cli.command.to_string().to_case(Case::Snake).as_str(),
-            Utc::now(),
-        )
+        .dispatch(tailcall_tracker::EventKind::Run {
+            command: cli.command.to_string().to_case(Case::Snake),
+            args: cli.command.args(),
+        })
         .await;
 
     run_command(cli, config_reader, runtime).await
