@@ -5767,6 +5767,7 @@ name = "tailcall-tracker"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
  "derive_more 0.99.18",
  "lazy_static",
  "machineid-rs",

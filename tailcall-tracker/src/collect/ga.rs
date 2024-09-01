@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use reqwest::header::{HeaderName, HeaderValue};
 
 use super::super::Result;
@@ -22,8 +23,12 @@ impl GaTracker {
             measurement_id: GA_TRACKER_MEASUREMENT_ID.to_string(),
         }
     }
-    fn create_request(&self, event_name: &str) -> Result<reqwest::Request> {
-        let event = GaEvent::new(event_name);
+    fn create_request(
+        &self,
+        event_name: &str,
+        start_time: DateTime<Utc>,
+    ) -> Result<reqwest::Request> {
+        let event = GaEvent::new(event_name, start_time);
         tracing::debug!("Sending event: {:?}", event);
         let mut url = reqwest::Url::parse(self.base_url.as_str())?;
         url.set_path("/mp/collect");
@@ -45,8 +50,8 @@ impl GaTracker {
 
 #[async_trait::async_trait]
 impl EventCollector for GaTracker {
-    async fn dispatch(&self, event_name: &str) -> Result<()> {
-        let request = self.create_request(event_name)?;
+    async fn dispatch(&self, event_name: &str, start_time: DateTime<Utc>) -> Result<()> {
+        let request = self.create_request(event_name, start_time)?;
         let client = reqwest::Client::new();
         let response = client.execute(request).await?;
         let status = response.status();
@@ -64,7 +69,7 @@ mod tests {
     #[tokio::test]
     async fn test_ga_tracker() {
         let ga_tracker = GaTracker::default();
-        if let Err(e) = ga_tracker.dispatch("test").await {
+        if let Err(e) = ga_tracker.dispatch("test", Utc::now()).await {
             panic!("Failed to dispatch event: {}", e);
         }
     }

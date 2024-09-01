@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::Utc;
 use clap::Parser;
 use convert_case::{Case, Casing};
 use dotenvy::dotenv;
@@ -22,12 +23,15 @@ pub async fn run() -> Result<()> {
 
     // Initialize ping event every 60 seconds
     let _ = TRACKER
-        .init_ping(tokio::time::Duration::from_secs(60))
+        .init_ping(tokio::time::Duration::from_secs(60), Utc::now())
         .await;
 
     // Dispatch the command as an event
     let _ = TRACKER
-        .dispatch(cli.command.to_string().to_case(Case::Snake).as_str())
+        .dispatch(
+            cli.command.to_string().to_case(Case::Snake).as_str(),
+            Utc::now(),
+        )
         .await;
 
     run_command(cli, config_reader, runtime).await
@@ -61,7 +65,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_tracker() {
-        if let Err(e) = TRACKER.dispatch("test").await {
+        if let Err(e) = TRACKER.dispatch("test", Utc::now()).await {
             panic!("Failed to dispatch event: {}", e);
         }
     }

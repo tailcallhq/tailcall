@@ -19,3 +19,4 @@ sysinfo = "0.31.0"
 tailcall-version = { path = "../tailcall-version" }
 posthog-rs = "0.2.2"
 async-trait = "0.1.81"
+chrono = "0.4.38"

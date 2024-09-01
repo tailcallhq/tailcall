@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use tokio::time::Duration;
 
 use super::Result;
@@ -7,7 +8,7 @@ use crate::collect::posthog::PostHogTracker;
 
 #[async_trait::async_trait]
 pub trait EventCollector: Send + Sync {
-    async fn dispatch(&self, event_name: &str) -> Result<()>;
+    async fn dispatch(&self, event_name: &str, start_time: DateTime<Utc>) -> Result<()>;
 }
 
 pub struct Tracker {
@@ -27,22 +28,22 @@ impl Default for Tracker {
 }
 
 impl Tracker {
-    pub async fn init_ping(&'static self, duration: Duration) {
+    pub async fn init_ping(&'static self, duration: Duration, start_time: DateTime<Utc>) {
         if self.is_tracking {
             let mut interval = tokio::time::interval(duration);
             tokio::task::spawn(async move {
                 loop {
                     interval.tick().await;
-                    let _ = self.dispatch("ping").await;
+                    let _ = self.dispatch("ping", start_time).await;
                 }
             });
         }
     }
 
-    pub async fn dispatch(&'static self, name: &str) -> Result<()> {
+    pub async fn dispatch(&'static self, name: &str, start_time: DateTime<Utc>) -> Result<()> {
         if self.is_tracking {
             for collector in &self.collectors {
-                collector.dispatch(name).await?;
+                collector.dispatch(name, start_time).await?;
             }
         }
         Ok(())

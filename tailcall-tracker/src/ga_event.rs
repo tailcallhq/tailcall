@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::helpers::{get_client_id, get_cpu_cores, get_os_name};
@@ -6,6 +7,8 @@ use crate::helpers::{get_client_id, get_cpu_cores, get_os_name};
 struct Params {
     cpu_cores: String,
     os_name: String,
+    start_time: String,
+    uptime: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,12 +18,25 @@ pub struct GaEventValue {
 }
 
 impl GaEventValue {
-    fn new(name: &str) -> GaEventValue {
+    fn new(name: &str, start_time: DateTime<Utc>) -> Self {
         let cores = get_cpu_cores();
         let os_name = get_os_name();
+        let mut uptime = None;
+        if name == "ping" {
+            let current_time = Utc::now();
+            uptime = Some(format!(
+                "{} minutes",
+                current_time.signed_duration_since(start_time).num_minutes()
+            ));
+        }
         GaEventValue {
             name: name.to_string(),
-            params: Params { cpu_cores: cores, os_name },
+            params: Params {
+                cpu_cores: cores,
+                os_name,
+                start_time: start_time.to_string(),
+                uptime,
+            },
         }
     }
 }
@@ -33,9 +49,12 @@ pub struct GaEvent {
 }
 
 impl GaEvent {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &str, start_time: DateTime<Utc>) -> Self {
         let id = get_client_id();
 
-        Self { client_id: id, events: vec![GaEventValue::new(name)] }
+        Self {
+            client_id: id,
+            events: vec![GaEventValue::new(name, start_time)],
+        }
     }
 }
