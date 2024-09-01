@@ -24,7 +24,9 @@
     "Query": {
       "fields": {
         "greet": {
-          "type": "String",
+          "type": {
+            "name": "String"
+          },
           "expr": {
             "body": "Hello World!"
           },

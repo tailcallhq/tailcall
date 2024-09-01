@@ -13,20 +13,28 @@
     "Post": {
       "fields": {
         "body": {
-          "type": "String",
+          "type": {
+            "name": "String"
+          },
           "cache": null
         },
         "id": {
-          "type": "Int",
+          "type": {
+            "name": "Int"
+          },
           "cache": null
         },
         "title": {
-          "type": "String",
+          "type": {
+            "name": "String"
+          },
           "cache": null
         },
         "userId": {
-          "type": "Int",
-          "required": true,
+          "type": {
+            "name": "Int",
+            "required": true
+          },
           "cache": null
         }
       },
@@ -35,21 +43,27 @@
     "Query": {
       "fields": {
         "post1": {
-          "type": "Post",
+          "type": {
+            "name": "Post"
+          },
           "http": {
             "path": "/posts/{{.env.ID}}"
           },
           "cache": null
         },
         "post2": {
-          "type": "Post",
+          "type": {
+            "name": "Post"
+          },
           "http": {
             "path": "/posts/{{.env.POST_ID}}"
           },
           "cache": null
         },
         "post3": {
-          "type": "Post",
+          "type": {
+            "name": "Post"
+          },
           "http": {
             "path": "/posts/{{.env.NESTED_POST_ID}}"
           },

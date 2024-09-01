@@ -2,7 +2,7 @@
   "request": {
     "url": "https://example.com/users?children=true"
   },
-  "fieldName": "users",
+  "fieldName": "nestedUsers",
   "response": {
     "status": 200,
     "body": {

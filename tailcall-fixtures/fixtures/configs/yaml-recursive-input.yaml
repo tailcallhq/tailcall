@@ -8,17 +8,21 @@ types:
   Bar:
     fields:
       name:
-        type: Foo
+        type:
+          name: Foo
       rec:
-        type: Bar
+        type:
+          name: Bar
 
   Query:
     fields:
       bars:
-        type: String
+        type:
+          name: String
         args:
           filter:
-            type: Bar
+            type:
+              name: Bar
         graphql:
           args:
           - key: baz
@@ -28,4 +32,5 @@ types:
   Foo:
     fields:
       name:
-        type: String
+        type:
+          name: String
