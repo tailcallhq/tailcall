@@ -29,6 +29,10 @@ impl<Value> Variables<Value> {
     pub fn get(&self, key: &str) -> Option<&Value> {
         self.0.get(key)
     }
+    pub fn into_hashmap(self) -> HashMap<String, Value> {
+        self.0
+    }
+
     pub fn insert(&mut self, key: String, value: Value) {
         self.0.insert(key, value);
     }
@@ -350,6 +354,7 @@ pub struct OperationPlan<Input> {
     nested: Vec<Field<Nested<Input>, Input>>,
     // TODO: drop index from here. Embed all the necessary information in each field of the plan.
     pub index: Arc<Index>,
+    pub is_introspection_query: bool,
 }
 
 impl<Input> std::fmt::Debug for OperationPlan<Input> {
@@ -382,6 +387,7 @@ impl<Input> OperationPlan<Input> {
             operation_type: self.operation_type,
             nested,
             index: self.index,
+            is_introspection_query: self.is_introspection_query,
         })
     }
 }
@@ -391,6 +397,7 @@ impl<Input> OperationPlan<Input> {
         fields: Vec<Field<Flat, Input>>,
         operation_type: OperationType,
         index: Arc<Index>,
+        is_introspection_query: bool,
     ) -> Self
     where
         Input: Clone,
@@ -402,7 +409,13 @@ impl<Input> OperationPlan<Input> {
             .map(|f| f.into_nested(&fields))
             .collect::<Vec<_>>();
 
-        Self { flat: fields, nested, operation_type, index }
+        Self {
+            flat: fields,
+            nested,
+            operation_type,
+            index,
+            is_introspection_query,
+        }
     }
 
     /// Returns a graphQL operation type

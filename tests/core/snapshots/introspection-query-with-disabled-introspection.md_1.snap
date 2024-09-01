@@ -9,13 +9,11 @@ expression: response
   },
   "body": {
     "data": {
-      "noneEntryMissing": [
-        {
-          "id": 1,
-          "bar": "bar_1"
-        },
-        null
-      ]
+      "me": {
+        "id": 1,
+        "name": "John Smith",
+        "birthday": "2023-03-08T12:45:26-05:00"
+      }
     }
   }
 }
