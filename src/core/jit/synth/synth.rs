@@ -1,4 +1,3 @@
-use crate::core::ir::TypedValue;
 use crate::core::jit::model::{Field, Nested, OperationPlan, Variables};
 use crate::core::jit::store::{Data, DataPath, Store};
 use crate::core::jit::{Error, PathSegment, Positioned, ValidationError};
@@ -37,6 +36,7 @@ where
     #[inline(always)]
     pub fn synthesize(&'a self) -> Result<Value, Positioned<Error>> {
         let mut data = Value::JsonObject::new();
+        let mut path = Vec::new();
 
         for child in self.plan.as_nested().iter() {
             if !self.include(child) {
@@ -44,22 +44,25 @@ where
             }
             // TODO: in case of error set `child.output_name` to null
             // and append error to response error array
-            let val = self.iter(child, None, &DataPath::new())?;
-
+            let val = self.iter(child, None, &DataPath::new(), &mut path)?;
             data.insert_key(&child.output_name, val);
         }
 
         Ok(Value::object(data))
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
         value: Option<&'a Value>,
         data_path: &DataPath,
+        path: &mut Vec<PathSegment>,
     ) -> Result<Value, Positioned<Error>> {
-        match self.store.get(&node.id) {
+        path.push(PathSegment::Field(node.output_name.clone()));
+
+        let result = match self.store.get(&node.id) {
             Some(val) => {
                 let mut data = val;
 
@@ -77,9 +80,10 @@ where
                         let value = result.as_ref().map_err(Clone::clone)?;
 
                         if node.type_of.is_list() != value.as_array().is_some() {
-                            return self.node_nullable_guard(node);
+                            self.node_nullable_guard(node, path)
+                        } else {
+                            self.iter_inner(node, value, data_path, path)
                         }
-                        self.iter_inner(node, value, data_path)
                     }
                     _ => {
                         // TODO: should bailout instead of returning Null
@@ -88,10 +92,13 @@ where
                 }
             }
             None => match value {
-                Some(result) => self.iter_inner(node, result, data_path),
-                None => self.node_nullable_guard(node),
+                Some(result) => self.iter_inner(node, result, data_path, path),
+                None => self.node_nullable_guard(node, path),
             },
-        }
+        };
+
+        path.pop();
+        result
     }
 
     /// This guard ensures to return Null value only if node type permits it, in
@@ -99,21 +106,25 @@ where
     fn node_nullable_guard(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
+        path: &[PathSegment],
     ) -> Result<Value, Positioned<Error>> {
         // according to GraphQL spec https://spec.graphql.org/October2021/#sec-Handling-Field-Errors
         if node.type_of.is_nullable() {
             Ok(Value::null())
         } else {
-            Err(ValidationError::ValueRequired.into()).map_err(|e| self.to_location_error(e, node))
+            Err(ValidationError::ValueRequired.into())
+                .map_err(|e| self.to_location_error(e, node, path))
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[inline(always)]
     fn iter_inner(
         &'a self,
         node: &'a Field<Nested<Value>, Value>,
         value: &'a Value,
         data_path: &DataPath,
+        path: &mut Vec<PathSegment>,
     ) -> Result<Value, Positioned<Error>> {
         // skip the field if field is not included in schema
         if !self.include(node) {
@@ -123,8 +134,8 @@ where
         let eval_result = if value.is_null() {
             // check the nullability of this type unwrapping list modifier
             let is_nullable = match &node.type_of {
-                crate::core::blueprint::Type::NamedType { non_null, .. } => !*non_null,
-                crate::core::blueprint::Type::ListType { of_type, .. } => of_type.is_nullable(),
+                crate::core::Type::Named { non_null, .. } => !*non_null,
+                crate::core::Type::List { of_type, .. } => of_type.is_nullable(),
             };
             if is_nullable {
                 Ok(Value::null())
@@ -164,15 +175,17 @@ where
                 (_, Some(obj)) => {
                     let mut ans = Value::JsonObject::new();
 
-                    let type_name = value.get_type_name().unwrap_or(node.type_of.name());
-
-                    for child in node.nested_iter(type_name) {
+                    for child in self.plan.field_iter_only(node, value) {
                         // all checks for skip must occur in `iter_inner`
                         // and include be checked before calling `iter` or recursing.
-                        let include = self.include(child);
-                        if include {
-                            let val = obj.get_key(child.name.as_str());
-                            ans.insert_key(&child.output_name, self.iter(child, val, data_path)?);
+                        if self.include(child) {
+                            let value = if child.name == "__typename" {
+                                Value::string(node.value_type(value).into())
+                            } else {
+                                let val = obj.get_key(child.name.as_str());
+                                self.iter(child, val, data_path, path)?
+                            };
+                            ans.insert_key(&child.output_name, value);
                         }
                     }
 
@@ -181,8 +194,11 @@ where
                 (Some(arr), _) => {
                     let mut ans = vec![];
                     for (i, val) in arr.iter().enumerate() {
-                        let val = self.iter_inner(node, val, &data_path.clone().with_index(i))?;
-                        ans.push(val)
+                        path.push(PathSegment::Index(i));
+                        let val =
+                            self.iter_inner(node, val, &data_path.clone().with_index(i), path)?;
+                        path.pop();
+                        ans.push(val);
                     }
                     Ok(Value::array(ans))
                 }
@@ -190,32 +206,16 @@ where
             }
         };
 
-        eval_result.map_err(|e| self.to_location_error(e, node))
+        eval_result.map_err(|e| self.to_location_error(e, node, path))
     }
 
     fn to_location_error(
         &'a self,
         error: Error,
         node: &'a Field<Nested<Value>, Value>,
+        path: &[PathSegment],
     ) -> Positioned<Error> {
-        // create path from the root to the current node in the fields tree
-        let path = {
-            let mut path = Vec::new();
-
-            let mut parent = self.plan.find_field(node.id.clone());
-
-            while let Some(field) = parent {
-                path.push(PathSegment::Field(field.output_name.to_string()));
-                parent = field
-                    .parent()
-                    .and_then(|id| self.plan.find_field(id.clone()));
-            }
-
-            path.reverse();
-            path
-        };
-
-        Positioned::new(error, node.pos).with_path(path)
+        Positioned::new(error, node.pos).with_path(path.to_vec())
     }
 }
 
@@ -420,6 +420,14 @@ mod tests {
     #[test]
     fn test_json_placeholder_borrowed() {
         let jp = JP::init("{ posts { id title userId user { id name } } }", None);
+        let synth = jp.synth();
+        let val: serde_json_borrow::Value = synth.synthesize().unwrap();
+        insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())
+    }
+
+    #[test]
+    fn test_json_placeholder_typename() {
+        let jp = JP::init("{ posts { id __typename user { __typename id } } }", None);
         let synth = jp.synth();
         let val: serde_json_borrow::Value = synth.synthesize().unwrap();
         insta::assert_snapshot!(serde_json::to_string_pretty(&val).unwrap())

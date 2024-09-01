@@ -13,7 +13,7 @@ use crate::core::jit::synth::Synth;
 
 /// A specialized executor that executes with async_graphql::Value
 pub struct ConstValueExecutor {
-    plan: OperationPlan<ConstValue>,
+    pub plan: OperationPlan<ConstValue>,
 }
 
 impl ConstValueExecutor {
@@ -24,7 +24,7 @@ impl ConstValueExecutor {
     pub async fn execute(
         self,
         req_ctx: &RequestContext,
-        request: Request<ConstValue>,
+        request: &Request<ConstValue>,
     ) -> Response<ConstValue, Error> {
         let exec = ConstValueExec::new(req_ctx);
         let plan = self.plan;

@@ -31,11 +31,11 @@ pub fn update_union_resolver<'a>(
 {
     TryFold::<(&ConfigModule, &Field, &config::Type, &str), FieldDefinition, String>::new(
         |(config, field, _, _), mut b_field| {
-            let Some(union_) = config.find_union(&field.type_of) else {
+            let Some(union_) = config.find_union(field.type_of.name()) else {
                 return Valid::succeed(b_field);
             };
 
-            compile_union_resolver(config, &field.type_of, union_).map(|discriminator| {
+            compile_union_resolver(config, field.type_of.name(), union_).map(|discriminator| {
                 b_field.resolver = Some(
                     b_field
                         .resolver
