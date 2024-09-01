@@ -4,12 +4,12 @@ use super::Result;
 use crate::check_tracking::check_tracking;
 use crate::event::Event;
 
-const API_SECRET: &str = match option_env!("API_SECRET") {
+const API_SECRET: &str = match option_env!("GA_API_SECRET") {
     Some(val) => val,
     None => "dev",
 };
 
-const MEASUREMENT_ID: &str = match option_env!("MEASUREMENT_ID") {
+const MEASUREMENT_ID: &str = match option_env!("GA_MEASUREMENT_ID") {
     Some(val) => val,
     None => "dev",
 };
