@@ -3,7 +3,10 @@ use tailcall_version::VERSION;
 use super::{super::Result, collectors::EventCollector};
 use crate::tracker::Event;
 
-const POSTHOG_API_KEY: &str = "phc_CWdKhSxlSsKceZhhnSJ1LfkaGxgYhZLh4Fx7ssjrkRf";
+const POSTHOG_API_SECRET: &str = match option_env!("POSTHOG_API_SECRET") {
+    Some(val) => val,
+    None => "dev",
+};
 
 pub struct PostHogTracker {
     api_secret: String,
@@ -11,7 +14,7 @@ pub struct PostHogTracker {
 
 impl PostHogTracker {
     pub fn default() -> Self {
-        Self { api_secret: POSTHOG_API_KEY.to_string() }
+        Self { api_secret: POSTHOG_API_SECRET.to_string() }
     }
 }
 

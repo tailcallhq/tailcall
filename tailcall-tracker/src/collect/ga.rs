@@ -4,8 +4,14 @@ use super::{super::Result, collectors::EventCollector};
 use crate::{collect::ga_event::GaEvent, Event};
 
 const GA_TRACKER_URL: &str = "https://www.google-analytics.com";
-const GA_TRACKER_API_SECRET: &str = "GVaEzXFeRkCI9YBIylbEjQ";
-const GA_TRACKER_MEASUREMENT_ID: &str = "G-JEP3QDWT0G";
+const GA_TRACKER_API_SECRET: &str = match option_env!("GA_API_SECRET") {
+    Some(val) => val,
+    None => "dev",
+};
+const GA_TRACKER_MEASUREMENT_ID: &str = match option_env!("GA_MEASUREMENT_ID") {
+    Some(val) => val,
+    None => "dev",
+};
 
 pub struct GaTracker {
     base_url: String,
