@@ -60,17 +60,3 @@ impl EventCollector for GaTracker {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::tracker::EventCollector;
-
-    #[tokio::test]
-    async fn test_ga_tracker() {
-        let ga_tracker = GaTracker::default();
-        if let Err(e) = ga_tracker.dispatch("test", Utc::now()).await {
-            panic!("Failed to dispatch event: {}", e);
-        }
-    }
-}

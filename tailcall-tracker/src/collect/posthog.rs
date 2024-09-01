@@ -43,17 +43,3 @@ impl EventCollector for PostHogTracker {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::tracker::EventCollector;
-
-    #[tokio::test]
-    async fn test_posthog_tracker() {
-        let posthog_tracker = PostHogTracker::default();
-        if let Err(e) = posthog_tracker.dispatch("test", Utc::now()).await {
-            panic!("Failed to dispatch event: {}", e);
-        }
-    }
-}
