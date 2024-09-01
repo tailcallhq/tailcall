@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use tokio::time::Duration;
 
 use super::Result;
-use crate::{check_tracking::check_tracking, collect::collectors::Collectors};
+use crate::check_tracking::check_tracking;
+use crate::collect::collectors::Collectors;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Event {
@@ -74,8 +75,9 @@ impl Tracker {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use lazy_static::lazy_static;
+
+    use super::*;
 
     lazy_static! {
         static ref TRACKER: Tracker = Tracker::default();

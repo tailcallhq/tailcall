@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
-
-use crate::tracker::{Event, EventKind};
-
-use super::super::Result;
-use super::{ga::GaTracker, posthog::PostHogTracker};
 use machineid_rs::{Encryption, HWIDComponent, IdBuilder};
 use sysinfo::System;
+
+use super::super::Result;
+use super::ga::GaTracker;
+use super::posthog::PostHogTracker;
+use crate::tracker::{Event, EventKind};
 
 const PARAPHRASE: &str = "tc_key";
 const DEFAULT_CLIENT_ID: &str = "<anonymous>";

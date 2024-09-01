@@ -1,7 +1,9 @@
 use reqwest::header::{HeaderName, HeaderValue};
 
-use super::{super::Result, collectors::EventCollector};
-use crate::{collect::ga_event::GaEvent, Event};
+use super::super::Result;
+use super::collectors::EventCollector;
+use crate::collect::ga_event::GaEvent;
+use crate::Event;
 
 const GA_TRACKER_URL: &str = "https://www.google-analytics.com";
 const GA_TRACKER_API_SECRET: &str = match option_env!("GA_API_SECRET") {
