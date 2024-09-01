@@ -4,8 +4,16 @@ use super::Result;
 use crate::check_tracking::check_tracking;
 use crate::event::Event;
 
-const API_SECRET: &str = "GVaEzXFeRkCI9YBIylbEjQ";
-const MEASUREMENT_ID: &str = "G-JEP3QDWT0G";
+const API_SECRET: &str = match option_env!("API_SECRET") {
+    Some(val) => val,
+    None => "dev",
+};
+
+const MEASUREMENT_ID: &str = match option_env!("MEASUREMENT_ID") {
+    Some(val) => val,
+    None => "dev",
+};
+
 const BASE_URL: &str = "https://www.google-analytics.com";
 
 ///
