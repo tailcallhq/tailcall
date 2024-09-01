@@ -1,10 +1,9 @@
 use std::path::Path;
 use std::sync::mpsc::Receiver;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use lazy_static::lazy_static;
 use notify::{Config, Error, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::time::Instant;
 
@@ -14,10 +13,6 @@ use crate::cli::server::http_server::RUNTIME;
 use crate::cli::server::Server;
 use crate::core::config::reader::ConfigReader;
 use crate::core::config::ConfigModule;
-
-lazy_static! {
-    pub static ref PREVENT_LOGS: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
-}
 
 pub(super) async fn start_command(
     file_paths: Vec<String>,
@@ -110,8 +105,6 @@ async fn handle_watch_event(
                             last_event_time = now;
 
                             if !event.paths.is_empty() {
-                                let mut prevent_logs = PREVENT_LOGS.lock().unwrap();
-                                *prevent_logs = true;
                                 tracing::info!("Reloaded configuration {:?}", event.paths[0]);
                             }
                             if let Some(runtime) = RUNTIME.lock().unwrap().take() {
@@ -135,15 +128,13 @@ async fn handle_watch_server(
     config_reader: Arc<ConfigReader>,
     watcher: &mut RecommendedWatcher,
 ) -> Result<()> {
-    let prevent_logs = *PREVENT_LOGS.lock().unwrap();
     if file_paths.len() == 1 {
         match config_reader.read_all(file_paths).await {
             Ok(config_module) => {
                 watch_linked_files(file_paths[0].as_str(), config_module.clone(), watcher).await;
-                if !prevent_logs {
-                    log_endpoint_set(&config_module.extensions().endpoint_set);
-                    Fmt::log_n_plus_one(false, config_module.config());
-                }
+
+                log_endpoint_set(&config_module.extensions().endpoint_set);
+                Fmt::log_n_plus_one(false, config_module.config());
 
                 let server = Server::new(config_module);
                 if let Err(err) = server.fork_start(true).await {
@@ -170,11 +161,8 @@ async fn handle_watch_server(
         }
         match config_reader.read_all(file_paths).await {
             Ok(config_module) => {
-                if !prevent_logs {
-                    log_endpoint_set(&config_module.extensions().endpoint_set);
-                    Fmt::log_n_plus_one(false, config_module.config());
-                }
-
+                log_endpoint_set(&config_module.extensions().endpoint_set);
+                Fmt::log_n_plus_one(false, config_module.config());
                 let server = Server::new(config_module);
                 if let Err(err) = server.fork_start(true).await {
                     tracing::error!("Failed to start server: {}", err);

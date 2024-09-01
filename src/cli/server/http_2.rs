@@ -9,7 +9,6 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use tokio::sync::oneshot;
 
 use super::server_config::ServerConfig;
-use crate::cli::tc::start::PREVENT_LOGS;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest};
 use crate::core::http::handle_request;
 use crate::core::Errata;
@@ -46,10 +45,7 @@ pub async fn start_http_2(
 
     let builder = Server::builder(acceptor).http2_only(true);
 
-    let prevent_logs = *PREVENT_LOGS.lock().unwrap();
-    if !prevent_logs {
-        super::log_launch(sc.as_ref());
-    }
+    super::log_launch(sc.as_ref());
 
     if let Some(sender) = server_up_sender {
         sender
