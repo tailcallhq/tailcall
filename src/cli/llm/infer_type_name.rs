@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::{Error, Result, Wizard};
-use crate::core::config::Config;
+use crate::core::config::{Config, LinkType};
 use crate::core::Mustache;
 
 const BASE_TEMPLATE: &str = include_str!("prompts/infer_type_name.md");
@@ -85,34 +85,43 @@ impl InferTypeName {
     }
 
     /// Determines if a type name is automatically generated.
-    fn is_auto_generated(type_name: &str) -> bool {
-        if let Some(first_char) = type_name.chars().next() {
-            if first_char == 'T' || first_char == 'M' {
-                type_name.len() > 1 && type_name[1..].chars().all(|c| c.is_ascii_digit())
-            } else {
-                false
-            }
-        } else {
-            false
+    ///
+    /// A type name is considered automatically generated if:
+    /// - It contain "__"
+    /// - It starts with 'T' or 'M' and All characters after the first one are
+    ///   ASCII digits
+    fn is_auto_generated(type_name: &str, is_grpc: bool) -> bool {
+        if is_grpc && type_name.contains("__") {
+            return true;
         }
+
+        type_name.starts_with(['T', 'M'])
+            && type_name.len() > 1
+            && type_name[1..].chars().all(|c| c.is_ascii_digit())
     }
 
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
+
+        let is_grpc = config
+            .links
+            .iter()
+            .any(|link| link.type_of == LinkType::Protobuf);
 
         // Filter out root operation types and types with non-auto-generated names
         let types_to_be_processed = config
             .types
             .iter()
             .filter(|(type_name, _)| {
-                !config.is_root_operation_type(type_name) && Self::is_auto_generated(type_name)
+                !config.is_root_operation_type(type_name)
+                    && Self::is_auto_generated(type_name, is_grpc)
             })
             .collect::<Vec<_>>();
 
         let mut used_type_names = config
             .types
             .iter()
-            .filter(|(ty_name, _)| !Self::is_auto_generated(ty_name))
+            .filter(|(ty_name, _)| !Self::is_auto_generated(ty_name, is_grpc))
             .map(|(ty_name, _)| ty_name.to_owned())
             .collect::<IndexSet<_>>();
 
@@ -214,16 +223,19 @@ mod test {
 
     #[test]
     fn test_is_auto_generated() {
-        assert!(InferTypeName::is_auto_generated("T1"));
-        assert!(InferTypeName::is_auto_generated("T1234"));
-        assert!(InferTypeName::is_auto_generated("M1"));
-        assert!(InferTypeName::is_auto_generated("M5678"));
+        assert!(InferTypeName::is_auto_generated("T1",false));
+        assert!(InferTypeName::is_auto_generated("T1234", false));
+        assert!(InferTypeName::is_auto_generated("M1",false));
+        assert!(InferTypeName::is_auto_generated("M5678",false));
+        assert!(InferTypeName::is_auto_generated("Some__Type", true));
 
-        assert!(!InferTypeName::is_auto_generated("User"));
-        assert!(!InferTypeName::is_auto_generated("T123abc"));
-        assert!(!InferTypeName::is_auto_generated("M"));
-        assert!(!InferTypeName::is_auto_generated(""));
-        assert!(!InferTypeName::is_auto_generated("123T"));
-        assert!(!InferTypeName::is_auto_generated("A1234"));
+        assert!(!InferTypeName::is_auto_generated("Some__Type", false));
+        assert!(!InferTypeName::is_auto_generated("User",false));
+        assert!(!InferTypeName::is_auto_generated("T123abc",false));
+        assert!(!InferTypeName::is_auto_generated("M",false));
+        assert!(!InferTypeName::is_auto_generated("",false));
+        assert!(!InferTypeName::is_auto_generated("123T",false));
+        assert!(!InferTypeName::is_auto_generated("A1234",false));
+
     }
 }
