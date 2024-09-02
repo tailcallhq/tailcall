@@ -223,19 +223,18 @@ mod test {
 
     #[test]
     fn test_is_auto_generated() {
-        assert!(InferTypeName::is_auto_generated("T1",false));
+        assert!(InferTypeName::is_auto_generated("T1", false));
         assert!(InferTypeName::is_auto_generated("T1234", false));
-        assert!(InferTypeName::is_auto_generated("M1",false));
-        assert!(InferTypeName::is_auto_generated("M5678",false));
+        assert!(InferTypeName::is_auto_generated("M1", false));
+        assert!(InferTypeName::is_auto_generated("M5678", false));
         assert!(InferTypeName::is_auto_generated("Some__Type", true));
 
         assert!(!InferTypeName::is_auto_generated("Some__Type", false));
-        assert!(!InferTypeName::is_auto_generated("User",false));
-        assert!(!InferTypeName::is_auto_generated("T123abc",false));
-        assert!(!InferTypeName::is_auto_generated("M",false));
-        assert!(!InferTypeName::is_auto_generated("",false));
-        assert!(!InferTypeName::is_auto_generated("123T",false));
-        assert!(!InferTypeName::is_auto_generated("A1234",false));
-
+        assert!(!InferTypeName::is_auto_generated("User", false));
+        assert!(!InferTypeName::is_auto_generated("T123abc", false));
+        assert!(!InferTypeName::is_auto_generated("M", false));
+        assert!(!InferTypeName::is_auto_generated("", false));
+        assert!(!InferTypeName::is_auto_generated("123T", false));
+        assert!(!InferTypeName::is_auto_generated("A1234", false));
     }
 }
