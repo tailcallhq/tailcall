@@ -89,7 +89,7 @@ impl InferTypeName {
     fn is_auto_generated(type_name: &str) -> bool {
         if let Some(first_char) = type_name.chars().next() {
             if first_char == 'T' || first_char == 'M' {
-                type_name[1..].chars().all(|c| c.is_ascii_digit())
+                type_name.len() > 1 && type_name[1..].chars().all(|c| c.is_ascii_digit())
             } else {
                 false
             }
@@ -184,6 +184,8 @@ mod test {
     use genai::chat::{ChatRequest, ChatResponse, MessageContent};
     use indexmap::indexset;
 
+    use crate::cli::llm::InferTypeName;
+
     use super::{Answer, Question};
 
     #[test]
@@ -210,5 +212,20 @@ mod test {
         };
         let answer = Answer::try_from(resp).unwrap();
         insta::assert_debug_snapshot!(answer);
+    }
+
+    #[test]
+    fn test_is_auto_generated() {
+        assert!(InferTypeName::is_auto_generated("T1"));
+        assert!(InferTypeName::is_auto_generated("T1234"));
+        assert!(InferTypeName::is_auto_generated("M1"));
+        assert!(InferTypeName::is_auto_generated("M5678"));
+
+        assert!(!InferTypeName::is_auto_generated("User"));
+        assert!(!InferTypeName::is_auto_generated("T123abc"));
+        assert!(!InferTypeName::is_auto_generated("M"));
+        assert!(!InferTypeName::is_auto_generated(""));
+        assert!(!InferTypeName::is_auto_generated("123T"));
+        assert!(!InferTypeName::is_auto_generated("A1234"));
     }
 }
