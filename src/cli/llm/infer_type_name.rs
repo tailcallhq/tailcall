@@ -144,13 +144,11 @@ impl InferTypeName {
                     Ok(answer) => {
                         let name = &answer.suggestions.join(", ");
                         for name in answer.suggestions {
-                            if config.types.contains_key(&name)
-                                || new_name_mappings.contains_key(&name)
-                            {
+                            if config.types.contains_key(&name) || used_type_names.contains(&name) {
                                 continue;
                             }
                             used_type_names.insert(name.clone());
-                            new_name_mappings.insert(name, type_name.to_owned());
+                            new_name_mappings.insert(type_name.to_owned(), name);
                             break;
                         }
                         tracing::info!(
@@ -183,7 +181,7 @@ impl InferTypeName {
             }
         }
 
-        Ok(new_name_mappings.into_iter().map(|(k, v)| (v, k)).collect())
+        Ok(new_name_mappings)
     }
 }
 
