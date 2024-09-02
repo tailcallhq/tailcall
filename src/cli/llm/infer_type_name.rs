@@ -1,12 +1,16 @@
 use std::collections::HashMap;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
+use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::{Error, Result, Wizard};
 use crate::core::config::Config;
 use crate::core::Mustache;
+
+const BASE_TEMPLATE: &str = include_str!("prompts/infer_type_name.md");
+
 
 pub struct InferTypeName {
     wizard: Wizard<Question, Answer>,
@@ -29,6 +33,8 @@ impl TryFrom<ChatResponse> for Answer {
 
 #[derive(Clone, Serialize)]
 struct Question {
+    #[serde(skip_serializing_if = "IndexSet::is_empty")]
+    used_types: IndexSet<String>,
     fields: Vec<(String, String)>,
 }
 
@@ -37,6 +43,7 @@ impl TryInto<ChatRequest> for Question {
 
     fn try_into(self) -> Result<ChatRequest> {
         let input = serde_json::to_string_pretty(&Question {
+            used_types: IndexSet::default(),
             fields: vec![
                 ("id".to_string(), "String".to_string()),
                 ("name".to_string(), "String".to_string()),
@@ -54,10 +61,10 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
-        let template_str = include_str!("prompts/infer_type_name.md");
-        let template = Mustache::parse(template_str);
+        let template = Mustache::parse(BASE_TEMPLATE);
 
         let context = json!({
+            "used_types": self.used_types,
             "input": input,
             "output": output,
         });
@@ -66,7 +73,9 @@ impl TryInto<ChatRequest> for Question {
 
         Ok(ChatRequest::new(vec![
             ChatMessage::system(rendered_prompt),
-            ChatMessage::user(serde_json::to_string(&self)?),
+            ChatMessage::user(serde_json::to_string(&json!({
+                "fields": &self.fields,
+            }))?),
         ]))
     }
 }
@@ -76,20 +85,43 @@ impl InferTypeName {
         Self { wizard: Wizard::new(model, secret) }
     }
 
+    /// Determines if a type name is automatically generated.
+    fn is_auto_generated(type_name: &str) -> bool {
+        if let Some(first_char) = type_name.chars().next() {
+            if first_char == 'T' || first_char == 'M' {
+                type_name[1..].chars().all(|c| c.is_ascii_digit())
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
     pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
-        // removed root type from types.
+        // Filter out root operation types and types with non-auto-generated names
         let types_to_be_processed = config
             .types
             .iter()
-            .filter(|(type_name, _)| !config.is_root_operation_type(type_name))
+            .filter(|(type_name, _)| {
+                !config.is_root_operation_type(type_name) && Self::is_auto_generated(type_name)
+            })
             .collect::<Vec<_>>();
+
+        let mut used_type_names = config
+            .types
+            .iter()
+            .filter(|(ty_name, _)| !Self::is_auto_generated(&ty_name))
+            .map(|(ty_name, _)| ty_name.to_owned())
+            .collect::<IndexSet<_>>();
 
         let total = types_to_be_processed.len();
         for (i, (type_name, type_)) in types_to_be_processed.into_iter().enumerate() {
             // convert type to sdl format.
             let question = Question {
+                used_types: used_type_names.clone(),
                 fields: type_
                     .fields
                     .iter()
@@ -109,6 +141,7 @@ impl InferTypeName {
                             {
                                 continue;
                             }
+                            used_type_names.insert(name.clone());
                             new_name_mappings.insert(name, type_name.to_owned());
                             break;
                         }
@@ -149,12 +182,14 @@ impl InferTypeName {
 #[cfg(test)]
 mod test {
     use genai::chat::{ChatRequest, ChatResponse, MessageContent};
+    use indexmap::indexset;
 
     use super::{Answer, Question};
 
     #[test]
     fn test_to_chat_request_conversion() {
         let question = Question {
+            used_types: indexset! {"Profile".to_owned(), "Person".to_owned()},
             fields: vec![
                 ("id".to_string(), "String".to_string()),
                 ("name".to_string(), "String".to_string()),
