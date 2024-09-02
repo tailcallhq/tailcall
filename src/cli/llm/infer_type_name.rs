@@ -11,7 +11,6 @@ use crate::core::Mustache;
 
 const BASE_TEMPLATE: &str = include_str!("prompts/infer_type_name.md");
 
-
 pub struct InferTypeName {
     wizard: Wizard<Question, Answer>,
 }
@@ -113,7 +112,7 @@ impl InferTypeName {
         let mut used_type_names = config
             .types
             .iter()
-            .filter(|(ty_name, _)| !Self::is_auto_generated(&ty_name))
+            .filter(|(ty_name, _)| !Self::is_auto_generated(ty_name))
             .map(|(ty_name, _)| ty_name.to_owned())
             .collect::<IndexSet<_>>();
 
@@ -184,9 +183,8 @@ mod test {
     use genai::chat::{ChatRequest, ChatResponse, MessageContent};
     use indexmap::indexset;
 
-    use crate::cli::llm::InferTypeName;
-
     use super::{Answer, Question};
+    use crate::cli::llm::InferTypeName;
 
     #[test]
     fn test_to_chat_request_conversion() {
