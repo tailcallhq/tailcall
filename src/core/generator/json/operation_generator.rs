@@ -39,7 +39,7 @@ impl OperationTypeGenerator {
             let root_ty = TypeGenerator::new(name_generator)
                 .generate_types(&request_sample.req_body, &mut config);
             // add input type to field.
-            let name_gen = NameGenerator::new("Input");
+            let name_gen = NameGenerator::new("input");
 
             let arg_name = name_gen.next();
             if let Some(Resolver::Http(http)) = &mut field.resolver {
