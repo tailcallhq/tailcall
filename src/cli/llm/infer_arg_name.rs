@@ -43,7 +43,7 @@ impl TryFrom<ChatResponse> for Answer {
 
 #[derive(Clone, Serialize)]
 struct Question {
-    args_info: OperationDefinition,
+    definition: OperationDefinition,
 }
 
 impl TryInto<ChatRequest> for Question {
@@ -65,7 +65,7 @@ impl TryInto<ChatRequest> for Question {
             },
         };
 
-        let input = serde_json::to_string_pretty(&Question { args_info: input2 })?;
+        let input = serde_json::to_string_pretty(&Question { definition: input2 })?;
         let output = serde_json::to_string_pretty(&Answer {
             suggestions: vec![
                 "createPostInput".into(),
@@ -86,11 +86,11 @@ impl TryInto<ChatRequest> for Question {
         });
 
         let rendered_prompt = template.render(&context);
-
-        Ok(ChatRequest::new(vec![
+        let request = ChatRequest::new(vec![
             ChatMessage::system(rendered_prompt),
-            ChatMessage::user(serde_json::to_string(&self)?),
-        ]))
+            ChatMessage::user(serde_json::to_string(&self.definition)?),
+        ]);
+        Ok(request)
     }
 }
 
@@ -124,7 +124,7 @@ impl InferArgName {
                         },
                     };
 
-                    let question = Question { args_info: question };
+                    let question = Question { definition: question };
 
                     let mut delay = 3;
                     loop {
@@ -203,7 +203,7 @@ mod test {
     #[test]
     fn test_to_chat_request_conversion() {
         let question = Question {
-            args_info: OperationDefinition {
+            definition: OperationDefinition {
                 argument: MetaData {
                     name: "input2".to_string(),
                     output_type: "Article".to_string(),
