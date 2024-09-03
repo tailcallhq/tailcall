@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::{Error, Result, Wizard};
+use crate::core::config::transformer::RenameTypes;
 use crate::core::config::Config;
-use crate::core::Mustache;
+use crate::core::valid::{Valid, Validator};
+use crate::core::{AsyncTransform, Mustache, Transform};
 
 pub struct InferTypeName {
     wizard: Wizard<Question, Answer>,
@@ -76,7 +78,7 @@ impl InferTypeName {
         Self { wizard: Wizard::new(model, secret) }
     }
 
-    pub async fn generate(&mut self, config: &Config) -> Result<HashMap<String, String>> {
+    pub async fn generate(&self, config: &Config) -> Result<HashMap<String, String>> {
         let mut new_name_mappings: HashMap<String, String> = HashMap::new();
 
         // removed root type from types.
@@ -143,6 +145,26 @@ impl InferTypeName {
         }
 
         Ok(new_name_mappings.into_iter().map(|(k, v)| (v, k)).collect())
+    }
+}
+
+impl AsyncTransform for InferTypeName {
+    type Value = Config;
+    type Error = Error;
+
+    async fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
+        match self.generate(&value).await {
+            Ok(suggested_names) => {
+                match RenameTypes::new(suggested_names.iter())
+                    .transform(value)
+                    .to_result()
+                {
+                    Ok(v) => Valid::succeed(v),
+                    Err(e) => Valid::fail(Error::Err(e.to_string())),
+                }
+            }
+            Err(err) => Valid::fail(err),
+        }
     }
 }
 

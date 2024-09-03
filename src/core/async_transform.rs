@@ -10,7 +10,7 @@ pub trait AsyncTransform {
 }
 
 /// A suite of common operators that are available for all transformers.
-pub trait TransformerOps: Sized + AsyncTransform {
+pub trait AsyncTransformerOps: Sized + AsyncTransform {
     fn pipe<Other: AsyncTransform>(self, other: Other) -> Pipe<Self, Other> {
         Pipe(self, other)
     }
@@ -26,7 +26,7 @@ pub trait TransformerOps: Sized + AsyncTransform {
     }
 }
 
-impl<T: AsyncTransform> TransformerOps for T {}
+impl<T: AsyncTransform> AsyncTransformerOps for T {}
 
 pub struct When<A>(A, bool);
 impl<A: AsyncTransform> AsyncTransform for When<A> {
@@ -72,6 +72,6 @@ impl<A, E> AsyncTransform for Default<A, E> {
     }
 }
 
-pub fn default<A, E>() -> Default<A, E> {
-    Default(std::marker::PhantomData)
-}
+// pub fn default<A, E>() -> Default<A, E> {
+//     Default(std::marker::PhantomData)
+// }

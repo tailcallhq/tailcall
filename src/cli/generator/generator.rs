@@ -10,14 +10,14 @@ use super::config::{Config, LLMConfig, Resolved, Source};
 use super::source::ConfigSource;
 use crate::cli::llm::infer_arg_name::InferArgName;
 use crate::cli::llm::InferTypeName;
-use crate::core::config::transformer::{Preset, RenameArgs, RenameTypes};
+use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
 use crate::core::generator::{Generator as ConfigGenerator, Input};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
 use crate::core::valid::{ValidateInto, Validator};
-use crate::core::{Mustache, Transform};
+use crate::core::{AsyncTransform, AsyncTransformerOps, Mustache};
 
 /// CLI that reads the the config file and generates the required tailcall
 /// configuration.
@@ -185,18 +185,10 @@ impl Generator {
 
         if infer_type_names {
             if let Some(LLMConfig { model: Some(model), secret }) = llm {
-                let mut llm_gen =
-                    InferTypeName::new(model.clone(), secret.clone().map(|s| s.to_string()));
-                let suggested_names = llm_gen.generate(config.config()).await?;
-                let cfg = RenameTypes::new(suggested_names.iter())
-                    .transform(config.config().to_owned())
-                    .to_result()?;
-
-                let mut llm_gen = InferArgName::new(model, secret.map(|s| s.to_string()));
-                let suggested_names = llm_gen.generate(&cfg).await?;
-
-                let cfg = RenameArgs::new(suggested_names)
-                    .transform(cfg)
+                let cfg = InferTypeName::new(model.clone(), secret.clone().map(|s| s.to_string()))
+                    .pipe(InferArgName::new(model, secret))
+                    .transform(config.config().clone())
+                    .await
                     .to_result()?;
 
                 config = ConfigModule::from(cfg);

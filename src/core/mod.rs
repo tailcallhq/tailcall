@@ -3,6 +3,7 @@
 
 pub mod app_context;
 pub mod async_graphql_hyper;
+mod async_transform;
 mod auth;
 pub mod blueprint;
 pub mod cache;
@@ -38,7 +39,6 @@ pub mod schema_extension;
 mod serde_value_ext;
 pub mod tracing;
 mod transform;
-mod async_transform;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
@@ -49,6 +49,7 @@ use std::hash::Hash;
 use std::num::NonZeroU64;
 
 use async_graphql_value::ConstValue;
+pub use async_transform::{AsyncTransform, AsyncTransformerOps};
 pub use blueprint::Type;
 pub use errata::Errata;
 pub use error::{Error, Result};

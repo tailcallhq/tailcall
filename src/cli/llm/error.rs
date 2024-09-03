@@ -6,6 +6,7 @@ pub enum Error {
     GenAI(genai::Error),
     EmptyResponse,
     Serde(serde_json::Error),
+    Err(String),
 }
 
 pub type Result<A> = std::result::Result<A, Error>;

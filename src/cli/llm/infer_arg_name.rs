@@ -4,9 +4,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::{Error, Result, Wizard};
-use crate::core::config::transformer::ArgumentInfo;
+use crate::core::config::transformer::{ArgumentInfo, RenameArgs};
 use crate::core::config::{Config, Resolver};
-use crate::core::Mustache;
+use crate::core::valid::{Valid, Validator};
+use crate::core::{AsyncTransform, Mustache, Transform};
 
 pub struct InferArgName {
     wizard: Wizard<Question, Answer>,
@@ -98,7 +99,7 @@ impl InferArgName {
         Self { wizard: Wizard::new(model, secret) }
     }
 
-    pub async fn generate(&mut self, config: &Config) -> Result<IndexMap<String, ArgumentInfo>> {
+    pub async fn generate(&self, config: &Config) -> Result<IndexMap<String, ArgumentInfo>> {
         let mut mapping: IndexMap<String, ArgumentInfo> = IndexMap::new();
 
         for (type_name, type_) in config.types.iter() {
@@ -169,14 +170,37 @@ impl InferArgName {
     }
 }
 
+impl AsyncTransform for InferArgName {
+    type Value = Config;
+    type Error = Error;
+
+    async fn transform(
+        &self,
+        value: Self::Value,
+    ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
+        match self.generate(&value).await {
+            Ok(suggested_names) => {
+                match RenameArgs::new(suggested_names)
+                    .transform(value)
+                    .to_result()
+                {
+                    Ok(v) => Valid::succeed(v),
+                    Err(e) => Valid::fail(Error::Err(e.to_string())),
+                }
+            }
+            Err(err) => Valid::fail(err),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use genai::chat::{ChatRequest, ChatResponse, MessageContent};
 
     use super::{Answer, Question};
     use crate::cli::llm::infer_arg_name::{FieldMapping, TypeInfo};
-    use crate::core::config::Config;
-    use crate::core::valid::Validator;
+    
+    
 
     #[test]
     fn test_to_chat_request_conversion() {
