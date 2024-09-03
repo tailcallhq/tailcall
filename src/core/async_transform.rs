@@ -99,6 +99,8 @@ impl<A: Send + Sync, E: Send + Sync> AsyncTransform for Default<A, E> {
     ) -> Valid<Self::Value, Self::Error> { Valid::succeed(value) }
 }
 
-// pub fn default<A, E>() -> Default<A, E> {
-//     Default(std::marker::PhantomData)
-// }
+// FIXME: use default with async presets.
+#[allow(dead_code)]
+pub fn default<A, E>() -> Default<A, E> {
+    Default(std::marker::PhantomData)
+}
