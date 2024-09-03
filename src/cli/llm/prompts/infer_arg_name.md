@@ -2,18 +2,9 @@ Given the Operation Definition of GraphQL, suggest {{count}} meaningful names fo
 The name should be concise and preferably a single word.
 
 Example Input:
-{
-"argument": {
-"name": "Input1",
-"outputType: "Article"
-},
-"field": {
-"name" : "createPost",
-"outputType" : "Post"
-}
-}
+{{input}}
 
 Example Output:
-suggestions: ["createPostInput","postInput", "articleInput","noteInput","messageInput"],
+{{output}}
 
 Ensure the output is in valid JSON format.
