@@ -1,0 +1,7 @@
+---
+source: src/core/config/transformer/rename_args.rs
+expression: transformed_config.to_sdl()
+---
+type Query {
+  user(userId: ID!, userName: String): JSON
+}

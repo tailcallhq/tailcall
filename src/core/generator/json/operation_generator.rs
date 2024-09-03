@@ -41,7 +41,7 @@ impl OperationTypeGenerator {
             // add input type to field.
             let name_gen = NameGenerator::new("Input");
 
-            let arg_name = name_gen.next(); 
+            let arg_name = name_gen.next();
             if let Some(Resolver::Http(http)) = &mut field.resolver {
                 http.body = Some(format!("{{{{.args.{}}}}}", arg_name));
                 http.method = request_sample.method.to_owned();
