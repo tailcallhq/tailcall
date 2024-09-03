@@ -12,7 +12,7 @@ use crate::cli::llm::infer_arg_name::InferArgName;
 use crate::cli::llm::InferTypeName;
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
-use crate::core::generator::{Generator as ConfigGenerator, Input};
+use crate::core::generator::{Generator as ConfigGenerator, Input, NameGenerator};
 use crate::core::proto_reader::ProtoReader;
 use crate::core::resource_reader::{Resource, ResourceReader};
 use crate::core::runtime::TargetRuntime;
@@ -99,7 +99,7 @@ impl Generator {
     /// concrete vec containing data for generator.
     pub async fn resolve_io(&self, config: Config<Resolved>) -> anyhow::Result<Vec<Input>> {
         let mut input_samples = vec![];
-
+        let field_name_generator = NameGenerator::new("f");
         let reader = ResourceReader::cached(self.runtime.clone());
         let proto_reader = ProtoReader::init(reader.clone(), self.runtime.clone());
         let output_dir = Path::new(&config.output.path.0)
@@ -136,7 +136,7 @@ impl Generator {
                         method,
                         req_body,
                         res_body: serde_json::from_str(&response.content)?,
-                        field_name,
+                        field_name: field_name.unwrap_or(field_name_generator.next()),
                         is_mutation,
                         headers: headers.into_btree_map(),
                     });

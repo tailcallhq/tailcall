@@ -323,7 +323,7 @@ mod tests {
                 src: location("https://example.com"),
                 headers: to_headers(headers),
                 body: None,
-                field_name: "test".to_string(),
+                field_name: Some("test".to_string()),
                 method: Some(Method::GET),
                 is_mutation: None,
             },
