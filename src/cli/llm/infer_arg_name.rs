@@ -14,16 +14,16 @@ pub struct InferArgName {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct TypeInfo {
+struct MetaData {
     name: String,
     #[serde(rename = "outputType")]
     output_type: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct FieldMapping {
-    argument: TypeInfo,
-    field: TypeInfo,
+struct OperationDefinition {
+    argument: MetaData,
+    field: MetaData,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,22 +43,22 @@ impl TryFrom<ChatResponse> for Answer {
 
 #[derive(Clone, Serialize)]
 struct Question {
-    args_info: FieldMapping,
+    args_info: OperationDefinition,
 }
 
 impl TryInto<ChatRequest> for Question {
     type Error = Error;
 
     fn try_into(self) -> Result<ChatRequest> {
-        let input2 = FieldMapping {
+        let input2 = OperationDefinition {
             argument: {
-                TypeInfo {
+                MetaData {
                     name: "input2".to_string(),
                     output_type: "Article".to_string(),
                 }
             },
             field: {
-                TypeInfo {
+                MetaData {
                     name: "createPost".to_string(),
                     output_type: "Post".to_string(),
                 }
@@ -113,12 +113,12 @@ impl InferArgName {
                     Some(Resolver::Http(http)) => !http.query.iter().any(|q| &q.key == *k),
                     _ => true,
                 }) {
-                    let question = FieldMapping {
-                        argument: TypeInfo {
+                    let question = OperationDefinition {
+                        argument: MetaData {
                             name: arg_name.to_string(),
                             output_type: arg.type_of.name().to_owned(),
                         },
-                        field: TypeInfo {
+                        field: MetaData {
                             name: field_name.to_string(),
                             output_type: field.type_of.name().to_owned(),
                         },
@@ -198,17 +198,17 @@ mod test {
     use genai::chat::{ChatRequest, ChatResponse, MessageContent};
 
     use super::{Answer, Question};
-    use crate::cli::llm::infer_arg_name::{FieldMapping, TypeInfo};
+    use crate::cli::llm::infer_arg_name::{OperationDefinition, MetaData};
 
     #[test]
     fn test_to_chat_request_conversion() {
         let question = Question {
-            args_info: FieldMapping {
-                argument: TypeInfo {
+            args_info: OperationDefinition {
+                argument: MetaData {
                     name: "input2".to_string(),
                     output_type: "Article".to_string(),
                 },
-                field: TypeInfo {
+                field: MetaData {
                     name: "createPost".to_string(),
                     output_type: "Post".to_string(),
                 },
