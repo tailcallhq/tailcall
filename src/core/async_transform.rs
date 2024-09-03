@@ -50,10 +50,7 @@ impl<A: AsyncTransform + Sync + Send> AsyncTransform for When<A> {
     type Value = A::Value;
     type Error = A::Error;
 
-    async fn transform(
-        &self,
-        value: Self::Value,
-    ) -> Valid<Self::Value, Self::Error> {
+    async fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
         if self.1 {
             self.0.transform(value).await
         } else {
@@ -75,10 +72,7 @@ where
     type Value = A;
     type Error = E;
 
-    async fn transform(
-        &self,
-        value: Self::Value,
-    ) -> Valid<Self::Value, Self::Error> {
+    async fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
         let result = self.0.transform(value).await;
         match result.to_result() {
             Ok(result) => self.1.transform(result).await,
@@ -93,10 +87,9 @@ pub struct Default<A, E>(std::marker::PhantomData<(A, E)>);
 impl<A: Send + Sync, E: Send + Sync> AsyncTransform for Default<A, E> {
     type Value = A;
     type Error = E;
-    async fn transform(
-        &self,
-        value: Self::Value,
-    ) -> Valid<Self::Value, Self::Error> { Valid::succeed(value) }
+    async fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
+        Valid::succeed(value)
+    }
 }
 
 // FIXME: use default with async presets.
