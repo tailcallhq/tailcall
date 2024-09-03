@@ -38,6 +38,7 @@ pub mod schema_extension;
 mod serde_value_ext;
 pub mod tracing;
 mod transform;
+mod async_transform;
 pub mod try_fold;
 pub mod valid;
 pub mod worker;
