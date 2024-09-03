@@ -1,0 +1,23 @@
+---
+source: src/cli/llm/infer_field_name.rs
+expression: request
+---
+ChatRequest {
+    system: None,
+    messages: [
+        ChatMessage {
+            role: System,
+            content: Text(
+                "You're master at suggesting field names for GraphQL type by looking at the URL and it's http method. Given a URL suggest 5 field names for the URL, return the response in following JSON format.\nnote: for fieldName follow camel case convention.\neg.\n\ninput:\nURL: https://jsonplaceholder.typicode.com/posts\nmethod: GET\n\noutput:\n{\n\"suggestions\": [\"posts\", \"postList\", \"articles\", \"articlesList\",\"entries\"]\n}\n\ninput:\nURL: https://jsonplaceholder.typicode.com/posts\nmethod: POST\n\noutput:\n{\n\"suggestions\": [\"createPost\", \"createArticle\", \"createEntry\", \"createNewPost\",\"createNewArticle\"]\n}\n\ninput:\nURL: https://jsonplaceholder.typicode.com/posts/1\nmethod: DELETE\n\noutput:\n{\n\"suggestions\": [\"deletePost\", \"removePost\", \"removePostById\", \"deleteEntry\",\"deleteEntryById\"]\n}\n",
+            ),
+            extra: None,
+        },
+        ChatMessage {
+            role: User,
+            content: Text(
+                "{\"url\":\"https://jsonplaceholder.typicode.com/posts\",\"method\":\"GET\"}",
+            ),
+            extra: None,
+        },
+    ],
+}
