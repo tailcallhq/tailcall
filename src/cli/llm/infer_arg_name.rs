@@ -199,8 +199,6 @@ mod test {
 
     use super::{Answer, Question};
     use crate::cli::llm::infer_arg_name::{FieldMapping, TypeInfo};
-    
-    
 
     #[test]
     fn test_to_chat_request_conversion() {
