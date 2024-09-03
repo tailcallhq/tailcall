@@ -26,7 +26,6 @@ impl<Value> Synth<Value> {
 impl<'a, Value> Synth<Value>
 where
     Value: JsonLike<'a> + Clone + std::fmt::Debug,
-    Value::JsonObject<'a>: JsonObjectLike<'a, Value = Value>,
 {
     #[inline(always)]
     fn include<T>(&self, field: &Field<T, Value>) -> bool {
