@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::{Error, Result, Wizard};
-use crate::core::config::transformer::{ArgumentInfo, RenameArgs};
+use crate::core::config::transformer::{ArgumentInfo, FieldName, RenameArgs, TypeName};
 use crate::core::config::{Config, Resolver};
 use crate::core::valid::{Valid, Validator};
 use crate::core::{AsyncTransform, Mustache, Transform};
@@ -140,8 +140,8 @@ impl InferArgName {
                                     arg_name.to_owned(),
                                     ArgumentInfo::new(
                                         answer.suggestions,
-                                        field_name.to_owned(),
-                                        type_name.to_owned(),
+                                        FieldName::new(field_name),
+                                        TypeName::new(type_name),
                                     ),
                                 );
                                 break;
@@ -198,7 +198,7 @@ mod test {
     use genai::chat::{ChatRequest, ChatResponse, MessageContent};
 
     use super::{Answer, Question};
-    use crate::cli::llm::infer_arg_name::{OperationDefinition, MetaData};
+    use crate::cli::llm::infer_arg_name::{MetaData, OperationDefinition};
 
     #[test]
     fn test_to_chat_request_conversion() {

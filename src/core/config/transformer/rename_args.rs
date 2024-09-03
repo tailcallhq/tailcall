@@ -4,8 +4,23 @@ use crate::core::config::{Config, Resolver};
 use crate::core::valid::{Valid, Validator};
 use crate::core::Transform;
 
-type FieldName = String;
-type TypeName = String;
+#[derive(Clone)]
+pub struct FieldName(String);
+
+impl FieldName {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
+}
+
+#[derive(Clone)]
+pub struct TypeName(String);
+
+impl TypeName {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
+}
 
 #[derive(Clone)]
 pub struct ArgumentInfo {
@@ -43,8 +58,8 @@ impl Transform for RenameArgs {
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
         Valid::from_iter(self.0.iter(), |(existing_name, arg_info)| {
-            let type_name = &arg_info.type_name;
-            let field_name = &arg_info.field_name;
+            let type_name = &arg_info.type_name.0;
+            let field_name = &arg_info.field_name.0;
             config.types.get_mut(type_name)
                 .and_then(|type_| type_.fields.get_mut(field_name))
                 .and_then(|field_| field_.args.shift_remove(existing_name))
@@ -113,10 +128,16 @@ mod tests {
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let arg_info1 =
-            ArgumentInfo::new(vec!["userId".to_string()], "user".into(), "Query".into());
-        let arg_info2 =
-            ArgumentInfo::new(vec!["userName".to_string()], "user".into(), "Query".into());
+        let arg_info1 = ArgumentInfo::new(
+            vec!["userId".to_string()],
+            FieldName::new("user"),
+            TypeName::new("Query"),
+        );
+        let arg_info2 = ArgumentInfo::new(
+            vec!["userName".to_string()],
+            FieldName::new("user"),
+            TypeName::new("Query"),
+        );
 
         let rename_args = indexmap::indexmap! {
             "id".to_string() => arg_info1.clone(),
@@ -140,8 +161,11 @@ mod tests {
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let arg_info =
-            ArgumentInfo::new(vec!["userName".to_string()], "user".into(), "Query".into());
+        let arg_info = ArgumentInfo::new(
+            vec!["userName".to_string()],
+            FieldName::new("user"),
+            TypeName::new("Query"),
+        );
 
         let rename_args = indexmap::indexmap! {
             "name".to_string() => arg_info,
