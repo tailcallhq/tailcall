@@ -65,6 +65,7 @@ impl InferFieldName {
 
         for (type_name, type_) in config.types.iter() {
             for (field_name, field) in type_.fields.iter() {
+                // TODO: add support for gRPC resolver.
                 if let Some(Resolver::Http(http)) = &field.resolver {
                     let question = Question {
                         url: http.base_url.as_ref().unwrap().clone(),
