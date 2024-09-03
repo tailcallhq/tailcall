@@ -9,6 +9,7 @@ use pathdiff::diff_paths;
 use super::config::{Config, LLMConfig, Resolved, Source};
 use super::source::ConfigSource;
 use crate::cli::llm::infer_arg_name::InferArgName;
+use crate::cli::llm::infer_field_name::InferFieldName;
 use crate::cli::llm::InferTypeName;
 use crate::core::config::transformer::Preset;
 use crate::core::config::{self, ConfigModule, ConfigReaderContext};
@@ -185,12 +186,15 @@ impl Generator {
 
         if infer_type_names {
             if let Some(LLMConfig { model: Some(model), secret }) = llm {
-                let cfg = InferTypeName::new(model.clone(), secret.clone().map(|s| s.to_string()))
+                let cfg = InferFieldName::new(model.clone(), secret.clone().map(|s| s.to_string()))
+                    .pipe(InferTypeName::new(
+                        model.clone(),
+                        secret.clone().map(|s| s.to_string()),
+                    ))
                     .pipe(InferArgName::new(model, secret))
                     .transform(config.config().clone())
                     .await
                     .to_result()?;
-
                 config = ConfigModule::from(cfg);
             }
         }

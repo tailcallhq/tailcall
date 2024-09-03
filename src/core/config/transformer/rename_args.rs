@@ -11,6 +11,10 @@ impl FieldName {
     pub fn new(name: impl Into<String>) -> Self {
         Self(name.into())
     }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
 }
 
 #[derive(Clone)]
@@ -19,6 +23,10 @@ pub struct TypeName(String);
 impl TypeName {
     pub fn new(name: impl Into<String>) -> Self {
         Self(name.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
     }
 }
 
