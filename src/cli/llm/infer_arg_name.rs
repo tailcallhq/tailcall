@@ -9,6 +9,8 @@ use crate::core::config::{Config, Resolver};
 use crate::core::valid::{Valid, Validator};
 use crate::core::{AsyncTransform, Mustache, Transform};
 
+const BASE_PROMPT: &str = include_str!("prompts/infer_arg_name.md");
+
 pub struct InferArgName {
     wizard: Wizard<Question, Answer>,
 }
@@ -76,8 +78,7 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
-        let template_str = include_str!("prompts/infer_arg_name.md");
-        let template = Mustache::parse(template_str);
+        let template = Mustache::parse(BASE_PROMPT);
 
         let context = json!({
             "input": input,
