@@ -14,8 +14,9 @@ use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::propagation::TraceContextPropagator;
 use opentelemetry_sdk::{runtime, Resource};
 use tonic::metadata::MetadataMap;
+use tonic::service::interceptor::InterceptedService;
 use tonic::transport::Server as TonicServer;
-use tonic::{Response, Status};
+use tonic::{Request, Response, Status};
 use tonic_tracing_opentelemetry::middleware::server;
 use tower::make::Shared;
 use tracing_subscriber::layer::SubscriberExt;
@@ -215,6 +216,19 @@ fn init_tracer() -> Result<(), Error> {
     Ok(())
 }
 
+fn intercept(req: Request<()>) -> Result<Request<()>, Status> {
+    println!("Intercepting request: {:?}", req);
+    if let Some(token) = req.metadata().get("authorization") {
+        if token != "secret" {
+            Err(Status::permission_denied("Unauthorized"))
+        } else {
+            Ok(req)
+        }
+    } else {
+        Err(Status::permission_denied("Unauthorized"))
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     if std::env::var("HONEYCOMB_API_KEY").is_ok() {
@@ -234,7 +248,7 @@ async fn main() -> Result<(), Error> {
     let tonic_service = TonicServer::builder()
         .layer(server::OtelGrpcLayer::default())
         .add_service(NewsServiceServer::new(news_service))
-        .add_service(service)
+        .add_service(InterceptedService::new(service, intercept))
         .into_service();
     let make_svc = Shared::new(tonic_service);
     println!("Server listening on grpc://{}", addr);

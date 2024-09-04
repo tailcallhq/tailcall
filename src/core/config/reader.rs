@@ -123,7 +123,15 @@ impl ConfigReader {
                     })
                 }
                 LinkType::Grpc => {
-                    let meta = self.proto_reader.fetch(link.src.as_str()).await?;
+                    let meta = self
+                        .proto_reader
+                        .fetch(
+                            link.src.as_str(),
+                            link.method.clone(),
+                            link.body.clone(),
+                            link.headers.clone(),
+                        )
+                        .await?;
 
                     for m in meta {
                         extensions.add_proto(m);

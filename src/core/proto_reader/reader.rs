@@ -8,6 +8,8 @@ use futures_util::FutureExt;
 use prost_reflect::prost_types::{FileDescriptorProto, FileDescriptorSet};
 use protox::file::{FileResolver, GoogleFileResolver};
 
+use crate::core::config::KeyValue;
+use crate::core::http::Method;
 use crate::core::proto_reader::fetch::GrpcReflection;
 use crate::core::resource_reader::{Cached, ResourceReader};
 use crate::core::runtime::TargetRuntime;
@@ -30,9 +32,22 @@ impl ProtoReader {
         Self { reader, runtime }
     }
 
+    #[allow(clippy::too_many_arguments)]
     /// Fetches proto files from a grpc server (grpc reflection)
-    pub async fn fetch<T: AsRef<str>>(&self, url: T) -> anyhow::Result<Vec<ProtoMetadata>> {
-        let grpc_reflection = Arc::new(GrpcReflection::new(url.as_ref(), self.runtime.clone()));
+    pub async fn fetch<T: AsRef<str>>(
+        &self,
+        url: T,
+        method: Option<Method>,
+        body: Option<String>,
+        headers: Option<Vec<KeyValue>>,
+    ) -> anyhow::Result<Vec<ProtoMetadata>> {
+        let grpc_reflection = Arc::new(GrpcReflection::new(
+            url.as_ref(),
+            method,
+            body,
+            headers,
+            self.runtime.clone(),
+        ));
 
         let mut proto_metadata = vec![];
         let service_list = grpc_reflection.list_all_files().await?;
