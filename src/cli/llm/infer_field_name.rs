@@ -116,47 +116,69 @@ impl InferFieldName {
 
         for (type_name, type_) in config.types.iter() {
             for (field_name, field) in type_.fields.iter() {
-                // TODO: add support for gRPC resolver.
-                if let Some(Resolver::Http(http)) = &field.resolver {
-                    let base_url = http
-                        .base_url
-                        .as_ref()
-                        .or(config.upstream.base_url.as_ref())
-                        .map(String::as_str)
-                        .ok_or_else(|| {
-                            Error::Err("Base URL is required for HTTP resolver".into())
-                        })?;
+                if field.resolver.is_none() {
+                    continue;
+                }
+                let question = match &field.resolver {
+                    Some(Resolver::Http(http)) => {
+                        let base_url = http
+                            .base_url
+                            .clone()
+                            .or_else(|| {
+                                config
+                                    .upstream
+                                    .base_url
+                                    .as_ref()
+                                    .map(|base| base.to_owned() + &http.path)
+                            })
+                            .ok_or_else(|| {
+                                Error::Err("Base URL is required for HTTP resolver".into())
+                            })?;
 
-                    let question =
-                        Question { url: base_url.to_owned(), method: http.method.to_string() };
+                        Question { url: base_url, method: http.method.to_string() }
+                    }
+                    Some(Resolver::Grpc(grpc)) => {
+                        let base_url = grpc
+                            .base_url
+                            .as_ref()
+                            .or(config.upstream.base_url.as_ref())
+                            .map(String::as_str)
+                            .ok_or_else(|| {
+                                Error::Err("Base URL is required for gRPC resolver".into())
+                            })?;
 
-                    let mut delay = 3;
-                    loop {
-                        let answer = self.wizard.ask(question.clone()).await;
-                        match answer {
-                            Ok(answer) => {
-                                tracing::info!(
-                                    "Suggestions for Field {}: [{:?}]",
+                        Question { url: base_url.to_owned(), method: grpc.method.to_string() }
+                    }
+                    _ => {
+                        unreachable!("Unsupported for other resolvers");
+                    }
+                };
+
+                let mut delay = 3;
+                loop {
+                    let answer = self.wizard.ask(question.clone()).await;
+                    match answer {
+                        Ok(answer) => {
+                            tracing::info!(
+                                "Suggestions for Field {}: [{:?}]",
+                                field_name,
+                                answer.suggestions,
+                            );
+                            mapping.insert(
+                                field_name.to_owned(),
+                                FieldInfo::new(answer.suggestions, TypeName::new(type_name)),
+                            );
+                            break;
+                        }
+                        Err(e) => {
+                            if let Error::GenAI(_) = e {
+                                tracing::warn!(
+                                    "Unable to retrieve a name for the field '{}'. Retrying in {}s",
                                     field_name,
-                                    answer.suggestions,
+                                    delay
                                 );
-                                mapping.insert(
-                                    field_name.to_owned(),
-                                    FieldInfo::new(answer.suggestions, TypeName::new(type_name)),
-                                );
-                                break;
-                            }
-                            Err(e) => {
-                                if let Error::GenAI(_) = e {
-                                    tracing::warn!(
-                                            "Unable to retrieve a name for the field '{}'. Retrying in {}s",
-                                            field_name,
-                                            delay
-                                        );
-                                    tokio::time::sleep(tokio::time::Duration::from_secs(delay))
-                                        .await;
-                                    delay *= std::cmp::min(delay * 2, 60);
-                                }
+                                tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;
+                                delay *= std::cmp::min(delay * 2, 60);
                             }
                         }
                     }
