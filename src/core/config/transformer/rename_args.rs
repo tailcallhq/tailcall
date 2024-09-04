@@ -44,7 +44,7 @@ impl Transform for RenameArgs {
                 .map_or_else(
                     || Valid::fail(format!(
                         "Cannot rename argument as Field '{}' not found in type '{}'.",
-                        existing_arg_name, type_name
+                        field_name, type_name
                     )),
                     |field_| {
                         if field_.args.contains_key(new_argument_name) {
@@ -247,6 +247,35 @@ mod tests {
 
         let expected_err = ValidationError::new(
             "Cannot rename argument from 'name' to 'userName' as it already exists in field 'user' of type 'Query'.".into(),
+        );
+
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), expected_err);
+    }
+
+    #[test]
+    fn test_wrong_location_for_argument() {
+        let sdl = r#"
+            type Query {
+                user(id: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let arg_info = Location {
+            field_name: "post".to_string(),
+            new_argument_name: "postId".to_string(),
+            type_name: "Query".to_string(),
+        };
+
+        let rename_args = indexmap::indexmap! {
+            "id".to_string() => arg_info,
+        };
+
+        let result = RenameArgs::new(rename_args).transform(config).to_result();
+
+        let expected_err = ValidationError::new(
+            "Cannot rename argument as Field 'post' not found in type 'Query'.".into(),
         );
 
         assert!(result.is_err());
