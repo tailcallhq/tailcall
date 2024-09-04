@@ -33,34 +33,26 @@ impl Transform for RenameFields {
     fn transform(&self, mut value: Self::Value) -> Valid<Self::Value, Self::Error> {
         Valid::from_iter(self.0.iter(), |(field_name, field_info)| {
             let type_name = field_info.type_name.as_str();
-            let suggested_field_name = field_info.suggestions.iter().find(|suggested_field_name| {
-                if let Some(type_) = value.find_type(type_name) {
-                    !type_.fields.contains_key(*suggested_field_name)
-                } else {
-                    false
-                }
-            });
 
-            match suggested_field_name {
-                Some(suggested_name) => {
-                    if let Some(type_def) = value.types.get_mut(type_name) {
+            if let Some(type_def) = value.types.get_mut(type_name) {
+                let suggested_field_name = field_info.suggestions.iter().find(|name| !type_def.fields.contains_key(*name));
+
+                match suggested_field_name {
+                    Some(suggested_name) => {
                         if let Some(field_def) = type_def.fields.remove(field_name) {
                             type_def.fields.insert(suggested_name.to_owned(), field_def);
                             Valid::succeed(())
                         } else {
-                            Valid::fail(format!(
-                                "Field '{}' not found in type '{}'.",
-                                field_name, type_name
-                            ))
+                            Valid::fail(format!("Field '{}' not found in type '{}'.", field_name, type_name))
                         }
-                    } else {
-                        Valid::fail(format!("Type '{}' not found.", type_name))
                     }
+                    None => Valid::fail(format!(
+                        "Could not rename field '{}' in type '{}'. All suggested names are already in use.",
+                        field_name, type_name
+                    )),
                 }
-                None => Valid::fail(format!(
-                    "Could not rename field name '{}'. All suggested names are already in use.",
-                    field_name
-                )),
+            } else {
+                Valid::fail(format!("Type '{}' not found.", type_name))
             }
         })
         .map(|_| value)
@@ -202,8 +194,8 @@ mod tests {
 
         let actual = RenameFields::new(mappings).transform(config).to_result();
         let expected_error = ValidationError::new(
-            "Could not rename field name 'old_name'. All suggested names are already in use."
-                .to_string(),
+            "Could not rename field 'old_name' in type 'User'. All suggested names are already in use."
+                .into(),
         );
 
         assert!(actual.is_err());
