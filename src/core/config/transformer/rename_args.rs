@@ -1,4 +1,3 @@
-
 use crate::core::config::{Config, Resolver};
 use crate::core::valid::{Valid, Validator};
 use crate::core::Transform;
@@ -53,7 +52,7 @@ impl Transform for RenameArgs {
                             ));
                         }
 
-                        if !matches!(&field_.resolver, Some(Resolver::Http(_)) | Some(Resolver::Grpc(_)) | Some(Resolver::Expr(_)) | Some(Resolver::Js(_)) | None) {
+                        if matches!(&field_.resolver, Some(Resolver::Call(_)) | Some(Resolver::Graphql(_))) {
                             return Valid::fail(format!(
                                 "Cannot rename argument '{}' to '{}' in field '{}' of type '{}'. Renaming is only supported for HTTP, Expr, JS and gRPC resolvers.",
                                 existing_arg_name, new_argument_name, field_name, type_name
@@ -94,11 +93,8 @@ impl Transform for RenameArgs {
                                     Resolver::Js(_) => {
                                         // No handling required as it doesn't take any arguments.
                                     }
-                                    Resolver::Call(_) => {
-
-                                    }
-                                    Resolver::Graphql(_) => {
-
+                                    _ => {
+                                        // Call and GraphQL resolver not supported.
                                     }
                                 }
                             }
