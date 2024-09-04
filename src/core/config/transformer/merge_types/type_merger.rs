@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use indexmap::{IndexMap, IndexSet};
 
-use super::mergeable_types::{MergeableTypes};
+use super::mergeable_types::MergeableTypes;
 use super::similarity::Similarity;
 use crate::core::config::{Config, Type};
 use crate::core::merge_right::MergeRight;
