@@ -3,28 +3,19 @@ note: for fieldName follow camel case convention.
 eg.
 
 input:
-URL: https://jsonplaceholder.typicode.com/posts
-method: GET
+{{input1}}
 
 output:
-{
-"suggestions": ["posts", "postList", "articles", "articlesList","entries"]
-}
+{{output1}}
 
 input:
-URL: https://jsonplaceholder.typicode.com/posts
-method: POST
+{{input2}}
 
 output:
-{
-"suggestions": ["createPost", "createArticle", "createEntry", "createNewPost","createNewArticle"]
-}
+{{output2}}
 
 input:
-URL: https://jsonplaceholder.typicode.com/posts/1
-method: DELETE
+{{input3}}
 
 output:
-{
-"suggestions": ["deletePost", "removePost", "removePostById", "deleteEntry","deleteEntryById"]
-}
+{{output3}}

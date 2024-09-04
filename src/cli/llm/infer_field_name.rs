@@ -42,7 +42,58 @@ impl TryInto<ChatRequest> for Question {
     fn try_into(self) -> Result<ChatRequest> {
         let template = Mustache::parse(BASE_TEMPLATE);
 
+        let input1 = Question {
+            url: "https://jsonplaceholder.typicode.com/posts".into(),
+            method: "GET".into(),
+        };
+
+        let output1 = Answer {
+            suggestions: vec![
+                "posts".into(),
+                "postList".into(),
+                "articles".into(),
+                "articlesList".into(),
+                "entries".into(),
+            ],
+        };
+
+        let input2 = Question {
+            url: "https://jsonplaceholder.typicode.com/posts".into(),
+            method: "POST".into(),
+        };
+
+        let output2 = Answer {
+            suggestions: vec![
+                "createPost".into(),
+                "createArticle".into(),
+                "createEntry".into(),
+                "createNewPost".into(),
+                "createNewArticle".into(),
+            ],
+        };
+
+        let input3 = Question {
+            url: "https://jsonplaceholder.typicode.com/posts/1".into(),
+            method: "DELETE".into(),
+        };
+
+        let output3 = Answer {
+            suggestions: vec![
+                "deletePost".into(),
+                "removePost".into(),
+                "removePostById".into(),
+                "deleteEntry".into(),
+                "deleteEntryById".into(),
+            ],
+        };
+
         let context = json!({
+            "input1": input1,
+            "input2": input2,
+            "input3": input3,
+            "output1": output1,
+            "output2": output2,
+            "output3": output3,
             "count": 5,
         });
 
