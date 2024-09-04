@@ -67,10 +67,17 @@ impl InferFieldName {
             for (field_name, field) in type_.fields.iter() {
                 // TODO: add support for gRPC resolver.
                 if let Some(Resolver::Http(http)) = &field.resolver {
-                    let question = Question {
-                        url: http.base_url.as_ref().unwrap().clone(),
-                        method: http.method.to_string(),
-                    };
+                    let base_url = http
+                        .base_url
+                        .as_ref()
+                        .or(config.upstream.base_url.as_ref())
+                        .map(String::as_str)
+                        .ok_or_else(|| {
+                            Error::Err("Base URL is required for HTTP resolver".into())
+                        })?;
+
+                    let question =
+                        Question { url: base_url.to_owned(), method: http.method.to_string() };
 
                     let mut delay = 3;
                     loop {
