@@ -57,7 +57,7 @@ impl Generator {
             query: "Query".into(),
             mutation: None,
             inputs: Vec::new(),
-            type_name_prefix: "T".into(),
+            type_name_prefix: "GEN__".into(),
             transformers: Default::default(),
         }
     }

@@ -89,7 +89,7 @@ impl TypeMerger {
         // step 2: merge similar types into single merged type.
         for same_types in similar_type_group_list {
             let mut merged_into = Type::default();
-            let merged_type_name = format!("M{}", merge_counter);
+            let merged_type_name = format!("GEN__M{}", merge_counter);
             let mut did_we_merge = false;
             for type_name in same_types {
                 if let Some(type_) = config.types.get(type_name.as_str()) {
