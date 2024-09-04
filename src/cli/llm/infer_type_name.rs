@@ -85,6 +85,7 @@ impl InferTypeName {
     }
 
     /// All generated type names starts with "GEN__"
+    #[inline]
     fn is_auto_generated(type_name: &str) -> bool {
         type_name.starts_with("GEN__")
     }
