@@ -166,7 +166,7 @@ mod tests {
     }
 
     #[test]
-    fn test_body_param() {
+    fn test_http_body_param() {
         let sdl = r#"
             schema {
                 query: Query
@@ -185,6 +185,32 @@ mod tests {
             field_name: "createPost".to_string(),
             new_argument_name: "createPostInput".to_string(),
             type_name: "Mutation".to_string(),
+        };
+
+        let rename_args = indexmap::indexmap! {
+            "input".to_string() => arg_info1,
+        };
+
+        let result = RenameArgs::new(rename_args)
+            .transform(config)
+            .to_result()
+            .unwrap();
+        insta::assert_snapshot!(result.to_sdl());
+    }
+
+    #[test]
+    fn test_grpc_body_param() {
+        let sdl = r#"
+            type Query {
+                newsByIdBatch(input: JSON!): JSON! @grpc(method: "news.NewsService.GetMultipleNews", body: "{{args.input}}")
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let arg_info1 = Location {
+            field_name: "newsByIdBatch".to_string(),
+            new_argument_name: "newsInput".to_string(),
+            type_name: "Query".to_string(),
         };
 
         let rename_args = indexmap::indexmap! {
