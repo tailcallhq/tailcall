@@ -11,7 +11,7 @@ use crate::core::ir::model::IR;
 use crate::core::ir::TypedValue;
 use crate::core::jit;
 use crate::core::jit::synth::Synth;
-use crate::core::json::{JsonLike, JsonLikeList, JsonObjectLike};
+use crate::core::json::{JsonLike, JsonLikeList};
 
 type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Positioned<Error>>>>>;
 
