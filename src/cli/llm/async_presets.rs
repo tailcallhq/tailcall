@@ -1,6 +1,7 @@
 use derive_setters::Setters;
 
 use super::infer_arg_name::InferArgName;
+use super::infer_field_name::InferFieldName;
 use super::Error;
 use crate::cli::llm::InferTypeName;
 use crate::core::config::Config;
@@ -30,7 +31,10 @@ impl AsyncTransform for AsyncPreset {
     ) -> crate::core::valid::Valid<Self::Value, Self::Error> {
         let model = self.model.clone();
         let secret = self.secret.clone();
-        InferTypeName::new(model.clone(), secret.clone().map(|s| s.to_string()))
+
+        // Note: try to keep the order same.
+        InferTypeName::new(model.clone(), secret.clone())
+            .pipe(InferFieldName::new(model.clone(), secret.clone()))
             .pipe(InferArgName::new(model, secret))
             .transform(value)
             .await
