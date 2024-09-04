@@ -10,5 +10,5 @@ input Input1 {
 }
 
 type Mutation {
-  postComments(postCommentsInput: Input1): T44 @http(body: "{{.args.postCommentsInput}}", method: "POST", path: "/posts")
+  postComments(GEN__Input1: Input1): T44 @http(body: "{{.args.GEN__Input1}}", method: "POST", path: "/posts")
 }
