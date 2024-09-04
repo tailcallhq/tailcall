@@ -110,7 +110,7 @@ impl<'a, Value: Deserialize<'a> + Clone + 'a + JsonLike<'a>> JP<Value> {
 
     pub fn synth(&'a self) -> Synth<Value> {
         let ProcessedTestData { posts, users } = self.test_data.to_processed();
-        let plan = self.plan.clone();
+        let plan = &self.plan;
         let vars = self.vars.clone();
 
         let posts_id = plan.find_field_path(&["posts"]).unwrap().id.to_owned();

@@ -6,16 +6,16 @@ use crate::core::scalar;
 
 type ValueStore<Value> = Store<Result<Value, Positioned<Error>>>;
 
-pub struct Synth<Value> {
-    plan: OperationPlan<Value>,
+pub struct Synth<'a, Value> {
+    plan: &'a OperationPlan<Value>,
     store: ValueStore<Value>,
     variables: Variables<Value>,
 }
 
-impl<Value> Synth<Value> {
+impl<'a, Value> Synth<'a, Value> {
     #[inline(always)]
     pub fn new(
-        plan: OperationPlan<Value>,
+        plan: &'a OperationPlan<Value>,
         store: ValueStore<Value>,
         variables: Variables<Value>,
     ) -> Self {
@@ -23,7 +23,7 @@ impl<Value> Synth<Value> {
     }
 }
 
-impl<'a, Value> Synth<Value>
+impl<'a, Value> Synth<'a, Value>
 where
     Value: JsonLike<'a> + Clone + std::fmt::Debug,
 {
@@ -230,6 +230,7 @@ mod tests {
     use crate::core::jit::model::{FieldId, Variables};
     use crate::core::jit::store::{Data, Store};
     use crate::core::jit::synth::Synth;
+    use crate::core::jit::{Error, OperationPlan, Positioned};
     use crate::core::valid::Validator;
 
     const POSTS: &str = r#"
@@ -302,49 +303,57 @@ mod tests {
 
     const CONFIG: &str = include_str!("../fixtures/jsonplaceholder-mutation.graphql");
 
-    fn make_store<'a, Value>(query: &str, store: Vec<(FieldId, TestData)>) -> Synth<Value>
-    where
-        Value: Deserialize<'a> + Serialize + Clone + std::fmt::Debug,
-    {
-        let store = store
-            .into_iter()
-            .map(|(id, data)| (id, data.into_value()))
-            .collect::<Vec<_>>();
+    struct StoreInfo<Value> {
+        plan: OperationPlan<Value>,
+        store: Store<Result<Value, Positioned<Error>>>,
+        vars: Variables<Value>,
+    }
+    impl<'a, Value: Deserialize<'a> + Serialize + Clone + std::fmt::Debug> StoreInfo<Value> {
+        fn make_store(query: &str, store: Vec<(FieldId, TestData)>) -> Self {
+            let store = store
+                .into_iter()
+                .map(|(id, data)| (id, data.into_value()))
+                .collect::<Vec<_>>();
 
-        let doc = async_graphql::parser::parse_query(query).unwrap();
-        let config = Config::from_sdl(CONFIG).to_result().unwrap();
-        let config = ConfigModule::from(config);
+            let doc = async_graphql::parser::parse_query(query).unwrap();
+            let config = Config::from_sdl(CONFIG).to_result().unwrap();
+            let config = ConfigModule::from(config);
 
-        let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
-        let plan = builder.build(&Variables::new(), None).unwrap();
-        let plan = plan.try_map(Deserialize::deserialize).unwrap();
+            let builder = Builder::new(&Blueprint::try_from(&config).unwrap(), doc);
+            let plan = builder.build(&Variables::new(), None).unwrap();
+            let plan = plan.try_map(Deserialize::deserialize).unwrap();
 
-        let store = store
-            .into_iter()
-            .fold(Store::new(), |mut store, (id, data)| {
-                store.set_data(id, data.map(Ok));
-                store
-            });
-        let vars = Variables::new();
-
-        super::Synth::new(plan, store, vars)
+            let store = store
+                .into_iter()
+                .fold(Store::new(), |mut store, (id, data)| {
+                    store.set_data(id, data.map(Ok));
+                    store
+                });
+            let vars = Variables::new();
+            Self { plan, store, vars }
+        }
     }
 
     struct Synths<'a> {
-        synth_const: Synth<async_graphql::Value>,
-        synth_borrow: Synth<serde_json_borrow::Value<'a>>,
+        info_const: StoreInfo<async_graphql::Value>,
+        info_borrow: StoreInfo<serde_json_borrow::Value<'a>>,
     }
 
     impl<'a> Synths<'a> {
         fn init(query: &str, store: Vec<(FieldId, TestData)>) -> Self {
-            let synth_const = make_store::<ConstValue>(query, store.clone());
-            let synth_borrow = make_store::<serde_json_borrow::Value>(query, store.clone());
-            Self { synth_const, synth_borrow }
+            let info_const = StoreInfo::<ConstValue>::make_store(query, store.clone());
+            let info_borrow = StoreInfo::<serde_json_borrow::Value>::make_store(query, store);
+
+            Self { info_const, info_borrow }
         }
         fn assert(self) {
-            let val_const = self.synth_const.synthesize().unwrap();
+            let StoreInfo { plan, store, vars } = self.info_const;
+            let synth_const = Synth::new(&plan, store, vars);
+            let val_const = synth_const.synthesize().unwrap();
             let val_const = serde_json::to_string_pretty(&val_const).unwrap();
-            let val_borrow = self.synth_borrow.synthesize().unwrap();
+            let StoreInfo { plan, store, vars } = self.info_borrow;
+            let synth_borrow = Synth::new(&plan, store, vars);
+            let val_borrow = synth_borrow.synthesize().unwrap();
             let val_borrow = serde_json::to_string_pretty(&val_borrow).unwrap();
             assert_eq!(val_const, val_borrow);
         }

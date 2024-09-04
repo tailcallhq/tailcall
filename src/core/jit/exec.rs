@@ -18,19 +18,19 @@ type SharedStore<Output, Error> = Arc<Mutex<Store<Result<Output, Positioned<Erro
 ///
 /// Default GraphQL executor that takes in a GraphQL Request and produces a
 /// GraphQL Response
-pub struct Executor<IRExec, Input> {
-    ctx: RequestContext<Input>,
+pub struct Executor<'a, IRExec, Input> {
+    ctx: RequestContext<'a, Input>,
     exec: IRExec,
 }
 
-impl<Input, Output, Exec> Executor<Exec, Input>
+impl<'a, Input, Output, Exec> Executor<'a, Exec, Input>
 where
     Output: for<'b> JsonLike<'b> + Debug + Clone,
     Input: Clone + Debug,
     Exec: IRExecutor<Input = Input, Output = Output, Error = jit::Error>,
 {
-    pub fn new(plan: OperationPlan<Input>, exec: Exec) -> Self {
-        Self { exec, ctx: RequestContext::new(plan.clone()) }
+    pub fn new(plan: &'a OperationPlan<Input>, exec: Exec) -> Self {
+        Self { exec, ctx: RequestContext::new(plan) }
     }
 
     pub async fn store(&self) -> Store<Result<Output, Positioned<jit::Error>>> {
@@ -42,7 +42,7 @@ where
         store
     }
 
-    pub async fn execute(self, synth: Synth<Output>) -> Response<Output, jit::Error> {
+    pub async fn execute(self, synth: Synth<'a, Output>) -> Response<Output, jit::Error> {
         let mut response = Response::new(synth.synthesize());
         response.add_errors(self.ctx.errors().clone());
         response
@@ -53,7 +53,7 @@ where
 struct ExecutorInner<'a, Input, Output, Error, Exec> {
     store: SharedStore<Output, Error>,
     ir_exec: &'a Exec,
-    request: &'a RequestContext<Input>,
+    request: &'a RequestContext<'a, Input>,
 }
 
 impl<'a, Input, Output, Error, Exec> ExecutorInner<'a, Input, Output, Error, Exec>

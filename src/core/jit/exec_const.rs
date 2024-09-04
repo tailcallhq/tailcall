@@ -28,11 +28,10 @@ impl ConstValueExecutor {
     ) -> Response<ConstValue, Error> {
         let exec = ConstValueExec::new(req_ctx);
         let plan = self.plan;
-        // TODO: drop the clones in plan
         let vars = request.variables.clone();
-        let exe = Executor::new(plan.clone(), exec);
+        let exe = Executor::new(&plan, exec);
         let store = exe.store().await;
-        let synth = Synth::new(plan, store, vars);
+        let synth = Synth::new(&plan, store, vars);
         exe.execute(synth).await
     }
 }
