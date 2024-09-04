@@ -166,6 +166,39 @@ mod tests {
     }
 
     #[test]
+    fn test_body_param() {
+        let sdl = r#"
+            schema {
+                query: Query
+                mutation: Mutation
+            }
+            type Query {
+                hello: String! @expr(body: "test")
+            }
+            type Mutation {
+              createPost(input: JSON): JSON! @http(path: "/posts", body: "{{.args.input}}", method: "POST")
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let arg_info1 = Location {
+            field_name: "createPost".to_string(),
+            new_argument_name: "createPostInput".to_string(),
+            type_name: "Mutation".to_string(),
+        };
+
+        let rename_args = indexmap::indexmap! {
+            "input".to_string() => arg_info1,
+        };
+
+        let result = RenameArgs::new(rename_args)
+            .transform(config)
+            .to_result()
+            .unwrap();
+        insta::assert_snapshot!(result.to_sdl());
+    }
+
+    #[test]
     fn test_rename_args_conflict() {
         let sdl = r#"
             type Query {
