@@ -61,6 +61,15 @@ impl Transform for RenameArgs {
                             ));
                         }
 
+                        if let Some(Resolver::Http(http)) = &field_.resolver {
+                            if http.query.iter().any(|q| &q.key == existing_arg_name) {
+                                return Valid::fail(format!(
+                                    "Cannot rename argument '{}' to '{}' in field '{}' of type '{}'. Renaming of query parameters is not allowed.",
+                                    existing_arg_name, new_argument_name, field_name, type_name
+                                ));
+                            }
+                        }
+
                         if let Some(arg) = field_.args.shift_remove(existing_arg_name) {
                             field_.args.insert(new_argument_name.to_owned(), arg);
                             if let Some(resolver) = &mut field_.resolver {
@@ -105,7 +114,7 @@ mod tests {
     fn test_rename_args() {
         let sdl = r#"
             type Query {
-                user(id: ID!, name: String): JSON
+                user(id: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
@@ -115,15 +124,9 @@ mod tests {
             new_argument_name: "userId".to_string(),
             type_name: "Query".to_string(),
         };
-        let arg_info2 = Location {
-            field_name: "user".to_string(),
-            new_argument_name: "userName".to_string(),
-            type_name: "Query".to_string(),
-        };
 
         let rename_args = indexmap::indexmap! {
             "id".to_string() => arg_info1.clone(),
-            "name".to_string() => arg_info2.clone(),
         };
 
         let transformed_config = RenameArgs::new(rename_args)
@@ -132,6 +135,34 @@ mod tests {
             .unwrap();
 
         insta::assert_snapshot!(transformed_config.to_sdl());
+    }
+
+    #[test]
+    fn test_fail_query_parameter_rename() {
+        let sdl = r#"
+            type Query {
+                user(id: ID!, name: String): JSON @http(path: "https://jsonplaceholder.typicode.com/users", query: [{key: "id", value: "{{.args.id}}"}])
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let arg_info1 = Location {
+            field_name: "user".to_string(),
+            new_argument_name: "userId".to_string(),
+            type_name: "Query".to_string(),
+        };
+
+        let rename_args = indexmap::indexmap! {
+            "id".to_string() => arg_info1,
+        };
+
+        let result = RenameArgs::new(rename_args).transform(config).to_result();
+        let expected_err = ValidationError::new(
+            "Cannot rename argument 'id' to 'userId' in field 'user' of type 'Query'. Renaming of query parameters is not allowed.".into()
+        );
+
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), expected_err);
     }
 
     #[test]

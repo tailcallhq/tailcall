@@ -3,5 +3,5 @@ source: src/core/config/transformer/rename_args.rs
 expression: transformed_config.to_sdl()
 ---
 type Query {
-  user(userId: ID!, userName: String): JSON
+  user(userId: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.userId}}")
 }
