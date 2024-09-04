@@ -1,4 +1,3 @@
-use indexmap::IndexMap;
 
 use crate::core::config::{Config, Resolver};
 use crate::core::valid::{Valid, Validator};
@@ -18,10 +17,10 @@ pub struct Location {
 ///     field_name => the field in which the argument in defined.
 ///     type_name => the type in which the argument is defined.
 /// }
-pub struct RenameArgs(IndexMap<String, Location>);
+pub struct RenameArgs(Vec<(String, Location)>);
 
 impl RenameArgs {
-    pub fn new(arg_rename_map: IndexMap<String, Location>) -> Self {
+    pub fn new(arg_rename_map: Vec<(String, Location)>) -> Self {
         Self(arg_rename_map)
     }
 }
@@ -54,9 +53,9 @@ impl Transform for RenameArgs {
                             ));
                         }
 
-                        if !matches!(&field_.resolver, Some(Resolver::Http(_)) | Some(Resolver::Grpc(_)) | None) {
+                        if !matches!(&field_.resolver, Some(Resolver::Http(_)) | Some(Resolver::Grpc(_)) | Some(Resolver::Expr(_)) | Some(Resolver::Js(_)) | None) {
                             return Valid::fail(format!(
-                                "Cannot rename argument '{}' to '{}' in field '{}' of type '{}'. Renaming is only supported for HTTP and gRPC resolvers.",
+                                "Cannot rename argument '{}' to '{}' in field '{}' of type '{}'. Renaming is only supported for HTTP, Expr, JS and gRPC resolvers.",
                                 existing_arg_name, new_argument_name, field_name, type_name
                             ));
                         }
@@ -87,7 +86,20 @@ impl Transform for RenameArgs {
                                             }
                                         }
                                     }
-                                    _ => {} // TODO: presently only HTTP & gRPC resolvers are supported, later on add support for rest of resolvers.
+                                    Resolver::Expr(expr) => {
+                                        if let Some(str_val) = expr.body.as_str() {
+                                            expr.body = serde_json::Value::String(str_val.replace(existing_arg_name, new_argument_name));
+                                        }
+                                    }
+                                    Resolver::Js(_) => {
+                                        // No handling required as it doesn't take any arguments.
+                                    }
+                                    Resolver::Call(_) => {
+
+                                    }
+                                    Resolver::Graphql(_) => {
+
+                                    }
                                 }
                             }
                             Valid::succeed(())
@@ -113,8 +125,17 @@ mod tests {
     #[test]
     fn test_rename_args() {
         let sdl = r#"
+            schema {
+                query: Query
+                mutation: Mutation
+            }
             type Query {
                 user(id: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
+                id(x: ID!): ID @expr(body: "{{.args.x}}")
+                newsByIdBatch(input: JSON!): JSON! @grpc(method: "news.NewsService.GetMultipleNews", body: "{{args.input}}")
+            }
+            type Mutation {
+              createPost(input: JSON): JSON! @http(path: "/posts", body: "{{.args.input}}", method: "POST")
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
@@ -125,9 +146,30 @@ mod tests {
             type_name: "Query".to_string(),
         };
 
-        let rename_args = indexmap::indexmap! {
-            "id".to_string() => arg_info1.clone(),
+        let arg_info2 = Location {
+            field_name: "id".to_string(),
+            new_argument_name: "y".to_string(),
+            type_name: "Query".to_string(),
         };
+
+        let arg_info3 = Location {
+            field_name: "newsByIdBatch".to_string(),
+            new_argument_name: "newsInput".to_string(),
+            type_name: "Query".to_string(),
+        };
+
+        let arg_info4 = Location {
+            field_name: "createPost".to_string(),
+            new_argument_name: "createPostInput".to_string(),
+            type_name: "Mutation".to_string(),
+        };
+
+        let rename_args = vec![
+            ("id".to_string(), arg_info1),
+            ("x".to_string(), arg_info2),
+            ("input".to_string(), arg_info3),
+            ("input".to_string(), arg_info4),
+        ];
 
         let transformed_config = RenameArgs::new(rename_args)
             .transform(config)
@@ -152,9 +194,7 @@ mod tests {
             type_name: "Query".to_string(),
         };
 
-        let rename_args = indexmap::indexmap! {
-            "id".to_string() => arg_info1,
-        };
+        let rename_args = vec![("id".to_string(), arg_info1)];
 
         let result = RenameArgs::new(rename_args).transform(config).to_result();
         let expected_err = ValidationError::new(
@@ -163,65 +203,6 @@ mod tests {
 
         assert!(result.is_err());
         assert_eq!(result.err().unwrap(), expected_err);
-    }
-
-    #[test]
-    fn test_http_body_param() {
-        let sdl = r#"
-            schema {
-                query: Query
-                mutation: Mutation
-            }
-            type Query {
-                hello: String! @expr(body: "test")
-            }
-            type Mutation {
-              createPost(input: JSON): JSON! @http(path: "/posts", body: "{{.args.input}}", method: "POST")
-            }
-        "#;
-        let config = Config::from_sdl(sdl).to_result().unwrap();
-
-        let arg_info1 = Location {
-            field_name: "createPost".to_string(),
-            new_argument_name: "createPostInput".to_string(),
-            type_name: "Mutation".to_string(),
-        };
-
-        let rename_args = indexmap::indexmap! {
-            "input".to_string() => arg_info1,
-        };
-
-        let result = RenameArgs::new(rename_args)
-            .transform(config)
-            .to_result()
-            .unwrap();
-        insta::assert_snapshot!(result.to_sdl());
-    }
-
-    #[test]
-    fn test_grpc_body_param() {
-        let sdl = r#"
-            type Query {
-                newsByIdBatch(input: JSON!): JSON! @grpc(method: "news.NewsService.GetMultipleNews", body: "{{args.input}}")
-            }
-        "#;
-        let config = Config::from_sdl(sdl).to_result().unwrap();
-
-        let arg_info1 = Location {
-            field_name: "newsByIdBatch".to_string(),
-            new_argument_name: "newsInput".to_string(),
-            type_name: "Query".to_string(),
-        };
-
-        let rename_args = indexmap::indexmap! {
-            "input".to_string() => arg_info1,
-        };
-
-        let result = RenameArgs::new(rename_args)
-            .transform(config)
-            .to_result()
-            .unwrap();
-        insta::assert_snapshot!(result.to_sdl());
     }
 
     #[test]
@@ -239,9 +220,7 @@ mod tests {
             type_name: "Query".to_string(),
         };
 
-        let rename_args = indexmap::indexmap! {
-            "name".to_string() => arg_info,
-        };
+        let rename_args = vec![("name".to_string(), arg_info)];
 
         let result = RenameArgs::new(rename_args).transform(config).to_result();
 
@@ -268,9 +247,7 @@ mod tests {
             type_name: "Query".to_string(),
         };
 
-        let rename_args = indexmap::indexmap! {
-            "id".to_string() => arg_info,
-        };
+        let rename_args = vec![("id".to_string(), arg_info)];
 
         let result = RenameArgs::new(rename_args).transform(config).to_result();
 
@@ -297,14 +274,39 @@ mod tests {
             type_name: "Query".to_string(),
         };
 
-        let rename_args = indexmap::indexmap! {
-            "userById".to_string() => arg_info,
-        };
+        let rename_args = vec![("userById".to_string(), arg_info)];
 
         let result = RenameArgs::new(rename_args).transform(config).to_result();
 
         let expected_err = ValidationError::new(
             "Cannot rename argument 'userById' as it does not exist in field 'user' of type 'Query'.".into(),
+        );
+
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), expected_err);
+    }
+
+    #[test]
+    fn test_error_for_unsupported_resolver() {
+        let sdl = r#"
+            type Query {
+              user(id: ID!): JSON! @graphQL(name: "user", args: [{key: "id", value: "{{.args.id}}"}])
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let arg_info = Location {
+            field_name: "user".to_string(),
+            new_argument_name: "userId".to_string(),
+            type_name: "Query".to_string(),
+        };
+
+        let rename_args = vec![("id".to_string(), arg_info)];
+
+        let result = RenameArgs::new(rename_args).transform(config).to_result();
+
+        let expected_err = ValidationError::new(
+            "Cannot rename argument 'id' to 'userId' in field 'user' of type 'Query'. Renaming is only supported for HTTP, Expr, JS and gRPC resolvers.".into()
         );
 
         assert!(result.is_err());

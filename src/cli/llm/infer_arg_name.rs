@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
-use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -102,8 +101,8 @@ impl InferArgName {
         Self { wizard: Wizard::new(model, secret) }
     }
 
-    pub async fn generate(&self, config: &Config) -> Result<IndexMap<String, Location>> {
-        let mut mapping: IndexMap<String, Location> = IndexMap::new();
+    pub async fn generate(&self, config: &Config) -> Result<Vec<(String, Location)>> {
+        let mut mapping: Vec<(String, Location)> = Vec::new();
 
         for (type_name, type_) in config.types.iter() {
             // collect all the args that's needs to be processed with LLM.
@@ -156,7 +155,7 @@ impl InferArgName {
                                         type_name: type_name.to_string(),
                                     };
 
-                                    mapping.insert(arg_name.to_owned(), arg_location);
+                                    mapping.push((arg_name.to_owned(), arg_location));
                                 }
                                 break;
                             }

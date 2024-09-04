@@ -2,6 +2,17 @@
 source: src/core/config/transformer/rename_args.rs
 expression: transformed_config.to_sdl()
 ---
+schema @server @upstream {
+  query: Query
+  mutation: Mutation
+}
+
+type Mutation {
+  createPost(createPostInput: JSON): JSON! @http(body: "{{.args.createPostInput}}", method: "POST", path: "/posts")
+}
+
 type Query {
+  id(y: ID!): ID @expr(body: "{{.args.y}}")
+  newsByIdBatch(newsInput: JSON!): JSON! @grpc(body: "{{args.newsInput}}", method: "news.NewsService.GetMultipleNews")
   user(userId: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.userId}}")
 }
