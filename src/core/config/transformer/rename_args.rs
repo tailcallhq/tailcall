@@ -5,52 +5,23 @@ use crate::core::valid::{Valid, Validator};
 use crate::core::Transform;
 
 #[derive(Clone)]
-pub struct FieldName(String);
-
-impl FieldName {
-    pub fn new(name: impl Into<String>) -> Self {
-        Self(name.into())
-    }
+pub struct Location {
+    pub new_argument_name: String,
+    pub field_name: String,
+    pub type_name: String,
 }
-
-#[derive(Clone)]
-pub struct TypeName(String);
-
-impl TypeName {
-    pub fn new(name: impl Into<String>) -> Self {
-        Self(name.into())
-    }
-}
-
-#[derive(Clone)]
-pub struct ArgumentInfo {
-    new_argument_name: String,
-    field_name: FieldName,
-    type_name: TypeName,
-}
-
-impl ArgumentInfo {
-    pub fn new(
-        new_argument_name: String,
-        field_name: FieldName,
-        type_name: TypeName,
-    ) -> ArgumentInfo {
-        Self { new_argument_name, field_name, type_name }
-    }
-}
-
 
 /// Transformer responsible for renaming the arguments.
-/// 
+///
 /// old_argument_name => {
 ///     new_argument_name => new argument name for argument.
 ///     field_name => the field in which the argument in defined.
 ///     type_name => the type in which the argument is defined.
 /// }
-pub struct RenameArgs(IndexMap<String, ArgumentInfo>);
+pub struct RenameArgs(IndexMap<String, Location>);
 
 impl RenameArgs {
-    pub fn new(arg_rename_map: IndexMap<String, ArgumentInfo>) -> Self {
+    pub fn new(arg_rename_map: IndexMap<String, Location>) -> Self {
         Self(arg_rename_map)
     }
 }
@@ -60,10 +31,11 @@ impl Transform for RenameArgs {
     type Error = String;
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
-        Valid::from_iter(self.0.iter(), |(existing_arg_name, arg_info)| {
-            let type_name = &arg_info.type_name.0;
-            let field_name = &arg_info.field_name.0;
-            let new_argument_name = &arg_info.new_argument_name;
+        Valid::from_iter(self.0.iter(), |(existing_arg_name, location)| {
+            // note: we can use expect on Location type as this type it's impossible to call this function without location being not set.
+            let type_name = location.type_name.as_str();
+            let field_name = location.field_name.as_str();
+            let new_argument_name = location.new_argument_name.as_str();
 
             config
                 .types
@@ -82,12 +54,7 @@ impl Transform for RenameArgs {
                             ));
                         }
 
-                        let is_rename_op_supported = match &field_.resolver {
-                            Some(Resolver::Http(_)) | Some(Resolver::Grpc(_)) | None => true,
-                            _ => false,
-                        };
-
-                        if !is_rename_op_supported {
+                        if !matches!(&field_.resolver, Some(Resolver::Http(_)) | Some(Resolver::Grpc(_)) | None) {
                             return Valid::fail(format!(
                                 "Cannot rename argument '{}' to '{}' in field '{}' of type '{}'. Renaming is only supported for HTTP and gRPC resolvers.",
                                 existing_arg_name, new_argument_name, field_name, type_name
@@ -114,7 +81,6 @@ impl Transform for RenameArgs {
                                     _ => {} // TODO: presently only HTTP & gRPC resolvers are supported, later on add support for rest of resolvers.
                                 }
                             }
-    
                             Valid::succeed(())
 
                         }else{
@@ -144,16 +110,16 @@ mod tests {
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let arg_info1 = ArgumentInfo::new(
-            "userId".to_string(),
-            FieldName::new("user"),
-            TypeName::new("Query"),
-        );
-        let arg_info2 = ArgumentInfo::new(
-            "userName".to_string(),
-            FieldName::new("user"),
-            TypeName::new("Query"),
-        );
+        let arg_info1 = Location {
+            field_name: "user".to_string(),
+            new_argument_name: "userId".to_string(),
+            type_name: "Query".to_string(),
+        };
+        let arg_info2 = Location {
+            field_name: "user".to_string(),
+            new_argument_name: "userName".to_string(),
+            type_name: "Query".to_string(),
+        };
 
         let rename_args = indexmap::indexmap! {
             "id".to_string() => arg_info1.clone(),
@@ -177,11 +143,11 @@ mod tests {
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let arg_info = ArgumentInfo::new(
-            "userName".to_string(),
-            FieldName::new("user"),
-            TypeName::new("Query"),
-        );
+        let arg_info = Location {
+            field_name: "user".to_string(),
+            new_argument_name: "userName".to_string(),
+            type_name: "Query".to_string(),
+        };
 
         let rename_args = indexmap::indexmap! {
             "name".to_string() => arg_info,
