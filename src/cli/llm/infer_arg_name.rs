@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -109,6 +111,9 @@ impl InferArgName {
                 if field.args.is_empty() {
                     continue;
                 }
+
+                let mut used_arg_name = HashSet::new();
+
                 // filter out query params as we shouldn't change the names of query params.
                 for (arg_name, arg) in field.args.iter().filter(|(k, _)| match &field.resolver {
                     Some(Resolver::Http(http)) => !http.query.iter().any(|q| &q.key == *k),
@@ -137,14 +142,25 @@ impl InferArgName {
                                     arg_name,
                                     answer.suggestions,
                                 );
-                                mapping.insert(
-                                    arg_name.to_owned(),
-                                    ArgumentInfo::new(
-                                        answer.suggestions,
-                                        FieldName::new(field_name),
-                                        TypeName::new(type_name),
-                                    ),
-                                );
+                                let suggested_argument_name = answer
+                                    .suggestions
+                                    .into_iter()
+                                    .filter(|suggestion| {
+                                        !field.args.contains_key(suggestion.as_str())
+                                            && !used_arg_name.contains(suggestion.as_str())
+                                    })
+                                    .next();
+                                if let Some(suggested_arg_name) = suggested_argument_name {
+                                    used_arg_name.insert(suggested_arg_name.clone());
+                                    mapping.insert(
+                                        arg_name.to_owned(),
+                                        ArgumentInfo::new(
+                                            suggested_arg_name,
+                                            FieldName::new(field_name),
+                                            TypeName::new(type_name),
+                                        ),
+                                    );
+                                }
                                 break;
                             }
                             Err(e) => {

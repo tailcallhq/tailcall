@@ -24,31 +24,34 @@ impl TypeName {
 
 #[derive(Clone)]
 pub struct ArgumentInfo {
-    suggested_names: Vec<String>,
+    new_argument_name: String,
     field_name: FieldName,
     type_name: TypeName,
 }
 
 impl ArgumentInfo {
     pub fn new(
-        suggested_names: Vec<String>,
+        new_argument_name: String,
         field_name: FieldName,
         type_name: TypeName,
     ) -> ArgumentInfo {
-        Self { suggested_names, field_name, type_name }
+        Self { new_argument_name, field_name, type_name }
     }
 }
 
-/// arg_name: {
-///     suggested_names: Vec<String>, suggested names for argument.
-///     field_name: String, name of the field which requires the argument.
-///     type_name: String, name of the type where the argument resides.
+
+/// Transformer responsible for renaming the arguments.
+/// 
+/// old_argument_name => {
+///     new_argument_name => new argument name for argument.
+///     field_name => the field in which the argument in defined.
+///     type_name => the type in which the argument is defined.
 /// }
 pub struct RenameArgs(IndexMap<String, ArgumentInfo>);
 
 impl RenameArgs {
-    pub fn new(suggestions: IndexMap<String, ArgumentInfo>) -> Self {
-        Self(suggestions)
+    pub fn new(arg_rename_map: IndexMap<String, ArgumentInfo>) -> Self {
+        Self(arg_rename_map)
     }
 }
 
@@ -57,57 +60,70 @@ impl Transform for RenameArgs {
     type Error = String;
 
     fn transform(&self, mut config: Self::Value) -> Valid<Self::Value, Self::Error> {
-        Valid::from_iter(self.0.iter(), |(existing_name, arg_info)| {
+        Valid::from_iter(self.0.iter(), |(existing_arg_name, arg_info)| {
             let type_name = &arg_info.type_name.0;
             let field_name = &arg_info.field_name.0;
-            config.types.get_mut(type_name)
+            let new_argument_name = &arg_info.new_argument_name;
+
+            config
+                .types
+                .get_mut(type_name)
                 .and_then(|type_| type_.fields.get_mut(field_name))
-                .and_then(|field_| field_.args.shift_remove(existing_name))
                 .map_or_else(
-                    || Valid::fail(format!("Argument '{}' not found in type '{}'.", existing_name, type_name)),
-                    |arg| {
-                        let field_ = config.types.get_mut(type_name)
-                            .and_then(|type_| type_.fields.get_mut(field_name))
-                            .expect("Field should exist");
+                    || Valid::fail(format!(
+                        "Cannot rename argument as Field '{}' not found in type '{}'.",
+                        existing_arg_name, type_name
+                    )),
+                    |field_| {
+                        if field_.args.contains_key(new_argument_name) {
+                            return Valid::fail(format!(
+                                "Cannot rename argument from '{}' to '{}' as it already exists in field '{}' of type '{}'.",
+                                existing_arg_name, new_argument_name, field_name, type_name
+                            ));
+                        }
 
-                        let new_name = arg_info.suggested_names.iter()
-                            .find(|suggested_name| !field_.args.contains_key(*suggested_name))
-                            .cloned();
+                        let is_rename_op_supported = match &field_.resolver {
+                            Some(Resolver::Http(_)) | Some(Resolver::Grpc(_)) | None => true,
+                            _ => false,
+                        };
 
-                        match new_name {
-                            Some(name) => {
-                                field_.args.insert(name.clone(), arg);
-                                match field_.resolver.as_mut(){
-                                    Some(Resolver::Http(http)) => {
-                                        // Note: we shouldn't modify the query params, as modifying them will change the API itself.
-                                        http.path = http.path.replace(existing_name, name.as_str());
-                                        if let Some(body) = http.body.as_mut() {
-                                            *body = body.replace(existing_name, name.as_str());
+                        if !is_rename_op_supported {
+                            return Valid::fail(format!(
+                                "Cannot rename argument '{}' to '{}' in field '{}' of type '{}'. Renaming is only supported for HTTP and gRPC resolvers.",
+                                existing_arg_name, new_argument_name, field_name, type_name
+                            ));
+                        }
+
+                        if let Some(arg) = field_.args.shift_remove(existing_arg_name) {
+                            field_.args.insert(new_argument_name.to_owned(), arg);
+                            if let Some(resolver) = &mut field_.resolver {
+                                match resolver {
+                                    Resolver::Http(http) => {
+                                        http.path = http.path.replace(existing_arg_name, new_argument_name);
+                                        if let Some(body) = &mut http.body {
+                                            *body = body.replace(existing_arg_name, new_argument_name);
                                         }
                                     }
-                                    Some(Resolver::Grpc(grpc)) => {
-                                        if let Some(body) = grpc.body.as_mut() {
+                                    Resolver::Grpc(grpc) => {
+                                        if let Some(body) = &mut grpc.body {
                                             if let Some(str_val) = body.as_str() {
-                                                *body = serde_json::Value::String(str_val.replace(existing_name, &name));
+                                                *body = serde_json::Value::String(str_val.replace(existing_arg_name, new_argument_name));
                                             }
                                         }
                                     }
-                                    _ => {
-                                        // TODO: handle for other resolvers.
-                                    }
+                                    _ => {} // TODO: presently only HTTP & gRPC resolvers are supported, later on add support for rest of resolvers.
                                 }
-
-                                Valid::succeed(())
-                            },
-                            None => {
-                                field_.args.insert(existing_name.clone(), arg);
-                                Valid::fail(format!(
-                                    "Could not rename argument '{}'. All suggested names are already in use.",
-                                    existing_name
-                                ))
                             }
+    
+                            Valid::succeed(())
+
+                        }else{
+                            Valid::fail(format!(
+                                "Cannot rename argument '{}' as it does not exist in field '{}' of type '{}'.",
+                                existing_arg_name, field_name, type_name
+                            ))
                         }
-                    }
+                    },
                 )
         })
         .map(|_| config)
@@ -129,12 +145,12 @@ mod tests {
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
         let arg_info1 = ArgumentInfo::new(
-            vec!["userId".to_string()],
+            "userId".to_string(),
             FieldName::new("user"),
             TypeName::new("Query"),
         );
         let arg_info2 = ArgumentInfo::new(
-            vec!["userName".to_string()],
+            "userName".to_string(),
             FieldName::new("user"),
             TypeName::new("Query"),
         );
@@ -162,7 +178,7 @@ mod tests {
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
         let arg_info = ArgumentInfo::new(
-            vec!["userName".to_string()],
+            "userName".to_string(),
             FieldName::new("user"),
             TypeName::new("Query"),
         );
@@ -174,7 +190,7 @@ mod tests {
         let result = RenameArgs::new(rename_args).transform(config).to_result();
 
         let expected_err = ValidationError::new(
-            "Could not rename argument 'name'. All suggested names are already in use.".to_string(),
+            "Cannot rename argument from 'name' to 'userName' as it already exists in field 'user' of type 'Query'.".into(),
         );
 
         assert!(result.is_err());
