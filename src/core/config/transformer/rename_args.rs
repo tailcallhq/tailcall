@@ -254,7 +254,7 @@ mod tests {
     }
 
     #[test]
-    fn test_wrong_location_for_argument() {
+    fn test_wrong_location_field_name_for_argument() {
         let sdl = r#"
             type Query {
                 user(id: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
@@ -276,6 +276,35 @@ mod tests {
 
         let expected_err = ValidationError::new(
             "Cannot rename argument as Field 'post' not found in type 'Query'.".into(),
+        );
+
+        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), expected_err);
+    }
+
+    #[test]
+    fn test_argument_not_exists() {
+        let sdl = r#"
+            type Query {
+                user(id: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let arg_info = Location {
+            field_name: "user".to_string(),
+            new_argument_name: "userId".to_string(),
+            type_name: "Query".to_string(),
+        };
+
+        let rename_args = indexmap::indexmap! {
+            "userById".to_string() => arg_info,
+        };
+
+        let result = RenameArgs::new(rename_args).transform(config).to_result();
+
+        let expected_err = ValidationError::new(
+            "Cannot rename argument 'userById' as it does not exist in field 'user' of type 'Query'.".into(),
         );
 
         assert!(result.is_err());
