@@ -28,20 +28,18 @@ impl Transform for RenameFields {
 
             if let Some(type_def) = value.types.get_mut(type_name) {
                 if type_def.fields.contains_key(new_field_name) {
-                    return Valid::fail(format!(
+                    Valid::fail(format!(
                         "Field '{}' already exists in type '{}'.",
                         new_field_name, type_name
-                    ));
+                    ))
+                } else if let Some(field_def) = type_def.fields.remove(field_name) {
+                    type_def.fields.insert(new_field_name.to_owned(), field_def);
+                    Valid::succeed(())
                 } else {
-                    if let Some(field_def) = type_def.fields.remove(field_name) {
-                        type_def.fields.insert(new_field_name.to_owned(), field_def);
-                        Valid::succeed(())
-                    } else {
-                        Valid::fail(format!(
-                            "Field '{}' not found in type '{}'.",
-                            field_name, type_name
-                        ))
-                    }
+                    Valid::fail(format!(
+                        "Field '{}' not found in type '{}'.",
+                        field_name, type_name
+                    ))
                 }
             } else {
                 Valid::fail(format!("Type '{}' not found.", type_name))
@@ -141,10 +139,7 @@ mod tests {
 
         let mappings = vec![(
             "name".into(),
-            Location {
-                new_field_name: "newName".into(),
-                type_name: "User".into(),
-            },
+            Location { new_field_name: "newName".into(), type_name: "User".into() },
         )];
 
         let actual = RenameFields::new(mappings).transform(config).to_result();
