@@ -211,16 +211,13 @@ impl AsyncTransform for InferFieldName {
 
     async fn transform(&self, value: Self::Value) -> Valid<Self::Value, Self::Error> {
         match self.generate(&value).await {
-            Ok(suggested_names) => {
-                match RenameFields::new(suggested_names)
-                    .transform(value)
-                    .to_result()
-                {
-                    Ok(v) => Valid::succeed(v),
-                    Err(e) => Valid::fail(Error::Err(e.to_string())),
-                }
-            }
-            Err(err) => Valid::fail(err),
+            Ok(suggested_names) => RenameFields::new(suggested_names)
+                .transform(value)
+                .to_result()
+                .map(Valid::succeed)
+                .map_err(|e| Error::Err(e.to_string()))
+                .unwrap_or_else(Valid::fail),
+            Err(e) => Valid::fail(e),
         }
     }
 }
