@@ -155,14 +155,20 @@ mod test {
                 id: ID!
                 name: String
             }
+            type B {
+                name: String
+                username: String
+            }
+            union FooBar = A | B
             type Post {
                 id: ID!
                 title: String
                 body: String
             }
-            type B {
-                name: String
-                username: String
+            enum Status {
+                PENDING
+                STARTED,
+                COMPLETED
             }
             type Query {
                 posts: [Post] @http(path: "/posts")
@@ -179,6 +185,7 @@ mod test {
                 "A" => "User",
                 "B" => "InputUser",
                 "Mutation" => "UserMutation",
+                "Status" => "TaskStatus"
             }
             .iter(),
         )
