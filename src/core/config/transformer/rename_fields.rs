@@ -142,8 +142,8 @@ mod tests {
         let mappings = vec![(
             "name".into(),
             Location {
-                new_field_name: "new_name".into(),
-                type_name: "NonExistentType".into(),
+                new_field_name: "newName".into(),
+                type_name: "User".into(),
             },
         )];
 
