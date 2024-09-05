@@ -25,7 +25,11 @@ pub fn is_valid_field_name(property_name: &str) -> bool {
 
 pub fn to_gql_type(value: &Value) -> String {
     match value {
-        Value::Null => "Empty",
+        Value::Null => {
+            // treat null values as JSON scalars as we don't know the exact shape of the
+            // output.
+            "JSON"
+        }
         Value::Bool(_) => "Boolean",
         Value::Number(_) => "Int",
         Value::String(_) => "String",
@@ -81,7 +85,7 @@ mod test {
         assert_eq!(to_gql_type(&json!(false)), "Boolean");
         assert_eq!(to_gql_type(&json!([1, 2, 3])), "List");
         assert_eq!(to_gql_type(&json!({"name":"test", "age": 12})), "Object");
-        assert_eq!(to_gql_type(&Value::Null), "Empty");
+        assert_eq!(to_gql_type(&Value::Null), "JSON");
 
         assert_eq!(to_gql_type(&json!([])), "List");
         assert_eq!(to_gql_type(&json!({})), "Object");
