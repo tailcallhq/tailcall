@@ -254,4 +254,30 @@ mod test {
         let expected = Err(b_err.combine(c_err));
         assert_eq!(actual, expected);
     }
+
+    #[test]
+    fn test_inferface_rename() {
+        let sdl = r#"
+            schema {
+                query: Query
+            }
+            interface Node {
+                id: ID
+            }
+            type Post implements Node {
+                id: ID
+                title: String
+            }
+            type Query {
+                posts: [Post] @http(path: "/posts")
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let result = RenameTypes::new(hashmap! {"Node" =>  "NodeTest"}.iter())
+            .transform(config)
+            .to_result()
+            .unwrap();
+        insta::assert_snapshot!(result.to_sdl())
+    }
 }
