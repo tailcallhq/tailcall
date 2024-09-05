@@ -359,15 +359,14 @@ mod tests {
     "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let arg_info = ArgumentInfo::new(
-            vec!["news".to_string()],
-            FieldName::new("newsById"),
-            TypeName::new("Query"),
-        );
-
-        let rename_args = indexmap::indexmap! {
-            "article".to_string() => arg_info,
-        };
+        let rename_args = vec![(
+            "article".into(),
+            Location {
+                field_name: "newsById".into(),
+                new_argument_name: "news".into(),
+                type_name: "Query".into(),
+            },
+        )];
 
         let transformed_config = RenameArgs::new(rename_args)
             .transform(config)

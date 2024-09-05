@@ -1,10 +1,11 @@
+use std::collections::HashSet;
+
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
-use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::{Error, Result, Wizard};
-use crate::core::config::transformer::{FieldInfo, RenameFields, TypeName};
+use crate::core::config::transformer::{FieldLocation, RenameFields};
 use crate::core::config::{Config, Resolver};
 use crate::core::valid::{Valid, Validator};
 use crate::core::{AsyncTransform, Mustache, Transform};
@@ -111,10 +112,11 @@ impl InferFieldName {
         Self { wizard: Wizard::new(model, secret) }
     }
 
-    pub async fn generate(&self, config: &Config) -> Result<IndexMap<String, FieldInfo>> {
-        let mut mapping: IndexMap<String, FieldInfo> = IndexMap::new();
+    pub async fn generate(&self, config: &Config) -> Result<Vec<(String, FieldLocation)>> {
+        let mut mapping: Vec<(String, FieldLocation)> = Vec::new();
 
         for (type_name, type_) in config.types.iter() {
+            let mut visited_types = HashSet::new();
             for (field_name, field) in type_.fields.iter() {
                 if field.resolver.is_none() {
                     continue;
@@ -164,10 +166,23 @@ impl InferFieldName {
                                 field_name,
                                 answer.suggestions,
                             );
-                            mapping.insert(
-                                field_name.to_owned(),
-                                FieldInfo::new(answer.suggestions, TypeName::new(type_name)),
-                            );
+                            let new_field_name =
+                                answer.suggestions.into_iter().find(|field_name| {
+                                    !type_.fields.contains_key(field_name)
+                                        && !visited_types.contains(field_name)
+                                });
+
+                            if let Some(new_field_name) = new_field_name {
+                                visited_types.insert(new_field_name.clone());
+                                mapping.push((
+                                    field_name.to_owned(),
+                                    FieldLocation {
+                                        new_field_name,
+                                        type_name: type_name.to_owned(),
+                                    },
+                                ));
+                            }
+
                             break;
                         }
                         Err(e) => {

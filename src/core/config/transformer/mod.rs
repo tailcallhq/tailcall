@@ -20,7 +20,7 @@ pub use merge_types::TypeMerger;
 pub use nested_unions::NestedUnions;
 pub use preset::Preset;
 pub use rename_args::{Location, RenameArgs};
-pub use rename_fields::{FieldInfo, RenameFields};
+pub use rename_fields::{Location as FieldLocation, RenameFields};
 pub use rename_types::RenameTypes;
 pub use required::Required;
 pub use tree_shake::TreeShake;

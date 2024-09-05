@@ -1,27 +1,18 @@
-use indexmap::IndexMap;
-
-use super::TypeName;
 use crate::core::config::Config;
 use crate::core::valid::{Valid, Validator};
 use crate::core::Transform;
 
 #[derive(Clone)]
-pub struct FieldInfo {
-    suggestions: Vec<String>,
-    type_name: TypeName,
-}
-
-impl FieldInfo {
-    pub fn new(suggestions: Vec<String>, type_name: TypeName) -> Self {
-        Self { suggestions, type_name }
-    }
+pub struct Location {
+    pub new_field_name: String,
+    pub type_name: String,
 }
 
 #[derive(Clone)]
-pub struct RenameFields(IndexMap<String, FieldInfo>);
+pub struct RenameFields(Vec<(String, Location)>);
 
 impl RenameFields {
-    pub fn new(mappings: IndexMap<String, FieldInfo>) -> Self {
+    pub fn new(mappings: Vec<(String, Location)>) -> Self {
         Self(mappings)
     }
 }
@@ -33,23 +24,24 @@ impl Transform for RenameFields {
     fn transform(&self, mut value: Self::Value) -> Valid<Self::Value, Self::Error> {
         Valid::from_iter(self.0.iter(), |(field_name, field_info)| {
             let type_name = field_info.type_name.as_str();
+            let new_field_name = field_info.new_field_name.as_str();
 
             if let Some(type_def) = value.types.get_mut(type_name) {
-                let suggested_field_name = field_info.suggestions.iter().find(|name| !type_def.fields.contains_key(*name));
-
-                match suggested_field_name {
-                    Some(suggested_name) => {
-                        if let Some(field_def) = type_def.fields.remove(field_name) {
-                            type_def.fields.insert(suggested_name.to_owned(), field_def);
-                            Valid::succeed(())
-                        } else {
-                            Valid::fail(format!("Field '{}' not found in type '{}'.", field_name, type_name))
-                        }
+                if type_def.fields.contains_key(new_field_name) {
+                    return Valid::fail(format!(
+                        "Field '{}' already exists in type '{}'.",
+                        new_field_name, type_name
+                    ));
+                } else {
+                    if let Some(field_def) = type_def.fields.remove(field_name) {
+                        type_def.fields.insert(new_field_name.to_owned(), field_def);
+                        Valid::succeed(())
+                    } else {
+                        Valid::fail(format!(
+                            "Field '{}' not found in type '{}'.",
+                            field_name, type_name
+                        ))
                     }
-                    None => Valid::fail(format!(
-                        "Could not rename field '{}' in type '{}'. All suggested names are already in use.",
-                        field_name, type_name
-                    )),
                 }
             } else {
                 Valid::fail(format!("Type '{}' not found.", type_name))
@@ -65,7 +57,7 @@ mod tests {
     use crate::core::valid::ValidationError;
 
     #[test]
-    fn test_successful_rename() {
+    fn test_rename_field() {
         let sdl = r#"
             type User {
                 old_name: String
@@ -73,11 +65,11 @@ mod tests {
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let mut mappings = IndexMap::new();
-        mappings.insert(
+        let mappings = vec![(
             "old_name".to_string(),
-            FieldInfo::new(vec!["new_name".to_string()], TypeName::new("User")),
-        );
+            Location { new_field_name: "new_name".into(), type_name: "User".into() },
+        )];
+
         let transformed_config = RenameFields::new(mappings)
             .transform(config)
             .to_result()
@@ -86,38 +78,6 @@ mod tests {
         let user_type = transformed_config.find_type("User").unwrap();
 
         assert!(user_type.fields.contains_key("new_name"));
-        assert!(!user_type.fields.contains_key("old_name"));
-    }
-
-    #[test]
-    fn test_rename_with_multiple_suggestions() {
-        let sdl = r#"
-            type User {
-                old_name: String
-                new_name: String
-            }
-        "#;
-
-        let config = Config::from_sdl(sdl).to_result().unwrap();
-
-        let mut mappings = IndexMap::new();
-        mappings.insert(
-            "old_name".to_string(),
-            FieldInfo::new(
-                vec!["new_name".to_string(), "updated_name".to_string()],
-                TypeName::new("User"),
-            ),
-        );
-        let transformed_config = RenameFields::new(mappings)
-            .transform(config)
-            .to_result()
-            .unwrap();
-
-        let user_type = transformed_config.find_type("User").unwrap();
-
-        assert!(user_type.fields.contains_key("updated_name"));
-        assert!(user_type.fields.contains_key("new_name"));
-
         assert!(!user_type.fields.contains_key("old_name"));
     }
 
@@ -130,19 +90,18 @@ mod tests {
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let mut mappings = IndexMap::new();
-        mappings.insert(
-            "non_existent_field".to_string(),
-            FieldInfo::new(vec!["new_name".to_string()], TypeName::new("User")),
-        );
+        let mappings = vec![(
+            "non_existent_field".into(),
+            Location { new_field_name: "new_name".into(), type_name: "User".into() },
+        )];
 
         let actual = RenameFields::new(mappings).transform(config).to_result();
 
-        assert!(actual.is_err());
         let expected_error = ValidationError::new(
             "Field 'non_existent_field' not found in type 'User'.".to_string(),
         );
 
+        assert!(actual.is_err());
         assert_eq!(actual.unwrap_err(), expected_error);
     }
 
@@ -155,48 +114,42 @@ mod tests {
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let mut mappings = IndexMap::new();
-        mappings.insert(
-            "name".to_string(),
-            FieldInfo::new(
-                vec!["new_name".to_string()],
-                TypeName::new("NonExistentType"),
-            ),
-        );
+        let mappings = vec![(
+            "name".into(),
+            Location {
+                new_field_name: "new_name".into(),
+                type_name: "NonExistentType".into(),
+            },
+        )];
+
         let actual = RenameFields::new(mappings).transform(config).to_result();
-
-        assert!(actual.is_err());
-
         let expected_error = ValidationError::new("Type 'NonExistentType' not found.".into());
 
+        assert!(actual.is_err());
         assert_eq!(actual.unwrap_err(), expected_error);
     }
 
     #[test]
-    fn test_rename_all_suggestions_in_use() {
+    fn test_duplicate_rename_type() {
         let sdl = r#"
             type User {
-                old_name: String
-                new_name: String
-                updated_name: String
+                name: String
+                newName: String
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
-        let mut mappings = IndexMap::new();
-        mappings.insert(
-            "old_name".to_string(),
-            FieldInfo::new(
-                vec!["new_name".to_string(), "updated_name".to_string()],
-                TypeName::new("User"),
-            ),
-        );
+        let mappings = vec![(
+            "name".into(),
+            Location {
+                new_field_name: "new_name".into(),
+                type_name: "NonExistentType".into(),
+            },
+        )];
 
         let actual = RenameFields::new(mappings).transform(config).to_result();
-        let expected_error = ValidationError::new(
-            "Could not rename field 'old_name' in type 'User'. All suggested names are already in use."
-                .into(),
-        );
+        let expected_error =
+            ValidationError::new("Field 'newName' already exists in type 'User'.".into());
 
         assert!(actual.is_err());
         assert_eq!(actual.unwrap_err(), expected_error);
