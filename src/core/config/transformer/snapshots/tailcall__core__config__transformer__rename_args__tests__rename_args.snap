@@ -8,7 +8,9 @@ schema @server @upstream {
 }
 
 type Foo {
-  user: JSON @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+  post: JSON @call(steps: [{query: "post", args: {userId: "{{.value.postId}}"}}])
+  postId: ID!
+  user: JSON @call(steps: [{query: "user", args: {userId: "{{.value.userId}}"}}])
   userId: ID!
 }
 
@@ -19,5 +21,6 @@ type Mutation {
 type Query {
   id(y: ID!): ID @expr(body: "{{.args.y}}")
   newsByIdBatch(newsInput: JSON!): JSON! @grpc(body: "{{args.newsInput}}", method: "news.NewsService.GetMultipleNews")
+  post(id: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/posts", query: [{key: "id", value: "{{.args.id}}"}])
   user(userId: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.userId}}")
 }

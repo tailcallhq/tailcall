@@ -34,6 +34,34 @@ impl Transform for RenameArgs {
             let type_name = location.type_name.as_str();
             let field_name = location.field_name.as_str();
             let new_argument_name = location.new_argument_name.as_str();
+            
+            if config.is_root_operation_type(type_name) {
+                let is_safe_operation = config.types.get(type_name)
+                .and_then(|base_type| base_type.fields.get(field_name))
+                .map(|base_field| {
+                    if let Some(Resolver::Http(http)) = &base_field.resolver {
+                        !http.query.iter().any(|q| &q.key == existing_arg_name)
+                    } else {
+                        true
+                    }
+                })
+                .unwrap_or(false);
+
+                // We need to ensure we are doing the changes only if `existing_arg_name` is not query param type.
+                if is_safe_operation {
+                    config.types.values_mut().for_each(|type_| {
+                        type_.fields.values_mut().for_each(|field_| {
+                            if let Some(Resolver::Call(call)) = field_.resolver.as_mut() {
+                                call.steps.iter_mut().for_each(|step| {
+                                    if let Some(arg) = step.args.remove(existing_arg_name) {
+                                        step.args.insert(new_argument_name.to_string(), arg);
+                                    }   
+                                })
+                            }
+                        })
+                    });
+                }
+            }
 
             config
                 .types
@@ -70,6 +98,7 @@ impl Transform for RenameArgs {
 
                         if let Some(arg) = field_.args.shift_remove(existing_arg_name) {
                             field_.args.insert(new_argument_name.to_owned(), arg);
+
                             if let Some(resolver) = &mut field_.resolver {
                                 match resolver {
                                     Resolver::Http(http) => {
@@ -127,6 +156,7 @@ mod tests {
             }
             type Query {
                 user(id: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
+                post(id: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/posts", query: [{key: "id", value: "{{.args.id}}"}])
                 id(x: ID!): ID @expr(body: "{{.args.x}}")
                 newsByIdBatch(input: JSON!): JSON! @grpc(method: "news.NewsService.GetMultipleNews", body: "{{args.input}}")
             }
@@ -135,7 +165,9 @@ mod tests {
             }
             type Foo {
                 userId: ID!
+                postId: ID!
                 user: JSON @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+                post: JSON @call(steps: [{query: "post", args: {id: "{{.value.postId}}"}}])
             }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
