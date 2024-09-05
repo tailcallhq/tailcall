@@ -34,7 +34,7 @@ impl Transform for RenameArgs {
             let field_name = location.field_name.as_str();
             let new_argument_name = location.new_argument_name.as_str();
 
-            let result = config
+            config
                 .types
                 .get_mut(type_name)
                 .and_then(|type_| type_.fields.get_mut(field_name))
@@ -107,41 +107,39 @@ impl Transform for RenameArgs {
                             ))
                         }
                     },
-                );
-
-            if result.is_succeed() && config.is_root_operation_type(type_name) {
-                // We need to ensure we are doing the changes only if `existing_arg_name` is not query param type.
-                let is_safe_operation = config.types.get(type_name)
-                .and_then(|base_type| base_type.fields.get(field_name))
-                .map(|base_field| {
-                    if let Some(Resolver::Http(http)) = &base_field.resolver {
-                        !http.query.iter().any(|q| &q.key == existing_arg_name)
-                    } else {
-                        true
-                    }
-                })
-                .unwrap_or(false);
-
-                if is_safe_operation {
-                    config.types.values_mut().for_each(|type_| {
-                        type_.fields.values_mut().for_each(|field_| {
-                            if let Some(Resolver::Call(call)) = field_.resolver.as_mut() {
-                                call.steps.iter_mut().for_each(|step| {
-                                    let new_f = field_name.to_owned();
-                                    let is_field_name_matched = step.query.as_ref().eq(&Some(&new_f))
-                                        || step.mutation.as_ref().eq(&Some(&new_f));
-                                    if is_field_name_matched {
-                                        if let Some(arg) = step.args.remove(existing_arg_name) {
-                                            step.args.insert(new_argument_name.to_string(), arg);
-                                        }
-                                    }
-                                })
+                ).and_then(|_| {
+                    if config.is_root_operation_type(type_name) {
+                        let is_safe_operation = config.types.get(type_name)
+                        .and_then(|base_type| base_type.fields.get(field_name))
+                        .map(|base_field| {
+                            if let Some(Resolver::Http(http)) = &base_field.resolver {
+                                !http.query.iter().any(|q| &q.key == existing_arg_name)
+                            } else {
+                                true
                             }
                         })
-                    });
-                }
-            }
-            result
+                        .unwrap_or(false);
+                        if is_safe_operation {
+                            config.types.values_mut().for_each(|type_| {
+                                type_.fields.values_mut().for_each(|field_| {
+                                    if let Some(Resolver::Call(call)) = field_.resolver.as_mut() {
+                                        call.steps.iter_mut().for_each(|step| {
+                                            let new_f = field_name.to_owned();
+                                            let is_field_name_matched = step.query.as_ref().eq(&Some(&new_f))
+                                                || step.mutation.as_ref().eq(&Some(&new_f));
+                                            if is_field_name_matched {
+                                                if let Some(arg) = step.args.remove(existing_arg_name) {
+                                                    step.args.insert(new_argument_name.to_string(), arg);
+                                                }
+                                            }
+                                        })
+                                    }
+                                })
+                            });
+                        }
+                    }
+                    Valid::succeed(())
+                })
         })
         .map(|_| config)
     }
