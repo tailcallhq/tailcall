@@ -19,7 +19,7 @@ pub use improve_type_names::ImproveTypeNames;
 pub use merge_types::TypeMerger;
 pub use nested_unions::NestedUnions;
 pub use preset::Preset;
-pub use rename_args::{ArgumentInfo, FieldName, RenameArgs, TypeName};
+pub use rename_args::{Location, RenameArgs};
 pub use rename_fields::{FieldInfo, RenameFields};
 pub use rename_types::RenameTypes;
 pub use required::Required;

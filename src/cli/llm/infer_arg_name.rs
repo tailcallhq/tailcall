@@ -1,13 +1,16 @@
+use std::collections::HashSet;
+
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
-use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use super::{Error, Result, Wizard};
-use crate::core::config::transformer::{ArgumentInfo, FieldName, RenameArgs, TypeName};
+use crate::core::config::transformer::{Location, RenameArgs};
 use crate::core::config::{Config, Resolver};
 use crate::core::valid::{Valid, Validator};
 use crate::core::{AsyncTransform, Mustache, Transform};
+
+const BASE_PROMPT: &str = include_str!("prompts/infer_arg_name.md");
 
 pub struct InferArgName {
     wizard: Wizard<Question, Answer>,
@@ -76,8 +79,7 @@ impl TryInto<ChatRequest> for Question {
             ],
         })?;
 
-        let template_str = include_str!("prompts/infer_arg_name.md");
-        let template = Mustache::parse(template_str);
+        let template = Mustache::parse(BASE_PROMPT);
 
         let context = json!({
             "input": input,
@@ -99,8 +101,8 @@ impl InferArgName {
         Self { wizard: Wizard::new(model, secret) }
     }
 
-    pub async fn generate(&self, config: &Config) -> Result<IndexMap<String, ArgumentInfo>> {
-        let mut mapping: IndexMap<String, ArgumentInfo> = IndexMap::new();
+    pub async fn generate(&self, config: &Config) -> Result<Vec<(String, Location)>> {
+        let mut mapping: Vec<(String, Location)> = Vec::new();
 
         for (type_name, type_) in config.types.iter() {
             // collect all the args that's needs to be processed with LLM.
@@ -108,6 +110,9 @@ impl InferArgName {
                 if field.args.is_empty() {
                     continue;
                 }
+
+                let mut used_arg_name = HashSet::new();
+
                 // filter out query params as we shouldn't change the names of query params.
                 for (arg_name, arg) in field.args.iter().filter(|(k, _)| match &field.resolver {
                     Some(Resolver::Http(http)) => !http.query.iter().any(|q| &q.key == *k),
@@ -136,14 +141,22 @@ impl InferArgName {
                                     arg_name,
                                     answer.suggestions,
                                 );
-                                mapping.insert(
-                                    arg_name.to_owned(),
-                                    ArgumentInfo::new(
-                                        answer.suggestions,
-                                        FieldName::new(field_name),
-                                        TypeName::new(type_name),
-                                    ),
-                                );
+                                let suggested_argument_name =
+                                    answer.suggestions.into_iter().find(|suggestion| {
+                                        !field.args.contains_key(suggestion.as_str())
+                                            && !used_arg_name.contains(suggestion.as_str())
+                                    });
+                                if let Some(suggested_arg_name) = suggested_argument_name {
+                                    used_arg_name.insert(suggested_arg_name.clone());
+
+                                    let arg_location = Location {
+                                        field_name: field_name.to_string(),
+                                        new_argument_name: suggested_arg_name,
+                                        type_name: type_name.to_string(),
+                                    };
+
+                                    mapping.push((arg_name.to_owned(), arg_location));
+                                }
                                 break;
                             }
                             Err(e) => {

@@ -2,6 +2,27 @@
 source: src/core/config/transformer/rename_args.rs
 expression: transformed_config.to_sdl()
 ---
+schema @server @upstream {
+  query: Query
+  mutation: Mutation
+}
+
+type Foo {
+  post: JSON @call(steps: [{query: "post", args: {id: "{{.value.postId}}"}}])
+  postId: ID!
+  user: JSON @call(steps: [{query: "user", args: {userId: "{{.value.userId}}"}}])
+  userId: ID!
+  userTest: JSON @call(steps: [{query: "userTest", args: {id: "{{.value.userId}}"}}])
+}
+
+type Mutation {
+  createPost(createPostInput: JSON): JSON! @http(body: "{{.args.createPostInput}}", method: "POST", path: "/posts")
+}
+
 type Query {
-  user(userId: ID!, userName: String): JSON
+  id(y: ID!): ID @expr(body: "{{.args.y}}")
+  newsByIdBatch(newsInput: JSON!): JSON! @grpc(body: "{{args.newsInput}}", method: "news.NewsService.GetMultipleNews")
+  post(id: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/posts", query: [{key: "id", value: "{{.args.id}}"}])
+  user(userId: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.userId}}")
+  userTest(id: ID!): JSON @http(path: "https://jsonplaceholder.typicode.com/users/{{.args.id}}")
 }
