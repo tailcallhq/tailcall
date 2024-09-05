@@ -133,6 +133,10 @@ mod tests {
             type Mutation {
               createPost(input: JSON): JSON! @http(path: "/posts", body: "{{.args.input}}", method: "POST")
             }
+            type Foo {
+                userId: ID!
+                user: JSON @call(steps: [{query: "user", args: {id: "{{.value.userId}}"}}])
+            }
         "#;
         let config = Config::from_sdl(sdl).to_result().unwrap();
 
