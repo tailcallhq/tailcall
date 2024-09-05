@@ -34,7 +34,6 @@ impl Transform for RenameArgs {
             let type_name = location.type_name.as_str();
             let field_name = location.field_name.as_str();
             let new_argument_name = location.new_argument_name.as_str();
-            
             if config.is_root_operation_type(type_name) {
                 let is_safe_operation = config.types.get(type_name)
                 .and_then(|base_type| base_type.fields.get(field_name))
@@ -55,7 +54,7 @@ impl Transform for RenameArgs {
                                 call.steps.iter_mut().for_each(|step| {
                                     if let Some(arg) = step.args.remove(existing_arg_name) {
                                         step.args.insert(new_argument_name.to_string(), arg);
-                                    }   
+                                    }
                                 })
                             }
                         })
