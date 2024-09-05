@@ -119,7 +119,7 @@ impl Transform for ImproveTypeNames {
     type Error = String;
     fn transform(&self, config: Config) -> Valid<Self::Value, Self::Error> {
         let finalized_candidates = CandidateGeneration::new(&config).generate().converge();
-        RenameTypes::new(finalized_candidates.iter()).transform(config.clone())
+        RenameTypes::new(finalized_candidates.iter()).transform(config)
     }
 }
 
