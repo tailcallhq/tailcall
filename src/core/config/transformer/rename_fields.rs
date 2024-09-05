@@ -34,6 +34,28 @@ impl Transform for RenameFields {
                     ))
                 } else if let Some(field_def) = type_def.fields.remove(field_name) {
                     type_def.fields.insert(new_field_name.to_owned(), field_def);
+
+                    value
+                        .types
+                        .values_mut()
+                        .filter(|type_| {
+                            !type_.added_fields.is_empty()
+                                && type_.fields.values().any(|f| f.type_of.name() == type_name)
+                        })
+                        .for_each(|type_| {
+                            type_.added_fields.iter_mut().for_each(|added_f| {
+                                added_f
+                                    .path
+                                    .iter_mut()
+                                    .filter(|segment| *segment == field_name)
+                                    .for_each(|segment| *segment = new_field_name.to_string());
+
+                                if added_f.name == *field_name {
+                                    added_f.name = added_f.name.replace(field_name, new_field_name);
+                                }
+                            });
+                        });
+
                     Valid::succeed(())
                 } else {
                     Valid::fail(format!(
@@ -148,5 +170,39 @@ mod tests {
 
         assert!(actual.is_err());
         assert_eq!(actual.unwrap_err(), expected_error);
+    }
+
+    #[test]
+    fn test_add_field_should_change_upon_field_name_change() {
+        let sdl = r#"
+            type Foo {
+                zipcode: String
+            }
+            type Address {
+                id: ID!
+                zipcode: String
+            }
+            type User @addField(name: "zipcode", path: ["address", "zipcode"]) {
+                address: Address @omit
+                name: String
+            }
+            type Test @addField(name: "zipcode", path: ["foo", "zipcode"]) {
+                foo: Foo @omit
+                name: String
+            }
+        "#;
+        let config = Config::from_sdl(sdl).to_result().unwrap();
+
+        let mappings = vec![(
+            "zipcode".into(),
+            Location { new_field_name: "code".into(), type_name: "Address".into() },
+        )];
+
+        let actual = RenameFields::new(mappings)
+            .transform(config)
+            .to_result()
+            .unwrap();
+
+        insta::assert_snapshot!(actual.to_sdl())
     }
 }
