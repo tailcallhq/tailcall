@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use indexmap::IndexMap;
 
 use crate::core::config::Config;
@@ -28,12 +30,11 @@ impl Transform for RenameTypes {
 
         // Ensure all types exist in the configuration
         Valid::from_iter(self.0.iter(), |(existing_name, suggested_name)| {
-            if !config.types.contains_key(existing_name) {
-                Valid::fail(format!(
-                    "Type '{}' not found in configuration.",
-                    existing_name
-                ))
-            } else {
+            if config.types.contains_key(existing_name)
+                || config.enums.contains_key(existing_name)
+                || config.unions.contains_key(existing_name)
+            {
+                // handle for the types.
                 if let Some(type_info) = config.types.remove(existing_name) {
                     config.types.insert(suggested_name.to_string(), type_info);
                     lookup.insert(existing_name.clone(), suggested_name.clone());
@@ -46,7 +47,24 @@ impl Transform for RenameTypes {
                     }
                 }
 
+                // handle for the enums.
+                if let Some(type_info) = config.enums.remove(existing_name) {
+                    config.enums.insert(suggested_name.to_string(), type_info);
+                    lookup.insert(existing_name.clone(), suggested_name.clone());
+                }
+
+                // handle for the union.
+                if let Some(type_info) = config.unions.remove(existing_name) {
+                    config.unions.insert(suggested_name.to_string(), type_info);
+                    lookup.insert(existing_name.clone(), suggested_name.clone());
+                }
+
                 Valid::succeed(())
+            } else {
+                Valid::fail(format!(
+                    "Type '{}' not found in configuration.",
+                    existing_name
+                ))
             }
         })
         .map(|_| {
@@ -65,6 +83,51 @@ impl Transform for RenameTypes {
                         }
                     }
                 }
+
+                // replace in interface.
+                type_.implements = type_
+                    .implements
+                    .iter()
+                    .filter_map(|interface_type_name| {
+                        lookup
+                            .get(interface_type_name)
+                            .cloned()
+                            .or(Some(interface_type_name.clone()))
+                    })
+                    .collect();
+            }
+
+            // replace in the union as well.
+            for union_type_ in config.unions.values_mut() {
+                // Collect changes to be made
+                let mut types_to_remove = HashSet::new();
+                let mut types_to_add = HashSet::new();
+
+                for type_name in union_type_.types.iter() {
+                    if let Some(merge_into_type_name) = lookup.get(type_name) {
+                        types_to_remove.insert(type_name.clone());
+                        types_to_add.insert(merge_into_type_name.clone());
+                    }
+                }
+                // Apply changes
+                for type_name in types_to_remove {
+                    union_type_.types.remove(&type_name);
+                }
+
+                for type_name in types_to_add {
+                    union_type_.types.insert(type_name);
+                }
+            }
+
+            // replace in union as well.
+            for union_type_ in config.unions.values_mut() {
+                union_type_.types = union_type_
+                    .types
+                    .iter()
+                    .filter_map(|type_name| {
+                        lookup.get(type_name).cloned().or(Some(type_name.clone()))
+                    })
+                    .collect();
             }
 
             config
