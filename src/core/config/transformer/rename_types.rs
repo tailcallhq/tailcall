@@ -104,9 +104,9 @@ impl Transform for RenameTypes {
                 let mut types_to_add = HashSet::new();
 
                 for type_name in union_type_.types.iter() {
-                    if let Some(merge_into_type_name) = lookup.get(type_name) {
+                    if let Some(new_type_name) = lookup.get(type_name) {
                         types_to_remove.insert(type_name.clone());
-                        types_to_add.insert(merge_into_type_name.clone());
+                        types_to_add.insert(new_type_name.clone());
                     }
                 }
                 // Apply changes
