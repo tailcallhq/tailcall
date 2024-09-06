@@ -14,7 +14,6 @@ use tokio::sync::oneshot;
 use tokio_rustls::TlsAcceptor;
 
 use super::server_config::ServerConfig;
-use crate::cli::CLIError;
 use crate::core::async_graphql_hyper::{GraphQLBatchRequest, GraphQLRequest, GraphQLRequestLike};
 use crate::core::http::handle_incoming;
 use crate::core::Errata;
@@ -30,8 +29,7 @@ pub async fn start_http_2(
 
     let mut tls_cfg = rustls::ServerConfig::builder()
         .with_no_client_auth()
-        .with_single_cert(cert, key.clone_key())
-        .map_err(CLIError::from)?;
+        .with_single_cert(cert, key.clone_key())?;
 
     tls_cfg.alpn_protocols = vec![
         b"h2".to_vec(),
