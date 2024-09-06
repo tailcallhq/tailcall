@@ -23,7 +23,6 @@ const TYPENAME_FIELD: &str = "__typename";
 impl<'json, T> TypedValue<'json> for T
 where
     T: JsonLike<'json>,
-    T::JsonObject<'json>: JsonObjectLike<'json, Value = T>,
 {
     type Error = anyhow::Error;
 
