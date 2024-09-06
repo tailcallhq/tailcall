@@ -150,6 +150,7 @@ impl Display for GraphQLType<Parsed> {
             Entity::EnumVariant => f.write_str(parsed.name.as_str())?,
             Entity::Field => f.write_str(parsed.name.to_case(Case::Camel).as_str())?,
             Entity::Method => {
+                f.write_str("GEN__")?;
                 if !parsed.namespace.is_empty() {
                     f.write_str(parsed.namespace.to_string().as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
@@ -157,6 +158,7 @@ impl Display for GraphQLType<Parsed> {
                 f.write_str(parsed.name.as_str())?
             }
             Entity::Enum | Entity::ObjectType => {
+                f.write_str("GEN__")?;
                 if !parsed.namespace.is_empty() {
                     f.write_str(parsed.namespace.to_string().as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
