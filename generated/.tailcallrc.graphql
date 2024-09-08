@@ -202,13 +202,11 @@ The @link directive allows you to import external resources, such as configurati
  will be later used by `@grpc` directive –.
 """
 directive @link(
-  body: String
   headers: [KeyValue]
   """
   The id of the link. It is used to reference the link in the schema.
   """
   id: String
-  method: Method
   """
   The source of the link. It can be a URL or a path to a file. If a path is provided, 
   it is relative to the file that imports the link.

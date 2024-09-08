@@ -3,7 +3,6 @@ use tailcall_macros::DirectiveDefinition;
 
 use super::super::is_default;
 use super::KeyValue;
-use crate::core::http::Method;
 
 #[derive(
     Default,
@@ -60,10 +59,6 @@ pub struct Link {
     #[serde(default, skip_serializing_if = "is_default", rename = "type")]
     pub type_of: LinkType,
 
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub method: Option<Method>,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub body: Option<String>,
     #[serde(default, skip_serializing_if = "is_default")]
     pub headers: Option<Vec<KeyValue>>,
 }

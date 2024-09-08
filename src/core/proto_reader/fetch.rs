@@ -15,7 +15,6 @@ use crate::core::config::{ConfigReaderContext, KeyValue};
 use crate::core::grpc::protobuf::ProtobufSet;
 use crate::core::grpc::request_template::RequestBody;
 use crate::core::grpc::RequestTemplate;
-use crate::core::http::Method;
 use crate::core::mustache::Mustache;
 use crate::core::runtime::TargetRuntime;
 
@@ -76,8 +75,6 @@ struct ReflectionResponse {
 pub struct GrpcReflection {
     server_reflection_method: GrpcMethod,
     url: String,
-    method: Option<Method>,
-    body: Option<String>,
     headers: Option<Vec<KeyValue>>,
     target_runtime: TargetRuntime,
 }
@@ -86,8 +83,6 @@ pub struct GrpcReflection {
 impl GrpcReflection {
     pub fn new<T: AsRef<str>>(
         url: T,
-        method: Option<Method>,
-        body: Option<String>,
         headers: Option<Vec<KeyValue>>,
         target_runtime: TargetRuntime,
     ) -> Self {
@@ -99,8 +94,6 @@ impl GrpcReflection {
         Self {
             server_reflection_method,
             url: url.as_ref().to_string(),
-            method,
-            body,
             headers,
             target_runtime,
         }
@@ -166,19 +159,10 @@ impl GrpcReflection {
             HeaderName::from_static("content-type"),
             Mustache::parse("application/grpc+proto"),
         ));
-        tracing::warn!("headers: {:#?}", headers);
-        let body_;
-        if let Some(custom_body) = self.body.clone() {
-            body_ = Some(RequestBody {
-                mustache: Some(Mustache::parse(custom_body.as_str())),
-                value: Default::default(),
-            });
-        } else {
-            body_ = Some(RequestBody {
-                mustache: Some(Mustache::parse(body.to_string().as_str())),
-                value: Default::default(),
-            });
-        }
+        let body_ = Some(RequestBody {
+            mustache: Some(Mustache::parse(body.to_string().as_str())),
+            value: Default::default(),
+        });
         let req_template = RequestTemplate {
             url: Mustache::parse(url.as_str()),
             headers,
@@ -269,8 +253,6 @@ mod grpc_fetch {
         let grpc_reflection = GrpcReflection::new(
             format!("http://localhost:{}", server.port()),
             None,
-            None,
-            None,
             crate::core::runtime::test::init(None),
         );
 
@@ -299,8 +281,6 @@ mod grpc_fetch {
 
         let grpc_reflection = GrpcReflection::new(
             format!("http://localhost:{}", server.port()),
-            None,
-            None,
             None,
             crate::core::runtime::test::init(None),
         );
@@ -333,13 +313,8 @@ mod grpc_fetch {
 
         let runtime = crate::core::runtime::test::init(None);
 
-        let grpc_reflection = GrpcReflection::new(
-            format!("http://localhost:{}", server.port()),
-            None,
-            None,
-            None,
-            runtime,
-        );
+        let grpc_reflection =
+            GrpcReflection::new(format!("http://localhost:{}", server.port()), None, runtime);
 
         let resp = grpc_reflection.list_all_files().await?;
 
@@ -370,13 +345,8 @@ mod grpc_fetch {
 
         let runtime = crate::core::runtime::test::init(None);
 
-        let grpc_reflection = GrpcReflection::new(
-            format!("http://localhost:{}", server.port()),
-            None,
-            None,
-            None,
-            runtime,
-        );
+        let grpc_reflection =
+            GrpcReflection::new(format!("http://localhost:{}", server.port()), None, runtime);
 
         let resp = grpc_reflection.list_all_files().await;
 
@@ -402,13 +372,8 @@ mod grpc_fetch {
 
         let runtime = crate::core::runtime::test::init(None);
 
-        let grpc_reflection = GrpcReflection::new(
-            format!("http://localhost:{}", server.port()),
-            None,
-            None,
-            None,
-            runtime,
-        );
+        let grpc_reflection =
+            GrpcReflection::new(format!("http://localhost:{}", server.port()), None, runtime);
 
         let result = grpc_reflection.get_by_service("nonexistent.Service").await;
         assert!(result.is_err());

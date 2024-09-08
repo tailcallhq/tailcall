@@ -74,8 +74,6 @@ mod tests {
             src: test_file.to_string(),
             type_of: LinkType::Protobuf,
             headers: None,
-            method: None,
-            body: None,
         }]);
         let method = GrpcMethod {
             package: "greetings".to_string(),

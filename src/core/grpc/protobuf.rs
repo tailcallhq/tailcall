@@ -267,8 +267,6 @@ pub mod tests {
             src: path.to_string(),
             type_of: LinkType::Protobuf,
             headers: None,
-            method: None,
-            body: None,
         }]);
 
         let method = GrpcMethod { package: id, service: "a".to_owned(), name: "b".to_owned() };
