@@ -382,4 +382,42 @@ mod grpc_fetch {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_custom_headers_resp_list_all() -> Result<()> {
+        let server = start_mock_server();
+
+        let http_reflection_service_not_found = server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .path("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
+                .header("authorization", "Bearer 123");
+            then.status(200).body(get_fake_resp());
+        });
+
+        let runtime = crate::core::runtime::test::init(None);
+
+        let grpc_reflection = GrpcReflection::new(
+            format!("http://localhost:{}", server.port()),
+            Some(vec![KeyValue {
+                key: "authorization".to_string(),
+                value: "Bearer 123".to_string(),
+            }]),
+            runtime,
+        );
+
+        let resp = grpc_reflection.list_all_files().await?;
+
+        assert_eq!(
+            [
+                "news.NewsService".to_string(),
+                "grpc.reflection.v1alpha.ServerReflection".to_string()
+            ]
+            .to_vec(),
+            resp
+        );
+
+        http_reflection_service_not_found.assert();
+
+        Ok(())
+    }
 }

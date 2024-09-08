@@ -216,16 +216,11 @@ fn init_tracer() -> Result<(), Error> {
     Ok(())
 }
 
+/// Intercepts the request and checks if the token is valid.
 fn intercept(req: Request<()>) -> Result<Request<()>, Status> {
-    println!("Intercepting request: {:?}", req);
-    if let Some(token) = req.metadata().get("authorization") {
-        if token != "secret" {
-            Err(Status::permission_denied("Unauthorized"))
-        } else {
-            Ok(req)
-        }
-    } else {
-        Err(Status::permission_denied("Unauthorized"))
+    match req.metadata().get("authorization") {
+        Some(token) if token == "Bearer 123" => Ok(req),
+        _ => Err(Status::permission_denied("Unauthorized")),
     }
 }
 
