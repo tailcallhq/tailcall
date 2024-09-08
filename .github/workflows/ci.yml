@@ -241,6 +241,8 @@ jobs:
       pull-requests: write
     env:
       GITHUB_TOKEN: ${{secrets.GITHUBTOKEN}}
+      GA_API_SECRET: ${{secrets.GA_API_SECRET}}
+      GA_MEASUREMENT_ID: ${{secrets.GA_MEASUREMENT_ID}}
       APP_VERSION: ${{ needs.draft_release.outputs.create_release_name }}
 
     steps:
