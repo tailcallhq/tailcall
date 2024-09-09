@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
 use convert_case::{Case, Casing};
+
+use crate::core::scalar::Scalar;
 pub(super) static DEFAULT_SEPARATOR: &str = "__";
 static PACKAGE_SEPARATOR: &str = ".";
 
@@ -159,7 +161,10 @@ impl Display for GraphQLType<Parsed> {
                 f.write_str(parsed.name.as_str())?
             }
             Entity::Enum | Entity::ObjectType => {
-                f.write_str("GEN__")?;
+                // if output type is scalar, then skip the prefix.
+                if !Scalar::is_predefined(&parsed.name) {
+                    f.write_str("GEN__")?;
+                }
                 if !parsed.namespace.is_empty() {
                     f.write_str(parsed.namespace.to_string().as_str())?;
                     f.write_str(DEFAULT_SEPARATOR)?;
@@ -190,17 +195,20 @@ mod tests {
     fn test_from_enum() {
         let input: Vec<TestParams> = vec![
             // Enums
-            ((Entity::Enum, &[], "foo"), "foo"),
-            ((Entity::Enum, &[], "Foo"), "Foo"),
-            ((Entity::Enum, &["a", "b.c"], "foo_bar"), "a__b__c__foo_bar"),
-            ((Entity::Enum, &[], "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::Enum, &["a.b.c"], "foo"), "a__b__c__foo"),
+            ((Entity::Enum, &[], "foo"), "GEN__foo"),
+            ((Entity::Enum, &[], "Foo"), "GEN__Foo"),
+            (
+                (Entity::Enum, &["a", "b.c"], "foo_bar"),
+                "GEN__a__b__c__foo_bar",
+            ),
+            ((Entity::Enum, &[], "a.b.c.foo"), "GEN__a_b_c_foo"),
+            ((Entity::Enum, &["a.b.c"], "foo"), "GEN__a__b__c__foo"),
             (
                 (Entity::Enum, &["a.b.c"], "d.e.f.foo"),
-                "a__b__c__d_e_f_foo",
+                "GEN__a__b__c__d_e_f_foo",
             ),
-            ((Entity::Enum, &[""], "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::Enum, &[], "a_b_c_foo"), "a_b_c_foo"),
+            ((Entity::Enum, &[""], "a.b.c.foo"), "GEN__a_b_c_foo"),
+            ((Entity::Enum, &[], "a_b_c_foo"), "GEN__a_b_c_foo"),
         ];
 
         assert_type_names(input);
@@ -226,17 +234,20 @@ mod tests {
     fn test_from_object_type() {
         let input: Vec<TestParams> = vec![
             // Object types
-            ((Entity::ObjectType, &[], "foo"), "foo"),
+            ((Entity::ObjectType, &[], "foo"), "GEN__foo"),
             (
                 (Entity::ObjectType, &["a", "b.c"], "fooBar"),
-                "a__b__c__fooBar",
+                "GEN__a__b__c__fooBar",
             ),
-            ((Entity::ObjectType, &[], "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::ObjectType, &["a.b.c"], "foo"), "a__b__c__foo"),
-            ((Entity::ObjectType, &["a.b"], "d.e.foo"), "a__b__d_e_foo"),
-            ((Entity::ObjectType, &[""], "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::ObjectType, &[], "a_b_c_foo"), "a_b_c_foo"),
-            ((Entity::ObjectType, &[], "foo.bar.Baz"), "foo_bar_Baz"),
+            ((Entity::ObjectType, &[], "a.b.c.foo"), "GEN__a_b_c_foo"),
+            ((Entity::ObjectType, &["a.b.c"], "foo"), "GEN__a__b__c__foo"),
+            (
+                (Entity::ObjectType, &["a.b"], "d.e.foo"),
+                "GEN__a__b__d_e_foo",
+            ),
+            ((Entity::ObjectType, &[""], "a.b.c.foo"), "GEN__a_b_c_foo"),
+            ((Entity::ObjectType, &[], "a_b_c_foo"), "GEN__a_b_c_foo"),
+            ((Entity::ObjectType, &[], "foo.bar.Baz"), "GEN__foo_bar_Baz"),
         ];
 
         assert_type_names(input);
@@ -246,17 +257,20 @@ mod tests {
     fn test_from_method() {
         let input: Vec<TestParams> = vec![
             // Methods
-            ((Entity::Method, &[], "foo"), "foo"),
-            ((Entity::Method, &["a.b.c"], "fooBar"), "a__b__c__fooBar"),
+            ((Entity::Method, &[], "foo"), "GEN__foo"),
+            (
+                (Entity::Method, &["a.b.c"], "fooBar"),
+                "GEN__a__b__c__fooBar",
+            ),
             (
                 (Entity::Method, &["a.b", "c"], "foo_bar"),
-                "a__b__c__foo_bar",
+                "GEN__a__b__c__foo_bar",
             ),
-            ((Entity::Method, &[], "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::Method, &["a.b.c"], "foo"), "a__b__c__foo"),
-            ((Entity::Method, &["a.b"], "d.e.foo"), "a__b__d_e_foo"),
-            ((Entity::Method, &[""], "a.b.c.foo"), "a_b_c_foo"),
-            ((Entity::Method, &[], "a_b_c_foo"), "a_b_c_foo"),
+            ((Entity::Method, &[], "a.b.c.foo"), "GEN__a_b_c_foo"),
+            ((Entity::Method, &["a.b.c"], "foo"), "GEN__a__b__c__foo"),
+            ((Entity::Method, &["a.b"], "d.e.foo"), "GEN__a__b__d_e_foo"),
+            ((Entity::Method, &[""], "a.b.c.foo"), "GEN__a_b_c_foo"),
+            ((Entity::Method, &[], "a_b_c_foo"), "GEN__a_b_c_foo"),
         ];
 
         assert_type_names(input);
