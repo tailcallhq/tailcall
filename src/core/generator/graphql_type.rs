@@ -144,6 +144,7 @@ enum Entity {
 }
 
 impl Display for GraphQLType<Parsed> {
+    // The "GEN__" prefix is used to identify auto-generated type names in the LLM-based name correction process.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let parsed = &self.0;
         match parsed.entity {
