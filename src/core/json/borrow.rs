@@ -12,7 +12,7 @@ impl<'ctx> JsonObjectLike<'ctx> for ObjectAsVec<'ctx> {
         ObjectAsVec::default()
     }
 
-    fn get_key(&'ctx self, key: &str) -> Option<&Value> {
+    fn get_key(&self, key: &str) -> Option<&Self::Value> {
         self.get(key)
     }
 
@@ -26,13 +26,13 @@ impl<'ctx> JsonObjectLike<'ctx> for ObjectAsVec<'ctx> {
 }
 
 impl<'ctx> JsonLike<'ctx> for Value<'ctx> {
-    type JsonObject<'obj> = ObjectAsVec<'obj>;
+    type JsonObject = ObjectAsVec<'ctx>;
 
     fn null() -> Self {
         Value::Null
     }
 
-    fn object(obj: Self::JsonObject<'ctx>) -> Self {
+    fn object(obj: Self::JsonObject) -> Self {
         Value::Object(obj)
     }
 
@@ -58,18 +58,18 @@ impl<'ctx> JsonLike<'ctx> for Value<'ctx> {
         }
     }
 
-    fn as_object(&self) -> Option<&Self::JsonObject<'_>> {
+    fn as_object(&self) -> Option<&Self::JsonObject> {
         self.as_object()
     }
 
-    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject<'ctx>> {
+    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject> {
         match self {
             Value::Object(obj) => Some(obj),
             _ => None,
         }
     }
 
-    fn into_object(self) -> Option<Self::JsonObject<'ctx>> {
+    fn into_object(self) -> Option<Self::JsonObject> {
         match self {
             Value::Object(obj) => Some(obj),
             _ => None,

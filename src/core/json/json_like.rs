@@ -5,36 +5,21 @@ pub trait JsonLikeOwned: for<'json> JsonLike<'json> {}
 impl<T> JsonLikeOwned for T where T: for<'json> JsonLike<'json> {}
 
 /// A trait for objects that can be used as JSON values
-pub trait JsonLike<'json>: Sized + Clone {
-    type JsonObject<'obj>: JsonObjectLike<
-        'obj,
-        // generally we want to specify `Self` instead of generic here
-        // and `Self` is used anyway through JsonObjectLike for
-        // current implementations.
-        // But `Self` means the very specific type with some specific lifetime
-        // which doesn't work in case we want to return self type but with different
-        // lifetime. Currently, it affects only `as_object` fn because `serde_json_borrow`
-        // returns smaller lifetime for Value in its `as_object` fn that either forces to
-        // use `&'json self` in the fn (that leads to error "variable does not live long enough")
-        // or generic like this.
-        // TODO: perhaps it could be fixed on `serde_json_borrow` side if we return `Value<'ctx>`
-        // instead of `Value<'_>` in its functions like `as_object`. In that case we can specify
-        // `Self` here and simplify usages of this trait
-        Value: JsonLike<'obj>,
-    >;
+pub trait JsonLike<'json>: Sized {
+    type JsonObject: JsonObjectLike<'json, Value = Self>;
 
     // Constructors
     fn null() -> Self;
-    fn object(obj: Self::JsonObject<'json>) -> Self;
+    fn object(obj: Self::JsonObject) -> Self;
     fn array(arr: Vec<Self>) -> Self;
     fn string(s: Cow<'json, str>) -> Self;
 
     // Operators
     fn as_array(&self) -> Option<&Vec<Self>>;
     fn into_array(self) -> Option<Vec<Self>>;
-    fn as_object(&self) -> Option<&Self::JsonObject<'_>>;
-    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject<'json>>;
-    fn into_object(self) -> Option<Self::JsonObject<'json>>;
+    fn as_object(&self) -> Option<&Self::JsonObject>;
+    fn as_object_mut(&mut self) -> Option<&mut Self::JsonObject>;
+    fn into_object(self) -> Option<Self::JsonObject>;
     fn as_str(&self) -> Option<&str>;
     fn as_i64(&self) -> Option<i64>;
     fn as_u64(&self) -> Option<u64>;
@@ -50,7 +35,7 @@ pub trait JsonLike<'json>: Sized + Clone {
 pub trait JsonObjectLike<'obj>: Sized {
     type Value;
     fn new() -> Self;
-    fn get_key(&'obj self, key: &str) -> Option<&Self::Value>;
+    fn get_key(&self, key: &str) -> Option<&Self::Value>;
     fn insert_key(&mut self, key: &'obj str, value: Self::Value);
     fn remove_key(&mut self, key: &'obj str) -> Option<Self::Value>;
 }
