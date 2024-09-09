@@ -1,3 +1,6 @@
+use std::fs;
+use std::path::Path;
+
 use anyhow::Result;
 use clap::Parser;
 use convert_case::{Case, Casing};
@@ -10,10 +13,6 @@ use crate::cli::{self, update_checker};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
 use crate::core::runtime::TargetRuntime;
-use std::fs;
-use std::path::Path;
-
-
 
 pub async fn run() -> Result<()> {
     if let Ok(path) = dotenv() {
@@ -40,9 +39,11 @@ pub async fn run() -> Result<()> {
 fn get_absolute_paths(file_paths: Vec<String>) -> Vec<String> {
     file_paths
         .into_iter()
-        .map(|path| fs::canonicalize(Path::new(&path))
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_else(|_| path)) // Fallback to original path if conversion fails
+        .map(|path| {
+            fs::canonicalize(Path::new(&path))
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|_| path)
+        }) // Fallback to original path if conversion fails
         .collect()
 }
 
