@@ -38,7 +38,7 @@ impl TryFrom<blueprint::Script> for LocalRuntime {
         let source = script.source;
         let js_runtime = rquickjs::Runtime::new()?;
         let context = Context::full(&js_runtime)?;
-        context.with(|ctx| {
+        let _: () = context.with(|ctx| {
             setup_builtins(&ctx)?;
             ctx.eval(source)
         })?;
