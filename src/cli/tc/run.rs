@@ -10,6 +10,10 @@ use crate::cli::{self, update_checker};
 use crate::core::blueprint::Blueprint;
 use crate::core::config::reader::ConfigReader;
 use crate::core::runtime::TargetRuntime;
+use std::fs;
+use std::path::Path;
+
+
 
 pub async fn run() -> Result<()> {
     if let Ok(path) = dotenv() {
@@ -33,12 +37,23 @@ pub async fn run() -> Result<()> {
     run_command(cli, config_reader, runtime).await
 }
 
+fn get_absolute_paths(file_paths: Vec<String>) -> Vec<String> {
+    file_paths
+        .into_iter()
+        .map(|path| fs::canonicalize(Path::new(&path))
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| path)) // Fallback to original path if conversion fails
+        .collect()
+}
+
 async fn run_command(cli: Cli, config_reader: ConfigReader, runtime: TargetRuntime) -> Result<()> {
     match cli.command {
         Command::Start { file_paths } => {
-            start::start_command(file_paths, &config_reader).await?;
+            let absolute_paths = get_absolute_paths(file_paths);
+            start::start_command(absolute_paths, &config_reader).await?;
         }
         Command::Check { file_paths, n_plus_one_queries, schema, format } => {
+            let file_paths = get_absolute_paths(file_paths);
             check::check_command(
                 check::CheckParams { file_paths, n_plus_one_queries, schema, format, runtime },
                 &config_reader,
