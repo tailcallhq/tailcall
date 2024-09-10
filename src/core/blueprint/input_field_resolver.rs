@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
+use async_graphql::Name;
+use async_graphql_value::ConstValue;
+use indexmap::IndexMap;
+
 use crate::core::blueprint::FieldDefinition;
 use crate::core::config;
 use crate::core::config::{ConfigModule, Field};
 use crate::core::ir::model::IR;
-use crate::core::json::{JsonLike, JsonObjectLike};
+use crate::core::json::{JsonLike, Lens};
 use crate::core::try_fold::TryFold;
 use crate::core::valid::Valid;
 
-///
 /// Our aim here is to construct the IR that modifies input arguments
-/// - rename fields
-/// - protect fields (TODO)
-/// - sanitize input before sending (TODO)
 pub fn update_input_field_resolver<'a>(
 ) -> TryFold<'a, (&'a ConfigModule, &'a Field, &'a config::Type, &'a str), FieldDefinition, String>
 {
@@ -27,31 +27,31 @@ pub fn update_input_field_resolver<'a>(
                     .iter()
                     .filter_map(|arg| {
                         let input_type = &arg.of_type;
-                        // holds (type name) => Lens
-                        let mut type_lenses: HashMap<String, InputTypeLens> = HashMap::new();
+                        // holds (type name) => Context
+                        let mut types_context: HashMap<String, InputFieldContext> = HashMap::new();
 
                         // used to keep the names of visited types so we don't visit them twice
                         let mut visited: Vec<String> = Vec::new();
 
                         // step: we extract the data required for the InputTransformsContext
-                        extract_type_lenses(
+                        extract_types_context(
                             input_type.name(),
                             config,
                             &mut visited,
-                            &mut type_lenses,
+                            &mut types_context,
                         );
 
-                        // step: we optimized the produced lenses (remove empty ones)
-                        let type_lenses = optimize_type_lenses(type_lenses);
+                        // step: we optimized the produced context (remove empty ones)
+                        let types_context = optimize_types_context(types_context);
 
                         let input_transforms = InputTransformsContext {
-                            type_lenses,
+                            types_context,
                             arg_name: arg.name.clone(),
                             arg_type: arg.of_type.name().to_string(),
                         };
 
                         // step: return the resolver only if we have transforms to apply
-                        if input_transforms.type_lenses.is_empty() {
+                        if input_transforms.types_context.is_empty() {
                             None
                         } else {
                             Some(IR::ModifyInput(input_transforms))
@@ -75,13 +75,12 @@ pub fn update_input_field_resolver<'a>(
     )
 }
 
-///
-/// Helper function that is used to recursively extract the lenses
-fn extract_type_lenses(
+/// Helper function that is used to recursively extract the operations context
+fn extract_types_context(
     target_type: &str,
     config: &&ConfigModule,
     visited: &mut Vec<String>,
-    type_lenses: &mut HashMap<String, InputTypeLens>,
+    types_context: &mut HashMap<String, InputFieldContext>,
 ) {
     // step: if we visited the type we skip
     if visited.contains(&target_type.to_string()) {
@@ -98,17 +97,22 @@ fn extract_type_lenses(
         .iter()
         .find(|(type_name, _)| type_name.as_str().eq(target_type))
     {
-        for (original_field_name, field) in &metadata.fields {
-            let (mut field_name, field_type) =
-                (original_field_name.to_string(), field.type_of.to_string());
+        let mut types: Vec<(Lens, String)> = Vec::new();
+        let mut operations: Vec<(Lens, Operation)> = Vec::new();
 
-            // step: we create a rename lens if it is applicable
-            let rename_lens = if let Some(modify) = &field.modify {
+        for (original_field_name, field) in &metadata.fields {
+            let (mut field_name, field_type) = (
+                original_field_name.to_string(),
+                field.type_of.name().to_string(),
+            );
+
+            // step: we record the rename operation
+            let operation_lens = if let Some(modify) = &field.modify {
                 if let Some(modified_name) = &modify.name {
                     field_name = modified_name.to_string();
-                    Some(InputTypeLens::Transform(
-                        field_name.clone(),
-                        InputFieldTransform::rename(original_field_name.clone()),
+                    Some((
+                        Lens::Select(field_name.clone()),
+                        Operation::Rename(original_field_name.to_string()),
                     ))
                 } else {
                     None
@@ -117,174 +121,139 @@ fn extract_type_lenses(
                 None
             };
 
-            // this lens is used to recursively apply lenses
-            let type_lens = InputTypeLens::Transform(
-                field_name.clone(),
-                InputFieldTransform::field_type(field_type.clone()),
-            );
+            // step: after we finish composing the operations we collect them
+            if let Some(lens) = operation_lens {
+                operations.push(lens);
+            }
 
-            let local_lens = match rename_lens {
-                Some(rename_lens) => InputTypeLens::compose(type_lens, rename_lens),
-                None => type_lens,
-            };
+            // step: we collect the type of the field to aid the recursive parsing of the
+            // object
+            types.push((Lens::Select(field_name), field_type));
 
-            // step: we compose the lens with the rest
-            let lens = match type_lenses.remove(&target_type.to_string()) {
-                Some(lens) => InputTypeLens::compose(lens, local_lens),
-                None => local_lens,
-            };
-
-            // step: we put the lens back
-            type_lenses.insert(target_type.to_string(), lens);
-
-            // step: we try to extract the nested type lens
-            extract_type_lenses(&field.type_of, config, visited, type_lenses);
+            // step: we go deeper to check it is nested type
+            extract_types_context(field.type_of.name(), config, visited, types_context);
         }
+
+        // step: putting the context together
+        let input_field_context = InputFieldContext { types, operations };
+
+        // step: we collect the context
+        types_context.insert(target_type.to_string(), input_field_context);
     }
 }
 
-///
-/// Helper function that is used to remove empty lenses
-fn optimize_type_lenses(
-    type_lenses: HashMap<String, InputTypeLens>,
-) -> HashMap<String, InputTypeLens> {
-    type_lenses
-        .clone()
-        .into_iter()
-        .filter_map(|(type_name, lens)| {
-            if lens.is_empty() {
-                None
-            } else {
-                Some((type_name, lens))
-            }
-        })
-        .collect()
+/// Helper function that is used to remove empty operations
+fn optimize_types_context(
+    types_context: HashMap<String, InputFieldContext>,
+) -> HashMap<String, InputFieldContext> {
+    let mut operations_count: HashMap<String, usize> = HashMap::new();
+
+    // step: we collect the types and their operations count
+    for (type_name, context) in types_context.iter() {
+        operations_count.insert(type_name.to_string(), context.operations.len());
+    }
+
+    let mut new_types_context = HashMap::new();
+
+    for (type_name, context) in types_context.into_iter() {
+        let outer_count = operations_count.get(&type_name).unwrap_or(&0);
+        if outer_count > &0 {
+            let new_input_context = InputFieldContext {
+                types: context
+                    .types
+                    .into_iter()
+                    .filter(|(_field_name, type_name)| {
+                        let inner_count = operations_count.get(type_name).unwrap_or(&0);
+                        // step: keep only fields that points to other types that contain operations
+                        inner_count > &0
+                    })
+                    .collect(),
+                operations: context.operations,
+            };
+
+            new_types_context.insert(type_name, new_input_context);
+        }
+    }
+
+    new_types_context
 }
 
-/// Used to contain all the directives that can apply on input type fields
+/// Used to contain the required context that allows to perform various
+/// operations on input field types
 #[derive(Clone, Debug)]
-pub enum InputFieldTransform {
+pub struct InputFieldContext {
+    pub types: Vec<(Lens, String)>,
+    pub operations: Vec<(Lens, Operation)>,
+}
+
+/// Used to contain all the operations you can apply on input field values
+#[derive(Clone, Debug)]
+pub enum Operation {
     /// Used to rename the field_name
     Rename(String),
-    /// Used to contain the field_type so we can apply deeply nested lenses
-    FieldType(String),
-    // TODO: add more operations as time goes on
+    /// Used to chains one or more operations
+    Compose(Box<Self>, Box<Self>),
 }
 
-impl InputFieldTransform {
-    fn rename(field_name: String) -> Self {
-        Self::Rename(field_name)
-    }
-
-    fn field_type(field_type: String) -> Self {
-        Self::FieldType(field_type)
-    }
-}
-
-#[derive(Clone, Debug)]
-/// Used to reconstruct input type objects
-pub enum InputTypeLens {
-    /// Used to compose two lenses together
-    Compose(Box<InputTypeLens>, Box<InputTypeLens>),
-    /// Used to apply a transformation to the lens
-    Transform(String, InputFieldTransform),
-}
-
-impl InputTypeLens {
-    /// Used to apply a set of lenses to the json value
-    pub fn transform<'json, J>(
-        &'json self,
-        type_lenses: &'json HashMap<String, InputTypeLens>,
-        value: &'json J,
-    ) -> J
-    where
-        J: JsonLike<'json>,
-    {
-        if let Some(items) = value.as_array() {
-            // if: it is an array, we iterate each item and we call recursively the
-            // `transform` to apply the lens for each item.
-            let arr = items
-                .iter()
-                .clone()
-                .map(|item| self.transform(type_lenses, item))
-                .collect::<Vec<_>>();
-            J::array(arr)
-        } else if let Some(obj) = value.as_object() {
-            // if: it is an object, we apply the set of lenses to the object
-            let mut new_map = J::JsonObject::new();
-
-            self.recursive_prepare_object::<J>(type_lenses, obj, &mut new_map);
-
-            J::object(new_map)
-        } else {
-            // if: anything else we just return it
-            value.clone()
-        }
-    }
-
-    ///
-    /// Helper function that is used to apply a set of lenses to the object
-    fn recursive_prepare_object<'json, J>(
-        &'json self,
-        type_lenses: &'json HashMap<String, InputTypeLens>,
-        obj: &'json <J as JsonLike<'json>>::JsonObject<'json>,
-        new_map: &mut <J as JsonLike<'json>>::JsonObject<'json>,
-    ) where
-        J: JsonLike<'json>,
-    {
-        match self {
-            InputTypeLens::Compose(first, second) => {
-                first.recursive_prepare_object::<J>(type_lenses, obj, new_map);
-                second.recursive_prepare_object::<J>(type_lenses, obj, new_map);
-            }
-            InputTypeLens::Transform(path, operation) => match operation {
-                InputFieldTransform::Rename(new_name) => {
-                    if let Some(value) = new_map.remove_key(path) {
-                        new_map.insert_key(new_name, value);
-                    }
-                }
-                InputFieldTransform::FieldType(field_type) => {
-                    // if: it is a field type we apply recursively the function to apply the
-                    // appropriate lenses to the nested fields
-                    if let Some(value) = obj.get_key(path) {
-                        match type_lenses.get(field_type) {
-                            Some(next_lens) => {
-                                let value: <<J as JsonLike<'json>>::JsonObject<'json> as JsonObjectLike>::Value
-                                = next_lens
-                                    .transform::<<J::JsonObject<'json> as JsonObjectLike>::Value>(
-                                        type_lenses,
-                                        value,
-                                    );
-                                new_map.insert_key(path, value);
-                            }
-                            None => {
-                                new_map.insert_key(path, value.clone());
-                            }
-                        }
-                    }
-                }
-            },
-        }
-    }
-
-    fn is_empty(&self) -> bool {
-        match self {
-            InputTypeLens::Compose(first, second) => first.is_empty() && second.is_empty(),
-            InputTypeLens::Transform(_, InputFieldTransform::Rename(_)) => false,
-            InputTypeLens::Transform(_, InputFieldTransform::FieldType(_)) => true,
-        }
-    }
-
-    fn compose(first: Self, second: Self) -> Self {
-        Self::Compose(Box::new(first), Box::new(second))
-    }
-}
-
-///
 /// Used to hold input field transformations context
 #[derive(Clone, Debug)]
 pub struct InputTransformsContext {
-    pub type_lenses: HashMap<String, InputTypeLens>,
+    pub types_context: HashMap<String, InputFieldContext>,
     pub arg_name: String,
     pub arg_type: String,
+}
+
+impl InputTransformsContext {
+    pub fn transform(&self, args: &mut IndexMap<Name, ConstValue>) {
+        let field_name = Name::new(self.arg_name.clone());
+        if let Some(mut value) = args.swap_remove(&field_name) {
+            self.recursive_transform(&self.arg_type, &mut value);
+            args.insert(field_name, value);
+        }
+    }
+
+    pub fn recursive_transform<Json>(&self, target_type: &str, value: &mut Json)
+    where
+        for<'json> Json: JsonLike<'json>,
+    {
+        if let Some(context) = self.types_context.get(target_type) {
+            // step: iterate recursive types and calculate their value
+            for (type_lens, type_name) in context.types.iter() {
+                if let Some(mut local_value) = type_lens.remove(value) {
+                    if let Some(_obj) = local_value.as_object_mut() {
+                        self.recursive_transform(type_name, &mut local_value);
+                    } else if let Some(arr) = local_value.as_array_mut() {
+                        for item in arr.iter_mut() {
+                            self.recursive_transform(type_name, item);
+                        }
+                    }
+                    type_lens.set(value, local_value);
+                }
+            }
+
+            // step: apply operations
+            for (operation_lens, operation) in context.operations.iter() {
+                if let Some(local_value) = operation_lens.remove(value) {
+                    let (new_lens, updated_value) =
+                        Self::recursive_operation(operation, operation_lens.clone(), local_value);
+                    new_lens.set(value, updated_value);
+                }
+            }
+        }
+    }
+
+    pub fn recursive_operation<Json>(
+        operation: &Operation,
+        _lens: Lens,
+        value: Json,
+    ) -> (Lens, Json) {
+        match operation {
+            Operation::Rename(new_name) => (Lens::select(new_name), value),
+            Operation::Compose(first, second) => {
+                let (lens, value) = Self::recursive_operation(first, _lens, value);
+                let (lens, value) = Self::recursive_operation(second, lens, value);
+                (lens, value)
+            }
+        }
+    }
 }

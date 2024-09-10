@@ -1,9 +1,7 @@
 use std::future::Future;
 use std::ops::Deref;
 
-use async_graphql::Name;
 use async_graphql_value::ConstValue;
-use indexmap::IndexMap;
 
 use super::eval_io::eval_io;
 use super::model::{Cache, CacheKey, Map, IR};
@@ -99,34 +97,10 @@ impl IR {
                     Ok(value)
                 }),
                 IR::ModifyInput(input_transforms) => {
-                    // TODO: target only specified input argument and leave the rest as_is
                     if let Some(args) = ctx.path_arg::<&str>(&[]) {
-                        // iter: we iterate the input arguments
-                        let args: IndexMap<Name, ConstValue> = args
-                            .as_object()
-                            .unwrap()
-                            .iter()
-                            .map(|(name, value)| {
-                                if name.to_string().eq(&input_transforms.arg_name) {
-                                    // if: input argument is the targeted one, we apply the lense
-                                    let value = match input_transforms
-                                        .type_lenses
-                                        .get(&input_transforms.arg_type)
-                                    {
-                                        Some(lens) => {
-                                            lens.transform(&input_transforms.type_lenses, value)
-                                        }
-                                        None => value.clone(),
-                                    };
-
-                                    (name.clone(), value)
-                                } else {
-                                    (name.clone(), value.clone())
-                                }
-                            })
-                            .collect();
-
-                        Ok(ConstValue::Object(args))
+                        let mut args = args.as_object().unwrap().clone();
+                        input_transforms.transform(&mut args);
+                        Ok(ConstValue::object(args))
                     } else {
                         Ok(ConstValue::Null)
                     }

@@ -1,5 +1,6 @@
 mod borrow;
 mod graphql;
+mod json_lens;
 mod json_like;
 mod json_like_list;
 mod json_schema;
@@ -7,6 +8,7 @@ mod serde;
 
 use std::collections::HashMap;
 
+pub use json_lens::*;
 pub use json_like::*;
 pub use json_like_list::*;
 pub use json_schema::*;
