@@ -33,34 +33,38 @@ if (matched_platform != null) {
   const specific_url = `v${version}/tailcall-${targetPlatform.get("target")}${targetPlatformExt}`
   const full_url = pkg_download_base_url + specific_url
 
-  console.log(`Downloading Tailcall for ${targetPlatform.get("target")}${targetPlatformExt}  ...`)
+  console.log(`Downloading Tailcall for ${targetPlatform.get("target")}${targetPlatformExt} ,\nUrl - ${full_url} ...`)
 
   const output_path = `bin/tailcall-${targetPlatform.get("target")}${targetPlatformExt}`
-  download_binary(full_url, output_path)
+  await download_binary(full_url, output_path)
 }
 
 async function download_binary(full_url, output_path) {
-  const file = fs.createWriteStream(output_path)
-  axios({
-    url: full_url,
-    method: "GET",
-    responseType: "stream",
-  })
-    .then((response) => {
-      response.data.pipe(file)
-      file.on("finish", async () => {
-        const __dirname = dirname(fileURLToPath(import.meta.url))
-
-        const directoryPath = resolve(__dirname, "../")
-        const packageJsonString = fs.readFileSync(resolve(directoryPath, "./package.json"), "utf8")
-        const packageJson = JSON.parse(packageJsonString)
-        packageJson.bin = {tailcall: output_path}
-        fs.writeFileSync(resolve(directoryPath, "./package.json"), JSON.stringify(packageJson, null, 2), "utf8")
-
-        console.log("Tailcall binary downloaded successfully")
-      })
+  try {
+    const file = fs.createWriteStream(output_path)
+    console.log("bin path -", output_path)
+    const response = await axios({
+      url: full_url,
+      method: "GET",
+      responseType: "stream",
     })
-    .catch((error) => {
-      console.error("Error downloading", error.message)
+
+    response.data.pipe(file)
+    response.data.on("error", (error) => {
+      console.error("Error with resp data - ", error)
     })
+
+    file.on("close", async () => {
+      const packageJsonString = await fs.promises.readFile("package.json", "utf8")
+      const packageJson = JSON.parse(packageJsonString)
+      packageJson.bin = {tailcall: output_path}
+      await fs.promises.writeFile("package.json", JSON.stringify(packageJson, null, 2), "utf8")
+      console.log("Tailcall binary downloaded successfully")
+    })
+    file.on("error", (error) => {
+      console.error("Error while writing to a file - ", error)
+    })
+  } catch (error) {
+    console.error("Error downloading", error.message)
+  }
 }
